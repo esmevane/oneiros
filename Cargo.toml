@@ -3,5 +3,6 @@ name = "oneiros"
 version = "0.0.0"
 edition = "2024"
 description = "A sqlite-based cognition kit for long-term agent language models."
+license = "MIT"
 
 [dependencies]
