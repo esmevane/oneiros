@@ -1,0 +1,24 @@
+[package]
+name = "oneiros"
+version.workspace = true
+edition.workspace = true
+description = "A sqlite-based cognition kit for long-term agent language models."
+license.workspace = true
+
+[package.metadata.dist]
+dist = true
+
+[[bin]]
+name = "oneiros"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+clap-verbosity-flag.workspace = true
+colorchoice-clap.workspace = true
+directories.workspace = true
+rusqlite.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

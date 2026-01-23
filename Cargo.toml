@@ -1,8 +1,28 @@
-[package]
-name = "oneiros"
-version = "0.0.0"
+[workspace]
+resolver = "2"
+members = [
+  "crates/*",
+]
+
+[workspace.package]
+version = "0.0.1"
 edition = "2024"
-description = "A sqlite-based cognition kit for long-term agent language models."
+repository = "https://github.com/esmevane/oneiros"
 license = "MIT"
 
-[dependencies]
+[workspace.dependencies]
+anstream = "0.6.21"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+clap-verbosity-flag = "3"
+colorchoice-clap = "1.0.7"
+directories = "5"
+rusqlite = { version = "0.31", features = ["bundled", "serde_json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["serde", "v4"] }
