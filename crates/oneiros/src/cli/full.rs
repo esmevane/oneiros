@@ -22,7 +22,6 @@ impl Full {
                 command.run(self.context()).await;
             }
         }
-        todo!()
     }
 }
 
