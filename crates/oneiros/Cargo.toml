@@ -3,6 +3,7 @@ name = "oneiros"
 version.workspace = true
 edition.workspace = true
 description = "A sqlite-based cognition kit for long-term agent language models."
+repository.workspace = true
 license.workspace = true
 
 [package.metadata.dist]
