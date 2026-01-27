@@ -1,5 +1,5 @@
 mod cli;
-mod comands;
+mod commands;
 mod context;
 mod database;
 mod error;
@@ -10,7 +10,7 @@ use clap::Parser;
 use cli::{Cli, Full, Preflight};
 use context::Context;
 
-pub(crate) use comands::Doctor;
+pub(crate) use commands::Doctor;
 pub(crate) use database::Database;
 pub(crate) use error::Error;
 
