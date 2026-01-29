@@ -7,7 +7,7 @@ mod logging;
 
 use clap::Parser;
 
-use cli::{Cli, Full, Preflight};
+use cli::Cli;
 use context::Context;
 
 pub(crate) use commands::Doctor;
@@ -17,11 +17,9 @@ pub(crate) use error::Error;
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub async fn run() -> Result<()> {
-    let preflight = Preflight::preflight_parse();
+    logging::init()?;
 
-    logging::init(preflight)?;
-
-    let cli = Full::parse();
+    let cli = Cli::parse();
 
     cli.run().await;
 

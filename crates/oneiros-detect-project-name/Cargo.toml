@@ -1,0 +1,13 @@
+[package]
+name = "oneiros-detect-project-name"
+version.workspace = true
+edition.workspace = true
+description = "Strategy-based project root and name detection for oneiros."
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+toml.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
