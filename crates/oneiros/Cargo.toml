@@ -18,6 +18,7 @@ clap.workspace = true
 clap-verbosity-flag.workspace = true
 colorchoice-clap.workspace = true
 directories.workspace = true
+oneiros-detect-project-name = { path = "../oneiros-detect-project-name" }
 rusqlite.workspace = true
 thiserror.workspace = true
 tokio.workspace = true

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Args;
 
 use crate::{Context, Database};
@@ -17,6 +19,17 @@ impl Doctor {
         };
 
         let mut checks = vec![];
+
+        // Report detected project
+        if let Some(name) = context.project_name() {
+            let root = context
+                .project_root()
+                .map(PathBuf::from)
+                .unwrap_or_default();
+            checks.push(Checks::ProjectDetected(name.to_string(), root));
+        } else {
+            checks.push(Checks::NoProjectDetected);
+        }
 
         if context.is_initialized() {
             checks.push(Checks::Initialized);
@@ -47,8 +60,8 @@ impl Doctor {
             checks.push(Checks::NoConfigFound(context.config_path()));
         }
 
-        for checks in checks {
-            checks.report();
+        for check in checks {
+            check.report();
         }
     }
 }
@@ -57,24 +70,32 @@ mod checks {
     use std::path::PathBuf;
 
     pub(crate) enum Checks {
+        ProjectDetected(String, PathBuf),
+        NoProjectDetected,
         Initialized,
         NotInitialized,
         DatabaseOk(PathBuf),
         NoDatabaseFound(PathBuf, String),
         EventLogReady(usize),
         NoEventLog(String),
-        ConfigOk(std::path::PathBuf),
-        NoConfigFound(std::path::PathBuf),
+        ConfigOk(PathBuf),
+        NoConfigFound(PathBuf),
     }
 
     impl Checks {
         pub(crate) fn report(&self) {
             match self {
+                Checks::ProjectDetected(name, root) => {
+                    tracing::info!("Project '{}' detected at '{}'.", name, root.display());
+                }
+                Checks::NoProjectDetected => {
+                    tracing::warn!("No project detected.");
+                }
                 Checks::Initialized => {
-                    tracing::info!("Project is initialized.");
+                    tracing::info!("System is initialized.");
                 }
                 Checks::NotInitialized => {
-                    tracing::warn!("Project is not initialized.");
+                    tracing::warn!("System is not initialized.");
                 }
                 Checks::DatabaseOk(path) => {
                     tracing::info!("Database found at '{}'.", path.display());
