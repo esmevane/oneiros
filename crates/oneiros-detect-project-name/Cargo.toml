@@ -5,6 +5,7 @@ edition.workspace = true
 description = "Strategy-based project root and name detection for oneiros."
 repository.workspace = true
 license.workspace = true
+publish = false
 
 [dependencies]
 toml.workspace = true
