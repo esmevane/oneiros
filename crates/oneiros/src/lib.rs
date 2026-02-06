@@ -5,7 +5,6 @@ mod error;
 mod events;
 mod logging;
 mod models;
-mod outcomes;
 mod projections;
 mod values;
 
@@ -17,7 +16,6 @@ pub(crate) use context::*;
 pub(crate) use events::*;
 pub(crate) use logging::*;
 pub(crate) use models::*;
-pub(crate) use outcomes::*;
 pub(crate) use values::*;
 
 pub use error::*;
@@ -26,10 +24,7 @@ pub async fn run() -> Result<(), Error> {
     logging::init()?;
 
     let cli = Cli::parse();
-
-    for outcome in cli.run().await? {
-        outcome.report();
-    }
+    cli.run().await?;
 
     Ok(())
 }
