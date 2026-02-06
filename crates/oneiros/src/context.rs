@@ -1,5 +1,8 @@
 use directories::ProjectDirs;
+use oneiros_db::{Database, DatabaseError};
 use oneiros_detect_project_name::{ProjectDetector, ProjectRoot};
+use oneiros_fs::FileOps;
+use oneiros_terminal::TerminalOps;
 use std::path::{Path, PathBuf};
 
 const QUALIFIER: &str = "com";
@@ -51,5 +54,21 @@ impl Context {
     /// Check if initialized.
     pub(crate) fn is_initialized(&self) -> bool {
         self.db_path().exists()
+    }
+
+    pub(crate) fn database(&self) -> Result<Database, DatabaseError> {
+        Ok(if self.db_path().exists() {
+            Database::open(self.db_path())?
+        } else {
+            Database::create(self.db_path())?
+        })
+    }
+
+    pub(crate) fn files(&self) -> FileOps {
+        FileOps
+    }
+
+    pub(crate) fn terminal(&self) -> TerminalOps {
+        TerminalOps
     }
 }

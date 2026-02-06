@@ -1,0 +1,15 @@
+[package]
+name = "oneiros-terminal"
+version.workspace = true
+edition.workspace = true
+description = "Strategy-based project root and name detection for oneiros."
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+inquire.workspace = true
+whoami.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -1,10 +1,12 @@
 use tracing_subscriber::filter::Directive;
 
-use crate::Error;
-
 const CRATE_NAME: &str = env!("CARGO_PKG_NAME");
 
-pub(crate) fn init() -> Result<(), Error> {
+#[derive(Debug, thiserror::Error)]
+#[error("Logging error: {0}")]
+pub struct LoggingError(#[from] tracing_subscriber::filter::ParseError);
+
+pub(crate) fn init() -> Result<(), LoggingError> {
     let directive: Directive = format!("{CRATE_NAME}=info").parse()?;
     let filter = tracing_subscriber::EnvFilter::from_default_env().add_directive(directive);
 
