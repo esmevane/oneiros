@@ -1,4 +1,5 @@
 use clap::Args;
+use oneiros_outcomes::Outcomes;
 
 use crate::*;
 
@@ -19,25 +20,27 @@ impl Init {
     pub(crate) async fn run(
         &self,
         context: Option<Context>,
-    ) -> Result<Vec<InitOutcomes>, InitError> {
+    ) -> Result<Outcomes<InitOutcomes>, InitError> {
+        let mut outcomes = Outcomes::new();
+
         let Some(context) = context else {
-            return Ok(vec![InitOutcomes::NoSystemContext]);
+            outcomes.emit(InitOutcomes::NoSystemContext);
+            return Ok(outcomes);
         };
 
-        let mut outcomes = Vec::new();
         let file_ops = context.files();
 
         file_ops.ensure_dir(&context.data_dir)?;
         file_ops.ensure_dir(&context.config_dir)?;
 
-        outcomes.push(InitOutcomes::EnsuredDirectories);
+        outcomes.emit(InitOutcomes::EnsuredDirectories);
 
         let database = context.database()?;
 
-        outcomes.push(InitOutcomes::DatabaseReady(context.db_path()));
+        outcomes.emit(InitOutcomes::DatabaseReady(context.db_path()));
 
         if database.tenant_exists()? {
-            outcomes.push(InitOutcomes::HostAlreadyInitialized);
+            outcomes.emit(InitOutcomes::HostAlreadyInitialized);
 
             return Ok(outcomes);
         }
@@ -45,19 +48,19 @@ impl Init {
         let name = match (self.yes, &self.name) {
             (_, Some(name)) => Label::new(name),
             (true, _) => {
-                outcomes.push(InitOutcomes::UnresolvedTenant);
+                outcomes.emit(InitOutcomes::UnresolvedTenant);
                 Label::new(UNKNOWN_TENANT)
             }
             _ => match context.terminal().get_name() {
                 Some(got_it) => Label::new(got_it),
                 None => {
-                    outcomes.push(InitOutcomes::UnresolvedTenant);
+                    outcomes.emit(InitOutcomes::UnresolvedTenant);
                     Label::new(UNKNOWN_TENANT)
                 }
             },
         };
 
-        outcomes.push(InitOutcomes::ResolvedTenant(name.clone()));
+        outcomes.emit(InitOutcomes::ResolvedTenant(name.clone()));
 
         let tenant_id = Id::new();
         let create_tenant = Events::Tenant(TenantEvents::TenantCreated(Tenant {
@@ -66,7 +69,7 @@ impl Init {
         }));
 
         database.log_event(&create_tenant, projections::SYSTEM_PROJECTIONS)?;
-        outcomes.push(InitOutcomes::TenantCreated);
+        outcomes.emit(InitOutcomes::TenantCreated);
 
         let actor_id = Id::new();
 
@@ -77,15 +80,15 @@ impl Init {
         }));
 
         database.log_event(&create_actor, projections::SYSTEM_PROJECTIONS)?;
-        outcomes.push(InitOutcomes::ActorCreated);
+        outcomes.emit(InitOutcomes::ActorCreated);
 
         let config_path = context.config_path();
         if !config_path.exists() {
             file_ops.write(&config_path, "")?;
-            outcomes.push(InitOutcomes::ConfigurationEnsured(config_path));
+            outcomes.emit(InitOutcomes::ConfigurationEnsured(config_path));
         }
 
-        outcomes.push(InitOutcomes::SystemInitialized(name));
+        outcomes.emit(InitOutcomes::SystemInitialized(name));
 
         Ok(outcomes)
     }
@@ -124,7 +127,6 @@ mod tests {
 
         let outcomes = init.run(Some(context)).await.unwrap();
 
-        // Check outcomes
         assert!(
             outcomes
                 .iter()

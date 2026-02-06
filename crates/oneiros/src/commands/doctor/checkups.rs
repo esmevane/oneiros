@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use crate::*;
-
 #[derive(Clone)]
 pub(crate) enum Checkups {
     ProjectDetected(String, PathBuf),
@@ -17,43 +15,46 @@ pub(crate) enum Checkups {
     NoContextAvailable,
 }
 
-impl Reportable for Checkups {
-    fn report(&self) {
+impl oneiros_outcomes::Reportable for Checkups {
+    fn level(&self) -> tracing::Level {
         match self {
-            Checkups::NoContextAvailable => {
-                tracing::error!(
-                    "No context available. Please run this command within a valid project directory."
-                );
+            Self::NoContextAvailable => tracing::Level::ERROR,
+            Self::NoProjectDetected
+            | Self::NotInitialized
+            | Self::NoDatabaseFound(_, _)
+            | Self::NoEventLog(_)
+            | Self::NoConfigFound(_) => tracing::Level::WARN,
+            Self::ProjectDetected(_, _)
+            | Self::Initialized
+            | Self::DatabaseOk(_)
+            | Self::EventLogReady(_)
+            | Self::ConfigOk(_) => tracing::Level::INFO,
+        }
+    }
+
+    fn message(&self) -> String {
+        match self {
+            Self::NoContextAvailable => {
+                "No context available. Please run this command within a valid project directory."
+                    .into()
             }
-            Checkups::ProjectDetected(name, root) => {
-                tracing::info!("Project '{}' detected at '{}'.", name, root.display());
+            Self::ProjectDetected(name, root) => {
+                format!("Project '{name}' detected at '{}'.", root.display())
             }
-            Checkups::NoProjectDetected => {
-                tracing::warn!("No project detected.");
+            Self::NoProjectDetected => "No project detected.".into(),
+            Self::Initialized => "System is initialized.".into(),
+            Self::NotInitialized => "System is not initialized.".into(),
+            Self::DatabaseOk(path) => format!("Database found at '{}'.", path.display()),
+            Self::NoDatabaseFound(path, error) => {
+                format!("Database not found at '{}': {error}", path.display())
             }
-            Checkups::Initialized => {
-                tracing::info!("System is initialized.");
+            Self::EventLogReady(count) => {
+                format!("Event log is ready with {count} events.")
             }
-            Checkups::NotInitialized => {
-                tracing::warn!("System is not initialized.");
-            }
-            Checkups::DatabaseOk(path) => {
-                tracing::info!("Database found at '{}'.", path.display());
-            }
-            Checkups::NoDatabaseFound(path, error) => {
-                tracing::warn!("Database not found at '{}': {}", path.display(), error);
-            }
-            Checkups::EventLogReady(count) => {
-                tracing::info!("Event log is ready with {} events.", count);
-            }
-            Checkups::NoEventLog(error) => {
-                tracing::warn!("Event log error: {}", error);
-            }
-            Checkups::ConfigOk(path) => {
-                tracing::info!("Config file found at '{}'.", path.display());
-            }
-            Checkups::NoConfigFound(path) => {
-                tracing::warn!("Config file not found at '{}'.", path.display());
+            Self::NoEventLog(error) => format!("Event log error: {error}"),
+            Self::ConfigOk(path) => format!("Config file found at '{}'.", path.display()),
+            Self::NoConfigFound(path) => {
+                format!("Config file not found at '{}'.", path.display())
             }
         }
     }

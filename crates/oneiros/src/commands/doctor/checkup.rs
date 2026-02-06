@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 use oneiros_db::Database;
+use oneiros_outcomes::Outcomes;
 
 use crate::*;
 
@@ -12,41 +13,41 @@ impl Checkup {
     pub(crate) async fn run(
         &self,
         context: Option<Context>,
-    ) -> Result<Vec<Checkups>, CheckupError> {
+    ) -> Result<Outcomes<Checkups>, CheckupError> {
+        let mut checks = Outcomes::new();
+
         let Some(context) = context else {
-            return Ok(vec![Checkups::NoContextAvailable]);
+            checks.emit(Checkups::NoContextAvailable);
+            return Ok(checks);
         };
 
-        let mut checks = vec![];
-
-        // Report detected project
         if let Some(name) = context.project_name() {
             let root = context
                 .project_root()
                 .map(PathBuf::from)
                 .unwrap_or_default();
-            checks.push(Checkups::ProjectDetected(name.to_string(), root));
+            checks.emit(Checkups::ProjectDetected(name.to_string(), root));
         } else {
-            checks.push(Checkups::NoProjectDetected);
+            checks.emit(Checkups::NoProjectDetected);
         }
 
         if context.is_initialized() {
-            checks.push(Checkups::Initialized);
+            checks.emit(Checkups::Initialized);
         } else {
-            checks.push(Checkups::NotInitialized);
+            checks.emit(Checkups::NotInitialized);
         }
 
         match Database::open(context.db_path()) {
             Ok(store) => {
-                checks.push(Checkups::DatabaseOk(context.db_path()));
+                checks.emit(Checkups::DatabaseOk(context.db_path()));
 
                 match store.event_count() {
-                    Ok(count) => checks.push(Checkups::EventLogReady(count)),
-                    Err(error) => checks.push(Checkups::NoEventLog(error.to_string())),
+                    Ok(count) => checks.emit(Checkups::EventLogReady(count)),
+                    Err(error) => checks.emit(Checkups::NoEventLog(error.to_string())),
                 };
             }
             Err(error) => {
-                checks.push(Checkups::NoDatabaseFound(
+                checks.emit(Checkups::NoDatabaseFound(
                     context.db_path(),
                     error.to_string(),
                 ));
@@ -54,9 +55,9 @@ impl Checkup {
         }
 
         if context.config_path().exists() {
-            checks.push(Checkups::ConfigOk(context.config_path()));
+            checks.emit(Checkups::ConfigOk(context.config_path()));
         } else {
-            checks.push(Checkups::NoConfigFound(context.config_path()));
+            checks.emit(Checkups::NoConfigFound(context.config_path()));
         }
 
         Ok(checks)

@@ -22,6 +22,7 @@ inquire.workspace = true
 oneiros-db.workspace = true
 oneiros-detect-project-name.workspace = true
 oneiros-fs.workspace = true
+oneiros-outcomes.workspace = true
 oneiros-terminal.workspace = true
 serde.workspace = true
 serde_json.workspace = true

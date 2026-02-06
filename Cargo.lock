@@ -532,6 +532,7 @@ dependencies = [
  "oneiros-db",
  "oneiros-detect-project-name",
  "oneiros-fs",
+ "oneiros-outcomes",
  "oneiros-terminal",
  "serde",
  "serde_json",
@@ -566,6 +567,14 @@ dependencies = [
 [[package]]
 name = "oneiros-fs"
 version = "0.0.1"
+
+[[package]]
+name = "oneiros-outcomes"
+version = "0.0.1"
+dependencies = [
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "oneiros-terminal"

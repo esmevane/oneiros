@@ -7,6 +7,7 @@ pub(crate) use init::*;
 pub(crate) use init_outcomes::*;
 
 use clap::{Args, Subcommand};
+use oneiros_outcomes::Outcomes;
 
 use crate::*;
 
@@ -20,9 +21,9 @@ impl System {
     pub(crate) async fn run(
         &self,
         context: Option<Context>,
-    ) -> Result<Vec<SystemOutcome>, SystemCommandError> {
+    ) -> Result<Outcomes<SystemOutcome>, SystemCommandError> {
         Ok(match &self.command {
-            SystemCommand::Init(init) => init.run(context).await.map(to_system_outcome)?,
+            SystemCommand::Init(init) => init.run(context).await?.map_into(),
         })
     }
 }
@@ -34,27 +35,13 @@ pub(crate) enum SystemCommand {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub(crate) enum SystemOutcome {
     InitOutcome(InitOutcomes),
-}
-
-impl Reportable for SystemOutcome {
-    fn report(&self) {
-        match self {
-            Self::InitOutcome(init_outcome) => init_outcome.report(),
-        }
-    }
 }
 
 impl From<InitOutcomes> for SystemOutcome {
     fn from(value: InitOutcomes) -> Self {
         Self::InitOutcome(value)
     }
-}
-
-fn to_system_outcome<T>(output: Vec<T>) -> Vec<SystemOutcome>
-where
-    T: Into<SystemOutcome> + Clone,
-{
-    output.iter().cloned().map(Into::into).collect()
 }

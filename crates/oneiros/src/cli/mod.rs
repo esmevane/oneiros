@@ -1,12 +1,15 @@
+mod cli_outcomes;
 mod commands;
 mod error;
 mod log_config;
 
+pub(crate) use cli_outcomes::CliOutcome;
 pub(crate) use commands::Command;
 pub(crate) use error::*;
 pub(crate) use log_config::LogConfig;
 
 use clap::Parser;
+use oneiros_outcomes::Outcomes;
 
 use crate::*;
 
@@ -20,19 +23,12 @@ pub(crate) struct Cli {
 }
 
 impl Cli {
-    pub(crate) async fn run(&self) -> Result<Vec<Outcome>, CliError> {
+    pub(crate) async fn run(&self) -> Result<Outcomes<CliOutcome>, CliError> {
         let context = Context::discover();
 
         Ok(match &self.command {
-            Command::Doctor(doctor) => doctor.run(context).await.map(to_outcome)?,
-            Command::System(system) => system.run(context).await.map(to_outcome)?,
+            Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
+            Command::System(system) => system.run(context).await?.map_into(),
         })
     }
-}
-
-fn to_outcome<T>(output: Vec<T>) -> Vec<Outcome>
-where
-    T: Into<Outcome> + Clone,
-{
-    output.iter().cloned().map(Into::into).collect()
 }

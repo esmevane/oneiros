@@ -21,6 +21,7 @@ inquire = "0.7"
 oneiros-db = { path = "crates/oneiros-db" }
 oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name" }
 oneiros-fs = { path = "crates/oneiros-fs" }
+oneiros-outcomes = { path = "crates/oneiros-outcomes" }
 oneiros-terminal = { path = "crates/oneiros-terminal" }
 rusqlite = { version = "0.31", features = [
   "bundled",
