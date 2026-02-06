@@ -1,4 +1,4 @@
 #[tokio::main]
-async fn main() -> oneiros::Result<()> {
+async fn main() -> Result<(), oneiros::Error> {
     oneiros::run().await
 }
