@@ -1,0 +1,14 @@
+[package]
+name = "oneiros-model"
+version.workspace = true
+edition.workspace = true
+description = "Shared domain types for the oneiros system: models, events, values, and projections."
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+oneiros-db.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true

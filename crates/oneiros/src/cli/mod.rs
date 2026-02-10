@@ -24,11 +24,13 @@ pub(crate) struct Cli {
 
 impl Cli {
     pub(crate) async fn run(&self) -> Result<Outcomes<CliOutcome>, CliError> {
-        let context = Context::discover();
+        let context = Context::discover().ok_or(CliPreconditionError::NoContext)?;
 
         Ok(match &self.command {
             Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
             Command::System(system) => system.run(context).await?.map_into(),
+            Command::Service(service) => service.run(context).await?.map_into(),
+            Command::Project(project) => project.run(context).await?.map_into(),
         })
     }
 }

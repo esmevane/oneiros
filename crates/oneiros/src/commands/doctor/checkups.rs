@@ -12,13 +12,11 @@ pub(crate) enum Checkups {
     NoEventLog(String),
     ConfigOk(PathBuf),
     NoConfigFound(PathBuf),
-    NoContextAvailable,
 }
 
 impl oneiros_outcomes::Reportable for Checkups {
     fn level(&self) -> tracing::Level {
         match self {
-            Self::NoContextAvailable => tracing::Level::ERROR,
             Self::NoProjectDetected
             | Self::NotInitialized
             | Self::NoDatabaseFound(_, _)
@@ -34,10 +32,6 @@ impl oneiros_outcomes::Reportable for Checkups {
 
     fn message(&self) -> String {
         match self {
-            Self::NoContextAvailable => {
-                "No context available. Please run this command within a valid project directory."
-                    .into()
-            }
             Self::ProjectDetected(name, root) => {
                 format!("Project '{name}' detected at '{}'.", root.display())
             }

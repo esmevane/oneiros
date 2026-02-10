@@ -1,0 +1,28 @@
+[package]
+name = "oneiros-service"
+version.workspace = true
+edition.workspace = true
+description = "Axum-based service for the oneiros system."
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+axum.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+oneiros-client.workspace = true
+oneiros-db.workspace = true
+oneiros-fs.workspace = true
+oneiros-model.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+tempfile.workspace = true
+tower.workspace = true

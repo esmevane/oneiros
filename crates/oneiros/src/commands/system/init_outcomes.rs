@@ -2,7 +2,6 @@ use crate::*;
 
 #[derive(Clone)]
 pub(crate) enum InitOutcomes {
-    NoSystemContext,
     EnsuredDirectories,
     DatabaseReady(std::path::PathBuf),
     HostAlreadyInitialized,
@@ -17,7 +16,6 @@ pub(crate) enum InitOutcomes {
 impl oneiros_outcomes::Reportable for InitOutcomes {
     fn level(&self) -> tracing::Level {
         match self {
-            Self::NoSystemContext => tracing::Level::ERROR,
             Self::UnresolvedTenant => tracing::Level::WARN,
             Self::HostAlreadyInitialized | Self::SystemInitialized(_) => tracing::Level::INFO,
             Self::EnsuredDirectories
@@ -31,7 +29,6 @@ impl oneiros_outcomes::Reportable for InitOutcomes {
 
     fn message(&self) -> String {
         match self {
-            Self::NoSystemContext => "Failed to discover system context.".into(),
             Self::UnresolvedTenant => "Could not resolve tenant name, using default.".into(),
             Self::EnsuredDirectories => "Ensured directories exist.".into(),
             Self::DatabaseReady(db_path) => format!("Database ready at {db_path:?}."),

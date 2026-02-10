@@ -10,16 +10,8 @@ use crate::*;
 pub(crate) struct Checkup;
 
 impl Checkup {
-    pub(crate) async fn run(
-        &self,
-        context: Option<Context>,
-    ) -> Result<Outcomes<Checkups>, CheckupError> {
+    pub(crate) async fn run(&self, context: Context) -> Result<Outcomes<Checkups>, CheckupError> {
         let mut checks = Outcomes::new();
-
-        let Some(context) = context else {
-            checks.emit(Checkups::NoContextAvailable);
-            return Ok(checks);
-        };
 
         if let Some(name) = context.project_name() {
             let root = context

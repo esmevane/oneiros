@@ -17,16 +17,8 @@ pub(crate) struct Init {
 }
 
 impl Init {
-    pub(crate) async fn run(
-        &self,
-        context: Option<Context>,
-    ) -> Result<Outcomes<InitOutcomes>, InitError> {
+    pub(crate) async fn run(&self, context: Context) -> Result<Outcomes<InitOutcomes>, InitError> {
         let mut outcomes = Outcomes::new();
-
-        let Some(context) = context else {
-            outcomes.emit(InitOutcomes::NoSystemContext);
-            return Ok(outcomes);
-        };
 
         let file_ops = context.files();
 
@@ -125,7 +117,7 @@ mod tests {
             yes: false,
         };
 
-        let outcomes = init.run(Some(context)).await.unwrap();
+        let outcomes = init.run(context).await.unwrap();
 
         assert!(
             outcomes
@@ -167,11 +159,11 @@ mod tests {
 
         // First run
         let context = Context::with_paths(data_dir.clone(), config_dir.clone());
-        let _ = init.run(Some(context)).await.unwrap();
+        let _ = init.run(context).await.unwrap();
 
         // Second run
         let context = Context::with_paths(data_dir.clone(), config_dir.clone());
-        let outcomes = init.run(Some(context)).await.unwrap();
+        let outcomes = init.run(context).await.unwrap();
 
         assert!(
             outcomes
