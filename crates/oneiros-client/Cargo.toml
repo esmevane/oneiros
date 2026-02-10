@@ -1,0 +1,19 @@
+[package]
+name = "oneiros-client"
+version.workspace = true
+edition.workspace = true
+description = "Client trait and HTTP implementation for the oneiros service."
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+http-body-util.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+oneiros-model.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true

@@ -11,21 +11,27 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
-        let conn = Connection::open(connection_string.as_ref())?;
-
-        Ok(Self { conn })
-    }
-
-    pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
-        let conn = Connection::open(path)?;
-
+    /// Register application-defined functions on a connection.
+    fn register_functions(conn: &Connection) -> Result<(), DatabaseError> {
         conn.create_scalar_function(
             "uuid",
             0,
             FunctionFlags::SQLITE_UTF8 | FunctionFlags::SQLITE_DETERMINISTIC,
             |_| Ok(Uuid::new_v4().to_string()),
         )?;
+        Ok(())
+    }
+
+    pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
+        let conn = Connection::open(connection_string.as_ref())?;
+        Self::register_functions(&conn)?;
+
+        Ok(Self { conn })
+    }
+
+    pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
+        let conn = Connection::open(path)?;
+        Self::register_functions(&conn)?;
 
         conn.execute_batch(migrations::SYSTEM)?;
 
@@ -75,6 +81,55 @@ impl Database {
             params![actor_id, tenant_id, name],
         )?;
         Ok(())
+    }
+
+    pub fn get_tenant_id(&self) -> Result<Option<String>, DatabaseError> {
+        let result = self
+            .conn
+            .query_row("select id from tenant limit 1", [], |row| row.get(0));
+
+        match result {
+            Ok(id) => Ok(Some(id)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn brain_exists(&self, tenant_id: &str, name: &str) -> Result<bool, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from brain where tenant_id = ?1 and name = ?2",
+            params![tenant_id, name],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
+    }
+
+    pub fn create_brain(
+        &self,
+        brain_id: &str,
+        tenant_id: &str,
+        name: &str,
+        path: &str,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into brain (id, tenant_id, name, path) values (?1, ?2, ?3, ?4)",
+            params![brain_id, tenant_id, name, path],
+        )?;
+        Ok(())
+    }
+
+    pub fn reset_brains(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from brain")?;
+        Ok(())
+    }
+
+    pub fn create_brain_db(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
+        let conn = Connection::open(path)?;
+        Self::register_functions(&conn)?;
+
+        conn.execute_batch(migrations::BRAIN)?;
+
+        Ok(Self { conn })
     }
 
     pub fn log_event(

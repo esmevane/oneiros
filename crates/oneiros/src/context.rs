@@ -51,6 +51,11 @@ impl Context {
         self.config_dir.join("config.toml")
     }
 
+    /// Path to the service Unix socket.
+    pub(crate) fn socket_path(&self) -> PathBuf {
+        self.data_dir.join("oneiros.sock")
+    }
+
     /// Check if initialized.
     pub(crate) fn is_initialized(&self) -> bool {
         self.db_path().exists()
