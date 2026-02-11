@@ -1,10 +1,12 @@
+mod client;
 mod error;
-mod http_client;
-mod service;
-mod types;
+mod requests;
+mod responses;
+mod socket;
 
-pub use error::{ConnectionError, Error, RequestError, ServiceResponseError};
-pub use http_client::HttpClient;
-pub use types::{BrainInfo, CreateBrainRequest};
+pub(crate) use socket::SocketClient;
 
-pub use service::*;
+pub use client::Client;
+pub use error::{ConnectionError, Error, RequestError, ResponseError};
+pub use requests::CreateBrainRequest;
+pub use responses::BrainInfo;

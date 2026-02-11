@@ -1,57 +1,38 @@
 mod error;
+mod outcomes;
 mod run;
-mod service_outcomes;
 mod status;
 
 pub(crate) use error::ServiceCommandError;
-pub(crate) use run::Run;
-pub(crate) use service_outcomes::{RunOutcomes, StatusOutcomes};
-pub(crate) use status::Status;
+pub(crate) use outcomes::ServiceOutcomes;
+pub(crate) use run::{RunService, RunServiceOutcomes};
+pub(crate) use status::{ServiceStatusOutcomes, Status};
 
 use clap::{Args, Subcommand};
 use oneiros_outcomes::Outcomes;
 
 #[derive(Clone, Args)]
-pub(crate) struct Service {
+pub(crate) struct ServiceOps {
     #[command(subcommand)]
-    pub command: ServiceSubcommand,
+    pub command: ServiceCommands,
 }
 
-impl Service {
+impl ServiceOps {
     pub(crate) async fn run(
         &self,
         context: crate::Context,
-    ) -> Result<Outcomes<ServiceOutcome>, ServiceCommandError> {
+    ) -> Result<Outcomes<ServiceOutcomes>, ServiceCommandError> {
         Ok(match &self.command {
-            ServiceSubcommand::Run(run) => run.run(context).await?.map_into(),
-            ServiceSubcommand::Status(status) => status.run(context).await?.map_into(),
+            ServiceCommands::Run(run) => run.run(context).await?.map_into(),
+            ServiceCommands::Status(status) => status.run(context).await?.map_into(),
         })
     }
 }
 
 #[derive(Clone, Subcommand)]
-pub(crate) enum ServiceSubcommand {
-    /// Start the oneiros service (foreground).
-    Run(Run),
-    /// Check if the oneiros service is running.
+pub(crate) enum ServiceCommands {
+    /// Start oneiros in the foreground.
+    Run(RunService),
+    /// Check if oneiros is running.
     Status(Status),
-}
-
-#[derive(Clone)]
-#[allow(dead_code)]
-pub(crate) enum ServiceOutcome {
-    Run(RunOutcomes),
-    Status(StatusOutcomes),
-}
-
-impl From<RunOutcomes> for ServiceOutcome {
-    fn from(value: RunOutcomes) -> Self {
-        Self::Run(value)
-    }
-}
-
-impl From<StatusOutcomes> for ServiceOutcome {
-    fn from(value: StatusOutcomes) -> Self {
-        Self::Status(value)
-    }
 }

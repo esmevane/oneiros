@@ -1,16 +1,17 @@
 mod error;
+mod extractors;
 mod handlers;
 mod routes;
 mod state;
 
-pub use error::Error;
-pub use routes::router;
-pub use state::ServiceState;
-
 use std::path::Path;
 use std::sync::Arc;
-
 use tokio::net::UnixListener;
+
+pub use error::*;
+pub use extractors::*;
+pub use routes::router;
+pub use state::*;
 
 /// Start the service, listening on the given Unix socket path.
 ///

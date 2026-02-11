@@ -1,23 +1,22 @@
 use thiserror::Error;
 
-use crate::{CheckupError, ProjectCommandError, ServiceCommandError, SystemCommandError};
-
-#[derive(Debug, Error)]
-pub enum CliPreconditionError {
-    #[error("No system context available.")]
-    NoContext,
-}
+use crate::{
+    CheckupError, ContextError, PersonaCommandError, ProjectCommandError, ServiceCommandError,
+    SystemCommandError,
+};
 
 #[derive(Debug, Error)]
 pub enum CliError {
-    #[error("{0}")]
-    Precondition(#[from] CliPreconditionError),
-    #[error("Error during checkup: {0}")]
+    #[error(transparent)]
+    Precondition(#[from] ContextError),
+    #[error(transparent)]
     Doctor(#[from] CheckupError),
-    #[error("Problem with project: {0}")]
+    #[error(transparent)]
+    Persona(#[from] PersonaCommandError),
+    #[error(transparent)]
     Project(#[from] ProjectCommandError),
-    #[error("Problem with service: {0}")]
+    #[error(transparent)]
     Service(#[from] ServiceCommandError),
-    #[error("Error on host command: {0}")]
+    #[error(transparent)]
     System(#[from] SystemCommandError),
 }

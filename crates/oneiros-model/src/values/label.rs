@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
-pub struct Label(pub String);
+pub struct Label(Arc<str>);
 
 impl Label {
     pub fn new(label: impl AsRef<str>) -> Self {
-        Self(label.as_ref().into())
+        Self(Arc::from(label.as_ref()))
     }
 
     pub fn as_str(&self) -> &str {
@@ -15,5 +17,11 @@ impl Label {
 impl core::fmt::Display for Label {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl AsRef<str> for Label {
+    fn as_ref(&self) -> &str {
+        self.as_str()
     }
 }

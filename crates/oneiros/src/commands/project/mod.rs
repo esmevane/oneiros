@@ -1,45 +1,33 @@
 mod error;
 mod init;
-mod init_outcomes;
+mod outcomes;
 
 pub(crate) use error::ProjectCommandError;
-pub(crate) use init::ProjectInit;
-pub(crate) use init_outcomes::ProjectInitOutcomes;
+pub(crate) use init::{InitProject, InitProjectOutcomes};
+pub(crate) use outcomes::ProjectOutcomes;
 
 use clap::{Args, Subcommand};
 use oneiros_outcomes::Outcomes;
 
 #[derive(Clone, Args)]
-pub(crate) struct Project {
+pub(crate) struct ProjectOps {
     #[command(subcommand)]
-    pub command: ProjectSubcommand,
+    pub command: ProjectCommands,
 }
 
-impl Project {
+impl ProjectOps {
     pub(crate) async fn run(
         &self,
         context: crate::Context,
-    ) -> Result<Outcomes<ProjectOutcome>, ProjectCommandError> {
+    ) -> Result<Outcomes<ProjectOutcomes>, ProjectCommandError> {
         Ok(match &self.command {
-            ProjectSubcommand::Init(init) => init.run(context).await?.map_into(),
+            ProjectCommands::Init(init) => init.run(context).await?.map_into(),
         })
     }
 }
 
 #[derive(Clone, Subcommand)]
-pub(crate) enum ProjectSubcommand {
+pub(crate) enum ProjectCommands {
     /// Initialize a brain for the current project.
-    Init(ProjectInit),
-}
-
-#[derive(Clone)]
-#[allow(dead_code)]
-pub(crate) enum ProjectOutcome {
-    Init(ProjectInitOutcomes),
-}
-
-impl From<ProjectInitOutcomes> for ProjectOutcome {
-    fn from(value: ProjectInitOutcomes) -> Self {
-        Self::Init(value)
-    }
+    Init(InitProject),
 }

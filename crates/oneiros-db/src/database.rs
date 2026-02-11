@@ -62,23 +62,27 @@ impl Database {
         Ok(())
     }
 
-    pub fn create_tenant(&self, tenant_id: &str, name: &str) -> Result<(), DatabaseError> {
+    pub fn create_tenant(
+        &self,
+        tenant_id: impl AsRef<str>,
+        name: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
         self.conn.execute(
             "insert or ignore into tenant (id, name) values (?1, ?2)",
-            params![tenant_id, name],
+            params![tenant_id.as_ref(), name.as_ref()],
         )?;
         Ok(())
     }
 
     pub fn create_actor(
         &self,
-        actor_id: &str,
-        tenant_id: &str,
-        name: &str,
+        actor_id: impl AsRef<str>,
+        tenant_id: impl AsRef<str>,
+        name: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
             "insert or ignore into actor (id, tenant_id, name) values (?1, ?2, ?3)",
-            params![actor_id, tenant_id, name],
+            params![actor_id.as_ref(), tenant_id.as_ref(), name.as_ref()],
         )?;
         Ok(())
     }
@@ -95,10 +99,32 @@ impl Database {
         }
     }
 
-    pub fn brain_exists(&self, tenant_id: &str, name: &str) -> Result<bool, DatabaseError> {
+    pub fn get_brain_path(
+        &self,
+        tenant_id: impl AsRef<str>,
+        id: impl AsRef<str>,
+    ) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select path from brain where tenant_id = ?1 and id = ?2",
+            params![tenant_id.as_ref(), id.as_ref()],
+            |row| row.get(0),
+        );
+
+        match result {
+            Ok(path) => Ok(Some(path)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn brain_exists(
+        &self,
+        tenant_id: impl AsRef<str>,
+        name: impl AsRef<str>,
+    ) -> Result<bool, DatabaseError> {
         let count: i64 = self.conn.query_row(
             "select count(*) from brain where tenant_id = ?1 and name = ?2",
-            params![tenant_id, name],
+            params![tenant_id.as_ref(), name.as_ref()],
             |row| row.get(0),
         )?;
         Ok(count > 0)
@@ -106,20 +132,138 @@ impl Database {
 
     pub fn create_brain(
         &self,
-        brain_id: &str,
-        tenant_id: &str,
-        name: &str,
-        path: &str,
+        brain_id: impl AsRef<str>,
+        tenant_id: impl AsRef<str>,
+        name: impl AsRef<str>,
+        path: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
             "insert or ignore into brain (id, tenant_id, name, path) values (?1, ?2, ?3, ?4)",
-            params![brain_id, tenant_id, name, path],
+            params![
+                brain_id.as_ref(),
+                tenant_id.as_ref(),
+                name.as_ref(),
+                path.as_ref()
+            ],
         )?;
         Ok(())
     }
 
     pub fn reset_brains(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from brain")?;
+        Ok(())
+    }
+
+    pub fn get_actor_id(
+        &self,
+        tenant_id: impl AsRef<str>,
+    ) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id from actor where tenant_id = ?1 limit 1",
+            params![tenant_id.as_ref()],
+            |row| row.get(0),
+        );
+
+        match result {
+            Ok(id) => Ok(Some(id)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn create_ticket(
+        &self,
+        ticket_id: impl AsRef<str>,
+        token: impl AsRef<str>,
+        created_by: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into tickets (id, token, created_by) values (?1, ?2, ?3)",
+            params![ticket_id.as_ref(), token.as_ref(), created_by.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn validate_ticket(&self, token: impl AsRef<str>) -> Result<bool, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id from tickets \
+             where token = ?1 \
+             and revoked_on is null \
+             and (expires_at is null or expires_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) \
+             and (max_uses is null or uses < max_uses)",
+            params![token.as_ref()],
+            |row| row.get::<_, String>(0),
+        );
+
+        match result {
+            Ok(_) => Ok(true),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(false),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn reset_tickets(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from tickets")?;
+        Ok(())
+    }
+
+    pub fn set_persona(
+        &self,
+        name: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into persona (name, description, prompt) \
+             values (?1, ?2, ?3) \
+             on conflict(name) do update set \
+             description = excluded.description, prompt = excluded.prompt",
+            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_persona(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "delete from persona where name = ?1",
+            params![name.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_persona(
+        &self,
+        name: impl AsRef<str>,
+    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from persona where name = ?1",
+            params![name.as_ref()],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        );
+
+        match result {
+            Ok(persona) => Ok(Some(persona)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_personas(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select name, description, prompt from persona order by name")?;
+
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+
+        let mut personas = Vec::new();
+        for row in rows {
+            personas.push(row?);
+        }
+        Ok(personas)
+    }
+
+    pub fn reset_personas(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from persona")?;
         Ok(())
     }
 

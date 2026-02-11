@@ -16,3 +16,16 @@ create table if not exists events (
 
 create index if not exists events_timestamp on events(timestamp);
 create index if not exists events_type on events(json_extract(meta, '$.type'));
+
+-- Personas are named roles that subagents in a brain adopt. They carry
+-- a description (human-readable purpose) and a prompt (the system prompt
+-- or instruction text the agent uses when adopting this persona).
+--
+-- Personas are identified by name. The upsert pattern uses ON CONFLICT
+-- to allow set-or-replace semantics.
+--
+create table if not exists persona (
+    name        text primary key not null,
+    description text not null default '',
+    prompt      text not null default ''
+);

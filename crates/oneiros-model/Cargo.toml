@@ -8,7 +8,10 @@ license.workspace = true
 publish = false
 
 [dependencies]
+data-encoding.workspace = true
 oneiros-db.workspace = true
+postcard.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+thiserror.workspace = true
 uuid.workspace = true

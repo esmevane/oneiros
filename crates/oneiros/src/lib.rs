@@ -1,3 +1,5 @@
+use oneiros_outcomes::Outcomes;
+
 mod cli;
 mod commands;
 mod context;
@@ -15,11 +17,10 @@ pub(crate) use oneiros_model::*;
 
 pub use error::*;
 
-pub async fn run() -> Result<(), Error> {
+pub async fn run() -> Result<Outcomes<CliOutcomes>, Error> {
     logging::init()?;
 
     let cli = Cli::parse();
-    cli.run().await?;
 
-    Ok(())
+    Ok(cli.run().await?)
 }

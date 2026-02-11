@@ -1,9 +1,9 @@
+mod entities;
 mod events;
-mod models;
 mod values;
 
 pub mod projections;
 
+pub use entities::*;
 pub use events::*;
-pub use models::*;
 pub use values::*;

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 #[derive(Debug, Clone, thiserror::Error)]
-#[error("{0}")]
+#[error(transparent)]
 pub struct ConnectionError(pub Arc<hyper::Error>);
 
 impl From<hyper::Error> for ConnectionError {
@@ -32,7 +32,7 @@ impl From<hyper::http::Error> for RequestError {
 
 #[derive(Debug, thiserror::Error)]
 #[error("service returned {status}: {body}")]
-pub struct ServiceResponseError {
+pub struct ResponseError {
     pub status: u16,
     pub body: String,
 }
@@ -46,7 +46,7 @@ pub enum Error {
     Request(#[from] RequestError),
 
     #[error(transparent)]
-    ServiceResponse(#[from] ServiceResponseError),
+    ServiceResponse(#[from] ResponseError),
 
     #[error("Failed to deserialize response: {0}")]
     Deserialization(#[from] serde_json::Error),
