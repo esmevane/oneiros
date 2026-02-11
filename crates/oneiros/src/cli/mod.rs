@@ -1,15 +1,14 @@
-mod cli_outcomes;
-mod commands;
 mod error;
 mod log_config;
-
-pub(crate) use cli_outcomes::CliOutcome;
-pub(crate) use commands::Command;
-pub(crate) use error::*;
-pub(crate) use log_config::LogConfig;
+mod outcomes;
 
 use clap::Parser;
+use clap::Subcommand;
 use oneiros_outcomes::Outcomes;
+
+pub(crate) use error::*;
+pub(crate) use log_config::LogConfig;
+pub(crate) use outcomes::CliOutcomes;
 
 use crate::*;
 
@@ -23,14 +22,29 @@ pub(crate) struct Cli {
 }
 
 impl Cli {
-    pub(crate) async fn run(&self) -> Result<Outcomes<CliOutcome>, CliError> {
-        let context = Context::discover().ok_or(CliPreconditionError::NoContext)?;
+    pub(crate) async fn run(&self) -> Result<Outcomes<CliOutcomes>, CliError> {
+        let context = Context::init()?;
 
         Ok(match &self.command {
             Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
+            Command::Persona(persona) => persona.run(context).await?.map_into(),
             Command::System(system) => system.run(context).await?.map_into(),
             Command::Service(service) => service.run(context).await?.map_into(),
             Command::Project(project) => project.run(context).await?.map_into(),
         })
     }
+}
+
+#[derive(Clone, Subcommand)]
+pub(crate) enum Command {
+    /// Check the health of the local oneiros host and the current project.
+    Doctor(Doctor),
+    /// Manage personas (named agent roles).
+    Persona(PersonaOps),
+    /// Project-level commands (init, etc.).
+    Project(ProjectOps),
+    /// Manage the oneiros service (run, status).
+    Service(ServiceOps),
+    /// System-level commands for the local oneiros host (init, status, etc.).
+    System(SystemOps),
 }

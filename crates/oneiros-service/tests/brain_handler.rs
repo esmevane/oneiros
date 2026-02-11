@@ -5,17 +5,29 @@ use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use oneiros_client::BrainInfo;
 use oneiros_db::Database;
-use oneiros_model::{BrainStatus, Events, Id, Label, Tenant, TenantEvents, projections};
+use oneiros_model::{
+    Actor, ActorEvents, ActorId, ActorName, BrainName, BrainStatus, Events, Tenant, TenantEvents,
+    TenantId, TenantName, projections,
+};
 use oneiros_service::{ServiceState, router};
 use tempfile::TempDir;
 use tower::util::ServiceExt;
 
-fn seed_tenant(db: &Database) {
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
-        tenant_id: Id::new(),
-        name: Label::new("Test Tenant"),
-    }));
+fn seed_tenant_and_actor(db: &Database) {
+    let tenant_id = TenantId::new();
 
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
+    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
+        .unwrap();
+
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        tenant_id,
+        actor_id: ActorId::new(),
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 }
@@ -24,7 +36,7 @@ fn setup() -> (TempDir, Arc<ServiceState>) {
     let temp = TempDir::new().unwrap();
     let db_path = temp.path().join("service.db");
     let db = Database::create(db_path).unwrap();
-    seed_tenant(&db);
+    seed_tenant_and_actor(&db);
 
     let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
     (temp, state)
@@ -70,9 +82,17 @@ async fn create_brain_returns_created() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let info: BrainInfo = serde_json::from_slice(&bytes).unwrap();
 
-    assert_eq!(info.name, Label::new("test-project"));
-    assert!(matches!(info.status, BrainStatus::Active));
-    assert!(!info.id.is_empty());
+    assert_eq!(info.entity.name, BrainName::new("test-project"));
+    assert!(matches!(info.entity.status, BrainStatus::Active));
+    assert!(!info.entity.brain_id.is_empty());
+    assert!(
+        !info.token.as_str().is_empty(),
+        "should return a ticket token"
+    );
+
+    // Token should be decodable with correct claims
+    let claims = info.token.decode().expect("token should be decodable");
+    assert!(!claims.brain_id.is_empty(), "brain_id claim should be set");
 
     // Verify brain.db was created on disk
     let brain_path = temp.path().join("brains").join("test-project.db");
@@ -104,7 +124,7 @@ async fn create_brain_fails_without_tenant() {
     let temp = TempDir::new().unwrap();
     let db_path = temp.path().join("service.db");
     let db = Database::create(db_path).unwrap();
-    // No tenant seeded
+    // No tenant or actor seeded
     let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
     let app = router(state);
 
@@ -112,4 +132,30 @@ async fn create_brain_fails_without_tenant() {
     let response = app.oneshot(post_json("/brains", &body)).await.unwrap();
 
     assert_eq!(response.status(), StatusCode::PRECONDITION_FAILED);
+}
+
+#[tokio::test]
+async fn create_brain_returns_valid_ticket() {
+    let (_temp, state) = setup();
+
+    // Create a brain
+    let app = router(state.clone());
+    let body = serde_json::json!({ "name": "ticket-test" });
+    let response = app.oneshot(post_json("/brains", &body)).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let info: BrainInfo = serde_json::from_slice(&bytes).unwrap();
+    let token = info.token.as_str();
+
+    // Use the returned token to list personas — should succeed with empty list
+    let app = router(state);
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/personas")
+        .header("authorization", format!("Bearer {token}"))
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 }
