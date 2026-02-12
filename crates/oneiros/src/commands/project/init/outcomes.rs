@@ -1,29 +1,11 @@
+use oneiros_model::BrainName;
+use oneiros_outcomes::Outcome;
 use std::path::PathBuf;
 
-use oneiros_model::BrainName;
-
-#[derive(Clone)]
+#[derive(Clone, Outcome)]
 pub enum InitProjectOutcomes {
+    #[outcome(message("Brain '{0}' created at {}.", .1.display()))]
     BrainCreated(BrainName, PathBuf),
+    #[outcome(message("Brain '{0}' already exists."))]
     BrainAlreadyExists(BrainName),
-}
-
-impl oneiros_outcomes::Reportable for InitProjectOutcomes {
-    fn level(&self) -> tracing::Level {
-        match self {
-            Self::BrainCreated(_, _) => tracing::Level::INFO,
-            Self::BrainAlreadyExists(_) => tracing::Level::INFO,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            Self::BrainCreated(name, path) => {
-                format!("Brain '{name}' created at {}.", path.display())
-            }
-            Self::BrainAlreadyExists(name) => {
-                format!("Brain '{name}' already exists.")
-            }
-        }
-    }
 }

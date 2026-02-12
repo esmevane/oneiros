@@ -1,25 +1,8 @@
 use oneiros_model::Persona;
+use oneiros_outcomes::Outcome;
 
-#[derive(Clone)]
+#[derive(Clone, Outcome)]
 pub enum ShowPersonaOutcomes {
+    #[outcome(message("Persona '{}'\n  Description: {}\n  Prompt: {}", .0.name, .0.description, .0.prompt))]
     PersonaDetails(Persona),
-}
-
-impl oneiros_outcomes::Reportable for ShowPersonaOutcomes {
-    fn level(&self) -> tracing::Level {
-        match self {
-            Self::PersonaDetails(_) => tracing::Level::INFO,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            Self::PersonaDetails(info) => {
-                format!(
-                    "Persona '{}'\n  Description: {}\n  Prompt: {}",
-                    info.name, info.description, info.prompt,
-                )
-            }
-        }
-    }
 }

@@ -1,23 +1,9 @@
-#[derive(Clone)]
+use oneiros_outcomes::Outcome;
+
+#[derive(Clone, Outcome)]
 pub enum ServiceStatusOutcomes {
+    #[outcome(message("Service is running."))]
     ServiceRunning,
+    #[outcome(message("Service is not running: {0}"), level = "warn")]
     ServiceNotRunning(String),
-}
-
-impl oneiros_outcomes::Reportable for ServiceStatusOutcomes {
-    fn level(&self) -> tracing::Level {
-        match self {
-            Self::ServiceRunning => tracing::Level::INFO,
-            Self::ServiceNotRunning(_) => tracing::Level::WARN,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            Self::ServiceRunning => "Service is running.".into(),
-            Self::ServiceNotRunning(reason) => {
-                format!("Service is not running: {reason}")
-            }
-        }
-    }
 }

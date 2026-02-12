@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use tracing_subscriber::fmt::MakeWriter;
 
-use crate::{Outcomes, Reportable};
+use crate::{ConsoleReporter, Outcomes, Reportable, Reporter};
 
 #[derive(Clone)]
 struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
@@ -190,6 +190,106 @@ fn into_inner_returns_vec() {
 
     let vec = outcomes.into_inner();
     assert_eq!(vec.len(), 1);
+}
+
+// -- log_message / prompt / Reporter tests --
+
+// An outcome with separate log and prompt messages.
+#[expect(
+    dead_code,
+    reason = "variants exercised through Reportable trait, not pattern matched"
+)]
+enum DetailedOutcome {
+    WithLog(String),
+    WithPrompt(String),
+    WithBoth(String),
+    Plain(String),
+}
+
+impl Reportable for DetailedOutcome {
+    fn level(&self) -> tracing::Level {
+        tracing::Level::INFO
+    }
+
+    fn message(&self) -> String {
+        match self {
+            Self::WithLog(m) | Self::WithPrompt(m) | Self::WithBoth(m) | Self::Plain(m) => {
+                m.clone()
+            }
+        }
+    }
+
+    fn log_message(&self) -> String {
+        match self {
+            Self::WithLog(_) => "internal log detail".into(),
+            Self::WithBoth(_) => "internal log for both".into(),
+            _ => self.message(),
+        }
+    }
+
+    fn prompt(&self) -> Option<String> {
+        match self {
+            Self::WithPrompt(_) => Some("try this next".into()),
+            Self::WithBoth(_) => Some("do something".into()),
+            _ => None,
+        }
+    }
+}
+
+#[test]
+fn log_message_defaults_to_message() {
+    let outcome = TestOutcome::Info("hello".into());
+    assert_eq!(outcome.log_message(), "hello");
+}
+
+#[test]
+fn log_message_can_differ_from_message() {
+    let outcome = DetailedOutcome::WithLog("user sees this".into());
+    assert_eq!(outcome.message(), "user sees this");
+    assert_eq!(outcome.log_message(), "internal log detail");
+}
+
+#[test]
+fn prompt_defaults_to_none() {
+    let outcome = TestOutcome::Info("hello".into());
+    assert_eq!(outcome.prompt(), None);
+}
+
+#[test]
+fn prompt_returns_some_when_provided() {
+    let outcome = DetailedOutcome::WithPrompt("msg".into());
+    assert_eq!(outcome.prompt(), Some("try this next".into()));
+}
+
+#[test]
+fn emit_uses_log_message_for_tracing() {
+    let buffer = Arc::new(Mutex::new(Vec::new()));
+    let subscriber = capture_subscriber(CaptureWriter(buffer.clone()));
+
+    tracing::subscriber::with_default(subscriber, || {
+        let mut outcomes = Outcomes::new();
+        outcomes.emit(DetailedOutcome::WithLog("user msg".into()));
+    });
+
+    let output = captured_output(&buffer);
+
+    assert!(
+        output.contains("internal log detail"),
+        "Expected log_message in tracing output, got:\n{output}"
+    );
+    assert!(
+        !output.contains("user msg"),
+        "Should not contain user message in tracing output, got:\n{output}"
+    );
+}
+
+#[test]
+fn console_reporter_prints_message() {
+    // ConsoleReporter uses println, so we just verify it doesn't panic
+    // and the trait is object-safe.
+    let reporter: &dyn Reporter = &ConsoleReporter;
+    let outcome = TestOutcome::Info("reporter test".into());
+    reporter.report(&outcome);
 }
 
 // Verify log.* fields are still swallowed (regression guard).
