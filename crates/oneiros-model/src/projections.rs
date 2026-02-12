@@ -23,6 +23,7 @@ pub const BRAIN_PROJECTIONS: &[Projection] = &[
     AGENT_CREATED_PROJECTION,
     AGENT_UPDATED_PROJECTION,
     AGENT_REMOVED_PROJECTION,
+    COGNITION_ADDED_PROJECTION,
 ];
 
 const TENANT_PROJECTION: Projection = Projection {
@@ -307,5 +308,30 @@ fn apply_agent_removed(conn: &Database, data: &Value) -> Result<(), DatabaseErro
 }
 
 fn reset_agents_removed_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+const COGNITION_ADDED_PROJECTION: Projection = Projection {
+    name: "cognition-added",
+    events: &["cognition-added"],
+    apply: apply_cognition_added,
+    reset: reset_cognitions,
+};
+
+fn apply_cognition_added(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(id) = data["id"].as_str()
+        && let Some(agent_id) = data["agent_id"].as_str()
+        && let Some(texture) = data["texture"].as_str()
+        && let Some(content) = data["content"].as_str()
+        && let Some(created_at) = data["created_at"].as_str()
+    {
+        conn.add_cognition(id, agent_id, texture, content, created_at)?;
+    };
+
+    Ok(())
+}
+
+fn reset_cognitions(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_cognitions()?;
     Ok(())
 }

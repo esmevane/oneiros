@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+chrono.workspace = true
 data-encoding.workspace = true
 oneiros-db.workspace = true
 postcard.workspace = true

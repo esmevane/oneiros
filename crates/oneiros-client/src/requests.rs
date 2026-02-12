@@ -1,4 +1,4 @@
-use oneiros_model::{AgentName, BrainName, Description, PersonaName, Prompt};
+use oneiros_model::{AgentName, BrainName, Content, Description, PersonaName, Prompt, TextureName};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,6 +18,13 @@ pub struct UpdateAgentRequest {
     pub description: Description,
     #[serde(default)]
     pub prompt: Prompt,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddCognitionRequest {
+    pub agent: AgentName,
+    pub texture: TextureName,
+    pub content: Content,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
