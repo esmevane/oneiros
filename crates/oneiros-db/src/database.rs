@@ -327,6 +327,64 @@ impl Database {
         Ok(())
     }
 
+    pub fn set_level(
+        &self,
+        name: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into level (name, description, prompt) \
+             values (?1, ?2, ?3) \
+             on conflict(name) do update set \
+             description = excluded.description, prompt = excluded.prompt",
+            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_level(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from level where name = ?1", params![name.as_ref()])?;
+        Ok(())
+    }
+
+    pub fn get_level(
+        &self,
+        name: impl AsRef<str>,
+    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from level where name = ?1",
+            params![name.as_ref()],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        );
+
+        match result {
+            Ok(level) => Ok(Some(level)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_levels(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select name, description, prompt from level order by name")?;
+
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+
+        let mut levels = Vec::new();
+        for row in rows {
+            levels.push(row?);
+        }
+        Ok(levels)
+    }
+
+    pub fn reset_levels(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from level")?;
+        Ok(())
+    }
+
     pub fn create_brain_db(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;

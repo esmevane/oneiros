@@ -27,6 +27,7 @@ impl Cli {
 
         Ok(match &self.command {
             Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
+            Command::Level(level) => level.run(context).await?.map_into(),
             Command::Persona(persona) => persona.run(context).await?.map_into(),
             Command::System(system) => system.run(context).await?.map_into(),
             Command::Service(service) => service.run(context).await?.map_into(),
@@ -40,6 +41,8 @@ impl Cli {
 pub(crate) enum Command {
     /// Check the health of the local oneiros host and the current project.
     Doctor(Doctor),
+    /// Manage levels (memory retention tiers).
+    Level(LevelOps),
     /// Manage personas (named agent roles).
     Persona(PersonaOps),
     /// Project-level commands (init, etc.).
