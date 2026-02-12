@@ -85,3 +85,15 @@ create table if not exists level (
     description text not null default '',
     prompt      text not null default ''
 );
+
+-- Memories are consolidated knowledge records tied to an agent and
+-- classified by retention level. Like cognitions, memories are
+-- append-only — created but never updated or deleted.
+--
+create table if not exists memory (
+    id          text primary key not null,
+    agent_id    text not null references agent(id),
+    level       text not null references level(name),
+    content     text not null,
+    created_at  text not null
+);

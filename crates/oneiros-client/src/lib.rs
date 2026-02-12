@@ -9,6 +9,7 @@ pub(crate) use socket::SocketClient;
 pub use client::Client;
 pub use error::{ConnectionError, Error, RequestError, ResponseError};
 pub use requests::{
-    AddCognitionRequest, CreateAgentRequest, CreateBrainRequest, UpdateAgentRequest,
+    AddCognitionRequest, AddMemoryRequest, CreateAgentRequest, CreateBrainRequest,
+    UpdateAgentRequest,
 };
 pub use responses::BrainInfo;

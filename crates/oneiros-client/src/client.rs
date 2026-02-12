@@ -1,6 +1,6 @@
 use oneiros_model::{
-    Agent, AgentName, Cognition, CognitionId, Level, LevelName, Persona, PersonaName, Texture,
-    TextureName, Token,
+    Agent, AgentName, Cognition, CognitionId, Level, LevelName, Memory, MemoryId, Persona,
+    PersonaName, Texture, TextureName, Token,
 };
 use std::path::Path;
 
@@ -189,6 +189,82 @@ impl Client {
             "/cognitions".to_string()
         } else {
             format!("/cognitions?{}", params.join("&"))
+        };
+
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn add_memory(
+        &self,
+        token: &Token,
+        request: AddMemoryRequest,
+    ) -> Result<Memory, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", "/memories", token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn get_memory(&self, token: &Token, id: &MemoryId) -> Result<Memory, Error> {
+        let uri = format!("/memories/{id}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn list_memories(
+        &self,
+        token: &Token,
+        agent: Option<&AgentName>,
+        level: Option<&LevelName>,
+    ) -> Result<Vec<Memory>, Error> {
+        let mut params = Vec::new();
+        if let Some(agent) = agent {
+            params.push(format!("agent={agent}"));
+        }
+        if let Some(level) = level {
+            params.push(format!("level={level}"));
+        }
+
+        let uri = if params.is_empty() {
+            "/memories".to_string()
+        } else {
+            format!("/memories?{}", params.join("&"))
         };
 
         let (status, response_body) = self

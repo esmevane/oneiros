@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use oneiros_model::{
-    AgentName, BrainId, BrainName, CognitionId, LevelName, PersonaName, TextureName,
+    AgentName, BrainId, BrainName, CognitionId, LevelName, MemoryId, PersonaName, TextureName,
 };
 
 use crate::extractors::ActorContextError;
@@ -31,6 +31,8 @@ pub enum NotFound {
     Cognition(CognitionId),
     #[error("Level not found: {0}")]
     Level(LevelName),
+    #[error("Memory not found: {0}")]
+    Memory(MemoryId),
     #[error("Persona not found: {0}")]
     Persona(PersonaName),
     #[error("Texture not found: {0}")]

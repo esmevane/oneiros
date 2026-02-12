@@ -12,6 +12,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Level(#[from] LevelOutcomes),
     #[outcome(transparent)]
+    Memory(#[from] MemoryOutcomes),
+    #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
     #[outcome(transparent)]
     Project(#[from] ProjectOutcomes),
