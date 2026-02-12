@@ -1,20 +1,8 @@
 use oneiros_model::PersonaName;
+use oneiros_outcomes::Outcome;
 
-#[derive(Clone)]
+#[derive(Clone, Outcome)]
 pub enum SetPersonaOutcomes {
+    #[outcome(message("Persona '{0}' set."))]
     PersonaSet(PersonaName),
-}
-
-impl oneiros_outcomes::Reportable for SetPersonaOutcomes {
-    fn level(&self) -> tracing::Level {
-        match self {
-            Self::PersonaSet(_) => tracing::Level::INFO,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            Self::PersonaSet(name) => format!("Persona '{name}' set."),
-        }
-    }
 }

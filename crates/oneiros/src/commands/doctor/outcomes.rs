@@ -1,55 +1,26 @@
+use oneiros_outcomes::Outcome;
 use std::path::PathBuf;
 
-#[derive(Clone)]
+#[derive(Clone, Outcome)]
 pub enum DoctorOutcomes {
+    #[outcome(message("Project '{0}' detected at '{}'.", .1.display()))]
     ProjectDetected(String, PathBuf),
+    #[outcome(message("No project detected."), level = "warn")]
     NoProjectDetected,
+    #[outcome(message("System is initialized."))]
     Initialized,
+    #[outcome(message("System is not initialized."), level = "warn")]
     NotInitialized,
+    #[outcome(message("Database found at '{}'.", .0.display()))]
     DatabaseOk(PathBuf),
+    #[outcome(message("Database not found at '{}': {1}", .0.display()), level = "warn")]
     NoDatabaseFound(PathBuf, String),
+    #[outcome(message("Event log is ready with {0} events."))]
     EventLogReady(usize),
+    #[outcome(message("Event log error: {0}"), level = "warn")]
     NoEventLog(String),
+    #[outcome(message("Config file found at '{}'.", .0.display()))]
     ConfigOk(PathBuf),
+    #[outcome(message("Config file not found at '{}'.", .0.display()), level = "warn")]
     NoConfigFound(PathBuf),
-}
-
-impl oneiros_outcomes::Reportable for DoctorOutcomes {
-    fn level(&self) -> tracing::Level {
-        match self {
-            Self::NoProjectDetected
-            | Self::NotInitialized
-            | Self::NoDatabaseFound(_, _)
-            | Self::NoEventLog(_)
-            | Self::NoConfigFound(_) => tracing::Level::WARN,
-            Self::ProjectDetected(_, _)
-            | Self::Initialized
-            | Self::DatabaseOk(_)
-            | Self::EventLogReady(_)
-            | Self::ConfigOk(_) => tracing::Level::INFO,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            Self::ProjectDetected(name, root) => {
-                format!("Project '{name}' detected at '{}'.", root.display())
-            }
-            Self::NoProjectDetected => "No project detected.".into(),
-            Self::Initialized => "System is initialized.".into(),
-            Self::NotInitialized => "System is not initialized.".into(),
-            Self::DatabaseOk(path) => format!("Database found at '{}'.", path.display()),
-            Self::NoDatabaseFound(path, error) => {
-                format!("Database not found at '{}': {error}", path.display())
-            }
-            Self::EventLogReady(count) => {
-                format!("Event log is ready with {count} events.")
-            }
-            Self::NoEventLog(error) => format!("Event log error: {error}"),
-            Self::ConfigOk(path) => format!("Config file found at '{}'.", path.display()),
-            Self::NoConfigFound(path) => {
-                format!("Config file not found at '{}'.", path.display())
-            }
-        }
-    }
 }

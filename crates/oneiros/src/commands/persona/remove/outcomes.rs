@@ -1,20 +1,8 @@
 use oneiros_model::PersonaName;
+use oneiros_outcomes::Outcome;
 
-#[derive(Clone)]
+#[derive(Clone, Outcome)]
 pub enum RemovePersonaOutcomes {
+    #[outcome(message("Persona '{0}' removed."))]
     PersonaRemoved(PersonaName),
-}
-
-impl oneiros_outcomes::Reportable for RemovePersonaOutcomes {
-    fn level(&self) -> tracing::Level {
-        match self {
-            Self::PersonaRemoved(_) => tracing::Level::INFO,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            Self::PersonaRemoved(name) => format!("Persona '{name}' removed."),
-        }
-    }
 }

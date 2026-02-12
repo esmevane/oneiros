@@ -1,33 +1,14 @@
 use crate::*;
+use oneiros_outcomes::Outcome;
 
-#[derive(Clone)]
+#[derive(Clone, Outcome)]
 pub enum PersonaOutcomes {
-    Set(SetPersonaOutcomes),
-    Remove(RemovePersonaOutcomes),
-    List(ListPersonasOutcomes),
-    Show(ShowPersonaOutcomes),
-}
-
-impl From<SetPersonaOutcomes> for PersonaOutcomes {
-    fn from(value: SetPersonaOutcomes) -> Self {
-        Self::Set(value)
-    }
-}
-
-impl From<RemovePersonaOutcomes> for PersonaOutcomes {
-    fn from(value: RemovePersonaOutcomes) -> Self {
-        Self::Remove(value)
-    }
-}
-
-impl From<ListPersonasOutcomes> for PersonaOutcomes {
-    fn from(value: ListPersonasOutcomes) -> Self {
-        Self::List(value)
-    }
-}
-
-impl From<ShowPersonaOutcomes> for PersonaOutcomes {
-    fn from(value: ShowPersonaOutcomes) -> Self {
-        Self::Show(value)
-    }
+    #[outcome(transparent)]
+    Set(#[from] SetPersonaOutcomes),
+    #[outcome(transparent)]
+    Remove(#[from] RemovePersonaOutcomes),
+    #[outcome(transparent)]
+    List(#[from] ListPersonasOutcomes),
+    #[outcome(transparent)]
+    Show(#[from] ShowPersonaOutcomes),
 }

@@ -29,9 +29,14 @@ oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name" }
 oneiros-fs = { path = "crates/oneiros-fs" }
 oneiros-model = { path = "crates/oneiros-model" }
 oneiros-outcomes = { path = "crates/oneiros-outcomes" }
+oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive" }
 oneiros-service = { path = "crates/oneiros-service" }
 oneiros-terminal = { path = "crates/oneiros-terminal" }
 postcard = { version = "1", features = ["alloc"] }
+pretty_assertions = "1"
+prettyplease = "0.2"
+proc-macro2 = "1"
+quote = "1"
 rusqlite = { version = "0.31", features = [
   "bundled",
   "functions",
@@ -40,6 +45,7 @@ rusqlite = { version = "0.31", features = [
 ] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
+syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["full"] }
@@ -47,6 +53,7 @@ toml = "0.8"
 tower = { version = "0.5.3", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+trybuild = "1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
 whoami = "1"
 

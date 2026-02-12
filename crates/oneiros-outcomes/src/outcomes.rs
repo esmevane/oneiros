@@ -82,7 +82,7 @@ impl<T: Reportable> Outcomes<T> {
         let loc = Location::caller();
         let file = loc.file();
         let line = loc.line();
-        let message = outcome.message();
+        let message = outcome.log_message();
         let level = outcome.level();
 
         dyn_event!(level, file, line, message);
