@@ -1,4 +1,5 @@
 mod actor;
+mod agent;
 mod brain;
 mod level;
 mod persona;
@@ -7,6 +8,7 @@ mod texture;
 mod ticket;
 
 pub use actor::{Actor, ActorId, ActorName};
+pub use agent::{Agent, AgentId, AgentName};
 pub use brain::{Brain, BrainId, BrainName, BrainStatus};
 pub use level::{Level, LevelName};
 pub use persona::{Persona, PersonaName};

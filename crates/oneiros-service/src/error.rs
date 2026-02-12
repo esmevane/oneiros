@@ -1,6 +1,6 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use oneiros_model::{BrainId, BrainName, LevelName, PersonaName, TextureName};
+use oneiros_model::{AgentName, BrainId, BrainName, LevelName, PersonaName, TextureName};
 
 use crate::extractors::ActorContextError;
 use crate::handlers::brain::CreateBrainError;
@@ -21,6 +21,8 @@ pub enum BadRequests {
 
 #[derive(Debug, thiserror::Error)]
 pub enum NotFound {
+    #[error("Agent not found: {0}")]
+    Agent(AgentName),
     #[error("Brain not found: {0}")]
     Brain(BrainId),
     #[error("Level not found: {0}")]
@@ -33,6 +35,8 @@ pub enum NotFound {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Conflicts {
+    #[error("Agent already exists: {0}")]
+    Agent(AgentName),
     #[error("Brain already exists: {0}")]
     Brain(BrainName),
 }
