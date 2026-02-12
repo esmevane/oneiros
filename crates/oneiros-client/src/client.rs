@@ -1,4 +1,6 @@
-use oneiros_model::{Level, LevelName, Persona, PersonaName, Texture, TextureName, Token};
+use oneiros_model::{
+    Agent, AgentName, Level, LevelName, Persona, PersonaName, Texture, TextureName, Token,
+};
 use std::path::Path;
 
 use crate::*;
@@ -17,6 +19,105 @@ impl Client {
     pub async fn create_brain(&self, request: CreateBrainRequest) -> Result<BrainInfo, Error> {
         let body = serde_json::to_vec(&request)?;
         let (status, response_body) = self.client.request("POST", "/brains", body).await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn create_agent(
+        &self,
+        token: &Token,
+        request: CreateAgentRequest,
+    ) -> Result<Agent, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", "/agents", token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn update_agent(
+        &self,
+        token: &Token,
+        name: &AgentName,
+        request: UpdateAgentRequest,
+    ) -> Result<Agent, Error> {
+        let uri = format!("/agents/{name}");
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("PUT", &uri, token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn remove_agent(&self, token: &Token, name: &AgentName) -> Result<(), Error> {
+        let uri = format!("/agents/{name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("DELETE", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_agent(&self, token: &Token, name: &AgentName) -> Result<Agent, Error> {
+        let uri = format!("/agents/{name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn list_agents(&self, token: &Token) -> Result<Vec<Agent>, Error> {
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", "/agents", token, None)
+            .await?;
 
         if status >= 400 {
             let body_str = String::from_utf8_lossy(&response_body).to_string();

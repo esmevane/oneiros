@@ -4,6 +4,8 @@ use oneiros_outcomes::Outcome;
 #[derive(Outcome)]
 pub enum CliOutcomes {
     #[outcome(transparent)]
+    Agent(#[from] AgentOutcomes),
+    #[outcome(transparent)]
     Doctor(#[from] DoctorOutcomes),
     #[outcome(transparent)]
     Level(#[from] LevelOutcomes),

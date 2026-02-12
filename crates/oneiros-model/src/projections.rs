@@ -11,6 +11,8 @@ pub const SYSTEM_PROJECTIONS: &[Projection] = &[
 ];
 
 /// Brain-level projections for data that lives within each brain's database.
+///
+/// Ordering: persona before agent (agent has FK to persona).
 pub const BRAIN_PROJECTIONS: &[Projection] = &[
     LEVEL_SET_PROJECTION,
     LEVEL_REMOVED_PROJECTION,
@@ -18,6 +20,9 @@ pub const BRAIN_PROJECTIONS: &[Projection] = &[
     PERSONA_REMOVED_PROJECTION,
     TEXTURE_SET_PROJECTION,
     TEXTURE_REMOVED_PROJECTION,
+    AGENT_CREATED_PROJECTION,
+    AGENT_UPDATED_PROJECTION,
+    AGENT_REMOVED_PROJECTION,
 ];
 
 const TENANT_PROJECTION: Projection = Projection {
@@ -235,5 +240,72 @@ fn apply_level_removed(conn: &Database, data: &Value) -> Result<(), DatabaseErro
 }
 
 fn reset_levels_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+const AGENT_CREATED_PROJECTION: Projection = Projection {
+    name: "agent-created",
+    events: &["agent-created"],
+    apply: apply_agent_created,
+    reset: reset_agents,
+};
+
+fn apply_agent_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(id) = data["id"].as_str()
+        && let Some(name) = data["name"].as_str()
+        && let Some(persona) = data["persona"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(prompt) = data["prompt"].as_str()
+    {
+        conn.create_agent_record(id, name, persona, description, prompt)?;
+    };
+
+    Ok(())
+}
+
+fn reset_agents(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_agents()?;
+    Ok(())
+}
+
+const AGENT_UPDATED_PROJECTION: Projection = Projection {
+    name: "agent-updated",
+    events: &["agent-updated"],
+    apply: apply_agent_updated,
+    reset: reset_agents_noop,
+};
+
+fn apply_agent_updated(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str()
+        && let Some(persona) = data["persona"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(prompt) = data["prompt"].as_str()
+    {
+        conn.update_agent(name, persona, description, prompt)?;
+    };
+
+    Ok(())
+}
+
+fn reset_agents_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+const AGENT_REMOVED_PROJECTION: Projection = Projection {
+    name: "agent-removed",
+    events: &["agent-removed"],
+    apply: apply_agent_removed,
+    reset: reset_agents_removed_noop,
+};
+
+fn apply_agent_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str() {
+        conn.remove_agent(name)?;
+    };
+
+    Ok(())
+}
+
+fn reset_agents_removed_noop(_conn: &Database) -> Result<(), DatabaseError> {
     Ok(())
 }

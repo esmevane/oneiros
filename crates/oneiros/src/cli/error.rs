@@ -1,14 +1,16 @@
 use thiserror::Error;
 
 use crate::{
-    CheckupError, ContextError, LevelCommandError, PersonaCommandError, ProjectCommandError,
-    ServiceCommandError, SystemCommandError, TextureCommandError,
+    AgentCommandError, CheckupError, ContextError, LevelCommandError, PersonaCommandError,
+    ProjectCommandError, ServiceCommandError, SystemCommandError, TextureCommandError,
 };
 
 #[derive(Debug, Error)]
 pub enum CliError {
     #[error(transparent)]
     Precondition(#[from] ContextError),
+    #[error(transparent)]
+    Agent(#[from] AgentCommandError),
     #[error(transparent)]
     Doctor(#[from] CheckupError),
     #[error(transparent)]

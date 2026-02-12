@@ -8,5 +8,5 @@ pub(crate) use socket::SocketClient;
 
 pub use client::Client;
 pub use error::{ConnectionError, Error, RequestError, ResponseError};
-pub use requests::CreateBrainRequest;
+pub use requests::{CreateAgentRequest, CreateBrainRequest, UpdateAgentRequest};
 pub use responses::BrainInfo;

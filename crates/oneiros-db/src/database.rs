@@ -6,6 +6,9 @@ use uuid::Uuid;
 
 use crate::*;
 
+/// Raw row from the agent table: (id, name, persona, description, prompt).
+type AgentRow = (String, String, String, String, String);
+
 pub struct Database {
     conn: Connection,
 }
@@ -382,6 +385,111 @@ impl Database {
 
     pub fn reset_levels(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from level")?;
+        Ok(())
+    }
+
+    pub fn create_agent_record(
+        &self,
+        id: impl AsRef<str>,
+        name: impl AsRef<str>,
+        persona: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into agent (id, name, persona, description, prompt) \
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                id.as_ref(),
+                name.as_ref(),
+                persona.as_ref(),
+                description.as_ref(),
+                prompt.as_ref()
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_agent(
+        &self,
+        name: impl AsRef<str>,
+        persona: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "update agent set persona = ?2, description = ?3, prompt = ?4 where name = ?1",
+            params![
+                name.as_ref(),
+                persona.as_ref(),
+                description.as_ref(),
+                prompt.as_ref()
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_agent(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from agent where name = ?1", params![name.as_ref()])?;
+        Ok(())
+    }
+
+    pub fn get_agent(&self, name: impl AsRef<str>) -> Result<Option<AgentRow>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, name, persona, description, prompt from agent where name = ?1",
+            params![name.as_ref()],
+            |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(agent) => Ok(Some(agent)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_agents(&self) -> Result<Vec<AgentRow>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select id, name, persona, description, prompt from agent order by name")?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut agents = Vec::new();
+        for row in rows {
+            agents.push(row?);
+        }
+        Ok(agents)
+    }
+
+    pub fn agent_name_exists(&self, name: impl AsRef<str>) -> Result<bool, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from agent where name = ?1",
+            params![name.as_ref()],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
+    }
+
+    pub fn reset_agents(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from agent")?;
         Ok(())
     }
 

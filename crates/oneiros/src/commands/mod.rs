@@ -1,3 +1,4 @@
+mod agent;
 mod doctor;
 mod level;
 mod persona;
@@ -6,6 +7,7 @@ mod service;
 pub(crate) mod system;
 mod texture;
 
+pub(crate) use agent::*;
 pub(crate) use doctor::*;
 pub(crate) use level::*;
 pub(crate) use persona::*;

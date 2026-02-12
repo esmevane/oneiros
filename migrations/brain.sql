@@ -43,6 +43,22 @@ create table if not exists texture (
     prompt      text not null default ''
 );
 
+-- Agents are named participants in a brain's cognition. Each agent adopts
+-- a persona (FK to persona.name) and may carry its own description and
+-- prompt that specialize or override the persona's defaults.
+--
+-- Agents are identified by a UUID primary key for stable FK references
+-- from cognition and memory, and carry a unique human-readable name for
+-- the user-facing API surface.
+--
+create table if not exists agent (
+    id          text primary key not null,
+    name        text unique not null,
+    persona     text not null references persona(name),
+    description text not null default '',
+    prompt      text not null default ''
+);
+
 -- Levels are memory retention tiers that determine how memories surface
 -- in agent context. Each level carries a description (human-readable
 -- purpose) and a prompt (guidance for agents when assigning memories to
