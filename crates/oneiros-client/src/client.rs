@@ -1,5 +1,6 @@
 use oneiros_model::{
-    Agent, AgentName, Level, LevelName, Persona, PersonaName, Texture, TextureName, Token,
+    Agent, AgentName, Cognition, CognitionId, Level, LevelName, Persona, PersonaName, Texture,
+    TextureName, Token,
 };
 use std::path::Path;
 
@@ -117,6 +118,82 @@ impl Client {
         let (status, response_body) = self
             .client
             .authenticated_request("GET", "/agents", token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn add_cognition(
+        &self,
+        token: &Token,
+        request: AddCognitionRequest,
+    ) -> Result<Cognition, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", "/cognitions", token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn get_cognition(&self, token: &Token, id: &CognitionId) -> Result<Cognition, Error> {
+        let uri = format!("/cognitions/{id}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn list_cognitions(
+        &self,
+        token: &Token,
+        agent: Option<&AgentName>,
+        texture: Option<&TextureName>,
+    ) -> Result<Vec<Cognition>, Error> {
+        let mut params = Vec::new();
+        if let Some(agent) = agent {
+            params.push(format!("agent={agent}"));
+        }
+        if let Some(texture) = texture {
+            params.push(format!("texture={texture}"));
+        }
+
+        let uri = if params.is_empty() {
+            "/cognitions".to_string()
+        } else {
+            format!("/cognitions?{}", params.join("&"))
+        };
+
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
             .await?;
 
         if status >= 400 {

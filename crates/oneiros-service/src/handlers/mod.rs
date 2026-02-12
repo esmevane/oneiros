@@ -1,5 +1,6 @@
 pub(crate) mod agent;
 pub(crate) mod brain;
+pub(crate) mod cognition;
 pub(crate) mod health;
 pub(crate) mod level;
 pub(crate) mod persona;

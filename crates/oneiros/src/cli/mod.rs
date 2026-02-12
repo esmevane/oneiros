@@ -27,6 +27,7 @@ impl Cli {
 
         Ok(match &self.command {
             Command::Agent(agent) => agent.run(context).await?.map_into(),
+            Command::Cognition(cognition) => cognition.run(context).await?.map_into(),
             Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
             Command::Level(level) => level.run(context).await?.map_into(),
             Command::Persona(persona) => persona.run(context).await?.map_into(),
@@ -42,6 +43,8 @@ impl Cli {
 pub(crate) enum Command {
     /// Manage agents (named participants in a brain's cognition).
     Agent(AgentOps),
+    /// Manage cognitions (thoughts logged by agents).
+    Cognition(CognitionOps),
     /// Check the health of the local oneiros host and the current project.
     Doctor(Doctor),
     /// Manage levels (memory retention tiers).

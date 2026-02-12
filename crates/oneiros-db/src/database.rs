@@ -9,6 +9,9 @@ use crate::*;
 /// Raw row from the agent table: (id, name, persona, description, prompt).
 type AgentRow = (String, String, String, String, String);
 
+/// Raw row from the cognition table: (id, agent_id, texture, content, created_at).
+type CognitionRow = (String, String, String, String, String);
+
 pub struct Database {
     conn: Connection,
 }
@@ -490,6 +493,159 @@ impl Database {
 
     pub fn reset_agents(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from agent")?;
+        Ok(())
+    }
+
+    pub fn add_cognition(
+        &self,
+        id: impl AsRef<str>,
+        agent_id: impl AsRef<str>,
+        texture: impl AsRef<str>,
+        content: impl AsRef<str>,
+        created_at: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into cognition (id, agent_id, texture, content, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                id.as_ref(),
+                agent_id.as_ref(),
+                texture.as_ref(),
+                content.as_ref(),
+                created_at.as_ref()
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_cognition(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Option<CognitionRow>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, agent_id, texture, content, created_at from cognition where id = ?1",
+            params![id.as_ref()],
+            |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(cognition) => Ok(Some(cognition)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_cognitions(&self) -> Result<Vec<CognitionRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, texture, content, created_at from cognition order by rowid",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut cognitions = Vec::new();
+        for row in rows {
+            cognitions.push(row?);
+        }
+        Ok(cognitions)
+    }
+
+    pub fn list_cognitions_by_agent(
+        &self,
+        agent_id: impl AsRef<str>,
+    ) -> Result<Vec<CognitionRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, texture, content, created_at from cognition \
+             where agent_id = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut cognitions = Vec::new();
+        for row in rows {
+            cognitions.push(row?);
+        }
+        Ok(cognitions)
+    }
+
+    pub fn list_cognitions_by_texture(
+        &self,
+        texture: impl AsRef<str>,
+    ) -> Result<Vec<CognitionRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, texture, content, created_at from cognition \
+             where texture = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![texture.as_ref()], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut cognitions = Vec::new();
+        for row in rows {
+            cognitions.push(row?);
+        }
+        Ok(cognitions)
+    }
+
+    pub fn list_cognitions_by_agent_and_texture(
+        &self,
+        agent_id: impl AsRef<str>,
+        texture: impl AsRef<str>,
+    ) -> Result<Vec<CognitionRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, texture, content, created_at from cognition \
+             where agent_id = ?1 and texture = ?2 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id.as_ref(), texture.as_ref()], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut cognitions = Vec::new();
+        for row in rows {
+            cognitions.push(row?);
+        }
+        Ok(cognitions)
+    }
+
+    pub fn reset_cognitions(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from cognition")?;
         Ok(())
     }
 

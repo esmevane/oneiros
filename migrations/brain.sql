@@ -59,6 +59,18 @@ create table if not exists agent (
     prompt      text not null default ''
 );
 
+-- Cognitions are the thoughts agents log. Each cognition is bound to an
+-- agent (who thought it) and a texture (what kind of thought it is).
+-- Cognitions are append-only — they are created but never updated or deleted.
+--
+create table if not exists cognition (
+    id          text primary key not null,
+    agent_id    text not null references agent(id),
+    texture     text not null references texture(name),
+    content     text not null,
+    created_at  text not null
+);
+
 -- Levels are memory retention tiers that determine how memories surface
 -- in agent context. Each level carries a description (human-readable
 -- purpose) and a prompt (guidance for agents when assigning memories to

@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 axum.workspace = true
+chrono.workspace = true
 hyper.workspace = true
 hyper-util.workspace = true
 oneiros-client.workspace = true

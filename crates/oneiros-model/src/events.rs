@@ -1,6 +1,6 @@
 use crate::{
-    Actor, Agent, AgentName, Brain, Level, LevelName, Persona, PersonaName, Tenant, Texture,
-    TextureName, Ticket,
+    Actor, Agent, AgentName, Brain, Cognition, Level, LevelName, Persona, PersonaName, Tenant,
+    Texture, TextureName, Ticket,
 };
 
 #[derive(serde::Serialize)]
@@ -27,6 +27,12 @@ pub enum AgentEvents {
     AgentCreated(Agent),
     AgentUpdated(Agent),
     AgentRemoved { name: AgentName },
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum CognitionEvents {
+    CognitionAdded(Cognition),
 }
 
 #[derive(serde::Serialize)]
@@ -62,6 +68,7 @@ pub enum Events {
     Actor(ActorEvents),
     Agent(AgentEvents),
     Brain(BrainEvents),
+    Cognition(CognitionEvents),
     Level(LevelEvents),
     Persona(PersonaEvents),
     Tenant(TenantEvents),

@@ -6,6 +6,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Agent(#[from] AgentOutcomes),
     #[outcome(transparent)]
+    Cognition(#[from] CognitionOutcomes),
+    #[outcome(transparent)]
     Doctor(#[from] DoctorOutcomes),
     #[outcome(transparent)]
     Level(#[from] LevelOutcomes),
