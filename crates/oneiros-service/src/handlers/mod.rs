@@ -3,5 +3,6 @@ pub(crate) mod brain;
 pub(crate) mod cognition;
 pub(crate) mod health;
 pub(crate) mod level;
+pub(crate) mod memory;
 pub(crate) mod persona;
 pub(crate) mod texture;
