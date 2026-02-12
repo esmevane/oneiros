@@ -12,6 +12,8 @@ pub const SYSTEM_PROJECTIONS: &[Projection] = &[
 
 /// Brain-level projections for data that lives within each brain's database.
 pub const BRAIN_PROJECTIONS: &[Projection] = &[
+    LEVEL_SET_PROJECTION,
+    LEVEL_REMOVED_PROJECTION,
     PERSONA_SET_PROJECTION,
     PERSONA_REMOVED_PROJECTION,
     TEXTURE_SET_PROJECTION,
@@ -191,5 +193,47 @@ fn apply_texture_removed(conn: &Database, data: &Value) -> Result<(), DatabaseEr
 }
 
 fn reset_textures_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+const LEVEL_SET_PROJECTION: Projection = Projection {
+    name: "level-set",
+    events: &["level-set"],
+    apply: apply_level_set,
+    reset: reset_levels,
+};
+
+fn apply_level_set(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(prompt) = data["prompt"].as_str()
+    {
+        conn.set_level(name, description, prompt)?;
+    };
+
+    Ok(())
+}
+
+fn reset_levels(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_levels()?;
+    Ok(())
+}
+
+const LEVEL_REMOVED_PROJECTION: Projection = Projection {
+    name: "level-removed",
+    events: &["level-removed"],
+    apply: apply_level_removed,
+    reset: reset_levels_noop,
+};
+
+fn apply_level_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str() {
+        conn.remove_level(name)?;
+    };
+
+    Ok(())
+}
+
+fn reset_levels_noop(_conn: &Database) -> Result<(), DatabaseError> {
     Ok(())
 }

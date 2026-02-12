@@ -6,6 +6,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Doctor(#[from] DoctorOutcomes),
     #[outcome(transparent)]
+    Level(#[from] LevelOutcomes),
+    #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
     #[outcome(transparent)]
     Project(#[from] ProjectOutcomes),

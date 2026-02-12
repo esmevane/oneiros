@@ -1,4 +1,4 @@
-use oneiros_model::{Persona, PersonaName, Texture, TextureName, Token};
+use oneiros_model::{Level, LevelName, Persona, PersonaName, Texture, TextureName, Token};
 use std::path::Path;
 
 use crate::*;
@@ -158,6 +158,77 @@ impl Client {
         let (status, response_body) = self
             .client
             .authenticated_request("GET", "/textures", token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn set_level(&self, token: &Token, request: Level) -> Result<Level, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("PUT", "/levels", token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn remove_level(&self, token: &Token, name: &LevelName) -> Result<(), Error> {
+        let uri = format!("/levels/{name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("DELETE", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_level(&self, token: &Token, name: &LevelName) -> Result<Level, Error> {
+        let uri = format!("/levels/{name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn list_levels(&self, token: &Token) -> Result<Vec<Level>, Error> {
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", "/levels", token, None)
             .await?;
 
         if status >= 400 {

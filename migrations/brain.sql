@@ -42,3 +42,18 @@ create table if not exists texture (
     description text not null default '',
     prompt      text not null default ''
 );
+
+-- Levels are memory retention tiers that determine how memories surface
+-- in agent context. Each level carries a description (human-readable
+-- purpose) and a prompt (guidance for agents when assigning memories to
+-- this level).
+--
+-- Examples: core (always included), active (included by default),
+-- passive (on request), archived (excluded unless retrieved).
+-- Levels are emergent — they can be seeded, added, or removed over time.
+--
+create table if not exists level (
+    name        text primary key not null,
+    description text not null default '',
+    prompt      text not null default ''
+);
