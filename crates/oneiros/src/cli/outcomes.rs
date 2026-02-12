@@ -13,4 +13,6 @@ pub enum CliOutcomes {
     Service(#[from] ServiceOutcomes),
     #[outcome(transparent)]
     System(#[from] SystemOutcomes),
+    #[outcome(transparent)]
+    Texture(#[from] TextureOutcomes),
 }

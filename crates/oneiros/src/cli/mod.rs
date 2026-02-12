@@ -31,6 +31,7 @@ impl Cli {
             Command::System(system) => system.run(context).await?.map_into(),
             Command::Service(service) => service.run(context).await?.map_into(),
             Command::Project(project) => project.run(context).await?.map_into(),
+            Command::Texture(texture) => texture.run(context).await?.map_into(),
         })
     }
 }
@@ -47,4 +48,6 @@ pub(crate) enum Command {
     Service(ServiceOps),
     /// System-level commands for the local oneiros host (init, status, etc.).
     System(SystemOps),
+    /// Manage textures (cognitive categories for agent thoughts).
+    Texture(TextureOps),
 }

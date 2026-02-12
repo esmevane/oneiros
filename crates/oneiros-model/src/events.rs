@@ -1,4 +1,4 @@
-use crate::{Actor, Brain, Persona, PersonaName, Tenant, Ticket};
+use crate::{Actor, Brain, Persona, PersonaName, Tenant, Texture, TextureName, Ticket};
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
@@ -27,6 +27,13 @@ pub enum PersonaEvents {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum TextureEvents {
+    TextureSet(Texture),
+    TextureRemoved { name: TextureName },
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TicketEvents {
     TicketIssued(Ticket),
 }
@@ -38,5 +45,6 @@ pub enum Events {
     Brain(BrainEvents),
     Persona(PersonaEvents),
     Tenant(TenantEvents),
+    Texture(TextureEvents),
     Ticket(TicketEvents),
 }

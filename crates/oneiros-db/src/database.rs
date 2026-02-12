@@ -267,6 +267,66 @@ impl Database {
         Ok(())
     }
 
+    pub fn set_texture(
+        &self,
+        name: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into texture (name, description, prompt) \
+             values (?1, ?2, ?3) \
+             on conflict(name) do update set \
+             description = excluded.description, prompt = excluded.prompt",
+            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_texture(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "delete from texture where name = ?1",
+            params![name.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_texture(
+        &self,
+        name: impl AsRef<str>,
+    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from texture where name = ?1",
+            params![name.as_ref()],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        );
+
+        match result {
+            Ok(texture) => Ok(Some(texture)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_textures(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select name, description, prompt from texture order by name")?;
+
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+
+        let mut textures = Vec::new();
+        for row in rows {
+            textures.push(row?);
+        }
+        Ok(textures)
+    }
+
+    pub fn reset_textures(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from texture")?;
+        Ok(())
+    }
+
     pub fn create_brain_db(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;

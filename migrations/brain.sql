@@ -29,3 +29,16 @@ create table if not exists persona (
     description text not null default '',
     prompt      text not null default ''
 );
+
+-- Textures are cognitive categories that classify agent thoughts. Each
+-- texture carries a description (human-readable purpose) and a prompt
+-- (guidance text for agents when logging cognition with this texture).
+--
+-- Examples: observation, learning, insight, hope, fear, bond, reflection.
+-- Textures are emergent — they can be seeded, added, or removed over time.
+--
+create table if not exists texture (
+    name        text primary key not null,
+    description text not null default '',
+    prompt      text not null default ''
+);
