@@ -11,7 +11,12 @@ pub const SYSTEM_PROJECTIONS: &[Projection] = &[
 ];
 
 /// Brain-level projections for data that lives within each brain's database.
-pub const BRAIN_PROJECTIONS: &[Projection] = &[PERSONA_SET_PROJECTION, PERSONA_REMOVED_PROJECTION];
+pub const BRAIN_PROJECTIONS: &[Projection] = &[
+    PERSONA_SET_PROJECTION,
+    PERSONA_REMOVED_PROJECTION,
+    TEXTURE_SET_PROJECTION,
+    TEXTURE_REMOVED_PROJECTION,
+];
 
 const TENANT_PROJECTION: Projection = Projection {
     name: "tenant",
@@ -144,5 +149,47 @@ fn apply_persona_removed(conn: &Database, data: &Value) -> Result<(), DatabaseEr
 }
 
 fn reset_personas_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+const TEXTURE_SET_PROJECTION: Projection = Projection {
+    name: "texture-set",
+    events: &["texture-set"],
+    apply: apply_texture_set,
+    reset: reset_textures,
+};
+
+fn apply_texture_set(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(prompt) = data["prompt"].as_str()
+    {
+        conn.set_texture(name, description, prompt)?;
+    };
+
+    Ok(())
+}
+
+fn reset_textures(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_textures()?;
+    Ok(())
+}
+
+const TEXTURE_REMOVED_PROJECTION: Projection = Projection {
+    name: "texture-removed",
+    events: &["texture-removed"],
+    apply: apply_texture_removed,
+    reset: reset_textures_noop,
+};
+
+fn apply_texture_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str() {
+        conn.remove_texture(name)?;
+    };
+
+    Ok(())
+}
+
+fn reset_textures_noop(_conn: &Database) -> Result<(), DatabaseError> {
     Ok(())
 }

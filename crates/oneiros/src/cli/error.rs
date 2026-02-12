@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::{
     CheckupError, ContextError, PersonaCommandError, ProjectCommandError, ServiceCommandError,
-    SystemCommandError,
+    SystemCommandError, TextureCommandError,
 };
 
 #[derive(Debug, Error)]
@@ -19,4 +19,6 @@ pub enum CliError {
     Service(#[from] ServiceCommandError),
     #[error(transparent)]
     System(#[from] SystemCommandError),
+    #[error(transparent)]
+    Texture(#[from] TextureCommandError),
 }
