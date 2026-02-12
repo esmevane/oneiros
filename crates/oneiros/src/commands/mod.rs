@@ -6,6 +6,7 @@ mod memory;
 mod persona;
 mod project;
 mod service;
+mod storage;
 pub(crate) mod system;
 mod texture;
 
@@ -17,5 +18,6 @@ pub(crate) use memory::*;
 pub(crate) use persona::*;
 pub(crate) use project::*;
 pub(crate) use service::*;
+pub(crate) use storage::*;
 pub(crate) use system::*;
 pub(crate) use texture::*;

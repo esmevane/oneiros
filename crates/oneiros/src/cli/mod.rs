@@ -32,6 +32,7 @@ impl Cli {
             Command::Level(level) => level.run(context).await?.map_into(),
             Command::Memory(memory) => memory.run(context).await?.map_into(),
             Command::Persona(persona) => persona.run(context).await?.map_into(),
+            Command::Storage(storage) => storage.run(context).await?.map_into(),
             Command::System(system) => system.run(context).await?.map_into(),
             Command::Service(service) => service.run(context).await?.map_into(),
             Command::Project(project) => project.run(context).await?.map_into(),
@@ -54,6 +55,8 @@ pub(crate) enum Command {
     Memory(MemoryOps),
     /// Manage personas (named agent roles).
     Persona(PersonaOps),
+    /// Manage content-addressable blob storage.
+    Storage(StorageOps),
     /// Project-level commands (init, etc.).
     Project(ProjectOps),
     /// Manage the oneiros service (run, status).

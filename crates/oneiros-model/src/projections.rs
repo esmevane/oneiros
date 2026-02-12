@@ -25,6 +25,8 @@ pub const BRAIN_PROJECTIONS: &[Projection] = &[
     AGENT_REMOVED_PROJECTION,
     COGNITION_ADDED_PROJECTION,
     MEMORY_ADDED_PROJECTION,
+    STORAGE_SET_PROJECTION,
+    STORAGE_REMOVED_PROJECTION,
 ];
 
 const TENANT_PROJECTION: Projection = Projection {
@@ -359,5 +361,47 @@ fn apply_memory_added(conn: &Database, data: &Value) -> Result<(), DatabaseError
 
 fn reset_memories(conn: &Database) -> Result<(), DatabaseError> {
     conn.reset_memories()?;
+    Ok(())
+}
+
+const STORAGE_SET_PROJECTION: Projection = Projection {
+    name: "storage-set",
+    events: &["storage-set"],
+    apply: apply_storage_set,
+    reset: reset_storage,
+};
+
+fn apply_storage_set(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(key) = data["key"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(hash) = data["hash"].as_str()
+    {
+        conn.set_storage(key, description, hash)?;
+    };
+
+    Ok(())
+}
+
+fn reset_storage(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_storage()?;
+    Ok(())
+}
+
+const STORAGE_REMOVED_PROJECTION: Projection = Projection {
+    name: "storage-removed",
+    events: &["storage-removed"],
+    apply: apply_storage_removed,
+    reset: reset_storage_noop,
+};
+
+fn apply_storage_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(key) = data["key"].as_str() {
+        conn.remove_storage(key)?;
+    };
+
+    Ok(())
+}
+
+fn reset_storage_noop(_conn: &Database) -> Result<(), DatabaseError> {
     Ok(())
 }
