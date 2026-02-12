@@ -16,6 +16,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
     #[outcome(transparent)]
+    Storage(#[from] StorageOutcomes),
+    #[outcome(transparent)]
     Project(#[from] ProjectOutcomes),
     #[outcome(transparent)]
     Service(#[from] ServiceOutcomes),

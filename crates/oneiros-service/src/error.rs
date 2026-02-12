@@ -1,7 +1,8 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use oneiros_model::{
-    AgentName, BrainId, BrainName, CognitionId, LevelName, MemoryId, PersonaName, TextureName,
+    AgentName, BrainId, BrainName, CognitionId, ContentHash, LevelName, MemoryId, PersonaName,
+    StorageKey, TextureName,
 };
 
 use crate::extractors::ActorContextError;
@@ -19,6 +20,8 @@ pub enum PreconditionFailure {
 pub enum BadRequests {
     #[error("Create brain request invalid: {0}")]
     Brain(#[from] CreateBrainError),
+    #[error("Invalid storage reference: {0}")]
+    StorageRef(#[from] oneiros_model::StorageRefError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -35,6 +38,8 @@ pub enum NotFound {
     Memory(MemoryId),
     #[error("Persona not found: {0}")]
     Persona(PersonaName),
+    #[error("Storage entry not found: {0}")]
+    Storage(StorageKey),
     #[error("Texture not found: {0}")]
     Texture(TextureName),
 }
@@ -45,6 +50,12 @@ pub enum Conflicts {
     Agent(AgentName),
     #[error("Brain already exists: {0}")]
     Brain(BrainName),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum DataIntegrity {
+    #[error("Blob data missing for content hash: {0}")]
+    BlobMissing(ContentHash),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -64,6 +75,9 @@ pub enum Error {
     #[error("Conflict: {0}")]
     Conflict(#[from] Conflicts),
 
+    #[error("Data integrity: {0}")]
+    DataIntegrity(#[from] DataIntegrity),
+
     #[error(transparent)]
     Database(#[from] oneiros_db::DatabaseError),
 
@@ -82,9 +96,10 @@ impl IntoResponse for Error {
             Error::NotInitialized(_) => StatusCode::PRECONDITION_FAILED,
             Error::BadRequest(_) => StatusCode::BAD_REQUEST,
             Error::Conflict(_) => StatusCode::CONFLICT,
-            Error::Database(_) | Error::Io(_) | Error::DatabasePoisoned => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            Error::DataIntegrity(_)
+            | Error::Database(_)
+            | Error::Io(_)
+            | Error::DatabasePoisoned => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         let body = serde_json::json!({ "error": self.to_string() });

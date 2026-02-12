@@ -97,3 +97,23 @@ create table if not exists memory (
     content     text not null,
     created_at  text not null
 );
+
+-- Blobs are content-addressable binary storage. Each blob is identified
+-- by its SHA-256 hash and stores zlib-compressed data. Blobs are NOT
+-- projections — they are a peer data source alongside the event log.
+-- Deduplication is automatic: same content = same hash = one row.
+--
+create table if not exists blob (
+    hash text primary key not null,
+    data blob not null,
+    size integer not null default 0
+);
+
+-- Storage entries map user-facing keys to content hashes. This table
+-- is a projection from storage-set and storage-removed events.
+--
+create table if not exists storage (
+    key         text primary key not null,
+    description text not null default '',
+    hash        text not null references blob(hash)
+);

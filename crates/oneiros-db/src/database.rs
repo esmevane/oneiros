@@ -802,6 +802,102 @@ impl Database {
         Ok(())
     }
 
+    // -- Blob operations (content-addressable store) --
+
+    pub fn put_blob(
+        &self,
+        hash: impl AsRef<str>,
+        data: &[u8],
+        original_size: usize,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into blob (hash, data, size) values (?1, ?2, ?3)",
+            params![hash.as_ref(), data, original_size as i64],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_blob(
+        &self,
+        hash: impl AsRef<str>,
+    ) -> Result<Option<(Vec<u8>, usize)>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select data, size from blob where hash = ?1",
+            params![hash.as_ref()],
+            |row| {
+                let data: Vec<u8> = row.get(0)?;
+                let size: i64 = row.get(1)?;
+                Ok((data, size as usize))
+            },
+        );
+
+        match result {
+            Ok(blob) => Ok(Some(blob)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    // -- Storage operations (projection table) --
+
+    pub fn set_storage(
+        &self,
+        key: impl AsRef<str>,
+        description: impl AsRef<str>,
+        hash: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into storage (key, description, hash) \
+             values (?1, ?2, ?3) \
+             on conflict(key) do update set \
+             description = excluded.description, hash = excluded.hash",
+            params![key.as_ref(), description.as_ref(), hash.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_storage(&self, key: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from storage where key = ?1", params![key.as_ref()])?;
+        Ok(())
+    }
+
+    pub fn get_storage(
+        &self,
+        key: impl AsRef<str>,
+    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select key, description, hash from storage where key = ?1",
+            params![key.as_ref()],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        );
+
+        match result {
+            Ok(entry) => Ok(Some(entry)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_storage(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select key, description, hash from storage order by key")?;
+
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+
+        let mut entries = Vec::new();
+        for row in rows {
+            entries.push(row?);
+        }
+        Ok(entries)
+    }
+
+    pub fn reset_storage(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from storage")?;
+        Ok(())
+    }
+
     pub fn create_brain_db(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;

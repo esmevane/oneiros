@@ -1,6 +1,6 @@
 use oneiros_model::{
     Agent, AgentName, Cognition, CognitionId, Level, LevelName, Memory, MemoryId, Persona,
-    PersonaName, Texture, TextureName, Token,
+    PersonaName, StorageEntry, StorageKey, StorageRef, Texture, TextureName, Token,
 };
 use std::path::Path;
 
@@ -494,6 +494,114 @@ impl Client {
         }
 
         Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn set_storage(
+        &self,
+        token: &Token,
+        key: &StorageKey,
+        data: Vec<u8>,
+        description: &str,
+    ) -> Result<StorageEntry, Error> {
+        let storage_ref = StorageRef::encode(key);
+        let uri = format!("/storage/{storage_ref}");
+        let headers = vec![("x-storage-description", description)];
+        let (status, response_body) = self
+            .client
+            .authenticated_binary_request("PUT", &uri, token, data, &headers)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn get_storage(
+        &self,
+        token: &Token,
+        key: &StorageKey,
+    ) -> Result<StorageEntry, Error> {
+        let storage_ref = StorageRef::encode(key);
+        let uri = format!("/storage/{storage_ref}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn get_storage_content(
+        &self,
+        token: &Token,
+        key: &StorageKey,
+    ) -> Result<Vec<u8>, Error> {
+        let storage_ref = StorageRef::encode(key);
+        let uri = format!("/storage/{storage_ref}/content");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(response_body)
+    }
+
+    pub async fn list_storage(&self, token: &Token) -> Result<Vec<StorageEntry>, Error> {
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", "/storage", token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn remove_storage(&self, token: &Token, key: &StorageKey) -> Result<(), Error> {
+        let storage_ref = StorageRef::encode(key);
+        let uri = format!("/storage/{storage_ref}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("DELETE", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(())
     }
 
     pub async fn health(&self) -> Result<(), Error> {
