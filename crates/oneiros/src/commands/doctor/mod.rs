@@ -13,9 +13,9 @@ pub(crate) use outcomes::DoctorOutcomes;
 use crate::*;
 
 #[derive(Args, Clone)]
-pub(crate) struct Doctor;
+pub(crate) struct DoctorOp;
 
-impl Doctor {
+impl DoctorOp {
     pub(crate) async fn run(
         &self,
         context: Context,

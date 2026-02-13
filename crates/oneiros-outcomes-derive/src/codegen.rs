@@ -62,6 +62,7 @@ fn gen_reportable(model: &OutcomeModel) -> TokenStream {
     };
 
     quote! {
+
         impl #impl_generics oneiros_outcomes::Reportable for #ident #ty_generics #where_clause {
             fn level(&self) -> tracing::Level {
                 match self {
@@ -290,6 +291,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -318,6 +320,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -347,6 +350,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -380,6 +384,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -417,6 +422,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for Outer {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -484,6 +490,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -537,6 +544,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {
@@ -568,6 +576,7 @@ mod tests {
         });
 
         let expected = pretty(quote! {
+
             impl oneiros_outcomes::Reportable for TestOutcome {
                 fn level(&self) -> tracing::Level {
                     match self {

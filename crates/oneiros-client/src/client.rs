@@ -1,6 +1,6 @@
 use oneiros_model::{
-    Agent, AgentName, Cognition, CognitionId, Level, LevelName, Memory, MemoryId, Persona,
-    PersonaName, StorageEntry, StorageKey, StorageRef, Texture, TextureName, Token,
+    Agent, AgentName, Cognition, CognitionId, DreamContext, Level, LevelName, Memory, MemoryId,
+    Persona, PersonaName, StorageEntry, StorageKey, StorageRef, Texture, TextureName, Token,
 };
 use std::path::Path;
 
@@ -602,6 +602,64 @@ impl Client {
         }
 
         Ok(())
+    }
+
+    pub async fn dream(
+        &self,
+        token: &Token,
+        agent_name: &AgentName,
+    ) -> Result<DreamContext, Error> {
+        let uri = format!("/dream/{agent_name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn introspect(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+        let uri = format!("/introspect/{agent_name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn reflect(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+        let uri = format!("/reflect/{agent_name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
     }
 
     pub async fn health(&self) -> Result<(), Error> {

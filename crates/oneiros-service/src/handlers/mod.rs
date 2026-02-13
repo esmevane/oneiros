@@ -1,9 +1,12 @@
 pub(crate) mod agent;
 pub(crate) mod brain;
 pub(crate) mod cognition;
+pub(crate) mod dream;
 pub(crate) mod health;
+pub(crate) mod introspect;
 pub(crate) mod level;
 pub(crate) mod memory;
 pub(crate) mod persona;
+pub(crate) mod reflect;
 pub(crate) mod storage;
 pub(crate) mod texture;
