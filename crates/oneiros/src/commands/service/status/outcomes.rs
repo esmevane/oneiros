@@ -1,7 +1,8 @@
 use oneiros_outcomes::Outcome;
 use std::path::PathBuf;
 
-#[derive(Clone, Outcome)]
+#[derive(Clone, serde::Serialize, Outcome)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ServiceStatusOutcomes {
     #[outcome(message("Socket: {}", .0.display()))]
     SocketPath(PathBuf),

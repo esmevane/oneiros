@@ -1,7 +1,8 @@
 use oneiros_model::StorageEntry;
 use oneiros_outcomes::Outcome;
 
-#[derive(Clone, Outcome)]
+#[derive(Clone, serde::Serialize, Outcome)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListStorageOutcomes {
     #[outcome(message("No storage entries."))]
     NoEntries,

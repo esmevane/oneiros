@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use tracing_subscriber::fmt::MakeWriter;
 
-use crate::{ConsoleReporter, Outcomes, Reportable, Reporter};
+use crate::{Outcomes, PromptReporter, Reportable, Reporter};
 
 #[derive(Clone)]
 struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
@@ -285,9 +285,9 @@ fn emit_uses_log_message_for_tracing() {
 
 #[test]
 fn console_reporter_prints_message() {
-    // ConsoleReporter uses println, so we just verify it doesn't panic
+    // PromptReporter uses println, so we just verify it doesn't panic
     // and the trait is object-safe.
-    let reporter: &dyn Reporter = &ConsoleReporter;
+    let reporter: &dyn Reporter = &PromptReporter;
     let outcome = TestOutcome::Info("reporter test".into());
     reporter.report(&outcome);
 }

@@ -1,7 +1,8 @@
 use crate::*;
 use oneiros_outcomes::Outcome;
 
-#[derive(Outcome)]
+#[derive(serde::Serialize, Outcome)]
+#[serde(untagged)]
 pub enum CliOutcomes {
     #[outcome(transparent)]
     Agent(#[from] AgentOutcomes),

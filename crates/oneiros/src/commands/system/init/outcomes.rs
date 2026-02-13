@@ -1,7 +1,8 @@
 use crate::*;
 use oneiros_outcomes::Outcome;
 
-#[derive(Clone, Outcome)]
+#[derive(Clone, serde::Serialize, Outcome)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum InitSystemOutcomes {
     #[outcome(message("Ensured directories exist."), level = "debug")]
     EnsuredDirectories,

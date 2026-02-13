@@ -1,3 +1,5 @@
+use crate::ReportableMetadata;
+
 /// A trait for types that can be reported as structured tracing events.
 ///
 /// Implementors provide the tracing level and human-readable message.
@@ -17,5 +19,12 @@ pub trait Reportable {
 
     fn prompt(&self) -> Option<String> {
         None
+    }
+
+    fn metadata(&self) -> ReportableMetadata
+    where
+        Self: Sized,
+    {
+        ReportableMetadata::from_reportable(self)
     }
 }

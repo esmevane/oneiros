@@ -1,7 +1,8 @@
 use crate::*;
 use oneiros_outcomes::Outcome;
 
-#[derive(Clone, Outcome)]
+#[derive(Clone, serde::Serialize, Outcome)]
+#[serde(untagged)]
 pub enum StorageOutcomes {
     #[outcome(transparent)]
     Set(#[from] SetStorageOutcomes),

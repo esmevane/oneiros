@@ -1,7 +1,8 @@
 use oneiros_model::Agent;
 use oneiros_outcomes::Outcome;
 
-#[derive(Clone, Outcome)]
+#[derive(Clone, serde::Serialize, Outcome)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListAgentsOutcomes {
     #[outcome(message("No agents configured."))]
     NoAgents,

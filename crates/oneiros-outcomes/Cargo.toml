@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 oneiros-outcomes-derive.workspace = true
+serde.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]

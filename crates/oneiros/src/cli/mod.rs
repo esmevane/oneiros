@@ -1,6 +1,7 @@
 mod error;
 mod log_config;
 mod outcomes;
+mod output_format;
 
 use clap::Parser;
 use clap::Subcommand;
@@ -9,6 +10,7 @@ use oneiros_outcomes::Outcomes;
 pub(crate) use error::*;
 pub(crate) use log_config::LogConfig;
 pub(crate) use outcomes::CliOutcomes;
+pub(crate) use output_format::OutputFormat;
 
 use crate::*;
 
@@ -17,11 +19,20 @@ use crate::*;
 pub(crate) struct Cli {
     #[command(flatten)]
     pub(crate) log: LogConfig,
+    /// Output format: prompt (default), quiet, or json.
+    #[arg(long, short, default_value = "prompt", global = true)]
+    pub(crate) output: OutputFormat,
     #[command(subcommand)]
     pub(crate) command: Command,
 }
 
 impl Cli {
+    pub(crate) fn report(&self, outcomes: &Outcomes<CliOutcomes>) {
+        for outcome in outcomes {
+            self.output.report_outcome(outcome);
+        }
+    }
+
     pub(crate) async fn run(&self) -> Result<Outcomes<CliOutcomes>, CliError> {
         let context = Context::init()?;
 
