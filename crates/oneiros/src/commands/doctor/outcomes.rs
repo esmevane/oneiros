@@ -1,7 +1,8 @@
 use oneiros_outcomes::Outcome;
 use std::path::PathBuf;
 
-#[derive(Clone, Outcome)]
+#[derive(Clone, serde::Serialize, Outcome)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorOutcomes {
     #[outcome(message("Project '{0}' detected at '{}'.", .1.display()))]
     ProjectDetected(String, PathBuf),

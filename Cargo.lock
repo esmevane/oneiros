@@ -1073,7 +1073,6 @@ dependencies = [
  "clap-verbosity-flag",
  "colorchoice-clap",
  "directories",
- "inquire",
  "oneiros-client",
  "oneiros-db",
  "oneiros-detect-project-name",
@@ -1090,7 +1089,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
@@ -1151,6 +1149,7 @@ name = "oneiros-outcomes"
 version = "0.0.1"
 dependencies = [
  "oneiros-outcomes-derive",
+ "serde",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1178,8 +1177,6 @@ dependencies = [
  "data-encoding",
  "flate2",
  "http-body-util",
- "hyper",
- "hyper-util",
  "oneiros-client",
  "oneiros-db",
  "oneiros-fs",
@@ -1192,7 +1189,6 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
- "uuid",
 ]
 
 [[package]]
