@@ -18,7 +18,16 @@ impl Status {
     ) -> Result<Outcomes<ServiceStatusOutcomes>, ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let socket_path = context.socket_path();
+
+        outcomes.emit(ServiceStatusOutcomes::SocketPath(socket_path.clone()));
+
+        if !socket_path.exists() {
+            outcomes.emit(ServiceStatusOutcomes::NoSocket);
+            return Ok(outcomes);
+        }
+
+        let client = Client::new(&socket_path);
 
         match client.health().await {
             Ok(()) => outcomes.emit(ServiceStatusOutcomes::ServiceRunning),

@@ -31,7 +31,7 @@ impl GetStorage {
             .get_storage_content(&context.ticket_token()?, &self.key)
             .await?;
 
-        std::fs::write(&self.output, &content)?;
+        context.files().write(&self.output, &content)?;
 
         outcomes.emit(GetStorageOutcomes::ContentWritten(
             self.key.clone(),

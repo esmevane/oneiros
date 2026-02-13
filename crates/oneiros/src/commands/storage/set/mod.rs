@@ -30,7 +30,7 @@ impl SetStorage {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
-        let data = std::fs::read(&self.file)?;
+        let data = context.files().read(&self.file)?;
 
         let entry = client
             .set_storage(&context.ticket_token()?, &self.key, data, &self.description)
