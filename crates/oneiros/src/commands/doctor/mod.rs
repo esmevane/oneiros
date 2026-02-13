@@ -2,6 +2,7 @@ mod error;
 mod outcomes;
 
 use clap::Args;
+use oneiros_client::Client;
 use oneiros_db::Database;
 use oneiros_outcomes::Outcomes;
 use std::path::PathBuf;
@@ -58,6 +59,13 @@ impl Doctor {
             checks.emit(DoctorOutcomes::ConfigOk(context.config_path()));
         } else {
             checks.emit(DoctorOutcomes::NoConfigFound(context.config_path()));
+        }
+
+        let client = Client::new(context.socket_path());
+
+        match client.health().await {
+            Ok(()) => checks.emit(DoctorOutcomes::ServiceRunning),
+            Err(error) => checks.emit(DoctorOutcomes::ServiceNotRunning(error.to_string())),
         }
 
         Ok(checks)

@@ -23,4 +23,8 @@ pub enum DoctorOutcomes {
     ConfigOk(PathBuf),
     #[outcome(message("Config file not found at '{}'.", .0.display()), level = "warn")]
     NoConfigFound(PathBuf),
+    #[outcome(message("Service is running."))]
+    ServiceRunning,
+    #[outcome(message("Service is not running: {0}"), level = "warn")]
+    ServiceNotRunning(String),
 }
