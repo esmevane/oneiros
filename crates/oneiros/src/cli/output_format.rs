@@ -13,7 +13,7 @@ pub(crate) enum OutputFormat {
 }
 
 impl OutputFormat {
-    pub(crate) fn report_outcome<T: Reportable + Serialize>(&self, outcome: &T) {
+    pub(crate) fn structured_output<T: Reportable + Serialize>(&self, outcome: &T) {
         match self {
             Self::Prompt => PromptReporter.report(outcome),
             Self::Quiet => QuietReporter.report(outcome),
