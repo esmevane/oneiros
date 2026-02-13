@@ -11,11 +11,17 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Doctor(#[from] DoctorOutcomes),
     #[outcome(transparent)]
+    Dream(#[from] DreamOutcomes),
+    #[outcome(transparent)]
+    Introspect(#[from] IntrospectOutcomes),
+    #[outcome(transparent)]
     Level(#[from] LevelOutcomes),
     #[outcome(transparent)]
     Memory(#[from] MemoryOutcomes),
     #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
+    #[outcome(transparent)]
+    Reflect(#[from] ReflectOutcomes),
     #[outcome(transparent)]
     Storage(#[from] StorageOutcomes),
     #[outcome(transparent)]

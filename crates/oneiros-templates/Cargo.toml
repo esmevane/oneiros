@@ -1,0 +1,16 @@
+[package]
+name = "oneiros-templates"
+version.workspace = true
+edition.workspace = true
+description = "Askama-based prompt templates for the oneiros system."
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+askama.workspace = true
+oneiros-model.workspace = true
+
+[dev-dependencies]
+chrono.workspace = true
+pretty_assertions.workspace = true

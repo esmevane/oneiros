@@ -1,6 +1,6 @@
 use crate::{
-    Actor, Agent, AgentName, Brain, Cognition, Level, LevelName, Memory, Persona, PersonaName,
-    StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
+    Actor, Agent, AgentName, Brain, Cognition, DreamContext, Level, LevelName, Memory, Persona,
+    PersonaName, StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
 };
 
 #[derive(serde::Serialize)]
@@ -76,15 +76,39 @@ pub enum TicketEvents {
 }
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum DreamingEvents {
+    DreamBegun { agent: AgentName },
+    DreamComplete(Box<DreamContext>),
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum IntrospectingEvents {
+    IntrospectionBegun { agent: AgentName },
+    IntrospectionComplete { agent: AgentName },
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum ReflectingEvents {
+    ReflectionBegun { agent: AgentName },
+    ReflectionComplete { agent: AgentName },
+}
+
+#[derive(serde::Serialize)]
 #[serde(untagged)]
 pub enum Events {
     Actor(ActorEvents),
     Agent(AgentEvents),
     Brain(BrainEvents),
     Cognition(CognitionEvents),
+    Dreaming(DreamingEvents),
+    Introspecting(IntrospectingEvents),
     Level(LevelEvents),
     Memory(MemoryEvents),
     Persona(PersonaEvents),
+    Reflecting(ReflectingEvents),
     Storage(StorageEvents),
     Tenant(TenantEvents),
     Texture(TextureEvents),

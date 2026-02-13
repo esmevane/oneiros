@@ -40,9 +40,12 @@ impl Cli {
             Command::Agent(agent) => agent.run(context).await?.map_into(),
             Command::Cognition(cognition) => cognition.run(context).await?.map_into(),
             Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
+            Command::Dream(dream) => dream.run(context).await?.map_into(),
+            Command::Introspect(introspect) => introspect.run(context).await?.map_into(),
             Command::Level(level) => level.run(context).await?.map_into(),
             Command::Memory(memory) => memory.run(context).await?.map_into(),
             Command::Persona(persona) => persona.run(context).await?.map_into(),
+            Command::Reflect(reflect) => reflect.run(context).await?.map_into(),
             Command::Storage(storage) => storage.run(context).await?.map_into(),
             Command::System(system) => system.run(context).await?.map_into(),
             Command::Service(service) => service.run(context).await?.map_into(),
@@ -59,13 +62,19 @@ pub(crate) enum Command {
     /// Manage cognitions (thoughts logged by agents).
     Cognition(CognitionOps),
     /// Check the health of the local oneiros host and the current project.
-    Doctor(Doctor),
+    Doctor(DoctorOp),
+    /// Compose an agent's full context into a dream prompt.
+    Dream(DreamOp),
+    /// Summarize a session before context compaction.
+    Introspect(IntrospectOp),
     /// Manage levels (memory retention tiers).
     Level(LevelOps),
     /// Manage memories (consolidated knowledge records).
     Memory(MemoryOps),
     /// Manage personas (named agent roles).
     Persona(PersonaOps),
+    /// Reflect on a significant event during a session.
+    Reflect(ReflectOp),
     /// Manage content-addressable blob storage.
     Storage(StorageOps),
     /// Project-level commands (init, etc.).
