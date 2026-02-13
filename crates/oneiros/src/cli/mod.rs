@@ -29,7 +29,7 @@ pub(crate) struct Cli {
 impl Cli {
     pub(crate) fn report(&self, outcomes: &Outcomes<CliOutcomes>) {
         for outcome in outcomes {
-            self.output.report_outcome(outcome);
+            self.output.structured_output(outcome);
         }
     }
 
