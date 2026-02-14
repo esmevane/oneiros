@@ -17,7 +17,7 @@ pub(crate) struct RemovePersona {
 impl RemovePersona {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<RemovePersonaOutcomes>, PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 

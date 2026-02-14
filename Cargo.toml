@@ -33,6 +33,7 @@ oneiros-model = { path = "crates/oneiros-model" }
 oneiros-outcomes = { path = "crates/oneiros-outcomes" }
 oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive" }
 oneiros-service = { path = "crates/oneiros-service" }
+oneiros-skill = { path = "crates/oneiros-skill" }
 oneiros-templates = { path = "crates/oneiros-templates" }
 oneiros-terminal = { path = "crates/oneiros-terminal" }
 postcard = { version = "1", features = ["alloc"] }

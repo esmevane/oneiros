@@ -18,7 +18,7 @@ pub(crate) struct ProjectOps {
 impl ProjectOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<ProjectOutcomes>, ProjectCommandError> {
         Ok(match &self.command {
             ProjectCommands::Init(init) => init.run(context).await?.map_into(),

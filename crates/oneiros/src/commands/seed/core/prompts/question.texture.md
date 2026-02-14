@@ -1,0 +1,1 @@
+Record questions you cannot answer yet. Good questions are valuable — they guide future investigation. Do not record rhetorical questions.

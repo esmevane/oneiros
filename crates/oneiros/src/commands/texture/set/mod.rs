@@ -11,21 +11,21 @@ use crate::*;
 #[derive(Clone, Args)]
 pub(crate) struct SetTexture {
     /// The texture name (identity).
-    name: TextureName,
+    pub(crate) name: TextureName,
 
     /// A human-readable description of the texture's purpose.
     #[arg(long, default_value = "")]
-    description: Description,
+    pub(crate) description: Description,
 
     /// Guidance text for agents when logging cognition with this texture.
     #[arg(long, default_value = "")]
-    prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 impl SetTexture {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<SetTextureOutcomes>, TextureCommandError> {
         let mut outcomes = Outcomes::new();
 

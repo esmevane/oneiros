@@ -17,7 +17,7 @@ pub(crate) struct ShowAgent {
 impl ShowAgent {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ShowAgentOutcomes>, AgentCommandError> {
         let mut outcomes = Outcomes::new();
 

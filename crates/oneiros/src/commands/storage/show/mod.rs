@@ -17,7 +17,7 @@ pub(crate) struct ShowStorage {
 impl ShowStorage {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ShowStorageOutcomes>, StorageCommandError> {
         let mut outcomes = Outcomes::new();
 

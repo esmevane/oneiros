@@ -17,7 +17,7 @@ pub(crate) struct ShowTexture {
 impl ShowTexture {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ShowTextureOutcomes>, TextureCommandError> {
         let mut outcomes = Outcomes::new();
 

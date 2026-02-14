@@ -23,7 +23,7 @@ pub(crate) struct AddCognition {
 impl AddCognition {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<AddCognitionOutcomes>, CognitionCommandError> {
         let mut outcomes = Outcomes::new();
 

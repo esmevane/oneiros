@@ -1,0 +1,11 @@
+[package]
+name = "oneiros-skill"
+version.workspace = true
+edition.workspace = true
+description = "Skill definitions, seed data, and plugin artifacts for the oneiros system."
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+serde_json.workspace = true

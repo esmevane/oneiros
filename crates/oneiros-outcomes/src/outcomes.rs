@@ -62,6 +62,22 @@ impl<T> Outcomes<T> {
         self.0.is_empty()
     }
 
+    /// Absorb already-emitted outcomes from another collection.
+    ///
+    /// Use this to merge child outcomes into a parent collection without
+    /// re-emitting tracing events. The child outcomes were already emitted
+    /// when they were originally produced.
+    pub fn absorb<U>(&mut self, other: Outcomes<U>)
+    where
+        T: From<U>,
+    {
+        self.extend(other.map_into())
+    }
+
+    fn extend(&mut self, other: Outcomes<T>) {
+        self.0.extend(other.0);
+    }
+
     /// Convert outcomes into a different type without re-emitting.
     ///
     /// Use this for wrapping child outcomes into parent enum variants

@@ -16,7 +16,7 @@ pub(crate) struct RunService;
 impl RunService {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<RunServiceOutcomes>, ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 

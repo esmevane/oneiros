@@ -23,7 +23,7 @@ pub(crate) struct CognitionOps {
 impl CognitionOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<CognitionOutcomes>, CognitionCommandError> {
         Ok(match &self.command {
             CognitionCommands::Add(cmd) => cmd.run(context).await?.map_into(),

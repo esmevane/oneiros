@@ -21,7 +21,7 @@ pub(crate) struct DreamOp {
 impl DreamOp {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<DreamOutcomes>, DreamError> {
         let mut outcomes = Outcomes::new();
 

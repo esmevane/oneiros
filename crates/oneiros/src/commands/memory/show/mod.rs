@@ -17,7 +17,7 @@ pub(crate) struct ShowMemory {
 impl ShowMemory {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ShowMemoryOutcomes>, MemoryCommandError> {
         let mut outcomes = Outcomes::new();
 

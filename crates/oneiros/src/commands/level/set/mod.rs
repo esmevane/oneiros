@@ -11,21 +11,21 @@ use crate::*;
 #[derive(Clone, Args)]
 pub(crate) struct SetLevel {
     /// The level name (identity).
-    name: LevelName,
+    pub(crate) name: LevelName,
 
     /// A human-readable description of the level's purpose.
     #[arg(long, default_value = "")]
-    description: Description,
+    pub(crate) description: Description,
 
     /// Guidance text for agents when applying this retention level.
     #[arg(long, default_value = "")]
-    prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 impl SetLevel {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<SetLevelOutcomes>, LevelCommandError> {
         let mut outcomes = Outcomes::new();
 

@@ -1,0 +1,99 @@
+use crate::*;
+
+pub(crate) fn textures() -> Vec<SetTexture> {
+    vec![
+        SetTexture {
+            name: TextureName::new("observation"),
+            description: Description::new("Something noticed — patterns, anomalies, curiosities."),
+            prompt: Prompt::new(include_str!("prompts/observation.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("learning"),
+            description: Description::new(
+                "Realizations and breakthroughs — the moments when something clicks.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/learning.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("question"),
+            description: Description::new("Genuine uncertainty worth holding onto."),
+            prompt: Prompt::new(include_str!("prompts/question.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("bond"),
+            description: Description::new("Relationships and shared experiences."),
+            prompt: Prompt::new(include_str!("prompts/bond.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("connection"),
+            description: Description::new("Cross-domain insight — when separate things rhyme."),
+            prompt: Prompt::new(include_str!("prompts/connection.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("reflection"),
+            description: Description::new("Meta-thinking about work, process, or self."),
+            prompt: Prompt::new(include_str!("prompts/reflection.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("assessment"),
+            description: Description::new("Expert verdict on a specific question."),
+            prompt: Prompt::new(include_str!("prompts/assessment.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("handoff"),
+            description: Description::new("Context for future sessions."),
+            prompt: Prompt::new(include_str!("prompts/handoff.texture.md")),
+        },
+        SetTexture {
+            name: TextureName::new("working"),
+            description: Description::new("Stream of consciousness during active work."),
+            prompt: Prompt::new(include_str!("prompts/working.texture.md")),
+        },
+    ]
+}
+
+pub(crate) fn levels() -> Vec<SetLevel> {
+    vec![
+        SetLevel {
+            name: LevelName::new("working"),
+            description: Description::new("Ephemeral thoughts that expire within a day."),
+            prompt: Prompt::new(include_str!("prompts/working.level.md")),
+        },
+        SetLevel {
+            name: LevelName::new("session"),
+            description: Description::new("Insights relevant for about a week."),
+            prompt: Prompt::new(include_str!("prompts/session.level.md")),
+        },
+        SetLevel {
+            name: LevelName::new("project"),
+            description: Description::new("Permanent knowledge for the lifetime of the project."),
+            prompt: Prompt::new(include_str!("prompts/project.level.md")),
+        },
+        SetLevel {
+            name: LevelName::new("archival"),
+            description: Description::new("Historical record preserved indefinitely."),
+            prompt: Prompt::new(include_str!("prompts/archival.level.md")),
+        },
+    ]
+}
+
+pub(crate) fn personas() -> Vec<SetPersona> {
+    vec![SetPersona {
+        name: PersonaName::new("process"),
+        description: Description::new(
+            "Internal lifecycle agents — orchestration, session structure, cognitive hygiene.",
+        ),
+        prompt: Prompt::new(include_str!("prompts/process.persona.md")),
+    }]
+}
+
+pub(crate) fn agents() -> Vec<CreateAgent> {
+    vec![CreateAgent {
+        name: AgentName::new("governor.process"),
+        persona: PersonaName::new("process"),
+        description: Description::new(
+            "Primary orchestration agent — routes work, enforces cognitive processes.",
+        ),
+        prompt: Prompt::new(include_str!("prompts/governor.process.agent.md")),
+    }]
+}

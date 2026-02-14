@@ -1,0 +1,1 @@
+Promote entries here when insights prove durable. Architectural decisions, fundamental learnings, patterns that keep recurring.

@@ -23,7 +23,7 @@ pub(crate) struct MemoryOps {
 impl MemoryOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<MemoryOutcomes>, MemoryCommandError> {
         Ok(match &self.command {
             MemoryCommands::Add(cmd) => cmd.run(context).await?.map_into(),

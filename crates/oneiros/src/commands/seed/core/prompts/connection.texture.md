@@ -1,0 +1,1 @@
+When you see a relationship between separate domains, capture it. Connections between architecture and user experience, between testing patterns and design decisions.

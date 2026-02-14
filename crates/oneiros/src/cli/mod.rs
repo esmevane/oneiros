@@ -37,20 +37,22 @@ impl Cli {
         let context = Context::init()?;
 
         Ok(match &self.command {
-            Command::Agent(agent) => agent.run(context).await?.map_into(),
-            Command::Cognition(cognition) => cognition.run(context).await?.map_into(),
-            Command::Doctor(doctor) => doctor.run(context).await?.map_into(),
-            Command::Dream(dream) => dream.run(context).await?.map_into(),
-            Command::Introspect(introspect) => introspect.run(context).await?.map_into(),
-            Command::Level(level) => level.run(context).await?.map_into(),
-            Command::Memory(memory) => memory.run(context).await?.map_into(),
-            Command::Persona(persona) => persona.run(context).await?.map_into(),
-            Command::Reflect(reflect) => reflect.run(context).await?.map_into(),
-            Command::Storage(storage) => storage.run(context).await?.map_into(),
-            Command::System(system) => system.run(context).await?.map_into(),
-            Command::Service(service) => service.run(context).await?.map_into(),
-            Command::Project(project) => project.run(context).await?.map_into(),
-            Command::Texture(texture) => texture.run(context).await?.map_into(),
+            Command::Agent(agent) => agent.run(&context).await?.map_into(),
+            Command::Cognition(cognition) => cognition.run(&context).await?.map_into(),
+            Command::Doctor(doctor) => doctor.run(&context).await?.map_into(),
+            Command::Dream(dream) => dream.run(&context).await?.map_into(),
+            Command::Introspect(introspect) => introspect.run(&context).await?.map_into(),
+            Command::Level(level) => level.run(&context).await?.map_into(),
+            Command::Memory(memory) => memory.run(&context).await?.map_into(),
+            Command::Persona(persona) => persona.run(&context).await?.map_into(),
+            Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
+            Command::Seed(seed) => seed.run(&context).await?.map_into(),
+            Command::Skill(skill) => skill.run(&context).await?.map_into(),
+            Command::Storage(storage) => storage.run(&context).await?.map_into(),
+            Command::System(system) => system.run(&context).await?.map_into(),
+            Command::Service(service) => service.run(&context).await?.map_into(),
+            Command::Project(project) => project.run(&context).await?.map_into(),
+            Command::Texture(texture) => texture.run(&context).await?.map_into(),
         })
     }
 }
@@ -75,6 +77,10 @@ pub(crate) enum Command {
     Persona(PersonaOps),
     /// Reflect on a significant event during a session.
     Reflect(ReflectOp),
+    /// Apply predefined seed data (textures, levels, personas).
+    Seed(SeedOps),
+    /// Manage the oneiros skill plugin.
+    Skill(SkillOps),
     /// Manage content-addressable blob storage.
     Storage(StorageOps),
     /// Project-level commands (init, etc.).

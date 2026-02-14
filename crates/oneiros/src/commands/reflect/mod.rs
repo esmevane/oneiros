@@ -21,7 +21,7 @@ pub(crate) struct ReflectOp {
 impl ReflectOp {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ReflectOutcomes>, ReflectError> {
         let mut outcomes = Outcomes::new();
 
