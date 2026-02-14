@@ -26,6 +26,19 @@ pub(crate) struct CreateAgent {
 }
 
 impl CreateAgent {
+    /// Normalize the agent name to include the persona suffix.
+    ///
+    /// - If name already ends with `.{persona}`, use as-is
+    /// - Otherwise, append `.{persona}` to the name
+    fn normalize_name(&self) -> AgentName {
+        let suffix = format!(".{}", self.persona.as_str());
+        if self.name.as_str().ends_with(&suffix) {
+            self.name.clone()
+        } else {
+            AgentName::new(format!("{}.{}", self.name.as_str(), self.persona.as_str()))
+        }
+    }
+
     pub(crate) async fn run(
         &self,
         context: &Context,
@@ -33,12 +46,13 @@ impl CreateAgent {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let name = self.normalize_name();
 
         let info = client
             .create_agent(
                 &context.ticket_token()?,
                 CreateAgentRequest {
-                    name: self.name.clone(),
+                    name,
                     persona: self.persona.clone(),
                     description: self.description.clone(),
                     prompt: self.prompt.clone(),

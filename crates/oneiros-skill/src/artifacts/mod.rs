@@ -1,4 +1,5 @@
 mod commands;
+mod marketplace;
 mod plugin;
 mod resources;
 mod skill_md;
@@ -33,6 +34,7 @@ pub fn all() -> Vec<ArtifactFile> {
 
     files.push(skill_md::artifact());
     files.push(plugin::artifact());
+    files.push(marketplace::artifact());
     files.extend(commands::artifacts());
     files.extend(resources::artifacts());
 
