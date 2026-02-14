@@ -2,7 +2,7 @@
 name = "oneiros-client"
 version.workspace = true
 edition.workspace = true
-description = "Client trait and HTTP implementation for the oneiros service."
+description = "A socket-based http client for oneiros services"
 repository.workspace = true
 license.workspace = true
 

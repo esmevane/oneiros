@@ -2,7 +2,7 @@
 name = "oneiros-skill"
 version.workspace = true
 edition.workspace = true
-description = "Skill definitions, seed data, and plugin artifacts for the oneiros system."
+description = "Skill templates and build systems for artifact generation"
 repository.workspace = true
 license.workspace = true
 
