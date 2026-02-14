@@ -41,6 +41,7 @@ impl Cli {
             Command::Cognition(cognition) => cognition.run(&context).await?.map_into(),
             Command::Doctor(doctor) => doctor.run(&context).await?.map_into(),
             Command::Dream(dream) => dream.run(&context).await?.map_into(),
+            Command::Guidebook(guidebook) => guidebook.run(&context).await?.map_into(),
             Command::Introspect(introspect) => introspect.run(&context).await?.map_into(),
             Command::Level(level) => level.run(&context).await?.map_into(),
             Command::Memory(memory) => memory.run(&context).await?.map_into(),
@@ -67,6 +68,8 @@ pub(crate) enum Command {
     Doctor(DoctorOp),
     /// Compose an agent's full context into a dream prompt.
     Dream(DreamOp),
+    /// Show the cognitive guidebook for an agent.
+    Guidebook(GuidebookOp),
     /// Summarize a session before context compaction.
     Introspect(IntrospectOp),
     /// Manage levels (memory retention tiers).

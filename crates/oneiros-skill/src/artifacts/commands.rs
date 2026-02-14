@@ -12,6 +12,7 @@ macro_rules! command {
 pub fn artifacts() -> Vec<ArtifactFile> {
     vec![
         command!("dream.md"),
+        command!("guidebook.md"),
         command!("introspect.md"),
         command!("reflect.md"),
         command!("cognition-add.md"),

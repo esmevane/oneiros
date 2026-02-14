@@ -30,6 +30,13 @@ pub(crate) fn textures() -> Vec<SetTexture> {
             prompt: Prompt::new(include_str!("prompts/connection.texture.md")),
         },
         SetTexture {
+            name: TextureName::new("dream"),
+            description: Description::new(
+                "Impressions from dreaming — imagery, intuitions, and half-formed significance.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/dream.texture.md")),
+        },
+        SetTexture {
             name: TextureName::new("reflection"),
             description: Description::new("Meta-thinking about work, process, or self."),
             prompt: Prompt::new(include_str!("prompts/reflection.texture.md")),
