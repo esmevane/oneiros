@@ -2,6 +2,7 @@
 name = "oneiros-outcomes-derive"
 version.workspace = true
 edition.workspace = true
+description = "Derive macros for oneiros-outcomes."
 repository.workspace = true
 license.workspace = true
 

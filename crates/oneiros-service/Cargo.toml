@@ -2,7 +2,7 @@
 name = "oneiros-service"
 version.workspace = true
 edition.workspace = true
-description = "Axum-based service for the oneiros system."
+description = "Provides resource interactions for the database layer via http"
 repository.workspace = true
 license.workspace = true
 

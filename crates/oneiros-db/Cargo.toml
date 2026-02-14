@@ -2,7 +2,7 @@
 name = "oneiros-db"
 version.workspace = true
 edition.workspace = true
-description = "Strategy-based project root and name detection for oneiros."
+description = "Sqlite powered database IO for oneiros' persistence layer"
 repository.workspace = true
 license.workspace = true
 

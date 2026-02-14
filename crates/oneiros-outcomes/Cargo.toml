@@ -2,6 +2,7 @@
 name = "oneiros-outcomes"
 version.workspace = true
 edition.workspace = true
+description = "Feedback primitives for logging and terminal targets"
 repository.workspace = true
 license.workspace = true
 

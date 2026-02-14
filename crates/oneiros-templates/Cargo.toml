@@ -2,7 +2,7 @@
 name = "oneiros-templates"
 version.workspace = true
 edition.workspace = true
-description = "Askama-based prompt templates for the oneiros system."
+description = "Askama based templates for more complex oneiros prompts."
 repository.workspace = true
 license.workspace = true
 

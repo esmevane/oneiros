@@ -2,7 +2,7 @@
 name = "oneiros-terminal"
 version.workspace = true
 edition.workspace = true
-description = "Strategy-based project root and name detection for oneiros."
+description = "Wrapper for common oneiros terminal operations."
 repository.workspace = true
 license.workspace = true
 
