@@ -25,7 +25,7 @@ pub(crate) struct PersonaOps {
 impl PersonaOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<PersonaOutcomes>, PersonaCommandError> {
         Ok(match &self.command {
             PersonaCommands::Set(cmd) => cmd.run(context).await?.map_into(),

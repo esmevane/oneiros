@@ -23,6 +23,10 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Reflect(#[from] ReflectOutcomes),
     #[outcome(transparent)]
+    Seed(#[from] SeedOutcomes),
+    #[outcome(transparent)]
+    Skill(#[from] SkillOutcomes),
+    #[outcome(transparent)]
     Storage(#[from] StorageOutcomes),
     #[outcome(transparent)]
     Project(#[from] ProjectOutcomes),

@@ -25,7 +25,7 @@ pub(crate) struct LevelOps {
 impl LevelOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<LevelOutcomes>, LevelCommandError> {
         Ok(match &self.command {
             LevelCommands::Set(cmd) => cmd.run(context).await?.map_into(),

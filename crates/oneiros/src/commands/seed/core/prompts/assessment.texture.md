@@ -1,0 +1,1 @@
+Provide a definitive perspective from your domain expertise on a specific question or decision. Be authoritative and concise.

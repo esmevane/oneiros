@@ -17,7 +17,7 @@ pub(crate) struct ShowPersona {
 impl ShowPersona {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ShowPersonaOutcomes>, PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 

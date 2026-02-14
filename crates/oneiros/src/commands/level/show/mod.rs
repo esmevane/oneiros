@@ -17,7 +17,7 @@ pub(crate) struct ShowLevel {
 impl ShowLevel {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ShowLevelOutcomes>, LevelCommandError> {
         let mut outcomes = Outcomes::new();
 

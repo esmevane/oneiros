@@ -14,7 +14,7 @@ pub(crate) struct UninstallService;
 impl UninstallService {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<UninstallServiceOutcomes>, ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 

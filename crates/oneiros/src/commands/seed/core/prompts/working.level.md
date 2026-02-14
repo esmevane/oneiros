@@ -1,0 +1,1 @@
+Use for stream-of-consciousness, attempts, and ephemera. These are disposable — capture freely without worrying about permanence.

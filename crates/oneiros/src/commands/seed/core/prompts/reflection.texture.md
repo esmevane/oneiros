@@ -1,0 +1,1 @@
+Step back and think about how work is going, not just what work is being done. Reflect on process, approach, and understanding.

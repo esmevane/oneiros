@@ -14,7 +14,7 @@ pub(crate) struct InitProject;
 impl InitProject {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<InitProjectOutcomes>, ProjectCommandError> {
         let mut outcomes = Outcomes::new();
 

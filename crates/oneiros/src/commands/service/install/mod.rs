@@ -16,7 +16,7 @@ pub(crate) struct InstallService;
 impl InstallService {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<InstallServiceOutcomes>, ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 

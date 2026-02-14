@@ -27,7 +27,7 @@ pub(crate) struct Init {
 impl Init {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<InitSystemOutcomes>, InitSystemError> {
         let mut outcomes = Outcomes::new();
 

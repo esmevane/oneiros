@@ -1141,6 +1141,7 @@ dependencies = [
  "oneiros-model",
  "oneiros-outcomes",
  "oneiros-service",
+ "oneiros-skill",
  "oneiros-templates",
  "oneiros-terminal",
  "serde",
@@ -1251,6 +1252,13 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
+]
+
+[[package]]
+name = "oneiros-skill"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

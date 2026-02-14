@@ -11,21 +11,21 @@ use crate::*;
 #[derive(Clone, Args)]
 pub(crate) struct SetPersona {
     /// The persona name (identity).
-    name: PersonaName,
+    pub(crate) name: PersonaName,
 
     /// A human-readable description of the persona's purpose.
     #[arg(long, default_value = "")]
-    description: Description,
+    pub(crate) description: Description,
 
     /// The system prompt or instruction text for this persona.
     #[arg(long, default_value = "")]
-    prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 impl SetPersona {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<SetPersonaOutcomes>, PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 

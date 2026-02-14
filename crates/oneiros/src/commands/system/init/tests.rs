@@ -27,7 +27,7 @@ async fn init_creates_tenant_and_actor() {
         yes: false,
     };
 
-    let outcomes = init.run(context).await.unwrap();
+    let outcomes = init.run(&context).await.unwrap();
 
     assert!(
         outcomes
@@ -69,11 +69,11 @@ async fn init_is_idempotent() {
 
     // First run
     let context = Context::with_paths(data_dir.clone(), config_dir.clone());
-    let _ = init.run(context).await.unwrap();
+    let _ = init.run(&context).await.unwrap();
 
     // Second run
     let context = Context::with_paths(data_dir.clone(), config_dir.clone());
-    let outcomes = init.run(context).await.unwrap();
+    let outcomes = init.run(&context).await.unwrap();
 
     assert!(
         outcomes

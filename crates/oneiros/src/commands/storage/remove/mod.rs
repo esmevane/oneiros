@@ -17,7 +17,7 @@ pub(crate) struct RemoveStorage {
 impl RemoveStorage {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<RemoveStorageOutcomes>, StorageCommandError> {
         let mut outcomes = Outcomes::new();
 

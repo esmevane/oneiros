@@ -22,7 +22,7 @@ pub(crate) struct ListCognitions {
 impl ListCognitions {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ListCognitionsOutcomes>, CognitionCommandError> {
         let mut outcomes = Outcomes::new();
 

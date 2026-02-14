@@ -27,7 +27,7 @@ pub(crate) struct StorageOps {
 impl StorageOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<StorageOutcomes>, StorageCommandError> {
         Ok(match &self.command {
             StorageCommands::Set(cmd) => cmd.run(context).await?.map_into(),

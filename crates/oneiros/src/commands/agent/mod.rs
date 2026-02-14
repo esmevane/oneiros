@@ -27,7 +27,7 @@ pub(crate) struct AgentOps {
 impl AgentOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<AgentOutcomes>, AgentCommandError> {
         Ok(match &self.command {
             AgentCommands::Create(cmd) => cmd.run(context).await?.map_into(),

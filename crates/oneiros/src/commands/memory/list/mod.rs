@@ -22,7 +22,7 @@ pub(crate) struct ListMemories {
 impl ListMemories {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<ListMemoriesOutcomes>, MemoryCommandError> {
         let mut outcomes = Outcomes::new();
 

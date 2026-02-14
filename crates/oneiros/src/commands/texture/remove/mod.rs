@@ -17,7 +17,7 @@ pub(crate) struct RemoveTexture {
 impl RemoveTexture {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<RemoveTextureOutcomes>, TextureCommandError> {
         let mut outcomes = Outcomes::new();
 

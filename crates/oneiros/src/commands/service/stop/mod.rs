@@ -14,7 +14,7 @@ pub(crate) struct StopService;
 impl StopService {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<StopServiceOutcomes>, ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 

@@ -18,7 +18,7 @@ pub(crate) struct DoctorOp;
 impl DoctorOp {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<DoctorOutcomes>, CheckupError> {
         let mut checks = Outcomes::new();
 

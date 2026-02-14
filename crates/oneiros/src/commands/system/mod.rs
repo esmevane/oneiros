@@ -20,7 +20,7 @@ pub(crate) struct SystemOps {
 impl SystemOps {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<SystemOutcomes>, SystemCommandError> {
         Ok(match &self.command {
             SystemCommand::Init(init) => init.run(context).await?.map_into(),

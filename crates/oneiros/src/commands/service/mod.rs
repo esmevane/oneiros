@@ -28,7 +28,7 @@ pub(crate) struct ServiceOps {
 impl ServiceOps {
     pub(crate) async fn run(
         &self,
-        context: crate::Context,
+        context: &crate::Context,
     ) -> Result<Outcomes<ServiceOutcomes>, ServiceCommandError> {
         Ok(match &self.command {
             ServiceCommands::Install(install) => install.run(context).await?.map_into(),

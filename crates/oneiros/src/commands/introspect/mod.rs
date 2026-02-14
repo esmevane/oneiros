@@ -21,7 +21,7 @@ pub(crate) struct IntrospectOp {
 impl IntrospectOp {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<IntrospectOutcomes>, IntrospectError> {
         let mut outcomes = Outcomes::new();
 

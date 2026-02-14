@@ -1,0 +1,1 @@
+Default level. Most cognition entries belong here. Session-relevant learnings, observations, and questions.

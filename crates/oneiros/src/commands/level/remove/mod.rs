@@ -17,7 +17,7 @@ pub(crate) struct RemoveLevel {
 impl RemoveLevel {
     pub(crate) async fn run(
         &self,
-        context: Context,
+        context: &Context,
     ) -> Result<Outcomes<RemoveLevelOutcomes>, LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
