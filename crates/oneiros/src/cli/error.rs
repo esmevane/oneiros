@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::{
     AgentCommandError, CheckupError, CognitionCommandError, ContextError, DreamError,
-    IntrospectError, LevelCommandError, MemoryCommandError, PersonaCommandError,
+    GuidebookError, IntrospectError, LevelCommandError, MemoryCommandError, PersonaCommandError,
     ProjectCommandError, ReflectError, SeedCommandError, ServiceCommandError, SkillCommandError,
     StorageCommandError, SystemCommandError, TextureCommandError,
 };
@@ -19,6 +19,8 @@ pub enum CliError {
     Doctor(#[from] CheckupError),
     #[error(transparent)]
     Dream(#[from] DreamError),
+    #[error(transparent)]
+    Guidebook(#[from] GuidebookError),
     #[error(transparent)]
     Introspect(#[from] IntrospectError),
     #[error(transparent)]

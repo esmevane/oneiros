@@ -1,8 +1,10 @@
 mod dream;
+mod guidebook;
 mod introspect;
 mod reflect;
 
 pub use dream::DreamTemplate;
+pub use guidebook::GuidebookTemplate;
 pub use introspect::IntrospectTemplate;
 pub use reflect::ReflectTemplate;
 
@@ -139,6 +141,120 @@ mod tests {
         assert!(rendered.contains("analytical — Think analytically."));
         assert!(rendered.contains("## Memory Levels"));
         assert!(rendered.contains("core — Fundamental knowledge."));
+    }
+
+    #[test]
+    fn dream_template_references_guidebook() {
+        let context = DreamContext {
+            agent: test_agent(),
+            persona: test_persona(),
+            memories: vec![],
+            cognitions: vec![],
+            textures: vec![],
+            levels: vec![],
+        };
+        let rendered = DreamTemplate::new(&context).to_string();
+
+        assert!(rendered.contains("oneiros guidebook atlas"));
+        assert!(rendered.contains("garden"));
+    }
+
+    #[test]
+    fn guidebook_template_renders_identity_and_sections() {
+        let context = DreamContext {
+            agent: test_agent(),
+            persona: test_persona(),
+            memories: vec![],
+            cognitions: vec![],
+            textures: vec![],
+            levels: vec![],
+        };
+        let rendered = GuidebookTemplate::new(&context).to_string();
+
+        assert!(rendered.contains("# Cognitive Guidebook for atlas"));
+        assert!(rendered.contains("## Your Identity"));
+        assert!(rendered.contains("A curious explorer agent."));
+        assert!(rendered.contains("## Your Capabilities"));
+        assert!(rendered.contains("## Your Lifecycle"));
+        assert!(rendered.contains("## Your Agency"));
+    }
+
+    #[test]
+    fn guidebook_template_renders_cli_commands_with_agent_name() {
+        let context = DreamContext {
+            agent: test_agent(),
+            persona: test_persona(),
+            memories: vec![],
+            cognitions: vec![],
+            textures: vec![],
+            levels: vec![],
+        };
+        let rendered = GuidebookTemplate::new(&context).to_string();
+
+        assert!(rendered.contains("oneiros cognition add atlas"));
+        assert!(rendered.contains("oneiros memory add atlas"));
+        assert!(rendered.contains("oneiros cognition list atlas"));
+        assert!(rendered.contains("oneiros memory list atlas"));
+        assert!(rendered.contains("oneiros dream atlas"));
+        assert!(rendered.contains("oneiros reflect atlas"));
+        assert!(rendered.contains("oneiros introspect atlas"));
+    }
+
+    #[test]
+    fn guidebook_template_renders_textures_and_levels() {
+        let context = DreamContext {
+            agent: test_agent(),
+            persona: test_persona(),
+            memories: vec![],
+            cognitions: vec![],
+            textures: vec![Texture {
+                name: TextureName::new("analytical"),
+                description: Description::new("Analytical thinking"),
+                prompt: Prompt::new("Think analytically."),
+            }],
+            levels: vec![Level {
+                name: LevelName::new("core"),
+                description: Description::new("Core memories"),
+                prompt: Prompt::new("Fundamental knowledge."),
+            }],
+        };
+        let rendered = GuidebookTemplate::new(&context).to_string();
+
+        assert!(rendered.contains("**analytical** — Think analytically."));
+        assert!(rendered.contains("**core** — Fundamental knowledge."));
+    }
+
+    #[test]
+    fn guidebook_template_omits_empty_textures_and_levels() {
+        let context = DreamContext {
+            agent: test_agent(),
+            persona: test_persona(),
+            memories: vec![],
+            cognitions: vec![],
+            textures: vec![],
+            levels: vec![],
+        };
+        let rendered = GuidebookTemplate::new(&context).to_string();
+
+        assert!(!rendered.contains("Your current textures:"));
+        assert!(!rendered.contains("Your current levels:"));
+    }
+
+    #[test]
+    fn guidebook_template_documents_agency() {
+        let context = DreamContext {
+            agent: test_agent(),
+            persona: test_persona(),
+            memories: vec![],
+            cognitions: vec![],
+            textures: vec![],
+            levels: vec![],
+        };
+        let rendered = GuidebookTemplate::new(&context).to_string();
+
+        assert!(rendered.contains("oneiros texture set"));
+        assert!(rendered.contains("oneiros level set"));
+        assert!(rendered.contains("oneiros agent create"));
     }
 
     #[test]
