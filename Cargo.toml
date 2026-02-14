@@ -25,17 +25,17 @@ http-body-util = "0.1.3"
 hyper = { version = "1.8", features = ["full"] }
 hyper-util = { version = "0.1.20", features = ["tokio"] }
 inquire = "0.7"
-oneiros-client = { path = "crates/oneiros-client" }
-oneiros-db = { path = "crates/oneiros-db" }
-oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name" }
-oneiros-fs = { path = "crates/oneiros-fs" }
-oneiros-model = { path = "crates/oneiros-model" }
-oneiros-outcomes = { path = "crates/oneiros-outcomes" }
-oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive" }
-oneiros-service = { path = "crates/oneiros-service" }
-oneiros-skill = { path = "crates/oneiros-skill" }
-oneiros-templates = { path = "crates/oneiros-templates" }
-oneiros-terminal = { path = "crates/oneiros-terminal" }
+oneiros-client = { path = "crates/oneiros-client", version = "0.0.2" }
+oneiros-db = { path = "crates/oneiros-db", version = "0.0.2" }
+oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name", version = "0.0.2" }
+oneiros-fs = { path = "crates/oneiros-fs", version = "0.0.2" }
+oneiros-model = { path = "crates/oneiros-model", version = "0.0.2" }
+oneiros-outcomes = { path = "crates/oneiros-outcomes", version = "0.0.2" }
+oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive", version = "0.0.2" }
+oneiros-service = { path = "crates/oneiros-service", version = "0.0.2" }
+oneiros-skill = { path = "crates/oneiros-skill", version = "0.0.2" }
+oneiros-templates = { path = "crates/oneiros-templates", version = "0.0.2" }
+oneiros-terminal = { path = "crates/oneiros-terminal", version = "0.0.2" }
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"
 prettyplease = "0.2"
