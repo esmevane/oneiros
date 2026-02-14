@@ -1,6 +1,9 @@
 [workspace]
 git_tag_enable = false
+git_release_enable = false
 
 [[package]]
 name = "oneiros"
 git_tag_enable = true
+git_release_enable = true
+git_tag_name = "v{{ version }}"
