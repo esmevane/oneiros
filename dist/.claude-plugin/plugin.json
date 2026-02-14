@@ -1,0 +1,36 @@
+{
+  "name": "oneiros",
+  "description": "Keep your agent continuity separate from your model session",
+  "version": "0.0.1",
+  "author": {
+    "name": "JC McCormick",
+    "url": "https://github.com/esmevane"
+  },
+  "repository": "https://github.com/esmevane/oneiros",
+  "license": "MIT",
+  "keywords": ["cognition", "memory", "agents", "context", "dream"],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "oneiros dream governor.process"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "oneiros introspect governor.process"
+          }
+        ]
+      }
+    ]
+  }
+}
