@@ -5,6 +5,5 @@ edition.workspace = true
 description = "Common file system operations"
 repository.workspace = true
 license.workspace = true
-publish = false
 
 [dependencies]
