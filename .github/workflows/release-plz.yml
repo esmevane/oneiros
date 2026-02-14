@@ -45,8 +45,24 @@ jobs:
       - *checkout
       - *install-rust
       - name: Run release-plz
+        id: release-plz
         uses: release-plz/action@v0.5
         with:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Rebuild generated files
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+        run: |
+          set -e
+          pr_number=${{ fromJSON(steps.release-plz.outputs.pr).number }}
+          if [[ -n "$pr_number" ]]; then
+            gh pr checkout $pr_number
+            cargo build -p oneiros-skill
+            if [[ -n "$(git status --porcelain dist/)" ]]; then
+              git add dist/
+              git commit --amend --no-edit
+              git push --force-with-lease
+            fi
+          fi

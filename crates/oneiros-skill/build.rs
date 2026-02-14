@@ -4,6 +4,7 @@ use std::path::Path;
 
 fn main() {
     println!("cargo:rerun-if-changed=skill");
+    println!("cargo:rerun-if-changed=../../Cargo.toml");
 
     let version = env::var("CARGO_PKG_VERSION").unwrap();
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
