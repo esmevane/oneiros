@@ -1,7 +1,7 @@
 {
   "name": "oneiros",
   "description": "Keep your agent continuity separate from your model session",
-  "version": "0.0.5-rc1",
+  "version": "0.0.5-rc2",
   "author": {
     "name": "JC McCormick",
     "url": "https://github.com/esmevane"
