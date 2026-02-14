@@ -1,0 +1,18 @@
+{
+  "name": "oneiros",
+  "owner": {
+    "name": "JC McCormick",
+    "url": "https://esmevane.com"
+  },
+  "metadata": {
+    "description": "Local-first continuity and collaboration for agents."
+  },
+  "plugins": [
+    {
+      "name": "oneiros",
+      "source": "./dist",
+      "description": "Local-first continuity and collaboration for agents.",
+      "version": "{{VERSION}}"
+    }
+  ]
+}

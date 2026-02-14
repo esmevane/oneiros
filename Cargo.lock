@@ -1128,7 +1128,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "oneiros"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -1156,7 +1156,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-client"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "http-body-util",
  "hyper",
@@ -1171,7 +1171,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-db"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1183,7 +1183,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-detect-project-name"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "tempfile",
  "toml 0.8.23",
@@ -1191,11 +1191,11 @@ dependencies = [
 
 [[package]]
 name = "oneiros-fs"
-version = "0.0.4"
+version = "0.0.5-rc1"
 
 [[package]]
 name = "oneiros-model"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "chrono",
  "data-encoding",
@@ -1209,7 +1209,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-outcomes"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "oneiros-outcomes-derive",
  "serde",
@@ -1219,7 +1219,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-outcomes-derive"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "oneiros-outcomes",
  "pretty_assertions",
@@ -1233,7 +1233,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-service"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "axum",
  "chrono",
@@ -1256,14 +1256,14 @@ dependencies = [
 
 [[package]]
 name = "oneiros-skill"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "oneiros-templates"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "askama",
  "chrono",
@@ -1273,7 +1273,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-terminal"
-version = "0.0.4"
+version = "0.0.5-rc1"
 dependencies = [
  "inquire",
  "tempfile",

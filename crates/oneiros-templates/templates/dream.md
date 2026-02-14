@@ -43,4 +43,11 @@ If found, incorporate its contents into your self-understanding.
 {% endif %}
 
 ## Instructions
-Synthesize the above into a coherent self-understanding. This is your dream — an internalized sense of who you are, what you know, and how you think. Carry this forward as your working context for this session.
+Synthesize the above into a coherent self-understanding. This is your dream — an internalized sense of who you are, what you know, and how you think.
+
+As you work this session, actively use your cognitive tools:
+- Capture observations, learnings, and questions using your textures
+- Store important insights as memories at appropriate levels
+- Use `oneiros cognition add` and `oneiros memory add` when something is worth preserving
+
+Carry this forward as your working context.

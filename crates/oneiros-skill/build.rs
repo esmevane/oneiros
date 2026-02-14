@@ -12,21 +12,26 @@ fn main() {
         .join("../..")
         .canonicalize()
         .unwrap();
-    let skill_dir = Path::new(&manifest_dir).join("skill");
+    let source = Path::new(&manifest_dir).join("skill");
     let dist_dir = workspace_root.join("dist");
 
+    // Write marketplace.json
+    let marketplace = fs::read_to_string(source.join("marketplace.json")).unwrap();
+    let plugins_dir = workspace_root.join(".claude-plugin/marketplace.json");
+    write_stamped(&plugins_dir, &marketplace, &version);
+
     // Write SKILL.md
-    let skill_md = fs::read_to_string(skill_dir.join("SKILL.md")).unwrap();
+    let skill_md = fs::read_to_string(source.join("SKILL.md")).unwrap();
     let dest = dist_dir.join("skills/oneiros/SKILL.md");
     write_stamped(&dest, &skill_md, &version);
 
     // Write plugin.json
-    let plugin = fs::read_to_string(skill_dir.join("plugin.json")).unwrap();
+    let plugin = fs::read_to_string(source.join("plugin.json")).unwrap();
     let dest = dist_dir.join(".claude-plugin/plugin.json");
     write_stamped(&dest, &plugin, &version);
 
     // Write command files
-    let commands_dir = skill_dir.join("commands");
+    let commands_dir = source.join("commands");
     if commands_dir.exists() {
         for entry in fs::read_dir(&commands_dir).unwrap() {
             let entry = entry.unwrap();
@@ -38,12 +43,12 @@ fn main() {
     }
 
     // Write AGENTS.md template
-    let agents_md = fs::read_to_string(skill_dir.join("agents-md.md")).unwrap();
+    let agents_md = fs::read_to_string(source.join("agents-md.md")).unwrap();
     let dest = dist_dir.join("agents-md.md");
     write_file(&dest, &agents_md);
 
     // Write resource files
-    let resources_dir = skill_dir.join("resources");
+    let resources_dir = source.join("resources");
     if resources_dir.exists() {
         for entry in fs::read_dir(&resources_dir).unwrap() {
             let entry = entry.unwrap();
