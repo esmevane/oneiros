@@ -263,9 +263,9 @@ mod tests {
         let rendered = IntrospectTemplate::new(&agent).to_string();
 
         assert!(rendered.contains("You are atlas."));
-        assert!(rendered.contains("oneiros memory add --agent atlas"));
-        assert!(rendered.contains("oneiros cognition add --agent atlas"));
-        assert!(rendered.contains("compaction"));
+        assert!(rendered.contains("oneiros memory add atlas"));
+        assert!(rendered.contains("oneiros cognition add atlas"));
+        assert!(rendered.contains("compact"));
     }
 
     #[test]
@@ -274,8 +274,8 @@ mod tests {
         let rendered = ReflectTemplate::new(&agent).to_string();
 
         assert!(rendered.contains("You are atlas."));
-        assert!(rendered.contains("oneiros memory add --agent atlas"));
-        assert!(rendered.contains("oneiros cognition add --agent atlas"));
-        assert!(rendered.contains("reflect"));
+        assert!(rendered.contains("oneiros memory add atlas"));
+        assert!(rendered.contains("oneiros cognition add atlas"));
+        assert!(rendered.contains("shifted"));
     }
 }
