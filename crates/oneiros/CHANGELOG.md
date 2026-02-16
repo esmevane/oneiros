@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/esmevane/oneiros/compare/v0.0.5-rc4...v0.0.5) - 2026-02-16
+
+### Other
+
+- Feedback pass.
+- Experiences.
+
 ## [0.0.4](https://github.com/esmevane/oneiros/compare/oneiros-v0.0.3...oneiros-v0.0.4) - 2026-02-14
 
 ### Other
