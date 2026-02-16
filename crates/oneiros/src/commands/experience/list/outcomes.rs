@@ -1,6 +1,23 @@
 use oneiros_model::Experience;
 use oneiros_outcomes::Outcome;
 
+#[derive(Clone, serde::Serialize)]
+#[serde(transparent)]
+pub struct ExperienceList(pub Vec<Experience>);
+
+impl core::fmt::Display for ExperienceList {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display = self
+            .0
+            .iter()
+            .map(|experience| format!("{experience}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        write!(f, "{display}")
+    }
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListExperiencesOutcomes {
@@ -8,8 +25,8 @@ pub enum ListExperiencesOutcomes {
     NoExperiences,
 
     #[outcome(
-        message("Experiences: {0:?}"),
+        message("{0}"),
         prompt("Which threads are still growing? Extend with `oneiros experience ref add`.")
     )]
-    Experiences(Vec<Experience>),
+    Experiences(ExperienceList),
 }

@@ -34,31 +34,7 @@ impl CreateExperience {
         let client = Client::new(context.socket_path());
         let token = context.ticket_token()?;
 
-        // Parse refs from the command line format
-        let mut refs = Vec::new();
-        for ref_str in &self.refs {
-            let parts: Vec<&str> = ref_str.split(':').collect();
-            if parts.len() < 2 || parts.len() > 3 {
-                return Err(ExperienceCommandError::InvalidRefFormat(format!(
-                    "Expected format 'id:kind' or 'id:kind:role', got: {}",
-                    ref_str
-                )));
-            }
-
-            let id = parts[0].parse::<Id>().map_err(|e| {
-                ExperienceCommandError::InvalidRefFormat(format!("Invalid id: {}", e))
-            })?;
-            let kind = parts[1].parse::<RecordKind>().map_err(|e| {
-                ExperienceCommandError::InvalidRefFormat(format!("Invalid kind: {}", e))
-            })?;
-            let role = if parts.len() == 3 {
-                Some(Label::new(parts[2]))
-            } else {
-                None
-            };
-
-            refs.push(RecordRef { id, kind, role });
-        }
+        let refs = resolve_refs(&self.refs, &client, &token).await?;
 
         let experience = client
             .create_experience(
@@ -86,4 +62,46 @@ impl CreateExperience {
 
         Ok(outcomes)
     }
+}
+
+async fn resolve_refs(
+    ref_strings: &[String],
+    client: &Client,
+    token: &oneiros_model::Token,
+) -> Result<Vec<RecordRef>, ExperienceCommandError> {
+    let mut refs = Vec::new();
+
+    for ref_str in ref_strings {
+        let parts: Vec<&str> = ref_str.split(':').collect();
+        if parts.len() < 2 || parts.len() > 3 {
+            return Err(ExperienceCommandError::InvalidRefFormat(format!(
+                "Expected format 'id:kind' or 'id:kind:role', got: {}",
+                ref_str
+            )));
+        }
+
+        let prefix = parts[0]
+            .parse::<PrefixId>()
+            .map_err(|e| ExperienceCommandError::InvalidRefFormat(format!("Invalid id: {}", e)))?;
+        let kind = parts[1].parse::<RecordKind>().map_err(|e| {
+            ExperienceCommandError::InvalidRefFormat(format!("Invalid kind: {}", e))
+        })?;
+        let role = if parts.len() == 3 {
+            Some(Label::new(parts[2]))
+        } else {
+            None
+        };
+
+        let id = match prefix.as_full_id() {
+            Some(id) => id,
+            None => {
+                let ids = super::list_ids_for_kind(client, token, &kind).await?;
+                prefix.resolve(&ids)?
+            }
+        };
+
+        refs.push(RecordRef { id, kind, role });
+    }
+
+    Ok(refs)
 }

@@ -39,7 +39,9 @@ impl ListCognitions {
         if cognitions.is_empty() {
             outcomes.emit(ListCognitionsOutcomes::NoCognitions);
         } else {
-            outcomes.emit(ListCognitionsOutcomes::Cognitions(cognitions));
+            outcomes.emit(ListCognitionsOutcomes::Cognitions(outcomes::CognitionList(
+                cognitions,
+            )));
         }
 
         Ok(outcomes)

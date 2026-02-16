@@ -39,7 +39,9 @@ impl ListMemories {
         if memories.is_empty() {
             outcomes.emit(ListMemoriesOutcomes::NoMemories);
         } else {
-            outcomes.emit(ListMemoriesOutcomes::Memories(memories));
+            outcomes.emit(ListMemoriesOutcomes::Memories(outcomes::MemoryList(
+                memories,
+            )));
         }
 
         Ok(outcomes)

@@ -10,8 +10,8 @@ use crate::*;
 
 #[derive(Clone, Args)]
 pub(crate) struct ShowMemory {
-    /// The memory ID to display.
-    id: MemoryId,
+    /// The memory ID (full UUID or 8+ character prefix).
+    id: PrefixId,
 }
 
 impl ShowMemory {
@@ -22,10 +22,18 @@ impl ShowMemory {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
-        let memory = client
-            .get_memory(&context.ticket_token()?, &self.id)
-            .await?;
+        let id = match self.id.as_full_id() {
+            Some(id) => MemoryId(id),
+            None => {
+                let all = client.list_memories(&token, None, None).await?;
+                let ids: Vec<_> = all.iter().map(|m| m.id.0).collect();
+                MemoryId(self.id.resolve(&ids)?)
+            }
+        };
+
+        let memory = client.get_memory(&token, &id).await?;
         outcomes.emit(ShowMemoryOutcomes::MemoryDetails(memory));
 
         Ok(outcomes)

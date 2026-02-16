@@ -10,8 +10,8 @@ use crate::*;
 
 #[derive(Clone, Args)]
 pub(crate) struct ShowExperience {
-    /// The experience ID to display.
-    id: ExperienceId,
+    /// The experience ID (full UUID or 8+ character prefix).
+    id: PrefixId,
 }
 
 impl ShowExperience {
@@ -22,11 +22,22 @@ impl ShowExperience {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
-        let info = client
-            .get_experience(&context.ticket_token()?, &self.id)
-            .await?;
-        outcomes.emit(ShowExperienceOutcomes::ExperienceDetails(info));
+        let id = match self.id.as_full_id() {
+            Some(id) => ExperienceId(id),
+            None => {
+                let all = client.list_experiences(&token, None, None).await?;
+                let ids: Vec<_> = all.iter().map(|e| e.id.0).collect();
+                ExperienceId(self.id.resolve(&ids)?)
+            }
+        };
+
+        let experience = client.get_experience(&token, &id).await?;
+
+        outcomes.emit(ShowExperienceOutcomes::ExperienceDetails(
+            outcomes::ExperienceDetail(experience),
+        ));
 
         Ok(outcomes)
     }
