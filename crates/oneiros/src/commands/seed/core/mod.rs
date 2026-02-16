@@ -140,12 +140,22 @@ pub(crate) fn sensations() -> Vec<SetSensation> {
 }
 
 pub(crate) fn agents() -> Vec<CreateAgent> {
-    vec![CreateAgent {
-        name: AgentName::new("governor.process"),
-        persona: PersonaName::new("process"),
-        description: Description::new(
-            "Primary orchestration agent — routes work, enforces cognitive processes.",
-        ),
-        prompt: Prompt::new(include_str!("prompts/governor.process.agent.md")),
-    }]
+    vec![
+        CreateAgent {
+            name: AgentName::new("governor.process"),
+            persona: PersonaName::new("process"),
+            description: Description::new(
+                "Primary orchestration agent — routes work, enforces cognitive processes.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/governor.process.agent.md")),
+        },
+        CreateAgent {
+            name: AgentName::new("oneiroi.process"),
+            persona: PersonaName::new("process"),
+            description: Description::new(
+                "Cognitive companion — the brain's self-awareness, tending the cognitive loop from inside.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/oneiroi.process.agent.md")),
+        },
+    ]
 }
