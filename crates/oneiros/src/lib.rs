@@ -2,6 +2,7 @@ mod cli;
 mod commands;
 mod context;
 mod error;
+mod gauge;
 mod logging;
 
 use clap::Parser;

@@ -4,7 +4,7 @@ use clap::Args;
 use oneiros_client::{AddExperienceRefRequest, Client};
 use oneiros_outcomes::Outcomes;
 
-pub(crate) use outcomes::RefAddOutcomes;
+pub(crate) use outcomes::{RefAddOutcomes, RefAddedResult};
 
 use crate::*;
 
@@ -32,10 +32,11 @@ impl RefAdd {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
         let experience = client
             .add_experience_ref(
-                &context.ticket_token()?,
+                &token,
                 &self.experience_id,
                 AddExperienceRefRequest {
                     record_id: self.record_id,
@@ -44,7 +45,31 @@ impl RefAdd {
                 },
             )
             .await?;
-        outcomes.emit(RefAddOutcomes::RefAdded(experience.id));
+
+        let agents = client.list_agents(&token).await?;
+        let gauge = agents
+            .iter()
+            .find(|a| a.id == experience.agent_id)
+            .map(|agent| {
+                // We have the agent name but need all experiences for that agent.
+                // Since we just did the ref_add, we can't easily filter by agent name
+                // without another call. Use the agent name with the experience we have.
+                agent.name.clone()
+            });
+
+        let gauge_str = if let Some(agent_name) = gauge {
+            let all = client
+                .list_experiences(&token, Some(&agent_name), None)
+                .await?;
+            crate::gauge::experience_gauge(&agent_name, &all)
+        } else {
+            String::new()
+        };
+
+        outcomes.emit(RefAddOutcomes::RefAdded(RefAddedResult {
+            id: experience.id,
+            gauge: gauge_str,
+        }));
 
         Ok(outcomes)
     }

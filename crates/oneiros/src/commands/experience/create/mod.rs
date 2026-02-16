@@ -4,7 +4,7 @@ use clap::Args;
 use oneiros_client::{Client, CreateExperienceRequest};
 use oneiros_outcomes::Outcomes;
 
-pub(crate) use outcomes::CreateExperienceOutcomes;
+pub(crate) use outcomes::{CreateExperienceOutcomes, ExperienceCreatedResult};
 
 use crate::*;
 
@@ -32,6 +32,7 @@ impl CreateExperience {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
         // Parse refs from the command line format
         let mut refs = Vec::new();
@@ -61,7 +62,7 @@ impl CreateExperience {
 
         let experience = client
             .create_experience(
-                &context.ticket_token()?,
+                &token,
                 CreateExperienceRequest {
                     agent: self.agent.clone(),
                     sensation: self.sensation.clone(),
@@ -70,7 +71,18 @@ impl CreateExperience {
                 },
             )
             .await?;
-        outcomes.emit(CreateExperienceOutcomes::ExperienceCreated(experience.id));
+
+        let all = client
+            .list_experiences(&token, Some(&self.agent), None)
+            .await?;
+        let gauge = crate::gauge::experience_gauge(&self.agent, &all);
+
+        outcomes.emit(CreateExperienceOutcomes::ExperienceCreated(
+            ExperienceCreatedResult {
+                id: experience.id,
+                gauge,
+            },
+        ));
 
         Ok(outcomes)
     }

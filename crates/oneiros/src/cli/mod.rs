@@ -51,6 +51,7 @@ impl Cli {
             Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
             Command::Seed(seed) => seed.run(&context).await?.map_into(),
             Command::Skill(skill) => skill.run(&context).await?.map_into(),
+            Command::Status(status) => status.run(&context).await?.map_into(),
             Command::Storage(storage) => storage.run(&context).await?.map_into(),
             Command::System(system) => system.run(&context).await?.map_into(),
             Command::Service(service) => service.run(&context).await?.map_into(),
@@ -90,6 +91,8 @@ pub(crate) enum Command {
     Seed(SeedOps),
     /// Manage the oneiros skill plugin.
     Skill(SkillOps),
+    /// Show a full cognitive status dashboard for an agent.
+    Status(StatusOp),
     /// Manage content-addressable blob storage.
     Storage(StorageOps),
     /// Project-level commands (init, etc.).

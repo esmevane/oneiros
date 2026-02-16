@@ -4,7 +4,7 @@ use clap::Args;
 use oneiros_client::{AddCognitionRequest, Client};
 use oneiros_outcomes::Outcomes;
 
-pub(crate) use outcomes::AddCognitionOutcomes;
+pub(crate) use outcomes::{AddCognitionOutcomes, CognitionAddedResult};
 
 use crate::*;
 
@@ -28,10 +28,11 @@ impl AddCognition {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
         let cognition = client
             .add_cognition(
-                &context.ticket_token()?,
+                &token,
                 AddCognitionRequest {
                     agent: self.agent.clone(),
                     texture: self.texture.clone(),
@@ -39,7 +40,16 @@ impl AddCognition {
                 },
             )
             .await?;
-        outcomes.emit(AddCognitionOutcomes::CognitionAdded(cognition.id));
+
+        let all = client
+            .list_cognitions(&token, Some(&self.agent), None)
+            .await?;
+        let gauge = crate::gauge::cognition_gauge(&self.agent, &all);
+
+        outcomes.emit(AddCognitionOutcomes::CognitionAdded(CognitionAddedResult {
+            id: cognition.id,
+            gauge,
+        }));
 
         Ok(outcomes)
     }

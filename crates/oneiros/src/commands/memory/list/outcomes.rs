@@ -7,6 +7,11 @@ pub enum ListMemoriesOutcomes {
     #[outcome(message("No memories found."))]
     NoMemories,
 
-    #[outcome(message("Memories: {0:?}"))]
+    #[outcome(
+        message("Memories: {0:?}"),
+        prompt(
+            "Which of these are still true? Has anything shifted since they were consolidated?"
+        )
+    )]
     Memories(Vec<Memory>),
 }
