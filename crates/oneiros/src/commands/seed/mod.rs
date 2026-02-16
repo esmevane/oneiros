@@ -59,6 +59,13 @@ async fn run_core(context: &Context) -> Result<Outcomes<SeedOutcomes>, SeedComma
         }
     }
 
+    for command in core::sensations() {
+        match command.run(context).await {
+            Ok(inner) => outcomes.absorb(inner),
+            Err(error) => failures.emit(CoreSeedOutcomes::failed("sensation", command.name, error)),
+        }
+    }
+
     for command in core::agents() {
         match command.run(context).await {
             Ok(inner) => outcomes.absorb(inner),

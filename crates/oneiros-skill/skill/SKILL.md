@@ -24,6 +24,8 @@ Oneiros provides eventful memory and cognitive context for AI agents. It lets ag
 - **Level**: A memory retention tier (working, session, project, archival) controlling persistence.
 - **Cognition**: A timestamped thought logged by an agent under a specific texture.
 - **Memory**: A consolidated knowledge record at a specific retention level.
+- **Experience**: A connection between cognitive records — the meaning layer between raw events and identity. Experiences have sensations (the quality of the connection) and references to other records.
+- **Sensation**: The character of an experience (caused, continues, grounds, echoes, tensions, distills). Like textures for cognitions, sensations classify how things connect.
 
 ## Cognitive Loop
 
@@ -37,8 +39,9 @@ The three cognitive commands form the agent lifecycle:
 
 1. On session start, the governor agent dreams: `oneiros dream governor.process`
 2. The governor wakes other agents as needed, each dreaming their own context
-3. During work, agents log cognitions and reflect on significant events
+3. During work, agents log cognitions, create experiences, and reflect on significant events
 4. Before compaction, agents introspect to preserve session continuity
+5. **After context compaction or session continuation, re-dream before resuming work.** The dream reassembles your full identity and cognitive context. Without it, you lose the practice of being yourself and become a task executor.
 
 ## Quick Start
 
@@ -63,6 +66,10 @@ oneiros skill install        # Install this skill globally
 | `agent create <name> <persona>` | Create a named agent |
 | `texture set <name>` | Define a cognitive category |
 | `level set <name>` | Define a memory retention tier |
+| `experience create <agent> <sensation> <description>` | Mark a connection between thoughts |
+| `experience list` | List all experiences |
+| `sensation set <name>` | Define a connection quality |
+| `sensation list` | List all sensations |
 | `seed core` | Apply core seed data |
 
 ## Resources

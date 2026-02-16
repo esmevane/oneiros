@@ -94,6 +94,51 @@ pub(crate) fn personas() -> Vec<SetPersona> {
     }]
 }
 
+pub(crate) fn sensations() -> Vec<SetSensation> {
+    vec![
+        SetSensation {
+            name: SensationName::new("caused"),
+            description: Description::new(
+                "One thought produced another — a causal chain you can trace.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/caused.sensation.md")),
+        },
+        SetSensation {
+            name: SensationName::new("continues"),
+            description: Description::new(
+                "Picks up where a previous thread left off — sequential continuation.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/continues.sensation.md")),
+        },
+        SetSensation {
+            name: SensationName::new("grounds"),
+            description: Description::new("A thought grounded in a memory or prior knowledge."),
+            prompt: Prompt::new(include_str!("prompts/grounds.sensation.md")),
+        },
+        SetSensation {
+            name: SensationName::new("echoes"),
+            description: Description::new(
+                "Things that resonate thematically without clear causation.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/echoes.sensation.md")),
+        },
+        SetSensation {
+            name: SensationName::new("tensions"),
+            description: Description::new(
+                "Ideas that pull against each other, creating productive friction.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/tensions.sensation.md")),
+        },
+        SetSensation {
+            name: SensationName::new("distills"),
+            description: Description::new(
+                "A consolidated understanding formed from earlier raw thoughts.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/distills.sensation.md")),
+        },
+    ]
+}
+
 pub(crate) fn agents() -> Vec<CreateAgent> {
     vec![CreateAgent {
         name: AgentName::new("governor.process"),

@@ -1,5 +1,6 @@
 use oneiros_model::{
-    AgentName, BrainName, Content, Description, LevelName, PersonaName, Prompt, TextureName,
+    AgentName, BrainName, Content, Description, Id, Label, LevelName, PersonaName, Prompt,
+    RecordKind, RecordRef, SensationName, TextureName,
 };
 use serde::{Deserialize, Serialize};
 
@@ -39,4 +40,26 @@ pub struct AddMemoryRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateBrainRequest {
     pub name: BrainName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateExperienceRequest {
+    pub agent: AgentName,
+    pub sensation: SensationName,
+    pub description: Content,
+    #[serde(default)]
+    pub refs: Vec<RecordRef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddExperienceRefRequest {
+    pub record_id: Id,
+    pub record_kind: RecordKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<Label>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateExperienceDescriptionRequest {
+    pub description: Content,
 }

@@ -84,13 +84,56 @@ pub(crate) async fn handler(
         })
         .collect();
 
+    let sensations = ticket
+        .db
+        .list_sensations()?
+        .into_iter()
+        .map(|(name, desc, prompt)| Sensation {
+            name: SensationName::new(name),
+            description: Description::new(desc),
+            prompt: Prompt::new(prompt),
+        })
+        .collect();
+
+    let experiences: Vec<Experience> = ticket
+        .db
+        .list_experiences_by_agent(agent.id.to_string())?
+        .into_iter()
+        .map(|(eid, agent_id, sensation, description, created_at)| {
+            let refs = ticket
+                .db
+                .list_experience_refs(&eid)
+                .unwrap_or_default()
+                .into_iter()
+                .map(
+                    |(_experience_id, record_id, record_kind, role, _created_at)| RecordRef {
+                        id: record_id.parse().unwrap_or_default(),
+                        kind: record_kind.parse().unwrap_or(RecordKind::Cognition),
+                        role: role.map(Label::new),
+                    },
+                )
+                .collect();
+
+            Experience {
+                id: eid.parse().unwrap_or_default(),
+                agent_id: agent_id.parse().unwrap_or_default(),
+                sensation: SensationName::new(sensation),
+                description: Content::new(description),
+                refs,
+                created_at: created_at.parse().unwrap_or_default(),
+            }
+        })
+        .collect();
+
     let context = DreamContext {
         agent,
         persona,
         memories,
         cognitions,
+        experiences,
         textures,
         levels,
+        sensations,
     };
 
     let complete = Events::Dreaming(DreamingEvents::DreamComplete(Box::new(context.clone())));

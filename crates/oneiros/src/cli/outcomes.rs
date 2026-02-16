@@ -13,6 +13,10 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Dream(#[from] DreamOutcomes),
     #[outcome(transparent)]
+    Experience(#[from] ExperienceOutcomes),
+    #[outcome(transparent)]
+    Sensation(#[from] SensationOutcomes),
+    #[outcome(transparent)]
     Guidebook(#[from] GuidebookOutcomes),
     #[outcome(transparent)]
     Introspect(#[from] IntrospectOutcomes),

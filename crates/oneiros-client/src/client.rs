@@ -1,6 +1,7 @@
 use oneiros_model::{
-    Agent, AgentName, Cognition, CognitionId, DreamContext, Level, LevelName, Memory, MemoryId,
-    Persona, PersonaName, StorageEntry, StorageKey, StorageRef, Texture, TextureName, Token,
+    Agent, AgentName, Cognition, CognitionId, DreamContext, Experience, ExperienceId, Level,
+    LevelName, Memory, MemoryId, Persona, PersonaName, Sensation, SensationName, StorageEntry,
+    StorageKey, StorageRef, Texture, TextureName, Token,
 };
 use std::path::Path;
 
@@ -631,6 +632,217 @@ impl Client {
         let (status, response_body) = self
             .client
             .authenticated_request("POST", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    // -- Sensation methods --
+
+    pub async fn set_sensation(
+        &self,
+        token: &Token,
+        request: Sensation,
+    ) -> Result<Sensation, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("PUT", "/sensations", token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn remove_sensation(&self, token: &Token, name: &SensationName) -> Result<(), Error> {
+        let uri = format!("/sensations/{name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("DELETE", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_sensation(
+        &self,
+        token: &Token,
+        name: &SensationName,
+    ) -> Result<Sensation, Error> {
+        let uri = format!("/sensations/{name}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn list_sensations(&self, token: &Token) -> Result<Vec<Sensation>, Error> {
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", "/sensations", token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    // -- Experience methods --
+
+    pub async fn create_experience(
+        &self,
+        token: &Token,
+        request: CreateExperienceRequest,
+    ) -> Result<Experience, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", "/experiences", token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn get_experience(
+        &self,
+        token: &Token,
+        id: &ExperienceId,
+    ) -> Result<Experience, Error> {
+        let uri = format!("/experiences/{id}");
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn list_experiences(
+        &self,
+        token: &Token,
+        agent: Option<&AgentName>,
+        sensation: Option<&SensationName>,
+    ) -> Result<Vec<Experience>, Error> {
+        let mut params = Vec::new();
+        if let Some(agent) = agent {
+            params.push(format!("agent={agent}"));
+        }
+        if let Some(sensation) = sensation {
+            params.push(format!("sensation={sensation}"));
+        }
+
+        let uri = if params.is_empty() {
+            "/experiences".to_string()
+        } else {
+            format!("/experiences?{}", params.join("&"))
+        };
+
+        let (status, response_body) = self
+            .client
+            .authenticated_request("GET", &uri, token, None)
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn add_experience_ref(
+        &self,
+        token: &Token,
+        experience_id: &ExperienceId,
+        request: AddExperienceRefRequest,
+    ) -> Result<Experience, Error> {
+        let uri = format!("/experiences/{experience_id}/refs");
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("POST", &uri, token, Some(body))
+            .await?;
+
+        if status >= 400 {
+            let body_str = String::from_utf8_lossy(&response_body).to_string();
+            return Err(ResponseError {
+                status,
+                body: body_str,
+            })?;
+        }
+
+        Ok(serde_json::from_slice(&response_body)?)
+    }
+
+    pub async fn update_experience_description(
+        &self,
+        token: &Token,
+        experience_id: &ExperienceId,
+        request: UpdateExperienceDescriptionRequest,
+    ) -> Result<Experience, Error> {
+        let uri = format!("/experiences/{experience_id}/description");
+        let body = serde_json::to_vec(&request)?;
+        let (status, response_body) = self
+            .client
+            .authenticated_request("PUT", &uri, token, Some(body))
             .await?;
 
         if status >= 400 {

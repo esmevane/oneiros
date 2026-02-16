@@ -1,0 +1,1 @@
+Directed. A thought grounded in a memory or prior knowledge. Use when a new cognition draws on something you already knew — when understanding comes from connecting the present to the past. The origin is the foundation (the memory, the established knowledge); what it reaches is the new thought that stands on it. Grounding makes thinking traceable back to its roots.
