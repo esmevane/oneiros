@@ -53,7 +53,7 @@ impl FromRequestParts<Arc<ServiceState>> for ActorContext {
                 .ok_or(NotFound::Brain(claims.brain_id))?
         };
 
-        let brain_db = Database::open(brain_path)?;
+        let brain_db = Database::open_brain(brain_path)?;
 
         Ok(ActorContext { db: brain_db })
     }

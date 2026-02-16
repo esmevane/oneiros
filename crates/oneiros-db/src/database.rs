@@ -15,6 +15,12 @@ type CognitionRow = (String, String, String, String, String);
 /// Raw row from the memory table: (id, agent_id, level, content, created_at).
 type MemoryRow = (String, String, String, String, String);
 
+/// Raw row from the experience table: (id, agent_id, sensation, description, created_at).
+type ExperienceRow = (String, String, String, String, String);
+
+/// Raw row from the experience_ref table: (experience_id, record_id, record_kind, role, created_at).
+type ExperienceRefRow = (String, String, String, Option<String>, String);
+
 pub struct Database {
     conn: Connection,
 }
@@ -34,6 +40,19 @@ impl Database {
     pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(connection_string.as_ref())?;
         Self::register_functions(&conn)?;
+
+        Ok(Self { conn })
+    }
+
+    /// Open a brain database, applying any missing schema migrations.
+    ///
+    /// The brain migration SQL is fully idempotent (`CREATE TABLE IF NOT EXISTS`),
+    /// so this is safe to call on every access. It ensures existing brain databases
+    /// pick up new tables introduced in later versions.
+    pub fn open_brain(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
+        let conn = Connection::open(path)?;
+        Self::register_functions(&conn)?;
+        conn.execute_batch(migrations::BRAIN)?;
 
         Ok(Self { conn })
     }
@@ -799,6 +818,263 @@ impl Database {
 
     pub fn reset_memories(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from memory")?;
+        Ok(())
+    }
+
+    // -- Sensation operations --
+
+    pub fn set_sensation(
+        &self,
+        name: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into sensation (name, description, prompt) \
+             values (?1, ?2, ?3) \
+             on conflict(name) do update set \
+             description = excluded.description, prompt = excluded.prompt",
+            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_sensation(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "delete from sensation where name = ?1",
+            params![name.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_sensation(
+        &self,
+        name: impl AsRef<str>,
+    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from sensation where name = ?1",
+            params![name.as_ref()],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        );
+
+        match result {
+            Ok(sensation) => Ok(Some(sensation)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_sensations(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select name, description, prompt from sensation order by name")?;
+
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+
+        let mut sensations = Vec::new();
+        for row in rows {
+            sensations.push(row?);
+        }
+        Ok(sensations)
+    }
+
+    pub fn reset_sensations(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from sensation")?;
+        Ok(())
+    }
+
+    // -- Experience operations --
+
+    pub fn add_experience(
+        &self,
+        id: impl AsRef<str>,
+        agent_id: impl AsRef<str>,
+        sensation: impl AsRef<str>,
+        description: impl AsRef<str>,
+        created_at: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into experience (id, agent_id, sensation, description, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                id.as_ref(),
+                agent_id.as_ref(),
+                sensation.as_ref(),
+                description.as_ref(),
+                created_at.as_ref()
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_experience(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Option<ExperienceRow>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, agent_id, sensation, description, created_at from experience where id = ?1",
+            params![id.as_ref()],
+            |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(experience) => Ok(Some(experience)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_experiences(&self) -> Result<Vec<ExperienceRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, sensation, description, created_at from experience order by rowid",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut experiences = Vec::new();
+        for row in rows {
+            experiences.push(row?);
+        }
+        Ok(experiences)
+    }
+
+    pub fn list_experiences_by_agent(
+        &self,
+        agent_id: impl AsRef<str>,
+    ) -> Result<Vec<ExperienceRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, sensation, description, created_at from experience \
+             where agent_id = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut experiences = Vec::new();
+        for row in rows {
+            experiences.push(row?);
+        }
+        Ok(experiences)
+    }
+
+    pub fn list_experiences_by_sensation(
+        &self,
+        sensation: impl AsRef<str>,
+    ) -> Result<Vec<ExperienceRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, sensation, description, created_at from experience \
+             where sensation = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![sensation.as_ref()], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut experiences = Vec::new();
+        for row in rows {
+            experiences.push(row?);
+        }
+        Ok(experiences)
+    }
+
+    pub fn add_experience_ref(
+        &self,
+        experience_id: impl AsRef<str>,
+        record_id: impl AsRef<str>,
+        record_kind: impl AsRef<str>,
+        role: Option<&str>,
+        created_at: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into experience_ref \
+             (experience_id, record_id, record_kind, role, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                experience_id.as_ref(),
+                record_id.as_ref(),
+                record_kind.as_ref(),
+                role,
+                created_at.as_ref()
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_experience_refs(
+        &self,
+        experience_id: impl AsRef<str>,
+    ) -> Result<Vec<ExperienceRefRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select experience_id, record_id, record_kind, role, created_at \
+             from experience_ref where experience_id = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![experience_id.as_ref()], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
+
+        let mut refs = Vec::new();
+        for row in rows {
+            refs.push(row?);
+        }
+        Ok(refs)
+    }
+
+    pub fn update_experience_description(
+        &self,
+        id: impl AsRef<str>,
+        description: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "update experience set description = ?2 where id = ?1",
+            params![id.as_ref(), description.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn reset_experiences(&self) -> Result<(), DatabaseError> {
+        self.conn
+            .execute_batch("delete from experience_ref; delete from experience")?;
+        Ok(())
+    }
+
+    pub fn reset_experience_refs(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from experience_ref")?;
         Ok(())
     }
 

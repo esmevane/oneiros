@@ -13,6 +13,8 @@ pub enum SeedOutcomes {
     #[outcome(transparent)]
     Agent(#[from] CreateAgentOutcomes),
     #[outcome(transparent)]
+    Sensation(#[from] SetSensationOutcomes),
+    #[outcome(transparent)]
     Core(#[from] CoreSeedOutcomes),
 }
 

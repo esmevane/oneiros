@@ -109,6 +109,45 @@ create table if not exists blob (
     size integer not null default 0
 );
 
+-- Sensations are categories that classify relationships between
+-- records. Like textures and levels, they carry a description and a
+-- prompt, and are emergent — they can be seeded, added, or removed.
+--
+-- Examples: caused, continues, echoes, tensions, crystallized-from.
+--
+create table if not exists sensation (
+    name        text primary key not null,
+    description text not null default '',
+    prompt      text not null default ''
+);
+
+-- Experiences are descriptive edges connecting records in the brain.
+-- Each experience is bound to an agent (who created it) and a
+-- sensation (what type of relationship it describes).
+-- Experiences can grow over time as new refs are added.
+--
+create table if not exists experience (
+    id          text primary key not null,
+    agent_id    text not null references agent(id),
+    sensation   text not null references sensation(name),
+    description text not null,
+    created_at  text not null
+);
+
+-- Experience refs are the edges themselves — each ref connects an
+-- experience to a record (cognition, memory, experience, or storage).
+-- The role field describes the record's participation in this
+-- experience (e.g. "origin", "outcome", "context").
+--
+create table if not exists experience_ref (
+    experience_id text not null references experience(id),
+    record_id     text not null,
+    record_kind   text not null,
+    role          text,
+    created_at    text not null,
+    primary key (experience_id, record_id)
+);
+
 -- Storage entries map user-facing keys to content hashes. This table
 -- is a projection from storage-set and storage-removed events.
 --

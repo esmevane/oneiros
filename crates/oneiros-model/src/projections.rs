@@ -12,7 +12,8 @@ pub const SYSTEM_PROJECTIONS: &[Projection] = &[
 
 /// Brain-level projections for data that lives within each brain's database.
 ///
-/// Ordering: persona before agent (agent has FK to persona).
+/// Ordering: persona before agent (agent has FK to persona),
+/// sensation before experience (experience has FK to sensation).
 pub const BRAIN_PROJECTIONS: &[Projection] = &[
     LEVEL_SET_PROJECTION,
     LEVEL_REMOVED_PROJECTION,
@@ -20,11 +21,16 @@ pub const BRAIN_PROJECTIONS: &[Projection] = &[
     PERSONA_REMOVED_PROJECTION,
     TEXTURE_SET_PROJECTION,
     TEXTURE_REMOVED_PROJECTION,
+    SENSATION_SET_PROJECTION,
+    SENSATION_REMOVED_PROJECTION,
     AGENT_CREATED_PROJECTION,
     AGENT_UPDATED_PROJECTION,
     AGENT_REMOVED_PROJECTION,
     COGNITION_ADDED_PROJECTION,
     MEMORY_ADDED_PROJECTION,
+    EXPERIENCE_CREATED_PROJECTION,
+    EXPERIENCE_REF_ADDED_PROJECTION,
+    EXPERIENCE_DESCRIPTION_UPDATED_PROJECTION,
     STORAGE_SET_PROJECTION,
     STORAGE_REMOVED_PROJECTION,
 ];
@@ -403,5 +409,138 @@ fn apply_storage_removed(conn: &Database, data: &Value) -> Result<(), DatabaseEr
 }
 
 fn reset_storage_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+// -- Sensation projections --
+
+const SENSATION_SET_PROJECTION: Projection = Projection {
+    name: "sensation-set",
+    events: &["sensation-set"],
+    apply: apply_sensation_set,
+    reset: reset_sensations,
+};
+
+fn apply_sensation_set(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(prompt) = data["prompt"].as_str()
+    {
+        conn.set_sensation(name, description, prompt)?;
+    };
+
+    Ok(())
+}
+
+fn reset_sensations(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_sensations()?;
+    Ok(())
+}
+
+const SENSATION_REMOVED_PROJECTION: Projection = Projection {
+    name: "sensation-removed",
+    events: &["sensation-removed"],
+    apply: apply_sensation_removed,
+    reset: reset_sensations_noop,
+};
+
+fn apply_sensation_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(name) = data["name"].as_str() {
+        conn.remove_sensation(name)?;
+    };
+
+    Ok(())
+}
+
+fn reset_sensations_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+// -- Experience projections --
+
+const EXPERIENCE_CREATED_PROJECTION: Projection = Projection {
+    name: "experience-created",
+    events: &["experience-created"],
+    apply: apply_experience_created,
+    reset: reset_experiences,
+};
+
+fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(id) = data["id"].as_str()
+        && let Some(agent_id) = data["agent_id"].as_str()
+        && let Some(sensation) = data["sensation"].as_str()
+        && let Some(description) = data["description"].as_str()
+        && let Some(created_at) = data["created_at"].as_str()
+    {
+        conn.add_experience(id, agent_id, sensation, description, created_at)?;
+
+        // Also insert any initial refs
+        if let Some(refs) = data["refs"].as_array() {
+            for record_ref in refs {
+                if let Some(ref_id) = record_ref["id"].as_str()
+                    && let Some(ref_kind) = record_ref["kind"].as_str()
+                {
+                    let role = record_ref["role"].as_str();
+                    conn.add_experience_ref(id, ref_id, ref_kind, role, created_at)?;
+                }
+            }
+        }
+    };
+
+    Ok(())
+}
+
+fn reset_experiences(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_experiences()?;
+    Ok(())
+}
+
+const EXPERIENCE_REF_ADDED_PROJECTION: Projection = Projection {
+    name: "experience-ref-added",
+    events: &["experience-ref-added"],
+    apply: apply_experience_ref_added,
+    reset: reset_experience_refs,
+};
+
+fn apply_experience_ref_added(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    if let Some(experience_id) = data["experience_id"].as_str()
+        && let Some(record_ref) = data.get("record_ref")
+        && let Some(ref_id) = record_ref["id"].as_str()
+        && let Some(ref_kind) = record_ref["kind"].as_str()
+    {
+        let role = record_ref["role"].as_str();
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.add_experience_ref(experience_id, ref_id, ref_kind, role, &now)?;
+    };
+
+    Ok(())
+}
+
+fn reset_experience_refs(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_experience_refs()?;
+    Ok(())
+}
+
+const EXPERIENCE_DESCRIPTION_UPDATED_PROJECTION: Projection = Projection {
+    name: "experience-description-updated",
+    events: &["experience-description-updated"],
+    apply: apply_experience_description_updated,
+    reset: reset_experience_description_noop,
+};
+
+fn apply_experience_description_updated(
+    conn: &Database,
+    data: &Value,
+) -> Result<(), DatabaseError> {
+    if let Some(experience_id) = data["experience_id"].as_str()
+        && let Some(description) = data["description"].as_str()
+    {
+        conn.update_experience_description(experience_id, description)?;
+    };
+
+    Ok(())
+}
+
+fn reset_experience_description_noop(_conn: &Database) -> Result<(), DatabaseError> {
     Ok(())
 }

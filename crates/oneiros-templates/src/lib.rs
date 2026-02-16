@@ -38,8 +38,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -62,8 +64,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -86,8 +90,10 @@ mod tests {
                 created_at: chrono::Utc::now(),
             }],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -108,8 +114,10 @@ mod tests {
                 content: Content::new("Patterns emerge from repetition."),
                 created_at: chrono::Utc::now(),
             }],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -124,6 +132,7 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![Texture {
                 name: TextureName::new("analytical"),
                 description: Description::new("Analytical thinking"),
@@ -134,6 +143,7 @@ mod tests {
                 description: Description::new("Core memories"),
                 prompt: Prompt::new("Fundamental knowledge."),
             }],
+            sensations: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -150,8 +160,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -166,8 +178,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -186,8 +200,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -207,6 +223,7 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![Texture {
                 name: TextureName::new("analytical"),
                 description: Description::new("Analytical thinking"),
@@ -217,6 +234,7 @@ mod tests {
                 description: Description::new("Core memories"),
                 prompt: Prompt::new("Fundamental knowledge."),
             }],
+            sensations: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -231,8 +249,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -247,8 +267,10 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![],
+            experiences: vec![],
             textures: vec![],
             levels: vec![],
+            sensations: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
