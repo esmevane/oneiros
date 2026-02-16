@@ -7,6 +7,11 @@ pub enum ListCognitionsOutcomes {
     #[outcome(message("No cognitions found."))]
     NoCognitions,
 
-    #[outcome(message("Cognitions: {0:?}"))]
+    #[outcome(
+        message("Cognitions: {0:?}"),
+        prompt(
+            "Which of these are still working threads? Consolidate what's crystallized with `oneiros memory add <agent>`."
+        )
+    )]
     Cognitions(Vec<Cognition>),
 }

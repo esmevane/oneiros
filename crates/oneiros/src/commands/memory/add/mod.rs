@@ -4,7 +4,7 @@ use clap::Args;
 use oneiros_client::{AddMemoryRequest, Client};
 use oneiros_outcomes::Outcomes;
 
-pub(crate) use outcomes::AddMemoryOutcomes;
+pub(crate) use outcomes::{AddMemoryOutcomes, MemoryAddedResult};
 
 use crate::*;
 
@@ -28,10 +28,11 @@ impl AddMemory {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
         let memory = client
             .add_memory(
-                &context.ticket_token()?,
+                &token,
                 AddMemoryRequest {
                     agent: self.agent.clone(),
                     level: self.level.clone(),
@@ -39,7 +40,16 @@ impl AddMemory {
                 },
             )
             .await?;
-        outcomes.emit(AddMemoryOutcomes::MemoryAdded(memory.id));
+
+        let all = client
+            .list_memories(&token, Some(&self.agent), None)
+            .await?;
+        let gauge = crate::gauge::memory_gauge(&self.agent, &all);
+
+        outcomes.emit(AddMemoryOutcomes::MemoryAdded(MemoryAddedResult {
+            id: memory.id,
+            gauge,
+        }));
 
         Ok(outcomes)
     }

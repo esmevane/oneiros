@@ -4,7 +4,7 @@ use clap::Args;
 use oneiros_client::{Client, UpdateExperienceDescriptionRequest};
 use oneiros_outcomes::Outcomes;
 
-pub(crate) use outcomes::UpdateExperienceOutcomes;
+pub(crate) use outcomes::{ExperienceUpdatedResult, UpdateExperienceOutcomes};
 
 use crate::*;
 
@@ -25,17 +25,39 @@ impl UpdateExperience {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let token = context.ticket_token()?;
 
         let experience = client
             .update_experience_description(
-                &context.ticket_token()?,
+                &token,
                 &self.id,
                 UpdateExperienceDescriptionRequest {
                     description: self.description.clone(),
                 },
             )
             .await?;
-        outcomes.emit(UpdateExperienceOutcomes::ExperienceUpdated(experience.id));
+
+        let agents = client.list_agents(&token).await?;
+        let gauge_str = agents
+            .iter()
+            .find(|a| a.id == experience.agent_id)
+            .map(|agent| agent.name.clone());
+
+        let gauge_str = if let Some(agent_name) = gauge_str {
+            let all = client
+                .list_experiences(&token, Some(&agent_name), None)
+                .await?;
+            crate::gauge::experience_gauge(&agent_name, &all)
+        } else {
+            String::new()
+        };
+
+        outcomes.emit(UpdateExperienceOutcomes::ExperienceUpdated(
+            ExperienceUpdatedResult {
+                id: experience.id,
+                gauge: gauge_str,
+            },
+        ));
 
         Ok(outcomes)
     }

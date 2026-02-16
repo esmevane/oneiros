@@ -4,8 +4,8 @@ use crate::{
     AgentCommandError, CheckupError, CognitionCommandError, ContextError, DreamError,
     ExperienceCommandError, GuidebookError, IntrospectError, LevelCommandError, MemoryCommandError,
     PersonaCommandError, ProjectCommandError, ReflectError, SeedCommandError,
-    SensationCommandError, ServiceCommandError, SkillCommandError, StorageCommandError,
-    SystemCommandError, TextureCommandError,
+    SensationCommandError, ServiceCommandError, SkillCommandError, StatusError,
+    StorageCommandError, SystemCommandError, TextureCommandError,
 };
 
 #[derive(Debug, Error)]
@@ -40,6 +40,8 @@ pub enum CliError {
     Seed(#[from] SeedCommandError),
     #[error(transparent)]
     Skill(#[from] SkillCommandError),
+    #[error(transparent)]
+    Status(#[from] StatusError),
     #[error(transparent)]
     Storage(#[from] StorageCommandError),
     #[error(transparent)]

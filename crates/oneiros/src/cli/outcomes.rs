@@ -33,6 +33,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Skill(#[from] SkillOutcomes),
     #[outcome(transparent)]
+    Status(#[from] StatusOutcomes),
+    #[outcome(transparent)]
     Storage(#[from] StorageOutcomes),
     #[outcome(transparent)]
     Project(#[from] ProjectOutcomes),

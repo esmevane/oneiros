@@ -7,6 +7,9 @@ pub enum ListExperiencesOutcomes {
     #[outcome(message("No experiences found."))]
     NoExperiences,
 
-    #[outcome(message("Experiences: {0:?}"))]
+    #[outcome(
+        message("Experiences: {0:?}"),
+        prompt("Which threads are still growing? Extend with `oneiros experience ref add`.")
+    )]
     Experiences(Vec<Experience>),
 }
