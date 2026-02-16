@@ -10,11 +10,11 @@ use crate::*;
 
 #[derive(Clone, Args)]
 pub(crate) struct RefAdd {
-    /// The experience ID to add a reference to.
-    experience_id: ExperienceId,
+    /// The experience ID to add a reference to (full UUID or 8+ character prefix).
+    experience_id: PrefixId,
 
-    /// The ID of the record to reference.
-    record_id: Id,
+    /// The ID of the record to reference (full UUID or 8+ character prefix).
+    record_id: PrefixId,
 
     /// The kind of record being referenced.
     record_kind: RecordKind,
@@ -34,12 +34,29 @@ impl RefAdd {
         let client = Client::new(context.socket_path());
         let token = context.ticket_token()?;
 
+        let experience_id = match self.experience_id.as_full_id() {
+            Some(id) => ExperienceId(id),
+            None => {
+                let all = client.list_experiences(&token, None, None).await?;
+                let ids: Vec<_> = all.iter().map(|e| e.id.0).collect();
+                ExperienceId(self.experience_id.resolve(&ids)?)
+            }
+        };
+
+        let record_id = match self.record_id.as_full_id() {
+            Some(id) => id,
+            None => {
+                let ids = super::list_ids_for_kind(&client, &token, &self.record_kind).await?;
+                self.record_id.resolve(&ids)?
+            }
+        };
+
         let experience = client
             .add_experience_ref(
                 &token,
-                &self.experience_id,
+                &experience_id,
                 AddExperienceRefRequest {
-                    record_id: self.record_id,
+                    record_id,
                     record_kind: self.record_kind.clone(),
                     role: self.role.as_ref().map(Label::new),
                 },
@@ -50,12 +67,7 @@ impl RefAdd {
         let gauge = agents
             .iter()
             .find(|a| a.id == experience.agent_id)
-            .map(|agent| {
-                // We have the agent name but need all experiences for that agent.
-                // Since we just did the ref_add, we can't easily filter by agent name
-                // without another call. Use the agent name with the experience we have.
-                agent.name.clone()
-            });
+            .map(|agent| agent.name.clone());
 
         let gauge_str = if let Some(agent_name) = gauge {
             let all = client

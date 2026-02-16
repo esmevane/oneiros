@@ -39,7 +39,9 @@ impl ListExperiences {
         if experiences.is_empty() {
             outcomes.emit(ListExperiencesOutcomes::NoExperiences);
         } else {
-            outcomes.emit(ListExperiencesOutcomes::Experiences(experiences));
+            outcomes.emit(ListExperiencesOutcomes::Experiences(
+                outcomes::ExperienceList(experiences),
+            ));
         }
 
         Ok(outcomes)

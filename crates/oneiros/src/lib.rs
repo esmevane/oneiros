@@ -4,6 +4,7 @@ mod context;
 mod error;
 mod gauge;
 mod logging;
+mod prefix_id;
 
 use clap::Parser;
 
@@ -13,6 +14,7 @@ pub(crate) use context::*;
 pub(crate) use logging::*;
 pub(crate) use oneiros_model::projections;
 pub(crate) use oneiros_model::*;
+pub(crate) use prefix_id::*;
 
 pub use error::*;
 

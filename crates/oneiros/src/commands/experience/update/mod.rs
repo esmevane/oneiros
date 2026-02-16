@@ -10,8 +10,8 @@ use crate::*;
 
 #[derive(Clone, Args)]
 pub(crate) struct UpdateExperience {
-    /// The experience ID to update.
-    id: ExperienceId,
+    /// The experience ID (full UUID or 8+ character prefix).
+    id: PrefixId,
 
     /// The new description for the experience.
     description: Content,
@@ -27,10 +27,19 @@ impl UpdateExperience {
         let client = Client::new(context.socket_path());
         let token = context.ticket_token()?;
 
+        let id = match self.id.as_full_id() {
+            Some(id) => ExperienceId(id),
+            None => {
+                let all = client.list_experiences(&token, None, None).await?;
+                let ids: Vec<_> = all.iter().map(|e| e.id.0).collect();
+                ExperienceId(self.id.resolve(&ids)?)
+            }
+        };
+
         let experience = client
             .update_experience_description(
                 &token,
-                &self.id,
+                &id,
                 UpdateExperienceDescriptionRequest {
                     description: self.description.clone(),
                 },

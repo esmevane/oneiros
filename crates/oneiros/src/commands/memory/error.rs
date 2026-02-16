@@ -1,4 +1,4 @@
-use crate::ContextError;
+use crate::{ContextError, PrefixError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum MemoryCommandError {
@@ -7,4 +7,7 @@ pub enum MemoryCommandError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error(transparent)]
+    PrefixResolve(#[from] PrefixError),
 }

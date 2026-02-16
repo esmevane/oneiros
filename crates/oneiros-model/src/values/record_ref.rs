@@ -10,6 +10,18 @@ pub struct RecordRef {
     pub role: Option<Label>,
 }
 
+impl core::fmt::Display for RecordRef {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let short_id = &self.id.to_string()[..8];
+        let kind = &self.kind;
+
+        match &self.role {
+            Some(role) => write!(f, "{short_id}:{kind} [{role}]"),
+            None => write!(f, "{short_id}:{kind}"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum RecordKind {

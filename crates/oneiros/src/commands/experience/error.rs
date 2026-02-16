@@ -1,4 +1,4 @@
-use crate::ContextError;
+use crate::{ContextError, PrefixError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ExperienceCommandError {
@@ -7,6 +7,9 @@ pub enum ExperienceCommandError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error(transparent)]
+    PrefixResolve(#[from] PrefixError),
 
     #[error("Invalid ref format: {0}")]
     InvalidRefFormat(String),
