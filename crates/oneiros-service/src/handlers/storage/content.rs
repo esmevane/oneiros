@@ -2,7 +2,7 @@ use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use flate2::read::ZlibDecoder;
-use oneiros_model::{ContentHash, StorageRef};
+use oneiros_model::StorageRef;
 use std::io::Read;
 
 use crate::*;
@@ -15,12 +15,12 @@ pub(crate) async fn handler(
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
 
-    let (_k, _desc, hash) = ticket.db.get_storage(&key)?.ok_or(NotFound::Storage(key))?;
+    let entry = ticket.db.get_storage(&key)?.ok_or(NotFound::Storage(key))?;
 
     let (compressed, _original_size) = ticket
         .db
-        .get_blob(&hash)?
-        .ok_or(DataIntegrity::BlobMissing(ContentHash::new(hash)))?;
+        .get_blob(&entry.hash)?
+        .ok_or(DataIntegrity::BlobMissing(entry.hash))?;
 
     let mut decoder = ZlibDecoder::new(&compressed[..]);
     let mut decompressed = Vec::new();

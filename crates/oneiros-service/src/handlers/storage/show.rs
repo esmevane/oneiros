@@ -1,6 +1,6 @@
 use axum::Json;
 use axum::extract::Path;
-use oneiros_model::{ContentHash, Description, StorageEntry, StorageKey, StorageRef};
+use oneiros_model::{StorageEntry, StorageRef};
 
 use crate::*;
 
@@ -12,11 +12,7 @@ pub(crate) async fn handler(
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
 
-    let (k, desc, hash) = ticket.db.get_storage(&key)?.ok_or(NotFound::Storage(key))?;
+    let entry = ticket.db.get_storage(&key)?.ok_or(NotFound::Storage(key))?;
 
-    Ok(Json(StorageEntry {
-        key: StorageKey::new(k),
-        description: Description::new(desc),
-        hash: ContentHash::new(hash),
-    }))
+    Ok(Json(entry))
 }

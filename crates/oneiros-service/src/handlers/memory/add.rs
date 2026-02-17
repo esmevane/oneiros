@@ -1,6 +1,6 @@
 use axum::{Json, http::StatusCode};
 use chrono::Utc;
-use oneiros_model::{AgentId, Events, Memory, MemoryEvents, MemoryId};
+use oneiros_model::{Events, Memory, MemoryEvents, MemoryId};
 use oneiros_protocol::AddMemoryRequest;
 
 use crate::*;
@@ -10,12 +10,10 @@ pub(crate) async fn handler(
     Json(request): Json<AddMemoryRequest>,
 ) -> Result<(StatusCode, Json<Memory>), Error> {
     // Resolve agent name to agent_id.
-    let (id, _, _, _, _) = ticket
+    let agent = ticket
         .db
         .get_agent(&request.agent)?
         .ok_or(NotFound::Agent(request.agent.clone()))?;
-
-    let agent_id: AgentId = id.parse().unwrap_or_default();
 
     // Validate that the referenced level exists.
     ticket
@@ -25,7 +23,7 @@ pub(crate) async fn handler(
 
     let memory = Memory {
         id: MemoryId::new(),
-        agent_id,
+        agent_id: agent.id,
         level: request.level,
         content: request.content,
         created_at: Utc::now(),

@@ -10,7 +10,7 @@ pub(crate) async fn handler(
     Json(request): Json<UpdateAgentRequest>,
 ) -> Result<(StatusCode, Json<Agent>), Error> {
     // Validate that the agent exists and get its current data (especially the ID).
-    let (id, name, _persona, _desc, _prompt) = ticket
+    let existing = ticket
         .db
         .get_agent(&given_name)?
         .ok_or(NotFound::Agent(given_name))?;
@@ -22,8 +22,8 @@ pub(crate) async fn handler(
         .ok_or(NotFound::Persona(request.persona.clone()))?;
 
     let agent = Agent {
-        id: id.parse().unwrap_or_default(),
-        name: AgentName::new(name),
+        id: existing.id,
+        name: existing.name,
         persona: request.persona,
         description: request.description,
         prompt: request.prompt,

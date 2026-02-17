@@ -1,8 +1,5 @@
 use axum::{Json, extract::Path, http::StatusCode};
-use oneiros_model::{
-    Content, Events, Experience, ExperienceEvents, ExperienceId, Label, RecordKind, RecordRef,
-    SensationName,
-};
+use oneiros_model::{Events, Experience, ExperienceEvents, ExperienceId, RecordRef};
 use oneiros_protocol::AddExperienceRefRequest;
 
 use crate::*;
@@ -13,7 +10,7 @@ pub(crate) async fn handler(
     Json(request): Json<AddExperienceRefRequest>,
 ) -> Result<(StatusCode, Json<Experience>), Error> {
     // Validate that the experience exists.
-    let (exp_id, agent_id, sensation, description, created_at) = ticket
+    ticket
         .db
         .get_experience(id.to_string())?
         .ok_or(NotFound::Experience(id))?;
@@ -33,26 +30,11 @@ pub(crate) async fn handler(
         .db
         .log_event(&event, projections::BRAIN_PROJECTIONS)?;
 
-    // Fetch all refs to build the full Experience.
-    let refs = ticket.db.list_experience_refs(&exp_id)?;
-
-    let record_refs = refs
-        .into_iter()
-        .map(|(_, record_id, record_kind, role, _)| RecordRef {
-            id: record_id.parse().unwrap_or_default(),
-            kind: record_kind.parse().unwrap_or(RecordKind::Storage),
-            role: role.map(Label::new),
-        })
-        .collect();
-
-    let experience = Experience {
-        id: exp_id.parse().unwrap_or_default(),
-        agent_id: agent_id.parse().unwrap_or_default(),
-        sensation: SensationName::new(sensation),
-        description: Content::new(description),
-        refs: record_refs,
-        created_at: created_at.parse().unwrap_or_default(),
-    };
+    // Re-fetch the full experience (now includes the new ref via projection).
+    let experience = ticket
+        .db
+        .get_experience(id.to_string())?
+        .ok_or(NotFound::Experience(id))?;
 
     Ok((StatusCode::OK, Json(experience)))
 }

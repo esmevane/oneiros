@@ -1,6 +1,6 @@
 use axum::{Json, http::StatusCode};
 use chrono::Utc;
-use oneiros_model::{AgentId, Events, Experience, ExperienceEvents, ExperienceId};
+use oneiros_model::{Events, Experience, ExperienceEvents, ExperienceId};
 use oneiros_protocol::CreateExperienceRequest;
 
 use crate::*;
@@ -10,12 +10,10 @@ pub(crate) async fn handler(
     Json(request): Json<CreateExperienceRequest>,
 ) -> Result<(StatusCode, Json<Experience>), Error> {
     // Resolve agent name to agent_id.
-    let (id, _, _, _, _) = ticket
+    let agent = ticket
         .db
         .get_agent(&request.agent)?
         .ok_or(NotFound::Agent(request.agent.clone()))?;
-
-    let agent_id: AgentId = id.parse().unwrap_or_default();
 
     // Validate that the referenced sensation exists.
     ticket
@@ -25,7 +23,7 @@ pub(crate) async fn handler(
 
     let experience = Experience {
         id: ExperienceId::new(),
-        agent_id,
+        agent_id: agent.id,
         sensation: request.sensation,
         description: request.description,
         refs: request.refs,
