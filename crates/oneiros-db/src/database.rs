@@ -247,10 +247,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_persona(
-        &self,
-        name: impl AsRef<str>,
-    ) -> Result<Option<Persona>, DatabaseError> {
+    pub fn get_persona(&self, name: impl AsRef<str>) -> Result<Option<Persona>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from persona where name = ?1",
             params![name.as_ref()],
@@ -321,10 +318,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_texture(
-        &self,
-        name: impl AsRef<str>,
-    ) -> Result<Option<Texture>, DatabaseError> {
+    pub fn get_texture(&self, name: impl AsRef<str>) -> Result<Option<Texture>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from texture where name = ?1",
             params![name.as_ref()],
@@ -393,10 +387,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_level(
-        &self,
-        name: impl AsRef<str>,
-    ) -> Result<Option<Level>, DatabaseError> {
+    pub fn get_level(&self, name: impl AsRef<str>) -> Result<Option<Level>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from level where name = ?1",
             params![name.as_ref()],
@@ -573,10 +564,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_cognition(
-        &self,
-        id: impl AsRef<str>,
-    ) -> Result<Option<Cognition>, DatabaseError> {
+    pub fn get_cognition(&self, id: impl AsRef<str>) -> Result<Option<Cognition>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, agent_id, texture, content, created_at from cognition where id = ?1",
             params![id.as_ref()],
@@ -890,10 +878,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_sensation(
-        &self,
-        name: impl AsRef<str>,
-    ) -> Result<Option<Sensation>, DatabaseError> {
+    pub fn get_sensation(&self, name: impl AsRef<str>) -> Result<Option<Sensation>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from sensation where name = ?1",
             params![name.as_ref()],
@@ -962,10 +947,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_experience(
-        &self,
-        id: impl AsRef<str>,
-    ) -> Result<Option<Experience>, DatabaseError> {
+    pub fn get_experience(&self, id: impl AsRef<str>) -> Result<Option<Experience>, DatabaseError> {
         let id_ref = id.as_ref();
         let result = self.conn.query_row(
             "select id, agent_id, sensation, description, created_at from experience where id = ?1",
@@ -1208,10 +1190,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_storage(
-        &self,
-        key: impl AsRef<str>,
-    ) -> Result<Option<StorageEntry>, DatabaseError> {
+    pub fn get_storage(&self, key: impl AsRef<str>) -> Result<Option<StorageEntry>, DatabaseError> {
         let result = self.conn.query_row(
             "select key, description, hash from storage where key = ?1",
             params![key.as_ref()],
