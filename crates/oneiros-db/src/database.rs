@@ -1,3 +1,5 @@
+use chrono::{DateTime, Utc};
+use oneiros_model::*;
 use rusqlite::functions::FunctionFlags;
 use rusqlite::{Connection, params};
 use serde_json::Value;
@@ -6,20 +8,77 @@ use uuid::Uuid;
 
 use crate::*;
 
-/// Raw row from the agent table: (id, name, persona, description, prompt).
-type AgentRow = (String, String, String, String, String);
+// -- Row parsing helpers --
 
-/// Raw row from the cognition table: (id, agent_id, texture, content, created_at).
-type CognitionRow = (String, String, String, String, String);
+fn parse_agent(row: (String, String, String, String, String)) -> Result<Agent, DatabaseError> {
+    let (id, name, persona, description, prompt) = row;
+    Ok(Agent {
+        id: id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("agent.id: {e}")))?,
+        name: AgentName::new(name),
+        persona: PersonaName::new(persona),
+        description: Description::new(description),
+        prompt: Prompt::new(prompt),
+    })
+}
 
-/// Raw row from the memory table: (id, agent_id, level, content, created_at).
-type MemoryRow = (String, String, String, String, String);
+fn parse_cognition(
+    row: (String, String, String, String, String),
+) -> Result<Cognition, DatabaseError> {
+    let (id, agent_id, texture, content, created_at) = row;
+    Ok(Cognition {
+        id: id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("cognition.id: {e}")))?,
+        agent_id: agent_id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("cognition.agent_id: {e}")))?,
+        texture: TextureName::new(texture),
+        content: Content::new(content),
+        created_at: created_at
+            .parse::<DateTime<Utc>>()
+            .map_err(|e| DatabaseError::ParseRow(format!("cognition.created_at: {e}")))?,
+    })
+}
 
-/// Raw row from the experience table: (id, agent_id, sensation, description, created_at).
-type ExperienceRow = (String, String, String, String, String);
+fn parse_memory(row: (String, String, String, String, String)) -> Result<Memory, DatabaseError> {
+    let (id, agent_id, level, content, created_at) = row;
+    Ok(Memory {
+        id: id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("memory.id: {e}")))?,
+        agent_id: agent_id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("memory.agent_id: {e}")))?,
+        level: LevelName::new(level),
+        content: Content::new(content),
+        created_at: created_at
+            .parse::<DateTime<Utc>>()
+            .map_err(|e| DatabaseError::ParseRow(format!("memory.created_at: {e}")))?,
+    })
+}
 
-/// Raw row from the experience_ref table: (experience_id, record_id, record_kind, role, created_at).
-type ExperienceRefRow = (String, String, String, Option<String>, String);
+fn parse_experience(
+    row: (String, String, String, String, String),
+    refs: Vec<RecordRef>,
+) -> Result<Experience, DatabaseError> {
+    let (id, agent_id, sensation, description, created_at) = row;
+    Ok(Experience {
+        id: id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("experience.id: {e}")))?,
+        agent_id: agent_id
+            .parse()
+            .map_err(|e| DatabaseError::ParseRow(format!("experience.agent_id: {e}")))?,
+        sensation: SensationName::new(sensation),
+        description: Content::new(description),
+        refs,
+        created_at: created_at
+            .parse::<DateTime<Utc>>()
+            .map_err(|e| DatabaseError::ParseRow(format!("experience.created_at: {e}")))?,
+    })
+}
 
 pub struct Database {
     conn: Connection,
@@ -235,6 +294,8 @@ impl Database {
         Ok(())
     }
 
+    // -- Persona operations --
+
     pub fn set_persona(
         &self,
         name: impl AsRef<str>,
@@ -262,11 +323,17 @@ impl Database {
     pub fn get_persona(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+    ) -> Result<Option<Persona>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from persona where name = ?1",
             params![name.as_ref()],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| {
+                Ok(Persona {
+                    name: PersonaName::new(row.get::<_, String>(0)?),
+                    description: Description::new(row.get::<_, String>(1)?),
+                    prompt: Prompt::new(row.get::<_, String>(2)?),
+                })
+            },
         );
 
         match result {
@@ -276,12 +343,18 @@ impl Database {
         }
     }
 
-    pub fn list_personas(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+    pub fn list_personas(&self) -> Result<Vec<Persona>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select name, description, prompt from persona order by name")?;
 
-        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Persona {
+                name: PersonaName::new(row.get::<_, String>(0)?),
+                description: Description::new(row.get::<_, String>(1)?),
+                prompt: Prompt::new(row.get::<_, String>(2)?),
+            })
+        })?;
 
         let mut personas = Vec::new();
         for row in rows {
@@ -294,6 +367,8 @@ impl Database {
         self.conn.execute_batch("delete from persona")?;
         Ok(())
     }
+
+    // -- Texture operations --
 
     pub fn set_texture(
         &self,
@@ -322,11 +397,17 @@ impl Database {
     pub fn get_texture(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+    ) -> Result<Option<Texture>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from texture where name = ?1",
             params![name.as_ref()],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| {
+                Ok(Texture {
+                    name: TextureName::new(row.get::<_, String>(0)?),
+                    description: Description::new(row.get::<_, String>(1)?),
+                    prompt: Prompt::new(row.get::<_, String>(2)?),
+                })
+            },
         );
 
         match result {
@@ -336,12 +417,18 @@ impl Database {
         }
     }
 
-    pub fn list_textures(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+    pub fn list_textures(&self) -> Result<Vec<Texture>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select name, description, prompt from texture order by name")?;
 
-        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Texture {
+                name: TextureName::new(row.get::<_, String>(0)?),
+                description: Description::new(row.get::<_, String>(1)?),
+                prompt: Prompt::new(row.get::<_, String>(2)?),
+            })
+        })?;
 
         let mut textures = Vec::new();
         for row in rows {
@@ -354,6 +441,8 @@ impl Database {
         self.conn.execute_batch("delete from texture")?;
         Ok(())
     }
+
+    // -- Level operations --
 
     pub fn set_level(
         &self,
@@ -380,11 +469,17 @@ impl Database {
     pub fn get_level(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+    ) -> Result<Option<Level>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from level where name = ?1",
             params![name.as_ref()],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| {
+                Ok(Level {
+                    name: LevelName::new(row.get::<_, String>(0)?),
+                    description: Description::new(row.get::<_, String>(1)?),
+                    prompt: Prompt::new(row.get::<_, String>(2)?),
+                })
+            },
         );
 
         match result {
@@ -394,12 +489,18 @@ impl Database {
         }
     }
 
-    pub fn list_levels(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+    pub fn list_levels(&self) -> Result<Vec<Level>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select name, description, prompt from level order by name")?;
 
-        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Level {
+                name: LevelName::new(row.get::<_, String>(0)?),
+                description: Description::new(row.get::<_, String>(1)?),
+                prompt: Prompt::new(row.get::<_, String>(2)?),
+            })
+        })?;
 
         let mut levels = Vec::new();
         for row in rows {
@@ -412,6 +513,8 @@ impl Database {
         self.conn.execute_batch("delete from level")?;
         Ok(())
     }
+
+    // -- Agent operations --
 
     pub fn create_agent_record(
         &self,
@@ -460,7 +563,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_agent(&self, name: impl AsRef<str>) -> Result<Option<AgentRow>, DatabaseError> {
+    pub fn get_agent(&self, name: impl AsRef<str>) -> Result<Option<Agent>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, name, persona, description, prompt from agent where name = ?1",
             params![name.as_ref()],
@@ -476,13 +579,13 @@ impl Database {
         );
 
         match result {
-            Ok(agent) => Ok(Some(agent)),
+            Ok(row) => Ok(Some(parse_agent(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
-    pub fn list_agents(&self) -> Result<Vec<AgentRow>, DatabaseError> {
+    pub fn list_agents(&self) -> Result<Vec<Agent>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select id, name, persona, description, prompt from agent order by name")?;
@@ -499,7 +602,7 @@ impl Database {
 
         let mut agents = Vec::new();
         for row in rows {
-            agents.push(row?);
+            agents.push(parse_agent(row?)?);
         }
         Ok(agents)
     }
@@ -517,6 +620,8 @@ impl Database {
         self.conn.execute_batch("delete from agent")?;
         Ok(())
     }
+
+    // -- Cognition operations --
 
     pub fn add_cognition(
         &self,
@@ -543,7 +648,7 @@ impl Database {
     pub fn get_cognition(
         &self,
         id: impl AsRef<str>,
-    ) -> Result<Option<CognitionRow>, DatabaseError> {
+    ) -> Result<Option<Cognition>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, agent_id, texture, content, created_at from cognition where id = ?1",
             params![id.as_ref()],
@@ -559,13 +664,13 @@ impl Database {
         );
 
         match result {
-            Ok(cognition) => Ok(Some(cognition)),
+            Ok(row) => Ok(Some(parse_cognition(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
-    pub fn list_cognitions(&self) -> Result<Vec<CognitionRow>, DatabaseError> {
+    pub fn list_cognitions(&self) -> Result<Vec<Cognition>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition order by rowid",
         )?;
@@ -582,7 +687,7 @@ impl Database {
 
         let mut cognitions = Vec::new();
         for row in rows {
-            cognitions.push(row?);
+            cognitions.push(parse_cognition(row?)?);
         }
         Ok(cognitions)
     }
@@ -590,7 +695,7 @@ impl Database {
     pub fn list_cognitions_by_agent(
         &self,
         agent_id: impl AsRef<str>,
-    ) -> Result<Vec<CognitionRow>, DatabaseError> {
+    ) -> Result<Vec<Cognition>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where agent_id = ?1 order by rowid",
@@ -608,7 +713,7 @@ impl Database {
 
         let mut cognitions = Vec::new();
         for row in rows {
-            cognitions.push(row?);
+            cognitions.push(parse_cognition(row?)?);
         }
         Ok(cognitions)
     }
@@ -616,7 +721,7 @@ impl Database {
     pub fn list_cognitions_by_texture(
         &self,
         texture: impl AsRef<str>,
-    ) -> Result<Vec<CognitionRow>, DatabaseError> {
+    ) -> Result<Vec<Cognition>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where texture = ?1 order by rowid",
@@ -634,7 +739,7 @@ impl Database {
 
         let mut cognitions = Vec::new();
         for row in rows {
-            cognitions.push(row?);
+            cognitions.push(parse_cognition(row?)?);
         }
         Ok(cognitions)
     }
@@ -643,7 +748,7 @@ impl Database {
         &self,
         agent_id: impl AsRef<str>,
         texture: impl AsRef<str>,
-    ) -> Result<Vec<CognitionRow>, DatabaseError> {
+    ) -> Result<Vec<Cognition>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where agent_id = ?1 and texture = ?2 order by rowid",
@@ -661,7 +766,7 @@ impl Database {
 
         let mut cognitions = Vec::new();
         for row in rows {
-            cognitions.push(row?);
+            cognitions.push(parse_cognition(row?)?);
         }
         Ok(cognitions)
     }
@@ -670,6 +775,8 @@ impl Database {
         self.conn.execute_batch("delete from cognition")?;
         Ok(())
     }
+
+    // -- Memory operations --
 
     pub fn add_memory(
         &self,
@@ -693,7 +800,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_memory(&self, id: impl AsRef<str>) -> Result<Option<MemoryRow>, DatabaseError> {
+    pub fn get_memory(&self, id: impl AsRef<str>) -> Result<Option<Memory>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, agent_id, level, content, created_at from memory where id = ?1",
             params![id.as_ref()],
@@ -709,13 +816,13 @@ impl Database {
         );
 
         match result {
-            Ok(memory) => Ok(Some(memory)),
+            Ok(row) => Ok(Some(parse_memory(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
-    pub fn list_memories(&self) -> Result<Vec<MemoryRow>, DatabaseError> {
+    pub fn list_memories(&self) -> Result<Vec<Memory>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory order by rowid",
         )?;
@@ -732,7 +839,7 @@ impl Database {
 
         let mut memories = Vec::new();
         for row in rows {
-            memories.push(row?);
+            memories.push(parse_memory(row?)?);
         }
         Ok(memories)
     }
@@ -740,7 +847,7 @@ impl Database {
     pub fn list_memories_by_agent(
         &self,
         agent_id: impl AsRef<str>,
-    ) -> Result<Vec<MemoryRow>, DatabaseError> {
+    ) -> Result<Vec<Memory>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where agent_id = ?1 order by rowid",
@@ -758,7 +865,7 @@ impl Database {
 
         let mut memories = Vec::new();
         for row in rows {
-            memories.push(row?);
+            memories.push(parse_memory(row?)?);
         }
         Ok(memories)
     }
@@ -766,7 +873,7 @@ impl Database {
     pub fn list_memories_by_level(
         &self,
         level: impl AsRef<str>,
-    ) -> Result<Vec<MemoryRow>, DatabaseError> {
+    ) -> Result<Vec<Memory>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where level = ?1 order by rowid",
@@ -784,7 +891,7 @@ impl Database {
 
         let mut memories = Vec::new();
         for row in rows {
-            memories.push(row?);
+            memories.push(parse_memory(row?)?);
         }
         Ok(memories)
     }
@@ -793,7 +900,7 @@ impl Database {
         &self,
         agent_id: impl AsRef<str>,
         level: impl AsRef<str>,
-    ) -> Result<Vec<MemoryRow>, DatabaseError> {
+    ) -> Result<Vec<Memory>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where agent_id = ?1 and level = ?2 order by rowid",
@@ -811,7 +918,7 @@ impl Database {
 
         let mut memories = Vec::new();
         for row in rows {
-            memories.push(row?);
+            memories.push(parse_memory(row?)?);
         }
         Ok(memories)
     }
@@ -850,11 +957,17 @@ impl Database {
     pub fn get_sensation(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+    ) -> Result<Option<Sensation>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from sensation where name = ?1",
             params![name.as_ref()],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| {
+                Ok(Sensation {
+                    name: SensationName::new(row.get::<_, String>(0)?),
+                    description: Description::new(row.get::<_, String>(1)?),
+                    prompt: Prompt::new(row.get::<_, String>(2)?),
+                })
+            },
         );
 
         match result {
@@ -864,12 +977,18 @@ impl Database {
         }
     }
 
-    pub fn list_sensations(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+    pub fn list_sensations(&self) -> Result<Vec<Sensation>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select name, description, prompt from sensation order by name")?;
 
-        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Sensation {
+                name: SensationName::new(row.get::<_, String>(0)?),
+                description: Description::new(row.get::<_, String>(1)?),
+                prompt: Prompt::new(row.get::<_, String>(2)?),
+            })
+        })?;
 
         let mut sensations = Vec::new();
         for row in rows {
@@ -910,10 +1029,11 @@ impl Database {
     pub fn get_experience(
         &self,
         id: impl AsRef<str>,
-    ) -> Result<Option<ExperienceRow>, DatabaseError> {
+    ) -> Result<Option<Experience>, DatabaseError> {
+        let id_ref = id.as_ref();
         let result = self.conn.query_row(
             "select id, agent_id, sensation, description, created_at from experience where id = ?1",
-            params![id.as_ref()],
+            params![id_ref],
             |row| {
                 Ok((
                     row.get(0)?,
@@ -926,13 +1046,16 @@ impl Database {
         );
 
         match result {
-            Ok(experience) => Ok(Some(experience)),
+            Ok(row) => {
+                let refs = self.collect_experience_refs(id_ref)?;
+                Ok(Some(parse_experience(row, refs)?))
+            }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
-    pub fn list_experiences(&self) -> Result<Vec<ExperienceRow>, DatabaseError> {
+    pub fn list_experiences(&self) -> Result<Vec<Experience>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience order by rowid",
         )?;
@@ -947,9 +1070,13 @@ impl Database {
             ))
         })?;
 
+        let raw_rows: Vec<(String, String, String, String, String)> = rows
+            .collect::<Result<_, _>>()?;
+
         let mut experiences = Vec::new();
-        for row in rows {
-            experiences.push(row?);
+        for row in raw_rows {
+            let refs = self.collect_experience_refs(&row.0)?;
+            experiences.push(parse_experience(row, refs)?);
         }
         Ok(experiences)
     }
@@ -957,7 +1084,7 @@ impl Database {
     pub fn list_experiences_by_agent(
         &self,
         agent_id: impl AsRef<str>,
-    ) -> Result<Vec<ExperienceRow>, DatabaseError> {
+    ) -> Result<Vec<Experience>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience \
              where agent_id = ?1 order by rowid",
@@ -973,9 +1100,13 @@ impl Database {
             ))
         })?;
 
+        let raw_rows: Vec<(String, String, String, String, String)> = rows
+            .collect::<Result<_, _>>()?;
+
         let mut experiences = Vec::new();
-        for row in rows {
-            experiences.push(row?);
+        for row in raw_rows {
+            let refs = self.collect_experience_refs(&row.0)?;
+            experiences.push(parse_experience(row, refs)?);
         }
         Ok(experiences)
     }
@@ -983,7 +1114,7 @@ impl Database {
     pub fn list_experiences_by_sensation(
         &self,
         sensation: impl AsRef<str>,
-    ) -> Result<Vec<ExperienceRow>, DatabaseError> {
+    ) -> Result<Vec<Experience>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience \
              where sensation = ?1 order by rowid",
@@ -999,9 +1130,13 @@ impl Database {
             ))
         })?;
 
+        let raw_rows: Vec<(String, String, String, String, String)> = rows
+            .collect::<Result<_, _>>()?;
+
         let mut experiences = Vec::new();
-        for row in rows {
-            experiences.push(row?);
+        for row in raw_rows {
+            let refs = self.collect_experience_refs(&row.0)?;
+            experiences.push(parse_experience(row, refs)?);
         }
         Ok(experiences)
     }
@@ -1029,28 +1164,35 @@ impl Database {
         Ok(())
     }
 
-    pub fn list_experience_refs(
+    fn collect_experience_refs(
         &self,
-        experience_id: impl AsRef<str>,
-    ) -> Result<Vec<ExperienceRefRow>, DatabaseError> {
+        experience_id: &str,
+    ) -> Result<Vec<RecordRef>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "select experience_id, record_id, record_kind, role, created_at \
+            "select record_id, record_kind, role \
              from experience_ref where experience_id = ?1 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![experience_id.as_ref()], |row| {
+        let rows = stmt.query_map(params![experience_id], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?,
             ))
         })?;
 
         let mut refs = Vec::new();
         for row in rows {
-            refs.push(row?);
+            let (record_id, record_kind, role) = row?;
+            refs.push(RecordRef {
+                id: record_id.parse().map_err(|e| {
+                    DatabaseError::ParseRow(format!("experience_ref.record_id: {e}"))
+                })?,
+                kind: record_kind.parse().map_err(|e| {
+                    DatabaseError::ParseRow(format!("experience_ref.record_kind: {e}"))
+                })?,
+                role: role.map(Label::new),
+            });
         }
         Ok(refs)
     }
@@ -1141,11 +1283,17 @@ impl Database {
     pub fn get_storage(
         &self,
         key: impl AsRef<str>,
-    ) -> Result<Option<(String, String, String)>, DatabaseError> {
+    ) -> Result<Option<StorageEntry>, DatabaseError> {
         let result = self.conn.query_row(
             "select key, description, hash from storage where key = ?1",
             params![key.as_ref()],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| {
+                Ok(StorageEntry {
+                    key: StorageKey::new(row.get::<_, String>(0)?),
+                    description: Description::new(row.get::<_, String>(1)?),
+                    hash: ContentHash::new(row.get::<_, String>(2)?),
+                })
+            },
         );
 
         match result {
@@ -1155,12 +1303,18 @@ impl Database {
         }
     }
 
-    pub fn list_storage(&self) -> Result<Vec<(String, String, String)>, DatabaseError> {
+    pub fn list_storage(&self) -> Result<Vec<StorageEntry>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select key, description, hash from storage order by key")?;
 
-        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?;
+        let rows = stmt.query_map([], |row| {
+            Ok(StorageEntry {
+                key: StorageKey::new(row.get::<_, String>(0)?),
+                description: Description::new(row.get::<_, String>(1)?),
+                hash: ContentHash::new(row.get::<_, String>(2)?),
+            })
+        })?;
 
         let mut entries = Vec::new();
         for row in rows {

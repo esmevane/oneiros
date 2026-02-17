@@ -1175,6 +1175,8 @@ dependencies = [
 name = "oneiros-db"
 version = "0.0.5"
 dependencies = [
+ "chrono",
+ "oneiros-model",
  "rusqlite",
  "serde",
  "serde_json",

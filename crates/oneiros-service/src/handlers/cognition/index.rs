@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{AgentName, Cognition, Content, TextureName};
+use oneiros_model::{AgentName, Cognition, TextureName};
 use serde::Deserialize;
 
 use crate::*;
@@ -10,24 +10,13 @@ pub(crate) struct ListParams {
     pub texture: Option<TextureName>,
 }
 
-fn to_cognition(row: (String, String, String, String, String)) -> Cognition {
-    let (id, agent_id, texture, content, created_at) = row;
-    Cognition {
-        id: id.parse().unwrap_or_default(),
-        agent_id: agent_id.parse().unwrap_or_default(),
-        texture: TextureName::new(texture),
-        content: Content::new(content),
-        created_at: created_at.parse().unwrap_or_default(),
-    }
-}
-
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
 ) -> Result<Json<Vec<Cognition>>, Error> {
-    let rows = match (params.agent, params.texture) {
+    let cognitions = match (params.agent, params.texture) {
         (Some(agent_name), Some(texture)) => {
-            let (id, _, _, _, _) = ticket
+            let agent = ticket
                 .db
                 .get_agent(&agent_name)?
                 .ok_or(NotFound::Agent(agent_name))?;
@@ -39,15 +28,15 @@ pub(crate) async fn handler(
 
             ticket
                 .db
-                .list_cognitions_by_agent_and_texture(&id, &texture)?
+                .list_cognitions_by_agent_and_texture(agent.id.to_string(), &texture)?
         }
         (Some(agent_name), None) => {
-            let (id, _, _, _, _) = ticket
+            let agent = ticket
                 .db
                 .get_agent(&agent_name)?
                 .ok_or(NotFound::Agent(agent_name))?;
 
-            ticket.db.list_cognitions_by_agent(&id)?
+            ticket.db.list_cognitions_by_agent(agent.id.to_string())?
         }
         (None, Some(texture)) => {
             ticket
@@ -59,8 +48,6 @@ pub(crate) async fn handler(
         }
         (None, None) => ticket.db.list_cognitions()?,
     };
-
-    let cognitions = rows.into_iter().map(to_cognition).collect::<Vec<_>>();
 
     Ok(Json(cognitions))
 }

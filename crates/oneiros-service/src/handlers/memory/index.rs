@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{AgentName, Content, LevelName, Memory};
+use oneiros_model::{AgentName, LevelName, Memory};
 use serde::Deserialize;
 
 use crate::*;
@@ -10,24 +10,13 @@ pub(crate) struct ListParams {
     pub level: Option<LevelName>,
 }
 
-fn to_memory(row: (String, String, String, String, String)) -> Memory {
-    let (id, agent_id, level, content, created_at) = row;
-    Memory {
-        id: id.parse().unwrap_or_default(),
-        agent_id: agent_id.parse().unwrap_or_default(),
-        level: LevelName::new(level),
-        content: Content::new(content),
-        created_at: created_at.parse().unwrap_or_default(),
-    }
-}
-
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
 ) -> Result<Json<Vec<Memory>>, Error> {
-    let rows = match (params.agent, params.level) {
+    let memories = match (params.agent, params.level) {
         (Some(agent_name), Some(level)) => {
-            let (id, _, _, _, _) = ticket
+            let agent = ticket
                 .db
                 .get_agent(&agent_name)?
                 .ok_or(NotFound::Agent(agent_name))?;
@@ -37,15 +26,17 @@ pub(crate) async fn handler(
                 .get_level(&level)?
                 .ok_or(NotFound::Level(level.clone()))?;
 
-            ticket.db.list_memories_by_agent_and_level(&id, &level)?
+            ticket
+                .db
+                .list_memories_by_agent_and_level(agent.id.to_string(), &level)?
         }
         (Some(agent_name), None) => {
-            let (id, _, _, _, _) = ticket
+            let agent = ticket
                 .db
                 .get_agent(&agent_name)?
                 .ok_or(NotFound::Agent(agent_name))?;
 
-            ticket.db.list_memories_by_agent(&id)?
+            ticket.db.list_memories_by_agent(agent.id.to_string())?
         }
         (None, Some(level)) => {
             ticket
@@ -57,8 +48,6 @@ pub(crate) async fn handler(
         }
         (None, None) => ticket.db.list_memories()?,
     };
-
-    let memories = rows.into_iter().map(to_memory).collect::<Vec<_>>();
 
     Ok(Json(memories))
 }

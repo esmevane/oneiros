@@ -7,4 +7,7 @@ pub enum DatabaseError {
 
     #[error("Unable to serialize JSON data to event: {0}")]
     Serialization(#[from] serde_json::Error),
+
+    #[error("Failed to parse row data: {0}")]
+    ParseRow(String),
 }
