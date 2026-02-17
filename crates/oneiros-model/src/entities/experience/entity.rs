@@ -11,7 +11,8 @@ pub struct Experience {
     pub agent_id: AgentId,
     pub sensation: SensationName,
     pub description: Content,
-    pub refs: Vec<RecordRef>,
+    #[serde(alias = "refs")]
+    pub links: Vec<Link>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -26,7 +27,7 @@ impl Experience {
         } else {
             description.to_string()
         };
-        let ref_count = self.refs.len();
+        let ref_count = self.links.len();
 
         format!("{short_id}  {sensation:<12} {truncated} ({ref_count} refs)")
     }
@@ -38,8 +39,8 @@ impl Experience {
             format!("  Description: {}", self.description),
         ];
 
-        lines.push(format!("  Refs: ({})", self.refs.len()));
-        for r in &self.refs {
+        lines.push(format!("  Refs: ({})", self.links.len()));
+        for r in &self.links {
             lines.push(format!("    {r}"));
         }
 
@@ -79,7 +80,7 @@ where
                 .map_err(ExperienceConstructionError::InvalidAgentId)?,
             sensation: SensationName::new(sensation),
             description: Content::new(description),
-            refs: Vec::new(),
+            links: Vec::new(),
             created_at: created_at
                 .as_ref()
                 .parse::<DateTime<Utc>>()
@@ -91,10 +92,10 @@ where
 impl Experience {
     pub fn construct_from_db(
         row: impl TryInto<Self, Error = ExperienceConstructionError>,
-        refs: Vec<RecordRef>,
+        links: Vec<Link>,
     ) -> Result<Self, ExperienceConstructionError> {
         let mut experience = row.try_into()?;
-        experience.refs = refs;
+        experience.links = links;
         Ok(experience)
     }
 }

@@ -13,5 +13,5 @@ pub enum ConstructionError {
     #[error(transparent)]
     Experience(#[from] ExperienceConstructionError),
     #[error(transparent)]
-    RecordRef(#[from] RecordRefConstructionError),
+    Link(#[from] LinkConstructionError),
 }

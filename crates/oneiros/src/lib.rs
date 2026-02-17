@@ -13,6 +13,7 @@ pub(crate) use commands::*;
 pub(crate) use context::*;
 pub(crate) use logging::*;
 pub(crate) use oneiros_model::*;
+pub(crate) use oneiros_protocol::*;
 pub(crate) use oneiros_service::projections;
 pub(crate) use prefix_id::*;
 

@@ -1,6 +1,7 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
-use oneiros_model::{Events, StorageEvents, StorageRef};
+use oneiros_model::StorageRef;
+use oneiros_protocol::{Events, StorageEvents};
 
 use crate::*;
 

@@ -3,13 +3,21 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use oneiros_db::Database;
 use oneiros_model::{
-    ActorId, Brain, BrainEvents, BrainId, BrainStatus, Events, IdParseError, TenantId, Ticket,
-    TicketEvents, TicketId, Token, TokenClaims,
+    ActorId, Brain, BrainId, BrainName, BrainStatus, Id, IdParseError, TenantId, Ticket, TicketId,
+    Token, TokenClaims,
 };
-use oneiros_protocol::{BrainInfo, CreateBrainRequest};
+use oneiros_protocol::{BrainEvents, BrainInfo, CreateBrainRequest, Events, TicketEvents};
 use std::sync::Arc;
 
 use crate::*;
+
+/// The identity-defining fields for a brain. Serialized with postcard
+/// and hashed with SHA-256 to produce a deterministic content-addressed ID.
+#[derive(serde::Serialize)]
+struct BrainContent<'a> {
+    tenant_id: &'a TenantId,
+    name: &'a BrainName,
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBrainError {
@@ -48,7 +56,12 @@ pub(crate) async fn handler(
 
     Database::create_brain_db(&path)?;
 
-    let brain_id = BrainId::new();
+    let brain_bytes = postcard::to_allocvec(&BrainContent {
+        tenant_id: &tenant_id,
+        name: &request.name,
+    })
+    .expect("postcard serialization of brain content");
+    let brain_id = BrainId(Id::from_content(&brain_bytes));
 
     let entity = Brain {
         tenant_id,

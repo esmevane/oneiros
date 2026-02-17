@@ -1,6 +1,6 @@
 use axum::{Json, extract::Path, http::StatusCode};
-use oneiros_model::{Events, Experience, ExperienceEvents, ExperienceId, RecordRef};
-use oneiros_protocol::AddExperienceRefRequest;
+use oneiros_model::{Experience, ExperienceId};
+use oneiros_protocol::{AddExperienceRefRequest, Events, ExperienceEvents};
 
 use crate::*;
 
@@ -15,15 +15,9 @@ pub(crate) async fn handler(
         .get_experience(id.to_string())?
         .ok_or(NotFound::Experience(id))?;
 
-    let record_ref = RecordRef {
-        id: request.record_id,
-        kind: request.record_kind,
-        role: request.role,
-    };
-
     let event = Events::Experience(ExperienceEvents::ExperienceRefAdded {
         experience_id: id,
-        record_ref: record_ref.clone(),
+        link: request.link,
     });
 
     ticket

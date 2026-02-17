@@ -13,6 +13,21 @@ use crate::*;
 
 const UNKNOWN_TENANT: &str = "onerios user";
 
+/// The identity-defining fields for a tenant. Serialized with postcard
+/// and hashed with SHA-256 to produce a deterministic content-addressed ID.
+#[derive(serde::Serialize)]
+struct TenantContent<'a> {
+    name: &'a TenantName,
+}
+
+/// The identity-defining fields for an actor. Serialized with postcard
+/// and hashed with SHA-256 to produce a deterministic content-addressed ID.
+#[derive(serde::Serialize)]
+struct ActorContent<'a> {
+    tenant_id: &'a TenantId,
+    name: &'a ActorName,
+}
+
 #[derive(Clone, Args)]
 pub(crate) struct Init {
     /// Your preferred name for your oneiros host.
@@ -65,7 +80,10 @@ impl Init {
 
         outcomes.emit(InitSystemOutcomes::ResolvedTenant(name.clone()));
 
-        let tenant_id = TenantId::new();
+        let tenant_bytes = postcard::to_allocvec(&TenantContent { name: &name })
+            .expect("postcard serialization of tenant content");
+        let tenant_id = TenantId(Id::from_content(&tenant_bytes));
+
         let create_tenant = Events::Tenant(TenantEvents::TenantCreated(Tenant {
             tenant_id,
             name: name.clone(),
@@ -74,12 +92,18 @@ impl Init {
         database.log_event(&create_tenant, projections::SYSTEM_PROJECTIONS)?;
         outcomes.emit(InitSystemOutcomes::TenantCreated);
 
-        let actor_id = ActorId::new();
+        let actor_name = ActorName::new(name.as_str());
+        let actor_bytes = postcard::to_allocvec(&ActorContent {
+            tenant_id: &tenant_id,
+            name: &actor_name,
+        })
+        .expect("postcard serialization of actor content");
+        let actor_id = ActorId(Id::from_content(&actor_bytes));
 
         let create_actor = Events::Actor(ActorEvents::ActorCreated(Actor {
             tenant_id,
             actor_id,
-            name: ActorName::new(name.as_str()),
+            name: actor_name,
         }));
 
         database.log_event(&create_actor, projections::SYSTEM_PROJECTIONS)?;

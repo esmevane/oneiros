@@ -1082,10 +1082,7 @@ impl Database {
         Ok(())
     }
 
-    fn collect_experience_refs(
-        &self,
-        experience_id: &str,
-    ) -> Result<Vec<RecordRef>, DatabaseError> {
+    fn collect_experience_refs(&self, experience_id: &str) -> Result<Vec<Link>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select record_id, record_kind, role \
              from experience_ref where experience_id = ?1 order by rowid",
@@ -1102,7 +1099,7 @@ impl Database {
         let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
         raw_rows
             .into_iter()
-            .map(RecordRef::construct_from_db)
+            .map(|(id, kind, role)| Link::construct_from_db(&id, &kind, role))
             .collect::<Result<Vec<_>, _>>()
             .map_err(DatabaseError::from)
     }

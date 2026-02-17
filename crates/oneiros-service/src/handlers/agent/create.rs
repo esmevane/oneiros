@@ -1,8 +1,16 @@
 use axum::{Json, http::StatusCode};
-use oneiros_model::{Agent, AgentEvents, AgentId, Events};
-use oneiros_protocol::CreateAgentRequest;
+use oneiros_model::{Agent, AgentId, AgentName, Id, PersonaName};
+use oneiros_protocol::{AgentEvents, CreateAgentRequest, Events};
 
 use crate::*;
+
+/// The identity-defining fields for an agent. Serialized with postcard
+/// and hashed with SHA-256 to produce a deterministic content-addressed ID.
+#[derive(serde::Serialize)]
+struct AgentContent<'a> {
+    name: &'a AgentName,
+    persona: &'a PersonaName,
+}
 
 pub(crate) async fn handler(
     ticket: ActorContext,
@@ -19,8 +27,14 @@ pub(crate) async fn handler(
         return Err(Conflicts::Agent(request.name).into());
     }
 
+    let content_bytes = postcard::to_allocvec(&AgentContent {
+        name: &request.name,
+        persona: &request.persona,
+    })
+    .expect("postcard serialization of agent content");
+
     let agent = Agent {
-        id: AgentId::new(),
+        id: AgentId(Id::from_content(&content_bytes)),
         name: request.name,
         persona: request.persona,
         description: request.description,

@@ -3,6 +3,7 @@ use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::*;
+use oneiros_protocol::*;
 use oneiros_service::*;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -161,7 +162,7 @@ async fn create_experience_returns_created() {
         experience.description.as_str(),
         "Template changes and orientation gap are two approaches to the same problem."
     );
-    assert!(experience.refs.is_empty());
+    assert!(experience.links.is_empty());
 }
 
 #[tokio::test]
@@ -208,14 +209,14 @@ async fn create_experience_with_refs() {
     seed_agent(&state, &token, "architect", "expert").await;
     seed_sensation(&state, &token, "caused").await;
 
-    let fake_id = Id::new();
+    let fake_id = CognitionId::new();
     let app = router(state);
     let body = serde_json::json!({
         "agent": "architect",
         "sensation": "caused",
         "description": "One insight led to another.",
-        "refs": [
-            { "id": fake_id.to_string(), "kind": "cognition", "role": "origin" }
+        "links": [
+            { "local": { "resource": { "cognition": fake_id.to_string() }, "role": "origin" } }
         ]
     });
 
@@ -227,10 +228,10 @@ async fn create_experience_with_refs() {
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let experience: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(experience.refs.len(), 1);
-    assert_eq!(experience.refs[0].kind, RecordKind::Cognition);
+    assert_eq!(experience.links.len(), 1);
+    assert_eq!(experience.links[0].resource().kind_name(), "cognition");
     assert_eq!(
-        experience.refs[0].role.as_ref().map(|l| l.as_str()),
+        experience.links[0].role().map(Label::as_str),
         Some("origin")
     );
 }
@@ -347,15 +348,13 @@ async fn add_ref_to_existing_experience() {
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let created: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert!(created.refs.is_empty());
+    assert!(created.links.is_empty());
 
-    // Add a ref.
-    let ref_id = Id::new();
+    // Add a link.
+    let ref_id = MemoryId::new();
     let app = router(state.clone());
     let body = serde_json::json!({
-        "record_id": ref_id.to_string(),
-        "record_kind": "memory",
-        "role": "origin"
+        "link": { "local": { "resource": { "memory": ref_id.to_string() }, "role": "origin" } }
     });
     let response = app
         .oneshot(post_json_auth(
@@ -369,12 +368,9 @@ async fn add_ref_to_existing_experience() {
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let updated: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].kind, RecordKind::Memory);
-    assert_eq!(
-        updated.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("origin")
-    );
+    assert_eq!(updated.links.len(), 1);
+    assert_eq!(updated.links[0].resource().kind_name(), "memory");
+    assert_eq!(updated.links[0].role().map(Label::as_str), Some("origin"));
 }
 
 #[tokio::test]
@@ -442,4 +438,81 @@ async fn experience_request_with_invalid_token_returns_unauthorized() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn create_same_experience_twice_produces_same_id() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "governor", "process").await;
+    seed_sensation(&state, &token, "continues").await;
+
+    let body = serde_json::json!({
+        "agent": "governor",
+        "sensation": "continues",
+        "description": "The identity thread carries forward."
+    });
+
+    // First creation.
+    let app = router(state.clone());
+    let response = app
+        .oneshot(post_json_auth("/experiences", &body, &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let first: Experience = serde_json::from_slice(&bytes).unwrap();
+
+    // Second creation — same content.
+    let app = router(state.clone());
+    let response = app
+        .oneshot(post_json_auth("/experiences", &body, &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let second: Experience = serde_json::from_slice(&bytes).unwrap();
+
+    // Same content → same ID.
+    assert_eq!(first.id.to_string(), second.id.to_string());
+
+    // Content-addressed ID: 64-char hex, no hyphens.
+    let id_str = first.id.to_string();
+    assert_eq!(id_str.len(), 64);
+    assert!(id_str.chars().all(|c| c.is_ascii_hexdigit()));
+}
+
+#[tokio::test]
+async fn different_experiences_produce_different_ids() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "governor", "process").await;
+    seed_sensation(&state, &token, "continues").await;
+
+    let app = router(state.clone());
+    let body_a = serde_json::json!({
+        "agent": "governor",
+        "sensation": "continues",
+        "description": "Thread A."
+    });
+    let response = app
+        .oneshot(post_json_auth("/experiences", &body_a, &token))
+        .await
+        .unwrap();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let first: Experience = serde_json::from_slice(&bytes).unwrap();
+
+    let app = router(state.clone());
+    let body_b = serde_json::json!({
+        "agent": "governor",
+        "sensation": "continues",
+        "description": "Thread B."
+    });
+    let response = app
+        .oneshot(post_json_auth("/experiences", &body_b, &token))
+        .await
+        .unwrap();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let second: Experience = serde_json::from_slice(&bytes).unwrap();
+
+    // Different content → different IDs.
+    assert_ne!(first.id.to_string(), second.id.to_string());
 }

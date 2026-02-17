@@ -51,16 +51,12 @@ impl RefAdd {
             }
         };
 
+        let resource = super::resource_ref_from_kind(&self.record_kind, record_id)?;
+        let role = self.role.as_ref().map(Label::new);
+        let link = Link::Local { resource, role };
+
         let experience = client
-            .add_experience_ref(
-                &token,
-                &experience_id,
-                AddExperienceRefRequest {
-                    record_id,
-                    record_kind: self.record_kind.clone(),
-                    role: self.role.as_ref().map(Label::new),
-                },
-            )
+            .add_experience_ref(&token, &experience_id, AddExperienceRefRequest { link })
             .await?;
 
         let agents = client.list_agents(&token).await?;

@@ -5,10 +5,9 @@ use axum::{
 use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::{
-    Actor, ActorEvents, ActorId, ActorName, BrainName, BrainStatus, Events, Tenant, TenantEvents,
-    TenantId, TenantName,
+    Actor, ActorId, ActorName, BrainName, BrainStatus, Tenant, TenantId, TenantName,
 };
-use oneiros_protocol::BrainInfo;
+use oneiros_protocol::{ActorEvents, BrainInfo, Events, TenantEvents};
 use oneiros_service::{ServiceState, projections, router};
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -86,6 +85,12 @@ async fn create_brain_returns_created() {
     assert_eq!(info.entity.name, BrainName::new("test-project"));
     assert!(matches!(info.entity.status, BrainStatus::Active));
     assert!(!info.entity.brain_id.is_empty());
+
+    // Content-addressed ID: 64-char hex, no hyphens.
+    let id_str = info.entity.brain_id.to_string();
+    assert_eq!(id_str.len(), 64);
+    assert!(id_str.chars().all(|c| c.is_ascii_hexdigit()));
+
     assert!(
         !info.token.as_str().is_empty(),
         "should return a ticket token"

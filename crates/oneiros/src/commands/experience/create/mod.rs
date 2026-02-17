@@ -34,7 +34,7 @@ impl CreateExperience {
         let client = Client::new(context.socket_path());
         let token = context.ticket_token()?;
 
-        let refs = resolve_refs(&self.refs, &client, &token).await?;
+        let links = resolve_links(&self.refs, &client, &token).await?;
 
         let experience = client
             .create_experience(
@@ -43,7 +43,7 @@ impl CreateExperience {
                     agent: self.agent.clone(),
                     sensation: self.sensation.clone(),
                     description: self.description.clone(),
-                    refs,
+                    links,
                 },
             )
             .await?;
@@ -64,12 +64,12 @@ impl CreateExperience {
     }
 }
 
-async fn resolve_refs(
+async fn resolve_links(
     ref_strings: &[String],
     client: &Client,
     token: &oneiros_model::Token,
-) -> Result<Vec<RecordRef>, ExperienceCommandError> {
-    let mut refs = Vec::new();
+) -> Result<Vec<Link>, ExperienceCommandError> {
+    let mut links = Vec::new();
 
     for ref_str in ref_strings {
         let parts: Vec<&str> = ref_str.split(':').collect();
@@ -100,8 +100,9 @@ async fn resolve_refs(
             }
         };
 
-        refs.push(RecordRef { id, kind, role });
+        let resource = super::resource_ref_from_kind(&kind, id)?;
+        links.push(Link::Local { resource, role });
     }
 
-    Ok(refs)
+    Ok(links)
 }

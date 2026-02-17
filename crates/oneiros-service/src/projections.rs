@@ -1,8 +1,8 @@
 use oneiros_db::{Database, DatabaseError, Projection};
 use oneiros_model::{
-    Actor, Agent, AgentName, Brain, Cognition, Content, Experience, ExperienceId, Level, LevelName,
-    Memory, Persona, PersonaName, RecordRef, Sensation, SensationName, StorageEntry, StorageKey,
-    Tenant, Texture, TextureName, Ticket,
+    Actor, Agent, AgentName, Brain, Cognition, Content, Experience, ExperienceId, Label, Level,
+    LevelName, Link, Memory, Persona, PersonaName, Sensation, SensationName, StorageEntry,
+    StorageKey, Tenant, Texture, TextureName, Ticket,
 };
 use serde_json::Value;
 
@@ -55,7 +55,8 @@ struct KeyOnly {
 #[derive(serde::Deserialize)]
 struct RefAdded {
     experience_id: ExperienceId,
-    record_ref: RecordRef,
+    #[serde(alias = "record_ref")]
+    link: Link,
 }
 
 #[derive(serde::Deserialize)]
@@ -483,12 +484,12 @@ fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), Databas
         &created_at,
     )?;
 
-    for record_ref in &experience.refs {
+    for link in &experience.links {
         conn.add_experience_ref(
             &id,
-            record_ref.id.to_string(),
-            record_ref.kind.to_string(),
-            record_ref.role.as_ref().map(|l| l.as_str()),
+            link.resource().id_string(),
+            link.resource().kind_name(),
+            link.role().map(Label::as_str),
             &created_at,
         )?;
     }
@@ -514,9 +515,9 @@ fn apply_experience_ref_added(conn: &Database, data: &Value) -> Result<(), Datab
 
     conn.add_experience_ref(
         added.experience_id.to_string(),
-        added.record_ref.id.to_string(),
-        added.record_ref.kind.to_string(),
-        added.record_ref.role.as_ref().map(|l| l.as_str()),
+        added.link.resource().id_string(),
+        added.link.resource().kind_name(),
+        added.link.role().map(Label::as_str),
         &now,
     )?;
 

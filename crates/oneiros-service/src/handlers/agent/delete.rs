@@ -1,5 +1,6 @@
 use axum::{extract::Path, http::StatusCode};
-use oneiros_model::{AgentEvents, AgentName, Events};
+use oneiros_model::AgentName;
+use oneiros_protocol::{AgentEvents, Events};
 
 use crate::*;
 

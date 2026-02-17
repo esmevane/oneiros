@@ -3,6 +3,7 @@ use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::*;
+use oneiros_protocol::*;
 use oneiros_service::*;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -161,6 +162,11 @@ async fn add_memory_returns_created() {
         memory.content.as_str(),
         "The system uses event sourcing for all state changes."
     );
+
+    // Content-addressed ID: 64-char hex, no hyphens.
+    let id_str = memory.id.to_string();
+    assert_eq!(id_str.len(), 64);
+    assert!(id_str.chars().all(|c| c.is_ascii_hexdigit()));
 }
 
 #[tokio::test]

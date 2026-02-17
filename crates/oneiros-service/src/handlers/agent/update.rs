@@ -1,6 +1,6 @@
 use axum::{Json, extract::Path, http::StatusCode};
-use oneiros_model::{Agent, AgentEvents, AgentName, Events};
-use oneiros_protocol::UpdateAgentRequest;
+use oneiros_model::{Agent, AgentName};
+use oneiros_protocol::{AgentEvents, Events, UpdateAgentRequest};
 
 use crate::*;
 

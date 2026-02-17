@@ -3,6 +3,7 @@ use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::*;
+use oneiros_protocol::*;
 use oneiros_service::*;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -146,6 +147,11 @@ async fn create_agent_returns_created() {
     assert_eq!(agent.description.as_str(), "The system architect");
     assert_eq!(agent.prompt.as_str(), "You design systems.");
     assert!(!agent.id.is_empty());
+
+    // Content-addressed ID: 64-char hex, no hyphens.
+    let id_str = agent.id.to_string();
+    assert_eq!(id_str.len(), 64);
+    assert!(id_str.chars().all(|c| c.is_ascii_hexdigit()));
 }
 
 #[tokio::test]

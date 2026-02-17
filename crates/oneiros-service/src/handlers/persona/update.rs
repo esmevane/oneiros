@@ -1,5 +1,6 @@
 use axum::{Json, http::StatusCode};
-use oneiros_model::{Events, Persona, PersonaEvents};
+use oneiros_model::Persona;
+use oneiros_protocol::{Events, PersonaEvents};
 
 use crate::*;
 

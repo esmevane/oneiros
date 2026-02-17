@@ -17,7 +17,7 @@ pub(crate) use update::{UpdateExperience, UpdateExperienceOutcomes};
 
 use clap::{Args, Subcommand};
 use oneiros_client::Client;
-use oneiros_model::{Id, RecordKind, Token};
+use oneiros_model::{CognitionId, ExperienceId, Id, MemoryId, RecordKind, ResourceRef, Token};
 use oneiros_outcomes::Outcomes;
 
 pub(super) async fn list_ids_for_kind(
@@ -44,6 +44,20 @@ pub(super) async fn list_ids_for_kind(
     };
 
     Ok(ids)
+}
+
+pub(super) fn resource_ref_from_kind(
+    kind: &RecordKind,
+    id: Id,
+) -> Result<ResourceRef, ExperienceCommandError> {
+    match kind {
+        RecordKind::Cognition => Ok(ResourceRef::Cognition(CognitionId(id))),
+        RecordKind::Memory => Ok(ResourceRef::Memory(MemoryId(id))),
+        RecordKind::Experience => Ok(ResourceRef::Experience(ExperienceId(id))),
+        RecordKind::Storage => Err(ExperienceCommandError::InvalidRefFormat(
+            "Storage references use keys, not IDs — use a storage key directly".to_string(),
+        )),
+    }
 }
 
 #[derive(Clone, Args)]

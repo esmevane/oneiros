@@ -1,9 +1,19 @@
 use axum::{Json, http::StatusCode};
-use chrono::Utc;
-use oneiros_model::{Cognition, CognitionEvents, CognitionId, Events};
-use oneiros_protocol::AddCognitionRequest;
+use chrono::{DateTime, Utc};
+use oneiros_model::{AgentName, Cognition, CognitionId, Content, Id, TextureName};
+use oneiros_protocol::{AddCognitionRequest, CognitionEvents, Events};
 
 use crate::*;
+
+/// The identity-defining fields for a cognition. Serialized with postcard
+/// and hashed with SHA-256 to produce a deterministic content-addressed ID.
+#[derive(serde::Serialize)]
+struct CognitionContent<'a> {
+    agent: &'a AgentName,
+    texture: &'a TextureName,
+    content: &'a Content,
+    created_at: &'a DateTime<Utc>,
+}
 
 pub(crate) async fn handler(
     ticket: ActorContext,
@@ -21,12 +31,21 @@ pub(crate) async fn handler(
         .get_texture(&request.texture)?
         .ok_or(NotFound::Texture(request.texture.clone()))?;
 
+    let created_at = Utc::now();
+    let content_bytes = postcard::to_allocvec(&CognitionContent {
+        agent: &request.agent,
+        texture: &request.texture,
+        content: &request.content,
+        created_at: &created_at,
+    })
+    .expect("postcard serialization of cognition content");
+
     let cognition = Cognition {
-        id: CognitionId::new(),
+        id: CognitionId(Id::from_content(&content_bytes)),
         agent_id: agent.id,
         texture: request.texture,
         content: request.content,
-        created_at: Utc::now(),
+        created_at,
     };
 
     let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));

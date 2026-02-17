@@ -3,6 +3,7 @@ use axum::http::{Method, Request, StatusCode};
 use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::*;
+use oneiros_protocol::*;
 use oneiros_service::*;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -163,6 +164,11 @@ async fn add_cognition_returns_created() {
         cognition.content.as_str(),
         "The coupling between modules feels wrong."
     );
+
+    // Content-addressed ID: 64-char hex, no hyphens.
+    let id_str = cognition.id.to_string();
+    assert_eq!(id_str.len(), 64);
+    assert!(id_str.chars().all(|c| c.is_ascii_hexdigit()));
 }
 
 #[tokio::test]

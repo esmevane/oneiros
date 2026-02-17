@@ -1,5 +1,6 @@
 use axum::{extract::Path, http::StatusCode};
-use oneiros_model::{Events, SensationEvents, SensationName};
+use oneiros_model::SensationName;
+use oneiros_protocol::{Events, SensationEvents};
 
 use crate::*;
 

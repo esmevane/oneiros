@@ -1,5 +1,6 @@
 use axum::{Json, http::StatusCode};
-use oneiros_model::{Events, Level, LevelEvents};
+use oneiros_model::Level;
+use oneiros_protocol::{Events, LevelEvents};
 
 use crate::*;
 
