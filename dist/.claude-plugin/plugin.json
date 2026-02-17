@@ -8,29 +8,5 @@
   },
   "repository": "https://github.com/esmevane/oneiros",
   "license": "MIT",
-  "keywords": ["cognition", "memory", "agents", "context", "dream"],
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "oneiros dream governor.process"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "oneiros introspect governor.process"
-          }
-        ]
-      }
-    ]
-  }
+  "keywords": ["cognition", "memory", "agents", "context", "dream"]
 }

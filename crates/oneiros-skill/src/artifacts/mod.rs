@@ -1,4 +1,5 @@
 mod commands;
+mod hooks;
 mod marketplace;
 mod plugin;
 mod resources;
@@ -30,11 +31,13 @@ impl ArtifactFile {
 pub const AGENTS_MD_SECTION: &str = include_str!("../../skill/agents-md.md");
 
 pub fn all() -> Vec<ArtifactFile> {
-    let mut files = Vec::new();
+    let mut files = vec![
+        skill_md::artifact(),
+        plugin::artifact(),
+        marketplace::artifact(),
+        hooks::artifact(),
+    ];
 
-    files.push(skill_md::artifact());
-    files.push(plugin::artifact());
-    files.push(marketplace::artifact());
     files.extend(commands::artifacts());
     files.extend(resources::artifacts());
 
@@ -76,6 +79,18 @@ mod tests {
         let parsed: serde_json::Value =
             serde_json::from_str(&plugin.content).expect("plugin.json should be valid JSON");
         assert_eq!(parsed["name"], "oneiros");
+    }
+
+    #[test]
+    fn hooks_json_is_valid_json() {
+        let files = all();
+        let hooks = files
+            .iter()
+            .find(|f| f.path.contains("hooks.json"))
+            .unwrap();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&hooks.content).expect("hooks.json should be valid JSON");
+        assert!(parsed["hooks"]["SessionStart"].is_array());
     }
 
     #[test]
