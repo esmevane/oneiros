@@ -1163,6 +1163,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "oneiros-model",
+ "oneiros-protocol",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -1231,6 +1232,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oneiros-protocol"
+version = "0.0.5"
+dependencies = [
+ "oneiros-model",
+ "serde",
+]
+
+[[package]]
 name = "oneiros-service"
 version = "0.0.5"
 dependencies = [
@@ -1239,10 +1248,10 @@ dependencies = [
  "data-encoding",
  "flate2",
  "http-body-util",
- "oneiros-client",
  "oneiros-db",
  "oneiros-fs",
  "oneiros-model",
+ "oneiros-protocol",
  "serde",
  "serde_json",
  "sha2",

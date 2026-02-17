@@ -1,8 +1,8 @@
 use axum::{Json, extract::Path, http::StatusCode};
-use oneiros_client::UpdateExperienceDescriptionRequest;
 use oneiros_model::{
     Events, Experience, ExperienceEvents, ExperienceId, Label, RecordKind, RecordRef, SensationName,
 };
+use oneiros_protocol::UpdateExperienceDescriptionRequest;
 
 use crate::*;
 

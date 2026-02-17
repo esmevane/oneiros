@@ -1,0 +1,11 @@
+[package]
+name = "oneiros-protocol"
+version.workspace = true
+edition.workspace = true
+description = "Shared protocol types for oneiros client and service communication"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+oneiros-model.workspace = true
+serde.workspace = true
