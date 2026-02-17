@@ -1,3 +1,4 @@
+use oneiros_model::*;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -8,6 +9,36 @@ pub enum DatabaseError {
     #[error("Unable to serialize JSON data to event: {0}")]
     Serialization(#[from] serde_json::Error),
 
-    #[error("Failed to parse row data: {0}")]
-    ParseRow(String),
+    #[error("Failed to construct domain type: {0}")]
+    Construction(#[from] ConstructionError),
+}
+
+impl From<AgentConstructionError> for DatabaseError {
+    fn from(e: AgentConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
+}
+
+impl From<CognitionConstructionError> for DatabaseError {
+    fn from(e: CognitionConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
+}
+
+impl From<MemoryConstructionError> for DatabaseError {
+    fn from(e: MemoryConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
+}
+
+impl From<ExperienceConstructionError> for DatabaseError {
+    fn from(e: ExperienceConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
+}
+
+impl From<RecordRefConstructionError> for DatabaseError {
+    fn from(e: RecordRefConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
 }

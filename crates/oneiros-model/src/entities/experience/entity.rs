@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
+use super::ExperienceConstructionError;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Experience {
     pub id: ExperienceId,
@@ -50,6 +52,50 @@ impl Experience {
 impl core::fmt::Display for Experience {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.as_table_row())
+    }
+}
+
+impl<A, B, C, D, E> TryFrom<(A, B, C, D, E)> for Experience
+where
+    A: AsRef<str>,
+    B: AsRef<str>,
+    C: AsRef<str>,
+    D: AsRef<str>,
+    E: AsRef<str>,
+{
+    type Error = ExperienceConstructionError;
+
+    fn try_from(
+        (id, agent_id, sensation, description, created_at): (A, B, C, D, E),
+    ) -> Result<Self, Self::Error> {
+        Ok(Experience {
+            id: id
+                .as_ref()
+                .parse()
+                .map_err(ExperienceConstructionError::InvalidId)?,
+            agent_id: agent_id
+                .as_ref()
+                .parse()
+                .map_err(ExperienceConstructionError::InvalidAgentId)?,
+            sensation: SensationName::new(sensation),
+            description: Content::new(description),
+            refs: Vec::new(),
+            created_at: created_at
+                .as_ref()
+                .parse::<DateTime<Utc>>()
+                .map_err(ExperienceConstructionError::InvalidCreatedAt)?,
+        })
+    }
+}
+
+impl Experience {
+    pub fn construct_from_db(
+        row: impl TryInto<Self, Error = ExperienceConstructionError>,
+        refs: Vec<RecordRef>,
+    ) -> Result<Self, ExperienceConstructionError> {
+        let mut experience = row.try_into()?;
+        experience.refs = refs;
+        Ok(experience)
     }
 }
 
