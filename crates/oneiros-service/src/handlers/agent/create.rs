@@ -1,6 +1,6 @@
 use axum::{Json, http::StatusCode};
-use oneiros_client::CreateAgentRequest;
 use oneiros_model::{Agent, AgentEvents, AgentId, Events};
+use oneiros_protocol::CreateAgentRequest;
 
 use crate::*;
 

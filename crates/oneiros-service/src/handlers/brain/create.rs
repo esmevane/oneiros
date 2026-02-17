@@ -1,12 +1,12 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use oneiros_client::{BrainInfo, CreateBrainRequest};
 use oneiros_db::Database;
 use oneiros_model::{
     ActorId, Brain, BrainEvents, BrainId, BrainStatus, Events, IdParseError, TenantId, Ticket,
     TicketEvents, TicketId, Token, TokenClaims,
 };
+use oneiros_protocol::{BrainInfo, CreateBrainRequest};
 use std::sync::Arc;
 
 use crate::*;
