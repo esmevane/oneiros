@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use oneiros_model::*;
 use rusqlite::functions::FunctionFlags;
 use rusqlite::{Connection, params};
@@ -7,78 +6,6 @@ use std::path::Path;
 use uuid::Uuid;
 
 use crate::*;
-
-// -- Row parsing helpers --
-
-fn parse_agent(row: (String, String, String, String, String)) -> Result<Agent, DatabaseError> {
-    let (id, name, persona, description, prompt) = row;
-    Ok(Agent {
-        id: id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("agent.id: {e}")))?,
-        name: AgentName::new(name),
-        persona: PersonaName::new(persona),
-        description: Description::new(description),
-        prompt: Prompt::new(prompt),
-    })
-}
-
-fn parse_cognition(
-    row: (String, String, String, String, String),
-) -> Result<Cognition, DatabaseError> {
-    let (id, agent_id, texture, content, created_at) = row;
-    Ok(Cognition {
-        id: id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("cognition.id: {e}")))?,
-        agent_id: agent_id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("cognition.agent_id: {e}")))?,
-        texture: TextureName::new(texture),
-        content: Content::new(content),
-        created_at: created_at
-            .parse::<DateTime<Utc>>()
-            .map_err(|e| DatabaseError::ParseRow(format!("cognition.created_at: {e}")))?,
-    })
-}
-
-fn parse_memory(row: (String, String, String, String, String)) -> Result<Memory, DatabaseError> {
-    let (id, agent_id, level, content, created_at) = row;
-    Ok(Memory {
-        id: id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("memory.id: {e}")))?,
-        agent_id: agent_id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("memory.agent_id: {e}")))?,
-        level: LevelName::new(level),
-        content: Content::new(content),
-        created_at: created_at
-            .parse::<DateTime<Utc>>()
-            .map_err(|e| DatabaseError::ParseRow(format!("memory.created_at: {e}")))?,
-    })
-}
-
-fn parse_experience(
-    row: (String, String, String, String, String),
-    refs: Vec<RecordRef>,
-) -> Result<Experience, DatabaseError> {
-    let (id, agent_id, sensation, description, created_at) = row;
-    Ok(Experience {
-        id: id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("experience.id: {e}")))?,
-        agent_id: agent_id
-            .parse()
-            .map_err(|e| DatabaseError::ParseRow(format!("experience.agent_id: {e}")))?,
-        sensation: SensationName::new(sensation),
-        description: Content::new(description),
-        refs,
-        created_at: created_at
-            .parse::<DateTime<Utc>>()
-            .map_err(|e| DatabaseError::ParseRow(format!("experience.created_at: {e}")))?,
-    })
-}
 
 pub struct Database {
     conn: Connection,
@@ -328,16 +255,16 @@ impl Database {
             "select name, description, prompt from persona where name = ?1",
             params![name.as_ref()],
             |row| {
-                Ok(Persona {
-                    name: PersonaName::new(row.get::<_, String>(0)?),
-                    description: Description::new(row.get::<_, String>(1)?),
-                    prompt: Prompt::new(row.get::<_, String>(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             },
         );
 
         match result {
-            Ok(persona) => Ok(Some(persona)),
+            Ok(row) => Ok(Some(Persona::construct_from_db(row))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -349,16 +276,16 @@ impl Database {
             .prepare("select name, description, prompt from persona order by name")?;
 
         let rows = stmt.query_map([], |row| {
-            Ok(Persona {
-                name: PersonaName::new(row.get::<_, String>(0)?),
-                description: Description::new(row.get::<_, String>(1)?),
-                prompt: Prompt::new(row.get::<_, String>(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         })?;
 
         let mut personas = Vec::new();
         for row in rows {
-            personas.push(row?);
+            personas.push(Persona::construct_from_db(row?));
         }
         Ok(personas)
     }
@@ -402,16 +329,16 @@ impl Database {
             "select name, description, prompt from texture where name = ?1",
             params![name.as_ref()],
             |row| {
-                Ok(Texture {
-                    name: TextureName::new(row.get::<_, String>(0)?),
-                    description: Description::new(row.get::<_, String>(1)?),
-                    prompt: Prompt::new(row.get::<_, String>(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             },
         );
 
         match result {
-            Ok(texture) => Ok(Some(texture)),
+            Ok(row) => Ok(Some(Texture::construct_from_db(row))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -423,16 +350,16 @@ impl Database {
             .prepare("select name, description, prompt from texture order by name")?;
 
         let rows = stmt.query_map([], |row| {
-            Ok(Texture {
-                name: TextureName::new(row.get::<_, String>(0)?),
-                description: Description::new(row.get::<_, String>(1)?),
-                prompt: Prompt::new(row.get::<_, String>(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         })?;
 
         let mut textures = Vec::new();
         for row in rows {
-            textures.push(row?);
+            textures.push(Texture::construct_from_db(row?));
         }
         Ok(textures)
     }
@@ -474,16 +401,16 @@ impl Database {
             "select name, description, prompt from level where name = ?1",
             params![name.as_ref()],
             |row| {
-                Ok(Level {
-                    name: LevelName::new(row.get::<_, String>(0)?),
-                    description: Description::new(row.get::<_, String>(1)?),
-                    prompt: Prompt::new(row.get::<_, String>(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             },
         );
 
         match result {
-            Ok(level) => Ok(Some(level)),
+            Ok(row) => Ok(Some(Level::construct_from_db(row))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -495,16 +422,16 @@ impl Database {
             .prepare("select name, description, prompt from level order by name")?;
 
         let rows = stmt.query_map([], |row| {
-            Ok(Level {
-                name: LevelName::new(row.get::<_, String>(0)?),
-                description: Description::new(row.get::<_, String>(1)?),
-                prompt: Prompt::new(row.get::<_, String>(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         })?;
 
         let mut levels = Vec::new();
         for row in rows {
-            levels.push(row?);
+            levels.push(Level::construct_from_db(row?));
         }
         Ok(levels)
     }
@@ -569,17 +496,17 @@ impl Database {
             params![name.as_ref()],
             |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
                 ))
             },
         );
 
         match result {
-            Ok(row) => Ok(Some(parse_agent(row)?)),
+            Ok(row) => Ok(Some(Agent::construct_from_db(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -592,19 +519,20 @@ impl Database {
 
         let rows = stmt.query_map([], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut agents = Vec::new();
-        for row in rows {
-            agents.push(parse_agent(row?)?);
-        }
-        Ok(agents)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Agent::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn agent_name_exists(&self, name: impl AsRef<str>) -> Result<bool, DatabaseError> {
@@ -654,17 +582,17 @@ impl Database {
             params![id.as_ref()],
             |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
                 ))
             },
         );
 
         match result {
-            Ok(row) => Ok(Some(parse_cognition(row)?)),
+            Ok(row) => Ok(Some(Cognition::construct_from_db(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -677,19 +605,20 @@ impl Database {
 
         let rows = stmt.query_map([], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut cognitions = Vec::new();
-        for row in rows {
-            cognitions.push(parse_cognition(row?)?);
-        }
-        Ok(cognitions)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Cognition::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn list_cognitions_by_agent(
@@ -703,19 +632,20 @@ impl Database {
 
         let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut cognitions = Vec::new();
-        for row in rows {
-            cognitions.push(parse_cognition(row?)?);
-        }
-        Ok(cognitions)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Cognition::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn list_cognitions_by_texture(
@@ -729,19 +659,20 @@ impl Database {
 
         let rows = stmt.query_map(params![texture.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut cognitions = Vec::new();
-        for row in rows {
-            cognitions.push(parse_cognition(row?)?);
-        }
-        Ok(cognitions)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Cognition::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn list_cognitions_by_agent_and_texture(
@@ -756,19 +687,20 @@ impl Database {
 
         let rows = stmt.query_map(params![agent_id.as_ref(), texture.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut cognitions = Vec::new();
-        for row in rows {
-            cognitions.push(parse_cognition(row?)?);
-        }
-        Ok(cognitions)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Cognition::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn reset_cognitions(&self) -> Result<(), DatabaseError> {
@@ -806,17 +738,17 @@ impl Database {
             params![id.as_ref()],
             |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
                 ))
             },
         );
 
         match result {
-            Ok(row) => Ok(Some(parse_memory(row)?)),
+            Ok(row) => Ok(Some(Memory::construct_from_db(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -829,19 +761,20 @@ impl Database {
 
         let rows = stmt.query_map([], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut memories = Vec::new();
-        for row in rows {
-            memories.push(parse_memory(row?)?);
-        }
-        Ok(memories)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Memory::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn list_memories_by_agent(
@@ -855,19 +788,20 @@ impl Database {
 
         let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut memories = Vec::new();
-        for row in rows {
-            memories.push(parse_memory(row?)?);
-        }
-        Ok(memories)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Memory::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn list_memories_by_level(
@@ -881,19 +815,20 @@ impl Database {
 
         let rows = stmt.query_map(params![level.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut memories = Vec::new();
-        for row in rows {
-            memories.push(parse_memory(row?)?);
-        }
-        Ok(memories)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Memory::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn list_memories_by_agent_and_level(
@@ -908,19 +843,20 @@ impl Database {
 
         let rows = stmt.query_map(params![agent_id.as_ref(), level.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let mut memories = Vec::new();
-        for row in rows {
-            memories.push(parse_memory(row?)?);
-        }
-        Ok(memories)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Memory::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn reset_memories(&self) -> Result<(), DatabaseError> {
@@ -962,16 +898,16 @@ impl Database {
             "select name, description, prompt from sensation where name = ?1",
             params![name.as_ref()],
             |row| {
-                Ok(Sensation {
-                    name: SensationName::new(row.get::<_, String>(0)?),
-                    description: Description::new(row.get::<_, String>(1)?),
-                    prompt: Prompt::new(row.get::<_, String>(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             },
         );
 
         match result {
-            Ok(sensation) => Ok(Some(sensation)),
+            Ok(row) => Ok(Some(Sensation::construct_from_db(row))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -983,16 +919,16 @@ impl Database {
             .prepare("select name, description, prompt from sensation order by name")?;
 
         let rows = stmt.query_map([], |row| {
-            Ok(Sensation {
-                name: SensationName::new(row.get::<_, String>(0)?),
-                description: Description::new(row.get::<_, String>(1)?),
-                prompt: Prompt::new(row.get::<_, String>(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         })?;
 
         let mut sensations = Vec::new();
         for row in rows {
-            sensations.push(row?);
+            sensations.push(Sensation::construct_from_db(row?));
         }
         Ok(sensations)
     }
@@ -1036,11 +972,11 @@ impl Database {
             params![id_ref],
             |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
                 ))
             },
         );
@@ -1048,7 +984,7 @@ impl Database {
         match result {
             Ok(row) => {
                 let refs = self.collect_experience_refs(id_ref)?;
-                Ok(Some(parse_experience(row, refs)?))
+                Ok(Some(Experience::construct_from_db(row, refs)?))
             }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
@@ -1062,21 +998,21 @@ impl Database {
 
         let rows = stmt.query_map([], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let raw_rows: Vec<(String, String, String, String, String)> = rows
-            .collect::<Result<_, _>>()?;
+        let raw_rows: Vec<(String, String, String, String, String)> =
+            rows.collect::<Result<_, _>>()?;
 
         let mut experiences = Vec::new();
         for row in raw_rows {
             let refs = self.collect_experience_refs(&row.0)?;
-            experiences.push(parse_experience(row, refs)?);
+            experiences.push(Experience::construct_from_db(row, refs)?);
         }
         Ok(experiences)
     }
@@ -1092,21 +1028,21 @@ impl Database {
 
         let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let raw_rows: Vec<(String, String, String, String, String)> = rows
-            .collect::<Result<_, _>>()?;
+        let raw_rows: Vec<(String, String, String, String, String)> =
+            rows.collect::<Result<_, _>>()?;
 
         let mut experiences = Vec::new();
         for row in raw_rows {
             let refs = self.collect_experience_refs(&row.0)?;
-            experiences.push(parse_experience(row, refs)?);
+            experiences.push(Experience::construct_from_db(row, refs)?);
         }
         Ok(experiences)
     }
@@ -1122,21 +1058,21 @@ impl Database {
 
         let rows = stmt.query_map(params![sensation.as_ref()], |row| {
             Ok((
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
             ))
         })?;
 
-        let raw_rows: Vec<(String, String, String, String, String)> = rows
-            .collect::<Result<_, _>>()?;
+        let raw_rows: Vec<(String, String, String, String, String)> =
+            rows.collect::<Result<_, _>>()?;
 
         let mut experiences = Vec::new();
         for row in raw_rows {
             let refs = self.collect_experience_refs(&row.0)?;
-            experiences.push(parse_experience(row, refs)?);
+            experiences.push(Experience::construct_from_db(row, refs)?);
         }
         Ok(experiences)
     }
@@ -1181,20 +1117,12 @@ impl Database {
             ))
         })?;
 
-        let mut refs = Vec::new();
-        for row in rows {
-            let (record_id, record_kind, role) = row?;
-            refs.push(RecordRef {
-                id: record_id.parse().map_err(|e| {
-                    DatabaseError::ParseRow(format!("experience_ref.record_id: {e}"))
-                })?,
-                kind: record_kind.parse().map_err(|e| {
-                    DatabaseError::ParseRow(format!("experience_ref.record_kind: {e}"))
-                })?,
-                role: role.map(Label::new),
-            });
-        }
-        Ok(refs)
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(RecordRef::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
     }
 
     pub fn update_experience_description(
@@ -1288,16 +1216,16 @@ impl Database {
             "select key, description, hash from storage where key = ?1",
             params![key.as_ref()],
             |row| {
-                Ok(StorageEntry {
-                    key: StorageKey::new(row.get::<_, String>(0)?),
-                    description: Description::new(row.get::<_, String>(1)?),
-                    hash: ContentHash::new(row.get::<_, String>(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             },
         );
 
         match result {
-            Ok(entry) => Ok(Some(entry)),
+            Ok(row) => Ok(Some(StorageEntry::construct_from_db(row))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -1309,16 +1237,16 @@ impl Database {
             .prepare("select key, description, hash from storage order by key")?;
 
         let rows = stmt.query_map([], |row| {
-            Ok(StorageEntry {
-                key: StorageKey::new(row.get::<_, String>(0)?),
-                description: Description::new(row.get::<_, String>(1)?),
-                hash: ContentHash::new(row.get::<_, String>(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         })?;
 
         let mut entries = Vec::new();
         for row in rows {
-            entries.push(row?);
+            entries.push(StorageEntry::construct_from_db(row?));
         }
         Ok(entries)
     }

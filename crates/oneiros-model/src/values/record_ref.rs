@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::*;
 
@@ -22,6 +23,38 @@ impl core::fmt::Display for RecordRef {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum RecordRefConstructionError {
+    #[error("invalid record id: {0}")]
+    InvalidId(#[from] IdParseError),
+    #[error("invalid record kind: {0}")]
+    InvalidKind(#[from] RecordKindParseError),
+}
+
+impl<A, B> TryFrom<(A, B, Option<String>)> for RecordRef
+where
+    A: AsRef<str>,
+    B: AsRef<str>,
+{
+    type Error = RecordRefConstructionError;
+
+    fn try_from((id, kind, role): (A, B, Option<String>)) -> Result<Self, Self::Error> {
+        Ok(RecordRef {
+            id: id.as_ref().parse()?,
+            kind: kind.as_ref().parse()?,
+            role: role.map(Label::new),
+        })
+    }
+}
+
+impl RecordRef {
+    pub fn construct_from_db(
+        row: impl TryInto<Self, Error = RecordRefConstructionError>,
+    ) -> Result<Self, RecordRefConstructionError> {
+        row.try_into()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum RecordKind {
@@ -42,8 +75,12 @@ impl core::fmt::Display for RecordKind {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("unknown record kind: {0}")]
+pub struct RecordKindParseError(pub String);
+
 impl core::str::FromStr for RecordKind {
-    type Err = String;
+    type Err = RecordKindParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -51,7 +88,7 @@ impl core::str::FromStr for RecordKind {
             "memory" => Ok(RecordKind::Memory),
             "experience" => Ok(RecordKind::Experience),
             "storage" => Ok(RecordKind::Storage),
-            other => Err(format!("unknown record kind: {other}")),
+            other => Err(RecordKindParseError(other.to_string())),
         }
     }
 }

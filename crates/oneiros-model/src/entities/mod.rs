@@ -13,12 +13,12 @@ mod texture;
 mod ticket;
 
 pub use actor::{Actor, ActorId, ActorName};
-pub use agent::{Agent, AgentId, AgentName};
+pub use agent::{Agent, AgentConstructionError, AgentId, AgentName};
 pub use brain::{Brain, BrainId, BrainName, BrainStatus};
-pub use cognition::{Cognition, CognitionId};
-pub use experience::{Experience, ExperienceId};
+pub use cognition::{Cognition, CognitionConstructionError, CognitionId};
+pub use experience::{Experience, ExperienceConstructionError, ExperienceId};
 pub use level::{Level, LevelName};
-pub use memory::{Memory, MemoryId};
+pub use memory::{Memory, MemoryConstructionError, MemoryId};
 pub use persona::{Persona, PersonaName};
 pub use sensation::{Sensation, SensationName};
 pub use storage::{StorageEntry, StorageKey};

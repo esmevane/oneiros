@@ -27,7 +27,7 @@ pub use id::{Id, IdParseError};
 pub use introspection::Introspection;
 pub use label::Label;
 pub use prompt::Prompt;
-pub use record_ref::{RecordKind, RecordRef};
+pub use record_ref::{RecordKind, RecordKindParseError, RecordRef, RecordRefConstructionError};
 pub use reflection::Reflection;
 pub use storage_ref::{StorageRef, StorageRefError};
 pub use token::{Token, TokenError};
