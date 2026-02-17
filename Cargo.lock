@@ -1200,10 +1200,8 @@ version = "0.0.5"
 dependencies = [
  "chrono",
  "data-encoding",
- "oneiros-db",
  "postcard",
  "serde",
- "serde_json",
  "thiserror 2.0.18",
  "uuid",
 ]

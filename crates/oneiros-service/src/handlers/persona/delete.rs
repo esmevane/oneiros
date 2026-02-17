@@ -1,5 +1,5 @@
 use axum::{extract::Path, http::StatusCode};
-use oneiros_model::{Events, PersonaEvents, PersonaName, projections};
+use oneiros_model::{Events, PersonaEvents, PersonaName};
 
 use crate::*;
 

@@ -2,7 +2,7 @@ use axum::{Json, extract::Path, http::StatusCode};
 use oneiros_client::AddExperienceRefRequest;
 use oneiros_model::{
     Content, Events, Experience, ExperienceEvents, ExperienceId, Label, RecordKind, RecordRef,
-    SensationName, projections,
+    SensationName,
 };
 
 use crate::*;

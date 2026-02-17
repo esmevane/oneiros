@@ -1,7 +1,7 @@
 use axum::{Json, http::StatusCode};
 use chrono::Utc;
 use oneiros_client::CreateExperienceRequest;
-use oneiros_model::{AgentId, Events, Experience, ExperienceEvents, ExperienceId, projections};
+use oneiros_model::{AgentId, Events, Experience, ExperienceEvents, ExperienceId};
 
 use crate::*;
 

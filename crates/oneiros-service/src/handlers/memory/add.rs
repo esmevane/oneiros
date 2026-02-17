@@ -1,7 +1,7 @@
 use axum::{Json, http::StatusCode};
 use chrono::Utc;
 use oneiros_client::AddMemoryRequest;
-use oneiros_model::{AgentId, Events, Memory, MemoryEvents, MemoryId, projections};
+use oneiros_model::{AgentId, Events, Memory, MemoryEvents, MemoryId};
 
 use crate::*;
 
