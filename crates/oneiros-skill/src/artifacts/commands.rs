@@ -3,7 +3,7 @@ use super::ArtifactFile;
 macro_rules! command {
     ($file:literal) => {
         ArtifactFile::new(
-            concat!("skills/oneiros/commands/", $file),
+            concat!("commands/", $file),
             include_str!(concat!("../../skill/commands/", $file)),
         )
     };

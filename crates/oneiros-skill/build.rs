@@ -30,6 +30,11 @@ fn main() {
     let dest = dist_dir.join(".claude-plugin/plugin.json");
     write_stamped(&dest, &plugin, &version);
 
+    // Write hooks.json
+    let hooks = fs::read_to_string(source.join("hooks.json")).unwrap();
+    let dest = dist_dir.join("hooks/hooks.json");
+    write_file(&dest, &hooks);
+
     // Write command files
     let commands_dir = source.join("commands");
     if commands_dir.exists() {
@@ -37,7 +42,7 @@ fn main() {
             let entry = entry.unwrap();
             let name = entry.file_name();
             let content = fs::read_to_string(entry.path()).unwrap();
-            let dest = dist_dir.join("skills/oneiros/commands").join(&name);
+            let dest = dist_dir.join("commands").join(&name);
             write_file(&dest, &content);
         }
     }
