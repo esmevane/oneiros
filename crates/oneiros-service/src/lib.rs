@@ -4,12 +4,14 @@ mod handlers;
 mod routes;
 mod state;
 
-use std::path::Path;
-use std::sync::Arc;
+pub mod projections;
+
+use std::{path::Path, sync::Arc};
 use tokio::net::UnixListener;
 
 pub use error::*;
 pub use extractors::*;
+pub use projections::{BRAIN_PROJECTIONS, SYSTEM_PROJECTIONS};
 pub use routes::router;
 pub use state::*;
 

@@ -1,12 +1,11 @@
-use axum::Json;
-use axum::body::Bytes;
-use axum::extract::Path;
-use axum::http::{HeaderMap, StatusCode};
-use flate2::Compression;
-use flate2::write::ZlibEncoder;
-use oneiros_model::{
-    ContentHash, Description, Events, StorageEntry, StorageEvents, StorageRef, projections,
+use axum::{
+    Json,
+    body::Bytes,
+    extract::Path,
+    http::{HeaderMap, StatusCode},
 };
+use flate2::{Compression, write::ZlibEncoder};
+use oneiros_model::{ContentHash, Description, Events, StorageEntry, StorageEvents, StorageRef};
 use sha2::{Digest, Sha256};
 use std::io::Write;
 

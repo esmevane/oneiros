@@ -1,5 +1,5 @@
 use axum::{extract::Path, http::StatusCode};
-use oneiros_model::{Events, TextureEvents, TextureName, projections};
+use oneiros_model::{Events, TextureEvents, TextureName};
 
 use crate::*;
 

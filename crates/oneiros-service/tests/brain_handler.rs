@@ -1,15 +1,16 @@
-use std::sync::Arc;
-
-use axum::body::Body;
-use axum::http::{Method, Request, StatusCode};
+use axum::{
+    body::Body,
+    http::{Method, Request, StatusCode},
+};
 use http_body_util::BodyExt;
 use oneiros_client::BrainInfo;
 use oneiros_db::Database;
 use oneiros_model::{
     Actor, ActorEvents, ActorId, ActorName, BrainName, BrainStatus, Events, Tenant, TenantEvents,
-    TenantId, TenantName, projections,
+    TenantId, TenantName,
 };
-use oneiros_service::{ServiceState, router};
+use oneiros_service::{ServiceState, projections, router};
+use std::sync::Arc;
 use tempfile::TempDir;
 use tower::util::ServiceExt;
 
