@@ -2,11 +2,13 @@ mod dream;
 mod guidebook;
 mod introspect;
 mod reflect;
+mod sense;
 
 pub use dream::DreamTemplate;
 pub use guidebook::GuidebookTemplate;
 pub use introspect::IntrospectTemplate;
 pub use reflect::ReflectTemplate;
+pub use sense::SenseTemplate;
 
 #[cfg(test)]
 mod tests {
@@ -299,5 +301,33 @@ mod tests {
         assert!(rendered.contains("oneiros memory add atlas"));
         assert!(rendered.contains("oneiros cognition add atlas"));
         assert!(rendered.contains("shifted"));
+    }
+
+    #[test]
+    fn sense_template_renders_agent_name() {
+        let agent = test_agent();
+        let rendered = SenseTemplate::new(&agent, "").to_string();
+
+        assert!(rendered.contains("You are atlas."));
+        assert!(rendered.contains("oneiros cognition add atlas"));
+        assert!(rendered.contains("sensing"));
+    }
+
+    #[test]
+    fn sense_template_includes_event_data_when_present() {
+        let agent = test_agent();
+        let event_json = r#"{"event": "PreCompact", "data": {}}"#;
+        let rendered = SenseTemplate::new(&agent, event_json).to_string();
+
+        assert!(rendered.contains("## What You Sensed"));
+        assert!(rendered.contains("PreCompact"));
+    }
+
+    #[test]
+    fn sense_template_omits_event_section_when_empty() {
+        let agent = test_agent();
+        let rendered = SenseTemplate::new(&agent, "").to_string();
+
+        assert!(!rendered.contains("## What You Sensed"));
     }
 }

@@ -53,6 +53,7 @@ pub fn artifacts() -> Vec<ArtifactFile> {
         command!("service-stop.md"),
         command!("doctor.md"),
         command!("seed.md"),
+        command!("sense.md"),
         command!("skill-install.md"),
     ]
 }

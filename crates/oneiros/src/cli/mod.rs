@@ -50,6 +50,7 @@ impl Cli {
             Command::Persona(persona) => persona.run(&context).await?.map_into(),
             Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
             Command::Seed(seed) => seed.run(&context).await?.map_into(),
+            Command::Sense(sense) => sense.run(&context).await?.map_into(),
             Command::Skill(skill) => skill.run(&context).await?.map_into(),
             Command::Status(status) => status.run(&context).await?.map_into(),
             Command::Storage(storage) => storage.run(&context).await?.map_into(),
@@ -89,6 +90,8 @@ pub(crate) enum Command {
     Reflect(ReflectOp),
     /// Apply predefined seed data (textures, levels, personas).
     Seed(SeedOps),
+    /// Sense an observation — interpret an external event through an agent's cognitive lens.
+    Sense(SenseOp),
     /// Manage the oneiros skill plugin.
     Skill(SkillOps),
     /// Show a full cognitive status dashboard for an agent.

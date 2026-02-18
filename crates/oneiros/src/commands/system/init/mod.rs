@@ -5,6 +5,7 @@ mod tests;
 
 use clap::Args;
 use oneiros_outcomes::Outcomes;
+use oneiros_protocol::*;
 
 pub(crate) use error::InitSystemError;
 pub(crate) use outcomes::InitSystemOutcomes;

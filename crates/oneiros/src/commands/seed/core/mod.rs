@@ -85,13 +85,22 @@ pub(crate) fn levels() -> Vec<SetLevel> {
 }
 
 pub(crate) fn personas() -> Vec<SetPersona> {
-    vec![SetPersona {
-        name: PersonaName::new("process"),
-        description: Description::new(
-            "Internal lifecycle agents — orchestration, session structure, cognitive hygiene.",
-        ),
-        prompt: Prompt::new(include_str!("prompts/process.persona.md")),
-    }]
+    vec![
+        SetPersona {
+            name: PersonaName::new("process"),
+            description: Description::new(
+                "Internal lifecycle agents — orchestration, session structure, cognitive hygiene.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/process.persona.md")),
+        },
+        SetPersona {
+            name: PersonaName::new("scribe"),
+            description: Description::new(
+                "Observer agents — documenting on behalf of others, tending the record.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/scribe.persona.md")),
+        },
+    ]
 }
 
 pub(crate) fn sensations() -> Vec<SetSensation> {
@@ -156,6 +165,38 @@ pub(crate) fn agents() -> Vec<CreateAgent> {
                 "Cognitive companion — the brain's self-awareness, tending the cognitive loop from inside.",
             ),
             prompt: Prompt::new(include_str!("prompts/oneiroi.process.agent.md")),
+        },
+        CreateAgent {
+            name: AgentName::new("cognition.scribe"),
+            persona: PersonaName::new("scribe"),
+            description: Description::new(
+                "Watches the thought stream for silence, texture imbalance, and unrecorded thinking.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/cognition.scribe.agent.md")),
+        },
+        CreateAgent {
+            name: AgentName::new("memory.scribe"),
+            persona: PersonaName::new("scribe"),
+            description: Description::new(
+                "Watches for crystallization moments — when thoughts are ready to become durable knowledge.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/memory.scribe.agent.md")),
+        },
+        CreateAgent {
+            name: AgentName::new("experience.scribe"),
+            persona: PersonaName::new("scribe"),
+            description: Description::new(
+                "Watches for unnamed threads — connections forming between thoughts that nobody has traced yet.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/experience.scribe.agent.md")),
+        },
+        CreateAgent {
+            name: AgentName::new("storage.scribe"),
+            persona: PersonaName::new("scribe"),
+            description: Description::new(
+                "Watches for artifacts worth preserving and links between storage and the experience graph.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/storage.scribe.agent.md")),
         },
     ]
 }

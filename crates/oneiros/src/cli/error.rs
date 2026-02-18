@@ -4,7 +4,7 @@ use crate::{
     AgentCommandError, CheckupError, CognitionCommandError, ContextError, DreamError,
     ExperienceCommandError, GuidebookError, IntrospectError, LevelCommandError, MemoryCommandError,
     PersonaCommandError, ProjectCommandError, ReflectError, SeedCommandError,
-    SensationCommandError, ServiceCommandError, SkillCommandError, StatusError,
+    SensationCommandError, SenseError, ServiceCommandError, SkillCommandError, StatusError,
     StorageCommandError, SystemCommandError, TextureCommandError,
 };
 
@@ -38,6 +38,8 @@ pub enum CliError {
     Reflect(#[from] ReflectError),
     #[error(transparent)]
     Seed(#[from] SeedCommandError),
+    #[error(transparent)]
+    Sense(#[from] SenseError),
     #[error(transparent)]
     Skill(#[from] SkillCommandError),
     #[error(transparent)]
