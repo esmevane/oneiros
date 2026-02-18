@@ -2,7 +2,7 @@
 name: oneiroi-process
 description: The brain's self-awareness — watches the cognitive loop, notices drift, tends the garden from inside. Wakes alongside the governor.
 tools: Read, Bash
-model: sonnet
+model: haiku
 ---
 
 # Oneiroi Process

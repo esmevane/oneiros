@@ -10,11 +10,5 @@ macro_rules! agent {
 }
 
 pub fn artifacts() -> Vec<ArtifactFile> {
-    vec![
-        agent!("oneiroi.process.md"),
-        agent!("cognition.scribe.md"),
-        agent!("memory.scribe.md"),
-        agent!("experience.scribe.md"),
-        agent!("storage.scribe.md"),
-    ]
+    vec![agent!("oneiroi.process.md"), agent!("activity.scribe.md")]
 }

@@ -422,6 +422,34 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
+    // -- Lifecycle methods --
+
+    pub async fn wake(&self, token: &Token, agent_name: &AgentName) -> Result<DreamContext, Error> {
+        let uri = format!("/lifecycle/wake/{agent_name}");
+        let bytes = self.send("POST", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn sleep(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+        let uri = format!("/lifecycle/sleep/{agent_name}");
+        let bytes = self.send("POST", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn emerge(&self, token: &Token, request: CreateAgentRequest) -> Result<Agent, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let bytes = self
+            .send("POST", "/lifecycle/emerge", token, Some(body))
+            .await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn recede(&self, token: &Token, agent_name: &AgentName) -> Result<(), Error> {
+        let uri = format!("/lifecycle/recede/{agent_name}");
+        self.send("POST", &uri, token, None).await?;
+        Ok(())
+    }
+
     pub async fn reflect(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
         let uri = format!("/reflect/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;

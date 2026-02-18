@@ -111,6 +111,15 @@ mod events {
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+    pub enum LifecycleEvents {
+        Woke { name: AgentName },
+        Slept { name: AgentName },
+        Emerged { name: AgentName },
+        Receded { name: AgentName },
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum DreamingEvents {
         DreamBegun { agent: AgentName },
         DreamComplete(Box<DreamContext>),
@@ -141,6 +150,7 @@ mod events {
         Experience(ExperienceEvents),
         Introspecting(IntrospectingEvents),
         Level(LevelEvents),
+        Lifecycle(LifecycleEvents),
         Memory(MemoryEvents),
         Persona(PersonaEvents),
         Reflecting(ReflectingEvents),
