@@ -6,6 +6,7 @@ pub(crate) mod experience;
 pub(crate) mod health;
 pub(crate) mod introspect;
 pub(crate) mod level;
+pub(crate) mod lifecycle;
 pub(crate) mod memory;
 pub(crate) mod persona;
 pub(crate) mod reflect;

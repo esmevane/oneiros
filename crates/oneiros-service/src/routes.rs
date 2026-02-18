@@ -13,6 +13,7 @@ pub fn router(state: Arc<ServiceState>) -> Router {
         .nest("/experiences", handlers::experience::router())
         .nest("/health", handlers::health::router())
         .nest("/introspect", handlers::introspect::router())
+        .nest("/lifecycle", handlers::lifecycle::router())
         .nest("/levels", handlers::level::router())
         .nest("/memories", handlers::memory::router())
         .nest("/personas", handlers::persona::router())

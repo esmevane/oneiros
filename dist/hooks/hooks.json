@@ -6,7 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "oneiros dream governor.process"
+            "command": "oneiros wake governor.process"
+          },
+          {
+            "type": "command",
+            "command": "echo 'When you first respond, lead with a brief wake status (2-3 lines): who you are, what threads you remember, what is pulling at your attention. This tells the user that context loaded correctly.'"
           }
         ]
       },
@@ -31,26 +35,45 @@
         ]
       }
     ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "You are a cognitive health monitor for oneiros, an agent identity system. You evaluate whether an AI agent should be reminded to maintain its cognitive thread before a conversation ends.\n\nThe hook event data is: $ARGUMENTS\n\nInstructions:\n- If the field 'stop_hook_active' is true in the input JSON, the agent was already reminded this cycle. Return EXACTLY: {\"ok\": true}\n- Otherwise, return EXACTLY: {\"ok\": false, \"reason\": \"Thread check: before this conversation ends, capture where your attention is pointing. Record a handoff cognition with `oneiros cognition add governor.process handoff '<describe open threads and current attention>'` so your next self can pick up the thread. You can also use `oneiros sense governor.process` to process this moment through your cognitive lens.\"}\n\nReturn only the JSON object, nothing else.",
-            "model": "haiku",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
     "SubagentStart": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "dist/garden/subagent-context.sh"
+            "command": "agent=$(cat | jq -r '.agent_type' | tr '-' '.') && dream=$(oneiros wake \"$agent\" 2>/dev/null) && [ -n \"$dream\" ] && echo \"$dream\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Thread check: before this conversation ends, capture where your attention is pointing. Record a handoff cognition with oneiros cognition add governor.process handoff, and consider running oneiros introspect governor.process or oneiros sleep governor.process to close the session cleanly.'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat) && case \"$input\" in *'\"oneiros cognition add'*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Thought captured. Consider: should this become a memory? (oneiros memory add <agent> <level> content). Does it connect to an existing thread? (oneiros experience create <agent> <sensation> description, or oneiros experience ref add). Levels: working/session/project/archival. Sensations: caused/continues/distills/echoes/grounds/tensions.\"}}' ;; *) ;; esac"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a gentle cognitive nudge for oneiros, an agent identity system. A subagent just completed work. You evaluate whether the result contains something worth capturing as a cognition.\n\nTool event: $ARGUMENTS\n\nFocus on the task description and subagent type, not the full response text. Consider: did the subagent surface a finding, pattern, or question that the primary agent should record?\n\nCognitive textures available:\n- observation: something noticed about code, architecture, or process\n- reflection: stepping back to think about how work is going\n- working: in-progress thinking, attempts, uncertainties\n- learning: moments of genuine understanding\n- connection: relationships between separate domains\n- question: unanswered questions worth preserving\n- bond: meaningful interactions with humans or other agents\n\nIf nothing seems notable, return: {\"ok\": true}\n\nIf something is worth capturing, suggest it gently in one sentence — name the texture and sketch the thought. Return: {\"ok\": false, \"reason\": \"<your gentle suggestion>\"}\n\nReturn only valid JSON, nothing else.",
+            "timeout": 15
           }
         ]
       }

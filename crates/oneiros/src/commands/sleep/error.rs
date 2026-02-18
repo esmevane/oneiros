@@ -1,0 +1,10 @@
+use crate::ContextError;
+
+#[derive(thiserror::Error, Debug)]
+pub enum SleepError {
+    #[error("Client error: {0}")]
+    Client(#[from] oneiros_client::Error),
+
+    #[error(transparent)]
+    Context(#[from] ContextError),
+}

@@ -5,6 +5,8 @@ use oneiros_outcomes::Outcome;
 #[serde(untagged)]
 pub enum CliOutcomes {
     #[outcome(transparent)]
+    Activity(#[from] ActivityOutcomes),
+    #[outcome(transparent)]
     Agent(#[from] AgentOutcomes),
     #[outcome(transparent)]
     Cognition(#[from] CognitionOutcomes),
@@ -12,6 +14,8 @@ pub enum CliOutcomes {
     Doctor(#[from] DoctorOutcomes),
     #[outcome(transparent)]
     Dream(#[from] DreamOutcomes),
+    #[outcome(transparent)]
+    Emerge(#[from] EmergeOutcomes),
     #[outcome(transparent)]
     Experience(#[from] ExperienceOutcomes),
     #[outcome(transparent)]
@@ -27,6 +31,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
     #[outcome(transparent)]
+    Recede(#[from] RecedeOutcomes),
+    #[outcome(transparent)]
     Reflect(#[from] ReflectOutcomes),
     #[outcome(transparent)]
     Seed(#[from] SeedOutcomes),
@@ -34,6 +40,8 @@ pub enum CliOutcomes {
     Sense(#[from] SenseOutcomes),
     #[outcome(transparent)]
     Skill(#[from] SkillOutcomes),
+    #[outcome(transparent)]
+    Sleep(#[from] SleepOutcomes),
     #[outcome(transparent)]
     Status(#[from] StatusOutcomes),
     #[outcome(transparent)]
@@ -46,4 +54,6 @@ pub enum CliOutcomes {
     System(#[from] SystemOutcomes),
     #[outcome(transparent)]
     Texture(#[from] TextureOutcomes),
+    #[outcome(transparent)]
+    Wake(#[from] WakeOutcomes),
 }

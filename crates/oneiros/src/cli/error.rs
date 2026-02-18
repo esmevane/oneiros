@@ -1,17 +1,20 @@
 use thiserror::Error;
 
 use crate::{
-    AgentCommandError, CheckupError, CognitionCommandError, ContextError, DreamError,
-    ExperienceCommandError, GuidebookError, IntrospectError, LevelCommandError, MemoryCommandError,
-    PersonaCommandError, ProjectCommandError, ReflectError, SeedCommandError,
-    SensationCommandError, SenseError, ServiceCommandError, SkillCommandError, StatusError,
-    StorageCommandError, SystemCommandError, TextureCommandError,
+    ActivityError, AgentCommandError, CheckupError, CognitionCommandError, ContextError,
+    DreamError, EmergeError, ExperienceCommandError, GuidebookError, IntrospectError,
+    LevelCommandError, MemoryCommandError, PersonaCommandError, ProjectCommandError, RecedeError,
+    ReflectError, SeedCommandError, SensationCommandError, SenseError, ServiceCommandError,
+    SkillCommandError, SleepError, StatusError, StorageCommandError, SystemCommandError,
+    TextureCommandError, WakeError,
 };
 
 #[derive(Debug, Error)]
 pub enum CliError {
     #[error(transparent)]
     Precondition(#[from] ContextError),
+    #[error(transparent)]
+    Activity(#[from] ActivityError),
     #[error(transparent)]
     Agent(#[from] AgentCommandError),
     #[error(transparent)]
@@ -20,6 +23,8 @@ pub enum CliError {
     Doctor(#[from] CheckupError),
     #[error(transparent)]
     Dream(#[from] DreamError),
+    #[error(transparent)]
+    Emerge(#[from] EmergeError),
     #[error(transparent)]
     Experience(#[from] ExperienceCommandError),
     #[error(transparent)]
@@ -35,6 +40,8 @@ pub enum CliError {
     #[error(transparent)]
     Persona(#[from] PersonaCommandError),
     #[error(transparent)]
+    Recede(#[from] RecedeError),
+    #[error(transparent)]
     Reflect(#[from] ReflectError),
     #[error(transparent)]
     Seed(#[from] SeedCommandError),
@@ -42,6 +49,8 @@ pub enum CliError {
     Sense(#[from] SenseError),
     #[error(transparent)]
     Skill(#[from] SkillCommandError),
+    #[error(transparent)]
+    Sleep(#[from] SleepError),
     #[error(transparent)]
     Status(#[from] StatusError),
     #[error(transparent)]
@@ -54,4 +63,6 @@ pub enum CliError {
     System(#[from] SystemCommandError),
     #[error(transparent)]
     Texture(#[from] TextureCommandError),
+    #[error(transparent)]
+    Wake(#[from] WakeError),
 }

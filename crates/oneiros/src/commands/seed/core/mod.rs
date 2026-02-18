@@ -167,36 +167,12 @@ pub(crate) fn agents() -> Vec<CreateAgent> {
             prompt: Prompt::new(include_str!("prompts/oneiroi.process.agent.md")),
         },
         CreateAgent {
-            name: AgentName::new("cognition.scribe"),
+            name: AgentName::new("activity.scribe"),
             persona: PersonaName::new("scribe"),
             description: Description::new(
-                "Watches the thought stream for silence, texture imbalance, and unrecorded thinking.",
+                "Watches cognitive activity across all domains — stream, memory, experience, and storage.",
             ),
-            prompt: Prompt::new(include_str!("prompts/cognition.scribe.agent.md")),
-        },
-        CreateAgent {
-            name: AgentName::new("memory.scribe"),
-            persona: PersonaName::new("scribe"),
-            description: Description::new(
-                "Watches for crystallization moments — when thoughts are ready to become durable knowledge.",
-            ),
-            prompt: Prompt::new(include_str!("prompts/memory.scribe.agent.md")),
-        },
-        CreateAgent {
-            name: AgentName::new("experience.scribe"),
-            persona: PersonaName::new("scribe"),
-            description: Description::new(
-                "Watches for unnamed threads — connections forming between thoughts that nobody has traced yet.",
-            ),
-            prompt: Prompt::new(include_str!("prompts/experience.scribe.agent.md")),
-        },
-        CreateAgent {
-            name: AgentName::new("storage.scribe"),
-            persona: PersonaName::new("scribe"),
-            description: Description::new(
-                "Watches for artifacts worth preserving and links between storage and the experience graph.",
-            ),
-            prompt: Prompt::new(include_str!("prompts/storage.scribe.agent.md")),
+            prompt: Prompt::new(include_str!("prompts/activity.scribe.agent.md")),
         },
     ]
 }

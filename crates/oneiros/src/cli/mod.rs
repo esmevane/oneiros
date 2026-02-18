@@ -37,10 +37,12 @@ impl Cli {
         let context = Context::init()?;
 
         Ok(match &self.command {
+            Command::Activity(activity) => activity.run(&context).await?.map_into(),
             Command::Agent(agent) => agent.run(&context).await?.map_into(),
             Command::Cognition(cognition) => cognition.run(&context).await?.map_into(),
             Command::Doctor(doctor) => doctor.run(&context).await?.map_into(),
             Command::Dream(dream) => dream.run(&context).await?.map_into(),
+            Command::Emerge(emerge) => emerge.run(&context).await?.map_into(),
             Command::Experience(experience) => experience.run(&context).await?.map_into(),
             Command::Sensation(sensation) => sensation.run(&context).await?.map_into(),
             Command::Guidebook(guidebook) => guidebook.run(&context).await?.map_into(),
@@ -48,22 +50,27 @@ impl Cli {
             Command::Level(level) => level.run(&context).await?.map_into(),
             Command::Memory(memory) => memory.run(&context).await?.map_into(),
             Command::Persona(persona) => persona.run(&context).await?.map_into(),
+            Command::Recede(recede) => recede.run(&context).await?.map_into(),
             Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
             Command::Seed(seed) => seed.run(&context).await?.map_into(),
             Command::Sense(sense) => sense.run(&context).await?.map_into(),
             Command::Skill(skill) => skill.run(&context).await?.map_into(),
+            Command::Sleep(sleep) => sleep.run(&context).await?.map_into(),
             Command::Status(status) => status.run(&context).await?.map_into(),
             Command::Storage(storage) => storage.run(&context).await?.map_into(),
             Command::System(system) => system.run(&context).await?.map_into(),
             Command::Service(service) => service.run(&context).await?.map_into(),
             Command::Project(project) => project.run(&context).await?.map_into(),
             Command::Texture(texture) => texture.run(&context).await?.map_into(),
+            Command::Wake(wake) => wake.run(&context).await?.map_into(),
         })
     }
 }
 
 #[derive(Clone, Subcommand)]
 pub(crate) enum Command {
+    /// Monitor agent activity across cognitive domains.
+    Activity(ActivityOps),
     /// Manage agents (named participants in a brain's cognition).
     Agent(AgentOps),
     /// Manage cognitions (thoughts logged by agents).
@@ -72,6 +79,8 @@ pub(crate) enum Command {
     Doctor(DoctorOp),
     /// Compose an agent's full context into a dream prompt.
     Dream(DreamOp),
+    /// Bring a new agent into existence.
+    Emerge(EmergeOp),
     /// Manage experiences (descriptive edges connecting cognitive records).
     Experience(ExperienceOps),
     /// Manage sensations (categories for experience relationships).
@@ -86,6 +95,8 @@ pub(crate) enum Command {
     Memory(MemoryOps),
     /// Manage personas (named agent roles).
     Persona(PersonaOps),
+    /// Retire an agent from active service.
+    Recede(RecedeOp),
     /// Reflect on a significant event during a session.
     Reflect(ReflectOp),
     /// Apply predefined seed data (textures, levels, personas).
@@ -94,6 +105,8 @@ pub(crate) enum Command {
     Sense(SenseOp),
     /// Manage the oneiros skill plugin.
     Skill(SkillOps),
+    /// Put an agent to sleep — end a session with introspection.
+    Sleep(SleepOp),
     /// Show a full cognitive status dashboard for an agent.
     Status(StatusOp),
     /// Manage content-addressable blob storage.
@@ -106,4 +119,6 @@ pub(crate) enum Command {
     System(SystemOps),
     /// Manage textures (cognitive categories for agent thoughts).
     Texture(TextureOps),
+    /// Wake an agent — start a session with dreaming.
+    Wake(WakeOp),
 }
