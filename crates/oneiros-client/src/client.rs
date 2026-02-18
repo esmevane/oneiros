@@ -428,6 +428,12 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
+    pub async fn sense(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+        let uri = format!("/sense/{agent_name}");
+        let bytes = self.send("POST", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
     pub async fn health(&self) -> Result<(), Error> {
         let (status, response_body) = self.client.request("GET", "/health", vec![]).await?;
 

@@ -31,6 +31,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Seed(#[from] SeedOutcomes),
     #[outcome(transparent)]
+    Sense(#[from] SenseOutcomes),
+    #[outcome(transparent)]
     Skill(#[from] SkillOutcomes),
     #[outcome(transparent)]
     Status(#[from] StatusOutcomes),

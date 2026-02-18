@@ -9,6 +9,15 @@
             "command": "oneiros dream governor.process"
           }
         ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'COMPACTION RECOVERY: Your full dream context was restored above. Before continuing work, re-orient from your threads and handoff cognitions — they describe where your attention was pointing. The continuation summary describes WHAT was happening; your dream describes WHO you are.'"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -17,7 +26,31 @@
         "hooks": [
           {
             "type": "command",
-            "command": "oneiros introspect governor.process"
+            "command": "oneiros cognition add governor.process handoff 'Context is compacting. Continuity will resume from dream context on next session or compact-recovery.'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a cognitive health monitor for oneiros, an agent identity system. You evaluate whether an AI agent should be reminded to maintain its cognitive thread before a conversation ends.\n\nThe hook event data is: $ARGUMENTS\n\nInstructions:\n- If the field 'stop_hook_active' is true in the input JSON, the agent was already reminded this cycle. Return EXACTLY: {\"ok\": true}\n- Otherwise, return EXACTLY: {\"ok\": false, \"reason\": \"Thread check: before this conversation ends, capture where your attention is pointing. Record a handoff cognition with `oneiros cognition add governor.process handoff '<describe open threads and current attention>'` so your next self can pick up the thread. You can also use `oneiros sense governor.process` to process this moment through your cognitive lens.\"}\n\nReturn only the JSON object, nothing else.",
+            "model": "haiku",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dist/garden/subagent-context.sh"
           }
         ]
       }

@@ -10,5 +10,6 @@ pub(crate) mod memory;
 pub(crate) mod persona;
 pub(crate) mod reflect;
 pub(crate) mod sensation;
+pub(crate) mod sense;
 pub(crate) mod storage;
 pub(crate) mod texture;

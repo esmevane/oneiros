@@ -1,3 +1,4 @@
+mod agents;
 mod commands;
 mod hooks;
 mod marketplace;
@@ -38,6 +39,7 @@ pub fn all() -> Vec<ArtifactFile> {
         hooks::artifact(),
     ];
 
+    files.extend(agents::artifacts());
     files.extend(commands::artifacts());
     files.extend(resources::artifacts());
 

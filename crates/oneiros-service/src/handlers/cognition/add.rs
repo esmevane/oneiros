@@ -1,7 +1,7 @@
 use axum::{Json, http::StatusCode};
 use chrono::Utc;
-use oneiros_model::{Cognition, CognitionEvents, CognitionId, Events};
-use oneiros_protocol::AddCognitionRequest;
+use oneiros_model::*;
+use oneiros_protocol::*;
 
 use crate::*;
 

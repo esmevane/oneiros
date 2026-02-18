@@ -47,6 +47,18 @@ fn main() {
         }
     }
 
+    // Write agent definition files
+    let agents_dir = source.join("agents");
+    if agents_dir.exists() {
+        for entry in fs::read_dir(&agents_dir).unwrap() {
+            let entry = entry.unwrap();
+            let name = entry.file_name();
+            let content = fs::read_to_string(entry.path()).unwrap();
+            let dest = dist_dir.join("agents").join(&name);
+            write_file(&dest, &content);
+        }
+    }
+
     // Write AGENTS.md template
     let agents_md = fs::read_to_string(source.join("agents-md.md")).unwrap();
     let dest = dist_dir.join("agents-md.md");

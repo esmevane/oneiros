@@ -1,6 +1,6 @@
 use axum::{Json, extract::Path, http::StatusCode};
-use oneiros_model::{Events, Experience, ExperienceEvents, ExperienceId, RecordRef};
-use oneiros_protocol::AddExperienceRefRequest;
+use oneiros_model::*;
+use oneiros_protocol::*;
 
 use crate::*;
 

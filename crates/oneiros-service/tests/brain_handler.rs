@@ -4,11 +4,8 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use oneiros_db::Database;
-use oneiros_model::{
-    Actor, ActorEvents, ActorId, ActorName, BrainName, BrainStatus, Events, Tenant, TenantEvents,
-    TenantId, TenantName,
-};
-use oneiros_protocol::BrainInfo;
+use oneiros_model::*;
+use oneiros_protocol::*;
 use oneiros_service::{ServiceState, projections, router};
 use std::sync::Arc;
 use tempfile::TempDir;

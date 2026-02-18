@@ -1141,6 +1141,7 @@ dependencies = [
  "oneiros-fs",
  "oneiros-model",
  "oneiros-outcomes",
+ "oneiros-protocol",
  "oneiros-service",
  "oneiros-skill",
  "oneiros-templates",
