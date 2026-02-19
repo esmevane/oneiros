@@ -7,41 +7,30 @@ use super::AgentConstructionError;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Agent {
-    pub id: AgentId,
     pub name: AgentName,
     pub persona: PersonaName,
     pub description: Description,
     pub prompt: Prompt,
 }
 
-impl<A, B, C, D, E> TryFrom<(A, B, C, D, E)> for Agent
-where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
-    D: AsRef<str>,
-    E: AsRef<str>,
-{
-    type Error = AgentConstructionError;
-
-    fn try_from(
-        (id, name, persona, description, prompt): (A, B, C, D, E),
-    ) -> Result<Self, Self::Error> {
-        Ok(Agent {
-            id: id.as_ref().parse()?,
+impl Agent {
+    pub fn construct_from_db(
+        (id, name, persona, description, prompt): (
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+        ),
+    ) -> Result<Identity<AgentId, Agent>, AgentConstructionError> {
+        let id: AgentId = id.as_ref().parse()?;
+        let agent = Agent {
             name: AgentName::new(name),
             persona: PersonaName::new(persona),
             description: Description::new(description),
             prompt: Prompt::new(prompt),
-        })
-    }
-}
-
-impl Agent {
-    pub fn construct_from_db(
-        row: impl TryInto<Self, Error = AgentConstructionError>,
-    ) -> Result<Self, AgentConstructionError> {
-        row.try_into()
+        };
+        Ok(Identity::new(id, agent))
     }
 }
 
@@ -66,7 +55,6 @@ mod tests {
     #[test]
     fn agent_identity() {
         let primary = Agent {
-            id: AgentId::new(),
             name: AgentName::new("governor.process"),
             persona: PersonaName::new("process"),
             description: Description::new("first"),
@@ -74,7 +62,6 @@ mod tests {
         };
 
         let other = Agent {
-            id: AgentId::new(),
             name: AgentName::new("governor.process"),
             persona: PersonaName::new("process"),
             description: Description::new("completely different"),
@@ -87,7 +74,6 @@ mod tests {
     #[test]
     fn agent_different_persona_different_link() {
         let primary = Agent {
-            id: AgentId::new(),
             name: AgentName::new("rust"),
             persona: PersonaName::new("expert"),
             description: Description::default(),
@@ -95,7 +81,6 @@ mod tests {
         };
 
         let other = Agent {
-            id: AgentId::new(),
             name: AgentName::new("rust"),
             persona: PersonaName::new("process"),
             description: Description::default(),

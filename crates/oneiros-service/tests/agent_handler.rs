@@ -141,7 +141,7 @@ async fn create_agent_returns_created() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Agent = serde_json::from_slice(&bytes).unwrap();
+    let agent: Identity<AgentId, Agent> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(agent.name, AgentName::new("architect"));
     assert_eq!(agent.persona, PersonaName::new("expert"));
     assert_eq!(agent.description.as_str(), "The system architect");
@@ -201,7 +201,7 @@ async fn list_agents_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Agent> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Identity<AgentId, Agent>> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -227,7 +227,7 @@ async fn list_agents_after_create() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Agent> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Identity<AgentId, Agent>> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
@@ -267,7 +267,7 @@ async fn get_agent_by_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Agent = serde_json::from_slice(&bytes).unwrap();
+    let agent: Identity<AgentId, Agent> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(agent.name, AgentName::new("architect"));
     assert_eq!(agent.persona, PersonaName::new("expert"));
 }
@@ -309,7 +309,7 @@ async fn update_agent() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Agent = serde_json::from_slice(&bytes).unwrap();
+    let agent: Identity<AgentId, Agent> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(agent.description.as_str(), "Version 2");
     assert_eq!(agent.prompt.as_str(), "Prompt v2");
 }

@@ -1,8 +1,8 @@
 use oneiros_db::{Database, DatabaseError, Projection};
 use oneiros_model::{
-    Actor, Agent, AgentName, Brain, Cognition, Content, Experience, ExperienceId, Level, LevelName,
-    Memory, Persona, PersonaName, RecordRef, Sensation, SensationName, StorageEntry, StorageKey,
-    Tenant, Texture, TextureName, Ticket,
+    Actor, Agent, AgentId, AgentName, Brain, Cognition, Content, Experience, ExperienceId,
+    Identity, Level, LevelName, Memory, Persona, PersonaName, RecordRef, Sensation, SensationName,
+    StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
 };
 use serde_json::Value;
 
@@ -319,7 +319,7 @@ const AGENT_CREATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_agent_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let agent: Agent = serde_json::from_value(data.clone())?;
+    let agent: Identity<AgentId, Agent> = serde_json::from_value(data.clone())?;
     conn.create_agent_record(
         agent.id.to_string(),
         &agent.name,
@@ -343,7 +343,7 @@ const AGENT_UPDATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_agent_updated(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let agent: Agent = serde_json::from_value(data.clone())?;
+    let agent: Identity<AgentId, Agent> = serde_json::from_value(data.clone())?;
     conn.update_agent(
         &agent.name,
         &agent.persona,

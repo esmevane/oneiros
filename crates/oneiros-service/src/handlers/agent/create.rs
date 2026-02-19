@@ -7,7 +7,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateAgentRequest>,
-) -> Result<(StatusCode, Json<Agent>), Error> {
+) -> Result<(StatusCode, Json<Identity<AgentId, Agent>>), Error> {
     // Validate that the referenced persona exists.
     ticket
         .db
@@ -19,13 +19,15 @@ pub(crate) async fn handler(
         return Err(Conflicts::Agent(request.name).into());
     }
 
-    let agent = Agent {
-        id: AgentId::new(),
-        name: request.name,
-        persona: request.persona,
-        description: request.description,
-        prompt: request.prompt,
-    };
+    let agent = Identity::new(
+        AgentId::new(),
+        Agent {
+            name: request.name,
+            persona: request.persona,
+            description: request.description,
+            prompt: request.prompt,
+        },
+    );
 
     let event = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
 

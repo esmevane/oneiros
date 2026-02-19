@@ -15,14 +15,16 @@ mod tests {
     use super::*;
     use oneiros_model::*;
 
-    fn test_agent() -> Agent {
-        Agent {
-            id: AgentId::new(),
-            name: AgentName::new("atlas"),
-            persona: PersonaName::new("explorer"),
-            description: Description::new("A curious explorer agent."),
-            prompt: Prompt::new("You explore and discover."),
-        }
+    fn test_agent() -> Identity<AgentId, Agent> {
+        Identity::new(
+            AgentId::new(),
+            Agent {
+                name: AgentName::new("atlas"),
+                persona: PersonaName::new("explorer"),
+                description: Description::new("A curious explorer agent."),
+                prompt: Prompt::new("You explore and discover."),
+            },
+        )
     }
 
     fn test_persona() -> Persona {

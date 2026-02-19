@@ -59,7 +59,7 @@ impl CreateAgent {
                 },
             )
             .await?;
-        outcomes.emit(CreateAgentOutcomes::AgentCreated(info.name));
+        outcomes.emit(CreateAgentOutcomes::AgentCreated(info.name.clone()));
 
         Ok(outcomes)
     }

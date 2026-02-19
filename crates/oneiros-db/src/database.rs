@@ -481,7 +481,10 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_agent(&self, name: impl AsRef<str>) -> Result<Option<Agent>, DatabaseError> {
+    pub fn get_agent(
+        &self,
+        name: impl AsRef<str>,
+    ) -> Result<Option<Identity<AgentId, Agent>>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, name, persona, description, prompt from agent where name = ?1",
             params![name.as_ref()],
@@ -503,7 +506,7 @@ impl Database {
         }
     }
 
-    pub fn list_agents(&self) -> Result<Vec<Agent>, DatabaseError> {
+    pub fn list_agents(&self) -> Result<Vec<Identity<AgentId, Agent>>, DatabaseError> {
         let mut stmt = self
             .conn
             .prepare("select id, name, persona, description, prompt from agent order by name")?;
