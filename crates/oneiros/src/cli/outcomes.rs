@@ -11,6 +11,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Cognition(#[from] CognitionOutcomes),
     #[outcome(transparent)]
+    Connection(#[from] ConnectionOutcomes),
+    #[outcome(transparent)]
     Doctor(#[from] DoctorOutcomes),
     #[outcome(transparent)]
     Dream(#[from] DreamOutcomes),
@@ -28,6 +30,8 @@ pub enum CliOutcomes {
     Level(#[from] LevelOutcomes),
     #[outcome(transparent)]
     Memory(#[from] MemoryOutcomes),
+    #[outcome(transparent)]
+    Nature(#[from] NatureOutcomes),
     #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
     #[outcome(transparent)]

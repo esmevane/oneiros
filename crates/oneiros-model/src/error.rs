@@ -9,6 +9,8 @@ pub enum ConstructionError {
     #[error(transparent)]
     Cognition(#[from] CognitionConstructionError),
     #[error(transparent)]
+    Connection(#[from] ConnectionConstructionError),
+    #[error(transparent)]
     Memory(#[from] MemoryConstructionError),
     #[error(transparent)]
     Experience(#[from] ExperienceConstructionError),

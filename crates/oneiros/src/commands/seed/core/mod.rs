@@ -148,6 +148,47 @@ pub(crate) fn sensations() -> Vec<SetSensation> {
     ]
 }
 
+pub(crate) fn natures() -> Vec<SetNature> {
+    vec![
+        SetNature {
+            name: NatureName::new("origin"),
+            description: Description::new(
+                "One entity gave rise to another — a generative relationship.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/origin.nature.md")),
+        },
+        SetNature {
+            name: NatureName::new("context"),
+            description: Description::new("One entity provides background or framing for another."),
+            prompt: Prompt::new(include_str!("prompts/context.nature.md")),
+        },
+        SetNature {
+            name: NatureName::new("continuation"),
+            description: Description::new(
+                "One entity follows from another — sequential progression.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/continuation.nature.md")),
+        },
+        SetNature {
+            name: NatureName::new("revision"),
+            description: Description::new("One entity updates or supersedes another."),
+            prompt: Prompt::new(include_str!("prompts/revision.nature.md")),
+        },
+        SetNature {
+            name: NatureName::new("reference"),
+            description: Description::new(
+                "Two entities are related without implying causation or sequence.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/reference.nature.md")),
+        },
+        SetNature {
+            name: NatureName::new("contrast"),
+            description: Description::new("Two entities differ in an instructive way."),
+            prompt: Prompt::new(include_str!("prompts/contrast.nature.md")),
+        },
+    ]
+}
+
 pub(crate) fn agents() -> Vec<CreateAgent> {
     vec![
         CreateAgent {

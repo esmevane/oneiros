@@ -1,0 +1,1 @@
+Undirected. Two entities differ in an instructive way. Use when comparing alternatives, surfacing tradeoffs, or noting how approaches diverge. Contrast connections don't judge which is better — they mark the boundary between them. The difference itself is the insight: what changes when you choose one over the other.

@@ -9,10 +9,11 @@ pub use sensing::*;
 
 mod events {
     use oneiros_model::{
-        Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId, Content,
-        DreamContext, Experience, ExperienceId, Identity, Level, LevelName, Memory, MemoryId,
-        Persona, PersonaName, RecordRef, Sensation, SensationName, StorageEntry, StorageKey,
-        Tenant, TenantId, Texture, TextureName, Ticket, TicketId,
+        Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
+        Connection, ConnectionId, Content, DreamContext, Experience, ExperienceId, Identity, Level,
+        LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName, RecordRef,
+        Sensation, SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture, TextureName,
+        Ticket, TicketId,
     };
 
     use crate::SenseEvents;
@@ -98,6 +99,20 @@ mod events {
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+    pub enum NatureEvents {
+        NatureSet(Nature),
+        NatureRemoved { name: NatureName },
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+    pub enum ConnectionEvents {
+        ConnectionCreated(Identity<ConnectionId, Connection>),
+        ConnectionRemoved { id: ConnectionId },
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum ExperienceEvents {
         ExperienceCreated(Identity<ExperienceId, Experience>),
         ExperienceRefAdded {
@@ -147,6 +162,8 @@ mod events {
         Agent(AgentEvents),
         Brain(BrainEvents),
         Cognition(CognitionEvents),
+        Connection(ConnectionEvents),
+        Nature(NatureEvents),
         Dreaming(DreamingEvents),
         Experience(ExperienceEvents),
         Introspecting(IntrospectingEvents),

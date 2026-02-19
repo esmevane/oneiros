@@ -941,6 +941,214 @@ impl Database {
         Ok(())
     }
 
+    // -- Nature operations --
+
+    pub fn set_nature(
+        &self,
+        name: impl AsRef<str>,
+        description: impl AsRef<str>,
+        prompt: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into nature (name, description, prompt) \
+             values (?1, ?2, ?3) \
+             on conflict(name) do update set \
+             description = excluded.description, prompt = excluded.prompt",
+            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_nature(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from nature where name = ?1", params![name.as_ref()])?;
+        Ok(())
+    }
+
+    pub fn get_nature(&self, name: impl AsRef<str>) -> Result<Option<Nature>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from nature where name = ?1",
+            params![name.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Nature::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_natures(&self) -> Result<Vec<Nature>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select name, description, prompt from nature order by name")?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })?;
+
+        let mut natures = Vec::new();
+        for row in rows {
+            natures.push(Nature::construct_from_db(row?));
+        }
+        Ok(natures)
+    }
+
+    pub fn reset_natures(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from nature")?;
+        Ok(())
+    }
+
+    // -- Connection operations --
+
+    pub fn create_connection(
+        &self,
+        id: impl AsRef<str>,
+        nature: impl AsRef<str>,
+        from_link: impl AsRef<str>,
+        to_link: impl AsRef<str>,
+        created_at: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert or ignore into connection (id, nature, from_link, to_link, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                id.as_ref(),
+                nature.as_ref(),
+                from_link.as_ref(),
+                to_link.as_ref(),
+                created_at.as_ref()
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_connection(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Option<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, nature, from_link, to_link, created_at from connection where id = ?1",
+            params![id.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(oneiros_model::Connection::construct_from_db(row)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_connections(
+        &self,
+    ) -> Result<Vec<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, nature, from_link, to_link, created_at from connection order by rowid",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(oneiros_model::Connection::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
+    }
+
+    pub fn list_connections_by_nature(
+        &self,
+        nature: impl AsRef<str>,
+    ) -> Result<Vec<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, nature, from_link, to_link, created_at from connection \
+             where nature = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![nature.as_ref()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(oneiros_model::Connection::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
+    }
+
+    pub fn list_connections_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Vec<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, nature, from_link, to_link, created_at from connection \
+             where from_link = ?1 or to_link = ?1 order by rowid",
+        )?;
+
+        let rows = stmt.query_map(params![link.as_ref()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(oneiros_model::Connection::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
+    }
+
+    pub fn remove_connection(&self, id: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from connection where id = ?1", params![id.as_ref()])?;
+        Ok(())
+    }
+
+    pub fn reset_connections(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from connection")?;
+        Ok(())
+    }
+
     // -- Experience operations --
 
     pub fn add_experience(

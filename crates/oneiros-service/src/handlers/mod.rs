@@ -1,6 +1,7 @@
 pub(crate) mod agent;
 pub(crate) mod brain;
 pub(crate) mod cognition;
+pub(crate) mod connection;
 pub(crate) mod dream;
 pub(crate) mod experience;
 pub(crate) mod health;
@@ -8,6 +9,7 @@ pub(crate) mod introspect;
 pub(crate) mod level;
 pub(crate) mod lifecycle;
 pub(crate) mod memory;
+pub(crate) mod nature;
 pub(crate) mod persona;
 pub(crate) mod reflect;
 pub(crate) mod sensation;

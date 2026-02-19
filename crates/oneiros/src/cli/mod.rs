@@ -40,6 +40,7 @@ impl Cli {
             Command::Activity(activity) => activity.run(&context).await?.map_into(),
             Command::Agent(agent) => agent.run(&context).await?.map_into(),
             Command::Cognition(cognition) => cognition.run(&context).await?.map_into(),
+            Command::Connection(connection) => connection.run(&context).await?.map_into(),
             Command::Doctor(doctor) => doctor.run(&context).await?.map_into(),
             Command::Dream(dream) => dream.run(&context).await?.map_into(),
             Command::Emerge(emerge) => emerge.run(&context).await?.map_into(),
@@ -49,6 +50,7 @@ impl Cli {
             Command::Introspect(introspect) => introspect.run(&context).await?.map_into(),
             Command::Level(level) => level.run(&context).await?.map_into(),
             Command::Memory(memory) => memory.run(&context).await?.map_into(),
+            Command::Nature(nature) => nature.run(&context).await?.map_into(),
             Command::Persona(persona) => persona.run(&context).await?.map_into(),
             Command::Recede(recede) => recede.run(&context).await?.map_into(),
             Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
@@ -75,6 +77,8 @@ pub(crate) enum Command {
     Agent(AgentOps),
     /// Manage cognitions (thoughts logged by agents).
     Cognition(CognitionOps),
+    /// Manage connections (edges between linked entities).
+    Connection(ConnectionOps),
     /// Check the health of the local oneiros host and the current project.
     Doctor(DoctorOp),
     /// Compose an agent's full context into a dream prompt.
@@ -93,13 +97,15 @@ pub(crate) enum Command {
     Level(LevelOps),
     /// Manage memories (consolidated knowledge records).
     Memory(MemoryOps),
+    /// Manage natures (categories for connection edges).
+    Nature(NatureOps),
     /// Manage personas (named agent roles).
     Persona(PersonaOps),
     /// Retire an agent from active service.
     Recede(RecedeOp),
     /// Reflect on a significant event during a session.
     Reflect(ReflectOp),
-    /// Apply predefined seed data (textures, levels, personas).
+    /// Apply predefined seed data (textures, levels, personas, sensations, natures).
     Seed(SeedOps),
     /// Sense an observation — interpret an external event through an agent's cognitive lens.
     Sense(SenseOp),
