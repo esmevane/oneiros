@@ -86,13 +86,15 @@ mod tests {
         let context = DreamContext {
             agent: test_agent(),
             persona: test_persona(),
-            memories: vec![Memory {
-                id: MemoryId::new(),
-                agent_id: AgentId::new(),
-                level: LevelName::new("core"),
-                content: Content::new("I remember the beginning."),
-                created_at: chrono::Utc::now(),
-            }],
+            memories: vec![Identity::new(
+                MemoryId::new(),
+                Memory {
+                    agent_id: AgentId::new(),
+                    level: LevelName::new("core"),
+                    content: Content::new("I remember the beginning."),
+                    created_at: chrono::Utc::now(),
+                },
+            )],
             cognitions: vec![],
             experiences: vec![],
             textures: vec![],
@@ -111,13 +113,15 @@ mod tests {
             agent: test_agent(),
             persona: test_persona(),
             memories: vec![],
-            cognitions: vec![Cognition {
-                id: CognitionId::new(),
-                agent_id: AgentId::new(),
-                texture: TextureName::new("analytical"),
-                content: Content::new("Patterns emerge from repetition."),
-                created_at: chrono::Utc::now(),
-            }],
+            cognitions: vec![Identity::new(
+                CognitionId::new(),
+                Cognition {
+                    agent_id: AgentId::new(),
+                    texture: TextureName::new("analytical"),
+                    content: Content::new("Patterns emerge from repetition."),
+                    created_at: chrono::Utc::now(),
+                },
+            )],
             experiences: vec![],
             textures: vec![],
             levels: vec![],

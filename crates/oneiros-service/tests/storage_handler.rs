@@ -13,31 +13,37 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
         tenant_id,
-        name: TenantName::new("Test Tenant"),
-    }));
+        Tenant {
+            name: TenantName::new("Test Tenant"),
+        },
+    )));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        tenant_id,
+    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
-        name: ActorName::new("Test Actor"),
-    }));
+        Actor {
+            tenant_id,
+            name: ActorName::new("Test Actor"),
+        },
+    )));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
+    let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        tenant_id,
-        name: BrainName::new("test-brain"),
-        path: brain_path.to_path_buf(),
-        status: BrainStatus::Active,
-    }));
+        Brain {
+            tenant_id,
+            name: BrainName::new("test-brain"),
+            path: brain_path.to_path_buf(),
+            status: BrainStatus::Active,
+        },
+    )));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 
@@ -47,11 +53,13 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         actor_id,
     });
 
-    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
-        ticket_id: TicketId::new(),
-        token: token.clone(),
-        created_by: actor_id,
-    }));
+    let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
+        TicketId::new(),
+        Ticket {
+            token: token.clone(),
+            created_by: actor_id,
+        },
+    )));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 

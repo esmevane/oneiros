@@ -8,7 +8,6 @@ use super::CognitionConstructionError;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Cognition {
-    pub id: CognitionId,
     pub agent_id: AgentId,
     pub texture: TextureName,
     pub content: Content,
@@ -16,8 +15,7 @@ pub struct Cognition {
 }
 
 impl Cognition {
-    fn as_table_row(&self) -> String {
-        let short_id = &self.id.to_string()[..8];
+    pub fn as_table_row(&self) -> String {
         let texture = format!("{}", self.texture);
         let content = self.content.as_str();
         let truncated = if content.len() > 80 {
@@ -27,7 +25,7 @@ impl Cognition {
             content.to_string()
         };
 
-        format!("{short_id}  {texture:<12} {truncated}")
+        format!("{texture:<12} {truncated}")
     }
 }
 
@@ -37,24 +35,21 @@ impl core::fmt::Display for Cognition {
     }
 }
 
-impl<A, B, C, D, E> TryFrom<(A, B, C, D, E)> for Cognition
-where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
-    D: AsRef<str>,
-    E: AsRef<str>,
-{
-    type Error = CognitionConstructionError;
-
-    fn try_from(
-        (id, agent_id, texture, content, created_at): (A, B, C, D, E),
-    ) -> Result<Self, Self::Error> {
-        Ok(Cognition {
-            id: id
-                .as_ref()
-                .parse()
-                .map_err(CognitionConstructionError::InvalidId)?,
+impl Cognition {
+    pub fn construct_from_db(
+        (id, agent_id, texture, content, created_at): (
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+        ),
+    ) -> Result<Identity<CognitionId, Self>, CognitionConstructionError> {
+        let id: CognitionId = id
+            .as_ref()
+            .parse()
+            .map_err(CognitionConstructionError::InvalidId)?;
+        let cognition = Cognition {
             agent_id: agent_id
                 .as_ref()
                 .parse()
@@ -65,15 +60,8 @@ where
                 .as_ref()
                 .parse::<DateTime<Utc>>()
                 .map_err(CognitionConstructionError::InvalidCreatedAt)?,
-        })
-    }
-}
-
-impl Cognition {
-    pub fn construct_from_db(
-        row: impl TryInto<Self, Error = CognitionConstructionError>,
-    ) -> Result<Self, CognitionConstructionError> {
-        row.try_into()
+        };
+        Ok(Identity::new(id, cognition))
     }
 }
 
@@ -98,16 +86,14 @@ mod tests {
     #[test]
     fn cognition_identity() {
         let primary = Cognition {
-            id: CognitionId::new(),
             agent_id: AgentId::new(),
             texture: TextureName::new("working"),
             content: Content::new("thinking about links"),
             created_at: Utc::now(),
         };
 
-        // Different agent, different id, different timestamp — same link
+        // Different agent and timestamp — same link
         let other = Cognition {
-            id: CognitionId::new(),
             agent_id: AgentId::new(),
             texture: TextureName::new("working"),
             content: Content::new("thinking about links"),
@@ -120,7 +106,6 @@ mod tests {
     #[test]
     fn cognition_different_content_different_link() {
         let primary = Cognition {
-            id: CognitionId::new(),
             agent_id: AgentId::new(),
             texture: TextureName::new("working"),
             content: Content::new("first thought"),
@@ -128,7 +113,6 @@ mod tests {
         };
 
         let other = Cognition {
-            id: CognitionId::new(),
             agent_id: AgentId::new(),
             texture: TextureName::new("working"),
             content: Content::new("second thought"),

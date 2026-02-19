@@ -5,7 +5,6 @@ use crate::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct Tenant {
-    pub tenant_id: TenantId,
     pub name: TenantName,
 }
 
@@ -29,12 +28,10 @@ mod tests {
     #[test]
     fn tenant_identity() {
         let primary = Tenant {
-            tenant_id: TenantId::new(),
             name: TenantName::new("default"),
         };
 
         let other = Tenant {
-            tenant_id: TenantId::new(),
             name: TenantName::new("default"),
         };
 

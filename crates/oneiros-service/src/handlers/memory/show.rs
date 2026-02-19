@@ -1,12 +1,12 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{Memory, MemoryId};
+use oneiros_model::{Identity, Memory, MemoryId};
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<MemoryId>,
-) -> Result<Json<Memory>, Error> {
+) -> Result<Json<Identity<MemoryId, Memory>>, Error> {
     let memory = ticket
         .db
         .get_memory(id.to_string())?

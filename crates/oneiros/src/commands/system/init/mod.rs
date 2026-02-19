@@ -67,21 +67,23 @@ impl Init {
         outcomes.emit(InitSystemOutcomes::ResolvedTenant(name.clone()));
 
         let tenant_id = TenantId::new();
-        let create_tenant = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        let create_tenant = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
             tenant_id,
-            name: name.clone(),
-        }));
+            Tenant { name: name.clone() },
+        )));
 
         database.log_event(&create_tenant, projections::SYSTEM_PROJECTIONS)?;
         outcomes.emit(InitSystemOutcomes::TenantCreated);
 
         let actor_id = ActorId::new();
 
-        let create_actor = Events::Actor(ActorEvents::ActorCreated(Actor {
-            tenant_id,
+        let create_actor = Events::Actor(ActorEvents::ActorCreated(Identity::new(
             actor_id,
-            name: ActorName::new(name.as_str()),
-        }));
+            Actor {
+                tenant_id,
+                name: ActorName::new(name.as_str()),
+            },
+        )));
 
         database.log_event(&create_actor, projections::SYSTEM_PROJECTIONS)?;
         outcomes.emit(InitSystemOutcomes::ActorCreated);

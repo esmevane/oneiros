@@ -47,13 +47,15 @@ pub(crate) async fn handler(
 
     let brain_id = BrainId::new();
 
-    let entity = Brain {
-        tenant_id,
+    let entity = Identity::new(
         brain_id,
-        path,
-        name: request.name,
-        status: BrainStatus::Active,
-    };
+        Brain {
+            tenant_id,
+            path,
+            name: request.name,
+            status: BrainStatus::Active,
+        },
+    );
 
     let event = Events::Brain(BrainEvents::BrainCreated(entity.clone()));
 
@@ -65,11 +67,13 @@ pub(crate) async fn handler(
         actor_id,
     });
 
-    let ticket_event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
-        ticket_id: TicketId::new(),
-        token: token.clone(),
-        created_by: actor_id,
-    }));
+    let ticket_event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
+        TicketId::new(),
+        Ticket {
+            token: token.clone(),
+            created_by: actor_id,
+        },
+    )));
 
     db.log_event(&ticket_event, projections::SYSTEM_PROJECTIONS)?;
 

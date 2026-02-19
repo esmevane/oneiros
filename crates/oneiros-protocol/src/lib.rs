@@ -9,9 +9,10 @@ pub use sensing::*;
 
 mod events {
     use oneiros_model::{
-        Actor, Agent, AgentId, AgentName, Brain, Cognition, Content, DreamContext, Experience,
-        ExperienceId, Identity, Level, LevelName, Memory, Persona, PersonaName, RecordRef,
-        Sensation, SensationName, StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
+        Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId, Content,
+        DreamContext, Experience, ExperienceId, Identity, Level, LevelName, Memory, MemoryId,
+        Persona, PersonaName, RecordRef, Sensation, SensationName, StorageEntry, StorageKey,
+        Tenant, TenantId, Texture, TextureName, Ticket, TicketId,
     };
 
     use crate::SenseEvents;
@@ -19,19 +20,19 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum TenantEvents {
-        TenantCreated(Tenant),
+        TenantCreated(Identity<TenantId, Tenant>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum ActorEvents {
-        ActorCreated(Actor),
+        ActorCreated(Identity<ActorId, Actor>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum BrainEvents {
-        BrainCreated(Brain),
+        BrainCreated(Identity<BrainId, Brain>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -45,13 +46,13 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum CognitionEvents {
-        CognitionAdded(Cognition),
+        CognitionAdded(Identity<CognitionId, Cognition>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum MemoryEvents {
-        MemoryAdded(Memory),
+        MemoryAdded(Identity<MemoryId, Memory>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -85,7 +86,7 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum TicketEvents {
-        TicketIssued(Ticket),
+        TicketIssued(Identity<TicketId, Ticket>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
@@ -98,7 +99,7 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum ExperienceEvents {
-        ExperienceCreated(Experience),
+        ExperienceCreated(Identity<ExperienceId, Experience>),
         ExperienceRefAdded {
             experience_id: ExperienceId,
             record_ref: RecordRef,

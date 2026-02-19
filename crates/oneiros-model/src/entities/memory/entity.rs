@@ -8,7 +8,6 @@ use super::MemoryConstructionError;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Memory {
-    pub id: MemoryId,
     pub agent_id: AgentId,
     pub level: LevelName,
     pub content: Content,
@@ -16,8 +15,7 @@ pub struct Memory {
 }
 
 impl Memory {
-    fn as_table_row(&self) -> String {
-        let short_id = &self.id.to_string()[..8];
+    pub fn as_table_row(&self) -> String {
         let level = format!("{}", self.level);
         let content = self.content.as_str();
         let truncated = if content.len() > 80 {
@@ -27,7 +25,7 @@ impl Memory {
             content.to_string()
         };
 
-        format!("{short_id}  {level:<12} {truncated}")
+        format!("{level:<12} {truncated}")
     }
 }
 
@@ -37,24 +35,21 @@ impl core::fmt::Display for Memory {
     }
 }
 
-impl<A, B, C, D, E> TryFrom<(A, B, C, D, E)> for Memory
-where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
-    D: AsRef<str>,
-    E: AsRef<str>,
-{
-    type Error = MemoryConstructionError;
-
-    fn try_from(
-        (id, agent_id, level, content, created_at): (A, B, C, D, E),
-    ) -> Result<Self, Self::Error> {
-        Ok(Memory {
-            id: id
-                .as_ref()
-                .parse()
-                .map_err(MemoryConstructionError::InvalidId)?,
+impl Memory {
+    pub fn construct_from_db(
+        (id, agent_id, level, content, created_at): (
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+        ),
+    ) -> Result<Identity<MemoryId, Self>, MemoryConstructionError> {
+        let id: MemoryId = id
+            .as_ref()
+            .parse()
+            .map_err(MemoryConstructionError::InvalidId)?;
+        let memory = Memory {
             agent_id: agent_id
                 .as_ref()
                 .parse()
@@ -65,15 +60,8 @@ where
                 .as_ref()
                 .parse::<DateTime<Utc>>()
                 .map_err(MemoryConstructionError::InvalidCreatedAt)?,
-        })
-    }
-}
-
-impl Memory {
-    pub fn construct_from_db(
-        row: impl TryInto<Self, Error = MemoryConstructionError>,
-    ) -> Result<Self, MemoryConstructionError> {
-        row.try_into()
+        };
+        Ok(Identity::new(id, memory))
     }
 }
 
@@ -98,7 +86,6 @@ mod tests {
     #[test]
     fn memory_identity() {
         let primary = Memory {
-            id: MemoryId::new(),
             agent_id: AgentId::new(),
             level: LevelName::new("project"),
             content: Content::new("oneiros is an identity substrate"),
@@ -107,7 +94,6 @@ mod tests {
 
         // Different agent and timestamp — same link
         let other = Memory {
-            id: MemoryId::new(),
             agent_id: AgentId::new(),
             level: LevelName::new("project"),
             content: Content::new("oneiros is an identity substrate"),

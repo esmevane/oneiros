@@ -6,7 +6,6 @@ use crate::*;
 #[derive(Serialize, Deserialize)]
 pub struct Actor {
     pub tenant_id: TenantId,
-    pub actor_id: ActorId,
     pub name: ActorName,
 }
 
@@ -29,16 +28,15 @@ mod tests {
 
     #[test]
     fn actor_identity() {
+        let tenant_id = TenantId::new();
+
         let primary = Actor {
-            tenant_id: TenantId::new(),
-            actor_id: ActorId::new(),
+            tenant_id,
             name: ActorName::new("default"),
         };
 
         let other = Actor {
-            // Same tenant, different actor_id — same link
-            tenant_id: primary.tenant_id,
-            actor_id: ActorId::new(),
+            tenant_id,
             name: ActorName::new("default"),
         };
 
