@@ -486,9 +486,9 @@ fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), Databas
     for record_ref in &experience.refs {
         conn.add_experience_ref(
             &id,
-            record_ref.id.to_string(),
-            record_ref.kind.to_string(),
-            record_ref.role.as_ref().map(|l| l.as_str()),
+            record_ref.id().to_string(),
+            record_ref.kind().to_string(),
+            record_ref.role().map(|l| l.as_str()),
             &created_at,
         )?;
     }
@@ -514,9 +514,9 @@ fn apply_experience_ref_added(conn: &Database, data: &Value) -> Result<(), Datab
 
     conn.add_experience_ref(
         added.experience_id.to_string(),
-        added.record_ref.id.to_string(),
-        added.record_ref.kind.to_string(),
-        added.record_ref.role.as_ref().map(|l| l.as_str()),
+        added.record_ref.id().to_string(),
+        added.record_ref.kind().to_string(),
+        added.record_ref.role().map(|l| l.as_str()),
         &now,
     )?;
 

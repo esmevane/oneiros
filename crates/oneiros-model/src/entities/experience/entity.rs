@@ -56,18 +56,31 @@ impl core::fmt::Display for Experience {
     }
 }
 
-impl<A, B, C, D, E> TryFrom<(A, B, C, D, E)> for Experience
+impl<GivenId, GivenAgentId, GivenSensation, GivenDescription, GivenCreatedAt>
+    TryFrom<(
+        GivenId,
+        GivenAgentId,
+        GivenSensation,
+        GivenDescription,
+        GivenCreatedAt,
+    )> for Experience
 where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
-    D: AsRef<str>,
-    E: AsRef<str>,
+    GivenId: AsRef<str>,
+    GivenAgentId: AsRef<str>,
+    GivenSensation: AsRef<str>,
+    GivenDescription: AsRef<str>,
+    GivenCreatedAt: AsRef<str>,
 {
     type Error = ExperienceConstructionError;
 
     fn try_from(
-        (id, agent_id, sensation, description, created_at): (A, B, C, D, E),
+        (id, agent_id, sensation, description, created_at): (
+            GivenId,
+            GivenAgentId,
+            GivenSensation,
+            GivenDescription,
+            GivenCreatedAt,
+        ),
     ) -> Result<Self, Self::Error> {
         Ok(Experience {
             id: id
@@ -135,11 +148,11 @@ mod tests {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
             description: Content::new("a thread"),
-            refs: vec![RecordRef {
-                id: Id::new(),
-                kind: RecordKind::Cognition,
-                role: None,
-            }],
+            refs: vec![RecordRef::identified(
+                Id::new(),
+                RecordKind::Cognition,
+                None,
+            )],
             created_at: Utc::now(),
         };
 

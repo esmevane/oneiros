@@ -229,9 +229,9 @@ async fn create_experience_with_refs() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 1);
-    assert_eq!(experience.refs[0].kind, RecordKind::Cognition);
+    assert_eq!(*experience.refs[0].kind(), RecordKind::Cognition);
     assert_eq!(
-        experience.refs[0].role.as_ref().map(|l| l.as_str()),
+        experience.refs[0].role().map(|l| l.as_str()),
         Some("origin")
     );
 }
@@ -371,11 +371,8 @@ async fn add_ref_to_existing_experience() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let updated: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].kind, RecordKind::Memory);
-    assert_eq!(
-        updated.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("origin")
-    );
+    assert_eq!(*updated.refs[0].kind(), RecordKind::Memory);
+    assert_eq!(updated.refs[0].role().map(|l| l.as_str()), Some("origin"));
 }
 
 #[tokio::test]

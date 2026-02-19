@@ -1102,7 +1102,7 @@ impl Database {
         let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
         raw_rows
             .into_iter()
-            .map(RecordRef::construct_from_db)
+            .map(IdentifiedRef::construct_from_db)
             .collect::<Result<Vec<_>, _>>()
             .map_err(DatabaseError::from)
     }

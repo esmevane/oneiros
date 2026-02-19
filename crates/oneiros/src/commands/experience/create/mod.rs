@@ -100,7 +100,7 @@ async fn resolve_refs(
             }
         };
 
-        refs.push(RecordRef { id, kind, role });
+        refs.push(RecordRef::identified(id, kind, role));
     }
 
     Ok(refs)
