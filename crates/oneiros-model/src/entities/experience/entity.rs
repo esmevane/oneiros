@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -99,4 +100,49 @@ impl Experience {
     }
 }
 
+impl Addressable for Experience {
+    fn address_label() -> &'static str {
+        "experience"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        // The experience is the identity: what sensation and description.
+        // Agent, timestamp, and refs are context or mutable.
+        Link::new(&(Self::address_label(), &self.sensation, &self.description))
+    }
+}
+
 domain_id!(ExperienceId);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn experience_identity() {
+        let primary = Experience {
+            id: ExperienceId::new(),
+            agent_id: AgentId::new(),
+            sensation: SensationName::new("continues"),
+            description: Content::new("a thread"),
+            refs: vec![],
+            created_at: Utc::now(),
+        };
+
+        // Different agent, timestamp, and refs — same link
+        let other = Experience {
+            id: ExperienceId::new(),
+            agent_id: AgentId::new(),
+            sensation: SensationName::new("continues"),
+            description: Content::new("a thread"),
+            refs: vec![RecordRef {
+                id: Id::new(),
+                kind: RecordKind::Cognition,
+                role: None,
+            }],
+            created_at: Utc::now(),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

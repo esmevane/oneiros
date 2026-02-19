@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -76,4 +77,64 @@ impl Cognition {
     }
 }
 
+impl Addressable for Cognition {
+    fn address_label() -> &'static str {
+        "cognition"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        // Content-addressable: the thought is the identity, regardless of
+        // who said it or when. Agent and timestamp are context, not identity.
+        Link::new(&(Self::address_label(), &self.texture, &self.content))
+    }
+}
+
 domain_id!(CognitionId);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cognition_identity() {
+        let primary = Cognition {
+            id: CognitionId::new(),
+            agent_id: AgentId::new(),
+            texture: TextureName::new("working"),
+            content: Content::new("thinking about links"),
+            created_at: Utc::now(),
+        };
+
+        // Different agent, different id, different timestamp — same link
+        let other = Cognition {
+            id: CognitionId::new(),
+            agent_id: AgentId::new(),
+            texture: TextureName::new("working"),
+            content: Content::new("thinking about links"),
+            created_at: Utc::now(),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+
+    #[test]
+    fn cognition_different_content_different_link() {
+        let primary = Cognition {
+            id: CognitionId::new(),
+            agent_id: AgentId::new(),
+            texture: TextureName::new("working"),
+            content: Content::new("first thought"),
+            created_at: Utc::now(),
+        };
+
+        let other = Cognition {
+            id: CognitionId::new(),
+            agent_id: AgentId::new(),
+            texture: TextureName::new("working"),
+            content: Content::new("second thought"),
+            created_at: Utc::now(),
+        };
+
+        assert_ne!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

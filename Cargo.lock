@@ -1197,12 +1197,26 @@ name = "oneiros-fs"
 version = "0.0.5"
 
 [[package]]
+name = "oneiros-link"
+version = "0.0.5"
+dependencies = [
+ "data-encoding",
+ "postcard",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "oneiros-model"
 version = "0.0.5"
 dependencies = [
  "chrono",
  "data-encoding",
+ "oneiros-link",
  "postcard",
+ "pretty_assertions",
  "serde",
  "thiserror 2.0.18",
  "uuid",

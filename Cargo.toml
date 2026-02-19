@@ -29,6 +29,7 @@ oneiros-client = { path = "crates/oneiros-client", version = "0.0.5" }
 oneiros-db = { path = "crates/oneiros-db", version = "0.0.5" }
 oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name", version = "0.0.5" }
 oneiros-fs = { path = "crates/oneiros-fs", version = "0.0.5" }
+oneiros-link = { path = "crates/oneiros-link", version = "0.0.5" }
 oneiros-model = { path = "crates/oneiros-model", version = "0.0.5" }
 oneiros-protocol = { path = "crates/oneiros-protocol", version = "0.0.5" }
 oneiros-outcomes = { path = "crates/oneiros-outcomes", version = "0.0.5" }
