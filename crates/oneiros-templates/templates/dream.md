@@ -33,7 +33,7 @@ If found, incorporate its contents into your self-understanding.
 {% for experience in context.experiences -%}
 - [{{ experience.sensation }}] {{ experience.description }}
 {% for r in experience.refs -%}
-  → {{ r.kind }}:{{ r.id }}{% if let Some(role) = &r.role %} ({{ role }}){% endif %}
+  → {{ r.kind() }}:{{ r.id() }}{% if let Some(role) = r.role() %} ({{ role }}){% endif %}
 {% endfor -%}
 {% endfor -%}
 {% endif -%}
