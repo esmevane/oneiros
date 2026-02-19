@@ -1,6 +1,6 @@
 use oneiros_model::{
-    AgentName, BrainName, Content, Description, Id, Label, LevelName, PersonaName, Prompt,
-    RecordKind, RecordRef, SensationName, TextureName,
+    AgentName, BrainName, Content, Description, LevelName, PersonaName, Prompt, RecordRef,
+    SensationName, TextureName,
 };
 use serde::{Deserialize, Serialize};
 
@@ -51,13 +51,12 @@ pub struct CreateExperienceRequest {
     pub refs: Vec<RecordRef>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AddExperienceRefRequest {
-    pub record_id: Id,
-    pub record_kind: RecordKind,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub role: Option<Label>,
-}
+/// A request to add a reference to an experience.
+///
+/// Accepts either form via serde untagged:
+///   Identified: { "record_id": "...", "record_kind": "cognition", "role": "origin" }
+///   Linked:     { "link": "base64url...", "role": "origin" }
+pub type AddExperienceRefRequest = RecordRef;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateExperienceDescriptionRequest {

@@ -135,18 +135,22 @@ create table if not exists experience (
 );
 
 -- Experience refs are the edges themselves — each ref connects an
--- experience to a record (cognition, memory, experience, or storage).
+-- experience to a record. Refs come in two forms:
+--   Identified: record_id + record_kind (legacy UUID-based reference)
+--   Linked: link (content-addressed reference via oneiros-link)
+-- Exactly one of (record_id, record_kind) or (link) should be populated.
 -- The role field describes the record's participation in this
 -- experience (e.g. "origin", "outcome", "context").
 --
 create table if not exists experience_ref (
     experience_id text not null references experience(id),
-    record_id     text not null,
-    record_kind   text not null,
+    record_id     text,
+    record_kind   text,
+    link          text,
     role          text,
-    created_at    text not null,
-    primary key (experience_id, record_id)
+    created_at    text not null
 );
+
 
 -- Storage entries map user-facing keys to content hashes. This table
 -- is a projection from storage-set and storage-removed events.

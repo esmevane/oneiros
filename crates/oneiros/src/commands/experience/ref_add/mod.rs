@@ -1,7 +1,7 @@
 mod outcomes;
 
 use clap::Args;
-use oneiros_client::{AddExperienceRefRequest, Client};
+use oneiros_client::Client;
 use oneiros_outcomes::Outcomes;
 
 pub(crate) use outcomes::{RefAddOutcomes, RefAddedResult};
@@ -55,11 +55,11 @@ impl RefAdd {
             .add_experience_ref(
                 &token,
                 &experience_id,
-                AddExperienceRefRequest {
+                RecordRef::identified(
                     record_id,
-                    record_kind: self.record_kind.clone(),
-                    role: self.role.as_ref().map(Label::new),
-                },
+                    self.record_kind.clone(),
+                    self.role.as_ref().map(Label::new),
+                ),
             )
             .await?;
 

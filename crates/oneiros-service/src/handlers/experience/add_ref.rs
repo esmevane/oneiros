@@ -15,11 +15,9 @@ pub(crate) async fn handler(
         .get_experience(id.to_string())?
         .ok_or(NotFound::Experience(id))?;
 
-    let record_ref = RecordRef::identified(request.record_id, request.record_kind, request.role);
-
     let event = Events::Experience(ExperienceEvents::ExperienceRefAdded {
         experience_id: id,
-        record_ref: record_ref.clone(),
+        record_ref: request.clone(),
     });
 
     ticket
