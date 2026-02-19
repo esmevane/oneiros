@@ -1,12 +1,12 @@
 use thiserror::Error;
 
 use crate::{
-    ActivityError, AgentCommandError, CheckupError, CognitionCommandError, ContextError,
-    DreamError, EmergeError, ExperienceCommandError, GuidebookError, IntrospectError,
-    LevelCommandError, MemoryCommandError, PersonaCommandError, ProjectCommandError, RecedeError,
-    ReflectError, SeedCommandError, SensationCommandError, SenseError, ServiceCommandError,
-    SkillCommandError, SleepError, StatusError, StorageCommandError, SystemCommandError,
-    TextureCommandError, WakeError,
+    ActivityError, AgentCommandError, CheckupError, CognitionCommandError, ConnectionCommandError,
+    ContextError, DreamError, EmergeError, ExperienceCommandError, GuidebookError, IntrospectError,
+    LevelCommandError, MemoryCommandError, NatureCommandError, PersonaCommandError,
+    ProjectCommandError, RecedeError, ReflectError, SeedCommandError, SensationCommandError,
+    SenseError, ServiceCommandError, SkillCommandError, SleepError, StatusError,
+    StorageCommandError, SystemCommandError, TextureCommandError, WakeError,
 };
 
 #[derive(Debug, Error)]
@@ -19,6 +19,8 @@ pub enum CliError {
     Agent(#[from] AgentCommandError),
     #[error(transparent)]
     Cognition(#[from] CognitionCommandError),
+    #[error(transparent)]
+    Connection(#[from] ConnectionCommandError),
     #[error(transparent)]
     Doctor(#[from] CheckupError),
     #[error(transparent)]
@@ -37,6 +39,8 @@ pub enum CliError {
     Level(#[from] LevelCommandError),
     #[error(transparent)]
     Memory(#[from] MemoryCommandError),
+    #[error(transparent)]
+    Nature(#[from] NatureCommandError),
     #[error(transparent)]
     Persona(#[from] PersonaCommandError),
     #[error(transparent)]

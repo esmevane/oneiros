@@ -31,9 +31,11 @@ pub(crate) async fn handler(
     let memories = ticket.db.list_memories_by_agent(agent.id.to_string())?;
     let cognitions = ticket.db.list_cognitions_by_agent(agent.id.to_string())?;
     let experiences = ticket.db.list_experiences_by_agent(agent.id.to_string())?;
+    let connections = ticket.db.list_connections()?;
     let textures = ticket.db.list_textures()?;
     let levels = ticket.db.list_levels()?;
     let sensations = ticket.db.list_sensations()?;
+    let natures = ticket.db.list_natures()?;
 
     let context = DreamContext {
         agent,
@@ -41,9 +43,11 @@ pub(crate) async fn handler(
         memories,
         cognitions,
         experiences,
+        connections,
         textures,
         levels,
         sensations,
+        natures,
     };
 
     let complete = Events::Dreaming(DreamingEvents::DreamComplete(Box::new(context.clone())));

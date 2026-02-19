@@ -1,0 +1,1 @@
+Directed. One entity gave rise to another — a generative relationship you can trace. Use when you can point to a specific record and say "this produced that." The source is where creation began; what it reaches is what emerged. Origin connections trace lineage — where ideas, decisions, or artifacts came from.

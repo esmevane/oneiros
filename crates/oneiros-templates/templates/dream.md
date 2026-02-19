@@ -37,6 +37,13 @@ If found, incorporate its contents into your self-understanding.
 {% endfor -%}
 {% endfor -%}
 {% endif -%}
+{% if !context.connections.is_empty() %}
+
+## Your Connections
+{% for connection in context.connections -%}
+- [{{ connection.nature }}] {{ connection.from_link }} → {{ connection.to_link }}
+{% endfor -%}
+{% endif -%}
 {% if !context.textures.is_empty() %}
 
 ## Cognitive Textures
@@ -56,6 +63,13 @@ If found, incorporate its contents into your self-understanding.
 ## Sensations
 {% for sensation in context.sensations -%}
 - {{ sensation.name }} — {{ sensation.prompt }}
+{% endfor -%}
+{% endif -%}
+{% if !context.natures.is_empty() %}
+
+## Natures
+{% for nature in context.natures -%}
+- {{ nature.name }} — {{ nature.prompt }}
 {% endfor -%}
 {% endif %}
 

@@ -8,6 +8,8 @@ pub fn router(state: Arc<ServiceState>) -> Router {
         .nest("/agents", handlers::agent::router())
         .nest("/brains", handlers::brain::router())
         .nest("/cognitions", handlers::cognition::router())
+        .nest("/connections", handlers::connection::router())
+        .nest("/natures", handlers::nature::router())
         .nest("/dream", handlers::dream::router())
         .nest("/sensations", handlers::sensation::router())
         .nest("/experiences", handlers::experience::router())

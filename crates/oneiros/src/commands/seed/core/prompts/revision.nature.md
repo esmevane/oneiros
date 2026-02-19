@@ -1,0 +1,1 @@
+Directed. One entity updates or supersedes another. Use when a newer version replaces an older one — a corrected understanding, an updated design, a refined approach. The source is the newer form; what it reaches is what it replaced. Revision connections preserve the history of how understanding evolved without losing what came before.

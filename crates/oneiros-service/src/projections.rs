@@ -1,9 +1,9 @@
 use oneiros_db::{Database, DatabaseError, Projection};
 use oneiros_model::{
-    Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId, Content,
-    Experience, ExperienceId, Identity, Level, LevelName, Memory, MemoryId, Persona, PersonaName,
-    RecordRef, Sensation, SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture,
-    TextureName, Ticket, TicketId,
+    Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId, Connection,
+    ConnectionId, Content, Experience, ExperienceId, Identity, Level, LevelName, Memory, MemoryId,
+    Nature, NatureName, Persona, PersonaName, RecordRef, Sensation, SensationName, StorageEntry,
+    StorageKey, Tenant, TenantId, Texture, TextureName, Ticket, TicketId,
 };
 use serde_json::Value;
 
@@ -29,6 +29,10 @@ pub const BRAIN_PROJECTIONS: &[Projection] = &[
     TEXTURE_REMOVED_PROJECTION,
     SENSATION_SET_PROJECTION,
     SENSATION_REMOVED_PROJECTION,
+    NATURE_SET_PROJECTION,
+    NATURE_REMOVED_PROJECTION,
+    CONNECTION_CREATED_PROJECTION,
+    CONNECTION_REMOVED_PROJECTION,
     AGENT_CREATED_PROJECTION,
     AGENT_UPDATED_PROJECTION,
     AGENT_REMOVED_PROJECTION,
@@ -51,6 +55,11 @@ struct NameOnly<T> {
 #[derive(serde::Deserialize)]
 struct KeyOnly {
     key: StorageKey,
+}
+
+#[derive(serde::Deserialize)]
+struct IdOnly<T> {
+    id: T,
 }
 
 #[derive(serde::Deserialize)]
@@ -307,6 +316,90 @@ fn apply_sensation_removed(conn: &Database, data: &Value) -> Result<(), Database
 }
 
 fn reset_sensations_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+// -- Brain projections: natures --
+
+const NATURE_SET_PROJECTION: Projection = Projection {
+    name: "nature-set",
+    events: &["nature-set"],
+    apply: apply_nature_set,
+    reset: reset_natures,
+};
+
+fn apply_nature_set(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    let nature: Nature = serde_json::from_value(data.clone())?;
+    conn.set_nature(
+        &nature.name,
+        nature.description.as_str(),
+        nature.prompt.as_str(),
+    )?;
+    Ok(())
+}
+
+fn reset_natures(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_natures()?;
+    Ok(())
+}
+
+const NATURE_REMOVED_PROJECTION: Projection = Projection {
+    name: "nature-removed",
+    events: &["nature-removed"],
+    apply: apply_nature_removed,
+    reset: reset_natures_noop,
+};
+
+fn apply_nature_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    let removed: NameOnly<NatureName> = serde_json::from_value(data.clone())?;
+    conn.remove_nature(&removed.name)?;
+    Ok(())
+}
+
+fn reset_natures_noop(_conn: &Database) -> Result<(), DatabaseError> {
+    Ok(())
+}
+
+// -- Brain projections: connections --
+
+const CONNECTION_CREATED_PROJECTION: Projection = Projection {
+    name: "connection-created",
+    events: &["connection-created"],
+    apply: apply_connection_created,
+    reset: reset_connections,
+};
+
+fn apply_connection_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    let connection: Identity<ConnectionId, Connection> = serde_json::from_value(data.clone())?;
+    conn.create_connection(
+        connection.id.to_string(),
+        &connection.nature,
+        connection.from_link.to_string(),
+        connection.to_link.to_string(),
+        connection.created_at.to_rfc3339(),
+    )?;
+    Ok(())
+}
+
+fn reset_connections(conn: &Database) -> Result<(), DatabaseError> {
+    conn.reset_connections()?;
+    Ok(())
+}
+
+const CONNECTION_REMOVED_PROJECTION: Projection = Projection {
+    name: "connection-removed",
+    events: &["connection-removed"],
+    apply: apply_connection_removed,
+    reset: reset_connections_noop,
+};
+
+fn apply_connection_removed(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
+    let removed: IdOnly<ConnectionId> = serde_json::from_value(data.clone())?;
+    conn.remove_connection(removed.id.to_string())?;
+    Ok(())
+}
+
+fn reset_connections_noop(_conn: &Database) -> Result<(), DatabaseError> {
     Ok(())
 }
 

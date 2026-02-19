@@ -1,7 +1,8 @@
 use oneiros_model::{
-    Agent, AgentId, AgentName, Cognition, CognitionId, DreamContext, Experience, ExperienceId,
-    Identity, Level, LevelName, Memory, MemoryId, Persona, PersonaName, Sensation, SensationName,
-    StorageEntry, StorageKey, StorageRef, Texture, TextureName, Token,
+    Agent, AgentId, AgentName, Cognition, CognitionId, Connection, ConnectionId, DreamContext,
+    Experience, ExperienceId, Identity, Level, LevelName, Link, Memory, MemoryId, Nature,
+    NatureName, Persona, PersonaName, Sensation, SensationName, StorageEntry, StorageKey,
+    StorageRef, Texture, TextureName, Token,
 };
 use std::path::Path;
 
@@ -366,6 +367,83 @@ impl Client {
     pub async fn list_sensations(&self, token: &Token) -> Result<Vec<Sensation>, Error> {
         let bytes = self.send("GET", "/sensations", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    // -- Nature methods --
+
+    pub async fn set_nature(&self, token: &Token, request: Nature) -> Result<Nature, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let bytes = self.send("PUT", "/natures", token, Some(body)).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn remove_nature(&self, token: &Token, name: &NatureName) -> Result<(), Error> {
+        let uri = format!("/natures/{name}");
+        self.send("DELETE", &uri, token, None).await?;
+        Ok(())
+    }
+
+    pub async fn get_nature(&self, token: &Token, name: &NatureName) -> Result<Nature, Error> {
+        let uri = format!("/natures/{name}");
+        let bytes = self.send("GET", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn list_natures(&self, token: &Token) -> Result<Vec<Nature>, Error> {
+        let bytes = self.send("GET", "/natures", token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    // -- Connection methods --
+
+    pub async fn create_connection(
+        &self,
+        token: &Token,
+        request: CreateConnectionRequest,
+    ) -> Result<Identity<ConnectionId, Connection>, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let bytes = self.send("POST", "/connections", token, Some(body)).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn get_connection(
+        &self,
+        token: &Token,
+        id: &ConnectionId,
+    ) -> Result<Identity<ConnectionId, Connection>, Error> {
+        let uri = format!("/connections/{id}");
+        let bytes = self.send("GET", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn list_connections(
+        &self,
+        token: &Token,
+        nature: Option<&NatureName>,
+        link: Option<&Link>,
+    ) -> Result<Vec<Identity<ConnectionId, Connection>>, Error> {
+        let mut params = Vec::new();
+        if let Some(nature) = nature {
+            params.push(format!("nature={nature}"));
+        }
+        if let Some(link) = link {
+            params.push(format!("link={link}"));
+        }
+
+        let uri = if params.is_empty() {
+            "/connections".to_string()
+        } else {
+            format!("/connections?{}", params.join("&"))
+        };
+
+        let bytes = self.send("GET", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn remove_connection(&self, token: &Token, id: &ConnectionId) -> Result<(), Error> {
+        let uri = format!("/connections/{id}");
+        self.send("DELETE", &uri, token, None).await?;
+        Ok(())
     }
 
     // -- Experience methods --

@@ -19,7 +19,7 @@ pub(crate) struct SeedOps {
 
 #[derive(Clone, Subcommand)]
 pub(crate) enum SeedCommands {
-    /// Seed core textures, levels, personas, and process agents.
+    /// Seed core textures, levels, personas, sensations, natures, and process agents.
     Core,
 }
 
@@ -63,6 +63,13 @@ async fn run_core(context: &Context) -> Result<Outcomes<SeedOutcomes>, SeedComma
         match command.run(context).await {
             Ok(inner) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("sensation", command.name, error)),
+        }
+    }
+
+    for command in core::natures() {
+        match command.run(context).await {
+            Ok(inner) => outcomes.absorb(inner),
+            Err(error) => failures.emit(CoreSeedOutcomes::failed("nature", command.name, error)),
         }
     }
 

@@ -25,6 +25,12 @@ impl From<CognitionConstructionError> for DatabaseError {
     }
 }
 
+impl From<ConnectionConstructionError> for DatabaseError {
+    fn from(e: ConnectionConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
+}
+
 impl From<MemoryConstructionError> for DatabaseError {
     fn from(e: MemoryConstructionError) -> Self {
         Self::Construction(e.into())

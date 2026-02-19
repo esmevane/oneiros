@@ -1,0 +1,1 @@
+Directed. One entity follows from another — sequential progression through time or reasoning. Use when something picks up where something else left off, extends an argument, or represents the next step in a chain. Continuation connections trace flow — the path through a sequence of thoughts, decisions, or actions.

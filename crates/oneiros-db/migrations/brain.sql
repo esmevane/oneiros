@@ -121,6 +121,31 @@ create table if not exists sensation (
     prompt      text not null default ''
 );
 
+-- Natures classify edges in the cognitive graph. Like textures,
+-- levels, and sensations, they carry a description and a prompt,
+-- and are emergent — seeded, added, or removed over time.
+--
+-- Examples: origin, result, context, evidence, continuation.
+--
+create table if not exists nature (
+    name        text primary key not null,
+    description text not null default '',
+    prompt      text not null default ''
+);
+
+-- Connections are first-class edges between entities in the cognitive
+-- graph. Each connection links two entities (via their content-addressed
+-- Links) through a nature that describes the relationship type.
+-- Identity: nature + from_link + to_link (timestamp is context).
+--
+create table if not exists connection (
+    id          text primary key not null,
+    nature      text not null references nature(name),
+    from_link   text not null,
+    to_link     text not null,
+    created_at  text not null
+);
+
 -- Experiences are descriptive edges connecting records in the brain.
 -- Each experience is bound to an agent (who created it) and a
 -- sensation (what type of relationship it describes).

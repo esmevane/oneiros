@@ -15,6 +15,8 @@ pub enum SeedOutcomes {
     #[outcome(transparent)]
     Sensation(#[from] SetSensationOutcomes),
     #[outcome(transparent)]
+    Nature(#[from] SetNatureOutcomes),
+    #[outcome(transparent)]
     Core(#[from] CoreSeedOutcomes),
 }
 

@@ -1,0 +1,1 @@
+Directed. One entity provides background or framing for another. Use when understanding something requires knowing something else first — a decision that only makes sense given a prior conversation, a cognition that draws on a memory, a design choice that rests on an architectural principle. Context connections make implicit dependencies explicit.

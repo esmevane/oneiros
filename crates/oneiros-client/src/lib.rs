@@ -8,6 +8,6 @@ pub use client::Client;
 pub use error::{ConnectionError, Error, RequestError, ResponseError};
 pub use oneiros_protocol::{
     AddCognitionRequest, AddExperienceRefRequest, AddMemoryRequest, BrainInfo, CreateAgentRequest,
-    CreateBrainRequest, CreateExperienceRequest, UpdateAgentRequest,
+    CreateBrainRequest, CreateConnectionRequest, CreateExperienceRequest, UpdateAgentRequest,
     UpdateExperienceDescriptionRequest,
 };
