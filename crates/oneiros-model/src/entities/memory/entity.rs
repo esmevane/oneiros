@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -76,4 +77,43 @@ impl Memory {
     }
 }
 
+impl Addressable for Memory {
+    fn address_label() -> &'static str {
+        "memory"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        // The memory is the identity: what level and what content.
+        // Agent and timestamp are context.
+        Link::new(&(Self::address_label(), &self.level, &self.content))
+    }
+}
+
 domain_id!(MemoryId);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn memory_identity() {
+        let primary = Memory {
+            id: MemoryId::new(),
+            agent_id: AgentId::new(),
+            level: LevelName::new("project"),
+            content: Content::new("oneiros is an identity substrate"),
+            created_at: Utc::now(),
+        };
+
+        // Different agent and timestamp — same link
+        let other = Memory {
+            id: MemoryId::new(),
+            agent_id: AgentId::new(),
+            level: LevelName::new("project"),
+            content: Content::new("oneiros is an identity substrate"),
+            created_at: Utc::now(),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

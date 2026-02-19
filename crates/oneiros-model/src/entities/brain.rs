@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -19,5 +20,44 @@ pub struct Brain {
     pub status: BrainStatus,
 }
 
+impl Addressable for Brain {
+    fn address_label() -> &'static str {
+        "brain"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        // path and status are operational, not identity
+        Link::new(&(Self::address_label(), &self.tenant_id, &self.name))
+    }
+}
+
 domain_id!(BrainId);
 domain_name!(BrainName);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn brain_identity() {
+        let tenant = TenantId::new();
+
+        let primary = Brain {
+            brain_id: BrainId::new(),
+            tenant_id: tenant,
+            name: BrainName::new("oneiros"),
+            path: PathBuf::from("/tmp/a"),
+            status: BrainStatus::Active,
+        };
+
+        let other = Brain {
+            brain_id: BrainId::new(),
+            tenant_id: tenant,
+            name: BrainName::new("oneiros"),
+            path: PathBuf::from("/tmp/b"),
+            status: BrainStatus::Active,
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

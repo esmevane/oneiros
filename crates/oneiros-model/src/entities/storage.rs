@@ -1,3 +1,4 @@
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -9,13 +10,20 @@ pub struct StorageEntry {
     pub hash: ContentHash,
 }
 
-impl<A, B, C> From<(A, B, C)> for StorageEntry
+impl StorageEntry {
+    pub fn construct_from_db(row: impl Into<Self>) -> Self {
+        row.into()
+    }
+}
+
+impl<GivenKey, GivenDescription, GivenHash> From<(GivenKey, GivenDescription, GivenHash)>
+    for StorageEntry
 where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
+    GivenKey: AsRef<str>,
+    GivenDescription: AsRef<str>,
+    GivenHash: AsRef<str>,
 {
-    fn from((key, description, hash): (A, B, C)) -> Self {
+    fn from((key, description, hash): (GivenKey, GivenDescription, GivenHash)) -> Self {
         StorageEntry {
             key: StorageKey::new(key),
             description: Description::new(description),
@@ -24,10 +32,36 @@ where
     }
 }
 
-impl StorageEntry {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl Addressable for StorageEntry {
+    fn address_label() -> &'static str {
+        "storage"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        Link::new(&(Self::address_label(), &self.key))
     }
 }
 
 domain_name!(StorageKey);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn storage_identity() {
+        let primary = StorageEntry {
+            key: StorageKey::new("config.toml"),
+            description: Description::new("first"),
+            hash: ContentHash::new("abc123"),
+        };
+
+        let other = StorageEntry {
+            key: StorageKey::new("config.toml"),
+            description: Description::new("updated"),
+            hash: ContentHash::new("def456"),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

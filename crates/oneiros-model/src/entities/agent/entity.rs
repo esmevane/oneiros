@@ -1,3 +1,4 @@
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -44,5 +45,63 @@ impl Agent {
     }
 }
 
+impl Addressable for Agent {
+    fn address_label() -> &'static str {
+        "agent"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        // description and prompt are mutable content, not identity
+        Link::new(&(Self::address_label(), &self.name, &self.persona))
+    }
+}
+
 domain_id!(AgentId);
 domain_name!(AgentName);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn agent_identity() {
+        let primary = Agent {
+            id: AgentId::new(),
+            name: AgentName::new("governor.process"),
+            persona: PersonaName::new("process"),
+            description: Description::new("first"),
+            prompt: Prompt::new("first"),
+        };
+
+        let other = Agent {
+            id: AgentId::new(),
+            name: AgentName::new("governor.process"),
+            persona: PersonaName::new("process"),
+            description: Description::new("completely different"),
+            prompt: Prompt::new("also different"),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+
+    #[test]
+    fn agent_different_persona_different_link() {
+        let primary = Agent {
+            id: AgentId::new(),
+            name: AgentName::new("rust"),
+            persona: PersonaName::new("expert"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        };
+
+        let other = Agent {
+            id: AgentId::new(),
+            name: AgentName::new("rust"),
+            persona: PersonaName::new("process"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        };
+
+        assert_ne!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

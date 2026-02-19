@@ -1,3 +1,4 @@
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -9,13 +10,20 @@ pub struct Persona {
     pub prompt: Prompt,
 }
 
-impl<A, B, C> From<(A, B, C)> for Persona
+impl Persona {
+    pub fn construct_from_db(row: impl Into<Self>) -> Self {
+        row.into()
+    }
+}
+
+impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
+    for Persona
 where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
+    GivenName: AsRef<str>,
+    GivenDescription: AsRef<str>,
+    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (A, B, C)) -> Self {
+    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
         Persona {
             name: PersonaName::new(name),
             description: Description::new(description),
@@ -24,10 +32,36 @@ where
     }
 }
 
-impl Persona {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl Addressable for Persona {
+    fn address_label() -> &'static str {
+        "persona"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        Link::new(&(Self::address_label(), &self.name))
     }
 }
 
 domain_name!(PersonaName);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn persona_identity() {
+        let primary = Persona {
+            name: PersonaName::new("process"),
+            description: Description::new("first"),
+            prompt: Prompt::new("first"),
+        };
+
+        let other = Persona {
+            name: PersonaName::new("process"),
+            description: Description::new("updated"),
+            prompt: Prompt::new("updated"),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+}

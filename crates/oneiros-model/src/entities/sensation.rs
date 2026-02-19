@@ -1,3 +1,4 @@
+use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -9,13 +10,20 @@ pub struct Sensation {
     pub prompt: Prompt,
 }
 
-impl<A, B, C> From<(A, B, C)> for Sensation
+impl Sensation {
+    pub fn construct_from_db(row: impl Into<Self>) -> Self {
+        row.into()
+    }
+}
+
+impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
+    for Sensation
 where
-    A: AsRef<str>,
-    B: AsRef<str>,
-    C: AsRef<str>,
+    GivenName: AsRef<str>,
+    GivenDescription: AsRef<str>,
+    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (A, B, C)) -> Self {
+    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
         Sensation {
             name: SensationName::new(name),
             description: Description::new(description),
@@ -24,10 +32,36 @@ where
     }
 }
 
-impl Sensation {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl Addressable for Sensation {
+    fn address_label() -> &'static str {
+        "sensation"
+    }
+
+    fn link(&self) -> Result<Link, LinkError> {
+        Link::new(&(Self::address_label(), &self.name))
     }
 }
 
 domain_name!(SensationName);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sensation_identity() {
+        let primary = Sensation {
+            name: SensationName::new("echoes"),
+            description: Description::new("first"),
+            prompt: Prompt::new("first"),
+        };
+
+        let other = Sensation {
+            name: SensationName::new("echoes"),
+            description: Description::new("updated"),
+            prompt: Prompt::new("updated"),
+        };
+
+        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+}
