@@ -45,7 +45,7 @@ impl UpdateAgent {
                 },
             )
             .await?;
-        outcomes.emit(UpdateAgentOutcomes::AgentUpdated(info.name));
+        outcomes.emit(UpdateAgentOutcomes::AgentUpdated(info.name.clone()));
 
         Ok(outcomes)
     }

@@ -1,7 +1,7 @@
 use oneiros_model::{
-    Agent, AgentName, Cognition, CognitionId, DreamContext, Experience, ExperienceId, Level,
-    LevelName, Memory, MemoryId, Persona, PersonaName, Sensation, SensationName, StorageEntry,
-    StorageKey, StorageRef, Texture, TextureName, Token,
+    Agent, AgentId, AgentName, Cognition, CognitionId, DreamContext, Experience, ExperienceId,
+    Identity, Level, LevelName, Memory, MemoryId, Persona, PersonaName, Sensation, SensationName,
+    StorageEntry, StorageKey, StorageRef, Texture, TextureName, Token,
 };
 use std::path::Path;
 
@@ -60,7 +60,7 @@ impl Client {
         &self,
         token: &Token,
         request: CreateAgentRequest,
-    ) -> Result<Agent, Error> {
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/agents", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -71,7 +71,7 @@ impl Client {
         token: &Token,
         name: &AgentName,
         request: UpdateAgentRequest,
-    ) -> Result<Agent, Error> {
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let uri = format!("/agents/{name}");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", &uri, token, Some(body)).await?;
@@ -84,13 +84,17 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_agent(&self, token: &Token, name: &AgentName) -> Result<Agent, Error> {
+    pub async fn get_agent(
+        &self,
+        token: &Token,
+        name: &AgentName,
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let uri = format!("/agents/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_agents(&self, token: &Token) -> Result<Vec<Agent>, Error> {
+    pub async fn list_agents(&self, token: &Token) -> Result<Vec<Identity<AgentId, Agent>>, Error> {
         let bytes = self.send("GET", "/agents", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -313,7 +317,11 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn introspect(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub async fn introspect(
+        &self,
+        token: &Token,
+        agent_name: &AgentName,
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let uri = format!("/introspect/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -430,13 +438,21 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn sleep(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub async fn sleep(
+        &self,
+        token: &Token,
+        agent_name: &AgentName,
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let uri = format!("/lifecycle/sleep/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn emerge(&self, token: &Token, request: CreateAgentRequest) -> Result<Agent, Error> {
+    pub async fn emerge(
+        &self,
+        token: &Token,
+        request: CreateAgentRequest,
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self
             .send("POST", "/lifecycle/emerge", token, Some(body))
@@ -450,13 +466,21 @@ impl Client {
         Ok(())
     }
 
-    pub async fn reflect(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub async fn reflect(
+        &self,
+        token: &Token,
+        agent_name: &AgentName,
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let uri = format!("/reflect/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn sense(&self, token: &Token, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub async fn sense(
+        &self,
+        token: &Token,
+        agent_name: &AgentName,
+    ) -> Result<Identity<AgentId, Agent>, Error> {
         let uri = format!("/sense/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)

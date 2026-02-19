@@ -9,9 +9,9 @@ pub use sensing::*;
 
 mod events {
     use oneiros_model::{
-        Actor, Agent, AgentName, Brain, Cognition, Content, DreamContext, Experience, ExperienceId,
-        Level, LevelName, Memory, Persona, PersonaName, RecordRef, Sensation, SensationName,
-        StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
+        Actor, Agent, AgentId, AgentName, Brain, Cognition, Content, DreamContext, Experience,
+        ExperienceId, Identity, Level, LevelName, Memory, Persona, PersonaName, RecordRef,
+        Sensation, SensationName, StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
     };
 
     use crate::SenseEvents;
@@ -37,8 +37,8 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum AgentEvents {
-        AgentCreated(Agent),
-        AgentUpdated(Agent),
+        AgentCreated(Identity<AgentId, Agent>),
+        AgentUpdated(Identity<AgentId, Agent>),
         AgentRemoved { name: AgentName },
     }
 

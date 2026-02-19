@@ -23,7 +23,6 @@ fn cross_type_discrimination() {
 #[test]
 fn link_roundtrip_through_display() {
     let agent = Agent {
-        id: AgentId::new(),
         name: AgentName::new("governor.process"),
         persona: PersonaName::new("process"),
         description: Description::default(),

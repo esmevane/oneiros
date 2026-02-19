@@ -59,7 +59,7 @@ impl EmergeOp {
             )
             .await?;
 
-        outcomes.emit(EmergeOutcomes::Emerged(agent.name));
+        outcomes.emit(EmergeOutcomes::Emerged(agent.name.clone()));
 
         Ok(outcomes)
     }
