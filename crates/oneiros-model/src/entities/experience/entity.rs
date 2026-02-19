@@ -93,7 +93,7 @@ impl Addressable for Experience {
     fn link(&self) -> Result<Link, LinkError> {
         // The experience is the identity: what sensation and description.
         // Agent, timestamp, and refs are context or mutable.
-        Link::new(&(Self::address_label(), &self.sensation, &self.description))
+        Link::new(&(Self::address_label(), &self.sensation))
     }
 }
 
@@ -117,7 +117,7 @@ mod tests {
         let other = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
-            description: Content::new("a thread"),
+            description: Content::new("a threadulo"),
             refs: vec![RecordRef::identified(
                 Id::new(),
                 RecordKind::Cognition,

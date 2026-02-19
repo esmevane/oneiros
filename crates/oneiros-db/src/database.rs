@@ -39,8 +39,17 @@ impl Database {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;
         conn.execute_batch(migrations::BRAIN)?;
+        Self::migrate_brain(&conn);
 
         Ok(Self { conn })
+    }
+
+    /// Run forward-only migrations that cannot be expressed as idempotent
+    /// CREATE TABLE IF NOT EXISTS statements. Each migration is a no-op
+    /// if the schema is already up to date.
+    fn migrate_brain(conn: &Connection) {
+        // v0.0.6: add link column to experience_ref for content-addressed refs.
+        let _ = conn.execute_batch("alter table experience_ref add column link text");
     }
 
     pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
@@ -1076,23 +1085,38 @@ impl Database {
     pub fn add_experience_ref(
         &self,
         experience_id: impl AsRef<str>,
-        record_id: impl AsRef<str>,
-        record_kind: impl AsRef<str>,
-        role: Option<&str>,
+        record_ref: &RecordRef,
         created_at: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
-        self.conn.execute(
-            "insert or ignore into experience_ref \
-             (experience_id, record_id, record_kind, role, created_at) \
-             values (?1, ?2, ?3, ?4, ?5)",
-            params![
-                experience_id.as_ref(),
-                record_id.as_ref(),
-                record_kind.as_ref(),
-                role,
-                created_at.as_ref()
-            ],
-        )?;
+        match record_ref {
+            RecordRef::Identified(r) => {
+                self.conn.execute(
+                    "insert or ignore into experience_ref \
+                     (experience_id, record_id, record_kind, role, created_at) \
+                     values (?1, ?2, ?3, ?4, ?5)",
+                    params![
+                        experience_id.as_ref(),
+                        r.id.to_string(),
+                        r.kind.to_string(),
+                        r.role.as_ref().map(|l| l.as_str()),
+                        created_at.as_ref()
+                    ],
+                )?;
+            }
+            RecordRef::Linked(r) => {
+                self.conn.execute(
+                    "insert or ignore into experience_ref \
+                     (experience_id, link, role, created_at) \
+                     values (?1, ?2, ?3, ?4)",
+                    params![
+                        experience_id.as_ref(),
+                        r.link.to_string(),
+                        r.role.as_ref().map(|l| l.as_str()),
+                        created_at.as_ref()
+                    ],
+                )?;
+            }
+        }
         Ok(())
     }
 
@@ -1101,24 +1125,32 @@ impl Database {
         experience_id: &str,
     ) -> Result<Vec<RecordRef>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "select record_id, record_kind, role \
+            "select record_id, record_kind, role, link \
              from experience_ref where experience_id = ?1 order by rowid",
         )?;
 
         let rows = stmt.query_map(params![experience_id], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, Option<String>>(2)?,
-            ))
+            let record_id: Option<String> = row.get(0)?;
+            let record_kind: Option<String> = row.get(1)?;
+            let role: Option<String> = row.get(2)?;
+            let link: Option<String> = row.get(3)?;
+            Ok((record_id, record_kind, role, link))
         })?;
 
-        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
-        raw_rows
-            .into_iter()
-            .map(IdentifiedRef::construct_from_db)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(DatabaseError::from)
+        let mut refs = Vec::new();
+        for row in rows {
+            let (record_id, record_kind, role, link) = row?;
+            let record_ref = if let Some(link_str) = link {
+                let link = link_str.parse().map_err(RecordRefConstructionError::from)?;
+                RecordRef::linked(link, role.map(Label::new))
+            } else {
+                let id_str = record_id.unwrap_or_default();
+                let kind_str = record_kind.unwrap_or_default();
+                IdentifiedRef::construct_from_db((id_str, kind_str, role))?
+            };
+            refs.push(record_ref);
+        }
+        Ok(refs)
     }
 
     pub fn update_experience_description(

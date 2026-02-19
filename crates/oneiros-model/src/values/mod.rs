@@ -30,7 +30,8 @@ pub use label::Label;
 pub use observation::Observation;
 pub use prompt::Prompt;
 pub use record_ref::{
-    IdentifiedRef, RecordKind, RecordKindParseError, RecordRef, RecordRefConstructionError,
+    IdentifiedRef, LinkedRef, RecordKind, RecordKindParseError, RecordRef,
+    RecordRefConstructionError,
 };
 pub use reflection::Reflection;
 pub use storage_ref::{StorageRef, StorageRefError};

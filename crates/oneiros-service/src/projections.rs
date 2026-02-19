@@ -485,13 +485,7 @@ fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), Databas
     )?;
 
     for record_ref in &experience.refs {
-        conn.add_experience_ref(
-            &id,
-            record_ref.id().to_string(),
-            record_ref.kind().to_string(),
-            record_ref.role().map(|l| l.as_str()),
-            &created_at,
-        )?;
+        conn.add_experience_ref(&id, record_ref, &created_at)?;
     }
 
     Ok(())
@@ -513,13 +507,7 @@ fn apply_experience_ref_added(conn: &Database, data: &Value) -> Result<(), Datab
     let added: RefAdded = serde_json::from_value(data.clone())?;
     let now = chrono::Utc::now().to_rfc3339();
 
-    conn.add_experience_ref(
-        added.experience_id.to_string(),
-        added.record_ref.id().to_string(),
-        added.record_ref.kind().to_string(),
-        added.record_ref.role().map(|l| l.as_str()),
-        &now,
-    )?;
+    conn.add_experience_ref(added.experience_id.to_string(), &added.record_ref, &now)?;
 
     Ok(())
 }
