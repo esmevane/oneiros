@@ -567,7 +567,10 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_cognition(&self, id: impl AsRef<str>) -> Result<Option<Cognition>, DatabaseError> {
+    pub fn get_cognition(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Option<Identity<CognitionId, Cognition>>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, agent_id, texture, content, created_at from cognition where id = ?1",
             params![id.as_ref()],
@@ -589,7 +592,7 @@ impl Database {
         }
     }
 
-    pub fn list_cognitions(&self) -> Result<Vec<Cognition>, DatabaseError> {
+    pub fn list_cognitions(&self) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition order by rowid",
         )?;
@@ -615,7 +618,7 @@ impl Database {
     pub fn list_cognitions_by_agent(
         &self,
         agent_id: impl AsRef<str>,
-    ) -> Result<Vec<Cognition>, DatabaseError> {
+    ) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where agent_id = ?1 order by rowid",
@@ -642,7 +645,7 @@ impl Database {
     pub fn list_cognitions_by_texture(
         &self,
         texture: impl AsRef<str>,
-    ) -> Result<Vec<Cognition>, DatabaseError> {
+    ) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where texture = ?1 order by rowid",
@@ -670,7 +673,7 @@ impl Database {
         &self,
         agent_id: impl AsRef<str>,
         texture: impl AsRef<str>,
-    ) -> Result<Vec<Cognition>, DatabaseError> {
+    ) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where agent_id = ?1 and texture = ?2 order by rowid",
@@ -723,7 +726,10 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_memory(&self, id: impl AsRef<str>) -> Result<Option<Memory>, DatabaseError> {
+    pub fn get_memory(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Option<Identity<MemoryId, Memory>>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, agent_id, level, content, created_at from memory where id = ?1",
             params![id.as_ref()],
@@ -745,7 +751,7 @@ impl Database {
         }
     }
 
-    pub fn list_memories(&self) -> Result<Vec<Memory>, DatabaseError> {
+    pub fn list_memories(&self) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory order by rowid",
         )?;
@@ -771,7 +777,7 @@ impl Database {
     pub fn list_memories_by_agent(
         &self,
         agent_id: impl AsRef<str>,
-    ) -> Result<Vec<Memory>, DatabaseError> {
+    ) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where agent_id = ?1 order by rowid",
@@ -798,7 +804,7 @@ impl Database {
     pub fn list_memories_by_level(
         &self,
         level: impl AsRef<str>,
-    ) -> Result<Vec<Memory>, DatabaseError> {
+    ) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where level = ?1 order by rowid",
@@ -826,7 +832,7 @@ impl Database {
         &self,
         agent_id: impl AsRef<str>,
         level: impl AsRef<str>,
-    ) -> Result<Vec<Memory>, DatabaseError> {
+    ) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where agent_id = ?1 and level = ?2 order by rowid",
@@ -950,7 +956,10 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_experience(&self, id: impl AsRef<str>) -> Result<Option<Experience>, DatabaseError> {
+    pub fn get_experience(
+        &self,
+        id: impl AsRef<str>,
+    ) -> Result<Option<Identity<ExperienceId, Experience>>, DatabaseError> {
         let id_ref = id.as_ref();
         let result = self.conn.query_row(
             "select id, agent_id, sensation, description, created_at from experience where id = ?1",
@@ -976,7 +985,9 @@ impl Database {
         }
     }
 
-    pub fn list_experiences(&self) -> Result<Vec<Experience>, DatabaseError> {
+    pub fn list_experiences(
+        &self,
+    ) -> Result<Vec<Identity<ExperienceId, Experience>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience order by rowid",
         )?;
@@ -1005,7 +1016,7 @@ impl Database {
     pub fn list_experiences_by_agent(
         &self,
         agent_id: impl AsRef<str>,
-    ) -> Result<Vec<Experience>, DatabaseError> {
+    ) -> Result<Vec<Identity<ExperienceId, Experience>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience \
              where agent_id = ?1 order by rowid",
@@ -1035,7 +1046,7 @@ impl Database {
     pub fn list_experiences_by_sensation(
         &self,
         sensation: impl AsRef<str>,
-    ) -> Result<Vec<Experience>, DatabaseError> {
+    ) -> Result<Vec<Identity<ExperienceId, Experience>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience \
              where sensation = ?1 order by rowid",

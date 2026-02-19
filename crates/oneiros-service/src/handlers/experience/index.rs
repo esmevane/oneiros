@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{AgentName, Experience, SensationName};
+use oneiros_model::{AgentName, Experience, ExperienceId, Identity, SensationName};
 use serde::Deserialize;
 
 use crate::*;
@@ -13,7 +13,7 @@ pub(crate) struct ListParams {
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
-) -> Result<Json<Vec<Experience>>, Error> {
+) -> Result<Json<Vec<Identity<ExperienceId, Experience>>>, Error> {
     let experiences = match (params.agent, params.sensation) {
         (Some(agent_name), Some(sensation)) => {
             let agent = ticket

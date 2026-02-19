@@ -103,13 +103,17 @@ impl Client {
         &self,
         token: &Token,
         request: AddCognitionRequest,
-    ) -> Result<Cognition, Error> {
+    ) -> Result<Identity<CognitionId, Cognition>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/cognitions", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn get_cognition(&self, token: &Token, id: &CognitionId) -> Result<Cognition, Error> {
+    pub async fn get_cognition(
+        &self,
+        token: &Token,
+        id: &CognitionId,
+    ) -> Result<Identity<CognitionId, Cognition>, Error> {
         let uri = format!("/cognitions/{id}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -120,7 +124,7 @@ impl Client {
         token: &Token,
         agent: Option<&AgentName>,
         texture: Option<&TextureName>,
-    ) -> Result<Vec<Cognition>, Error> {
+    ) -> Result<Vec<Identity<CognitionId, Cognition>>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
             params.push(format!("agent={agent}"));
@@ -143,13 +147,17 @@ impl Client {
         &self,
         token: &Token,
         request: AddMemoryRequest,
-    ) -> Result<Memory, Error> {
+    ) -> Result<Identity<MemoryId, Memory>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/memories", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn get_memory(&self, token: &Token, id: &MemoryId) -> Result<Memory, Error> {
+    pub async fn get_memory(
+        &self,
+        token: &Token,
+        id: &MemoryId,
+    ) -> Result<Identity<MemoryId, Memory>, Error> {
         let uri = format!("/memories/{id}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -160,7 +168,7 @@ impl Client {
         token: &Token,
         agent: Option<&AgentName>,
         level: Option<&LevelName>,
-    ) -> Result<Vec<Memory>, Error> {
+    ) -> Result<Vec<Identity<MemoryId, Memory>>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
             params.push(format!("agent={agent}"));
@@ -366,7 +374,7 @@ impl Client {
         &self,
         token: &Token,
         request: CreateExperienceRequest,
-    ) -> Result<Experience, Error> {
+    ) -> Result<Identity<ExperienceId, Experience>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/experiences", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -376,7 +384,7 @@ impl Client {
         &self,
         token: &Token,
         id: &ExperienceId,
-    ) -> Result<Experience, Error> {
+    ) -> Result<Identity<ExperienceId, Experience>, Error> {
         let uri = format!("/experiences/{id}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -387,7 +395,7 @@ impl Client {
         token: &Token,
         agent: Option<&AgentName>,
         sensation: Option<&SensationName>,
-    ) -> Result<Vec<Experience>, Error> {
+    ) -> Result<Vec<Identity<ExperienceId, Experience>>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
             params.push(format!("agent={agent}"));
@@ -411,7 +419,7 @@ impl Client {
         token: &Token,
         experience_id: &ExperienceId,
         request: AddExperienceRefRequest,
-    ) -> Result<Experience, Error> {
+    ) -> Result<Identity<ExperienceId, Experience>, Error> {
         let uri = format!("/experiences/{experience_id}/refs");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", &uri, token, Some(body)).await?;
@@ -423,7 +431,7 @@ impl Client {
         token: &Token,
         experience_id: &ExperienceId,
         request: UpdateExperienceDescriptionRequest,
-    ) -> Result<Experience, Error> {
+    ) -> Result<Identity<ExperienceId, Experience>, Error> {
         let uri = format!("/experiences/{experience_id}/description");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", &uri, token, Some(body)).await?;

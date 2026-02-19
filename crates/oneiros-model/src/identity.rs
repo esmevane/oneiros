@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Deref;
 
 use oneiros_link::*;
@@ -28,6 +29,14 @@ impl<I, T> Identity<I, T> {
     /// Consume the wrapper, returning the inner value.
     pub fn into_inner(self) -> T {
         self.inner
+    }
+}
+
+impl<I: fmt::Display, T: fmt::Display> fmt::Display for Identity<I, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let id = self.id.to_string();
+        let prefix = if id.len() >= 8 { &id[..8] } else { &id };
+        write!(f, "{prefix:<10}{}", self.inner)
     }
 }
 

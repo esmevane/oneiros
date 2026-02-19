@@ -1,12 +1,12 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{Experience, ExperienceId};
+use oneiros_model::{Experience, ExperienceId, Identity};
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
-) -> Result<Json<Experience>, Error> {
+) -> Result<Json<Identity<ExperienceId, Experience>>, Error> {
     let experience = ticket
         .db
         .get_experience(id.to_string())?

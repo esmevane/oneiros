@@ -14,18 +14,22 @@ use tower::util::ServiceExt;
 fn seed_tenant_and_actor(db: &Database) {
     let tenant_id = TenantId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
         tenant_id,
-        name: TenantName::new("Test Tenant"),
-    }));
+        Tenant {
+            name: TenantName::new("Test Tenant"),
+        },
+    )));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        tenant_id,
-        actor_id: ActorId::new(),
-        name: ActorName::new("Test Actor"),
-    }));
+    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
+        ActorId::new(),
+        Actor {
+            tenant_id,
+            name: ActorName::new("Test Actor"),
+        },
+    )));
     db.log_event(&event, projections::SYSTEM_PROJECTIONS)
         .unwrap();
 }
@@ -82,7 +86,7 @@ async fn create_brain_returns_created() {
 
     assert_eq!(info.entity.name, BrainName::new("test-project"));
     assert!(matches!(info.entity.status, BrainStatus::Active));
-    assert!(!info.entity.brain_id.is_empty());
+    assert!(!info.entity.id.is_empty());
     assert!(
         !info.token.as_str().is_empty(),
         "should return a ticket token"

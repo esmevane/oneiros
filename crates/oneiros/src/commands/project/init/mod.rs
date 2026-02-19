@@ -36,8 +36,8 @@ impl InitProject {
                     .store_ticket(project_name.as_str(), info.token.as_str())
                     .map_err(ProjectCommandError::Io)?;
                 outcomes.emit(InitProjectOutcomes::BrainCreated(
-                    info.entity.name,
-                    info.entity.path,
+                    info.entity.name.clone(),
+                    info.entity.path.clone(),
                 ));
             }
             Err(oneiros_client::Error::ServiceResponse(ref e)) if e.status == 409 => {

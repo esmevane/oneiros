@@ -13,7 +13,6 @@ pub enum BrainStatus {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Brain {
-    pub brain_id: BrainId,
     pub tenant_id: TenantId,
     pub name: BrainName,
     pub path: PathBuf,
@@ -43,7 +42,6 @@ mod tests {
         let tenant = TenantId::new();
 
         let primary = Brain {
-            brain_id: BrainId::new(),
             tenant_id: tenant,
             name: BrainName::new("oneiros"),
             path: PathBuf::from("/tmp/a"),
@@ -51,7 +49,6 @@ mod tests {
         };
 
         let other = Brain {
-            brain_id: BrainId::new(),
             tenant_id: tenant,
             name: BrainName::new("oneiros"),
             path: PathBuf::from("/tmp/b"),

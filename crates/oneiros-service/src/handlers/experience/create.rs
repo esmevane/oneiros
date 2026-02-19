@@ -8,7 +8,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateExperienceRequest>,
-) -> Result<(StatusCode, Json<Experience>), Error> {
+) -> Result<(StatusCode, Json<Identity<ExperienceId, Experience>>), Error> {
     // Resolve agent name to agent_id.
     let agent = ticket
         .db
@@ -21,14 +21,16 @@ pub(crate) async fn handler(
         .get_sensation(&request.sensation)?
         .ok_or(NotFound::Sensation(request.sensation.clone()))?;
 
-    let experience = Experience {
-        id: ExperienceId::new(),
-        agent_id: agent.id,
-        sensation: request.sensation,
-        description: request.description,
-        refs: request.refs,
-        created_at: Utc::now(),
-    };
+    let experience = Identity::new(
+        ExperienceId::new(),
+        Experience {
+            agent_id: agent.id,
+            sensation: request.sensation,
+            description: request.description,
+            refs: request.refs,
+            created_at: Utc::now(),
+        },
+    );
 
     let event = Events::Experience(ExperienceEvents::ExperienceCreated(experience.clone()));
 

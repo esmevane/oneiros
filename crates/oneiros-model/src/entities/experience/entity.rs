@@ -8,7 +8,6 @@ use super::ExperienceConstructionError;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Experience {
-    pub id: ExperienceId,
     pub agent_id: AgentId,
     pub sensation: SensationName,
     pub description: Content,
@@ -17,8 +16,7 @@ pub struct Experience {
 }
 
 impl Experience {
-    fn as_table_row(&self) -> String {
-        let short_id = &self.id.to_string()[..8];
+    pub fn as_table_row(&self) -> String {
         let sensation = format!("{}", self.sensation);
         let description = self.description.as_str();
         let truncated = if description.len() > 80 {
@@ -29,12 +27,11 @@ impl Experience {
         };
         let ref_count = self.refs.len();
 
-        format!("{short_id}  {sensation:<12} {truncated} ({ref_count} refs)")
+        format!("{sensation:<12} {truncated} ({ref_count} refs)")
     }
 
     pub fn as_detail(&self) -> String {
         let mut lines = vec![
-            format!("Experience {}", self.id),
             format!("  Sensation: {}", self.sensation),
             format!("  Description: {}", self.description),
         ];
@@ -56,60 +53,35 @@ impl core::fmt::Display for Experience {
     }
 }
 
-impl<GivenId, GivenAgentId, GivenSensation, GivenDescription, GivenCreatedAt>
-    TryFrom<(
-        GivenId,
-        GivenAgentId,
-        GivenSensation,
-        GivenDescription,
-        GivenCreatedAt,
-    )> for Experience
-where
-    GivenId: AsRef<str>,
-    GivenAgentId: AsRef<str>,
-    GivenSensation: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenCreatedAt: AsRef<str>,
-{
-    type Error = ExperienceConstructionError;
-
-    fn try_from(
+impl Experience {
+    pub fn construct_from_db(
         (id, agent_id, sensation, description, created_at): (
-            GivenId,
-            GivenAgentId,
-            GivenSensation,
-            GivenDescription,
-            GivenCreatedAt,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
+            impl AsRef<str>,
         ),
-    ) -> Result<Self, Self::Error> {
-        Ok(Experience {
-            id: id
-                .as_ref()
-                .parse()
-                .map_err(ExperienceConstructionError::InvalidId)?,
+        refs: Vec<RecordRef>,
+    ) -> Result<Identity<ExperienceId, Self>, ExperienceConstructionError> {
+        let id: ExperienceId = id
+            .as_ref()
+            .parse()
+            .map_err(ExperienceConstructionError::InvalidId)?;
+        let experience = Experience {
             agent_id: agent_id
                 .as_ref()
                 .parse()
                 .map_err(ExperienceConstructionError::InvalidAgentId)?,
             sensation: SensationName::new(sensation),
             description: Content::new(description),
-            refs: Vec::new(),
+            refs,
             created_at: created_at
                 .as_ref()
                 .parse::<DateTime<Utc>>()
                 .map_err(ExperienceConstructionError::InvalidCreatedAt)?,
-        })
-    }
-}
-
-impl Experience {
-    pub fn construct_from_db(
-        row: impl TryInto<Self, Error = ExperienceConstructionError>,
-        refs: Vec<RecordRef>,
-    ) -> Result<Self, ExperienceConstructionError> {
-        let mut experience = row.try_into()?;
-        experience.refs = refs;
-        Ok(experience)
+        };
+        Ok(Identity::new(id, experience))
     }
 }
 
@@ -134,7 +106,6 @@ mod tests {
     #[test]
     fn experience_identity() {
         let primary = Experience {
-            id: ExperienceId::new(),
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
             description: Content::new("a thread"),
@@ -144,7 +115,6 @@ mod tests {
 
         // Different agent, timestamp, and refs — same link
         let other = Experience {
-            id: ExperienceId::new(),
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
             description: Content::new("a thread"),

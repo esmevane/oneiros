@@ -1,8 +1,9 @@
 use oneiros_db::{Database, DatabaseError, Projection};
 use oneiros_model::{
-    Actor, Agent, AgentId, AgentName, Brain, Cognition, Content, Experience, ExperienceId,
-    Identity, Level, LevelName, Memory, Persona, PersonaName, RecordRef, Sensation, SensationName,
-    StorageEntry, StorageKey, Tenant, Texture, TextureName, Ticket,
+    Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId, Content,
+    Experience, ExperienceId, Identity, Level, LevelName, Memory, MemoryId, Persona, PersonaName,
+    RecordRef, Sensation, SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture,
+    TextureName, Ticket, TicketId,
 };
 use serde_json::Value;
 
@@ -74,8 +75,8 @@ const TENANT_PROJECTION: Projection = Projection {
 };
 
 fn apply_tenant(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let tenant: Tenant = serde_json::from_value(data.clone())?;
-    conn.create_tenant(tenant.tenant_id.to_string(), &tenant.name)?;
+    let tenant: Identity<TenantId, Tenant> = serde_json::from_value(data.clone())?;
+    conn.create_tenant(tenant.id.to_string(), &tenant.name)?;
     Ok(())
 }
 
@@ -92,9 +93,9 @@ const ACTOR_PROJECTION: Projection = Projection {
 };
 
 fn apply_actor(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let actor: Actor = serde_json::from_value(data.clone())?;
+    let actor: Identity<ActorId, Actor> = serde_json::from_value(data.clone())?;
     conn.create_actor(
-        actor.actor_id.to_string(),
+        actor.id.to_string(),
         actor.tenant_id.to_string(),
         &actor.name,
     )?;
@@ -114,9 +115,9 @@ const BRAIN_PROJECTION: Projection = Projection {
 };
 
 fn apply_brain(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let brain: Brain = serde_json::from_value(data.clone())?;
+    let brain: Identity<BrainId, Brain> = serde_json::from_value(data.clone())?;
     conn.create_brain(
-        brain.brain_id.to_string(),
+        brain.id.to_string(),
         brain.tenant_id.to_string(),
         &brain.name,
         brain.path.display().to_string(),
@@ -137,9 +138,9 @@ const TICKET_ISSUED_PROJECTION: Projection = Projection {
 };
 
 fn apply_ticket_issued(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let ticket: Ticket = serde_json::from_value(data.clone())?;
+    let ticket: Identity<TicketId, Ticket> = serde_json::from_value(data.clone())?;
     conn.create_ticket(
-        ticket.ticket_id.to_string(),
+        ticket.id.to_string(),
         ticket.token.to_string(),
         ticket.created_by.to_string(),
     )?;
@@ -384,7 +385,7 @@ const COGNITION_ADDED_PROJECTION: Projection = Projection {
 };
 
 fn apply_cognition_added(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let cognition: Cognition = serde_json::from_value(data.clone())?;
+    let cognition: Identity<CognitionId, Cognition> = serde_json::from_value(data.clone())?;
     conn.add_cognition(
         cognition.id.to_string(),
         cognition.agent_id.to_string(),
@@ -408,7 +409,7 @@ const MEMORY_ADDED_PROJECTION: Projection = Projection {
 };
 
 fn apply_memory_added(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let memory: Memory = serde_json::from_value(data.clone())?;
+    let memory: Identity<MemoryId, Memory> = serde_json::from_value(data.clone())?;
     conn.add_memory(
         memory.id.to_string(),
         memory.agent_id.to_string(),
@@ -471,7 +472,7 @@ const EXPERIENCE_CREATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let experience: Experience = serde_json::from_value(data.clone())?;
+    let experience: Identity<ExperienceId, Experience> = serde_json::from_value(data.clone())?;
     let id = experience.id.to_string();
     let created_at = experience.created_at.to_rfc3339();
 

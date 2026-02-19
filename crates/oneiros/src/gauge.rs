@@ -1,26 +1,32 @@
 use oneiros_model::*;
 use std::collections::BTreeMap;
 
-pub(crate) fn cognition_gauge(agent: &AgentName, cognitions: &[Cognition]) -> String {
+pub(crate) fn cognition_gauge(
+    agent: &AgentName,
+    cognitions: &[Identity<CognitionId, Cognition>],
+) -> String {
     let breakdown = group_by(cognitions, |c| c.texture.to_string());
     format_gauge(agent, "cognitions", &breakdown)
 }
 
-pub(crate) fn memory_gauge(agent: &AgentName, memories: &[Memory]) -> String {
+pub(crate) fn memory_gauge(agent: &AgentName, memories: &[Identity<MemoryId, Memory>]) -> String {
     let breakdown = group_by(memories, |m| m.level.to_string());
     format_gauge(agent, "memories", &breakdown)
 }
 
-pub(crate) fn experience_gauge(agent: &AgentName, experiences: &[Experience]) -> String {
+pub(crate) fn experience_gauge(
+    agent: &AgentName,
+    experiences: &[Identity<ExperienceId, Experience>],
+) -> String {
     let breakdown = group_by(experiences, |e| e.sensation.to_string());
     format_gauge(agent, "experiences", &breakdown)
 }
 
 pub(crate) fn full_status(
     agent: &AgentName,
-    cognitions: &[Cognition],
-    memories: &[Memory],
-    experiences: &[Experience],
+    cognitions: &[Identity<CognitionId, Cognition>],
+    memories: &[Identity<MemoryId, Memory>],
+    experiences: &[Identity<ExperienceId, Experience>],
 ) -> String {
     let cog_breakdown = group_by(cognitions, |c| c.texture.to_string());
     let mem_breakdown = group_by(memories, |m| m.level.to_string());
@@ -82,35 +88,41 @@ mod tests {
     use super::*;
     use chrono::Utc;
 
-    fn make_cognition(texture: &str) -> Cognition {
-        Cognition {
-            id: CognitionId::new(),
-            agent_id: AgentId::new(),
-            texture: TextureName::new(texture),
-            content: Content::new("test"),
-            created_at: Utc::now(),
-        }
+    fn make_cognition(texture: &str) -> Identity<CognitionId, Cognition> {
+        Identity::new(
+            CognitionId::new(),
+            Cognition {
+                agent_id: AgentId::new(),
+                texture: TextureName::new(texture),
+                content: Content::new("test"),
+                created_at: Utc::now(),
+            },
+        )
     }
 
-    fn make_memory(level: &str) -> Memory {
-        Memory {
-            id: MemoryId::new(),
-            agent_id: AgentId::new(),
-            level: LevelName::new(level),
-            content: Content::new("test"),
-            created_at: Utc::now(),
-        }
+    fn make_memory(level: &str) -> Identity<MemoryId, Memory> {
+        Identity::new(
+            MemoryId::new(),
+            Memory {
+                agent_id: AgentId::new(),
+                level: LevelName::new(level),
+                content: Content::new("test"),
+                created_at: Utc::now(),
+            },
+        )
     }
 
-    fn make_experience(sensation: &str) -> Experience {
-        Experience {
-            id: ExperienceId::new(),
-            agent_id: AgentId::new(),
-            sensation: SensationName::new(sensation),
-            description: Content::new("test"),
-            refs: vec![],
-            created_at: Utc::now(),
-        }
+    fn make_experience(sensation: &str) -> Identity<ExperienceId, Experience> {
+        Identity::new(
+            ExperienceId::new(),
+            Experience {
+                agent_id: AgentId::new(),
+                sensation: SensationName::new(sensation),
+                description: Content::new("test"),
+                refs: vec![],
+                created_at: Utc::now(),
+            },
+        )
     }
 
     #[test]
