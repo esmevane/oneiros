@@ -86,7 +86,8 @@ const TENANT_PROJECTION: Projection = Projection {
 
 fn apply_tenant(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
     let tenant: Identity<TenantId, Tenant> = serde_json::from_value(data.clone())?;
-    conn.create_tenant(tenant.id.to_string(), &tenant.name)?;
+    let link = tenant.link()?.to_string();
+    conn.create_tenant(tenant.id.to_string(), &tenant.name, &link)?;
     Ok(())
 }
 
@@ -104,10 +105,12 @@ const ACTOR_PROJECTION: Projection = Projection {
 
 fn apply_actor(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
     let actor: Identity<ActorId, Actor> = serde_json::from_value(data.clone())?;
+    let link = actor.link()?.to_string();
     conn.create_actor(
         actor.id.to_string(),
         actor.tenant_id.to_string(),
         &actor.name,
+        &link,
     )?;
     Ok(())
 }
@@ -126,11 +129,13 @@ const BRAIN_PROJECTION: Projection = Projection {
 
 fn apply_brain(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
     let brain: Identity<BrainId, Brain> = serde_json::from_value(data.clone())?;
+    let link = brain.link()?.to_string();
     conn.create_brain(
         brain.id.to_string(),
         brain.tenant_id.to_string(),
         &brain.name,
         brain.path.display().to_string(),
+        &link,
     )?;
     Ok(())
 }

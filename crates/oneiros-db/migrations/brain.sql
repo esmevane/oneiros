@@ -31,8 +31,6 @@ create table if not exists persona (
     link        text
 );
 
-create index if not exists persona_link on persona(link);
-
 -- Textures are cognitive categories that classify agent thoughts. Each
 -- texture carries a description (human-readable purpose) and a prompt
 -- (guidance text for agents when logging cognition with this texture).
@@ -46,8 +44,6 @@ create table if not exists texture (
     prompt      text not null default '',
     link        text
 );
-
-create index if not exists texture_link on texture(link);
 
 -- Agents are named participants in a brain's cognition. Each agent adopts
 -- a persona (FK to persona.name) and may carry its own description and
@@ -66,8 +62,6 @@ create table if not exists agent (
     link        text
 );
 
-create index if not exists agent_link on agent(link);
-
 -- Cognitions are the thoughts agents log. Each cognition is bound to an
 -- agent (who thought it) and a texture (what kind of thought it is).
 -- Cognitions are append-only — they are created but never updated or deleted.
@@ -80,8 +74,6 @@ create table if not exists cognition (
     created_at  text not null,
     link        text
 );
-
-create index if not exists cognition_link on cognition(link);
 
 -- Levels are memory retention tiers that determine how memories surface
 -- in agent context. Each level carries a description (human-readable
@@ -99,8 +91,6 @@ create table if not exists level (
     link        text
 );
 
-create index if not exists level_link on level(link);
-
 -- Memories are consolidated knowledge records tied to an agent and
 -- classified by retention level. Like cognitions, memories are
 -- append-only — created but never updated or deleted.
@@ -113,8 +103,6 @@ create table if not exists memory (
     created_at  text not null,
     link        text
 );
-
-create index if not exists memory_link on memory(link);
 
 -- Blobs are content-addressable binary storage. Each blob is identified
 -- by its SHA-256 hash and stores zlib-compressed data. Blobs are NOT
@@ -140,8 +128,6 @@ create table if not exists sensation (
     link        text
 );
 
-create index if not exists sensation_link on sensation(link);
-
 -- Natures classify edges in the cognitive graph. Like textures,
 -- levels, and sensations, they carry a description and a prompt,
 -- and are emergent — seeded, added, or removed over time.
@@ -154,8 +140,6 @@ create table if not exists nature (
     prompt      text not null default '',
     link        text
 );
-
-create index if not exists nature_link on nature(link);
 
 -- Connections are first-class edges between entities in the cognitive
 -- graph. Each connection links two entities (via their content-addressed
@@ -171,8 +155,6 @@ create table if not exists connection (
     link        text
 );
 
-create index if not exists connection_link on connection(link);
-
 -- Experiences are descriptive edges connecting records in the brain.
 -- Each experience is bound to an agent (who created it) and a
 -- sensation (what type of relationship it describes).
@@ -186,8 +168,6 @@ create table if not exists experience (
     created_at  text not null,
     link        text
 );
-
-create index if not exists experience_link on experience(link);
 
 -- Experience refs are the edges themselves — each ref connects an
 -- experience to a record. Refs come in two forms:
@@ -216,5 +196,3 @@ create table if not exists storage (
     hash        text not null references blob(hash),
     link        text
 );
-
-create index if not exists storage_link on storage(link);
