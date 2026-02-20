@@ -12,8 +12,12 @@ pub enum ReplayBrainOutcomes {
     BackupCreated(PathBuf),
     #[outcome(message("Created fresh brain database at {}.", .0.display()))]
     FreshDbCreated(PathBuf),
+    #[outcome(message("Warning: event {0} ({1}): {2}"), level = "warn")]
+    ProjectionWarning(usize, String, String),
     #[outcome(message("Replayed {0} events through projections."))]
     EventsReplayed(usize),
+    #[outcome(message("{0} projection warnings (events logged, projections skipped)."))]
+    Warnings(usize),
     #[outcome(message("Replay complete."))]
     Complete,
 }

@@ -55,12 +55,32 @@ impl ReplayBrain {
         outcomes.emit(ReplayBrainOutcomes::FreshDbCreated(brain_path));
 
         // Step 5: Replay rewritten events through projections.
+        //
+        // Uses replay_event which treats projection failures as non-fatal.
+        // This matches the original system: events commit before projections
+        // run, so a failed projection leaves the event logged but unapplied.
         let mut replayed = 0;
+        let mut warnings = 0;
         for event in &rewritten {
-            fresh_db.log_event(event, BRAIN_PROJECTIONS)?;
+            match fresh_db.replay_event(event, BRAIN_PROJECTIONS) {
+                Ok(None) => {}
+                Ok(Some(projection_err)) => {
+                    let event_type = event["type"].as_str().unwrap_or("unknown");
+                    outcomes.emit(ReplayBrainOutcomes::ProjectionWarning(
+                        replayed + 1,
+                        event_type.to_string(),
+                        projection_err.to_string(),
+                    ));
+                    warnings += 1;
+                }
+                Err(e) => return Err(e.into()),
+            }
             replayed += 1;
         }
         outcomes.emit(ReplayBrainOutcomes::EventsReplayed(replayed));
+        if warnings > 0 {
+            outcomes.emit(ReplayBrainOutcomes::Warnings(warnings));
+        }
         outcomes.emit(ReplayBrainOutcomes::Complete);
 
         Ok(outcomes)

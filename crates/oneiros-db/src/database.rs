@@ -68,15 +68,27 @@ impl Database {
         Ok(count as usize)
     }
 
-    /// Read all events in chronological order.
+    /// Read all events in chronological order, with causal tiebreaking.
     ///
-    /// Events are ordered by `id ASC` (UUIDv7 IDs sort chronologically).
-    /// Each row's `data` column is parsed from its stored JSON string into
-    /// a `serde_json::Value`.
+    /// Events are ordered by `timestamp ASC`. Within the same timestamp,
+    /// seed/vocabulary events sort first (they define names referenced by
+    /// other events), then agent lifecycle, then everything else. This
+    /// ensures FK dependencies are satisfied during replay.
     pub fn read_events(&self) -> Result<Vec<EventRow>, DatabaseError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, timestamp, data FROM events ORDER BY id ASC")?;
+        let mut stmt = self.conn.prepare(
+            "SELECT id, timestamp, data FROM events
+             ORDER BY timestamp ASC,
+             CASE json_extract(meta, '$.type')
+                 WHEN 'texture-set'   THEN 0
+                 WHEN 'level-set'     THEN 0
+                 WHEN 'persona-set'   THEN 0
+                 WHEN 'sensation-set' THEN 0
+                 WHEN 'nature-set'    THEN 0
+                 WHEN 'agent-created' THEN 1
+                 WHEN 'agent-updated' THEN 1
+                 ELSE 2
+             END ASC",
+        )?;
 
         let rows = stmt.query_map([], |row| {
             let id: String = row.get(0)?;
@@ -1869,6 +1881,26 @@ impl Database {
 
         self.create_event(&event)?;
         self.run_projections(projections, &event)
+    }
+
+    /// Replay an event: insert it into the log and run projections best-effort.
+    ///
+    /// Unlike `log_event`, projection failures are non-fatal. This matches
+    /// the original system's behavior where events commit before projections
+    /// run — a projection failure in the original leaves the event logged
+    /// but the projection unapplied. Returns `Ok(None)` on full success,
+    /// `Ok(Some(err))` if the event was logged but a projection failed.
+    pub fn replay_event(
+        &self,
+        data: &Value,
+        projections: &[Projection],
+    ) -> Result<Option<DatabaseError>, DatabaseError> {
+        self.create_event(data)?;
+
+        match self.run_projections(projections, data) {
+            Ok(()) => Ok(None),
+            Err(e) => Ok(Some(e)),
+        }
     }
 
     fn create_event(&self, data: &Value) -> Result<(), DatabaseError> {
