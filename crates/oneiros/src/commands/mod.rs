@@ -1,5 +1,6 @@
 mod activity;
 mod agent;
+mod brain;
 mod cognition;
 mod connection;
 mod doctor;
@@ -29,6 +30,7 @@ mod wake;
 
 pub(crate) use activity::*;
 pub(crate) use agent::*;
+pub(crate) use brain::*;
 pub(crate) use cognition::*;
 pub(crate) use connection::*;
 pub(crate) use doctor::*;

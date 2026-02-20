@@ -1,6 +1,6 @@
 macro_rules! domain_id {
     ($name:ident) => {
-        #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+        #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
         #[serde(transparent)]
         pub struct $name(pub crate::Id);
 
@@ -11,12 +11,6 @@ macro_rules! domain_id {
 
             pub fn is_empty(&self) -> bool {
                 self.0.is_empty()
-            }
-        }
-
-        impl Default for $name {
-            fn default() -> Self {
-                Self::new()
             }
         }
 

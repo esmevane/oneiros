@@ -68,7 +68,7 @@ impl Init {
 
         let tenant_id = TenantId::new();
         let create_tenant = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-            tenant_id,
+            tenant_id.clone(),
             Tenant { name: name.clone() },
         )));
 
@@ -80,7 +80,7 @@ impl Init {
         let create_actor = Events::Actor(ActorEvents::ActorCreated(Identity::new(
             actor_id,
             Actor {
-                tenant_id,
+                tenant_id: tenant_id.clone(),
                 name: ActorName::new(name.as_str()),
             },
         )));

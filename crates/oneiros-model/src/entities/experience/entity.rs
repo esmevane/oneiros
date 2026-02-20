@@ -93,7 +93,7 @@ impl Addressable for Experience {
     fn link(&self) -> Result<Link, LinkError> {
         // The experience is the identity: what sensation and description.
         // Agent, timestamp, and refs are context or mutable.
-        Link::new(&(Self::address_label(), &self.sensation))
+        Link::new(&(Self::address_label(), &self.sensation, &self.description))
     }
 }
 
@@ -104,7 +104,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn experience_identity() {
+    fn experience_identity_same_sensation_and_description() {
         let primary = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
@@ -113,11 +113,11 @@ mod tests {
             created_at: Utc::now(),
         };
 
-        // Different agent, timestamp, and refs — same link
+        // Different agent, timestamp, and refs — same link (sensation + description match)
         let other = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
-            description: Content::new("a threadulo"),
+            description: Content::new("a thread"),
             refs: vec![RecordRef::identified(
                 Id::new(),
                 RecordKind::Cognition,
@@ -127,5 +127,27 @@ mod tests {
         };
 
         assert_eq!(primary.link().unwrap(), other.link().unwrap());
+    }
+
+    #[test]
+    fn experience_identity_different_description() {
+        let primary = Experience {
+            agent_id: AgentId::new(),
+            sensation: SensationName::new("continues"),
+            description: Content::new("a thread"),
+            refs: vec![],
+            created_at: Utc::now(),
+        };
+
+        // Same sensation, different description — different link
+        let other = Experience {
+            agent_id: AgentId::new(),
+            sensation: SensationName::new("continues"),
+            description: Content::new("a different thread"),
+            refs: vec![],
+            created_at: Utc::now(),
+        };
+
+        assert_ne!(primary.link().unwrap(), other.link().unwrap());
     }
 }

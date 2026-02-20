@@ -15,7 +15,7 @@ fn seed_tenant_and_actor(db: &Database) {
     let tenant_id = TenantId::new();
 
     let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
+        tenant_id.clone(),
         Tenant {
             name: TenantName::new("Test Tenant"),
         },

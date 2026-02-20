@@ -14,7 +14,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let actor_id = ActorId::new();
 
     let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
+        tenant_id.clone(),
         Tenant {
             name: TenantName::new("Test Tenant"),
         },
@@ -23,9 +23,9 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        actor_id,
+        actor_id.clone(),
         Actor {
-            tenant_id,
+            tenant_id: tenant_id.clone(),
             name: ActorName::new("Test Actor"),
         },
     )));
@@ -38,9 +38,9 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     // Register the brain in the service database
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
-        brain_id,
+        brain_id.clone(),
         Brain {
-            tenant_id,
+            tenant_id: tenant_id.clone(),
             name: BrainName::new("test-brain"),
             path: brain_path.to_path_buf(),
             status: BrainStatus::Active,
@@ -53,7 +53,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let token = Token::issue(TokenClaims {
         brain_id,
         tenant_id,
-        actor_id,
+        actor_id: actor_id.clone(),
     });
 
     let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(

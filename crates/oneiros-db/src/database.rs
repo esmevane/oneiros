@@ -7,6 +7,15 @@ use uuid::Uuid;
 
 use crate::*;
 
+/// A raw event row from the `events` table.
+///
+/// Used by the replay tool to read the full event log in chronological order.
+pub struct EventRow {
+    pub id: String,
+    pub timestamp: String,
+    pub data: serde_json::Value,
+}
+
 pub struct Database {
     conn: Connection,
 }
@@ -26,7 +35,6 @@ impl Database {
     pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(connection_string.as_ref())?;
         Self::register_functions(&conn)?;
-        Self::migrate_system(&conn);
 
         Ok(Self { conn })
     }
@@ -40,56 +48,8 @@ impl Database {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;
         conn.execute_batch(migrations::BRAIN)?;
-        Self::migrate_brain(&conn);
 
         Ok(Self { conn })
-    }
-
-    /// Run forward-only migrations that cannot be expressed as idempotent
-    /// CREATE TABLE IF NOT EXISTS statements. Each migration is a no-op
-    /// if the schema is already up to date.
-    fn migrate_brain(conn: &Connection) {
-        // v0.0.6: add link column to experience_ref for content-addressed refs.
-        let _ = conn.execute_batch("alter table experience_ref add column link text");
-
-        // v0.0.7: add link column to all entity tables for content-addressed lookup.
-        let _ = conn.execute_batch("alter table persona add column link text");
-        let _ = conn.execute_batch("alter table texture add column link text");
-        let _ = conn.execute_batch("alter table level add column link text");
-        let _ = conn.execute_batch("alter table sensation add column link text");
-        let _ = conn.execute_batch("alter table nature add column link text");
-        let _ = conn.execute_batch("alter table agent add column link text");
-        let _ = conn.execute_batch("alter table cognition add column link text");
-        let _ = conn.execute_batch("alter table memory add column link text");
-        let _ = conn.execute_batch("alter table experience add column link text");
-        let _ = conn.execute_batch("alter table connection add column link text");
-        let _ = conn.execute_batch("alter table storage add column link text");
-
-        let _ = conn.execute_batch("create index if not exists persona_link on persona(link)");
-        let _ = conn.execute_batch("create index if not exists texture_link on texture(link)");
-        let _ = conn.execute_batch("create index if not exists level_link on level(link)");
-        let _ = conn.execute_batch("create index if not exists sensation_link on sensation(link)");
-        let _ = conn.execute_batch("create index if not exists nature_link on nature(link)");
-        let _ = conn.execute_batch("create index if not exists agent_link on agent(link)");
-        let _ = conn.execute_batch("create index if not exists cognition_link on cognition(link)");
-        let _ = conn.execute_batch("create index if not exists memory_link on memory(link)");
-        let _ =
-            conn.execute_batch("create index if not exists experience_link on experience(link)");
-        let _ =
-            conn.execute_batch("create index if not exists connection_link on connection(link)");
-        let _ = conn.execute_batch("create index if not exists storage_link on storage(link)");
-    }
-
-    /// Run forward-only migrations for the system database.
-    fn migrate_system(conn: &Connection) {
-        // v0.0.7: add link column to system entity tables.
-        let _ = conn.execute_batch("alter table tenant add column link text");
-        let _ = conn.execute_batch("alter table actor add column link text");
-        let _ = conn.execute_batch("alter table brain add column link text");
-
-        let _ = conn.execute_batch("create index if not exists tenant_link on tenant(link)");
-        let _ = conn.execute_batch("create index if not exists actor_link on actor(link)");
-        let _ = conn.execute_batch("create index if not exists brain_link on brain(link)");
     }
 
     pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
@@ -106,6 +66,40 @@ impl Database {
             .conn
             .query_row("select count(*) from events", [], |row| row.get(0))?;
         Ok(count as usize)
+    }
+
+    /// Read all events in chronological order.
+    ///
+    /// Events are ordered by `id ASC` (UUIDv7 IDs sort chronologically).
+    /// Each row's `data` column is parsed from its stored JSON string into
+    /// a `serde_json::Value`.
+    pub fn read_events(&self) -> Result<Vec<EventRow>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, timestamp, data FROM events ORDER BY id ASC")?;
+
+        let rows = stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let timestamp: String = row.get(1)?;
+            let data_str: String = row.get(2)?;
+
+            Ok((id, timestamp, data_str))
+        })?;
+
+        let mut events = Vec::new();
+
+        for row in rows {
+            let (id, timestamp, data_str) = row?;
+            let data: serde_json::Value = serde_json::from_str(&data_str)?;
+
+            events.push(EventRow {
+                id,
+                timestamp,
+                data,
+            });
+        }
+
+        Ok(events)
     }
 
     pub fn tenant_exists(&self) -> Result<bool, DatabaseError> {

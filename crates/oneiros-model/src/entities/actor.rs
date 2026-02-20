@@ -31,7 +31,7 @@ mod tests {
         let tenant_id = TenantId::new();
 
         let primary = Actor {
-            tenant_id,
+            tenant_id: tenant_id.clone(),
             name: ActorName::new("default"),
         };
 

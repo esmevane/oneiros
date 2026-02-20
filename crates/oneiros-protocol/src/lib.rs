@@ -8,6 +8,7 @@ pub use responses::*;
 pub use sensing::*;
 
 mod events {
+    use chrono::{DateTime, Utc};
     use oneiros_model::{
         Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
         Connection, ConnectionId, Content, DreamContext, Experience, ExperienceId, Identity, Level,
@@ -118,6 +119,10 @@ mod events {
         ExperienceRefAdded {
             experience_id: ExperienceId,
             record_ref: RecordRef,
+            /// Timestamp of the ref addition. Optional for backward compat with
+            /// legacy events that predate this field.
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            created_at: Option<DateTime<Utc>>,
         },
         ExperienceDescriptionUpdated {
             experience_id: ExperienceId,

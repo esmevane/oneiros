@@ -5,6 +5,7 @@ mod routes;
 mod state;
 
 pub mod projections;
+pub mod replay;
 
 use std::{path::Path, sync::Arc};
 use tokio::net::UnixListener;

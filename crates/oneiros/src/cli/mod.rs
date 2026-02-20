@@ -39,6 +39,7 @@ impl Cli {
         Ok(match &self.command {
             Command::Activity(activity) => activity.run(&context).await?.map_into(),
             Command::Agent(agent) => agent.run(&context).await?.map_into(),
+            Command::Brain(brain) => brain.run(&context).await?.map_into(),
             Command::Cognition(cognition) => cognition.run(&context).await?.map_into(),
             Command::Connection(connection) => connection.run(&context).await?.map_into(),
             Command::Doctor(doctor) => doctor.run(&context).await?.map_into(),
@@ -75,6 +76,8 @@ pub(crate) enum Command {
     Activity(ActivityOps),
     /// Manage agents (named participants in a brain's cognition).
     Agent(AgentOps),
+    /// Brain-level operations (replay, maintenance).
+    Brain(BrainOps),
     /// Manage cognitions (thoughts logged by agents).
     Cognition(CognitionOps),
     /// Manage connections (edges between linked entities).

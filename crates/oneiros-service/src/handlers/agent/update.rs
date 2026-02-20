@@ -22,7 +22,7 @@ pub(crate) async fn handler(
         .ok_or(NotFound::Persona(request.persona.clone()))?;
 
     let agent = Identity::new(
-        existing.id,
+        existing.id.clone(),
         Agent {
             name: existing.name.clone(),
             persona: request.persona,

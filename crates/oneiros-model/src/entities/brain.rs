@@ -42,7 +42,7 @@ mod tests {
         let tenant = TenantId::new();
 
         let primary = Brain {
-            tenant_id: tenant,
+            tenant_id: tenant.clone(),
             name: BrainName::new("oneiros"),
             path: PathBuf::from("/tmp/a"),
             status: BrainStatus::Active,

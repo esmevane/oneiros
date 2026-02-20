@@ -196,3 +196,17 @@ create table if not exists storage (
     hash        text not null references blob(hash),
     link        text
 );
+
+-- Link indexes for content-addressed entity lookup.
+--
+create index if not exists persona_link on persona(link);
+create index if not exists texture_link on texture(link);
+create index if not exists level_link on level(link);
+create index if not exists sensation_link on sensation(link);
+create index if not exists nature_link on nature(link);
+create index if not exists agent_link on agent(link);
+create index if not exists cognition_link on cognition(link);
+create index if not exists memory_link on memory(link);
+create index if not exists experience_link on experience(link);
+create index if not exists connection_link on connection(link);
+create index if not exists storage_link on storage(link);

@@ -28,15 +28,15 @@ pub(super) async fn list_ids_for_kind(
     let ids = match kind {
         RecordKind::Cognition => {
             let all = client.list_cognitions(token, None, None).await?;
-            all.iter().map(|c| c.id.0).collect()
+            all.iter().map(|c| c.id.0.clone()).collect()
         }
         RecordKind::Memory => {
             let all = client.list_memories(token, None, None).await?;
-            all.iter().map(|m| m.id.0).collect()
+            all.iter().map(|m| m.id.0.clone()).collect()
         }
         RecordKind::Experience => {
             let all = client.list_experiences(token, None, None).await?;
-            all.iter().map(|e| e.id.0).collect()
+            all.iter().map(|e| e.id.0.clone()).collect()
         }
         RecordKind::Storage => {
             vec![]

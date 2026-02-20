@@ -1,12 +1,12 @@
 use thiserror::Error;
 
 use crate::{
-    ActivityError, AgentCommandError, CheckupError, CognitionCommandError, ConnectionCommandError,
-    ContextError, DreamError, EmergeError, ExperienceCommandError, GuidebookError, IntrospectError,
-    LevelCommandError, MemoryCommandError, NatureCommandError, PersonaCommandError,
-    ProjectCommandError, RecedeError, ReflectError, SeedCommandError, SensationCommandError,
-    SenseError, ServiceCommandError, SkillCommandError, SleepError, StatusError,
-    StorageCommandError, SystemCommandError, TextureCommandError, WakeError,
+    ActivityError, AgentCommandError, BrainCommandError, CheckupError, CognitionCommandError,
+    ConnectionCommandError, ContextError, DreamError, EmergeError, ExperienceCommandError,
+    GuidebookError, IntrospectError, LevelCommandError, MemoryCommandError, NatureCommandError,
+    PersonaCommandError, ProjectCommandError, RecedeError, ReflectError, SeedCommandError,
+    SensationCommandError, SenseError, ServiceCommandError, SkillCommandError, SleepError,
+    StatusError, StorageCommandError, SystemCommandError, TextureCommandError, WakeError,
 };
 
 #[derive(Debug, Error)]
@@ -17,6 +17,8 @@ pub enum CliError {
     Activity(#[from] ActivityError),
     #[error(transparent)]
     Agent(#[from] AgentCommandError),
+    #[error(transparent)]
+    Brain(#[from] BrainCommandError),
     #[error(transparent)]
     Cognition(#[from] CognitionCommandError),
     #[error(transparent)]

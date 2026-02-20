@@ -28,7 +28,7 @@ impl ShowCognition {
             Some(id) => CognitionId(id),
             None => {
                 let all = client.list_cognitions(&token, None, None).await?;
-                let ids: Vec<_> = all.iter().map(|c| c.id.0).collect();
+                let ids: Vec<_> = all.iter().map(|c| c.id.0.clone()).collect();
                 CognitionId(self.id.resolve(&ids)?)
             }
         };

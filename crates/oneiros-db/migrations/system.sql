@@ -170,3 +170,9 @@ create table if not exists tickets (
 );
 
 create unique index if not exists unique_tickets_token on tickets (token);
+
+-- Link indexes for content-addressed entity lookup.
+--
+create index if not exists tenant_link on tenant(link);
+create index if not exists actor_link on actor(link);
+create index if not exists brain_link on brain(link);

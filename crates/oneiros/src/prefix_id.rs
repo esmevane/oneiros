@@ -28,7 +28,7 @@ impl PrefixId {
     /// If this is a full UUID, return it directly as an `Id`.
     pub fn as_full_id(&self) -> Option<Id> {
         match &self.0 {
-            PrefixIdInner::Full(id) => Some(*id),
+            PrefixIdInner::Full(id) => Some(id.clone()),
             PrefixIdInner::Prefix(_) => None,
         }
     }
@@ -38,7 +38,7 @@ impl PrefixId {
     /// against the hex representation (no dashes) of each ID.
     pub fn resolve(&self, known_ids: &[Id]) -> Result<Id, PrefixError> {
         match &self.0 {
-            PrefixIdInner::Full(id) => Ok(*id),
+            PrefixIdInner::Full(id) => Ok(id.clone()),
             PrefixIdInner::Prefix(prefix) => {
                 let matches: Vec<_> = known_ids
                     .iter()
@@ -50,7 +50,7 @@ impl PrefixId {
 
                 match matches.len() {
                     0 => Err(PrefixError::NotFound(prefix.clone())),
-                    1 => Ok(*matches[0]),
+                    1 => Ok(matches[0].clone()),
                     n => Err(PrefixError::Ambiguous(prefix.clone(), n)),
                 }
             }
@@ -71,11 +71,16 @@ impl core::str::FromStr for PrefixId {
     type Err = PrefixError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(id) = s.parse::<Id>() {
+        let cleaned = s.replace('-', "");
+
+        // Full UUID: exactly 32 hex characters (with or without dashes).
+        // Parse via Id to get Id::Legacy. PrefixId only works with UUIDs.
+        if cleaned.len() == 32
+            && cleaned.chars().all(|c| c.is_ascii_hexdigit())
+            && let Ok(id) = s.parse::<Id>()
+        {
             return Ok(Self(PrefixIdInner::Full(id)));
         }
-
-        let cleaned = s.replace('-', "");
 
         if cleaned.len() < 8 {
             return Err(PrefixError::TooShort(s.to_string()));
@@ -131,7 +136,7 @@ mod tests {
     fn prefix_resolves_unique_match() {
         let id1 = make_id("019c5ea2-ba84-7cf1-8113-3db9b418c82c");
         let id2 = make_id("019c5ea7-0000-7000-8000-000000000000");
-        let known = vec![id1, id2];
+        let known = vec![id1.clone(), id2];
 
         let prefix: PrefixId = "019c5ea2".parse().unwrap();
         let resolved = prefix.resolve(&known).unwrap();
