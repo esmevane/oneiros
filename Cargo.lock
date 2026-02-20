@@ -1268,6 +1268,7 @@ dependencies = [
  "oneiros-fs",
  "oneiros-model",
  "oneiros-protocol",
+ "rusqlite",
  "serde",
  "serde_json",
  "sha2",

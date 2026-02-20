@@ -50,6 +50,33 @@ impl Database {
     fn migrate_brain(conn: &Connection) {
         // v0.0.6: add link column to experience_ref for content-addressed refs.
         let _ = conn.execute_batch("alter table experience_ref add column link text");
+
+        // v0.0.7: add link column to all entity tables for content-addressed lookup.
+        let _ = conn.execute_batch("alter table persona add column link text");
+        let _ = conn.execute_batch("alter table texture add column link text");
+        let _ = conn.execute_batch("alter table level add column link text");
+        let _ = conn.execute_batch("alter table sensation add column link text");
+        let _ = conn.execute_batch("alter table nature add column link text");
+        let _ = conn.execute_batch("alter table agent add column link text");
+        let _ = conn.execute_batch("alter table cognition add column link text");
+        let _ = conn.execute_batch("alter table memory add column link text");
+        let _ = conn.execute_batch("alter table experience add column link text");
+        let _ = conn.execute_batch("alter table connection add column link text");
+        let _ = conn.execute_batch("alter table storage add column link text");
+
+        let _ = conn.execute_batch("create index if not exists persona_link on persona(link)");
+        let _ = conn.execute_batch("create index if not exists texture_link on texture(link)");
+        let _ = conn.execute_batch("create index if not exists level_link on level(link)");
+        let _ = conn.execute_batch("create index if not exists sensation_link on sensation(link)");
+        let _ = conn.execute_batch("create index if not exists nature_link on nature(link)");
+        let _ = conn.execute_batch("create index if not exists agent_link on agent(link)");
+        let _ = conn.execute_batch("create index if not exists cognition_link on cognition(link)");
+        let _ = conn.execute_batch("create index if not exists memory_link on memory(link)");
+        let _ =
+            conn.execute_batch("create index if not exists experience_link on experience(link)");
+        let _ =
+            conn.execute_batch("create index if not exists connection_link on connection(link)");
+        let _ = conn.execute_batch("create index if not exists storage_link on storage(link)");
     }
 
     pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
@@ -237,13 +264,20 @@ impl Database {
         name: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into persona (name, description, prompt) \
-             values (?1, ?2, ?3) \
+            "insert into persona (name, description, prompt, link) \
+             values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
-             description = excluded.description, prompt = excluded.prompt",
-            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+             description = excluded.description, prompt = excluded.prompt, \
+             link = excluded.link",
+            params![
+                name.as_ref(),
+                description.as_ref(),
+                prompt.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
@@ -308,13 +342,20 @@ impl Database {
         name: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into texture (name, description, prompt) \
-             values (?1, ?2, ?3) \
+            "insert into texture (name, description, prompt, link) \
+             values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
-             description = excluded.description, prompt = excluded.prompt",
-            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+             description = excluded.description, prompt = excluded.prompt, \
+             link = excluded.link",
+            params![
+                name.as_ref(),
+                description.as_ref(),
+                prompt.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
@@ -379,13 +420,20 @@ impl Database {
         name: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into level (name, description, prompt) \
-             values (?1, ?2, ?3) \
+            "insert into level (name, description, prompt, link) \
+             values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
-             description = excluded.description, prompt = excluded.prompt",
-            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+             description = excluded.description, prompt = excluded.prompt, \
+             link = excluded.link",
+            params![
+                name.as_ref(),
+                description.as_ref(),
+                prompt.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
@@ -450,16 +498,18 @@ impl Database {
         persona: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into agent (id, name, persona, description, prompt) \
-             values (?1, ?2, ?3, ?4, ?5)",
+            "insert or ignore into agent (id, name, persona, description, prompt, link) \
+             values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 id.as_ref(),
                 name.as_ref(),
                 persona.as_ref(),
                 description.as_ref(),
-                prompt.as_ref()
+                prompt.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
@@ -471,14 +521,17 @@ impl Database {
         persona: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "update agent set persona = ?2, description = ?3, prompt = ?4 where name = ?1",
+            "update agent set persona = ?2, description = ?3, prompt = ?4, link = ?5 \
+             where name = ?1",
             params![
                 name.as_ref(),
                 persona.as_ref(),
                 description.as_ref(),
-                prompt.as_ref()
+                prompt.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
@@ -561,16 +614,18 @@ impl Database {
         texture: impl AsRef<str>,
         content: impl AsRef<str>,
         created_at: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into cognition (id, agent_id, texture, content, created_at) \
-             values (?1, ?2, ?3, ?4, ?5)",
+            "insert or ignore into cognition (id, agent_id, texture, content, created_at, link) \
+             values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 id.as_ref(),
                 agent_id.as_ref(),
                 texture.as_ref(),
                 content.as_ref(),
-                created_at.as_ref()
+                created_at.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
@@ -720,16 +775,18 @@ impl Database {
         level: impl AsRef<str>,
         content: impl AsRef<str>,
         created_at: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into memory (id, agent_id, level, content, created_at) \
-             values (?1, ?2, ?3, ?4, ?5)",
+            "insert or ignore into memory (id, agent_id, level, content, created_at, link) \
+             values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 id.as_ref(),
                 agent_id.as_ref(),
                 level.as_ref(),
                 content.as_ref(),
-                created_at.as_ref()
+                created_at.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
@@ -877,13 +934,20 @@ impl Database {
         name: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into sensation (name, description, prompt) \
-             values (?1, ?2, ?3) \
+            "insert into sensation (name, description, prompt, link) \
+             values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
-             description = excluded.description, prompt = excluded.prompt",
-            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+             description = excluded.description, prompt = excluded.prompt, \
+             link = excluded.link",
+            params![
+                name.as_ref(),
+                description.as_ref(),
+                prompt.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
@@ -948,13 +1012,20 @@ impl Database {
         name: impl AsRef<str>,
         description: impl AsRef<str>,
         prompt: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into nature (name, description, prompt) \
-             values (?1, ?2, ?3) \
+            "insert into nature (name, description, prompt, link) \
+             values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
-             description = excluded.description, prompt = excluded.prompt",
-            params![name.as_ref(), description.as_ref(), prompt.as_ref()],
+             description = excluded.description, prompt = excluded.prompt, \
+             link = excluded.link",
+            params![
+                name.as_ref(),
+                description.as_ref(),
+                prompt.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
@@ -1019,16 +1090,18 @@ impl Database {
         from_link: impl AsRef<str>,
         to_link: impl AsRef<str>,
         created_at: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into connection (id, nature, from_link, to_link, created_at) \
-             values (?1, ?2, ?3, ?4, ?5)",
+            "insert or ignore into connection (id, nature, from_link, to_link, created_at, link) \
+             values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 id.as_ref(),
                 nature.as_ref(),
                 from_link.as_ref(),
                 to_link.as_ref(),
-                created_at.as_ref()
+                created_at.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
@@ -1158,16 +1231,18 @@ impl Database {
         sensation: impl AsRef<str>,
         description: impl AsRef<str>,
         created_at: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into experience (id, agent_id, sensation, description, created_at) \
-             values (?1, ?2, ?3, ?4, ?5)",
+            "insert or ignore into experience (id, agent_id, sensation, description, created_at, link) \
+             values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 id.as_ref(),
                 agent_id.as_ref(),
                 sensation.as_ref(),
                 description.as_ref(),
-                created_at.as_ref()
+                created_at.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
@@ -1427,13 +1502,20 @@ impl Database {
         key: impl AsRef<str>,
         description: impl AsRef<str>,
         hash: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into storage (key, description, hash) \
-             values (?1, ?2, ?3) \
+            "insert into storage (key, description, hash, link) \
+             values (?1, ?2, ?3, ?4) \
              on conflict(key) do update set \
-             description = excluded.description, hash = excluded.hash",
-            params![key.as_ref(), description.as_ref(), hash.as_ref()],
+             description = excluded.description, hash = excluded.hash, \
+             link = excluded.link",
+            params![
+                key.as_ref(),
+                description.as_ref(),
+                hash.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
