@@ -11,6 +11,9 @@ pub enum DatabaseError {
 
     #[error("Failed to construct domain type: {0}")]
     Construction(#[from] ConstructionError),
+
+    #[error("Failed to compute link: {0}")]
+    Link(#[from] LinkError),
 }
 
 impl From<AgentConstructionError> for DatabaseError {
