@@ -12,7 +12,7 @@ pub(crate) async fn handler(
     ticket
         .db
         .get_connection(id.to_string())?
-        .ok_or(NotFound::Connection(id))?;
+        .ok_or(NotFound::Connection(id.to_string()))?;
 
     let event = Events::Connection(ConnectionEvents::ConnectionRemoved { id });
 

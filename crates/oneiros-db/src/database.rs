@@ -353,6 +353,29 @@ impl Database {
         Ok(personas)
     }
 
+    pub fn get_persona_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Persona>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from persona where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Persona::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub fn reset_personas(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from persona")?;
         Ok(())
@@ -431,6 +454,29 @@ impl Database {
         Ok(textures)
     }
 
+    pub fn get_texture_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Texture>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from texture where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Texture::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub fn reset_textures(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from texture")?;
         Ok(())
@@ -505,6 +551,26 @@ impl Database {
             levels.push(Level::construct_from_db(row?));
         }
         Ok(levels)
+    }
+
+    pub fn get_level_by_link(&self, link: impl AsRef<str>) -> Result<Option<Level>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from level where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Level::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     pub fn reset_levels(&self) -> Result<(), DatabaseError> {
@@ -612,6 +678,31 @@ impl Database {
             .map(Agent::construct_from_db)
             .collect::<Result<Vec<_>, _>>()
             .map_err(DatabaseError::from)
+    }
+
+    pub fn get_agent_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Identity<AgentId, Agent>>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, name, persona, description, prompt from agent where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Agent::construct_from_db(row)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     pub fn agent_name_exists(&self, name: impl AsRef<str>) -> Result<bool, DatabaseError> {
@@ -784,6 +875,31 @@ impl Database {
             .map_err(DatabaseError::from)
     }
 
+    pub fn get_cognition_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Identity<CognitionId, Cognition>>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, agent_id, texture, content, created_at from cognition where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Cognition::construct_from_db(row)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub fn reset_cognitions(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from cognition")?;
         Ok(())
@@ -945,6 +1061,31 @@ impl Database {
             .map_err(DatabaseError::from)
     }
 
+    pub fn get_memory_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Identity<MemoryId, Memory>>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, agent_id, level, content, created_at from memory where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Memory::construct_from_db(row)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub fn reset_memories(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from memory")?;
         Ok(())
@@ -1023,6 +1164,29 @@ impl Database {
         Ok(sensations)
     }
 
+    pub fn get_sensation_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Sensation>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from sensation where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Sensation::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub fn reset_sensations(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from sensation")?;
         Ok(())
@@ -1097,6 +1261,29 @@ impl Database {
             natures.push(Nature::construct_from_db(row?));
         }
         Ok(natures)
+    }
+
+    pub fn get_nature_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Nature>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from nature where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Nature::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     pub fn reset_natures(&self) -> Result<(), DatabaseError> {
@@ -1232,6 +1419,31 @@ impl Database {
             .map(oneiros_model::Connection::construct_from_db)
             .collect::<Result<Vec<_>, _>>()
             .map_err(DatabaseError::from)
+    }
+
+    pub fn get_connection_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, nature, from_link, to_link, created_at from connection where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(oneiros_model::Connection::construct_from_db(row)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     pub fn remove_connection(&self, id: impl AsRef<str>) -> Result<(), DatabaseError> {
@@ -1386,6 +1598,34 @@ impl Database {
             experiences.push(Experience::construct_from_db(row, refs)?);
         }
         Ok(experiences)
+    }
+
+    pub fn get_experience_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<Identity<ExperienceId, Experience>>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, agent_id, sensation, description, created_at from experience where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => {
+                let refs = self.collect_experience_refs(&row.0)?;
+                Ok(Some(Experience::construct_from_db(row, refs)?))
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     pub fn add_experience_ref(
@@ -1587,6 +1827,29 @@ impl Database {
             entries.push(StorageEntry::construct_from_db(row?));
         }
         Ok(entries)
+    }
+
+    pub fn get_storage_by_link(
+        &self,
+        link: impl AsRef<str>,
+    ) -> Result<Option<StorageEntry>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select key, description, hash from storage where link = ?1",
+            params![link.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(StorageEntry::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     pub fn reset_storage(&self) -> Result<(), DatabaseError> {

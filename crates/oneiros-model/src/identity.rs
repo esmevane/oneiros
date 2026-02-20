@@ -35,8 +35,7 @@ impl<I, T> Identity<I, T> {
 impl<I: fmt::Display, T: fmt::Display> fmt::Display for Identity<I, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let id = self.id.to_string();
-        let prefix = if id.len() >= 8 { &id[..8] } else { &id };
-        write!(f, "{prefix:<10}{}", self.inner)
+        write!(f, "{id:<30}{}", self.inner)
     }
 }
 

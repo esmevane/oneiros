@@ -13,7 +13,7 @@ pub(crate) async fn handler(
     ticket
         .db
         .get_experience(id.to_string())?
-        .ok_or(NotFound::Experience(id))?;
+        .ok_or(NotFound::Experience(id.to_string()))?;
 
     let event = Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated {
         experience_id: id,
@@ -28,7 +28,7 @@ pub(crate) async fn handler(
     let experience = ticket
         .db
         .get_experience(id.to_string())?
-        .ok_or(NotFound::Experience(id))?;
+        .ok_or(NotFound::Experience(id.to_string()))?;
 
     Ok((StatusCode::OK, Json(experience)))
 }

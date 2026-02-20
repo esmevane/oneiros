@@ -51,3 +51,9 @@ impl From<RecordRefConstructionError> for DatabaseError {
         Self::Construction(e.into())
     }
 }
+
+impl From<IdParseError> for DatabaseError {
+    fn from(e: IdParseError) -> Self {
+        Self::Construction(e.into())
+    }
+}

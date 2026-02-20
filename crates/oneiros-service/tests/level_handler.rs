@@ -275,3 +275,37 @@ async fn level_request_with_invalid_token_returns_unauthorized() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn get_level_by_link() {
+    let (_temp, state, token) = setup();
+
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "name": "core",
+        "description": "Identity-defining memories",
+        "prompt": "Only assign core status to foundational memories."
+    });
+    app.oneshot(put_json_auth("/levels", &body, &token))
+        .await
+        .unwrap();
+
+    let app = router(state.clone());
+    let response = app.oneshot(get_auth("/levels/core", &token)).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let link = value["link"].as_str().unwrap().to_string();
+    assert!(!link.is_empty());
+
+    let app = router(state);
+    let response = app
+        .oneshot(get_auth(&format!("/levels/{link}"), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let fetched: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(fetched["name"], "core");
+    assert_eq!(fetched["link"], link);
+}
