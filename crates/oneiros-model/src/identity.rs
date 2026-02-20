@@ -35,7 +35,7 @@ impl<I, T> Identity<I, T> {
 impl<I: fmt::Display, T: fmt::Display> fmt::Display for Identity<I, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let id = self.id.to_string();
-        write!(f, "{id:<30}{}", self.inner)
+        write!(f, "{id:<38}{}", self.inner)
     }
 }
 
