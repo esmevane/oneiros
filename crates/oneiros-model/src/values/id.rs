@@ -69,16 +69,50 @@ impl core::str::FromStr for Id {
     }
 }
 
+/// Helper for non-human-readable (binary) serialization formats like postcard.
+/// Provides a tagged enum so binary formats can distinguish Legacy from Content.
+#[derive(serde::Serialize, serde::Deserialize)]
+enum BinaryId {
+    Legacy(uuid::Uuid),
+    Content(Vec<u8>),
+}
+
+impl From<&Id> for BinaryId {
+    fn from(id: &Id) -> Self {
+        match id {
+            Id::Legacy(uuid) => BinaryId::Legacy(*uuid),
+            Id::Content(bytes) => BinaryId::Content(bytes.to_vec()),
+        }
+    }
+}
+
+impl From<BinaryId> for Id {
+    fn from(binary: BinaryId) -> Self {
+        match binary {
+            BinaryId::Legacy(uuid) => Id::Legacy(uuid),
+            BinaryId::Content(bytes) => Id::Content(bytes::Bytes::from(bytes)),
+        }
+    }
+}
+
 impl serde::Serialize for Id {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&self.to_string())
+        if serializer.is_human_readable() {
+            serializer.serialize_str(&self.to_string())
+        } else {
+            BinaryId::from(self).serialize(serializer)
+        }
     }
 }
 
 impl<'de> serde::Deserialize<'de> for Id {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        s.parse().map_err(serde::de::Error::custom)
+        if deserializer.is_human_readable() {
+            let s = String::deserialize(deserializer)?;
+            s.parse().map_err(serde::de::Error::custom)
+        } else {
+            BinaryId::deserialize(deserializer).map(Id::from)
+        }
     }
 }
 
@@ -145,5 +179,21 @@ mod tests {
         let a = Id::content(&vec![1, 2, 3]);
         let b = Id::content(&vec![4, 5, 6]);
         assert_ne!(a, b);
+    }
+
+    #[test]
+    fn legacy_postcard_round_trip() {
+        let id = Id::new();
+        let bytes = postcard::to_allocvec(&id).unwrap();
+        let parsed: Id = postcard::from_bytes(&bytes).unwrap();
+        assert_eq!(id, parsed);
+    }
+
+    #[test]
+    fn content_postcard_round_trip() {
+        let id = Id::content(&vec![10, 20, 30, 40, 50]);
+        let bytes = postcard::to_allocvec(&id).unwrap();
+        let parsed: Id = postcard::from_bytes(&bytes).unwrap();
+        assert_eq!(id, parsed);
     }
 }
