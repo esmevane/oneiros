@@ -373,3 +373,51 @@ async fn connection_request_with_invalid_token_returns_unauthorized() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn get_connection_by_link() {
+    let (_temp, state, token) = setup();
+    seed_nature(&state, &token, "origin").await;
+
+    let link_a = Link::new(&("test", "entity-a")).unwrap();
+    let link_b = Link::new(&("test", "entity-b")).unwrap();
+
+    let body = serde_json::json!({
+        "nature": "origin",
+        "from_link": link_a.to_string(),
+        "to_link": link_b.to_string(),
+    });
+
+    let app = router(state.clone());
+    let response = app
+        .oneshot(post_json_auth("/connections", &body, &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let created: Identity<ConnectionId, Connection> = serde_json::from_slice(&bytes).unwrap();
+
+    // Fetch by ID to get the link
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth(&format!("/connections/{}", created.id), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let link = value["link"].as_str().unwrap().to_string();
+    assert!(!link.is_empty());
+
+    // Fetch by link
+    let app = router(state);
+    let response = app
+        .oneshot(get_auth(&format!("/connections/{link}"), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let fetched: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(fetched["nature"], "origin");
+    assert_eq!(fetched["link"], link);
+}

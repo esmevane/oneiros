@@ -408,3 +408,48 @@ async fn memory_request_with_invalid_token_returns_unauthorized() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn get_memory_by_link() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "architect", "expert").await;
+    seed_level(&state, &token, "core").await;
+
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "agent": "architect",
+        "level": "core",
+        "content": "A memory resolved by link."
+    });
+    let response = app
+        .oneshot(post_json_auth("/memories", &body, &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let created: Identity<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
+
+    // Fetch by ID to get the link
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth(&format!("/memories/{}", created.id), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let link = value["link"].as_str().unwrap().to_string();
+    assert!(!link.is_empty());
+
+    // Fetch by link
+    let app = router(state);
+    let response = app
+        .oneshot(get_auth(&format!("/memories/{link}"), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let fetched: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(fetched["content"], "A memory resolved by link.");
+    assert_eq!(fetched["link"], link);
+}

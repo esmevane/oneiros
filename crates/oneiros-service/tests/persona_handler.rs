@@ -280,3 +280,43 @@ async fn persona_request_with_invalid_token_returns_unauthorized() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn get_persona_by_link() {
+    let (_temp, state, token) = setup();
+
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "name": "expert",
+        "description": "A domain expert",
+        "prompt": "You are a domain expert."
+    });
+    app.oneshot(put_json_auth("/personas", &body, &token))
+        .await
+        .unwrap();
+
+    // Fetch by name to get the link from Record wrapper
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth("/personas/expert", &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let link = value["link"].as_str().unwrap().to_string();
+    assert!(!link.is_empty());
+
+    // Fetch by link on the same show endpoint
+    let app = router(state);
+    let response = app
+        .oneshot(get_auth(&format!("/personas/{link}"), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let fetched: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(fetched["name"], "expert");
+    assert_eq!(fetched["description"], "A domain expert");
+    assert_eq!(fetched["link"], link);
+}

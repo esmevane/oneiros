@@ -1,8 +1,8 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use oneiros_model::{
-    AgentName, BrainId, BrainName, CognitionId, ConnectionId, ContentHash, ExperienceId, LevelName,
-    MemoryId, NatureName, PersonaName, SensationName, StorageKey, TextureName,
+    AgentName, BrainId, BrainName, ContentHash, LevelName, LinkError, NatureName, PersonaName,
+    SensationName, StorageKey, TextureName,
 };
 
 use crate::extractors::ActorContextError;
@@ -31,19 +31,19 @@ pub enum NotFound {
     #[error("Brain not found: {0}")]
     Brain(BrainId),
     #[error("Cognition not found: {0}")]
-    Cognition(CognitionId),
+    Cognition(String),
     #[error("Connection not found: {0}")]
-    Connection(ConnectionId),
+    Connection(String),
     #[error("Nature not found: {0}")]
     Nature(NatureName),
     #[error("Experience not found: {0}")]
-    Experience(ExperienceId),
+    Experience(String),
     #[error("Sensation not found: {0}")]
     Sensation(SensationName),
     #[error("Level not found: {0}")]
     Level(LevelName),
     #[error("Memory not found: {0}")]
-    Memory(MemoryId),
+    Memory(String),
     #[error("Persona not found: {0}")]
     Persona(PersonaName),
     #[error("Storage entry not found: {0}")]
@@ -86,6 +86,9 @@ pub enum Error {
     #[error("Data integrity: {0}")]
     DataIntegrity(#[from] DataIntegrity),
 
+    #[error("Failed to compute link: {0}")]
+    Link(#[from] LinkError),
+
     #[error(transparent)]
     Database(#[from] oneiros_db::DatabaseError),
 
@@ -105,6 +108,7 @@ impl IntoResponse for Error {
             Error::BadRequest(_) => StatusCode::BAD_REQUEST,
             Error::Conflict(_) => StatusCode::CONFLICT,
             Error::DataIntegrity(_)
+            | Error::Link(_)
             | Error::Database(_)
             | Error::Io(_)
             | Error::DatabasePoisoned => StatusCode::INTERNAL_SERVER_ERROR,

@@ -16,4 +16,6 @@ pub enum ConstructionError {
     Experience(#[from] ExperienceConstructionError),
     #[error(transparent)]
     RecordRef(#[from] RecordRefConstructionError),
+    #[error("invalid id: {0}")]
+    Id(#[from] IdParseError),
 }

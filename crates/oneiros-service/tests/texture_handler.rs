@@ -273,3 +273,40 @@ async fn texture_request_with_invalid_token_returns_unauthorized() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn get_texture_by_link() {
+    let (_temp, state, token) = setup();
+
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "name": "observation",
+        "description": "Something noticed",
+        "prompt": "Describe what you observed."
+    });
+    app.oneshot(put_json_auth("/textures", &body, &token))
+        .await
+        .unwrap();
+
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth("/textures/observation", &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let link = value["link"].as_str().unwrap().to_string();
+    assert!(!link.is_empty());
+
+    let app = router(state);
+    let response = app
+        .oneshot(get_auth(&format!("/textures/{link}"), &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let fetched: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(fetched["name"], "observation");
+    assert_eq!(fetched["link"], link);
+}
