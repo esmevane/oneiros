@@ -26,6 +26,7 @@ impl Database {
     pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(connection_string.as_ref())?;
         Self::register_functions(&conn)?;
+        Self::migrate_system(&conn);
 
         Ok(Self { conn })
     }
@@ -79,6 +80,18 @@ impl Database {
         let _ = conn.execute_batch("create index if not exists storage_link on storage(link)");
     }
 
+    /// Run forward-only migrations for the system database.
+    fn migrate_system(conn: &Connection) {
+        // v0.0.7: add link column to system entity tables.
+        let _ = conn.execute_batch("alter table tenant add column link text");
+        let _ = conn.execute_batch("alter table actor add column link text");
+        let _ = conn.execute_batch("alter table brain add column link text");
+
+        let _ = conn.execute_batch("create index if not exists tenant_link on tenant(link)");
+        let _ = conn.execute_batch("create index if not exists actor_link on actor(link)");
+        let _ = conn.execute_batch("create index if not exists brain_link on brain(link)");
+    }
+
     pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;
@@ -116,10 +129,11 @@ impl Database {
         &self,
         tenant_id: impl AsRef<str>,
         name: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into tenant (id, name) values (?1, ?2)",
-            params![tenant_id.as_ref(), name.as_ref()],
+            "insert or ignore into tenant (id, name, link) values (?1, ?2, ?3)",
+            params![tenant_id.as_ref(), name.as_ref(), link.as_ref()],
         )?;
         Ok(())
     }
@@ -129,10 +143,16 @@ impl Database {
         actor_id: impl AsRef<str>,
         tenant_id: impl AsRef<str>,
         name: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into actor (id, tenant_id, name) values (?1, ?2, ?3)",
-            params![actor_id.as_ref(), tenant_id.as_ref(), name.as_ref()],
+            "insert or ignore into actor (id, tenant_id, name, link) values (?1, ?2, ?3, ?4)",
+            params![
+                actor_id.as_ref(),
+                tenant_id.as_ref(),
+                name.as_ref(),
+                link.as_ref()
+            ],
         )?;
         Ok(())
     }
@@ -186,14 +206,17 @@ impl Database {
         tenant_id: impl AsRef<str>,
         name: impl AsRef<str>,
         path: impl AsRef<str>,
+        link: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into brain (id, tenant_id, name, path) values (?1, ?2, ?3, ?4)",
+            "insert or ignore into brain (id, tenant_id, name, path, link) \
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 brain_id.as_ref(),
                 tenant_id.as_ref(),
                 name.as_ref(),
-                path.as_ref()
+                path.as_ref(),
+                link.as_ref()
             ],
         )?;
         Ok(())
