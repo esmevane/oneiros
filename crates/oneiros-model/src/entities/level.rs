@@ -43,6 +43,7 @@ impl Addressable for Level {
 }
 
 domain_name!(LevelName);
+oneiros_link::domain_link!(LevelLink, "level");
 
 #[cfg(test)]
 mod tests {

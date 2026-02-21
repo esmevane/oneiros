@@ -43,6 +43,7 @@ impl Addressable for Texture {
 }
 
 domain_name!(TextureName);
+oneiros_link::domain_link!(TextureLink, "texture");
 
 #[cfg(test)]
 mod tests {

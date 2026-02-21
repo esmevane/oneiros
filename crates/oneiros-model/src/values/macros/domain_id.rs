@@ -1,6 +1,6 @@
 macro_rules! domain_id {
     ($name:ident) => {
-        #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+        #[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
         #[serde(transparent)]
         pub struct $name(pub crate::Id);
 
@@ -9,8 +9,34 @@ macro_rules! domain_id {
                 Self(crate::Id::new())
             }
 
+            pub fn from_id(id: crate::Id) -> Self {
+                Self(id)
+            }
+
+            pub fn inner(&self) -> &crate::Id {
+                &self.0
+            }
+
             pub fn is_empty(&self) -> bool {
                 self.0.is_empty()
+            }
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl From<$name> for crate::Id {
+            fn from(typed: $name) -> Self {
+                typed.0
+            }
+        }
+
+        impl From<crate::Id> for $name {
+            fn from(id: crate::Id) -> Self {
+                Self(id)
             }
         }
 

@@ -13,13 +13,13 @@ pub(crate) async fn handler(
     let agent = ticket
         .db
         .get_agent(&request.agent)?
-        .ok_or(NotFound::Agent(request.agent.clone()))?;
+        .ok_or(NotFound::Agent(Key::Id(request.agent.clone())))?;
 
     // Validate that the referenced level exists.
     ticket
         .db
         .get_level(&request.level)?
-        .ok_or(NotFound::Level(request.level.clone()))?;
+        .ok_or(NotFound::Level(Key::Id(request.level.clone())))?;
 
     let memory = Identity::new(
         MemoryId::new(),

@@ -43,6 +43,7 @@ impl Addressable for StorageEntry {
 }
 
 domain_name!(StorageKey);
+oneiros_link::domain_link!(StorageLink, "storage");
 
 #[cfg(test)]
 mod tests {

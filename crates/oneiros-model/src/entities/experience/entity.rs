@@ -11,7 +11,7 @@ pub struct Experience {
     pub agent_id: AgentId,
     pub sensation: SensationName,
     pub description: Content,
-    pub refs: Vec<RecordRef>,
+    pub refs: Vec<EntityRef>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -62,7 +62,7 @@ impl Experience {
             impl AsRef<str>,
             impl AsRef<str>,
         ),
-        refs: Vec<RecordRef>,
+        refs: Vec<EntityRef>,
     ) -> Result<Identity<ExperienceId, Self>, ExperienceConstructionError> {
         let id: ExperienceId = id
             .as_ref()
@@ -98,6 +98,7 @@ impl Addressable for Experience {
 }
 
 domain_id!(ExperienceId);
+oneiros_link::domain_link!(ExperienceLink, "experience");
 
 #[cfg(test)]
 mod tests {
@@ -118,11 +119,7 @@ mod tests {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
             description: Content::new("a thread"),
-            refs: vec![RecordRef::identified(
-                Id::new(),
-                RecordKind::Cognition,
-                None,
-            )],
+            refs: vec![EntityRef::from_id(Id::new(), None)],
             created_at: Utc::now(),
         };
 

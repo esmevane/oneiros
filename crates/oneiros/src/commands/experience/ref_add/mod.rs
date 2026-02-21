@@ -38,7 +38,7 @@ impl RefAdd {
             Some(id) => ExperienceId(id),
             None => {
                 let all = client.list_experiences(&token, None, None).await?;
-                let ids: Vec<_> = all.iter().map(|e| e.id.0.clone()).collect();
+                let ids: Vec<_> = all.iter().map(|e| e.id.inner().clone()).collect();
                 ExperienceId(self.experience_id.resolve(&ids)?)
             }
         };
@@ -55,11 +55,7 @@ impl RefAdd {
             .add_experience_ref(
                 &token,
                 &experience_id,
-                RecordRef::identified(
-                    record_id,
-                    self.record_kind.clone(),
-                    self.role.as_ref().map(Label::new),
-                ),
+                EntityRef::from_id(record_id, self.role.as_ref().map(Label::new)),
             )
             .await?;
 

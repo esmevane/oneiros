@@ -13,13 +13,13 @@ pub(crate) async fn handler(
     let agent = ticket
         .db
         .get_agent(&request.agent)?
-        .ok_or(NotFound::Agent(request.agent.clone()))?;
+        .ok_or(NotFound::Agent(Key::Id(request.agent.clone())))?;
 
     // Validate that the referenced texture exists.
     ticket
         .db
         .get_texture(&request.texture)?
-        .ok_or(NotFound::Texture(request.texture.clone()))?;
+        .ok_or(NotFound::Texture(Key::Id(request.texture.clone())))?;
 
     let cognition = Identity::new(
         CognitionId::new(),

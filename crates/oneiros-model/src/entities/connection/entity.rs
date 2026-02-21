@@ -103,6 +103,7 @@ impl Addressable for Connection {
 }
 
 domain_id!(ConnectionId);
+oneiros_link::domain_link!(ConnectionLink, "connection");
 
 #[cfg(test)]
 mod tests {

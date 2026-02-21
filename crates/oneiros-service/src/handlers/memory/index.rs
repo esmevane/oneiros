@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{AgentName, Identity, LevelName, Memory, MemoryId};
+use oneiros_model::{AgentName, Identity, Key, LevelName, Memory, MemoryId};
 use serde::Deserialize;
 
 use crate::*;
@@ -19,12 +19,12 @@ pub(crate) async fn handler(
             let agent = ticket
                 .db
                 .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
+                .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
             ticket
                 .db
                 .get_level(&level)?
-                .ok_or(NotFound::Level(level.clone()))?;
+                .ok_or(NotFound::Level(Key::Id(level.clone())))?;
 
             ticket
                 .db
@@ -34,7 +34,7 @@ pub(crate) async fn handler(
             let agent = ticket
                 .db
                 .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
+                .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
             ticket.db.list_memories_by_agent(agent.id.to_string())?
         }
@@ -42,7 +42,7 @@ pub(crate) async fn handler(
             ticket
                 .db
                 .get_level(&level)?
-                .ok_or(NotFound::Level(level.clone()))?;
+                .ok_or(NotFound::Level(Key::Id(level.clone())))?;
 
             ticket.db.list_memories_by_level(&level)?
         }

@@ -13,13 +13,13 @@ pub(crate) async fn handler(
     let agent = ticket
         .db
         .get_agent(&request.agent)?
-        .ok_or(NotFound::Agent(request.agent.clone()))?;
+        .ok_or(NotFound::Agent(Key::Id(request.agent.clone())))?;
 
     // Validate that the referenced sensation exists.
     ticket
         .db
         .get_sensation(&request.sensation)?
-        .ok_or(NotFound::Sensation(request.sensation.clone()))?;
+        .ok_or(NotFound::Sensation(Key::Id(request.sensation.clone())))?;
 
     let experience = Identity::new(
         ExperienceId::new(),

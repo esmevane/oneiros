@@ -5,20 +5,12 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(identifier): Path<String>,
+    Path(key): Path<Key<CognitionId, CognitionLink>>,
 ) -> Result<Json<Record<Identity<CognitionId, Cognition>>>, Error> {
-    let by_id = ticket.db.get_cognition(&identifier)?;
-
-    let cognition = if let Some(c) = by_id {
-        c
-    } else if let Ok(link) = identifier.parse::<Link>() {
-        ticket
-            .db
-            .get_cognition_by_link(link.to_string())?
-            .ok_or(NotFound::Cognition(identifier))?
-    } else {
-        return Err(NotFound::Cognition(identifier).into());
-    };
+    let cognition = ticket
+        .db
+        .get_cognition_by_key(&key)?
+        .ok_or(NotFound::Cognition(key))?;
 
     let record = Record::new(cognition)?;
     Ok(Json(record))

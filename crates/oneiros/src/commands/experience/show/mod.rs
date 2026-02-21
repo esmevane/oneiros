@@ -28,7 +28,7 @@ impl ShowExperience {
             Some(id) => ExperienceId(id),
             None => {
                 let all = client.list_experiences(&token, None, None).await?;
-                let ids: Vec<_> = all.iter().map(|e| e.id.0.clone()).collect();
+                let ids: Vec<_> = all.iter().map(|e| e.id.inner().clone()).collect();
                 ExperienceId(self.id.resolve(&ids)?)
             }
         };

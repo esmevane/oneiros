@@ -32,6 +32,7 @@ impl Addressable for Brain {
 
 domain_id!(BrainId);
 domain_name!(BrainName);
+oneiros_link::domain_link!(BrainLink, "brain");
 
 #[cfg(test)]
 mod tests {

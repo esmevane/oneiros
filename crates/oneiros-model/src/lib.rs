@@ -7,6 +7,6 @@ mod values;
 pub use entities::*;
 pub use error::*;
 pub use identity::Identity;
-pub use oneiros_link::{Addressable, Link, LinkError};
+pub use oneiros_link::{Addressable, Key, KeyParseError, Link, LinkError, LinkNarrowingError};
 pub use record::Record;
 pub use values::*;

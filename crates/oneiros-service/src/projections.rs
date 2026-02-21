@@ -2,7 +2,7 @@ use oneiros_db::{Database, DatabaseError, Projection};
 use oneiros_model::{
     Actor, ActorId, Addressable, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
     Connection, ConnectionId, Content, Experience, ExperienceId, Identity, Level, LevelName,
-    Memory, MemoryId, Nature, NatureName, Persona, PersonaName, RecordRef, Sensation,
+    Memory, MemoryId, Nature, NatureName, Persona, PersonaName, EntityRef, Sensation,
     SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture, TextureName, Ticket,
     TicketId,
 };
@@ -66,7 +66,7 @@ struct IdOnly<T> {
 #[derive(serde::Deserialize)]
 struct RefAdded {
     experience_id: ExperienceId,
-    record_ref: RecordRef,
+    record_ref: EntityRef,
     created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 

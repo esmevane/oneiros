@@ -43,6 +43,7 @@ impl Addressable for Nature {
 }
 
 domain_name!(NatureName);
+oneiros_link::domain_link!(NatureLink, "nature");
 
 #[cfg(test)]
 mod tests {

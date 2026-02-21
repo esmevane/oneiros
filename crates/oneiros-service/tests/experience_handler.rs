@@ -237,10 +237,7 @@ async fn create_experience_with_refs() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let experience: Identity<ExperienceId, Experience> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 1);
-    assert_eq!(
-        experience.refs[0].kind().cloned(),
-        Some(RecordKind::Cognition)
-    );
+    assert_eq!(experience.refs[0].id(), Some(&fake_id));
     assert_eq!(
         experience.refs[0].role().map(|l| l.as_str()),
         Some("origin")
@@ -382,7 +379,7 @@ async fn add_ref_to_existing_experience() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let updated: Identity<ExperienceId, Experience> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].kind().cloned(), Some(RecordKind::Memory));
+    assert_eq!(updated.refs[0].id(), Some(&ref_id));
     assert_eq!(updated.refs[0].role().map(|l| l.as_str()), Some("origin"));
 }
 
@@ -457,7 +454,6 @@ async fn create_experience_with_linked_ref() {
     assert_eq!(experience.refs.len(), 1);
     assert_eq!(experience.refs[0].link(), Some(&link));
     assert!(experience.refs[0].id().is_none());
-    assert!(experience.refs[0].kind().is_none());
     assert_eq!(
         experience.refs[0].role().map(|l| l.as_str()),
         Some("origin")

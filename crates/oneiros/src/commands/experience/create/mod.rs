@@ -68,7 +68,7 @@ async fn resolve_refs(
     ref_strings: &[String],
     client: &Client,
     token: &oneiros_model::Token,
-) -> Result<Vec<RecordRef>, ExperienceCommandError> {
+) -> Result<Vec<EntityRef>, ExperienceCommandError> {
     let mut refs = Vec::new();
 
     for ref_str in ref_strings {
@@ -100,7 +100,7 @@ async fn resolve_refs(
             }
         };
 
-        refs.push(RecordRef::identified(id, kind, role));
+        refs.push(EntityRef::from_id(id, role));
     }
 
     Ok(refs)

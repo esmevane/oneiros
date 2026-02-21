@@ -12,7 +12,7 @@ mod events {
     use oneiros_model::{
         Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
         Connection, ConnectionId, Content, DreamContext, Experience, ExperienceId, Identity, Level,
-        LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName, RecordRef,
+        LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName, EntityRef,
         Sensation, SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture, TextureName,
         Ticket, TicketId,
     };
@@ -118,7 +118,7 @@ mod events {
         ExperienceCreated(Identity<ExperienceId, Experience>),
         ExperienceRefAdded {
             experience_id: ExperienceId,
-            record_ref: RecordRef,
+            record_ref: EntityRef,
             /// Timestamp of the ref addition. Optional for backward compat with
             /// legacy events that predate this field.
             #[serde(default, skip_serializing_if = "Option::is_none")]

@@ -29,10 +29,7 @@ pub use introspection::Introspection;
 pub use label::Label;
 pub use observation::Observation;
 pub use prompt::Prompt;
-pub use record_ref::{
-    IdentifiedRef, LinkedRef, RecordKind, RecordKindParseError, RecordRef,
-    RecordRefConstructionError,
-};
+pub use record_ref::{EntityRef, EntityRefConstructionError, RecordKind, RecordKindParseError};
 pub use reflection::Reflection;
 pub use storage_ref::{StorageRef, StorageRefError};
 pub use token::{Token, TokenError};

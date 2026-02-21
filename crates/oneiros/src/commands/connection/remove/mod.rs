@@ -28,7 +28,7 @@ impl RemoveConnection {
             Some(id) => ConnectionId(id),
             None => {
                 let all = client.list_connections(&token, None, None).await?;
-                let ids: Vec<_> = all.iter().map(|c| c.id.0.clone()).collect();
+                let ids: Vec<_> = all.iter().map(|c| c.id.inner().clone()).collect();
                 ConnectionId(self.id.resolve(&ids)?)
             }
         };

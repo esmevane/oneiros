@@ -15,6 +15,12 @@ pub enum Id {
     Content(bytes::Bytes),
 }
 
+impl Default for Id {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Id {
     pub fn new() -> Self {
         Self::Legacy(uuid::Uuid::now_v7())

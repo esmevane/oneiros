@@ -11,7 +11,7 @@ pub(crate) async fn handler(
     ticket
         .db
         .get_agent(&name)?
-        .ok_or(NotFound::Agent(name.clone()))?;
+        .ok_or(NotFound::Agent(Key::Id(name.clone())))?;
 
     let receded = Events::Lifecycle(LifecycleEvents::Receded { name: name.clone() });
     ticket.db.log_event(&receded, &[])?;

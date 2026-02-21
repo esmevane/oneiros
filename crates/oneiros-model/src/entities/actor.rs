@@ -21,6 +21,7 @@ impl Addressable for Actor {
 
 domain_id!(ActorId);
 domain_name!(ActorName);
+oneiros_link::domain_link!(ActorLink, "actor");
 
 #[cfg(test)]
 mod tests {

@@ -2,7 +2,7 @@ use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use flate2::read::ZlibDecoder;
-use oneiros_model::StorageRef;
+use oneiros_model::{Key, StorageRef};
 use std::io::Read;
 
 use crate::*;
@@ -15,7 +15,10 @@ pub(crate) async fn handler(
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
 
-    let entry = ticket.db.get_storage(&key)?.ok_or(NotFound::Storage(key))?;
+    let entry = ticket
+        .db
+        .get_storage(&key)?
+        .ok_or(NotFound::Storage(Key::Id(key)))?;
 
     let (compressed, _original_size) = ticket
         .db

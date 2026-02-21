@@ -78,6 +78,7 @@ impl Addressable for Memory {
 }
 
 domain_id!(MemoryId);
+oneiros_link::domain_link!(MemoryLink, "memory");
 
 #[cfg(test)]
 mod tests {

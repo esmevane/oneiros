@@ -46,8 +46,8 @@ impl From<ExperienceConstructionError> for DatabaseError {
     }
 }
 
-impl From<RecordRefConstructionError> for DatabaseError {
-    fn from(e: RecordRefConstructionError) -> Self {
+impl From<EntityRefConstructionError> for DatabaseError {
+    fn from(e: EntityRefConstructionError) -> Self {
         Self::Construction(e.into())
     }
 }

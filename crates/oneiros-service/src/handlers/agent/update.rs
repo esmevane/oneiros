@@ -13,13 +13,13 @@ pub(crate) async fn handler(
     let existing = ticket
         .db
         .get_agent(&given_name)?
-        .ok_or(NotFound::Agent(given_name))?;
+        .ok_or(NotFound::Agent(Key::Id(given_name)))?;
 
     // Validate that the referenced persona exists.
     ticket
         .db
         .get_persona(&request.persona)?
-        .ok_or(NotFound::Persona(request.persona.clone()))?;
+        .ok_or(NotFound::Persona(Key::Id(request.persona.clone())))?;
 
     let agent = Identity::new(
         existing.id.clone(),

@@ -382,6 +382,22 @@ impl Database {
         }
     }
 
+    pub fn get_persona_by_key(
+        &self,
+        key: &Key<PersonaName, PersonaLink>,
+    ) -> Result<Option<Persona>, DatabaseError> {
+        if let Some(name) = key.try_id() {
+            let result = self.get_persona(name.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_persona_by_link(link.to_string());
+        }
+        Ok(None)
+    }
+
     pub fn reset_personas(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from persona")?;
         Ok(())
@@ -483,6 +499,22 @@ impl Database {
         }
     }
 
+    pub fn get_texture_by_key(
+        &self,
+        key: &Key<TextureName, TextureLink>,
+    ) -> Result<Option<Texture>, DatabaseError> {
+        if let Some(name) = key.try_id() {
+            let result = self.get_texture(name.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_texture_by_link(link.to_string());
+        }
+        Ok(None)
+    }
+
     pub fn reset_textures(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from texture")?;
         Ok(())
@@ -577,6 +609,22 @@ impl Database {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn get_level_by_key(
+        &self,
+        key: &Key<LevelName, LevelLink>,
+    ) -> Result<Option<Level>, DatabaseError> {
+        if let Some(name) = key.try_id() {
+            let result = self.get_level(name.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_level_by_link(link.to_string());
+        }
+        Ok(None)
     }
 
     pub fn reset_levels(&self) -> Result<(), DatabaseError> {
@@ -709,6 +757,22 @@ impl Database {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn get_agent_by_key(
+        &self,
+        key: &Key<AgentName, AgentLink>,
+    ) -> Result<Option<Identity<AgentId, Agent>>, DatabaseError> {
+        if let Some(name) = key.try_id() {
+            let result = self.get_agent(name.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_agent_by_link(link.to_string());
+        }
+        Ok(None)
     }
 
     pub fn agent_name_exists(&self, name: impl AsRef<str>) -> Result<bool, DatabaseError> {
@@ -906,6 +970,22 @@ impl Database {
         }
     }
 
+    pub fn get_cognition_by_key(
+        &self,
+        key: &Key<CognitionId, CognitionLink>,
+    ) -> Result<Option<Identity<CognitionId, Cognition>>, DatabaseError> {
+        if let Some(id) = key.try_id() {
+            let result = self.get_cognition(id.to_string())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_cognition_by_link(link.to_string());
+        }
+        Ok(None)
+    }
+
     pub fn reset_cognitions(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from cognition")?;
         Ok(())
@@ -1092,6 +1172,22 @@ impl Database {
         }
     }
 
+    pub fn get_memory_by_key(
+        &self,
+        key: &Key<MemoryId, MemoryLink>,
+    ) -> Result<Option<Identity<MemoryId, Memory>>, DatabaseError> {
+        if let Some(id) = key.try_id() {
+            let result = self.get_memory(id.to_string())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_memory_by_link(link.to_string());
+        }
+        Ok(None)
+    }
+
     pub fn reset_memories(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from memory")?;
         Ok(())
@@ -1193,6 +1289,22 @@ impl Database {
         }
     }
 
+    pub fn get_sensation_by_key(
+        &self,
+        key: &Key<SensationName, SensationLink>,
+    ) -> Result<Option<Sensation>, DatabaseError> {
+        if let Some(name) = key.try_id() {
+            let result = self.get_sensation(name.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_sensation_by_link(link.to_string());
+        }
+        Ok(None)
+    }
+
     pub fn reset_sensations(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from sensation")?;
         Ok(())
@@ -1290,6 +1402,22 @@ impl Database {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn get_nature_by_key(
+        &self,
+        key: &Key<NatureName, NatureLink>,
+    ) -> Result<Option<Nature>, DatabaseError> {
+        if let Some(name) = key.try_id() {
+            let result = self.get_nature(name.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_nature_by_link(link.to_string());
+        }
+        Ok(None)
     }
 
     pub fn reset_natures(&self) -> Result<(), DatabaseError> {
@@ -1450,6 +1578,22 @@ impl Database {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn get_connection_by_key(
+        &self,
+        key: &Key<ConnectionId, ConnectionLink>,
+    ) -> Result<Option<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        if let Some(id) = key.try_id() {
+            let result = self.get_connection(id.to_string())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_connection_by_link(link.to_string());
+        }
+        Ok(None)
     }
 
     pub fn remove_connection(&self, id: impl AsRef<str>) -> Result<(), DatabaseError> {
@@ -1634,48 +1778,47 @@ impl Database {
         }
     }
 
+    pub fn get_experience_by_key(
+        &self,
+        key: &Key<ExperienceId, ExperienceLink>,
+    ) -> Result<Option<Identity<ExperienceId, Experience>>, DatabaseError> {
+        if let Some(id) = key.try_id() {
+            let result = self.get_experience(id.to_string())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_experience_by_link(link.to_string());
+        }
+        Ok(None)
+    }
+
     pub fn add_experience_ref(
         &self,
         experience_id: impl AsRef<str>,
-        record_ref: &RecordRef,
+        entity_ref: &EntityRef,
         created_at: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
-        match record_ref {
-            RecordRef::Identified(r) => {
-                self.conn.execute(
-                    "insert or ignore into experience_ref \
-                     (experience_id, record_id, record_kind, role, created_at) \
-                     values (?1, ?2, ?3, ?4, ?5)",
-                    params![
-                        experience_id.as_ref(),
-                        r.id.to_string(),
-                        r.kind.to_string(),
-                        r.role.as_ref().map(|l| l.as_str()),
-                        created_at.as_ref()
-                    ],
-                )?;
-            }
-            RecordRef::Linked(r) => {
-                self.conn.execute(
-                    "insert or ignore into experience_ref \
-                     (experience_id, link, role, created_at) \
-                     values (?1, ?2, ?3, ?4)",
-                    params![
-                        experience_id.as_ref(),
-                        r.link.to_string(),
-                        r.role.as_ref().map(|l| l.as_str()),
-                        created_at.as_ref()
-                    ],
-                )?;
-            }
-        }
+        self.conn.execute(
+            "insert or ignore into experience_ref \
+             (experience_id, record_id, link, role, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                experience_id.as_ref(),
+                entity_ref.id().map(|id| id.to_string()),
+                entity_ref.link().map(|l| l.to_string()),
+                entity_ref.role().map(|l| l.as_str()),
+                created_at.as_ref()
+            ],
+        )?;
         Ok(())
     }
 
     fn collect_experience_refs(
         &self,
         experience_id: &str,
-    ) -> Result<Vec<RecordRef>, DatabaseError> {
+    ) -> Result<Vec<EntityRef>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select record_id, record_kind, role, link \
              from experience_ref where experience_id = ?1 order by rowid",
@@ -1692,15 +1835,7 @@ impl Database {
         let mut refs = Vec::new();
         for row in rows {
             let (record_id, record_kind, role, link) = row?;
-            let record_ref = if let Some(link_str) = link {
-                let link = link_str.parse().map_err(RecordRefConstructionError::from)?;
-                RecordRef::linked(link, role.map(Label::new))
-            } else {
-                let id_str = record_id.unwrap_or_default();
-                let kind_str = record_kind.unwrap_or_default();
-                IdentifiedRef::construct_from_db((id_str, kind_str, role))?
-            };
-            refs.push(record_ref);
+            refs.push(EntityRef::construct_from_db(record_id, record_kind, role, link)?);
         }
         Ok(refs)
     }
@@ -1856,6 +1991,22 @@ impl Database {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn get_storage_by_key(
+        &self,
+        key: &Key<StorageKey, StorageLink>,
+    ) -> Result<Option<StorageEntry>, DatabaseError> {
+        if let Some(storage_key) = key.try_id() {
+            let result = self.get_storage(storage_key.clone())?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+        if let Some(link) = key.try_link() {
+            return self.get_storage_by_link(link.to_string());
+        }
+        Ok(None)
     }
 
     pub fn reset_storage(&self) -> Result<(), DatabaseError> {

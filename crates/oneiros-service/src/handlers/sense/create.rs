@@ -11,7 +11,7 @@ pub(crate) async fn handler(
     let agent = ticket
         .db
         .get_agent(&agent_name)?
-        .ok_or(NotFound::Agent(agent_name.clone()))?;
+        .ok_or(NotFound::Agent(Key::Id(agent_name.clone())))?;
 
     let sensed = Events::Sense(SenseEvents::Sensed {
         agent: agent.name.clone(),

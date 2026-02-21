@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{Connection, ConnectionId, Identity, Link, NatureName};
+use oneiros_model::{Connection, ConnectionId, Identity, Key, Link, NatureName};
 use serde::Deserialize;
 
 use crate::*;
@@ -19,7 +19,7 @@ pub(crate) async fn handler(
             ticket
                 .db
                 .get_nature(&nature)?
-                .ok_or(NotFound::Nature(nature.clone()))?;
+                .ok_or(NotFound::Nature(Key::Id(nature.clone())))?;
 
             ticket
                 .db
@@ -32,7 +32,7 @@ pub(crate) async fn handler(
             ticket
                 .db
                 .get_nature(&nature)?
-                .ok_or(NotFound::Nature(nature.clone()))?;
+                .ok_or(NotFound::Nature(Key::Id(nature.clone())))?;
 
             ticket.db.list_connections_by_nature(&nature)?
         }

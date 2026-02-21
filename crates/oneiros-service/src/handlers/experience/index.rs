@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{AgentName, Experience, ExperienceId, Identity, SensationName};
+use oneiros_model::{AgentName, Experience, ExperienceId, Identity, Key, SensationName};
 use serde::Deserialize;
 
 use crate::*;
@@ -19,12 +19,12 @@ pub(crate) async fn handler(
             let agent = ticket
                 .db
                 .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
+                .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
             ticket
                 .db
                 .get_sensation(&sensation)?
-                .ok_or(NotFound::Sensation(sensation.clone()))?;
+                .ok_or(NotFound::Sensation(Key::Id(sensation.clone())))?;
 
             ticket
                 .db
@@ -37,7 +37,7 @@ pub(crate) async fn handler(
             let agent = ticket
                 .db
                 .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
+                .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
             ticket.db.list_experiences_by_agent(agent.id.to_string())?
         }
@@ -45,7 +45,7 @@ pub(crate) async fn handler(
             ticket
                 .db
                 .get_sensation(&sensation)?
-                .ok_or(NotFound::Sensation(sensation.clone()))?;
+                .ok_or(NotFound::Sensation(Key::Id(sensation.clone())))?;
 
             ticket.db.list_experiences_by_sensation(&sensation)?
         }

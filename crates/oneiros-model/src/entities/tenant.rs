@@ -20,6 +20,7 @@ impl Addressable for Tenant {
 
 domain_id!(TenantId);
 domain_name!(TenantName);
+oneiros_link::domain_link!(TenantLink, "tenant");
 
 #[cfg(test)]
 mod tests {

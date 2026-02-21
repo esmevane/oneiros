@@ -12,7 +12,7 @@ pub(crate) async fn handler(
     ticket
         .db
         .get_persona(&request.persona)?
-        .ok_or(NotFound::Persona(request.persona.clone()))?;
+        .ok_or(NotFound::Persona(Key::Id(request.persona.clone())))?;
 
     // Check for name uniqueness.
     if ticket.db.agent_name_exists(&request.name)? {

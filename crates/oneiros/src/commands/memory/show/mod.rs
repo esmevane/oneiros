@@ -28,7 +28,7 @@ impl ShowMemory {
             Some(id) => MemoryId(id),
             None => {
                 let all = client.list_memories(&token, None, None).await?;
-                let ids: Vec<_> = all.iter().map(|m| m.id.0.clone()).collect();
+                let ids: Vec<_> = all.iter().map(|m| m.id.inner().clone()).collect();
                 MemoryId(self.id.resolve(&ids)?)
             }
         };

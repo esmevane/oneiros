@@ -78,6 +78,7 @@ impl Addressable for Cognition {
 }
 
 domain_id!(CognitionId);
+oneiros_link::domain_link!(CognitionLink, "cognition");
 
 #[cfg(test)]
 mod tests {

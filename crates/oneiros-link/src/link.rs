@@ -49,6 +49,18 @@ impl Link {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// Check whether this link's content begins with the given resource label.
+    ///
+    /// Links are postcard-encoded tuples whose first element is the
+    /// `address_label` string. This method checks that prefix without
+    /// decoding the entire link.
+    pub fn has_label(&self, label: &str) -> bool {
+        match postcard::to_allocvec(label) {
+            Ok(prefix) => self.0.starts_with(&prefix),
+            Err(_) => false,
+        }
+    }
 }
 
 impl core::fmt::Display for Link {

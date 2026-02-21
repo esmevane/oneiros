@@ -43,6 +43,7 @@ impl Addressable for Sensation {
 }
 
 domain_name!(SensationName);
+oneiros_link::domain_link!(SensationLink, "sensation");
 
 #[cfg(test)]
 mod tests {

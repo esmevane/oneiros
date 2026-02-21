@@ -5,7 +5,7 @@ use crate::IdParseError;
 #[derive(Debug, Error)]
 pub enum ConnectionConstructionError {
     #[error("invalid connection id: {0}")]
-    InvalidId(IdParseError),
+    InvalidId(#[from] IdParseError),
     #[error("invalid from_link: {0}")]
     InvalidFromLink(oneiros_link::LinkError),
     #[error("invalid to_link: {0}")]

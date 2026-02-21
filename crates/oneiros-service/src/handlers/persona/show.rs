@@ -1,24 +1,16 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{Link, Persona, PersonaName, Record};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(identifier): Path<String>,
+    Path(key): Path<Key<PersonaName, PersonaLink>>,
 ) -> Result<Json<Record<Persona>>, Error> {
-    let by_name = ticket.db.get_persona(PersonaName::new(&identifier))?;
-
-    let persona = if let Some(p) = by_name {
-        p
-    } else if let Ok(link) = identifier.parse::<Link>() {
-        ticket
-            .db
-            .get_persona_by_link(link.to_string())?
-            .ok_or(NotFound::Persona(PersonaName::new(&identifier)))?
-    } else {
-        return Err(NotFound::Persona(PersonaName::new(&identifier)).into());
-    };
+    let persona = ticket
+        .db
+        .get_persona_by_key(&key)?
+        .ok_or(NotFound::Persona(key))?;
 
     let record = Record::new(persona)?;
     Ok(Json(record))

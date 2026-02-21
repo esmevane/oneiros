@@ -1,5 +1,5 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{AgentName, Cognition, CognitionId, Identity, TextureName};
+use oneiros_model::{AgentName, Cognition, CognitionId, Identity, Key, TextureName};
 use serde::Deserialize;
 
 use crate::*;
@@ -19,12 +19,12 @@ pub(crate) async fn handler(
             let agent = ticket
                 .db
                 .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
+                .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
             ticket
                 .db
                 .get_texture(&texture)?
-                .ok_or(NotFound::Texture(texture.clone()))?;
+                .ok_or(NotFound::Texture(Key::Id(texture.clone())))?;
 
             ticket
                 .db
@@ -34,7 +34,7 @@ pub(crate) async fn handler(
             let agent = ticket
                 .db
                 .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
+                .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
             ticket.db.list_cognitions_by_agent(agent.id.to_string())?
         }
@@ -42,7 +42,7 @@ pub(crate) async fn handler(
             ticket
                 .db
                 .get_texture(&texture)?
-                .ok_or(NotFound::Texture(texture.clone()))?;
+                .ok_or(NotFound::Texture(Key::Id(texture.clone())))?;
 
             ticket.db.list_cognitions_by_texture(&texture)?
         }

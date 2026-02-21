@@ -15,10 +15,10 @@ pub(crate) async fn handler(
     ticket
         .db
         .get_experience(&id_str)?
-        .ok_or(NotFound::Experience(id_str.clone()))?;
+        .ok_or(NotFound::Experience(Key::Id(id.clone())))?;
 
     let event = Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated {
-        experience_id: id,
+        experience_id: id.clone(),
         description: request.description.clone(),
     });
 
@@ -30,7 +30,7 @@ pub(crate) async fn handler(
     let experience = ticket
         .db
         .get_experience(&id_str)?
-        .ok_or(NotFound::Experience(id_str))?;
+        .ok_or(NotFound::Experience(Key::Id(id)))?;
 
     Ok((StatusCode::OK, Json(experience)))
 }

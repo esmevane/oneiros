@@ -11,7 +11,7 @@ pub(crate) async fn handler(
     let agent = ticket
         .db
         .get_agent(&agent_name)?
-        .ok_or(NotFound::Agent(agent_name.clone()))?;
+        .ok_or(NotFound::Agent(Key::Id(agent_name.clone())))?;
 
     let woke = Events::Lifecycle(LifecycleEvents::Woke {
         name: agent.name.clone(),
@@ -26,7 +26,7 @@ pub(crate) async fn handler(
     let persona = ticket
         .db
         .get_persona(&agent.persona)?
-        .ok_or(NotFound::Persona(agent.persona.clone()))?;
+        .ok_or(NotFound::Persona(Key::Id(agent.persona.clone())))?;
 
     let memories = ticket.db.list_memories_by_agent(agent.id.to_string())?;
     let cognitions = ticket.db.list_cognitions_by_agent(agent.id.to_string())?;

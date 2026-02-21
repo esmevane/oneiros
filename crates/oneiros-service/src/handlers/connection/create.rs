@@ -13,7 +13,7 @@ pub(crate) async fn handler(
     ticket
         .db
         .get_nature(&request.nature)?
-        .ok_or(NotFound::Nature(request.nature.clone()))?;
+        .ok_or(NotFound::Nature(Key::Id(request.nature.clone())))?;
 
     let connection = Identity::new(
         ConnectionId::new(),

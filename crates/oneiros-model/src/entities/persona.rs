@@ -43,6 +43,7 @@ impl Addressable for Persona {
 }
 
 domain_name!(PersonaName);
+oneiros_link::domain_link!(PersonaLink, "persona");
 
 #[cfg(test)]
 mod tests {

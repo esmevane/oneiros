@@ -1,8 +1,10 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use oneiros_model::{
-    AgentName, BrainId, BrainName, ContentHash, LevelName, LinkError, NatureName, PersonaName,
-    SensationName, StorageKey, TextureName,
+    AgentLink, AgentName, BrainId, BrainName, CognitionId, CognitionLink, ConnectionId,
+    ConnectionLink, ContentHash, ExperienceId, ExperienceLink, Key, LevelLink, LevelName,
+    LinkError, MemoryId, MemoryLink, NatureLink, NatureName, PersonaLink, PersonaName,
+    SensationLink, SensationName, StorageKey, StorageLink, TextureLink, TextureName,
 };
 
 use crate::extractors::ActorContextError;
@@ -27,29 +29,29 @@ pub enum BadRequests {
 #[derive(Debug, thiserror::Error)]
 pub enum NotFound {
     #[error("Agent not found: {0}")]
-    Agent(AgentName),
+    Agent(Key<AgentName, AgentLink>),
     #[error("Brain not found: {0}")]
     Brain(BrainId),
     #[error("Cognition not found: {0}")]
-    Cognition(String),
+    Cognition(Key<CognitionId, CognitionLink>),
     #[error("Connection not found: {0}")]
-    Connection(String),
+    Connection(Key<ConnectionId, ConnectionLink>),
     #[error("Nature not found: {0}")]
-    Nature(NatureName),
+    Nature(Key<NatureName, NatureLink>),
     #[error("Experience not found: {0}")]
-    Experience(String),
+    Experience(Key<ExperienceId, ExperienceLink>),
     #[error("Sensation not found: {0}")]
-    Sensation(SensationName),
+    Sensation(Key<SensationName, SensationLink>),
     #[error("Level not found: {0}")]
-    Level(LevelName),
+    Level(Key<LevelName, LevelLink>),
     #[error("Memory not found: {0}")]
-    Memory(String),
+    Memory(Key<MemoryId, MemoryLink>),
     #[error("Persona not found: {0}")]
-    Persona(PersonaName),
+    Persona(Key<PersonaName, PersonaLink>),
     #[error("Storage entry not found: {0}")]
-    Storage(StorageKey),
+    Storage(Key<StorageKey, StorageLink>),
     #[error("Texture not found: {0}")]
-    Texture(TextureName),
+    Texture(Key<TextureName, TextureLink>),
 }
 
 #[derive(Debug, thiserror::Error)]
