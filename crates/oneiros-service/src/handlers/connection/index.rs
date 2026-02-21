@@ -23,7 +23,7 @@ pub(crate) async fn handler(
 
             ticket
                 .db
-                .list_connections_by_link(link.to_string())?
+                .list_connections_by_link(&link)?
                 .into_iter()
                 .filter(|c| c.nature == nature)
                 .collect()
@@ -36,7 +36,7 @@ pub(crate) async fn handler(
 
             ticket.db.list_connections_by_nature(&nature)?
         }
-        (None, Some(link)) => ticket.db.list_connections_by_link(link.to_string())?,
+        (None, Some(link)) => ticket.db.list_connections_by_link(&link)?,
         (None, None) => ticket.db.list_connections()?,
     };
 

@@ -23,9 +23,9 @@ pub(crate) async fn handler(
         .get_persona(&agent.persona)?
         .ok_or(NotFound::Persona(Key::Id(agent.persona.clone())))?;
 
-    let memories = ticket.db.list_memories_by_agent(agent.id.to_string())?;
-    let cognitions = ticket.db.list_cognitions_by_agent(agent.id.to_string())?;
-    let experiences = ticket.db.list_experiences_by_agent(agent.id.to_string())?;
+    let memories = ticket.db.list_memories_by_agent(&agent.id)?;
+    let cognitions = ticket.db.list_cognitions_by_agent(&agent.id)?;
+    let experiences = ticket.db.list_experiences_by_agent(&agent.id)?;
     let connections = ticket.db.list_connections()?;
     let textures = ticket.db.list_textures()?;
     let levels = ticket.db.list_levels()?;

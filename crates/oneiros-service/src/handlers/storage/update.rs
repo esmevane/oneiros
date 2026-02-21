@@ -39,13 +39,14 @@ pub(crate) async fn handler(
     let compressed = encoder.finish()?;
 
     // Write blob (INSERT OR IGNORE — idempotent by hash)
-    ticket.db.put_blob(&hash_hex, &compressed, body.len())?;
+    let hash = ContentHash::new(&hash_hex);
+    ticket.db.put_blob(&hash, &compressed, body.len())?;
 
     // Log event (projection will update storage table)
     let entry = StorageEntry {
         key,
         description: Description::new(description),
-        hash: ContentHash::new(&hash_hex),
+        hash,
     };
 
     let event = Events::Storage(StorageEvents::StorageSet(entry.clone()));

@@ -9,12 +9,10 @@ pub(crate) async fn handler(
     Path(id): Path<ExperienceId>,
     Json(request): Json<AddExperienceRefRequest>,
 ) -> Result<(StatusCode, Json<Identity<ExperienceId, Experience>>), Error> {
-    let id_str = id.to_string();
-
     // Validate that the experience exists.
     ticket
         .db
-        .get_experience(&id_str)?
+        .get_experience(&id)?
         .ok_or(NotFound::Experience(Key::Id(id.clone())))?;
 
     let event = Events::Experience(ExperienceEvents::ExperienceRefAdded {
@@ -30,7 +28,7 @@ pub(crate) async fn handler(
     // Re-fetch the full experience (now includes the new ref via projection).
     let experience = ticket
         .db
-        .get_experience(&id_str)?
+        .get_experience(&id)?
         .ok_or(NotFound::Experience(Key::Id(id)))?;
 
     Ok((StatusCode::OK, Json(experience)))

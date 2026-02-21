@@ -28,13 +28,13 @@ pub(crate) async fn handler(
         .map_err(BadRequests::from)?;
 
     let actor_id: ActorId = db
-        .get_actor_id(tenant_id.to_string())?
+        .get_actor_id(&tenant_id)?
         .ok_or(PreconditionFailure::NoActor)?
         .parse()
         .map_err(CreateBrainError::from)
         .map_err(BadRequests::from)?;
 
-    if db.brain_exists(tenant_id.to_string(), request.name.as_str())? {
+    if db.brain_exists(&tenant_id, &request.name)? {
         Err(Conflicts::Brain(request.name.clone()))?;
     }
 

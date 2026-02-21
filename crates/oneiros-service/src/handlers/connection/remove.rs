@@ -11,7 +11,7 @@ pub(crate) async fn handler(
 ) -> Result<StatusCode, Error> {
     ticket
         .db
-        .get_connection(id.to_string())?
+        .get_connection(&id)?
         .ok_or(NotFound::Connection(Key::Id(id.clone())))?;
 
     let event = Events::Connection(ConnectionEvents::ConnectionRemoved { id });

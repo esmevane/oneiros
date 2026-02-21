@@ -49,7 +49,7 @@ impl FromRequestParts<Arc<ServiceState>> for ActorContext {
                 Err(ActorContextError::InvalidOrExpiredTicket)?;
             }
 
-            db.get_brain_path(claims.tenant_id.to_string(), claims.brain_id.to_string())?
+            db.get_brain_path(&claims.tenant_id, &claims.brain_id)?
                 .ok_or(NotFound::Brain(claims.brain_id))?
         };
 

@@ -133,32 +133,32 @@ impl Database {
 
     pub fn create_tenant(
         &self,
-        tenant_id: impl AsRef<str>,
-        name: impl AsRef<str>,
-        link: impl AsRef<str>,
+        tenant_id: &TenantId,
+        name: &TenantName,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let id_str = tenant_id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into tenant (id, name, link) values (?1, ?2, ?3)",
-            params![tenant_id.as_ref(), name.as_ref(), link.as_ref()],
+            params![&id_str, name.as_ref(), &link_str],
         )?;
         Ok(())
     }
 
     pub fn create_actor(
         &self,
-        actor_id: impl AsRef<str>,
-        tenant_id: impl AsRef<str>,
-        name: impl AsRef<str>,
-        link: impl AsRef<str>,
+        actor_id: &ActorId,
+        tenant_id: &TenantId,
+        name: &ActorName,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let actor_id_str = actor_id.to_string();
+        let tenant_id_str = tenant_id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into actor (id, tenant_id, name, link) values (?1, ?2, ?3, ?4)",
-            params![
-                actor_id.as_ref(),
-                tenant_id.as_ref(),
-                name.as_ref(),
-                link.as_ref()
-            ],
+            params![&actor_id_str, &tenant_id_str, name.as_ref(), &link_str],
         )?;
         Ok(())
     }
@@ -177,12 +177,14 @@ impl Database {
 
     pub fn get_brain_path(
         &self,
-        tenant_id: impl AsRef<str>,
-        id: impl AsRef<str>,
+        tenant_id: &TenantId,
+        id: &BrainId,
     ) -> Result<Option<String>, DatabaseError> {
+        let tenant_id_str = tenant_id.to_string();
+        let id_str = id.to_string();
         let result = self.conn.query_row(
             "select path from brain where tenant_id = ?1 and id = ?2",
-            params![tenant_id.as_ref(), id.as_ref()],
+            params![&tenant_id_str, &id_str],
             |row| row.get(0),
         );
 
@@ -195,12 +197,13 @@ impl Database {
 
     pub fn brain_exists(
         &self,
-        tenant_id: impl AsRef<str>,
-        name: impl AsRef<str>,
+        tenant_id: &TenantId,
+        name: &BrainName,
     ) -> Result<bool, DatabaseError> {
+        let tenant_id_str = tenant_id.to_string();
         let count: i64 = self.conn.query_row(
             "select count(*) from brain where tenant_id = ?1 and name = ?2",
-            params![tenant_id.as_ref(), name.as_ref()],
+            params![&tenant_id_str, name.as_ref()],
             |row| row.get(0),
         )?;
         Ok(count > 0)
@@ -208,22 +211,19 @@ impl Database {
 
     pub fn create_brain(
         &self,
-        brain_id: impl AsRef<str>,
-        tenant_id: impl AsRef<str>,
-        name: impl AsRef<str>,
-        path: impl AsRef<str>,
-        link: impl AsRef<str>,
+        brain_id: &BrainId,
+        tenant_id: &TenantId,
+        name: &BrainName,
+        path: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let brain_id_str = brain_id.to_string();
+        let tenant_id_str = tenant_id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into brain (id, tenant_id, name, path, link) \
              values (?1, ?2, ?3, ?4, ?5)",
-            params![
-                brain_id.as_ref(),
-                tenant_id.as_ref(),
-                name.as_ref(),
-                path.as_ref(),
-                link.as_ref()
-            ],
+            params![&brain_id_str, &tenant_id_str, name.as_ref(), path, &link_str],
         )?;
         Ok(())
     }
@@ -235,11 +235,12 @@ impl Database {
 
     pub fn get_actor_id(
         &self,
-        tenant_id: impl AsRef<str>,
+        tenant_id: &TenantId,
     ) -> Result<Option<String>, DatabaseError> {
+        let tenant_id_str = tenant_id.to_string();
         let result = self.conn.query_row(
             "select id from actor where tenant_id = ?1 limit 1",
-            params![tenant_id.as_ref()],
+            params![&tenant_id_str],
             |row| row.get(0),
         );
 
@@ -252,25 +253,27 @@ impl Database {
 
     pub fn create_ticket(
         &self,
-        ticket_id: impl AsRef<str>,
-        token: impl AsRef<str>,
-        created_by: impl AsRef<str>,
+        ticket_id: &TicketId,
+        token: &str,
+        created_by: &ActorId,
     ) -> Result<(), DatabaseError> {
+        let id_str = ticket_id.to_string();
+        let created_by_str = created_by.to_string();
         self.conn.execute(
             "insert into tickets (id, token, created_by) values (?1, ?2, ?3)",
-            params![ticket_id.as_ref(), token.as_ref(), created_by.as_ref()],
+            params![&id_str, token, &created_by_str],
         )?;
         Ok(())
     }
 
-    pub fn validate_ticket(&self, token: impl AsRef<str>) -> Result<bool, DatabaseError> {
+    pub fn validate_ticket(&self, token: &str) -> Result<bool, DatabaseError> {
         let result = self.conn.query_row(
             "select id from tickets \
              where token = ?1 \
              and revoked_on is null \
              and (expires_at is null or expires_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) \
              and (max_uses is null or uses < max_uses)",
-            params![token.as_ref()],
+            params![token],
             |row| row.get::<_, String>(0),
         );
 
@@ -290,28 +293,24 @@ impl Database {
 
     pub fn set_persona(
         &self,
-        name: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        name: &PersonaName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "insert into persona (name, description, prompt, link) \
              values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
              description = excluded.description, prompt = excluded.prompt, \
              link = excluded.link",
-            params![
-                name.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![name.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
-    pub fn remove_persona(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_persona(&self, name: &PersonaName) -> Result<(), DatabaseError> {
         self.conn.execute(
             "delete from persona where name = ?1",
             params![name.as_ref()],
@@ -319,7 +318,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_persona(&self, name: impl AsRef<str>) -> Result<Option<Persona>, DatabaseError> {
+    pub fn get_persona(&self, name: &PersonaName) -> Result<Option<Persona>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from persona where name = ?1",
             params![name.as_ref()],
@@ -361,11 +360,12 @@ impl Database {
 
     pub fn get_persona_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Persona>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from persona where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -387,13 +387,14 @@ impl Database {
         key: &Key<PersonaName, PersonaLink>,
     ) -> Result<Option<Persona>, DatabaseError> {
         if let Some(name) = key.try_id() {
-            let result = self.get_persona(name.clone())?;
+            let result = self.get_persona(name)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_persona_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_persona_by_link(&link);
         }
         Ok(None)
     }
@@ -407,28 +408,24 @@ impl Database {
 
     pub fn set_texture(
         &self,
-        name: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        name: &TextureName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "insert into texture (name, description, prompt, link) \
              values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
              description = excluded.description, prompt = excluded.prompt, \
              link = excluded.link",
-            params![
-                name.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![name.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
-    pub fn remove_texture(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_texture(&self, name: &TextureName) -> Result<(), DatabaseError> {
         self.conn.execute(
             "delete from texture where name = ?1",
             params![name.as_ref()],
@@ -436,7 +433,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_texture(&self, name: impl AsRef<str>) -> Result<Option<Texture>, DatabaseError> {
+    pub fn get_texture(&self, name: &TextureName) -> Result<Option<Texture>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from texture where name = ?1",
             params![name.as_ref()],
@@ -478,11 +475,12 @@ impl Database {
 
     pub fn get_texture_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Texture>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from texture where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -504,13 +502,14 @@ impl Database {
         key: &Key<TextureName, TextureLink>,
     ) -> Result<Option<Texture>, DatabaseError> {
         if let Some(name) = key.try_id() {
-            let result = self.get_texture(name.clone())?;
+            let result = self.get_texture(name)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_texture_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_texture_by_link(&link);
         }
         Ok(None)
     }
@@ -524,34 +523,30 @@ impl Database {
 
     pub fn set_level(
         &self,
-        name: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        name: &LevelName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "insert into level (name, description, prompt, link) \
              values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
              description = excluded.description, prompt = excluded.prompt, \
              link = excluded.link",
-            params![
-                name.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![name.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
-    pub fn remove_level(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_level(&self, name: &LevelName) -> Result<(), DatabaseError> {
         self.conn
             .execute("delete from level where name = ?1", params![name.as_ref()])?;
         Ok(())
     }
 
-    pub fn get_level(&self, name: impl AsRef<str>) -> Result<Option<Level>, DatabaseError> {
+    pub fn get_level(&self, name: &LevelName) -> Result<Option<Level>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from level where name = ?1",
             params![name.as_ref()],
@@ -591,10 +586,11 @@ impl Database {
         Ok(levels)
     }
 
-    pub fn get_level_by_link(&self, link: impl AsRef<str>) -> Result<Option<Level>, DatabaseError> {
+    pub fn get_level_by_link(&self, link: &Link) -> Result<Option<Level>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from level where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -616,13 +612,14 @@ impl Database {
         key: &Key<LevelName, LevelLink>,
     ) -> Result<Option<Level>, DatabaseError> {
         if let Some(name) = key.try_id() {
-            let result = self.get_level(name.clone())?;
+            let result = self.get_level(name)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_level_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_level_by_link(&link);
         }
         Ok(None)
     }
@@ -636,51 +633,41 @@ impl Database {
 
     pub fn create_agent_record(
         &self,
-        id: impl AsRef<str>,
-        name: impl AsRef<str>,
-        persona: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        id: &AgentId,
+        name: &AgentName,
+        persona: &PersonaName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into agent (id, name, persona, description, prompt, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                id.as_ref(),
-                name.as_ref(),
-                persona.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![&id_str, name.as_ref(), persona.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
     pub fn update_agent(
         &self,
-        name: impl AsRef<str>,
-        persona: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        name: &AgentName,
+        persona: &PersonaName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "update agent set persona = ?2, description = ?3, prompt = ?4, link = ?5 \
              where name = ?1",
-            params![
-                name.as_ref(),
-                persona.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![name.as_ref(), persona.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
-    pub fn remove_agent(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_agent(&self, name: &AgentName) -> Result<(), DatabaseError> {
         self.conn
             .execute("delete from agent where name = ?1", params![name.as_ref()])?;
         Ok(())
@@ -688,7 +675,7 @@ impl Database {
 
     pub fn get_agent(
         &self,
-        name: impl AsRef<str>,
+        name: &AgentName,
     ) -> Result<Option<Identity<AgentId, Agent>>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, name, persona, description, prompt from agent where name = ?1",
@@ -736,11 +723,12 @@ impl Database {
 
     pub fn get_agent_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Identity<AgentId, Agent>>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select id, name, persona, description, prompt from agent where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -764,18 +752,19 @@ impl Database {
         key: &Key<AgentName, AgentLink>,
     ) -> Result<Option<Identity<AgentId, Agent>>, DatabaseError> {
         if let Some(name) = key.try_id() {
-            let result = self.get_agent(name.clone())?;
+            let result = self.get_agent(name)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_agent_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_agent_by_link(&link);
         }
         Ok(None)
     }
 
-    pub fn agent_name_exists(&self, name: impl AsRef<str>) -> Result<bool, DatabaseError> {
+    pub fn agent_name_exists(&self, name: &AgentName) -> Result<bool, DatabaseError> {
         let count: i64 = self.conn.query_row(
             "select count(*) from agent where name = ?1",
             params![name.as_ref()],
@@ -793,35 +782,32 @@ impl Database {
 
     pub fn add_cognition(
         &self,
-        id: impl AsRef<str>,
-        agent_id: impl AsRef<str>,
-        texture: impl AsRef<str>,
-        content: impl AsRef<str>,
-        created_at: impl AsRef<str>,
-        link: impl AsRef<str>,
+        id: &CognitionId,
+        agent_id: &AgentId,
+        texture: &TextureName,
+        content: &str,
+        created_at: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
+        let agent_id_str = agent_id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into cognition (id, agent_id, texture, content, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                id.as_ref(),
-                agent_id.as_ref(),
-                texture.as_ref(),
-                content.as_ref(),
-                created_at.as_ref(),
-                link.as_ref()
-            ],
+            params![&id_str, &agent_id_str, texture.as_ref(), content, created_at, &link_str],
         )?;
         Ok(())
     }
 
     pub fn get_cognition(
         &self,
-        id: impl AsRef<str>,
+        id: &CognitionId,
     ) -> Result<Option<Identity<CognitionId, Cognition>>, DatabaseError> {
+        let id_str = id.to_string();
         let result = self.conn.query_row(
             "select id, agent_id, texture, content, created_at from cognition where id = ?1",
-            params![id.as_ref()],
+            params![&id_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -865,14 +851,15 @@ impl Database {
 
     pub fn list_cognitions_by_agent(
         &self,
-        agent_id: impl AsRef<str>,
+        agent_id: &AgentId,
     ) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
+        let agent_id_str = agent_id.to_string();
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where agent_id = ?1 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
+        let rows = stmt.query_map(params![&agent_id_str], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -892,7 +879,7 @@ impl Database {
 
     pub fn list_cognitions_by_texture(
         &self,
-        texture: impl AsRef<str>,
+        texture: &TextureName,
     ) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
@@ -919,15 +906,16 @@ impl Database {
 
     pub fn list_cognitions_by_agent_and_texture(
         &self,
-        agent_id: impl AsRef<str>,
-        texture: impl AsRef<str>,
+        agent_id: &AgentId,
+        texture: &TextureName,
     ) -> Result<Vec<Identity<CognitionId, Cognition>>, DatabaseError> {
+        let agent_id_str = agent_id.to_string();
         let mut stmt = self.conn.prepare(
             "select id, agent_id, texture, content, created_at from cognition \
              where agent_id = ?1 and texture = ?2 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![agent_id.as_ref(), texture.as_ref()], |row| {
+        let rows = stmt.query_map(params![&agent_id_str, texture.as_ref()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -947,11 +935,12 @@ impl Database {
 
     pub fn get_cognition_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Identity<CognitionId, Cognition>>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select id, agent_id, texture, content, created_at from cognition where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -975,13 +964,14 @@ impl Database {
         key: &Key<CognitionId, CognitionLink>,
     ) -> Result<Option<Identity<CognitionId, Cognition>>, DatabaseError> {
         if let Some(id) = key.try_id() {
-            let result = self.get_cognition(id.to_string())?;
+            let result = self.get_cognition(id)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_cognition_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_cognition_by_link(&link);
         }
         Ok(None)
     }
@@ -995,35 +985,32 @@ impl Database {
 
     pub fn add_memory(
         &self,
-        id: impl AsRef<str>,
-        agent_id: impl AsRef<str>,
-        level: impl AsRef<str>,
-        content: impl AsRef<str>,
-        created_at: impl AsRef<str>,
-        link: impl AsRef<str>,
+        id: &MemoryId,
+        agent_id: &AgentId,
+        level: &LevelName,
+        content: &str,
+        created_at: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
+        let agent_id_str = agent_id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into memory (id, agent_id, level, content, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                id.as_ref(),
-                agent_id.as_ref(),
-                level.as_ref(),
-                content.as_ref(),
-                created_at.as_ref(),
-                link.as_ref()
-            ],
+            params![&id_str, &agent_id_str, level.as_ref(), content, created_at, &link_str],
         )?;
         Ok(())
     }
 
     pub fn get_memory(
         &self,
-        id: impl AsRef<str>,
+        id: &MemoryId,
     ) -> Result<Option<Identity<MemoryId, Memory>>, DatabaseError> {
+        let id_str = id.to_string();
         let result = self.conn.query_row(
             "select id, agent_id, level, content, created_at from memory where id = ?1",
-            params![id.as_ref()],
+            params![&id_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1067,14 +1054,15 @@ impl Database {
 
     pub fn list_memories_by_agent(
         &self,
-        agent_id: impl AsRef<str>,
+        agent_id: &AgentId,
     ) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
+        let agent_id_str = agent_id.to_string();
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where agent_id = ?1 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
+        let rows = stmt.query_map(params![&agent_id_str], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1094,7 +1082,7 @@ impl Database {
 
     pub fn list_memories_by_level(
         &self,
-        level: impl AsRef<str>,
+        level: &LevelName,
     ) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
@@ -1121,15 +1109,16 @@ impl Database {
 
     pub fn list_memories_by_agent_and_level(
         &self,
-        agent_id: impl AsRef<str>,
-        level: impl AsRef<str>,
+        agent_id: &AgentId,
+        level: &LevelName,
     ) -> Result<Vec<Identity<MemoryId, Memory>>, DatabaseError> {
+        let agent_id_str = agent_id.to_string();
         let mut stmt = self.conn.prepare(
             "select id, agent_id, level, content, created_at from memory \
              where agent_id = ?1 and level = ?2 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![agent_id.as_ref(), level.as_ref()], |row| {
+        let rows = stmt.query_map(params![&agent_id_str, level.as_ref()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1149,11 +1138,12 @@ impl Database {
 
     pub fn get_memory_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Identity<MemoryId, Memory>>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select id, agent_id, level, content, created_at from memory where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1177,13 +1167,14 @@ impl Database {
         key: &Key<MemoryId, MemoryLink>,
     ) -> Result<Option<Identity<MemoryId, Memory>>, DatabaseError> {
         if let Some(id) = key.try_id() {
-            let result = self.get_memory(id.to_string())?;
+            let result = self.get_memory(id)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_memory_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_memory_by_link(&link);
         }
         Ok(None)
     }
@@ -1197,28 +1188,24 @@ impl Database {
 
     pub fn set_sensation(
         &self,
-        name: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        name: &SensationName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "insert into sensation (name, description, prompt, link) \
              values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
              description = excluded.description, prompt = excluded.prompt, \
              link = excluded.link",
-            params![
-                name.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![name.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
-    pub fn remove_sensation(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_sensation(&self, name: &SensationName) -> Result<(), DatabaseError> {
         self.conn.execute(
             "delete from sensation where name = ?1",
             params![name.as_ref()],
@@ -1226,7 +1213,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_sensation(&self, name: impl AsRef<str>) -> Result<Option<Sensation>, DatabaseError> {
+    pub fn get_sensation(&self, name: &SensationName) -> Result<Option<Sensation>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from sensation where name = ?1",
             params![name.as_ref()],
@@ -1268,11 +1255,12 @@ impl Database {
 
     pub fn get_sensation_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Sensation>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from sensation where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1294,13 +1282,14 @@ impl Database {
         key: &Key<SensationName, SensationLink>,
     ) -> Result<Option<Sensation>, DatabaseError> {
         if let Some(name) = key.try_id() {
-            let result = self.get_sensation(name.clone())?;
+            let result = self.get_sensation(name)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_sensation_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_sensation_by_link(&link);
         }
         Ok(None)
     }
@@ -1314,34 +1303,30 @@ impl Database {
 
     pub fn set_nature(
         &self,
-        name: impl AsRef<str>,
-        description: impl AsRef<str>,
-        prompt: impl AsRef<str>,
-        link: impl AsRef<str>,
+        name: &NatureName,
+        description: &str,
+        prompt: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "insert into nature (name, description, prompt, link) \
              values (?1, ?2, ?3, ?4) \
              on conflict(name) do update set \
              description = excluded.description, prompt = excluded.prompt, \
              link = excluded.link",
-            params![
-                name.as_ref(),
-                description.as_ref(),
-                prompt.as_ref(),
-                link.as_ref()
-            ],
+            params![name.as_ref(), description, prompt, &link_str],
         )?;
         Ok(())
     }
 
-    pub fn remove_nature(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_nature(&self, name: &NatureName) -> Result<(), DatabaseError> {
         self.conn
             .execute("delete from nature where name = ?1", params![name.as_ref()])?;
         Ok(())
     }
 
-    pub fn get_nature(&self, name: impl AsRef<str>) -> Result<Option<Nature>, DatabaseError> {
+    pub fn get_nature(&self, name: &NatureName) -> Result<Option<Nature>, DatabaseError> {
         let result = self.conn.query_row(
             "select name, description, prompt from nature where name = ?1",
             params![name.as_ref()],
@@ -1383,11 +1368,12 @@ impl Database {
 
     pub fn get_nature_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Nature>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from nature where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1409,13 +1395,14 @@ impl Database {
         key: &Key<NatureName, NatureLink>,
     ) -> Result<Option<Nature>, DatabaseError> {
         if let Some(name) = key.try_id() {
-            let result = self.get_nature(name.clone())?;
+            let result = self.get_nature(name)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_nature_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_nature_by_link(&link);
         }
         Ok(None)
     }
@@ -1429,35 +1416,33 @@ impl Database {
 
     pub fn create_connection(
         &self,
-        id: impl AsRef<str>,
-        nature: impl AsRef<str>,
-        from_link: impl AsRef<str>,
-        to_link: impl AsRef<str>,
-        created_at: impl AsRef<str>,
-        link: impl AsRef<str>,
+        id: &ConnectionId,
+        nature: &NatureName,
+        from_link: &Link,
+        to_link: &Link,
+        created_at: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
+        let from_link_str = from_link.to_string();
+        let to_link_str = to_link.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into connection (id, nature, from_link, to_link, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                id.as_ref(),
-                nature.as_ref(),
-                from_link.as_ref(),
-                to_link.as_ref(),
-                created_at.as_ref(),
-                link.as_ref()
-            ],
+            params![&id_str, nature.as_ref(), &from_link_str, &to_link_str, created_at, &link_str],
         )?;
         Ok(())
     }
 
     pub fn get_connection(
         &self,
-        id: impl AsRef<str>,
+        id: &ConnectionId,
     ) -> Result<Option<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let id_str = id.to_string();
         let result = self.conn.query_row(
             "select id, nature, from_link, to_link, created_at from connection where id = ?1",
-            params![id.as_ref()],
+            params![&id_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1503,7 +1488,7 @@ impl Database {
 
     pub fn list_connections_by_nature(
         &self,
-        nature: impl AsRef<str>,
+        nature: &NatureName,
     ) -> Result<Vec<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, nature, from_link, to_link, created_at from connection \
@@ -1530,14 +1515,15 @@ impl Database {
 
     pub fn list_connections_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Vec<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let link_str = link.to_string();
         let mut stmt = self.conn.prepare(
             "select id, nature, from_link, to_link, created_at from connection \
              where from_link = ?1 or to_link = ?1 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![link.as_ref()], |row| {
+        let rows = stmt.query_map(params![&link_str], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1557,11 +1543,12 @@ impl Database {
 
     pub fn get_connection_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select id, nature, from_link, to_link, created_at from connection where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1585,20 +1572,22 @@ impl Database {
         key: &Key<ConnectionId, ConnectionLink>,
     ) -> Result<Option<Identity<ConnectionId, oneiros_model::Connection>>, DatabaseError> {
         if let Some(id) = key.try_id() {
-            let result = self.get_connection(id.to_string())?;
+            let result = self.get_connection(id)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_connection_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_connection_by_link(&link);
         }
         Ok(None)
     }
 
-    pub fn remove_connection(&self, id: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_connection(&self, id: &ConnectionId) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
         self.conn
-            .execute("delete from connection where id = ?1", params![id.as_ref()])?;
+            .execute("delete from connection where id = ?1", params![&id_str])?;
         Ok(())
     }
 
@@ -1611,23 +1600,26 @@ impl Database {
 
     pub fn add_experience(
         &self,
-        id: impl AsRef<str>,
-        agent_id: impl AsRef<str>,
-        sensation: impl AsRef<str>,
-        description: impl AsRef<str>,
-        created_at: impl AsRef<str>,
-        link: impl AsRef<str>,
+        id: &ExperienceId,
+        agent_id: &AgentId,
+        sensation: &SensationName,
+        description: &str,
+        created_at: &str,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
+        let agent_id_str = agent_id.to_string();
+        let link_str = link.to_string();
         self.conn.execute(
             "insert or ignore into experience (id, agent_id, sensation, description, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
-                id.as_ref(),
-                agent_id.as_ref(),
+                &id_str,
+                &agent_id_str,
                 sensation.as_ref(),
-                description.as_ref(),
-                created_at.as_ref(),
-                link.as_ref()
+                description,
+                created_at,
+                &link_str
             ],
         )?;
         Ok(())
@@ -1635,12 +1627,12 @@ impl Database {
 
     pub fn get_experience(
         &self,
-        id: impl AsRef<str>,
+        id: &ExperienceId,
     ) -> Result<Option<Identity<ExperienceId, Experience>>, DatabaseError> {
-        let id_ref = id.as_ref();
+        let id_str = id.to_string();
         let result = self.conn.query_row(
             "select id, agent_id, sensation, description, created_at from experience where id = ?1",
-            params![id_ref],
+            params![&id_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1654,7 +1646,7 @@ impl Database {
 
         match result {
             Ok(row) => {
-                let refs = self.collect_experience_refs(id_ref)?;
+                let refs = self.collect_experience_refs(&id_str)?;
                 Ok(Some(Experience::construct_from_db(row, refs)?))
             }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -1692,14 +1684,15 @@ impl Database {
 
     pub fn list_experiences_by_agent(
         &self,
-        agent_id: impl AsRef<str>,
+        agent_id: &AgentId,
     ) -> Result<Vec<Identity<ExperienceId, Experience>>, DatabaseError> {
+        let agent_id_str = agent_id.to_string();
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience \
              where agent_id = ?1 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![agent_id.as_ref()], |row| {
+        let rows = stmt.query_map(params![&agent_id_str], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1722,7 +1715,7 @@ impl Database {
 
     pub fn list_experiences_by_sensation(
         &self,
-        sensation: impl AsRef<str>,
+        sensation: &SensationName,
     ) -> Result<Vec<Identity<ExperienceId, Experience>>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select id, agent_id, sensation, description, created_at from experience \
@@ -1752,11 +1745,12 @@ impl Database {
 
     pub fn get_experience_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<Identity<ExperienceId, Experience>>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select id, agent_id, sensation, description, created_at from experience where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1783,33 +1777,35 @@ impl Database {
         key: &Key<ExperienceId, ExperienceLink>,
     ) -> Result<Option<Identity<ExperienceId, Experience>>, DatabaseError> {
         if let Some(id) = key.try_id() {
-            let result = self.get_experience(id.to_string())?;
+            let result = self.get_experience(id)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_experience_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_experience_by_link(&link);
         }
         Ok(None)
     }
 
     pub fn add_experience_ref(
         &self,
-        experience_id: impl AsRef<str>,
+        experience_id: &ExperienceId,
         entity_ref: &EntityRef,
-        created_at: impl AsRef<str>,
+        created_at: &str,
     ) -> Result<(), DatabaseError> {
+        let experience_id_str = experience_id.to_string();
         self.conn.execute(
             "insert or ignore into experience_ref \
              (experience_id, record_id, link, role, created_at) \
              values (?1, ?2, ?3, ?4, ?5)",
             params![
-                experience_id.as_ref(),
+                &experience_id_str,
                 entity_ref.id().map(|id| id.to_string()),
                 entity_ref.link().map(|l| l.to_string()),
                 entity_ref.role().map(|l| l.as_str()),
-                created_at.as_ref()
+                created_at
             ],
         )?;
         Ok(())
@@ -1842,12 +1838,13 @@ impl Database {
 
     pub fn update_experience_description(
         &self,
-        id: impl AsRef<str>,
-        description: impl AsRef<str>,
+        id: &ExperienceId,
+        description: &str,
     ) -> Result<(), DatabaseError> {
+        let id_str = id.to_string();
         self.conn.execute(
             "update experience set description = ?2 where id = ?1",
-            params![id.as_ref(), description.as_ref()],
+            params![&id_str, description],
         )?;
         Ok(())
     }
@@ -1867,7 +1864,7 @@ impl Database {
 
     pub fn put_blob(
         &self,
-        hash: impl AsRef<str>,
+        hash: &ContentHash,
         data: &[u8],
         original_size: usize,
     ) -> Result<(), DatabaseError> {
@@ -1880,7 +1877,7 @@ impl Database {
 
     pub fn get_blob(
         &self,
-        hash: impl AsRef<str>,
+        hash: &ContentHash,
     ) -> Result<Option<(Vec<u8>, usize)>, DatabaseError> {
         let result = self.conn.query_row(
             "select data, size from blob where hash = ?1",
@@ -1903,11 +1900,12 @@ impl Database {
 
     pub fn set_storage(
         &self,
-        key: impl AsRef<str>,
-        description: impl AsRef<str>,
-        hash: impl AsRef<str>,
-        link: impl AsRef<str>,
+        key: &StorageKey,
+        description: &str,
+        hash: &ContentHash,
+        link: &Link,
     ) -> Result<(), DatabaseError> {
+        let link_str = link.to_string();
         self.conn.execute(
             "insert into storage (key, description, hash, link) \
              values (?1, ?2, ?3, ?4) \
@@ -1916,21 +1914,21 @@ impl Database {
              link = excluded.link",
             params![
                 key.as_ref(),
-                description.as_ref(),
+                description,
                 hash.as_ref(),
-                link.as_ref()
+                &link_str
             ],
         )?;
         Ok(())
     }
 
-    pub fn remove_storage(&self, key: impl AsRef<str>) -> Result<(), DatabaseError> {
+    pub fn remove_storage(&self, key: &StorageKey) -> Result<(), DatabaseError> {
         self.conn
             .execute("delete from storage where key = ?1", params![key.as_ref()])?;
         Ok(())
     }
 
-    pub fn get_storage(&self, key: impl AsRef<str>) -> Result<Option<StorageEntry>, DatabaseError> {
+    pub fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, DatabaseError> {
         let result = self.conn.query_row(
             "select key, description, hash from storage where key = ?1",
             params![key.as_ref()],
@@ -1972,11 +1970,12 @@ impl Database {
 
     pub fn get_storage_by_link(
         &self,
-        link: impl AsRef<str>,
+        link: &Link,
     ) -> Result<Option<StorageEntry>, DatabaseError> {
+        let link_str = link.to_string();
         let result = self.conn.query_row(
             "select key, description, hash from storage where link = ?1",
-            params![link.as_ref()],
+            params![&link_str],
             |row| {
                 Ok((
                     row.get::<_, String>(0)?,
@@ -1998,13 +1997,14 @@ impl Database {
         key: &Key<StorageKey, StorageLink>,
     ) -> Result<Option<StorageEntry>, DatabaseError> {
         if let Some(storage_key) = key.try_id() {
-            let result = self.get_storage(storage_key.clone())?;
+            let result = self.get_storage(storage_key)?;
             if result.is_some() {
                 return Ok(result);
             }
         }
         if let Some(link) = key.try_link() {
-            return self.get_storage_by_link(link.to_string());
+            let link: Link = link.clone().into();
+            return self.get_storage_by_link(&link);
         }
         Ok(None)
     }

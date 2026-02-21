@@ -28,7 +28,7 @@ pub(crate) async fn handler(
 
             ticket
                 .db
-                .list_memories_by_agent_and_level(agent.id.to_string(), &level)?
+                .list_memories_by_agent_and_level(&agent.id, &level)?
         }
         (Some(agent_name), None) => {
             let agent = ticket
@@ -36,7 +36,7 @@ pub(crate) async fn handler(
                 .get_agent(&agent_name)?
                 .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
-            ticket.db.list_memories_by_agent(agent.id.to_string())?
+            ticket.db.list_memories_by_agent(&agent.id)?
         }
         (None, Some(level)) => {
             ticket

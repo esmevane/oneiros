@@ -28,7 +28,7 @@ pub(crate) async fn handler(
 
             ticket
                 .db
-                .list_experiences_by_agent(agent.id.to_string())?
+                .list_experiences_by_agent(&agent.id)?
                 .into_iter()
                 .filter(|exp| exp.sensation == sensation)
                 .collect()
@@ -39,7 +39,7 @@ pub(crate) async fn handler(
                 .get_agent(&agent_name)?
                 .ok_or(NotFound::Agent(Key::Id(agent_name)))?;
 
-            ticket.db.list_experiences_by_agent(agent.id.to_string())?
+            ticket.db.list_experiences_by_agent(&agent.id)?
         }
         (None, Some(sensation)) => {
             ticket
