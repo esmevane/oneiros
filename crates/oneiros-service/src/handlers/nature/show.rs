@@ -1,12 +1,12 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{Nature, NatureName};
+use oneiros_model::{NatureName, NatureRecord};
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(given_name): Path<NatureName>,
-) -> Result<Json<Nature>, Error> {
+) -> Result<Json<NatureRecord>, Error> {
     let nature = ticket
         .db
         .get_nature(&given_name)?

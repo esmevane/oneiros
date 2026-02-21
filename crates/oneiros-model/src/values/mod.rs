@@ -7,7 +7,6 @@ mod dream_context;
 mod id;
 mod introspection;
 mod label;
-mod macros;
 mod observation;
 mod prompt;
 mod record_ref;
@@ -15,8 +14,6 @@ mod reflection;
 mod storage_ref;
 mod token;
 mod token_version;
-
-pub(crate) use macros::*;
 
 pub use claim::TokenClaims;
 pub use content::Content;

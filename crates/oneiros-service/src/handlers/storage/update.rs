@@ -17,7 +17,7 @@ pub(crate) async fn handler(
     Path(storage_ref): Path<StorageRef>,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<(StatusCode, Json<StorageEntry>), Error> {
+) -> Result<(StatusCode, Json<StorageEntryRecord>), Error> {
     let key = storage_ref
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
@@ -42,16 +42,14 @@ pub(crate) async fn handler(
     ticket.db.put_blob(&hash_hex, &compressed, body.len())?;
 
     // Log event (projection will update storage table)
-    let entry = StorageEntry {
-        key,
-        description: Description::new(description),
-        hash: ContentHash::new(&hash_hex),
-    };
+    let entry = StorageEntryRecord::init(
+        description,
+        ContentHash::new(&hash_hex),
+        StorageEntry { key },
+    );
 
     let event = Events::Storage(StorageEvents::StorageSet(entry.clone()));
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok((StatusCode::OK, Json(entry)))
 }

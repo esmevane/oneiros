@@ -17,9 +17,7 @@ pub(crate) async fn handler(
     ticket.db.log_event(&receded, &[])?;
 
     let removed = Events::Agent(AgentEvents::AgentRemoved { name });
-    ticket
-        .db
-        .log_event(&removed, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&removed, projections::brain::ALL)?;
 
     Ok(StatusCode::OK)
 }

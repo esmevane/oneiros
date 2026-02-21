@@ -34,14 +34,16 @@ impl SetNature {
         let info = client
             .set_nature(
                 &context.ticket_token()?,
-                Nature {
-                    name: self.name.clone(),
-                    description: self.description.clone(),
-                    prompt: self.prompt.clone(),
-                },
+                NatureRecord::init(
+                    self.description.clone(),
+                    self.prompt.clone(),
+                    Nature {
+                        name: self.name.clone(),
+                    },
+                ),
             )
             .await?;
-        outcomes.emit(SetNatureOutcomes::NatureSet(info.name));
+        outcomes.emit(SetNatureOutcomes::NatureSet(info.name.clone()));
 
         Ok(outcomes)
     }

@@ -3,45 +3,52 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Texture {
-    pub name: TextureName,
-    pub description: Description,
-    pub prompt: Prompt,
-}
+pub type TextureRecord = HasDescription<HasPrompt<Texture>>;
 
-impl Texture {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl TextureRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        texture: impl Into<Texture>,
+    ) -> Self {
+        HasDescription::new(
+            description.into(),
+            HasPrompt::new(prompt.into(), texture.into()),
+        )
     }
 }
 
-impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
-    for Texture
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Texture {
+    pub name: TextureName,
+}
+
+impl Texture {
+    pub fn construct_from_db(
+        (name, description, prompt): (impl AsRef<str>, impl AsRef<str>, impl AsRef<str>),
+    ) -> TextureRecord {
+        TextureRecord::init(
+            Description::new(description),
+            Prompt::new(prompt),
+            Texture {
+                name: TextureName::new(name),
+            },
+        )
+    }
+}
+
+impl<GivenName> From<GivenName> for Texture
 where
     GivenName: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
+    fn from(name: GivenName) -> Self {
         Texture {
             name: TextureName::new(name),
-            description: Description::new(description),
-            prompt: Prompt::new(prompt),
         }
     }
 }
 
-impl Addressable for Texture {
-    fn address_label() -> &'static str {
-        "texture"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.name))
-    }
-}
-
+domain_link!(Texture => TextureLink);
 domain_name!(TextureName);
 
 #[cfg(test)]
@@ -52,16 +59,12 @@ mod tests {
     fn texture_identity() {
         let primary = Texture {
             name: TextureName::new("observation"),
-            description: Description::new("first"),
-            prompt: Prompt::new("first"),
         };
 
         let other = Texture {
             name: TextureName::new("observation"),
-            description: Description::new("updated"),
-            prompt: Prompt::new("updated"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

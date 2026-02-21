@@ -5,12 +5,37 @@ use crate::*;
 
 use super::AgentConstructionError;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+pub type AgentRecord = Identity<AgentId, HasDescription<HasPrompt<Agent>>>;
+
+impl AgentRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        agent: impl Into<Agent>,
+    ) -> Self {
+        Self::construct(AgentId::new(), description, prompt, agent)
+    }
+
+    pub fn construct(
+        id: impl Into<AgentId>,
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        agent: impl Into<Agent>,
+    ) -> Self {
+        Identity::new(
+            id.into(),
+            HasDescription::new(
+                description.into(),
+                HasPrompt::new(prompt.into(), agent.into()),
+            ),
+        )
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Agent {
     pub name: AgentName,
     pub persona: PersonaName,
-    pub description: Description,
-    pub prompt: Prompt,
 }
 
 impl Agent {
@@ -22,29 +47,22 @@ impl Agent {
             impl AsRef<str>,
             impl AsRef<str>,
         ),
-    ) -> Result<Identity<AgentId, Agent>, AgentConstructionError> {
-        let id: AgentId = id.as_ref().parse()?;
+    ) -> Result<AgentRecord, AgentConstructionError> {
         let agent = Agent {
             name: AgentName::new(name),
             persona: PersonaName::new(persona),
-            description: Description::new(description),
-            prompt: Prompt::new(prompt),
         };
-        Ok(Identity::new(id, agent))
+
+        Ok(AgentRecord::construct(
+            id.as_ref().parse::<AgentId>()?,
+            description,
+            prompt,
+            agent,
+        ))
     }
 }
 
-impl Addressable for Agent {
-    fn address_label() -> &'static str {
-        "agent"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        // description and prompt are mutable content, not identity
-        Link::new(&(Self::address_label(), &self.name, &self.persona))
-    }
-}
-
+domain_link!(Agent => AgentLink);
 domain_id!(AgentId);
 domain_name!(AgentName);
 
@@ -57,18 +75,14 @@ mod tests {
         let primary = Agent {
             name: AgentName::new("governor.process"),
             persona: PersonaName::new("process"),
-            description: Description::new("first"),
-            prompt: Prompt::new("first"),
         };
 
         let other = Agent {
             name: AgentName::new("governor.process"),
             persona: PersonaName::new("process"),
-            description: Description::new("completely different"),
-            prompt: Prompt::new("also different"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 
     #[test]
@@ -76,17 +90,13 @@ mod tests {
         let primary = Agent {
             name: AgentName::new("rust"),
             persona: PersonaName::new("expert"),
-            description: Description::default(),
-            prompt: Prompt::default(),
         };
 
         let other = Agent {
             name: AgentName::new("rust"),
             persona: PersonaName::new("process"),
-            description: Description::default(),
-            prompt: Prompt::default(),
         };
 
-        assert_ne!(primary.link().unwrap(), other.link().unwrap());
+        assert_ne!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

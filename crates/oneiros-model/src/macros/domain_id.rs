@@ -14,6 +14,12 @@ macro_rules! domain_id {
             }
         }
 
+        impl From<crate::Id> for $name {
+            fn from(id: crate::Id) -> Self {
+                Self(id)
+            }
+        }
+
         impl Default for $name {
             fn default() -> Self {
                 Self::new()

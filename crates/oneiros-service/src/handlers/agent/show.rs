@@ -6,7 +6,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(given_name): Path<AgentName>,
-) -> Result<Json<Identity<AgentId, Agent>>, Error> {
+) -> Result<Json<AgentRecord>, Error> {
     let agent = ticket
         .db
         .get_agent(&given_name)?

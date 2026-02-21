@@ -1,4 +1,4 @@
-use oneiros_model::Sensation;
+use oneiros_model::SensationRecord;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListSensationsOutcomes {
     NoSensations,
 
     #[outcome(message("Sensations: {0:?}"))]
-    Sensations(Vec<Sensation>),
+    Sensations(Vec<SensationRecord>),
 }

@@ -1,12 +1,12 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{Connection, ConnectionId, Identity};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ConnectionId>,
-) -> Result<Json<Identity<ConnectionId, Connection>>, Error> {
+) -> Result<Json<Record<ConnectionId, Connection>>, Error> {
     let connection = ticket
         .db
         .get_connection(id.to_string())?

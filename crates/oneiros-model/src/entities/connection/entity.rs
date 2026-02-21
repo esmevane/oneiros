@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
@@ -6,12 +5,11 @@ use crate::*;
 
 use super::ConnectionConstructionError;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Connection {
     pub nature: NatureName,
     pub from_link: Link,
     pub to_link: Link,
-    pub created_at: DateTime<Utc>,
 }
 
 impl Connection {
@@ -40,20 +38,11 @@ impl Connection {
             format!("  Nature: {}", self.nature),
             format!("  From: {}", self.from_link),
             format!("  To: {}", self.to_link),
-            format!("  Created: {}", self.created_at),
         ];
 
         lines.join("\n")
     }
-}
 
-impl core::fmt::Display for Connection {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.as_table_row())
-    }
-}
-
-impl Connection {
     pub fn construct_from_db(
         (id, nature, from_link, to_link, created_at): (
             impl AsRef<str>,
@@ -62,11 +51,9 @@ impl Connection {
             impl AsRef<str>,
             impl AsRef<str>,
         ),
-    ) -> Result<Identity<ConnectionId, Self>, ConnectionConstructionError> {
-        let id: ConnectionId = id
-            .as_ref()
-            .parse()
-            .map_err(ConnectionConstructionError::InvalidId)?;
+    ) -> Result<Record<ConnectionId, Self>, ConnectionConstructionError> {
+        let id: ConnectionId = id.as_ref().parse()?;
+
         let connection = Connection {
             nature: NatureName::new(nature),
             from_link: from_link
@@ -77,31 +64,19 @@ impl Connection {
                 .as_ref()
                 .parse()
                 .map_err(ConnectionConstructionError::InvalidToLink)?,
-            created_at: created_at
-                .as_ref()
-                .parse::<DateTime<Utc>>()
-                .map_err(ConnectionConstructionError::InvalidCreatedAt)?,
         };
-        Ok(Identity::new(id, connection))
+
+        Ok(Record::build(id, connection, created_at)?)
     }
 }
 
-impl Addressable for Connection {
-    fn address_label() -> &'static str {
-        "connection"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        // Identity: nature + from + to. Timestamp is context.
-        Link::new(&(
-            Self::address_label(),
-            &self.nature,
-            &self.from_link,
-            &self.to_link,
-        ))
+impl core::fmt::Display for Connection {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.as_table_row())
     }
 }
 
+domain_link!(Connection => ConnectionLink);
 domain_id!(ConnectionId);
 
 #[cfg(test)]
@@ -117,7 +92,6 @@ mod tests {
             nature: NatureName::new("origin"),
             from_link: link_a.clone(),
             to_link: link_b.clone(),
-            created_at: Utc::now(),
         };
 
         // Different timestamp — same link
@@ -125,10 +99,9 @@ mod tests {
             nature: NatureName::new("origin"),
             from_link: link_a,
             to_link: link_b,
-            created_at: Utc::now(),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 
     #[test]
@@ -140,16 +113,14 @@ mod tests {
             nature: NatureName::new("origin"),
             from_link: link_a.clone(),
             to_link: link_b.clone(),
-            created_at: Utc::now(),
         };
 
         let context = Connection {
             nature: NatureName::new("context"),
             from_link: link_a,
             to_link: link_b,
-            created_at: Utc::now(),
         };
 
-        assert_ne!(origin.link().unwrap(), context.link().unwrap());
+        assert_ne!(origin.as_link().unwrap(), context.as_link().unwrap());
     }
 }

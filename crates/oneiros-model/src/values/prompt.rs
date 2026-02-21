@@ -18,6 +18,15 @@ impl core::fmt::Display for Prompt {
     }
 }
 
+impl<T> From<T> for Prompt
+where
+    T: AsRef<str>,
+{
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
 impl core::str::FromStr for Prompt {
     type Err = core::convert::Infallible;
 

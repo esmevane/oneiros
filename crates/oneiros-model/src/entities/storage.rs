@@ -3,45 +3,49 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct StorageEntry {
-    pub key: StorageKey,
-    pub description: Description,
-    pub hash: ContentHash,
-}
+pub type StorageEntryRecord = HasDescription<HasHash<StorageEntry>>;
 
-impl StorageEntry {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl StorageEntryRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        hash: impl Into<ContentHash>,
+        entry: StorageEntry,
+    ) -> Self {
+        HasDescription::new(description.into(), HasHash::new(hash, entry))
     }
 }
 
-impl<GivenKey, GivenDescription, GivenHash> From<(GivenKey, GivenDescription, GivenHash)>
-    for StorageEntry
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct StorageEntry {
+    pub key: StorageKey,
+}
+
+impl StorageEntry {
+    pub fn construct_from_db(
+        (key, description, hash): (impl AsRef<str>, impl AsRef<str>, impl AsRef<str>),
+    ) -> StorageEntryRecord {
+        StorageEntryRecord::init(
+            Description::new(description),
+            ContentHash::new(hash),
+            StorageEntry {
+                key: StorageKey::new(key),
+            },
+        )
+    }
+}
+
+impl<GivenKey> From<GivenKey> for StorageEntry
 where
     GivenKey: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenHash: AsRef<str>,
 {
-    fn from((key, description, hash): (GivenKey, GivenDescription, GivenHash)) -> Self {
+    fn from(key: GivenKey) -> Self {
         StorageEntry {
             key: StorageKey::new(key),
-            description: Description::new(description),
-            hash: ContentHash::new(hash),
         }
     }
 }
 
-impl Addressable for StorageEntry {
-    fn address_label() -> &'static str {
-        "storage"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.key))
-    }
-}
-
+domain_link!(StorageEntry => StorageEntryLink);
 domain_name!(StorageKey);
 
 #[cfg(test)]
@@ -52,16 +56,12 @@ mod tests {
     fn storage_identity() {
         let primary = StorageEntry {
             key: StorageKey::new("config.toml"),
-            description: Description::new("first"),
-            hash: ContentHash::new("abc123"),
         };
 
         let other = StorageEntry {
             key: StorageKey::new("config.toml"),
-            description: Description::new("updated"),
-            hash: ContentHash::new("def456"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

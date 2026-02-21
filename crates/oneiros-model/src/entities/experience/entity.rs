@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
@@ -6,54 +5,56 @@ use crate::*;
 
 use super::ExperienceConstructionError;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+pub type ExperienceRecord = Record<ExperienceId, HasDescription<HasRefs<Experience>>>;
+
+impl ExperienceRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        refs: Vec<RecordRef>,
+        experience: Experience,
+    ) -> Self {
+        Record::create(HasDescription::new(
+            description.into(),
+            HasRefs::new(refs, experience),
+        ))
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Experience {
     pub agent_id: AgentId,
     pub sensation: SensationName,
-    pub description: Content,
-    pub refs: Vec<RecordRef>,
-    pub created_at: DateTime<Utc>,
 }
 
 impl Experience {
-    pub fn as_table_row(&self) -> String {
+    pub fn as_table_row(&self, description: &Description, refs: &[RecordRef]) -> String {
         let sensation = format!("{}", self.sensation);
-        let description = self.description.as_str();
-        let truncated = if description.len() > 80 {
-            let end = description.floor_char_boundary(80);
-            format!("{}...", &description[..end])
+        let desc = description.as_str();
+        let truncated = if desc.len() > 80 {
+            let end = desc.floor_char_boundary(80);
+            format!("{}...", &desc[..end])
         } else {
-            description.to_string()
+            desc.to_string()
         };
-        let ref_count = self.refs.len();
+        let ref_count = refs.len();
 
         format!("{sensation:<12} {truncated} ({ref_count} refs)")
     }
 
-    pub fn as_detail(&self) -> String {
+    pub fn as_detail(&self, description: &Description, refs: &[RecordRef]) -> String {
         let mut lines = vec![
             format!("  Sensation: {}", self.sensation),
-            format!("  Description: {}", self.description),
+            format!("  Description: {}", description),
         ];
 
-        lines.push(format!("  Refs: ({})", self.refs.len()));
-        for r in &self.refs {
+        lines.push(format!("  Refs: ({})", refs.len()));
+        for r in refs {
             lines.push(format!("    {r}"));
         }
 
-        lines.push(format!("  Created: {}", self.created_at));
-
         lines.join("\n")
     }
-}
 
-impl core::fmt::Display for Experience {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.as_table_row())
-    }
-}
-
-impl Experience {
     pub fn construct_from_db(
         (id, agent_id, sensation, description, created_at): (
             impl AsRef<str>,
@@ -63,7 +64,7 @@ impl Experience {
             impl AsRef<str>,
         ),
         refs: Vec<RecordRef>,
-    ) -> Result<Identity<ExperienceId, Self>, ExperienceConstructionError> {
+    ) -> Result<ExperienceRecord, ExperienceConstructionError> {
         let id: ExperienceId = id
             .as_ref()
             .parse()
@@ -74,29 +75,20 @@ impl Experience {
                 .parse()
                 .map_err(ExperienceConstructionError::InvalidAgentId)?,
             sensation: SensationName::new(sensation),
-            description: Content::new(description),
-            refs,
-            created_at: created_at
-                .as_ref()
-                .parse::<DateTime<Utc>>()
-                .map_err(ExperienceConstructionError::InvalidCreatedAt)?,
         };
-        Ok(Identity::new(id, experience))
+
+        Ok(Record::build(
+            id,
+            HasDescription::new(
+                Description::new(description),
+                HasRefs::new(refs, experience),
+            ),
+            created_at,
+        )?)
     }
 }
 
-impl Addressable for Experience {
-    fn address_label() -> &'static str {
-        "experience"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        // The experience is the identity: what sensation and description.
-        // Agent, timestamp, and refs are context or mutable.
-        Link::new(&(Self::address_label(), &self.sensation))
-    }
-}
-
+domain_link!(Experience => ExperienceLink);
 domain_id!(ExperienceId);
 
 #[cfg(test)]
@@ -105,27 +97,18 @@ mod tests {
 
     #[test]
     fn experience_identity() {
+        let agent_id = AgentId::new();
+
         let primary = Experience {
-            agent_id: AgentId::new(),
+            agent_id,
             sensation: SensationName::new("continues"),
-            description: Content::new("a thread"),
-            refs: vec![],
-            created_at: Utc::now(),
         };
 
-        // Different agent, timestamp, and refs — same link
         let other = Experience {
-            agent_id: AgentId::new(),
+            agent_id,
             sensation: SensationName::new("continues"),
-            description: Content::new("a threadulo"),
-            refs: vec![RecordRef::identified(
-                Id::new(),
-                RecordKind::Cognition,
-                None,
-            )],
-            created_at: Utc::now(),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

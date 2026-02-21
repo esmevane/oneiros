@@ -19,8 +19,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
@@ -29,23 +28,24 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
-            name: BrainName::new("test-brain"),
-            path: brain_path.to_path_buf(),
-            status: BrainStatus::Active,
-        },
+        HasPath::new(
+            brain_path,
+            Brain {
+                tenant_id,
+                name: BrainName::new("test-brain"),
+                status: BrainStatus::Active,
+            },
+        ),
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -60,8 +60,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             created_by: actor_id,
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
 }
@@ -163,7 +162,7 @@ async fn add_memory_returns_created() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let memory: Identity<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
+    let memory: Record<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
     assert!(!memory.id.is_empty());
     assert_eq!(memory.level, LevelName::new("core"));
     assert_eq!(
@@ -219,7 +218,7 @@ async fn list_memories_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Record<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -254,7 +253,7 @@ async fn list_memories_after_add() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Record<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
@@ -293,7 +292,7 @@ async fn list_memories_filtered_by_agent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Record<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "Architect memory.");
 }
@@ -333,7 +332,7 @@ async fn list_memories_filtered_by_level() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Record<MemoryId, Memory>> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "An active memory.");
 }
@@ -368,7 +367,7 @@ async fn get_memory_by_id() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Identity<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
+    let created: Record<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state);
     let response = app
@@ -378,7 +377,7 @@ async fn get_memory_by_id() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Identity<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Record<MemoryId, Memory> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.content.as_str(), "A notable memory.");
 }

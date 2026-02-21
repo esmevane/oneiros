@@ -19,8 +19,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
@@ -29,23 +28,24 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
-            name: BrainName::new("test-brain"),
-            path: brain_path.to_path_buf(),
-            status: BrainStatus::Active,
-        },
+        HasPath::new(
+            brain_path,
+            Brain {
+                tenant_id,
+                name: BrainName::new("test-brain"),
+                status: BrainStatus::Active,
+            },
+        ),
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -60,8 +60,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             created_by: actor_id,
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
 }
@@ -125,7 +124,7 @@ async fn set_sensation_returns_ok() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Sensation = serde_json::from_slice(&bytes).unwrap();
+    let info: SensationRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.name, SensationName::new("echoes"));
     assert_eq!(
         info.description.as_str(),
@@ -170,7 +169,7 @@ async fn set_sensation_is_idempotent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Sensation = serde_json::from_slice(&bytes).unwrap();
+    let info: SensationRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -184,7 +183,7 @@ async fn list_sensations_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Sensation> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<SensationRecord> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -209,7 +208,7 @@ async fn list_sensations_after_set() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Sensation> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<SensationRecord> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 

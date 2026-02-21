@@ -3,45 +3,52 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Sensation {
-    pub name: SensationName,
-    pub description: Description,
-    pub prompt: Prompt,
-}
+pub type SensationRecord = HasDescription<HasPrompt<Sensation>>;
 
-impl Sensation {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl SensationRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        sensation: impl Into<Sensation>,
+    ) -> Self {
+        HasDescription::new(
+            description.into(),
+            HasPrompt::new(prompt.into(), sensation.into()),
+        )
     }
 }
 
-impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
-    for Sensation
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Sensation {
+    pub name: SensationName,
+}
+
+impl Sensation {
+    pub fn construct_from_db(
+        (name, description, prompt): (impl AsRef<str>, impl AsRef<str>, impl AsRef<str>),
+    ) -> SensationRecord {
+        SensationRecord::init(
+            Description::new(description),
+            Prompt::new(prompt),
+            Sensation {
+                name: SensationName::new(name),
+            },
+        )
+    }
+}
+
+impl<GivenName> From<GivenName> for Sensation
 where
     GivenName: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
+    fn from(name: GivenName) -> Self {
         Sensation {
             name: SensationName::new(name),
-            description: Description::new(description),
-            prompt: Prompt::new(prompt),
         }
     }
 }
 
-impl Addressable for Sensation {
-    fn address_label() -> &'static str {
-        "sensation"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.name))
-    }
-}
-
+domain_link!(Sensation => SensationLink);
 domain_name!(SensationName);
 
 #[cfg(test)]
@@ -52,16 +59,12 @@ mod tests {
     fn sensation_identity() {
         let primary = Sensation {
             name: SensationName::new("echoes"),
-            description: Description::new("first"),
-            prompt: Prompt::new("first"),
         };
 
         let other = Sensation {
             name: SensationName::new("echoes"),
-            description: Description::new("updated"),
-            prompt: Prompt::new("updated"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

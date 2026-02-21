@@ -34,14 +34,16 @@ impl SetSensation {
         let info = client
             .set_sensation(
                 &context.ticket_token()?,
-                Sensation {
-                    name: self.name.clone(),
-                    description: self.description.clone(),
-                    prompt: self.prompt.clone(),
-                },
+                SensationRecord::init(
+                    self.description.clone(),
+                    self.prompt.clone(),
+                    Sensation {
+                        name: self.name.clone(),
+                    },
+                ),
             )
             .await?;
-        outcomes.emit(SetSensationOutcomes::SensationSet(info.name));
+        outcomes.emit(SetSensationOutcomes::SensationSet(info.name.clone()));
 
         Ok(outcomes)
     }

@@ -1,20 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    Agent, AgentId, Cognition, CognitionId, Connection, ConnectionId, Experience, ExperienceId,
-    Identity, Level, Memory, MemoryId, Nature, Persona, Sensation, Texture,
-};
+use crate::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DreamContext {
-    pub agent: Identity<AgentId, Agent>,
-    pub persona: Persona,
-    pub memories: Vec<Identity<MemoryId, Memory>>,
-    pub cognitions: Vec<Identity<CognitionId, Cognition>>,
-    pub experiences: Vec<Identity<ExperienceId, Experience>>,
-    pub connections: Vec<Identity<ConnectionId, Connection>>,
-    pub textures: Vec<Texture>,
-    pub levels: Vec<Level>,
-    pub sensations: Vec<Sensation>,
-    pub natures: Vec<Nature>,
+    pub agent: AgentRecord,
+    pub persona: PersonaRecord,
+    pub memories: Vec<Record<MemoryId, Memory>>,
+    pub cognitions: Vec<Record<CognitionId, Cognition>>,
+    pub experiences: Vec<ExperienceRecord>,
+    pub connections: Vec<Record<ConnectionId, Connection>>,
+    pub textures: Vec<TextureRecord>,
+    pub levels: Vec<LevelRecord>,
+    pub sensations: Vec<SensationRecord>,
+    pub natures: Vec<NatureRecord>,
 }

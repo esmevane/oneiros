@@ -1,4 +1,4 @@
-use oneiros_model::Texture;
+use oneiros_model::TextureRecord;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListTexturesOutcomes {
     NoTextures,
 
     #[outcome(message("Textures: {0:?}"))]
-    Textures(Vec<Texture>),
+    Textures(Vec<TextureRecord>),
 }

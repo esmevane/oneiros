@@ -1,13 +1,13 @@
-use oneiros_model::{Experience, ExperienceId, Identity};
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct ExperienceDetail(pub Identity<ExperienceId, Experience>);
+pub struct ExperienceDetail(pub ExperienceRecord);
 
 impl core::fmt::Display for ExperienceDetail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.as_detail())
+        write!(f, "{}", self.0.as_detail(&self.0.description, &self.0.refs))
     }
 }
 

@@ -1,3 +1,4 @@
+use data_encoding::DecodeError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -6,10 +7,7 @@ pub enum LinkError {
     Serialization(postcard::Error),
 
     #[error("failed to decode link: {0}")]
-    Decoding(String),
-
-    #[error("failed to encode link: {0}")]
-    Encoding(String),
+    Decoding(#[from] DecodeError),
 }
 
 impl From<postcard::Error> for LinkError {

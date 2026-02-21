@@ -3,21 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Tenant {
     pub name: TenantName,
 }
 
-impl Addressable for Tenant {
-    fn address_label() -> &'static str {
-        "tenant"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.name))
-    }
-}
-
+domain_link!(Tenant => TenantLink);
 domain_id!(TenantId);
 domain_name!(TenantName);
 
@@ -35,6 +26,6 @@ mod tests {
             name: TenantName::new("default"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

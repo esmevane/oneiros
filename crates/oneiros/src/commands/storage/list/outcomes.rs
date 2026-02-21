@@ -1,4 +1,4 @@
-use oneiros_model::StorageEntry;
+use oneiros_model::StorageEntryRecord;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListStorageOutcomes {
     NoEntries,
 
     #[outcome(message("Storage entries: {0:?}"))]
-    Entries(Vec<StorageEntry>),
+    Entries(Vec<StorageEntryRecord>),
 }

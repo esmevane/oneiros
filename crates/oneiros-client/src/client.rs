@@ -1,9 +1,5 @@
-use oneiros_model::{
-    Agent, AgentId, AgentName, Cognition, CognitionId, Connection, ConnectionId, DreamContext,
-    Experience, ExperienceId, Identity, Level, LevelName, Link, Memory, MemoryId, Nature,
-    NatureName, Persona, PersonaName, Sensation, SensationName, StorageEntry, StorageKey,
-    StorageRef, Texture, TextureName, Token,
-};
+use oneiros_link::*;
+use oneiros_model::*;
 use std::path::Path;
 
 use crate::*;
@@ -61,7 +57,7 @@ impl Client {
         &self,
         token: &Token,
         request: CreateAgentRequest,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    ) -> Result<AgentRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/agents", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -72,7 +68,7 @@ impl Client {
         token: &Token,
         name: &AgentName,
         request: UpdateAgentRequest,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    ) -> Result<AgentRecord, Error> {
         let uri = format!("/agents/{name}");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", &uri, token, Some(body)).await?;
@@ -85,17 +81,13 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_agent(
-        &self,
-        token: &Token,
-        name: &AgentName,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    pub async fn get_agent(&self, token: &Token, name: &AgentName) -> Result<AgentRecord, Error> {
         let uri = format!("/agents/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_agents(&self, token: &Token) -> Result<Vec<Identity<AgentId, Agent>>, Error> {
+    pub async fn list_agents(&self, token: &Token) -> Result<Vec<AgentRecord>, Error> {
         let bytes = self.send("GET", "/agents", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -104,7 +96,7 @@ impl Client {
         &self,
         token: &Token,
         request: AddCognitionRequest,
-    ) -> Result<Identity<CognitionId, Cognition>, Error> {
+    ) -> Result<Record<CognitionId, Cognition>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/cognitions", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -114,7 +106,7 @@ impl Client {
         &self,
         token: &Token,
         id: &CognitionId,
-    ) -> Result<Identity<CognitionId, Cognition>, Error> {
+    ) -> Result<Record<CognitionId, Cognition>, Error> {
         let uri = format!("/cognitions/{id}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -125,7 +117,7 @@ impl Client {
         token: &Token,
         agent: Option<&AgentName>,
         texture: Option<&TextureName>,
-    ) -> Result<Vec<Identity<CognitionId, Cognition>>, Error> {
+    ) -> Result<Vec<Record<CognitionId, Cognition>>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
             params.push(format!("agent={agent}"));
@@ -148,7 +140,7 @@ impl Client {
         &self,
         token: &Token,
         request: AddMemoryRequest,
-    ) -> Result<Identity<MemoryId, Memory>, Error> {
+    ) -> Result<Record<MemoryId, Memory>, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/memories", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -158,7 +150,7 @@ impl Client {
         &self,
         token: &Token,
         id: &MemoryId,
-    ) -> Result<Identity<MemoryId, Memory>, Error> {
+    ) -> Result<Record<MemoryId, Memory>, Error> {
         let uri = format!("/memories/{id}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -169,7 +161,7 @@ impl Client {
         token: &Token,
         agent: Option<&AgentName>,
         level: Option<&LevelName>,
-    ) -> Result<Vec<Identity<MemoryId, Memory>>, Error> {
+    ) -> Result<Vec<Record<MemoryId, Memory>>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
             params.push(format!("agent={agent}"));
@@ -188,7 +180,11 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn set_persona(&self, token: &Token, request: Persona) -> Result<Persona, Error> {
+    pub async fn set_persona(
+        &self,
+        token: &Token,
+        request: PersonaRecord,
+    ) -> Result<PersonaRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", "/personas", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -200,18 +196,26 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_persona(&self, token: &Token, name: &PersonaName) -> Result<Persona, Error> {
+    pub async fn get_persona(
+        &self,
+        token: &Token,
+        name: &PersonaName,
+    ) -> Result<PersonaRecord, Error> {
         let uri = format!("/personas/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_personas(&self, token: &Token) -> Result<Vec<Persona>, Error> {
+    pub async fn list_personas(&self, token: &Token) -> Result<Vec<PersonaRecord>, Error> {
         let bytes = self.send("GET", "/personas", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn set_texture(&self, token: &Token, request: Texture) -> Result<Texture, Error> {
+    pub async fn set_texture(
+        &self,
+        token: &Token,
+        request: TextureRecord,
+    ) -> Result<TextureRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", "/textures", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -223,18 +227,26 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_texture(&self, token: &Token, name: &TextureName) -> Result<Texture, Error> {
+    pub async fn get_texture(
+        &self,
+        token: &Token,
+        name: &TextureName,
+    ) -> Result<TextureRecord, Error> {
         let uri = format!("/textures/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_textures(&self, token: &Token) -> Result<Vec<Texture>, Error> {
+    pub async fn list_textures(&self, token: &Token) -> Result<Vec<TextureRecord>, Error> {
         let bytes = self.send("GET", "/textures", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn set_level(&self, token: &Token, request: Level) -> Result<Level, Error> {
+    pub async fn set_level(
+        &self,
+        token: &Token,
+        request: LevelRecord,
+    ) -> Result<LevelRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", "/levels", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -246,13 +258,13 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_level(&self, token: &Token, name: &LevelName) -> Result<Level, Error> {
+    pub async fn get_level(&self, token: &Token, name: &LevelName) -> Result<LevelRecord, Error> {
         let uri = format!("/levels/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_levels(&self, token: &Token) -> Result<Vec<Level>, Error> {
+    pub async fn list_levels(&self, token: &Token) -> Result<Vec<LevelRecord>, Error> {
         let bytes = self.send("GET", "/levels", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -263,7 +275,7 @@ impl Client {
         key: &StorageKey,
         data: Vec<u8>,
         description: &str,
-    ) -> Result<StorageEntry, Error> {
+    ) -> Result<StorageEntryRecord, Error> {
         let storage_ref = StorageRef::encode(key);
         let uri = format!("/storage/{storage_ref}");
         let headers = vec![("x-storage-description", description)];
@@ -287,7 +299,7 @@ impl Client {
         &self,
         token: &Token,
         key: &StorageKey,
-    ) -> Result<StorageEntry, Error> {
+    ) -> Result<StorageEntryRecord, Error> {
         let storage_ref = StorageRef::encode(key);
         let uri = format!("/storage/{storage_ref}");
         let bytes = self.send("GET", &uri, token, None).await?;
@@ -304,7 +316,7 @@ impl Client {
         self.send("GET", &uri, token, None).await
     }
 
-    pub async fn list_storage(&self, token: &Token) -> Result<Vec<StorageEntry>, Error> {
+    pub async fn list_storage(&self, token: &Token) -> Result<Vec<StorageEntryRecord>, Error> {
         let bytes = self.send("GET", "/storage", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -330,7 +342,7 @@ impl Client {
         &self,
         token: &Token,
         agent_name: &AgentName,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    ) -> Result<AgentRecord, Error> {
         let uri = format!("/introspect/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -341,8 +353,8 @@ impl Client {
     pub async fn set_sensation(
         &self,
         token: &Token,
-        request: Sensation,
-    ) -> Result<Sensation, Error> {
+        request: SensationRecord,
+    ) -> Result<SensationRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", "/sensations", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -358,20 +370,24 @@ impl Client {
         &self,
         token: &Token,
         name: &SensationName,
-    ) -> Result<Sensation, Error> {
+    ) -> Result<SensationRecord, Error> {
         let uri = format!("/sensations/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_sensations(&self, token: &Token) -> Result<Vec<Sensation>, Error> {
+    pub async fn list_sensations(&self, token: &Token) -> Result<Vec<SensationRecord>, Error> {
         let bytes = self.send("GET", "/sensations", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
     // -- Nature methods --
 
-    pub async fn set_nature(&self, token: &Token, request: Nature) -> Result<Nature, Error> {
+    pub async fn set_nature(
+        &self,
+        token: &Token,
+        request: NatureRecord,
+    ) -> Result<NatureRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", "/natures", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -383,13 +399,17 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_nature(&self, token: &Token, name: &NatureName) -> Result<Nature, Error> {
+    pub async fn get_nature(
+        &self,
+        token: &Token,
+        name: &NatureName,
+    ) -> Result<NatureRecord, Error> {
         let uri = format!("/natures/{name}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn list_natures(&self, token: &Token) -> Result<Vec<Nature>, Error> {
+    pub async fn list_natures(&self, token: &Token) -> Result<Vec<NatureRecord>, Error> {
         let bytes = self.send("GET", "/natures", token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -452,7 +472,7 @@ impl Client {
         &self,
         token: &Token,
         request: CreateExperienceRequest,
-    ) -> Result<Identity<ExperienceId, Experience>, Error> {
+    ) -> Result<ExperienceRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", "/experiences", token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -462,7 +482,7 @@ impl Client {
         &self,
         token: &Token,
         id: &ExperienceId,
-    ) -> Result<Identity<ExperienceId, Experience>, Error> {
+    ) -> Result<ExperienceRecord, Error> {
         let uri = format!("/experiences/{id}");
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -473,7 +493,7 @@ impl Client {
         token: &Token,
         agent: Option<&AgentName>,
         sensation: Option<&SensationName>,
-    ) -> Result<Vec<Identity<ExperienceId, Experience>>, Error> {
+    ) -> Result<Vec<ExperienceRecord>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
             params.push(format!("agent={agent}"));
@@ -497,7 +517,7 @@ impl Client {
         token: &Token,
         experience_id: &ExperienceId,
         request: AddExperienceRefRequest,
-    ) -> Result<Identity<ExperienceId, Experience>, Error> {
+    ) -> Result<ExperienceRecord, Error> {
         let uri = format!("/experiences/{experience_id}/refs");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("POST", &uri, token, Some(body)).await?;
@@ -509,7 +529,7 @@ impl Client {
         token: &Token,
         experience_id: &ExperienceId,
         request: UpdateExperienceDescriptionRequest,
-    ) -> Result<Identity<ExperienceId, Experience>, Error> {
+    ) -> Result<ExperienceRecord, Error> {
         let uri = format!("/experiences/{experience_id}/description");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", &uri, token, Some(body)).await?;
@@ -524,11 +544,7 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn sleep(
-        &self,
-        token: &Token,
-        agent_name: &AgentName,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    pub async fn sleep(&self, token: &Token, agent_name: &AgentName) -> Result<AgentRecord, Error> {
         let uri = format!("/lifecycle/sleep/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
@@ -538,7 +554,7 @@ impl Client {
         &self,
         token: &Token,
         request: CreateAgentRequest,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    ) -> Result<AgentRecord, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self
             .send("POST", "/lifecycle/emerge", token, Some(body))
@@ -556,17 +572,13 @@ impl Client {
         &self,
         token: &Token,
         agent_name: &AgentName,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    ) -> Result<AgentRecord, Error> {
         let uri = format!("/reflect/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn sense(
-        &self,
-        token: &Token,
-        agent_name: &AgentName,
-    ) -> Result<Identity<AgentId, Agent>, Error> {
+    pub async fn sense(&self, token: &Token, agent_name: &AgentName) -> Result<AgentRecord, Error> {
         let uri = format!("/sense/{agent_name}");
         let bytes = self.send("POST", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)

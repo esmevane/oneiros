@@ -7,5 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+oneiros-link.workspace = true
 oneiros-model.workspace = true
 serde.workspace = true

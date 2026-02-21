@@ -15,24 +15,25 @@ mod tests {
     use super::*;
     use oneiros_model::*;
 
-    fn test_agent() -> Identity<AgentId, Agent> {
-        Identity::new(
-            AgentId::new(),
+    fn test_agent() -> AgentRecord {
+        AgentRecord::init(
+            "A curious explorer agent",
+            "You explore and discover.",
             Agent {
                 name: AgentName::new("atlas"),
                 persona: PersonaName::new("explorer"),
-                description: Description::new("A curious explorer agent."),
-                prompt: Prompt::new("You explore and discover."),
             },
         )
     }
 
-    fn test_persona() -> Persona {
-        Persona {
-            name: PersonaName::new("explorer"),
-            description: Description::new("An explorer persona."),
-            prompt: Prompt::new("Explore with curiosity."),
-        }
+    fn test_persona() -> PersonaRecord {
+        PersonaRecord::init(
+            "An explorer persona.",
+            "Explore with curiosity.",
+            Persona {
+                name: PersonaName::new("explorer"),
+            },
+        )
     }
 
     #[test]
@@ -53,7 +54,7 @@ mod tests {
 
         assert!(rendered.contains("You are waking as atlas."));
         assert!(rendered.contains("## Your Identity"));
-        assert!(rendered.contains("A curious explorer agent."));
+        assert!(rendered.contains("A curious explorer agent"));
         assert!(rendered.contains("You explore and discover."));
         assert!(rendered.contains("## Your Persona"));
         assert!(rendered.contains("An explorer persona."));
@@ -91,15 +92,11 @@ mod tests {
         let context = DreamContext {
             agent: test_agent(),
             persona: test_persona(),
-            memories: vec![Identity::new(
-                MemoryId::new(),
-                Memory {
-                    agent_id: AgentId::new(),
-                    level: LevelName::new("core"),
-                    content: Content::new("I remember the beginning."),
-                    created_at: chrono::Utc::now(),
-                },
-            )],
+            memories: vec![Record::create(Memory {
+                agent_id: AgentId::new(),
+                level: LevelName::new("core"),
+                content: Content::new("I remember the beginning."),
+            })],
             cognitions: vec![],
             experiences: vec![],
             connections: vec![],
@@ -120,15 +117,11 @@ mod tests {
             agent: test_agent(),
             persona: test_persona(),
             memories: vec![],
-            cognitions: vec![Identity::new(
-                CognitionId::new(),
-                Cognition {
-                    agent_id: AgentId::new(),
-                    texture: TextureName::new("analytical"),
-                    content: Content::new("Patterns emerge from repetition."),
-                    created_at: chrono::Utc::now(),
-                },
-            )],
+            cognitions: vec![Record::create(Cognition {
+                agent_id: AgentId::new(),
+                texture: TextureName::new("analytical"),
+                content: Content::new("Patterns emerge from repetition."),
+            })],
             experiences: vec![],
             connections: vec![],
             textures: vec![],
@@ -151,16 +144,20 @@ mod tests {
             cognitions: vec![],
             experiences: vec![],
             connections: vec![],
-            textures: vec![Texture {
-                name: TextureName::new("analytical"),
-                description: Description::new("Analytical thinking"),
-                prompt: Prompt::new("Think analytically."),
-            }],
-            levels: vec![Level {
-                name: LevelName::new("core"),
-                description: Description::new("Core memories"),
-                prompt: Prompt::new("Fundamental knowledge."),
-            }],
+            textures: vec![TextureRecord::init(
+                "Analytical thinking",
+                "Think analytically.",
+                Texture {
+                    name: TextureName::new("analytical"),
+                },
+            )],
+            levels: vec![LevelRecord::init(
+                "Core memories",
+                "Fundamental knowledge.",
+                Level {
+                    name: LevelName::new("core"),
+                },
+            )],
             sensations: vec![],
             natures: vec![],
         };
@@ -210,7 +207,7 @@ mod tests {
 
         assert!(rendered.contains("# Cognitive Guidebook for atlas"));
         assert!(rendered.contains("## Your Identity"));
-        assert!(rendered.contains("A curious explorer agent."));
+        assert!(rendered.contains("A curious explorer agent"));
         assert!(rendered.contains("## Your Capabilities"));
         assert!(rendered.contains("## Your Lifecycle"));
         assert!(rendered.contains("## Your Agency"));
@@ -250,16 +247,20 @@ mod tests {
             cognitions: vec![],
             experiences: vec![],
             connections: vec![],
-            textures: vec![Texture {
-                name: TextureName::new("analytical"),
-                description: Description::new("Analytical thinking"),
-                prompt: Prompt::new("Think analytically."),
-            }],
-            levels: vec![Level {
-                name: LevelName::new("core"),
-                description: Description::new("Core memories"),
-                prompt: Prompt::new("Fundamental knowledge."),
-            }],
+            textures: vec![TextureRecord::init(
+                "Analytical thinking",
+                "Think analytically.",
+                Texture {
+                    name: TextureName::new("analytical"),
+                },
+            )],
+            levels: vec![LevelRecord::init(
+                "Core memories",
+                "Fundamental knowledge.",
+                Level {
+                    name: LevelName::new("core"),
+                },
+            )],
             sensations: vec![],
             natures: vec![],
         };

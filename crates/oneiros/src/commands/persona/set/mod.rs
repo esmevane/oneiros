@@ -34,14 +34,16 @@ impl SetPersona {
         let info = client
             .set_persona(
                 &context.ticket_token()?,
-                Persona {
-                    name: self.name.clone(),
-                    description: self.description.clone(),
-                    prompt: self.prompt.clone(),
-                },
+                PersonaRecord::init(
+                    self.description.clone(),
+                    self.prompt.clone(),
+                    Persona {
+                        name: self.name.clone(),
+                    },
+                ),
             )
             .await?;
-        outcomes.emit(SetPersonaOutcomes::PersonaSet(info.name));
+        outcomes.emit(SetPersonaOutcomes::PersonaSet(info.name.clone()));
 
         Ok(outcomes)
     }

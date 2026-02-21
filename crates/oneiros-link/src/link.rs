@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use data_encoding::BASE64URL_NOPAD;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +12,7 @@ use crate::LinkError;
 /// are displayed and parsed as base64url (no padding) for compact,
 /// URL-safe representation.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Link(Vec<u8>);
+pub struct Link(Bytes);
 
 impl Link {
     /// Create a link from any serializable content.
@@ -27,7 +28,9 @@ impl Link {
     /// # }
     /// ```
     pub fn new(content: &impl Serialize) -> Result<Self, LinkError> {
-        postcard::to_allocvec(content).map(Self).map_err(Into::into)
+        postcard::to_allocvec(content)
+            .map(Self::from_bytes)
+            .map_err(Into::into)
     }
 
     /// The raw postcard bytes of this link.
@@ -37,12 +40,12 @@ impl Link {
 
     /// Consume the link and return the raw bytes.
     pub fn into_bytes(self) -> Vec<u8> {
-        self.0
+        self.0.into()
     }
 
     /// Create a link from raw bytes. No validation is performed.
     pub fn from_bytes(bytes: Vec<u8>) -> Self {
-        Self(bytes)
+        Self(bytes.into())
     }
 
     /// Returns true if this link has no content.
@@ -61,10 +64,7 @@ impl core::str::FromStr for Link {
     type Err = LinkError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BASE64URL_NOPAD
-            .decode(s.as_bytes())
-            .map(Self)
-            .map_err(|e| LinkError::Decoding(e.to_string()))
+        Ok(BASE64URL_NOPAD.decode(s.as_bytes()).map(Self::from_bytes)?)
     }
 }
 

@@ -8,13 +8,7 @@ pub use responses::*;
 pub use sensing::*;
 
 mod events {
-    use oneiros_model::{
-        Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
-        Connection, ConnectionId, Content, DreamContext, Experience, ExperienceId, Identity, Level,
-        LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName, RecordRef,
-        Sensation, SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture, TextureName,
-        Ticket, TicketId,
-    };
+    use oneiros_model::*;
 
     use crate::SenseEvents;
 
@@ -33,54 +27,54 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum BrainEvents {
-        BrainCreated(Identity<BrainId, Brain>),
+        BrainCreated(Identity<BrainId, HasPath<Brain>>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum AgentEvents {
-        AgentCreated(Identity<AgentId, Agent>),
-        AgentUpdated(Identity<AgentId, Agent>),
+        AgentCreated(AgentRecord),
+        AgentUpdated(AgentRecord),
         AgentRemoved { name: AgentName },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum CognitionEvents {
-        CognitionAdded(Identity<CognitionId, Cognition>),
+        CognitionAdded(Record<CognitionId, Cognition>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum MemoryEvents {
-        MemoryAdded(Identity<MemoryId, Memory>),
+        MemoryAdded(Record<MemoryId, Memory>),
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum StorageEvents {
-        StorageSet(StorageEntry),
+        StorageSet(StorageEntryRecord),
         StorageRemoved { key: StorageKey },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum PersonaEvents {
-        PersonaSet(Persona),
+        PersonaSet(PersonaRecord),
         PersonaRemoved { name: PersonaName },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum TextureEvents {
-        TextureSet(Texture),
+        TextureSet(TextureRecord),
         TextureRemoved { name: TextureName },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum LevelEvents {
-        LevelSet(Level),
+        LevelSet(LevelRecord),
         LevelRemoved { name: LevelName },
     }
 
@@ -93,35 +87,35 @@ mod events {
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum SensationEvents {
-        SensationSet(Sensation),
+        SensationSet(SensationRecord),
         SensationRemoved { name: SensationName },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum NatureEvents {
-        NatureSet(Nature),
+        NatureSet(NatureRecord),
         NatureRemoved { name: NatureName },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum ConnectionEvents {
-        ConnectionCreated(Identity<ConnectionId, Connection>),
+        ConnectionCreated(Record<ConnectionId, Connection>),
         ConnectionRemoved { id: ConnectionId },
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
     #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
     pub enum ExperienceEvents {
-        ExperienceCreated(Identity<ExperienceId, Experience>),
+        ExperienceCreated(ExperienceRecord),
         ExperienceRefAdded {
             experience_id: ExperienceId,
             record_ref: RecordRef,
         },
         ExperienceDescriptionUpdated {
             experience_id: ExperienceId,
-            description: Content,
+            description: Description,
         },
     }
 

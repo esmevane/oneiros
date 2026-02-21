@@ -10,9 +10,7 @@ pub(crate) async fn handler(
 ) -> Result<StatusCode, Error> {
     let event = Events::Agent(AgentEvents::AgentRemoved { name });
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok(StatusCode::OK)
 }

@@ -20,8 +20,7 @@ fn seed_tenant_and_actor(db: &Database) {
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         ActorId::new(),
@@ -30,8 +29,7 @@ fn seed_tenant_and_actor(db: &Database) {
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 }
 
 fn setup() -> (TempDir, Arc<ServiceState>) {

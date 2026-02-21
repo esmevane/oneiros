@@ -1,8 +1,6 @@
-use std::fmt;
-use std::ops::Deref;
-
 use oneiros_link::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use std::{fmt, ops::Deref};
 
 /// A shape paired with an external identifier.
 ///
@@ -48,35 +46,45 @@ impl<I, T> Deref for Identity<I, T> {
     }
 }
 
-impl<I, T: Addressable> Addressable for Identity<I, T> {
-    fn address_label() -> &'static str {
-        T::address_label()
+impl<I, T> AsLink for Identity<I, T>
+where
+    T: AsLink,
+    T::Linkable: Linkable,
+{
+    type Linkable = T::Linkable;
+
+    fn as_link(&self) -> Result<Self::Linkable, LinkError> {
+        self.inner.as_link()
+    }
+}
+
+impl<I, T> Linkable for Identity<I, T>
+where
+    I: Serialize + DeserializeOwned,
+    T: Linkable,
+{
+    fn to_link(&self) -> Result<Link, LinkError> {
+        self.inner.to_link()
     }
 
-    fn link(&self) -> Result<Link, LinkError> {
-        self.inner.link()
+    fn to_link_string(&self) -> Result<String, LinkError> {
+        self.inner.to_link_string()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use oneiros_link::*;
     use pretty_assertions::assert_eq;
+
+    use crate::*;
+
+    use super::*;
 
     #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
     struct Widget {
         name: String,
         color: String,
-    }
-
-    impl Addressable for Widget {
-        fn address_label() -> &'static str {
-            "widget"
-        }
-
-        fn link(&self) -> Result<Link, LinkError> {
-            Link::new(&(Self::address_label(), &self.name))
-        }
     }
 
     #[test]
@@ -85,7 +93,9 @@ mod tests {
             name: "sprocket".into(),
             color: "red".into(),
         };
+
         let identity = Identity::new(42u64, widget);
+
         assert_eq!(identity.id, 42);
         assert_eq!(identity.name, "sprocket");
     }
@@ -96,7 +106,9 @@ mod tests {
             name: "sprocket".into(),
             color: "red".into(),
         };
+
         let identity = Identity::new(42u64, widget);
+
         assert_eq!(identity.color, "red");
     }
 
@@ -106,6 +118,7 @@ mod tests {
             name: "sprocket".into(),
             color: "red".into(),
         };
+
         let identity = Identity::new(42u64, widget);
         let json = serde_json::to_value(&identity).unwrap();
 
@@ -121,49 +134,62 @@ mod tests {
             name: "sprocket".into(),
             color: "red".into(),
         };
+
         let identity = Identity::new(42u64, widget);
         let json = serde_json::to_string(&identity).unwrap();
         let deserialized: Identity<u64, Widget> = serde_json::from_str(&json).unwrap();
+
         assert_eq!(deserialized, identity);
     }
 
     #[test]
-    fn delegates_addressable_to_inner() {
-        let widget = Widget {
-            name: "sprocket".into(),
-            color: "red".into(),
+    fn delegates_as_link_to_inner() {
+        let widget = Actor {
+            tenant_id: TenantId::new(),
+            name: ActorName::new("red"),
         };
-        let expected = widget.link().unwrap();
+
+        let expected = widget.as_link().unwrap();
         let identity = Identity::new(42u64, widget);
-        assert_eq!(identity.link().unwrap(), expected);
+
+        assert_eq!(identity.as_link().unwrap(), expected);
     }
 
     #[test]
-    fn different_id_same_address() {
-        let i1 = Identity::new(
+    fn different_identities_have_the_same_link() {
+        let tenant_id = TenantId::new();
+        let identity_one = Identity::new(
             1u64,
-            Widget {
-                name: "sprocket".into(),
-                color: "red".into(),
+            Actor {
+                tenant_id,
+                name: ActorName::new("red"),
             },
         );
-        let i2 = Identity::new(
+
+        let identity_two = Identity::new(
             2u64,
-            Widget {
-                name: "sprocket".into(),
-                color: "red".into(),
+            Actor {
+                tenant_id,
+                name: ActorName::new("red"),
             },
         );
-        assert_eq!(i1.link().unwrap(), i2.link().unwrap());
+
+        assert_eq!(
+            identity_one.as_link().unwrap(),
+            identity_two.as_link().unwrap()
+        );
     }
 
     #[test]
     fn into_inner_returns_shape() {
-        let widget = Widget {
-            name: "sprocket".into(),
-            color: "red".into(),
+        let tenant_id = TenantId::new();
+        let widget = Actor {
+            tenant_id,
+            name: ActorName::new("red"),
         };
+
         let identity = Identity::new(42u64, widget.clone());
+
         assert_eq!(identity.into_inner(), widget);
     }
 }

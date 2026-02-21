@@ -1,8 +1,8 @@
-use oneiros_model::{Brain, BrainId, Identity, Token};
+use oneiros_model::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrainInfo {
-    pub entity: Identity<BrainId, Brain>,
+    pub entity: Identity<BrainId, HasPath<Brain>>,
     pub token: Token,
 }
