@@ -74,7 +74,7 @@ impl core::str::FromStr for PrefixId {
         let cleaned = s.replace('-', "");
 
         // Full UUID: exactly 32 hex characters (with or without dashes).
-        // Parse via Id to get Id::Legacy. PrefixId only works with UUIDs.
+        // PrefixId only works with UUIDs.
         if cleaned.len() == 32
             && cleaned.chars().all(|c| c.is_ascii_hexdigit())
             && let Ok(id) = s.parse::<Id>()

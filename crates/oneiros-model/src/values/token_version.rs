@@ -3,16 +3,32 @@ pub(super) enum TokenVersion {
     V0(super::claim::TokenClaims),
 }
 
-/// Legacy token format: raw UUIDs without the tagged `Id` enum wrapper.
-/// Used to decode tokens created before the `Id` type became an enum.
+/// Enum-era token format: tokens issued while `Id` was a tagged enum
+/// (`Legacy(Uuid)` / `Content(Bytes)`). These tokens carry an extra
+/// variant discriminant per ID in their postcard bytes.
 #[derive(serde::Deserialize)]
-pub(super) enum LegacyTokenVersion {
-    V0(LegacyClaims),
+pub(super) enum EnumEraTokenVersion {
+    V0(EnumEraClaims),
 }
 
 #[derive(serde::Deserialize)]
-pub(super) struct LegacyClaims {
-    pub brain_id: uuid::Uuid,
-    pub tenant_id: uuid::Uuid,
-    pub actor_id: uuid::Uuid,
+pub(super) struct EnumEraClaims {
+    pub brain_id: EnumEraId,
+    pub tenant_id: EnumEraId,
+    pub actor_id: EnumEraId,
+}
+
+#[derive(serde::Deserialize)]
+pub(super) enum EnumEraId {
+    Legacy(uuid::Uuid),
+    Content(()),
+}
+
+impl EnumEraId {
+    pub fn into_uuid(self) -> Option<uuid::Uuid> {
+        match self {
+            Self::Legacy(uuid) => Some(uuid),
+            Self::Content(_) => None,
+        }
+    }
 }
