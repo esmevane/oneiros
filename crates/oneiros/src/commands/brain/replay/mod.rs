@@ -35,6 +35,7 @@ impl ReplayBrain {
         let source_db = Database::open_brain(&brain_path)?;
         let events = source_db.read_events()?;
         let event_count = events.len();
+
         outcomes.emit(ReplayBrainOutcomes::EventsRead(event_count));
 
         // Step 2: Rewrite events with content-addressed IDs.
@@ -68,7 +69,7 @@ impl ReplayBrain {
                     let event_type = event["type"].as_str().unwrap_or("unknown");
                     outcomes.emit(ReplayBrainOutcomes::ProjectionWarning(
                         replayed + 1,
-                        event_type.to_string(),
+                        event.to_string(),
                         projection_err.to_string(),
                     ));
                     warnings += 1;
