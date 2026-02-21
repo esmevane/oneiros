@@ -118,7 +118,7 @@ mod tests {
             Experience {
                 agent_id: AgentId::new(),
                 sensation: SensationName::new(sensation),
-                description: Content::new("test"),
+                description: Description::new("test"),
                 refs: vec![],
                 created_at: Utc::now(),
             },

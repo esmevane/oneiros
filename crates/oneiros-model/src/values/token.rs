@@ -45,9 +45,18 @@ impl Token {
         let EnumEraTokenVersion::V0(claims) = tagged;
 
         Ok(Claim {
-            brain_id: BrainId(Id(claims.brain_id.into_uuid().ok_or(TokenError::Encoding)?)),
-            tenant_id: TenantId(Id(claims.tenant_id.into_uuid().ok_or(TokenError::Encoding)?)),
-            actor_id: ActorId(Id(claims.actor_id.into_uuid().ok_or(TokenError::Encoding)?)),
+            brain_id: BrainId(Id(claims
+                .brain_id
+                .into_uuid()
+                .ok_or(TokenError::Encoding)?)),
+            tenant_id: TenantId(Id(claims
+                .tenant_id
+                .into_uuid()
+                .ok_or(TokenError::Encoding)?)),
+            actor_id: ActorId(Id(claims
+                .actor_id
+                .into_uuid()
+                .ok_or(TokenError::Encoding)?)),
         })
     }
 
@@ -115,12 +124,12 @@ mod tests {
         });
 
         let payload = postcard::to_allocvec(&old_versioned).unwrap();
-        let encoded = data_encoding::BASE32_NOPAD
-            .encode(&payload)
-            .to_lowercase();
+        let encoded = data_encoding::BASE32_NOPAD.encode(&payload).to_lowercase();
         let token = Token(encoded);
 
-        let decoded = token.decode().expect("enum-era token should decode via fallback");
+        let decoded = token
+            .decode()
+            .expect("enum-era token should decode via fallback");
 
         assert_eq!(decoded.brain_id, BrainId(Id(brain_uuid)));
         assert_eq!(decoded.tenant_id, TenantId(Id(tenant_uuid)));
@@ -155,12 +164,12 @@ mod tests {
         });
 
         let payload = postcard::to_allocvec(&old_versioned).unwrap();
-        let encoded = data_encoding::BASE32_NOPAD
-            .encode(&payload)
-            .to_lowercase();
+        let encoded = data_encoding::BASE32_NOPAD.encode(&payload).to_lowercase();
         let token = Token(encoded);
 
-        let decoded = token.decode().expect("legacy token should decode via primary path");
+        let decoded = token
+            .decode()
+            .expect("legacy token should decode via primary path");
 
         assert_eq!(decoded.brain_id, BrainId(Id(brain_uuid)));
         assert_eq!(decoded.tenant_id, TenantId(Id(tenant_uuid)));

@@ -1,8 +1,8 @@
 use oneiros_db::{Database, DatabaseError, Projection};
 use oneiros_model::{
     Actor, ActorId, Addressable, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
-    Connection, ConnectionId, Content, Experience, ExperienceId, Identity, Level, LevelName,
-    Memory, MemoryId, Nature, NatureName, Persona, PersonaName, EntityRef, Sensation,
+    Connection, ConnectionId, Description, EntityRef, Experience, ExperienceId, Identity, Level,
+    LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName, Sensation,
     SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture, TextureName, Ticket,
     TicketId,
 };
@@ -73,7 +73,7 @@ struct RefAdded {
 #[derive(serde::Deserialize)]
 struct DescriptionUpdated {
     experience_id: ExperienceId,
-    description: Content,
+    description: Description,
 }
 
 // -- System projections --

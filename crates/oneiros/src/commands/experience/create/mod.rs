@@ -17,7 +17,7 @@ pub(crate) struct CreateExperience {
     sensation: SensationName,
 
     /// A description of the experience.
-    description: Content,
+    description: Description,
 
     /// References to cognitive records in the format: id:kind or id:kind:role
     #[arg(long = "ref")]

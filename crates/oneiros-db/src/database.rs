@@ -223,7 +223,13 @@ impl Database {
         self.conn.execute(
             "insert or ignore into brain (id, tenant_id, name, path, link) \
              values (?1, ?2, ?3, ?4, ?5)",
-            params![&brain_id_str, &tenant_id_str, name.as_ref(), path, &link_str],
+            params![
+                &brain_id_str,
+                &tenant_id_str,
+                name.as_ref(),
+                path,
+                &link_str
+            ],
         )?;
         Ok(())
     }
@@ -233,10 +239,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_actor_id(
-        &self,
-        tenant_id: &TenantId,
-    ) -> Result<Option<String>, DatabaseError> {
+    pub fn get_actor_id(&self, tenant_id: &TenantId) -> Result<Option<String>, DatabaseError> {
         let tenant_id_str = tenant_id.to_string();
         let result = self.conn.query_row(
             "select id from actor where tenant_id = ?1 limit 1",
@@ -358,10 +361,7 @@ impl Database {
         Ok(personas)
     }
 
-    pub fn get_persona_by_link(
-        &self,
-        link: &Link,
-    ) -> Result<Option<Persona>, DatabaseError> {
+    pub fn get_persona_by_link(&self, link: &Link) -> Result<Option<Persona>, DatabaseError> {
         let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from persona where link = ?1",
@@ -473,10 +473,7 @@ impl Database {
         Ok(textures)
     }
 
-    pub fn get_texture_by_link(
-        &self,
-        link: &Link,
-    ) -> Result<Option<Texture>, DatabaseError> {
+    pub fn get_texture_by_link(&self, link: &Link) -> Result<Option<Texture>, DatabaseError> {
         let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from texture where link = ?1",
@@ -645,7 +642,14 @@ impl Database {
         self.conn.execute(
             "insert or ignore into agent (id, name, persona, description, prompt, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![&id_str, name.as_ref(), persona.as_ref(), description, prompt, &link_str],
+            params![
+                &id_str,
+                name.as_ref(),
+                persona.as_ref(),
+                description,
+                prompt,
+                &link_str
+            ],
         )?;
         Ok(())
     }
@@ -662,7 +666,13 @@ impl Database {
         self.conn.execute(
             "update agent set persona = ?2, description = ?3, prompt = ?4, link = ?5 \
              where name = ?1",
-            params![name.as_ref(), persona.as_ref(), description, prompt, &link_str],
+            params![
+                name.as_ref(),
+                persona.as_ref(),
+                description,
+                prompt,
+                &link_str
+            ],
         )?;
         Ok(())
     }
@@ -795,7 +805,14 @@ impl Database {
         self.conn.execute(
             "insert or ignore into cognition (id, agent_id, texture, content, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![&id_str, &agent_id_str, texture.as_ref(), content, created_at, &link_str],
+            params![
+                &id_str,
+                &agent_id_str,
+                texture.as_ref(),
+                content,
+                created_at,
+                &link_str
+            ],
         )?;
         Ok(())
     }
@@ -998,7 +1015,14 @@ impl Database {
         self.conn.execute(
             "insert or ignore into memory (id, agent_id, level, content, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![&id_str, &agent_id_str, level.as_ref(), content, created_at, &link_str],
+            params![
+                &id_str,
+                &agent_id_str,
+                level.as_ref(),
+                content,
+                created_at,
+                &link_str
+            ],
         )?;
         Ok(())
     }
@@ -1253,10 +1277,7 @@ impl Database {
         Ok(sensations)
     }
 
-    pub fn get_sensation_by_link(
-        &self,
-        link: &Link,
-    ) -> Result<Option<Sensation>, DatabaseError> {
+    pub fn get_sensation_by_link(&self, link: &Link) -> Result<Option<Sensation>, DatabaseError> {
         let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from sensation where link = ?1",
@@ -1366,10 +1387,7 @@ impl Database {
         Ok(natures)
     }
 
-    pub fn get_nature_by_link(
-        &self,
-        link: &Link,
-    ) -> Result<Option<Nature>, DatabaseError> {
+    pub fn get_nature_by_link(&self, link: &Link) -> Result<Option<Nature>, DatabaseError> {
         let link_str = link.to_string();
         let result = self.conn.query_row(
             "select name, description, prompt from nature where link = ?1",
@@ -1430,7 +1448,14 @@ impl Database {
         self.conn.execute(
             "insert or ignore into connection (id, nature, from_link, to_link, created_at, link) \
              values (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![&id_str, nature.as_ref(), &from_link_str, &to_link_str, created_at, &link_str],
+            params![
+                &id_str,
+                nature.as_ref(),
+                &from_link_str,
+                &to_link_str,
+                created_at,
+                &link_str
+            ],
         )?;
         Ok(())
     }
@@ -1831,7 +1856,12 @@ impl Database {
         let mut refs = Vec::new();
         for row in rows {
             let (record_id, record_kind, role, link) = row?;
-            refs.push(EntityRef::construct_from_db(record_id, record_kind, role, link)?);
+            refs.push(EntityRef::construct_from_db(
+                record_id,
+                record_kind,
+                role,
+                link,
+            )?);
         }
         Ok(refs)
     }
@@ -1875,10 +1905,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_blob(
-        &self,
-        hash: &ContentHash,
-    ) -> Result<Option<(Vec<u8>, usize)>, DatabaseError> {
+    pub fn get_blob(&self, hash: &ContentHash) -> Result<Option<(Vec<u8>, usize)>, DatabaseError> {
         let result = self.conn.query_row(
             "select data, size from blob where hash = ?1",
             params![hash.as_ref()],
@@ -1912,12 +1939,7 @@ impl Database {
              on conflict(key) do update set \
              description = excluded.description, hash = excluded.hash, \
              link = excluded.link",
-            params![
-                key.as_ref(),
-                description,
-                hash.as_ref(),
-                &link_str
-            ],
+            params![key.as_ref(), description, hash.as_ref(), &link_str],
         )?;
         Ok(())
     }
@@ -1968,10 +1990,7 @@ impl Database {
         Ok(entries)
     }
 
-    pub fn get_storage_by_link(
-        &self,
-        link: &Link,
-    ) -> Result<Option<StorageEntry>, DatabaseError> {
+    pub fn get_storage_by_link(&self, link: &Link) -> Result<Option<StorageEntry>, DatabaseError> {
         let link_str = link.to_string();
         let result = self.conn.query_row(
             "select key, description, hash from storage where link = ?1",

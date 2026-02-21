@@ -21,6 +21,8 @@ pub(super) struct EnumEraClaims {
 #[derive(serde::Deserialize)]
 pub(super) enum EnumEraId {
     Legacy(uuid::Uuid),
+    /// Exists for postcard deserialization of tokens issued during the Id-as-enum era.
+    /// Tokens with Content IDs will fail to decode (returns TokenError::Encoding).
     Content(()),
 }
 

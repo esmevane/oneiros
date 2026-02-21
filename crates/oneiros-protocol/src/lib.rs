@@ -11,8 +11,8 @@ mod events {
     use chrono::{DateTime, Utc};
     use oneiros_model::{
         Actor, ActorId, Agent, AgentId, AgentName, Brain, BrainId, Cognition, CognitionId,
-        Connection, ConnectionId, Content, DreamContext, Experience, ExperienceId, Identity, Level,
-        LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName, EntityRef,
+        Connection, ConnectionId, Description, DreamContext, EntityRef, Experience, ExperienceId,
+        Identity, Level, LevelName, Memory, MemoryId, Nature, NatureName, Persona, PersonaName,
         Sensation, SensationName, StorageEntry, StorageKey, Tenant, TenantId, Texture, TextureName,
         Ticket, TicketId,
     };
@@ -126,7 +126,7 @@ mod events {
         },
         ExperienceDescriptionUpdated {
             experience_id: ExperienceId,
-            description: Content,
+            description: Description,
         },
     }
 

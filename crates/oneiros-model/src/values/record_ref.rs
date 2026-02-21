@@ -89,7 +89,7 @@ struct EntityRefDeHelper {
     /// Not stored in EntityRef — the Link carries the resource type.
     #[serde(default)]
     #[allow(dead_code)]
-    kind: Option<RecordKind>,
+    kind: Option<String>,
     #[serde(default)]
     role: Option<Label>,
 }
@@ -105,7 +105,7 @@ impl<'de> Deserialize<'de> for EntityRef {
             (None, None) => {
                 return Err(serde::de::Error::custom(
                     "EntityRef requires at least one of 'id' or 'link'",
-                ))
+                ));
             }
         };
 
@@ -161,10 +161,7 @@ impl EntityRef {
     ) -> Result<Self, EntityRefConstructionError> {
         let role = role.map(Label::new);
 
-        let parsed_link = link
-            .as_deref()
-            .map(|s| s.parse::<Link>())
-            .transpose()?;
+        let parsed_link = link.as_deref().map(|s| s.parse::<Link>()).transpose()?;
 
         let parsed_id = record_id
             .as_deref()
@@ -196,6 +193,7 @@ pub enum RecordKind {
     Cognition,
     Memory,
     Experience,
+    Connection,
     Storage,
 }
 
@@ -205,6 +203,7 @@ impl core::fmt::Display for RecordKind {
             RecordKind::Cognition => write!(f, "cognition"),
             RecordKind::Memory => write!(f, "memory"),
             RecordKind::Experience => write!(f, "experience"),
+            RecordKind::Connection => write!(f, "connection"),
             RecordKind::Storage => write!(f, "storage"),
         }
     }
@@ -222,6 +221,7 @@ impl core::str::FromStr for RecordKind {
             "cognition" => Ok(RecordKind::Cognition),
             "memory" => Ok(RecordKind::Memory),
             "experience" => Ok(RecordKind::Experience),
+            "connection" => Ok(RecordKind::Connection),
             "storage" => Ok(RecordKind::Storage),
             other => Err(RecordKindParseError(other.to_string())),
         }

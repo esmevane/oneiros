@@ -38,6 +38,11 @@ pub(super) async fn list_ids_for_kind(
             let all = client.list_experiences(token, None, None).await?;
             all.iter().map(|e| e.id.inner().clone()).collect()
         }
+        RecordKind::Connection => {
+            let all = client.list_connections(token, None, None).await?;
+            all.iter().map(|c| c.id.inner().clone()).collect()
+        }
+        // Storage entries are keyed by name/path, not UUID — prefix resolution doesn't apply.
         RecordKind::Storage => {
             vec![]
         }

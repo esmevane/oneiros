@@ -353,12 +353,10 @@ mod tests {
     #[test]
     fn deserialize_from_string() {
         // Serde deserialization delegates to FromStr.
-        let key: Key<String, u64> =
-            serde_json::from_value(serde_json::json!("hello")).unwrap();
+        let key: Key<String, u64> = serde_json::from_value(serde_json::json!("hello")).unwrap();
         assert_eq!(key, Key::Id("hello".into()));
 
-        let key: Key<String, u64> =
-            serde_json::from_value(serde_json::json!("42")).unwrap();
+        let key: Key<String, u64> = serde_json::from_value(serde_json::json!("42")).unwrap();
         assert_eq!(key, Key::Link(42));
     }
 }

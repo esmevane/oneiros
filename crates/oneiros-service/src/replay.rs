@@ -216,8 +216,10 @@ fn rewrite_connection(
 
 /// Rewrite an experience-ref-added event.
 ///
-/// Maps experience_id, maps the record_ref's id (if IdentifiedRef variant),
-/// and backfills created_at from the event row's timestamp when absent.
+/// Maps experience_id, maps the record_ref's id if the ref has an id field
+/// (EntityRef with Key::Id or Key::Both). Refs with only a link field
+/// (EntityRef with Key::Link) are already content-addressed.
+/// Backfills created_at from the event row's timestamp when absent.
 fn rewrite_experience_ref_added(
     data: &mut Value,
     id_map: &mut HashMap<String, String>,
@@ -226,8 +228,8 @@ fn rewrite_experience_ref_added(
     // Map the experience_id.
     map_field(data, &["data", "experience_id"], id_map);
 
-    // Map the record_ref's id if it's an IdentifiedRef (has "id" field).
-    // LinkedRef variants (with "link" field) are already content-addressed.
+    // Map the record_ref's id when present (Key::Id or Key::Both).
+    // Refs with only a link (Key::Link) are already content-addressed.
     if data["data"]["record_ref"]["id"].is_string() {
         map_field(data, &["data", "record_ref", "id"], id_map);
     }

@@ -10,7 +10,7 @@ use super::ExperienceConstructionError;
 pub struct Experience {
     pub agent_id: AgentId,
     pub sensation: SensationName,
-    pub description: Content,
+    pub description: Description,
     pub refs: Vec<EntityRef>,
     pub created_at: DateTime<Utc>,
 }
@@ -74,7 +74,7 @@ impl Experience {
                 .parse()
                 .map_err(ExperienceConstructionError::InvalidAgentId)?,
             sensation: SensationName::new(sensation),
-            description: Content::new(description),
+            description: Description::new(description),
             refs,
             created_at: created_at
                 .as_ref()
@@ -109,7 +109,7 @@ mod tests {
         let primary = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
-            description: Content::new("a thread"),
+            description: Description::new("a thread"),
             refs: vec![],
             created_at: Utc::now(),
         };
@@ -118,7 +118,7 @@ mod tests {
         let other = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
-            description: Content::new("a thread"),
+            description: Description::new("a thread"),
             refs: vec![EntityRef::from_id(Id::new(), None)],
             created_at: Utc::now(),
         };
@@ -131,7 +131,7 @@ mod tests {
         let primary = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
-            description: Content::new("a thread"),
+            description: Description::new("a thread"),
             refs: vec![],
             created_at: Utc::now(),
         };
@@ -140,7 +140,7 @@ mod tests {
         let other = Experience {
             agent_id: AgentId::new(),
             sensation: SensationName::new("continues"),
-            description: Content::new("a different thread"),
+            description: Description::new("a different thread"),
             refs: vec![],
             created_at: Utc::now(),
         };
