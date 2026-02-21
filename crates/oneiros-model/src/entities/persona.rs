@@ -3,45 +3,52 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Persona {
-    pub name: PersonaName,
-    pub description: Description,
-    pub prompt: Prompt,
-}
+pub type PersonaRecord = HasDescription<HasPrompt<Persona>>;
 
-impl Persona {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl PersonaRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        persona: impl Into<Persona>,
+    ) -> Self {
+        HasDescription::new(
+            description.into(),
+            HasPrompt::new(prompt.into(), persona.into()),
+        )
     }
 }
 
-impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
-    for Persona
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Persona {
+    pub name: PersonaName,
+}
+
+impl Persona {
+    pub fn construct_from_db(
+        (name, description, prompt): (impl AsRef<str>, impl AsRef<str>, impl AsRef<str>),
+    ) -> PersonaRecord {
+        PersonaRecord::init(
+            Description::new(description),
+            Prompt::new(prompt),
+            Persona {
+                name: PersonaName::new(name),
+            },
+        )
+    }
+}
+
+impl<GivenName> From<GivenName> for Persona
 where
     GivenName: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
+    fn from(name: GivenName) -> Self {
         Persona {
             name: PersonaName::new(name),
-            description: Description::new(description),
-            prompt: Prompt::new(prompt),
         }
     }
 }
 
-impl Addressable for Persona {
-    fn address_label() -> &'static str {
-        "persona"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.name))
-    }
-}
-
+domain_link!(Persona => PersonaLink);
 domain_name!(PersonaName);
 
 #[cfg(test)]
@@ -52,16 +59,12 @@ mod tests {
     fn persona_identity() {
         let primary = Persona {
             name: PersonaName::new("process"),
-            description: Description::new("first"),
-            prompt: Prompt::new("first"),
         };
 
         let other = Persona {
             name: PersonaName::new("process"),
-            description: Description::new("updated"),
-            prompt: Prompt::new("updated"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

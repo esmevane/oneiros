@@ -19,8 +19,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
@@ -29,8 +28,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     // Create the brain database file on disk
     Database::create_brain_db(brain_path).unwrap();
@@ -39,15 +37,17 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
-            name: BrainName::new("test-brain"),
-            path: brain_path.to_path_buf(),
-            status: BrainStatus::Active,
-        },
+        HasPath::new(
+            brain_path,
+            Brain {
+                tenant_id,
+                name: BrainName::new("test-brain"),
+                status: BrainStatus::Active,
+            },
+        ),
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     // Issue a root ticket for the brain
     let token = Token::issue(TokenClaims {
@@ -63,8 +63,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             created_by: actor_id,
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
 }
@@ -128,7 +127,7 @@ async fn set_persona_returns_ok() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Persona = serde_json::from_slice(&bytes).unwrap();
+    let info: PersonaRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.name, PersonaName::new("expert"));
     assert_eq!(info.description.as_str(), "A domain expert");
     assert_eq!(info.prompt.as_str(), "You are a domain expert.");
@@ -174,7 +173,7 @@ async fn set_persona_is_idempotent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Persona = serde_json::from_slice(&bytes).unwrap();
+    let info: PersonaRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -188,7 +187,7 @@ async fn list_personas_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Persona> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<PersonaRecord> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -213,7 +212,7 @@ async fn list_personas_after_set() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Persona> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<PersonaRecord> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 

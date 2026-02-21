@@ -3,45 +3,52 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Level {
-    pub name: LevelName,
-    pub description: Description,
-    pub prompt: Prompt,
-}
+pub type LevelRecord = HasDescription<HasPrompt<Level>>;
 
-impl Level {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl LevelRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        level: impl Into<Level>,
+    ) -> Self {
+        HasDescription::new(
+            description.into(),
+            HasPrompt::new(prompt.into(), level.into()),
+        )
     }
 }
 
-impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
-    for Level
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Level {
+    pub name: LevelName,
+}
+
+impl Level {
+    pub fn construct_from_db(
+        (name, description, prompt): (impl AsRef<str>, impl AsRef<str>, impl AsRef<str>),
+    ) -> LevelRecord {
+        LevelRecord::init(
+            Description::new(description),
+            Prompt::new(prompt),
+            Level {
+                name: LevelName::new(name),
+            },
+        )
+    }
+}
+
+impl<GivenName> From<GivenName> for Level
 where
     GivenName: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
+    fn from(name: GivenName) -> Self {
         Level {
             name: LevelName::new(name),
-            description: Description::new(description),
-            prompt: Prompt::new(prompt),
         }
     }
 }
 
-impl Addressable for Level {
-    fn address_label() -> &'static str {
-        "level"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.name))
-    }
-}
-
+domain_link!(Level => LevelLink);
 domain_name!(LevelName);
 
 #[cfg(test)]
@@ -52,16 +59,12 @@ mod tests {
     fn level_identity() {
         let primary = Level {
             name: LevelName::new("project"),
-            description: Description::new("first"),
-            prompt: Prompt::new("first"),
         };
 
         let other = Level {
             name: LevelName::new("project"),
-            description: Description::new("updated"),
-            prompt: Prompt::new("updated"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

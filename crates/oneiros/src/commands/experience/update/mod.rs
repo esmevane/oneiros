@@ -14,7 +14,7 @@ pub(crate) struct UpdateExperience {
     id: PrefixId,
 
     /// The new description for the experience.
-    description: Content,
+    description: Description,
 }
 
 impl UpdateExperience {

@@ -8,7 +8,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
     Json(request): Json<AddExperienceRefRequest>,
-) -> Result<(StatusCode, Json<Identity<ExperienceId, Experience>>), Error> {
+) -> Result<(StatusCode, Json<ExperienceRecord>), Error> {
     // Validate that the experience exists.
     ticket
         .db
@@ -20,9 +20,7 @@ pub(crate) async fn handler(
         record_ref: request.clone(),
     });
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     // Re-fetch the full experience (now includes the new ref via projection).
     let experience = ticket

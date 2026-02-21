@@ -6,13 +6,11 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Json(nature): Json<Nature>,
-) -> Result<(StatusCode, Json<Nature>), Error> {
+    Json(nature): Json<NatureRecord>,
+) -> Result<(StatusCode, Json<NatureRecord>), Error> {
     let event = Events::Nature(NatureEvents::NatureSet(nature.clone()));
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok((StatusCode::OK, Json(nature)))
 }

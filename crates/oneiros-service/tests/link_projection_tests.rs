@@ -1,6 +1,9 @@
-use axum::body::Body;
-use axum::http::{Method, Request, StatusCode};
+use axum::{
+    body::Body,
+    http::{Method, Request, StatusCode},
+};
 use oneiros_db::Database;
+use oneiros_link::*;
 use oneiros_model::*;
 use oneiros_protocol::*;
 use oneiros_service::*;
@@ -19,8 +22,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
@@ -29,23 +31,24 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
-            name: BrainName::new("test-brain"),
-            path: brain_path.to_path_buf(),
-            status: BrainStatus::Active,
-        },
+        HasPath::new(
+            brain_path,
+            Brain {
+                tenant_id,
+                name: BrainName::new("test-brain"),
+                status: BrainStatus::Active,
+            },
+        ),
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -60,8 +63,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             created_by: actor_id,
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
 }
@@ -127,10 +129,11 @@ async fn persona_set_stores_link() {
         )
         .unwrap();
 
-    let expected = Persona::from(("expert", "A domain expert", "You are a domain expert."))
-        .link()
+    let expected = Persona::from("expert")
+        .as_link()
         .unwrap()
-        .to_string();
+        .to_link_string()
+        .unwrap();
 
     assert_eq!(link, expected);
 }
@@ -175,12 +178,11 @@ async fn agent_created_stores_link() {
     let expected = Agent {
         name: AgentName::new("governor.process"),
         persona: PersonaName::new("process"),
-        description: Description::new("The governor"),
-        prompt: Prompt::new("You are the governor."),
     }
-    .link()
+    .as_link()
     .unwrap()
-    .to_string();
+    .to_link_string()
+    .unwrap();
 
     assert_eq!(link, expected);
 }
@@ -250,12 +252,11 @@ async fn agent_updated_recomputes_link() {
     let expected = Agent {
         name: AgentName::new("test.agent"),
         persona: PersonaName::new("expert"),
-        description: Description::new("updated"),
-        prompt: Prompt::new("updated"),
     }
-    .link()
+    .as_link()
     .unwrap()
-    .to_string();
+    .to_link_string()
+    .unwrap();
 
     assert_eq!(link_after, expected);
 }

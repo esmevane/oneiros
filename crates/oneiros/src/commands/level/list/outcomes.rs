@@ -1,4 +1,4 @@
-use oneiros_model::Level;
+use oneiros_model::LevelRecord;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListLevelsOutcomes {
     NoLevels,
 
     #[outcome(message("Levels: {0:?}"))]
-    Levels(Vec<Level>),
+    Levels(Vec<LevelRecord>),
 }

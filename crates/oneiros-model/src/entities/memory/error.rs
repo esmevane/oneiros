@@ -1,13 +1,11 @@
-use thiserror::Error;
+use crate::*;
 
-use crate::IdParseError;
-
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum MemoryConstructionError {
     #[error("invalid memory id: {0}")]
     InvalidId(IdParseError),
     #[error("invalid agent id: {0}")]
     InvalidAgentId(IdParseError),
     #[error("invalid created_at timestamp: {0}")]
-    InvalidCreatedAt(chrono::ParseError),
+    InvalidCreatedAt(#[from] TimestampConstructionFailure),
 }

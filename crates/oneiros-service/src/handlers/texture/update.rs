@@ -6,13 +6,11 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Json(texture): Json<Texture>,
-) -> Result<(StatusCode, Json<Texture>), Error> {
+    Json(texture): Json<TextureRecord>,
+) -> Result<(StatusCode, Json<TextureRecord>), Error> {
     let event = Events::Texture(TextureEvents::TextureSet(texture.clone()));
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok((StatusCode::OK, Json(texture)))
 }

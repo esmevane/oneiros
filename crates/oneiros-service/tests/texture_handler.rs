@@ -19,8 +19,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
@@ -29,23 +28,24 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
-            name: BrainName::new("test-brain"),
-            path: brain_path.to_path_buf(),
-            status: BrainStatus::Active,
-        },
+        HasPath::new(
+            brain_path,
+            Brain {
+                tenant_id,
+                name: BrainName::new("test-brain"),
+                status: BrainStatus::Active,
+            },
+        ),
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -60,8 +60,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             created_by: actor_id,
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
 }
@@ -125,7 +124,7 @@ async fn set_texture_returns_ok() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Texture = serde_json::from_slice(&bytes).unwrap();
+    let info: TextureRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.name, TextureName::new("observation"));
     assert_eq!(info.description.as_str(), "Something noticed or perceived");
     assert_eq!(info.prompt.as_str(), "Describe what you observed.");
@@ -168,7 +167,7 @@ async fn set_texture_is_idempotent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Texture = serde_json::from_slice(&bytes).unwrap();
+    let info: TextureRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -182,7 +181,7 @@ async fn list_textures_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Texture> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<TextureRecord> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -207,7 +206,7 @@ async fn list_textures_after_set() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Texture> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<TextureRecord> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 

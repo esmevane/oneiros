@@ -2,6 +2,7 @@ mod outcomes;
 
 use clap::Args;
 use oneiros_client::{Client, CreateConnectionRequest};
+use oneiros_link::Link;
 use oneiros_outcomes::Outcomes;
 
 pub(crate) use outcomes::CreateConnectionOutcomes;

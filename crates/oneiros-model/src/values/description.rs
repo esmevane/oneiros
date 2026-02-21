@@ -18,6 +18,15 @@ impl core::fmt::Display for Description {
     }
 }
 
+impl<T> From<T> for Description
+where
+    T: AsRef<str>,
+{
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
 impl core::str::FromStr for Description {
     type Err = core::convert::Infallible;
 

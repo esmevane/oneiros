@@ -49,17 +49,19 @@ pub(crate) async fn handler(
 
     let entity = Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
+        HasPath::new(
             path,
-            name: request.name,
-            status: BrainStatus::Active,
-        },
+            Brain {
+                tenant_id,
+                name: request.name,
+                status: BrainStatus::Active,
+            },
+        ),
     );
 
     let event = Events::Brain(BrainEvents::BrainCreated(entity.clone()));
 
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)?;
+    db.log_event(&event, projections::system::ALL)?;
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -75,7 +77,7 @@ pub(crate) async fn handler(
         },
     )));
 
-    db.log_event(&ticket_event, projections::SYSTEM_PROJECTIONS)?;
+    db.log_event(&ticket_event, projections::system::ALL)?;
 
     let info = BrainInfo { entity, token };
 

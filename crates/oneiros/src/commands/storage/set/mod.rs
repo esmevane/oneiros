@@ -36,7 +36,7 @@ impl SetStorage {
             .set_storage(&context.ticket_token()?, &self.key, data, &self.description)
             .await?;
 
-        outcomes.emit(SetStorageOutcomes::StorageSet(entry.key));
+        outcomes.emit(SetStorageOutcomes::StorageSet(entry.key.clone()));
 
         Ok(outcomes)
     }

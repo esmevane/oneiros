@@ -1,4 +1,4 @@
-use oneiros_model::Nature;
+use oneiros_model::NatureRecord;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListNaturesOutcomes {
     NoNatures,
 
     #[outcome(message("Natures: {0:?}"))]
-    Natures(Vec<Nature>),
+    Natures(Vec<NatureRecord>),
 }

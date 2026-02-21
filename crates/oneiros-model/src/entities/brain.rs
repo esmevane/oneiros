@@ -1,35 +1,22 @@
-use std::path::PathBuf;
-
 use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BrainStatus {
     Active,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Brain {
     pub tenant_id: TenantId,
     pub name: BrainName,
-    pub path: PathBuf,
     pub status: BrainStatus,
 }
 
-impl Addressable for Brain {
-    fn address_label() -> &'static str {
-        "brain"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        // path and status are operational, not identity
-        Link::new(&(Self::address_label(), &self.tenant_id, &self.name))
-    }
-}
-
+domain_link!(Brain => BrainLink);
 domain_id!(BrainId);
 domain_name!(BrainName);
 
@@ -44,17 +31,15 @@ mod tests {
         let primary = Brain {
             tenant_id: tenant,
             name: BrainName::new("oneiros"),
-            path: PathBuf::from("/tmp/a"),
             status: BrainStatus::Active,
         };
 
         let other = Brain {
             tenant_id: tenant,
             name: BrainName::new("oneiros"),
-            path: PathBuf::from("/tmp/b"),
             status: BrainStatus::Active,
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

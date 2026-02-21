@@ -1,5 +1,4 @@
 use axum::{Json, http::StatusCode};
-use chrono::Utc;
 use oneiros_model::*;
 use oneiros_protocol::*;
 
@@ -8,7 +7,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateExperienceRequest>,
-) -> Result<(StatusCode, Json<Identity<ExperienceId, Experience>>), Error> {
+) -> Result<(StatusCode, Json<ExperienceRecord>), Error> {
     // Resolve agent name to agent_id.
     let agent = ticket
         .db
@@ -21,22 +20,18 @@ pub(crate) async fn handler(
         .get_sensation(&request.sensation)?
         .ok_or(NotFound::Sensation(request.sensation.clone()))?;
 
-    let experience = Identity::new(
-        ExperienceId::new(),
+    let experience = ExperienceRecord::init(
+        request.description,
+        request.refs,
         Experience {
             agent_id: agent.id,
             sensation: request.sensation,
-            description: request.description,
-            refs: request.refs,
-            created_at: Utc::now(),
         },
     );
 
     let event = Events::Experience(ExperienceEvents::ExperienceCreated(experience.clone()));
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok((StatusCode::CREATED, Json(experience)))
 }

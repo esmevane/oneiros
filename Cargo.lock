@@ -1139,6 +1139,7 @@ dependencies = [
  "oneiros-db",
  "oneiros-detect-project-name",
  "oneiros-fs",
+ "oneiros-link",
  "oneiros-model",
  "oneiros-outcomes",
  "oneiros-protocol",
@@ -1163,6 +1164,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "oneiros-link",
  "oneiros-model",
  "oneiros-protocol",
  "serde_json",
@@ -1175,6 +1177,7 @@ dependencies = [
 name = "oneiros-db"
 version = "0.0.5"
 dependencies = [
+ "oneiros-link",
  "oneiros-model",
  "rusqlite",
  "serde",
@@ -1200,6 +1203,7 @@ version = "0.0.5"
 name = "oneiros-link"
 version = "0.0.5"
 dependencies = [
+ "bytes",
  "data-encoding",
  "postcard",
  "pretty_assertions",
@@ -1251,6 +1255,7 @@ dependencies = [
 name = "oneiros-protocol"
 version = "0.0.5"
 dependencies = [
+ "oneiros-link",
  "oneiros-model",
  "serde",
 ]
@@ -1266,6 +1271,7 @@ dependencies = [
  "http-body-util",
  "oneiros-db",
  "oneiros-fs",
+ "oneiros-link",
  "oneiros-model",
  "oneiros-protocol",
  "rusqlite",

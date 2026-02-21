@@ -1,3 +1,4 @@
+use oneiros_link::*;
 use oneiros_model::*;
 use thiserror::Error;
 

@@ -16,9 +16,7 @@ pub(crate) async fn handler(
 
     let event = Events::Connection(ConnectionEvents::ConnectionRemoved { id });
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -1,9 +1,9 @@
-use oneiros_model::{Cognition, CognitionId, Identity};
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct CognitionList(pub Vec<Identity<CognitionId, Cognition>>);
+pub struct CognitionList(pub Vec<Record<CognitionId, Cognition>>);
 
 impl core::fmt::Display for CognitionList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

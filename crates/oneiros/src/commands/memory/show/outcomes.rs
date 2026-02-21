@@ -1,4 +1,4 @@
-use oneiros_model::{Identity, Memory, MemoryId};
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ShowMemoryOutcomes {
         message("Memory {}\n  Agent: {}\n  Level: {}\n  Content: {}\n  Created: {}", .0.id, .0.agent_id, .0.level, .0.content, .0.created_at),
         prompt("Is this grounded in specific cognitions? Mark it with `oneiros experience create <agent> grounds <description>`.")
     )]
-    MemoryDetails(Identity<MemoryId, Memory>),
+    MemoryDetails(Record<MemoryId, Memory>),
 }

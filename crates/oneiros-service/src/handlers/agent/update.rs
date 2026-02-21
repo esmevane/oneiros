@@ -8,7 +8,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(given_name): Path<AgentName>,
     Json(request): Json<UpdateAgentRequest>,
-) -> Result<(StatusCode, Json<Identity<AgentId, Agent>>), Error> {
+) -> Result<(StatusCode, Json<AgentRecord>), Error> {
     // Validate that the agent exists and get its current data (especially the ID).
     let existing = ticket
         .db
@@ -21,21 +21,19 @@ pub(crate) async fn handler(
         .get_persona(&request.persona)?
         .ok_or(NotFound::Persona(request.persona.clone()))?;
 
-    let agent = Identity::new(
+    let agent = AgentRecord::construct(
         existing.id,
+        request.description.as_str(),
+        request.prompt.as_str(),
         Agent {
             name: existing.name.clone(),
             persona: request.persona,
-            description: request.description,
-            prompt: request.prompt,
         },
     );
 
     let event = Events::Agent(AgentEvents::AgentUpdated(agent.clone()));
 
-    ticket
-        .db
-        .log_event(&event, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&event, projections::brain::ALL)?;
 
     Ok((StatusCode::OK, Json(agent)))
 }

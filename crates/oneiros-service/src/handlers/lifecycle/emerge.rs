@@ -7,7 +7,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateAgentRequest>,
-) -> Result<(StatusCode, Json<Identity<AgentId, Agent>>), Error> {
+) -> Result<(StatusCode, Json<AgentRecord>), Error> {
     ticket
         .db
         .get_persona(&request.persona)?
@@ -17,25 +17,23 @@ pub(crate) async fn handler(
         return Err(Conflicts::Agent(request.name).into());
     }
 
-    let agent = Identity::new(
-        AgentId::new(),
+    let agent = AgentRecord::init(
+        request.description,
+        request.prompt,
         Agent {
             name: request.name,
             persona: request.persona,
-            description: request.description,
-            prompt: request.prompt,
         },
     );
 
     let emerged = Events::Lifecycle(LifecycleEvents::Emerged {
         name: agent.name.clone(),
     });
+
     ticket.db.log_event(&emerged, &[])?;
 
     let created = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
-    ticket
-        .db
-        .log_event(&created, projections::BRAIN_PROJECTIONS)?;
+    ticket.db.log_event(&created, projections::brain::ALL)?;
 
     Ok((StatusCode::CREATED, Json(agent)))
 }

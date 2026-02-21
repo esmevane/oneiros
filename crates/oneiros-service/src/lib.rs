@@ -11,7 +11,7 @@ use tokio::net::UnixListener;
 
 pub use error::*;
 pub use extractors::*;
-pub use projections::{BRAIN_PROJECTIONS, SYSTEM_PROJECTIONS};
+pub use projections::{brain, system};
 pub use routes::router;
 pub use state::*;
 

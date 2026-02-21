@@ -3,45 +3,52 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Nature {
-    pub name: NatureName,
-    pub description: Description,
-    pub prompt: Prompt,
-}
+pub type NatureRecord = HasDescription<HasPrompt<Nature>>;
 
-impl Nature {
-    pub fn construct_from_db(row: impl Into<Self>) -> Self {
-        row.into()
+impl NatureRecord {
+    pub fn init(
+        description: impl Into<Description>,
+        prompt: impl Into<Prompt>,
+        nature: impl Into<Nature>,
+    ) -> Self {
+        HasDescription::new(
+            description.into(),
+            HasPrompt::new(prompt.into(), nature.into()),
+        )
     }
 }
 
-impl<GivenName, GivenDescription, GivenPrompt> From<(GivenName, GivenDescription, GivenPrompt)>
-    for Nature
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Nature {
+    pub name: NatureName,
+}
+
+impl Nature {
+    pub fn construct_from_db(
+        (name, description, prompt): (impl AsRef<str>, impl AsRef<str>, impl AsRef<str>),
+    ) -> NatureRecord {
+        NatureRecord::init(
+            Description::new(description),
+            Prompt::new(prompt),
+            Nature {
+                name: NatureName::new(name),
+            },
+        )
+    }
+}
+
+impl<GivenName> From<GivenName> for Nature
 where
     GivenName: AsRef<str>,
-    GivenDescription: AsRef<str>,
-    GivenPrompt: AsRef<str>,
 {
-    fn from((name, description, prompt): (GivenName, GivenDescription, GivenPrompt)) -> Self {
+    fn from(name: GivenName) -> Self {
         Nature {
             name: NatureName::new(name),
-            description: Description::new(description),
-            prompt: Prompt::new(prompt),
         }
     }
 }
 
-impl Addressable for Nature {
-    fn address_label() -> &'static str {
-        "nature"
-    }
-
-    fn link(&self) -> Result<Link, LinkError> {
-        Link::new(&(Self::address_label(), &self.name))
-    }
-}
-
+domain_link!(Nature => NatureLink);
 domain_name!(NatureName);
 
 #[cfg(test)]
@@ -52,16 +59,12 @@ mod tests {
     fn nature_identity() {
         let primary = Nature {
             name: NatureName::new("origin"),
-            description: Description::new("first"),
-            prompt: Prompt::new("first"),
         };
 
         let other = Nature {
             name: NatureName::new("origin"),
-            description: Description::new("updated"),
-            prompt: Prompt::new("updated"),
         };
 
-        assert_eq!(primary.link().unwrap(), other.link().unwrap());
+        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
     }
 }

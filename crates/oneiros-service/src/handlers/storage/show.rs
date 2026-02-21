@@ -1,13 +1,13 @@
 use axum::Json;
 use axum::extract::Path;
-use oneiros_model::{StorageEntry, StorageRef};
+use oneiros_model::{StorageEntryRecord, StorageRef};
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(storage_ref): Path<StorageRef>,
-) -> Result<Json<StorageEntry>, Error> {
+) -> Result<Json<StorageEntryRecord>, Error> {
     let key = storage_ref
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;

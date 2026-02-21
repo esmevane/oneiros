@@ -1,4 +1,4 @@
-use oneiros_model::Persona;
+use oneiros_model::PersonaRecord;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListPersonasOutcomes {
     NoPersonas,
 
     #[outcome(message("Personas: {0:?}"))]
-    Personas(Vec<Persona>),
+    Personas(Vec<PersonaRecord>),
 }

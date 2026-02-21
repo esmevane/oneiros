@@ -1,16 +1,16 @@
-use oneiros_model::{Experience, ExperienceId, Identity};
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct ExperienceList(pub Vec<Identity<ExperienceId, Experience>>);
+pub struct ExperienceList(pub Vec<ExperienceRecord>);
 
 impl core::fmt::Display for ExperienceList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let display = self
             .0
             .iter()
-            .map(|experience| format!("{experience}"))
+            .map(|experience| experience.as_table_row(&experience.description, &experience.refs))
             .collect::<Vec<_>>()
             .join("\n");
 

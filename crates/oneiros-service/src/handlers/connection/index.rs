@@ -1,5 +1,6 @@
 use axum::{Json, extract::Query};
-use oneiros_model::{Connection, ConnectionId, Identity, Link, NatureName};
+use oneiros_link::Link;
+use oneiros_model::*;
 use serde::Deserialize;
 
 use crate::*;
@@ -13,7 +14,7 @@ pub(crate) struct ListParams {
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
-) -> Result<Json<Vec<Identity<ConnectionId, Connection>>>, Error> {
+) -> Result<Json<Vec<Record<ConnectionId, Connection>>>, Error> {
     let connections = match (params.nature, params.link) {
         (Some(nature), Some(link)) => {
             ticket

@@ -1,12 +1,12 @@
 mod entities;
 mod error;
-mod identity;
-mod record;
+mod macros;
 mod values;
+mod wrappers;
+
+pub(crate) use macros::*;
 
 pub use entities::*;
 pub use error::*;
-pub use identity::Identity;
-pub use oneiros_link::{Addressable, Link, LinkError};
-pub use record::Record;
 pub use values::*;
+pub use wrappers::*;

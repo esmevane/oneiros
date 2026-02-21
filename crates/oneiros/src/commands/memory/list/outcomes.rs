@@ -1,9 +1,9 @@
-use oneiros_model::{Identity, Memory, MemoryId};
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct MemoryList(pub Vec<Identity<MemoryId, Memory>>);
+pub struct MemoryList(pub Vec<Record<MemoryId, Memory>>);
 
 impl core::fmt::Display for MemoryList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

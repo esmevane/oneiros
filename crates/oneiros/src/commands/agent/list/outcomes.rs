@@ -1,4 +1,4 @@
-use oneiros_model::{Agent, AgentId, Identity};
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -8,5 +8,5 @@ pub enum ListAgentsOutcomes {
     NoAgents,
 
     #[outcome(message("Agents: {0:?}"))]
-    Agents(Vec<Identity<AgentId, Agent>>),
+    Agents(Vec<AgentRecord>),
 }

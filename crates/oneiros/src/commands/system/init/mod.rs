@@ -72,7 +72,7 @@ impl Init {
             Tenant { name: name.clone() },
         )));
 
-        database.log_event(&create_tenant, projections::SYSTEM_PROJECTIONS)?;
+        database.log_event(&create_tenant, projections::system::ALL)?;
         outcomes.emit(InitSystemOutcomes::TenantCreated);
 
         let actor_id = ActorId::new();
@@ -85,7 +85,7 @@ impl Init {
             },
         )));
 
-        database.log_event(&create_actor, projections::SYSTEM_PROJECTIONS)?;
+        database.log_event(&create_actor, projections::system::ALL)?;
         outcomes.emit(InitSystemOutcomes::ActorCreated);
 
         let config_path = context.config_path();

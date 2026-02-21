@@ -19,8 +19,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: TenantName::new("Test Tenant"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
         actor_id,
@@ -29,23 +28,24 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             name: ActorName::new("Test Actor"),
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
     let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
         brain_id,
-        Brain {
-            tenant_id,
-            name: BrainName::new("test-brain"),
-            path: brain_path.to_path_buf(),
-            status: BrainStatus::Active,
-        },
+        HasPath::new(
+            brain_path,
+            Brain {
+                tenant_id,
+                name: BrainName::new("test-brain"),
+                status: BrainStatus::Active,
+            },
+        ),
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -60,8 +60,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
             created_by: actor_id,
         },
     )));
-    db.log_event(&event, projections::SYSTEM_PROJECTIONS)
-        .unwrap();
+    db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
 }
@@ -149,7 +148,7 @@ async fn create_agent_returns_created() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Identity<AgentId, Agent> = serde_json::from_slice(&bytes).unwrap();
+    let agent: AgentRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(agent.name, AgentName::new("architect"));
     assert_eq!(agent.persona, PersonaName::new("expert"));
     assert_eq!(agent.description.as_str(), "The system architect");
@@ -209,7 +208,7 @@ async fn list_agents_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<AgentId, Agent>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<AgentRecord> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -235,7 +234,7 @@ async fn list_agents_after_create() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<AgentId, Agent>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<AgentRecord> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
@@ -275,7 +274,7 @@ async fn get_agent_by_name() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Identity<AgentId, Agent> = serde_json::from_slice(&bytes).unwrap();
+    let agent: AgentRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(agent.name, AgentName::new("architect"));
     assert_eq!(agent.persona, PersonaName::new("expert"));
 }
@@ -317,7 +316,7 @@ async fn update_agent() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Identity<AgentId, Agent> = serde_json::from_slice(&bytes).unwrap();
+    let agent: AgentRecord = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(agent.description.as_str(), "Version 2");
     assert_eq!(agent.prompt.as_str(), "Prompt v2");
 }

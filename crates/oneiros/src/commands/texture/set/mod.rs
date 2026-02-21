@@ -34,14 +34,16 @@ impl SetTexture {
         let info = client
             .set_texture(
                 &context.ticket_token()?,
-                Texture {
-                    name: self.name.clone(),
-                    description: self.description.clone(),
-                    prompt: self.prompt.clone(),
-                },
+                TextureRecord::init(
+                    self.description.clone(),
+                    self.prompt.clone(),
+                    Texture {
+                        name: self.name.clone(),
+                    },
+                ),
             )
             .await?;
-        outcomes.emit(SetTextureOutcomes::TextureSet(info.name));
+        outcomes.emit(SetTextureOutcomes::TextureSet(info.name.clone()));
 
         Ok(outcomes)
     }

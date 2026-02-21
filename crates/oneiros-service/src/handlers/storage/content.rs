@@ -20,7 +20,7 @@ pub(crate) async fn handler(
     let (compressed, _original_size) = ticket
         .db
         .get_blob(&entry.hash)?
-        .ok_or(DataIntegrity::BlobMissing(entry.hash))?;
+        .ok_or(DataIntegrity::BlobMissing(entry.hash.clone()))?;
 
     let mut decoder = ZlibDecoder::new(&compressed[..]);
     let mut decompressed = Vec::new();
