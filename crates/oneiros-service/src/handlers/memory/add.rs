@@ -21,7 +21,7 @@ pub(crate) async fn handler(
         .ok_or(NotFound::Level(request.level.clone()))?;
 
     let memory = Record::create(Memory {
-        agent_id: agent.id,
+        agent_id: Key::Id(agent.id),
         level: request.level,
         content: request.content,
     });

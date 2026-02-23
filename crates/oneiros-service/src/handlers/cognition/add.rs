@@ -21,7 +21,7 @@ pub(crate) async fn handler(
         .ok_or(NotFound::Texture(request.texture.clone()))?;
 
     let cognition = Record::create(Cognition {
-        agent_id: agent.id,
+        agent_id: Key::Id(agent.id),
         texture: request.texture,
         content: request.content,
     });

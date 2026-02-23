@@ -20,11 +20,14 @@ impl OutputFormat {
             Self::Json => {
                 if let Some(mut value) = serde_json::to_value(outcome).ok()
                     && let Some(metadata) = serde_json::to_value(outcome.metadata()).ok()
-                    && let Some(value_as_object) = value.as_object_mut()
                 {
-                    value_as_object.insert("metadata".into(), metadata);
+                    if let Some(value_as_object) = value.as_object_mut() {
+                        value_as_object.insert("metadata".into(), metadata);
 
-                    if let Ok(json) = serde_json::to_string(&value) {
+                        if let Ok(json) = serde_json::to_string(&value) {
+                            println!("{json}");
+                        }
+                    } else if let Ok(json) = serde_json::to_string(&value) {
                         println!("{json}");
                     }
                 }

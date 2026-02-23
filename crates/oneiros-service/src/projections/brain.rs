@@ -331,7 +331,7 @@ fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseErro
 
     db.add_cognition(
         &cognition.id,
-        &cognition.agent_id,
+        &cognition.agent_id.clone().to_id()?,
         &cognition.texture,
         &cognition.content,
         &created_at,
@@ -355,7 +355,7 @@ fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> 
 
     db.add_memory(
         &memory.id,
-        &memory.agent_id,
+        &memory.agent_id.clone().to_id()?,
         &memory.level,
         &memory.content,
         &created_at,
@@ -410,7 +410,7 @@ fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), Databas
 
     conn.add_experience(
         &experience.id,
-        &experience.agent_id,
+        &experience.agent_id.clone().to_id()?,
         &experience.sensation,
         &experience.description,
         &created_at,

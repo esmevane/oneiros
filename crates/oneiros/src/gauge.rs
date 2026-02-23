@@ -86,7 +86,7 @@ mod tests {
 
     fn make_cognition(texture: &str) -> Record<CognitionId, Cognition> {
         Record::create(Cognition {
-            agent_id: AgentId::new(),
+            agent_id: Key::Id(AgentId::new()),
             texture: TextureName::new(texture),
             content: Content::new("test"),
         })
@@ -94,7 +94,7 @@ mod tests {
 
     fn make_memory(level: &str) -> Record<MemoryId, Memory> {
         Record::create(Memory {
-            agent_id: AgentId::new(),
+            agent_id: Key::Id(AgentId::new()),
             level: LevelName::new(level),
             content: Content::new("test"),
         })
@@ -105,7 +105,7 @@ mod tests {
             "test",
             vec![],
             Experience {
-                agent_id: AgentId::new(),
+                agent_id: Key::Id(AgentId::new()),
                 sensation: SensationName::new(sensation),
             },
         )

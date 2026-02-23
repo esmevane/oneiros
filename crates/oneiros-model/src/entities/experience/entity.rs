@@ -22,7 +22,7 @@ impl ExperienceRecord {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Experience {
-    pub agent_id: AgentId,
+    pub agent_id: Key<AgentId, AgentLink>,
     pub sensation: SensationName,
 }
 
@@ -69,11 +69,10 @@ impl Experience {
             .as_ref()
             .parse()
             .map_err(ExperienceConstructionError::InvalidId)?;
+
+        let agent_id: Key<AgentId, AgentLink> = agent_id.as_ref().parse()?;
         let experience = Experience {
-            agent_id: agent_id
-                .as_ref()
-                .parse()
-                .map_err(ExperienceConstructionError::InvalidAgentId)?,
+            agent_id,
             sensation: SensationName::new(sensation),
         };
 
@@ -97,10 +96,10 @@ mod tests {
 
     #[test]
     fn experience_identity() {
-        let agent_id = AgentId::new();
+        let agent_id = Key::Id(AgentId::new());
 
         let primary = Experience {
-            agent_id,
+            agent_id: agent_id.clone(),
             sensation: SensationName::new("continues"),
         };
 
