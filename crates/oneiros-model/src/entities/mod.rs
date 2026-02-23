@@ -3,6 +3,7 @@ mod agent;
 mod brain;
 mod cognition;
 mod connection;
+mod event;
 mod experience;
 mod level;
 mod memory;
@@ -21,6 +22,7 @@ pub use agent::{Agent, AgentConstructionError, AgentId, AgentLink, AgentName, Ag
 pub use brain::{Brain, BrainId, BrainLink, BrainName, BrainStatus};
 pub use cognition::{Cognition, CognitionConstructionError, CognitionId, CognitionLink};
 pub use connection::{Connection, ConnectionConstructionError, ConnectionId, ConnectionLink};
+pub use event::{Event, EventId};
 pub use experience::{
     Experience, ExperienceConstructionError, ExperienceId, ExperienceLink, ExperienceRecord,
 };
