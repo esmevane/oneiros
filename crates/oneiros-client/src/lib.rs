@@ -6,8 +6,4 @@ pub(crate) use socket::SocketClient;
 
 pub use client::Client;
 pub use error::{ConnectionError, Error, RequestError, ResponseError};
-pub use oneiros_protocol::{
-    AddCognitionRequest, AddExperienceRefRequest, AddMemoryRequest, BrainInfo, CreateAgentRequest,
-    CreateBrainRequest, CreateConnectionRequest, CreateExperienceRequest, UpdateAgentRequest,
-    UpdateExperienceDescriptionRequest,
-};
+pub use oneiros_protocol::*;

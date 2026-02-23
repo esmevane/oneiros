@@ -67,3 +67,9 @@ pub struct CreateConnectionRequest {
 pub struct UpdateExperienceDescriptionRequest {
     pub description: Description,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum SensingRequests {
+    Sense { agent: oneiros_model::AgentName },
+}
