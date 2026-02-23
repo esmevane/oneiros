@@ -12,6 +12,7 @@ mod prompt;
 mod record_ref;
 mod reflection;
 mod storage_ref;
+mod timestamp;
 mod token;
 mod token_version;
 
@@ -32,4 +33,5 @@ pub use record_ref::{
 };
 pub use reflection::Reflection;
 pub use storage_ref::{StorageRef, StorageRefError};
+pub use timestamp::{Timestamp, TimestampParseError};
 pub use token::{Token, TokenError};
