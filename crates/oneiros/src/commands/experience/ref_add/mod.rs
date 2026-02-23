@@ -66,7 +66,14 @@ impl RefAdd {
         let agents = client.list_agents(&token).await?;
         let gauge = agents
             .iter()
-            .find(|a| a.id == experience.agent_id)
+            .find(|agent| {
+                experience
+                    .agent_id
+                    .clone()
+                    .to_id()
+                    .map(|id| agent.id == id)
+                    .unwrap_or_default()
+            })
             .map(|agent| agent.name.clone());
 
         let gauge_str = if let Some(agent_name) = gauge {

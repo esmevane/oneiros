@@ -24,7 +24,7 @@ pub(crate) async fn handler(
         request.description,
         request.refs,
         Experience {
-            agent_id: agent.id,
+            agent_id: Key::Id(agent.id),
             sensation: request.sensation,
         },
     );

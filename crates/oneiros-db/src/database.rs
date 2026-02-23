@@ -160,8 +160,8 @@ impl Database {
     }
 
     pub fn get_event(&self, id: &EventId) -> Result<Option<Event>, DatabaseError> {
-        enum Collection {
-            Event(Event),
+        enum Attempt {
+            Success(Event),
             Failure(serde_json::Error),
         }
 
@@ -171,15 +171,15 @@ impl Database {
             |row| {
                 let raw_event: String = row.get(0)?;
                 match serde_json::from_str::<Event>(&raw_event) {
-                    Ok(event) => Ok(Collection::Event(event)),
-                    Err(error) => Ok(Collection::Failure(error)),
+                    Ok(event) => Ok(Attempt::Success(event)),
+                    Err(error) => Ok(Attempt::Failure(error)),
                 }
             }
         );
 
         match result {
-            Ok(Collection::Event(event)) => Ok(Some(event)),
-            Ok(Collection::Failure(error)) => Err(error)?,
+            Ok(Attempt::Success(event)) => Ok(Some(event)),
+            Ok(Attempt::Failure(error)) => Err(error)?,
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error)?,
         }

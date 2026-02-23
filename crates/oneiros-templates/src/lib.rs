@@ -93,7 +93,7 @@ mod tests {
             agent: test_agent(),
             persona: test_persona(),
             memories: vec![Record::create(Memory {
-                agent_id: AgentId::new(),
+                agent_id: Key::Id(AgentId::new()),
                 level: LevelName::new("core"),
                 content: Content::new("I remember the beginning."),
             })],
@@ -118,7 +118,7 @@ mod tests {
             persona: test_persona(),
             memories: vec![],
             cognitions: vec![Record::create(Cognition {
-                agent_id: AgentId::new(),
+                agent_id: Key::Id(AgentId::new()),
                 texture: TextureName::new("analytical"),
                 content: Content::new("Patterns emerge from repetition."),
             })],

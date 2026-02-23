@@ -6,7 +6,7 @@ use oneiros_outcomes::{Outcome, Outcomes};
 use crate::*;
 
 #[derive(Clone, serde::Serialize, Outcome)]
-#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+#[serde(untagged)]
 pub enum ListEventsOutcomes {
     #[outcome(message("No events found."))]
     NoEvents,
