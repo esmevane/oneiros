@@ -229,7 +229,7 @@ const CONNECTION_CREATED_PROJECTION: Projection = Projection {
 fn apply_connection_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let connection: Record<ConnectionId, Connection> = serde_json::from_value(data.clone())?;
     let link = connection.as_link()?;
-    let created_at = connection.created_at.to_rfc3339();
+    let created_at = connection.created_at.as_string();
 
     db.create_connection(
         &connection.id,
@@ -327,7 +327,7 @@ const COGNITION_ADDED_PROJECTION: Projection = Projection {
 fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let cognition: Record<CognitionId, Cognition> = serde_json::from_value(data.clone())?;
     let link = cognition.as_link()?;
-    let created_at = cognition.created_at.to_rfc3339();
+    let created_at = cognition.created_at.as_string();
 
     db.add_cognition(
         &cognition.id,
@@ -351,7 +351,7 @@ const MEMORY_ADDED_PROJECTION: Projection = Projection {
 fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let memory: Record<MemoryId, Memory> = serde_json::from_value(data.clone())?;
     let link = memory.as_link()?;
-    let created_at = memory.created_at.to_rfc3339();
+    let created_at = memory.created_at.as_string();
 
     db.add_memory(
         &memory.id,
@@ -405,7 +405,7 @@ const EXPERIENCE_CREATED_PROJECTION: Projection = Projection {
 
 fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
     let experience: ExperienceRecord = serde_json::from_value(data.clone())?;
-    let created_at = experience.created_at.to_rfc3339();
+    let created_at = experience.created_at.as_string();
     let link = experience.as_link()?;
 
     conn.add_experience(

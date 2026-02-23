@@ -1,13 +1,15 @@
 use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
+use crate::*;
+
 #[derive(Debug, thiserror::Error)]
 #[error("failed to construct timestamps from database values: {0}")]
-pub struct TimestampConstructionFailure(#[from] chrono::ParseError);
+pub struct TimestampConstructionFailure(#[from] TimestampParseError);
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Timestamps<T> {
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: Timestamp,
     #[serde(flatten)]
     inner: T,
 }
@@ -15,7 +17,7 @@ pub struct Timestamps<T> {
 impl<T> Timestamps<T> {
     pub fn now(inner: T) -> Self {
         Self {
-            created_at: chrono::Utc::now(),
+            created_at: Timestamp::now(),
             inner,
         }
     }
@@ -25,7 +27,7 @@ impl<T> Timestamps<T> {
         inner: T,
     ) -> Result<Self, TimestampConstructionFailure> {
         Ok(Self {
-            created_at: created_at.as_ref().parse()?,
+            created_at: Timestamp::parse_str(created_at)?,
             inner,
         })
     }
@@ -38,7 +40,7 @@ impl<T> Timestamps<T> {
 
 impl<T: core::fmt::Display> core::fmt::Display for Timestamps<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{} ({})", self.inner, self.created_at.to_rfc3339())
+        write!(f, "{} (created_at: {})", self.inner, self.created_at)
     }
 }
 
@@ -81,8 +83,6 @@ mod tests {
     use oneiros_link::*;
     use pretty_assertions::assert_eq;
 
-    use crate::*;
-
     use super::*;
 
     #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -98,9 +98,9 @@ mod tests {
             color: "red".into(),
         };
 
-        let before = Utc::now();
+        let before = Timestamp::now();
         let identity = Timestamps::now(widget);
-        let after = Utc::now();
+        let after = Timestamp::now();
 
         assert!(identity.created_at >= before && identity.created_at <= after);
 

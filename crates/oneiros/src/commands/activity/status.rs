@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use clap::Args;
 use oneiros_client::Client;
 use oneiros_outcomes::Outcomes;
@@ -57,6 +56,6 @@ impl ActivityStatus {
     }
 }
 
-fn most_recent<T>(items: &[T], ts: impl Fn(&T) -> DateTime<Utc>) -> Option<DateTime<Utc>> {
+fn most_recent<T>(items: &[T], ts: impl Fn(&T) -> Timestamp) -> Option<Timestamp> {
     items.iter().map(ts).max()
 }

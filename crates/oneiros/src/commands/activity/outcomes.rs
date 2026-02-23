@@ -1,5 +1,4 @@
-use chrono::{DateTime, Utc};
-use oneiros_model::AgentName;
+use oneiros_model::*;
 use oneiros_outcomes::Outcome;
 use std::fmt;
 
@@ -7,11 +6,11 @@ use std::fmt;
 pub struct AgentActivity {
     pub name: AgentName,
     pub cognition_count: usize,
-    pub cognition_latest: Option<DateTime<Utc>>,
+    pub cognition_latest: Option<Timestamp>,
     pub memory_count: usize,
-    pub memory_latest: Option<DateTime<Utc>>,
+    pub memory_latest: Option<Timestamp>,
     pub experience_count: usize,
-    pub experience_latest: Option<DateTime<Utc>>,
+    pub experience_latest: Option<Timestamp>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -60,7 +59,7 @@ impl fmt::Display for AgentActivityTable {
             .max();
 
             let freshness = match latest {
-                Some(ts) => format_relative(ts),
+                Some(timestamp) => timestamp.elapsed(),
                 None => "never".to_string(),
             };
 
@@ -76,23 +75,6 @@ impl fmt::Display for AgentActivityTable {
         }
 
         Ok(())
-    }
-}
-
-fn format_relative(ts: DateTime<Utc>) -> String {
-    let elapsed = Utc::now().signed_duration_since(ts);
-    let secs = elapsed.num_seconds();
-
-    if secs < 0 {
-        "just now".to_string()
-    } else if secs < 60 {
-        format!("{secs}s ago")
-    } else if secs < 3600 {
-        format!("{}m ago", secs / 60)
-    } else if secs < 86400 {
-        format!("{}h ago", secs / 3600)
-    } else {
-        format!("{}d ago", secs / 86400)
     }
 }
 
