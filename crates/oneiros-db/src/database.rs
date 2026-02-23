@@ -108,6 +108,83 @@ impl Database {
         Ok(count as usize)
     }
 
+    /// Read all events in chronological order, with causal tiebreaking.
+    ///
+    /// Events are ordered by `timestamp ASC`. Within the same timestamp,
+    /// seed/vocabulary events sort first (they define names referenced by
+    /// other events), then agent lifecycle, then everything else. This
+    /// ensures FK dependencies are satisfied during replay.
+    pub fn read_events(&self) -> Result<Vec<Event>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT json_object('id', id, 'timestamp', timestamp, 'data', data) FROM events
+              ORDER BY timestamp ASC,
+              CASE json_extract(meta, '$.type')
+                  WHEN 'texture-set'   THEN 0
+                  WHEN 'level-set'     THEN 0
+                  WHEN 'persona-set'   THEN 0
+                  WHEN 'sensation-set' THEN 0
+                  WHEN 'nature-set'    THEN 0
+                  WHEN 'agent-created' THEN 1
+                  WHEN 'agent-updated' THEN 1
+                  ELSE 2
+              END ASC",
+        )?;
+
+        enum Collection {
+            Event(Event),
+            Failure(serde_json::Error),
+        }
+
+        let rows = stmt.query_map([], |row| {
+            let raw_event: String = row.get(0)?;
+
+            match serde_json::from_str::<Event>(&raw_event) {
+                Ok(event) => Ok(Collection::Event(event)),
+                Err(error) => Ok(Collection::Failure(error)),
+            }
+        })?;
+
+        let mut events = Vec::new();
+
+        for row in rows {
+            match row? {
+                Collection::Event(event) => events.push(event),
+                Collection::Failure(error) => {
+                    eprintln!("Failed to parse event JSON: {error}");
+                    continue;
+                }
+            };
+        }
+
+        Ok(events)
+    }
+
+    pub fn get_event(&self, id: &EventId) -> Result<Option<Event>, DatabaseError> {
+        enum Collection {
+            Event(Event),
+            Failure(serde_json::Error),
+        }
+
+        let result = self.conn.query_row(
+            "select json_object('id', id, 'timestamp', timestamp, 'data', data) from events where id = ?1",
+            params![id.to_string()],
+            |row| {
+                let raw_event: String = row.get(0)?;
+                match serde_json::from_str::<Event>(&raw_event) {
+                    Ok(event) => Ok(Collection::Event(event)),
+                    Err(error) => Ok(Collection::Failure(error)),
+                }
+            }
+        );
+
+        match result {
+            Ok(Collection::Event(event)) => Ok(Some(event)),
+            Ok(Collection::Failure(error)) => Err(error)?,
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error)?,
+        }
+    }
+
     pub fn tenant_exists(&self) -> Result<bool, DatabaseError> {
         let count: i64 = self
             .conn

@@ -3,6 +3,7 @@ pub(crate) mod brain;
 pub(crate) mod cognition;
 pub(crate) mod connection;
 pub(crate) mod dream;
+pub(crate) mod event;
 pub(crate) mod experience;
 pub(crate) mod health;
 pub(crate) mod introspect;

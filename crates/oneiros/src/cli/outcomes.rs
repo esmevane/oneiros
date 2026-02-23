@@ -19,6 +19,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Emerge(#[from] EmergeOutcomes),
     #[outcome(transparent)]
+    Event(#[from] EventOutcomes),
+    #[outcome(transparent)]
     Experience(#[from] ExperienceOutcomes),
     #[outcome(transparent)]
     Sensation(#[from] SensationOutcomes),

@@ -38,6 +38,17 @@ impl Client {
         Ok(response_body)
     }
 
+    pub async fn get_event(&self, token: &Token, name: &EventId) -> Result<Event, Error> {
+        let uri = format!("/events/{name}");
+        let bytes = self.send("GET", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn list_events(&self, token: &Token) -> Result<Vec<Event>, Error> {
+        let bytes = self.send("GET", "/events", token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
     pub async fn create_brain(&self, request: CreateBrainRequest) -> Result<BrainInfo, Error> {
         let body = serde_json::to_vec(&request)?;
         let (status, response_body) = self.client.request("POST", "/brains", body).await?;

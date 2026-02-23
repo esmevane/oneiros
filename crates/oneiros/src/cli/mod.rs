@@ -45,6 +45,7 @@ impl Cli {
             Command::Dream(dream) => dream.run(&context).await?.map_into(),
             Command::Emerge(emerge) => emerge.run(&context).await?.map_into(),
             Command::Experience(experience) => experience.run(&context).await?.map_into(),
+            Command::Event(event) => event.run(&context).await?.map_into(),
             Command::Sensation(sensation) => sensation.run(&context).await?.map_into(),
             Command::Guidebook(guidebook) => guidebook.run(&context).await?.map_into(),
             Command::Introspect(introspect) => introspect.run(&context).await?.map_into(),
@@ -87,6 +88,8 @@ pub(crate) enum Command {
     Emerge(EmergeOp),
     /// Manage experiences (descriptive edges connecting cognitive records).
     Experience(ExperienceOps),
+    /// Inspect event log entries for a given brain
+    Event(EventOps),
     /// Manage sensations (categories for experience relationships).
     Sensation(SensationOps),
     /// Show the cognitive guidebook for an agent.
