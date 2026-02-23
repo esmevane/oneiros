@@ -1,9 +1,6 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use oneiros_model::{
-    AgentName, BrainId, BrainName, CognitionId, ConnectionId, ContentHash, ExperienceId, LevelName,
-    MemoryId, NatureName, PersonaName, SensationName, StorageKey, TextureName,
-};
+use oneiros_model::*;
 
 use crate::extractors::ActorContextError;
 use crate::handlers::brain::CreateBrainError;
@@ -50,6 +47,8 @@ pub enum NotFound {
     Storage(StorageKey),
     #[error("Texture not found: {0}")]
     Texture(TextureName),
+    #[error("Event not found: {0}")]
+    Event(EventId),
 }
 
 #[derive(Debug, thiserror::Error)]
