@@ -16,10 +16,10 @@ pub enum ListEventsOutcomes {
 }
 
 #[derive(Clone, Args)]
-pub(crate) struct ListEvents;
+pub struct ListEvents;
 
 impl ListEvents {
-    pub(crate) async fn run(
+    pub async fn run(
         &self,
         context: &Context,
     ) -> Result<Outcomes<ListEventsOutcomes>, EventCommandError> {

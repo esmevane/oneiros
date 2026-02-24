@@ -13,13 +13,13 @@ pub enum ShowEventOutcomes {
 }
 
 #[derive(Clone, Args)]
-pub(crate) struct ShowEvent {
+pub struct ShowEvent {
     /// The event id to display.
     id: EventId,
 }
 
 impl ShowEvent {
-    pub(crate) async fn run(
+    pub async fn run(
         &self,
         context: &Context,
     ) -> Result<Outcomes<ShowEventOutcomes>, EventCommandError> {
