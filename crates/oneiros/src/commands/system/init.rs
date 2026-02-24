@@ -1,7 +1,6 @@
 use clap::Args;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
-use oneiros_protocol::*;
 
 use crate::*;
 

@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_client::{AddMemoryRequest, Client};
+use oneiros_client::Client;
 use oneiros_model::MemoryId;
 use oneiros_outcomes::{Outcome, Outcomes};
 

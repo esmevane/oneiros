@@ -5,7 +5,6 @@ use axum::{
 use oneiros_db::Database;
 use oneiros_link::*;
 use oneiros_model::*;
-use oneiros_protocol::*;
 use oneiros_service::*;
 use rusqlite::params;
 use std::sync::Arc;

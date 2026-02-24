@@ -1,6 +1,7 @@
 use oneiros_link::*;
-use oneiros_model::*;
 use serde::{Deserialize, Serialize};
+
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateAgentRequest {
@@ -71,5 +72,5 @@ pub struct UpdateExperienceDescriptionRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum SensingRequests {
-    Sense { agent: oneiros_model::AgentName },
+    Sense { agent: AgentName },
 }

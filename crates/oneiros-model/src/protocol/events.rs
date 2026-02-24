@@ -1,5 +1,6 @@
-use oneiros_model::*;
 use serde::{Deserialize, Serialize};
+
+use crate::*;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
@@ -141,7 +142,7 @@ pub enum ReflectingEvents {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum SenseEvents {
-    Sensed { agent: oneiros_model::AgentName },
+    Sensed { agent: AgentName },
 }
 
 #[derive(Serialize, Deserialize)]

@@ -1142,7 +1142,6 @@ dependencies = [
  "oneiros-link",
  "oneiros-model",
  "oneiros-outcomes",
- "oneiros-protocol",
  "oneiros-service",
  "oneiros-skill",
  "oneiros-templates",
@@ -1166,7 +1165,6 @@ dependencies = [
  "hyper-util",
  "oneiros-link",
  "oneiros-model",
- "oneiros-protocol",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
@@ -1252,15 +1250,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "oneiros-protocol"
-version = "0.0.5"
-dependencies = [
- "oneiros-link",
- "oneiros-model",
- "serde",
-]
-
-[[package]]
 name = "oneiros-service"
 version = "0.0.5"
 dependencies = [
@@ -1273,7 +1262,6 @@ dependencies = [
  "oneiros-fs",
  "oneiros-link",
  "oneiros-model",
- "oneiros-protocol",
  "rusqlite",
  "serde",
  "serde_json",

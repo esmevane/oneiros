@@ -6,7 +6,6 @@ use axum::{
 };
 use flate2::{Compression, write::ZlibEncoder};
 use oneiros_model::*;
-use oneiros_protocol::*;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 
