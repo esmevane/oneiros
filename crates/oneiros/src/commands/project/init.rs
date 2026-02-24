@@ -39,9 +39,7 @@ impl InitProject {
 
         match client.create_brain(request).await {
             Ok(info) => {
-                context
-                    .store_ticket(project_name.as_str(), info.token.as_str())
-                    .map_err(ProjectCommandError::Io)?;
+                context.store_ticket(project_name.as_str(), info.token.as_str())?;
                 outcomes.emit(InitProjectOutcomes::BrainCreated(
                     info.entity.name.clone(),
                     info.entity.path.clone(),

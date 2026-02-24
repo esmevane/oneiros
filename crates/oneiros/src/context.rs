@@ -1,15 +1,13 @@
-mod error;
-
 use directories::ProjectDirs;
 use oneiros_db::{Database, DatabaseError};
 use oneiros_detect_project_name::{ProjectDetector, ProjectRoot};
 use oneiros_fs::FileOps;
 use oneiros_model::Token;
 use oneiros_terminal::TerminalOps;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-
-pub(crate) use error::ContextError;
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "esmevane";
@@ -21,6 +19,18 @@ const HEALTH_CHECK_DELAYS: &[Duration] = &[
     Duration::from_millis(800),
     Duration::from_millis(1600),
 ];
+
+#[derive(thiserror::Error, Debug)]
+pub enum ContextError {
+    #[error("No system context available.")]
+    NoContext,
+    #[error("Unable to parse project name")]
+    NoProject,
+    #[error("Malformed or missing token file: {0}")]
+    MalformedTokenFile(#[from] std::io::Error),
+    #[error("Project directory not available")]
+    NoProjectDir,
+}
 
 pub(crate) struct Context {
     /// The detected project (name and root path), if any.
@@ -88,8 +98,8 @@ impl Context {
     }
 
     /// Retrieve the ticket token for the current project's brain.
-    pub(crate) fn ticket_token(&self) -> Result<Token, error::ContextError> {
-        let name = self.project_name().ok_or(error::ContextError::NoProject)?;
+    pub(crate) fn ticket_token(&self) -> Result<Token, ContextError> {
+        let name = self.project_name().ok_or(ContextError::NoProject)?;
         Ok(self
             .files()
             .read_to_string(self.ticket_path(name))

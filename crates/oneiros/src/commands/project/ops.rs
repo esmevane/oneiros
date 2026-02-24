@@ -5,11 +5,17 @@ use crate::*;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ProjectCommandError {
+    #[error(transparent)]
+    Context(#[from] ContextError),
+
     #[error("Client error: {0}")]
     Client(#[from] oneiros_client::Error),
 
     #[error("IO error: {0}")]
-    Io(std::io::Error),
+    Io(#[from] std::io::Error),
+
+    #[error("Malformed JSON: {0}")]
+    Json(#[from] serde_json::Error),
 
     #[error("No project detected. Run this from within a project directory.")]
     NoProject,
@@ -20,6 +26,8 @@ pub enum ProjectCommandError {
 pub enum ProjectOutcomes {
     #[outcome(transparent)]
     Init(#[from] InitProjectOutcomes),
+    #[outcome(transparent)]
+    Export(#[from] ExportProjectOutcomes),
 }
 
 #[derive(Clone, Args)]
@@ -35,6 +43,7 @@ impl ProjectOps {
     ) -> Result<Outcomes<ProjectOutcomes>, ProjectCommandError> {
         Ok(match &self.command {
             ProjectCommands::Init(init) => init.run(context).await?.map_into(),
+            ProjectCommands::Export(export) => export.run(context).await?.map_into(),
         })
     }
 }
@@ -43,4 +52,6 @@ impl ProjectOps {
 pub enum ProjectCommands {
     /// Initialize a brain for the current project.
     Init(InitProject),
+    /// Export a brain to the target directory (defaults to current directory)
+    Export(ExportProject),
 }
