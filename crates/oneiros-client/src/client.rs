@@ -64,6 +64,10 @@ impl Client {
         Ok(serde_json::from_slice(&response_body)?)
     }
 
+    pub async fn export_brain(&self, token: &Token) -> Result<Vec<Event>, Error> {
+        self.list_events(token).await
+    }
+
     pub async fn create_agent(
         &self,
         token: &Token,

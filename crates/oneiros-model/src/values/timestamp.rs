@@ -23,6 +23,10 @@ impl Timestamp {
         self.0.to_rfc3339()
     }
 
+    pub fn as_date_string(&self) -> String {
+        self.0.format("%Y-%m-%d").to_string()
+    }
+
     pub fn elapsed(&self) -> String {
         let elapsed = Utc::now().signed_duration_since(self.0);
         let secs = elapsed.num_seconds();
