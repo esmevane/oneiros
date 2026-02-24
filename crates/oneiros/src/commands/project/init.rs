@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_client::{Client, CreateBrainRequest};
+use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use std::path::PathBuf;

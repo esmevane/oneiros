@@ -6,7 +6,6 @@ use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_link::*;
 use oneiros_model::*;
-use oneiros_protocol::*;
 use oneiros_service::*;
 use std::sync::Arc;
 use tempfile::TempDir;

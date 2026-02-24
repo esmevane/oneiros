@@ -1,6 +1,6 @@
 use clap::Args;
-use oneiros_client::{Client, CreateAgentRequest};
-use oneiros_model::AgentName;
+use oneiros_client::Client;
+use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;

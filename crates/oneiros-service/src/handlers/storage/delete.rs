@@ -1,7 +1,6 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
 use oneiros_model::*;
-use oneiros_protocol::*;
 
 use crate::*;
 

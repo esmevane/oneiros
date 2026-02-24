@@ -1,5 +1,6 @@
-use oneiros_model::*;
 use serde::{Deserialize, Serialize};
+
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrainInfo {

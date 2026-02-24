@@ -1,6 +1,5 @@
 use axum::{Json, extract::Path};
 use oneiros_model::*;
-use oneiros_protocol::*;
 
 use crate::*;
 

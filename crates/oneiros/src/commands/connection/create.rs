@@ -1,7 +1,7 @@
 use clap::Args;
-use oneiros_client::{Client, CreateConnectionRequest};
+use oneiros_client::Client;
 use oneiros_link::Link;
-use oneiros_model::ConnectionId;
+use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;

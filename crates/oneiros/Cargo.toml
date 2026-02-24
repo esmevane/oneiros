@@ -26,7 +26,6 @@ oneiros-fs.workspace = true
 oneiros-link.workspace = true
 oneiros-model.workspace = true
 oneiros-outcomes.workspace = true
-oneiros-protocol.workspace = true
 oneiros-service.workspace = true
 oneiros-skill.workspace = true
 oneiros-templates.workspace = true

@@ -130,7 +130,7 @@ impl Database {
               END ASC",
         )?;
 
-        enum Collection {
+        enum Attempt {
             Event(Event),
             Failure(serde_json::Error),
         }
@@ -139,8 +139,8 @@ impl Database {
             let raw_event: String = row.get(0)?;
 
             match serde_json::from_str::<Event>(&raw_event) {
-                Ok(event) => Ok(Collection::Event(event)),
-                Err(error) => Ok(Collection::Failure(error)),
+                Ok(event) => Ok(Attempt::Event(event)),
+                Err(error) => Ok(Attempt::Failure(error)),
             }
         })?;
 
@@ -148,8 +148,8 @@ impl Database {
 
         for row in rows {
             match row? {
-                Collection::Event(event) => events.push(event),
-                Collection::Failure(error) => {
+                Attempt::Event(event) => events.push(event),
+                Attempt::Failure(error) => {
                     eprintln!("Failed to parse event JSON: {error}");
                     continue;
                 }

@@ -1,6 +1,6 @@
 use clap::Args;
-use oneiros_client::{AddCognitionRequest, Client};
-use oneiros_model::CognitionId;
+use oneiros_client::Client;
+use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;

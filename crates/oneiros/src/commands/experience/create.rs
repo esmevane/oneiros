@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_client::{Client, CreateExperienceRequest};
+use oneiros_client::Client;
 use oneiros_model::ExperienceId;
 use oneiros_outcomes::{Outcome, Outcomes};
 

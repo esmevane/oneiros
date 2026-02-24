@@ -3,7 +3,6 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use oneiros_db::Database;
 use oneiros_model::*;
-use oneiros_protocol::*;
 use std::sync::Arc;
 
 use crate::*;
