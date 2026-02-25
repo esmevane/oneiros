@@ -2,15 +2,14 @@ use clap::Args;
 use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
-use std::path::PathBuf;
 
 use crate::*;
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum InitProjectOutcomes {
-    #[outcome(message("Brain '{0}' created at {}.", .1.display()))]
-    BrainCreated(BrainName, PathBuf),
+    #[outcome(message("Brain '{0}' created."))]
+    BrainCreated(BrainName),
     #[outcome(message("Brain '{0}' already exists."))]
     BrainAlreadyExists(BrainName),
 }
@@ -40,10 +39,7 @@ impl InitProject {
         match client.create_brain(request).await {
             Ok(info) => {
                 context.store_ticket(project_name.as_str(), info.token.as_str())?;
-                outcomes.emit(InitProjectOutcomes::BrainCreated(
-                    info.entity.name.clone(),
-                    info.entity.path.clone(),
-                ));
+                outcomes.emit(InitProjectOutcomes::BrainCreated(project_name.clone()));
             }
             Err(oneiros_client::Error::ServiceResponse(ref e)) if e.status == 409 => {
                 outcomes.emit(InitProjectOutcomes::BrainAlreadyExists(project_name));

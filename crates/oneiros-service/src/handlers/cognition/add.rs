@@ -19,15 +19,17 @@ pub(crate) async fn handler(
         .get_texture(&request.texture)?
         .ok_or(NotFound::Texture(request.texture.clone()))?;
 
-    let cognition = Record::create(Cognition {
-        agent_id: Key::Id(agent.id),
+    let cognition = Cognition {
+        agent_id: agent.id,
         texture: request.texture,
         content: request.content,
-    });
+    };
 
-    let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));
+    let record = Record::create(cognition);
+
+    let event = Events::Cognition(CognitionEvents::CognitionAdded(record.clone()));
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
 
-    Ok((StatusCode::CREATED, Json(cognition)))
+    Ok((StatusCode::CREATED, Json(record)))
 }

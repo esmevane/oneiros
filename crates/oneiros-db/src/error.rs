@@ -4,8 +4,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DatabaseError {
-    #[error("Key misuse: {0}")]
-    KeyMisused(#[from] KeyMisuseError),
+    #[error("Invalid ID: {0}")]
+    Id(#[from] IdParseError),
 
     #[error("Database error: {0}")]
     Sqlite(#[from] rusqlite::Error),

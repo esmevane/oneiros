@@ -19,18 +19,16 @@ pub(crate) async fn handler(
         .get_sensation(&request.sensation)?
         .ok_or(NotFound::Sensation(request.sensation.clone()))?;
 
-    let experience = ExperienceRecord::init(
-        request.description,
-        request.refs,
-        Experience {
-            agent_id: Key::Id(agent.id),
-            sensation: request.sensation,
-        },
-    );
+    let experience = Experience {
+        agent_id: agent.id,
+        sensation: request.sensation,
+    };
 
-    let event = Events::Experience(ExperienceEvents::ExperienceCreated(experience.clone()));
+    let record = ExperienceRecord::init(request.description, request.refs, experience);
+
+    let event = Events::Experience(ExperienceEvents::ExperienceCreated(record.clone()));
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
 
-    Ok((StatusCode::CREATED, Json(experience)))
+    Ok((StatusCode::CREATED, Json(record)))
 }

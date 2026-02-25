@@ -4,5 +4,5 @@ mod socket;
 
 pub(crate) use socket::SocketClient;
 
-pub use client::Client;
+pub use client::{Client, ImportEvent, ImportResponse, ReplayResponse};
 pub use error::{ConnectionError, Error, RequestError, ResponseError};

@@ -36,6 +36,13 @@ pub(crate) async fn handler(
     let sensations = ticket.db.list_sensations()?;
     let natures = ticket.db.list_natures()?;
 
+    let complete = Events::Dreaming(DreamingEvents::DreamComplete {
+        agent: Agent {
+            name: agent.name.clone(),
+            persona: agent.persona.clone(),
+        },
+    });
+
     let context = DreamContext {
         agent,
         persona,
@@ -49,7 +56,6 @@ pub(crate) async fn handler(
         natures,
     };
 
-    let complete = Events::Dreaming(DreamingEvents::DreamComplete(Box::new(context.clone())));
     ticket.db.log_event(&complete, &[])?;
 
     Ok(Json(context))

@@ -18,15 +18,17 @@ pub(crate) async fn handler(
         .get_level(&request.level)?
         .ok_or(NotFound::Level(request.level.clone()))?;
 
-    let memory = Record::create(Memory {
-        agent_id: Key::Id(agent.id),
+    let memory = Memory {
+        agent_id: agent.id,
         level: request.level,
         content: request.content,
-    });
+    };
 
-    let event = Events::Memory(MemoryEvents::MemoryAdded(memory.clone()));
+    let record = Record::create(memory);
+
+    let event = Events::Memory(MemoryEvents::MemoryAdded(record.clone()));
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
 
-    Ok((StatusCode::CREATED, Json(memory)))
+    Ok((StatusCode::CREATED, Json(record)))
 }

@@ -105,10 +105,8 @@ impl Init {
         database.log_event(&create_tenant, projections::system::ALL)?;
         outcomes.emit(InitSystemOutcomes::TenantCreated);
 
-        let actor_id = ActorId::new();
-
         let create_actor = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-            actor_id,
+            ActorId::new(),
             Actor {
                 tenant_id,
                 name: ActorName::new(name.as_str()),
