@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::SensationRecord;
+use oneiros_model::Sensation;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,7 +9,7 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowSensationOutcomes {
     #[outcome(message("Sensation details: {0:?}"))]
-    SensationDetails(SensationRecord),
+    SensationDetails(Sensation),
 }
 
 #[derive(Clone, Args)]

@@ -13,7 +13,7 @@ pub(crate) struct ListParams {
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
-) -> Result<Json<Vec<ExperienceRecord>>, Error> {
+) -> Result<Json<Vec<Experience>>, Error> {
     let experiences = match (params.agent, params.sensation) {
         (Some(agent_name), Some(sensation)) => {
             let agent = ticket

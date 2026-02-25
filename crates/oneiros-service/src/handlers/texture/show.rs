@@ -1,12 +1,12 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{TextureName, TextureRecord};
+use oneiros_model::{Texture, TextureName};
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(given_name): Path<TextureName>,
-) -> Result<Json<TextureRecord>, Error> {
+) -> Result<Json<Texture>, Error> {
     let texture = ticket
         .db
         .get_texture(&given_name)?

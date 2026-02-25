@@ -7,7 +7,7 @@ use crate::*;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct MemoryList(pub Vec<Record<MemoryId, Memory>>);
+pub struct MemoryList(pub Vec<Memory>);
 
 impl core::fmt::Display for MemoryList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

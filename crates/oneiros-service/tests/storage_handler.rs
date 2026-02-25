@@ -12,37 +12,29 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
-        Tenant {
-            name: TenantName::new("Test Tenant"),
-        },
-    )));
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        actor_id,
-        Actor {
-            tenant_id,
-            name: ActorName::new("Test Actor"),
-        },
-    )));
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: actor_id,
+        tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
-        brain_id,
-        HasPath::new(
-            brain_path,
-            Brain {
-                tenant_id,
-                name: BrainName::new("test-brain"),
-                status: BrainStatus::Active,
-            },
-        ),
-    )));
+    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
+        id: brain_id,
+        tenant_id,
+        name: BrainName::new("test-brain"),
+        status: BrainStatus::Active,
+        path: brain_path.to_path_buf(),
+    }));
 
     db.log_event(&event, projections::system::ALL).unwrap();
 
@@ -52,13 +44,11 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         actor_id,
     });
 
-    let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
-        TicketId::new(),
-        Ticket {
-            token: token.clone(),
-            created_by: actor_id,
-        },
-    )));
+    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
+        id: TicketId::new(),
+        token: token.clone(),
+        created_by: actor_id,
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
@@ -130,7 +120,7 @@ async fn set_storage_returns_ok() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry: StorageEntryRecord = serde_json::from_slice(&bytes).unwrap();
+    let entry: StorageEntry = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(entry.key, StorageKey::new("greeting"));
     assert_eq!(entry.description.as_str(), "A greeting");
     assert!(!entry.hash.as_str().is_empty());
@@ -165,7 +155,7 @@ async fn set_storage_is_idempotent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry: StorageEntryRecord = serde_json::from_slice(&bytes).unwrap();
+    let entry: StorageEntry = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(entry.description.as_str(), "Version 2");
 }
 
@@ -181,7 +171,7 @@ async fn set_storage_deduplicates_content() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry_a: StorageEntryRecord = serde_json::from_slice(&bytes).unwrap();
+    let entry_a: StorageEntry = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state);
     let response = app
@@ -189,7 +179,7 @@ async fn set_storage_deduplicates_content() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry_b: StorageEntryRecord = serde_json::from_slice(&bytes).unwrap();
+    let entry_b: StorageEntry = serde_json::from_slice(&bytes).unwrap();
 
     assert_eq!(entry_a.hash, entry_b.hash);
 }
@@ -239,7 +229,7 @@ async fn list_storage_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<StorageEntryRecord> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<StorageEntry> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -272,7 +262,7 @@ async fn list_storage_after_set() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<StorageEntryRecord> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<StorageEntry> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
@@ -293,14 +283,14 @@ async fn show_storage_metadata() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: StorageEntryRecord = serde_json::from_slice(&bytes).unwrap();
+    let created: StorageEntry = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state);
     let response = app.oneshot(get_auth(&uri, &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry: StorageEntryRecord = serde_json::from_slice(&bytes).unwrap();
+    let entry: StorageEntry = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(entry.key, StorageKey::new("doc"));
     assert_eq!(entry.description.as_str(), "A document");
     assert_eq!(entry.hash, created.hash);

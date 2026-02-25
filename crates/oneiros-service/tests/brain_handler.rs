@@ -13,21 +13,17 @@ use tower::util::ServiceExt;
 fn seed_tenant_and_actor(db: &Database) {
     let tenant_id = TenantId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
-        Tenant {
-            name: TenantName::new("Test Tenant"),
-        },
-    )));
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        ActorId::new(),
-        Actor {
-            tenant_id,
-            name: ActorName::new("Test Actor"),
-        },
-    )));
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: ActorId::new(),
+        tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 }
 

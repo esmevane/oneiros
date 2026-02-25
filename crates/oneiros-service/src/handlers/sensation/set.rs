@@ -5,8 +5,8 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Json(sensation): Json<SensationRecord>,
-) -> Result<(StatusCode, Json<SensationRecord>), Error> {
+    Json(sensation): Json<Sensation>,
+) -> Result<(StatusCode, Json<Sensation>), Error> {
     let event = Events::Sensation(SensationEvents::SensationSet(sensation.clone()));
 
     ticket.db.log_event(&event, projections::brain::ALL)?;

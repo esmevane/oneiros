@@ -4,14 +4,14 @@ use crate::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DreamContext {
-    pub agent: AgentRecord,
-    pub persona: PersonaRecord,
-    pub memories: Vec<Record<MemoryId, Memory>>,
-    pub cognitions: Vec<Record<CognitionId, Cognition>>,
-    pub experiences: Vec<ExperienceRecord>,
-    pub connections: Vec<Record<ConnectionId, Connection>>,
-    pub textures: Vec<TextureRecord>,
-    pub levels: Vec<LevelRecord>,
-    pub sensations: Vec<SensationRecord>,
-    pub natures: Vec<NatureRecord>,
+    pub agent: Agent,
+    pub persona: Persona,
+    pub memories: Vec<Memory>,
+    pub cognitions: Vec<Cognition>,
+    pub experiences: Vec<Experience>,
+    pub connections: Vec<Connection>,
+    pub textures: Vec<Texture>,
+    pub levels: Vec<Level>,
+    pub sensations: Vec<Sensation>,
+    pub natures: Vec<Nature>,
 }

@@ -1,20 +1,20 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::ExperienceRecord;
+use oneiros_model::Experience;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct ExperienceList(pub Vec<ExperienceRecord>);
+pub struct ExperienceList(pub Vec<Experience>);
 
 impl core::fmt::Display for ExperienceList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let display = self
             .0
             .iter()
-            .map(|experience| experience.as_table_row(&experience.description, &experience.refs))
+            .map(|experience| experience.as_table_row())
             .collect::<Vec<_>>()
             .join("\n");
 

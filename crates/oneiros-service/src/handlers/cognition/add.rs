@@ -6,7 +6,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<AddCognitionRequest>,
-) -> Result<(StatusCode, Json<Record<CognitionId, Cognition>>), Error> {
+) -> Result<(StatusCode, Json<Cognition>), Error> {
     // Resolve agent name to agent_id.
     let agent = ticket
         .db
@@ -19,17 +19,11 @@ pub(crate) async fn handler(
         .get_texture(&request.texture)?
         .ok_or(NotFound::Texture(request.texture.clone()))?;
 
-    let cognition = Cognition {
-        agent_id: agent.id,
-        texture: request.texture,
-        content: request.content,
-    };
+    let cognition = Cognition::create(agent.id, request.texture, request.content);
 
-    let record = Record::create(cognition);
-
-    let event = Events::Cognition(CognitionEvents::CognitionAdded(record.clone()));
+    let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
 
-    Ok((StatusCode::CREATED, Json(record)))
+    Ok((StatusCode::CREATED, Json(cognition)))
 }

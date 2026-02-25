@@ -47,17 +47,8 @@ pub(crate) async fn handler(
 
     Database::create_brain_db(&path)?;
 
-    let brain = HasPath::new(
-        path,
-        Brain {
-            tenant_id,
-            name: request.name,
-            status: BrainStatus::Active,
-        },
-    );
-
-    let brain_id = BrainId::new();
-    let brain = Identity::new(brain_id, brain);
+    let brain = Brain::init(tenant_id, request.name, path);
+    let brain_id = brain.id;
 
     let event = Events::Brain(BrainEvents::BrainCreated(brain));
 
@@ -69,13 +60,7 @@ pub(crate) async fn handler(
         actor_id,
     });
 
-    let ticket = Identity::new(
-        TicketId::new(),
-        Ticket {
-            token: token.clone(),
-            created_by: actor_id,
-        },
-    );
+    let ticket = Ticket::init(token.clone(), actor_id);
 
     let ticket_event = Events::Ticket(TicketEvents::TicketIssued(ticket));
 

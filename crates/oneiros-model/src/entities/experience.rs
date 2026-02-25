@@ -10,53 +10,59 @@ pub enum ExperienceConstructionError {
     #[error("invalid agent id: {0}")]
     InvalidAgentId(IdParseError),
     #[error("invalid created_at timestamp: {0}")]
-    InvalidCreatedAt(#[from] TimestampConstructionFailure),
-}
-
-pub type ExperienceRecord = Record<ExperienceId, HasDescription<HasRefs<Experience>>>;
-
-impl ExperienceRecord {
-    pub fn init(
-        description: impl Into<Description>,
-        refs: Vec<RecordRef>,
-        experience: Experience,
-    ) -> Self {
-        Record::create(HasDescription::new(
-            description.into(),
-            HasRefs::new(refs, experience),
-        ))
-    }
+    InvalidCreatedAt(#[from] TimestampParseError),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Experience {
+    pub id: ExperienceId,
     pub agent_id: AgentId,
     pub sensation: SensationName,
+    pub description: Description,
+    #[serde(default)]
+    pub refs: Vec<RecordRef>,
+    pub created_at: Timestamp,
 }
 
 impl Experience {
-    pub fn as_table_row(&self, description: &Description, refs: &[RecordRef]) -> String {
+    pub fn create(
+        agent_id: AgentId,
+        sensation: SensationName,
+        description: Description,
+        refs: Vec<RecordRef>,
+    ) -> Self {
+        Self {
+            id: ExperienceId::from(Id::new()),
+            agent_id,
+            sensation,
+            description,
+            refs,
+            created_at: Timestamp::now(),
+        }
+    }
+
+    pub fn as_table_row(&self) -> String {
         let sensation = format!("{}", self.sensation);
-        let desc = description.as_str();
+        let desc = self.description.as_str();
         let truncated = if desc.len() > 80 {
             let end = desc.floor_char_boundary(80);
             format!("{}...", &desc[..end])
         } else {
             desc.to_string()
         };
-        let ref_count = refs.len();
+        let ref_count = self.refs.len();
 
         format!("{sensation:<12} {truncated} ({ref_count} refs)")
     }
 
-    pub fn as_detail(&self, description: &Description, refs: &[RecordRef]) -> String {
+    pub fn as_detail(&self) -> String {
         let mut lines = vec![
             format!("  Sensation: {}", self.sensation),
-            format!("  Description: {}", description),
+            format!("  Description: {}", self.description),
         ];
 
-        lines.push(format!("  Refs: ({})", refs.len()));
-        for r in refs {
+        lines.push(format!("  Refs: ({})", self.refs.len()));
+        for r in &self.refs {
             lines.push(format!("    {r}"));
         }
 
@@ -72,29 +78,28 @@ impl Experience {
             impl AsRef<str>,
         ),
         refs: Vec<RecordRef>,
-    ) -> Result<ExperienceRecord, ExperienceConstructionError> {
-        let id: ExperienceId = id
-            .as_ref()
-            .parse()
-            .map_err(ExperienceConstructionError::InvalidId)?;
-
-        let agent_id: AgentId = agent_id
-            .as_ref()
-            .parse()
-            .map_err(ExperienceConstructionError::InvalidAgentId)?;
-        let experience = Experience {
-            agent_id,
+    ) -> Result<Experience, ExperienceConstructionError> {
+        Ok(Experience {
+            id: id
+                .as_ref()
+                .parse()
+                .map_err(ExperienceConstructionError::InvalidId)?,
+            agent_id: agent_id
+                .as_ref()
+                .parse()
+                .map_err(ExperienceConstructionError::InvalidAgentId)?,
             sensation: SensationName::new(sensation),
-        };
+            description: Description::new(description),
+            refs,
+            created_at: Timestamp::parse_str(created_at)?,
+        })
+    }
+}
 
-        Ok(Record::build(
-            id,
-            HasDescription::new(
-                Description::new(description),
-                HasRefs::new(refs, experience),
-            ),
-            created_at,
-        )?)
+impl core::fmt::Display for Experience {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let prefix = &self.id.to_string()[..8];
+        write!(f, "{prefix} {}", self.as_table_row())
     }
 }
 
@@ -106,19 +111,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn experience_identity() {
-        let agent_id = AgentId::new();
+    fn experience_same_fields_same_link() {
+        let experience = Experience::create(
+            AgentId::new(),
+            SensationName::new("continues"),
+            Description::new("desc"),
+            vec![],
+        );
 
-        let primary = Experience {
-            agent_id,
-            sensation: SensationName::new("continues"),
-        };
+        let clone = experience.clone();
 
-        let other = Experience {
-            agent_id,
-            sensation: SensationName::new("continues"),
-        };
-
-        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
+        assert_eq!(experience.as_link().unwrap(), clone.as_link().unwrap());
     }
 }

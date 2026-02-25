@@ -38,12 +38,10 @@ impl SetNature {
         let info = client
             .set_nature(
                 &context.ticket_token()?,
-                NatureRecord::init(
+                Nature::init(
+                    self.name.clone(),
                     self.description.clone(),
                     self.prompt.clone(),
-                    Nature {
-                        name: self.name.clone(),
-                    },
                 ),
             )
             .await?;

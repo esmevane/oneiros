@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::LevelRecord;
+use oneiros_model::Level;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,7 +9,7 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowLevelOutcomes {
     #[outcome(message("Level '{}'\n  Description: {}\n  Prompt: {}", .0.name, .0.description, .0.prompt))]
-    LevelDetails(LevelRecord),
+    LevelDetails(Level),
 }
 
 #[derive(Clone, Args)]

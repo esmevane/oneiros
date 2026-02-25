@@ -27,16 +27,9 @@ impl SystemResourceLink {
 #[serde(untagged)]
 pub enum ProjectResourceLink {
     Agent(AgentLink),
-    Cognition(CognitionLink),
     Connection(ConnectionLink),
     Experience(ExperienceLink),
-    Level(LevelLink),
-    Memory(MemoryLink),
-    Nature(NatureLink),
-    Persona(PersonaLink),
-    Sensation(SensationLink),
     StorageEntry(StorageEntryLink),
-    Texture(TextureLink),
 }
 
 impl ProjectResourceLink {
@@ -77,13 +70,16 @@ mod tests {
     #[test]
     fn nested_deserializing() {
         let tenant_id = TenantId::new();
+        let actor_id = ActorId::new();
         let actor_link = ActorLink::Actor(Actor {
+            id: actor_id,
             tenant_id,
             name: ActorName::new("actor"),
         });
 
         let resource_link =
             ResourceLink::SystemResourceLink(SystemResourceLink::Actor(ActorLink::Actor(Actor {
+                id: actor_id,
                 tenant_id,
                 name: ActorName::new("actor"),
             })));

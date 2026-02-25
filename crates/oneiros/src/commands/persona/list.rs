@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::PersonaRecord;
+use oneiros_model::Persona;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListPersonasOutcomes {
     NoPersonas,
 
     #[outcome(message("Personas: {0:?}"))]
-    Personas(Vec<PersonaRecord>),
+    Personas(Vec<Persona>),
 }
 
 #[derive(Clone, Args)]

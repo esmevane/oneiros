@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::TextureRecord;
+use oneiros_model::Texture;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListTexturesOutcomes {
     NoTextures,
 
     #[outcome(message("Textures: {0:?}"))]
-    Textures(Vec<TextureRecord>),
+    Textures(Vec<Texture>),
 }
 
 #[derive(Clone, Args)]
