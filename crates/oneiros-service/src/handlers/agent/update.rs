@@ -20,19 +20,21 @@ pub(crate) async fn handler(
         .get_persona(&request.persona)?
         .ok_or(NotFound::Persona(request.persona.clone()))?;
 
-    let agent = AgentRecord::construct(
+    let agent = Agent {
+        name: existing.name.clone(),
+        persona: request.persona,
+    };
+
+    let record = AgentRecord::construct(
         existing.id,
         request.description.as_str(),
         request.prompt.as_str(),
-        Agent {
-            name: existing.name.clone(),
-            persona: request.persona,
-        },
+        agent,
     );
 
-    let event = Events::Agent(AgentEvents::AgentUpdated(agent.clone()));
+    let event = Events::Agent(AgentEvents::AgentUpdated(record.clone()));
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
 
-    Ok((StatusCode::OK, Json(agent)))
+    Ok((StatusCode::OK, Json(record)))
 }

@@ -28,6 +28,10 @@ pub enum ProjectOutcomes {
     Init(#[from] InitProjectOutcomes),
     #[outcome(transparent)]
     Export(#[from] ExportProjectOutcomes),
+    #[outcome(transparent)]
+    Import(#[from] ImportProjectOutcomes),
+    #[outcome(transparent)]
+    Replay(#[from] ReplayProjectOutcomes),
 }
 
 #[derive(Clone, Args)]
@@ -44,6 +48,8 @@ impl ProjectOps {
         Ok(match &self.command {
             ProjectCommands::Init(init) => init.run(context).await?.map_into(),
             ProjectCommands::Export(export) => export.run(context).await?.map_into(),
+            ProjectCommands::Import(import) => import.run(context).await?.map_into(),
+            ProjectCommands::Replay(replay) => replay.run(context).await?.map_into(),
         })
     }
 }
@@ -54,4 +60,8 @@ pub enum ProjectCommands {
     Init(InitProject),
     /// Export a brain to the target directory (defaults to current directory)
     Export(ExportProject),
+    /// Import events from a jsonl export into the brain.
+    Import(ImportProject),
+    /// Replay all events through projections, rebuilding the read model.
+    Replay(ReplayProject),
 }

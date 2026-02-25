@@ -8,14 +8,14 @@ pub enum CognitionConstructionError {
     #[error("invalid cognition id: {0}")]
     InvalidId(IdParseError),
     #[error("invalid agent id: {0}")]
-    InvalidAgentId(#[from] KeyParseError),
+    InvalidAgentId(IdParseError),
     #[error("invalid created_at timestamp: {0}")]
     InvalidCreatedAt(#[from] TimestampConstructionFailure),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Cognition {
-    pub agent_id: Key<AgentId, AgentLink>,
+    pub agent_id: AgentId,
     pub texture: TextureName,
     pub content: Content,
 }
@@ -48,7 +48,10 @@ impl Cognition {
             .parse()
             .map_err(CognitionConstructionError::InvalidId)?;
 
-        let agent_id: Key<AgentId, AgentLink> = agent_id.as_ref().parse()?;
+        let agent_id: AgentId = agent_id
+            .as_ref()
+            .parse()
+            .map_err(CognitionConstructionError::InvalidAgentId)?;
 
         let cognition = Cognition {
             agent_id,
@@ -75,10 +78,10 @@ mod tests {
 
     #[test]
     fn cognition_identity() {
-        let agent_id = Key::Id(AgentId::new());
+        let agent_id = AgentId::new();
 
         let primary = Cognition {
-            agent_id: agent_id.clone(),
+            agent_id,
             texture: TextureName::new("working"),
             content: Content::new("thinking about links"),
         };
@@ -95,13 +98,13 @@ mod tests {
     #[test]
     fn cognition_different_content_different_link() {
         let primary = Cognition {
-            agent_id: Key::Id(AgentId::new()),
+            agent_id: AgentId::new(),
             texture: TextureName::new("working"),
             content: Content::new("first thought"),
         };
 
         let other = Cognition {
-            agent_id: Key::Id(AgentId::new()),
+            agent_id: AgentId::new(),
             texture: TextureName::new("working"),
             content: Content::new("second thought"),
         };

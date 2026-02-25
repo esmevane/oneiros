@@ -1,8 +1,26 @@
 use oneiros_link::*;
 use oneiros_model::*;
+use serde_json::Value;
 use std::path::Path;
 
 use crate::*;
+
+#[derive(serde::Serialize)]
+pub struct ImportEvent {
+    pub timestamp: String,
+    pub data: Value,
+}
+
+#[derive(serde::Deserialize)]
+pub struct ImportResponse {
+    pub imported: usize,
+    pub replayed: usize,
+}
+
+#[derive(serde::Deserialize)]
+pub struct ReplayResponse {
+    pub replayed: usize,
+}
 
 pub struct Client {
     client: SocketClient,
@@ -66,6 +84,23 @@ impl Client {
 
     pub async fn export_brain(&self, token: &Token) -> Result<Vec<Event>, Error> {
         self.list_events(token).await
+    }
+
+    pub async fn import_events(
+        &self,
+        token: &Token,
+        events: Vec<ImportEvent>,
+    ) -> Result<ImportResponse, Error> {
+        let body = serde_json::to_vec(&events)?;
+        let bytes = self
+            .send("POST", "/events/import", token, Some(body))
+            .await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn replay_brain(&self, token: &Token) -> Result<ReplayResponse, Error> {
+        let bytes = self.send("POST", "/events/replay", token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
     }
 
     pub async fn create_agent(

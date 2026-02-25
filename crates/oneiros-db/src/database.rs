@@ -26,7 +26,6 @@ impl Database {
     pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(connection_string.as_ref())?;
         Self::register_functions(&conn)?;
-        Self::migrate_system(&conn);
 
         Ok(Self { conn })
     }
@@ -40,56 +39,8 @@ impl Database {
         let conn = Connection::open(path)?;
         Self::register_functions(&conn)?;
         conn.execute_batch(migrations::BRAIN)?;
-        Self::migrate_brain(&conn);
 
         Ok(Self { conn })
-    }
-
-    /// Run forward-only migrations that cannot be expressed as idempotent
-    /// CREATE TABLE IF NOT EXISTS statements. Each migration is a no-op
-    /// if the schema is already up to date.
-    fn migrate_brain(conn: &Connection) {
-        // v0.0.6: add link column to experience_ref for content-addressed refs.
-        let _ = conn.execute_batch("alter table experience_ref add column link text");
-
-        // v0.0.7: add link column to all entity tables for content-addressed lookup.
-        let _ = conn.execute_batch("alter table persona add column link text");
-        let _ = conn.execute_batch("alter table texture add column link text");
-        let _ = conn.execute_batch("alter table level add column link text");
-        let _ = conn.execute_batch("alter table sensation add column link text");
-        let _ = conn.execute_batch("alter table nature add column link text");
-        let _ = conn.execute_batch("alter table agent add column link text");
-        let _ = conn.execute_batch("alter table cognition add column link text");
-        let _ = conn.execute_batch("alter table memory add column link text");
-        let _ = conn.execute_batch("alter table experience add column link text");
-        let _ = conn.execute_batch("alter table connection add column link text");
-        let _ = conn.execute_batch("alter table storage add column link text");
-
-        let _ = conn.execute_batch("create index if not exists persona_link on persona(link)");
-        let _ = conn.execute_batch("create index if not exists texture_link on texture(link)");
-        let _ = conn.execute_batch("create index if not exists level_link on level(link)");
-        let _ = conn.execute_batch("create index if not exists sensation_link on sensation(link)");
-        let _ = conn.execute_batch("create index if not exists nature_link on nature(link)");
-        let _ = conn.execute_batch("create index if not exists agent_link on agent(link)");
-        let _ = conn.execute_batch("create index if not exists cognition_link on cognition(link)");
-        let _ = conn.execute_batch("create index if not exists memory_link on memory(link)");
-        let _ =
-            conn.execute_batch("create index if not exists experience_link on experience(link)");
-        let _ =
-            conn.execute_batch("create index if not exists connection_link on connection(link)");
-        let _ = conn.execute_batch("create index if not exists storage_link on storage(link)");
-    }
-
-    /// Run forward-only migrations for the system database.
-    fn migrate_system(conn: &Connection) {
-        // v0.0.7: add link column to system entity tables.
-        let _ = conn.execute_batch("alter table tenant add column link text");
-        let _ = conn.execute_batch("alter table actor add column link text");
-        let _ = conn.execute_batch("alter table brain add column link text");
-
-        let _ = conn.execute_batch("create index if not exists tenant_link on tenant(link)");
-        let _ = conn.execute_batch("create index if not exists actor_link on actor(link)");
-        let _ = conn.execute_batch("create index if not exists brain_link on brain(link)");
     }
 
     pub fn create(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
@@ -116,7 +67,7 @@ impl Database {
     /// ensures FK dependencies are satisfied during replay.
     pub fn read_events(&self) -> Result<Vec<Event>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "SELECT json_object('id', id, 'timestamp', timestamp, 'data', data) FROM events
+            "SELECT json_object('id', id, 'timestamp', timestamp, 'data', json(data)) FROM events
               ORDER BY timestamp ASC,
               CASE json_extract(meta, '$.type')
                   WHEN 'texture-set'   THEN 0
@@ -268,13 +219,14 @@ impl Database {
         &self,
         tenant_id: impl AsRef<str>,
         name: impl AsRef<str>,
-    ) -> Result<bool, DatabaseError> {
-        let count: i64 = self.conn.query_row(
-            "select count(*) from brain where tenant_id = ?1 and name = ?2",
+    ) -> Result<BrainId, DatabaseError> {
+        let id: String = self.conn.query_row(
+            "select id from brain where tenant_id = ?1 and name = ?2",
             params![tenant_id.as_ref(), name.as_ref()],
             |row| row.get(0),
         )?;
-        Ok(count > 0)
+
+        Ok(id.parse()?)
     }
 
     pub fn create_brain(
@@ -644,6 +596,22 @@ impl Database {
     }
 
     pub fn remove_agent(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "delete from cognition where agent_id in (select id from agent where name = ?1)",
+            params![name.as_ref()],
+        )?;
+        self.conn.execute(
+            "delete from memory where agent_id in (select id from agent where name = ?1)",
+            params![name.as_ref()],
+        )?;
+        self.conn.execute(
+            "delete from experience_ref where experience_id in (select id from experience where agent_id in (select id from agent where name = ?1))",
+            params![name.as_ref()],
+        )?;
+        self.conn.execute(
+            "delete from experience where agent_id in (select id from agent where name = ?1)",
+            params![name.as_ref()],
+        )?;
         self.conn
             .execute("delete from agent where name = ?1", params![name.as_ref()])?;
         Ok(())
@@ -1708,6 +1676,56 @@ impl Database {
         )?;
 
         Ok(())
+    }
+
+    pub fn import_event(&self, timestamp: &str, data: &Value) -> Result<(), DatabaseError> {
+        let event_type = data["type"].as_str().unwrap_or("__unmarked");
+        let meta = serde_json::json!({ "type": event_type });
+
+        self.conn.execute(
+            "insert into events (timestamp, data, meta) values (?1, ?2, ?3)",
+            params![timestamp, data.to_string(), meta.to_string()],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn replay(&self, projections: &[Projection]) -> Result<usize, DatabaseError> {
+        for projection in projections.iter().rev() {
+            (projection.reset)(self)?;
+        }
+
+        let mut stmt = self.conn.prepare(
+            "SELECT data FROM events
+              ORDER BY timestamp ASC,
+              CASE json_extract(meta, '$.type')
+                  WHEN 'texture-set'   THEN 0
+                  WHEN 'level-set'     THEN 0
+                  WHEN 'persona-set'   THEN 0
+                  WHEN 'sensation-set' THEN 0
+                  WHEN 'nature-set'    THEN 0
+                  WHEN 'agent-created' THEN 1
+                  WHEN 'agent-updated' THEN 1
+                  ELSE 2
+              END ASC",
+        )?;
+
+        let mut count = 0;
+
+        let rows = stmt.query_map([], |row| {
+            let raw: String = row.get(0)?;
+            Ok(raw)
+        })?;
+
+        for row in rows {
+            let raw = row?;
+            let event: Value = serde_json::from_str(&raw)?;
+
+            self.run_projections(projections, &event)?;
+            count += 1;
+        }
+
+        Ok(count)
     }
 
     fn run_projections(

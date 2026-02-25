@@ -33,7 +33,10 @@ pub(crate) async fn handler(
         .map_err(CreateBrainError::from)
         .map_err(BadRequests::from)?;
 
-    if db.brain_exists(tenant_id.to_string(), request.name.as_str())? {
+    if db
+        .brain_exists(tenant_id.to_string(), request.name.as_str())
+        .is_ok()
+    {
         Err(Conflicts::Brain(request.name.clone()))?;
     }
 
@@ -44,21 +47,19 @@ pub(crate) async fn handler(
 
     Database::create_brain_db(&path)?;
 
-    let brain_id = BrainId::new();
-
-    let entity = Identity::new(
-        brain_id,
-        HasPath::new(
-            path,
-            Brain {
-                tenant_id,
-                name: request.name,
-                status: BrainStatus::Active,
-            },
-        ),
+    let brain = HasPath::new(
+        path,
+        Brain {
+            tenant_id,
+            name: request.name,
+            status: BrainStatus::Active,
+        },
     );
 
-    let event = Events::Brain(BrainEvents::BrainCreated(entity.clone()));
+    let brain_id = BrainId::new();
+    let brain = Identity::new(brain_id, brain);
+
+    let event = Events::Brain(BrainEvents::BrainCreated(brain));
 
     db.log_event(&event, projections::system::ALL)?;
 
@@ -68,17 +69,22 @@ pub(crate) async fn handler(
         actor_id,
     });
 
-    let ticket_event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
+    let ticket = Identity::new(
         TicketId::new(),
         Ticket {
             token: token.clone(),
             created_by: actor_id,
         },
-    )));
+    );
+
+    let ticket_event = Events::Ticket(TicketEvents::TicketIssued(ticket));
 
     db.log_event(&ticket_event, projections::system::ALL)?;
 
-    let info = BrainInfo { entity, token };
+    let info = BrainInfo {
+        entity: brain_id,
+        token,
+    };
 
     Ok((StatusCode::CREATED, Json(info)))
 }

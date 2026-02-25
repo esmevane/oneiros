@@ -15,6 +15,7 @@ pub(crate) async fn handler(
     let begun = Events::Dreaming(DreamingEvents::DreamBegun {
         agent: agent.name.clone(),
     });
+
     ticket.db.log_event(&begun, &[])?;
 
     let persona = ticket
@@ -44,7 +45,14 @@ pub(crate) async fn handler(
         natures,
     };
 
-    let complete = Events::Dreaming(DreamingEvents::DreamComplete(Box::new(context.clone())));
+    let agent = context.agent.clone().into_inner();
+    let complete = Events::Dreaming(DreamingEvents::DreamComplete {
+        agent: Agent {
+            name: agent.name.clone(),
+            persona: agent.persona.clone(),
+        },
+    });
+
     ticket.db.log_event(&complete, &[])?;
 
     Ok(Json(context))

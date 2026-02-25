@@ -11,8 +11,8 @@ pub enum ListEventsOutcomes {
     #[outcome(message("No events found."))]
     NoEvents,
 
-    #[outcome(message("Events: {0:?}"))]
-    Events(Vec<Event>),
+    #[outcome(message("{0}"))]
+    Event(Event),
 }
 
 #[derive(Clone, Args)]
@@ -26,13 +26,14 @@ impl ListEvents {
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
+        let events = client.list_events(&context.ticket_token()?).await?;
 
-        let textures = client.list_events(&context.ticket_token()?).await?;
-
-        if textures.is_empty() {
+        if events.is_empty() {
             outcomes.emit(ListEventsOutcomes::NoEvents);
         } else {
-            outcomes.emit(ListEventsOutcomes::Events(textures));
+            for event in events {
+                outcomes.emit(ListEventsOutcomes::Event(event));
+            }
         }
 
         Ok(outcomes)

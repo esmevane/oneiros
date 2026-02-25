@@ -16,23 +16,21 @@ pub(crate) async fn handler(
         return Err(Conflicts::Agent(request.name).into());
     }
 
-    let agent = AgentRecord::init(
-        request.description,
-        request.prompt,
-        Agent {
-            name: request.name,
-            persona: request.persona,
-        },
-    );
+    let agent = Agent {
+        name: request.name,
+        persona: request.persona,
+    };
 
-    let emerged = Events::Lifecycle(LifecycleEvents::Emerged {
-        name: agent.name.clone(),
-    });
+    let agent_name = agent.name.clone();
+
+    let record = AgentRecord::init(request.description, request.prompt, agent);
+
+    let emerged = Events::Lifecycle(LifecycleEvents::Emerged { name: agent_name });
 
     ticket.db.log_event(&emerged, &[])?;
 
-    let created = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
+    let created = Events::Agent(AgentEvents::AgentCreated(record.clone()));
     ticket.db.log_event(&created, projections::brain::ALL)?;
 
-    Ok((StatusCode::CREATED, Json(agent)))
+    Ok((StatusCode::CREATED, Json(record)))
 }

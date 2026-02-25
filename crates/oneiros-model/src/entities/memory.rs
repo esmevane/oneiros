@@ -8,14 +8,14 @@ pub enum MemoryConstructionError {
     #[error("invalid memory id: {0}")]
     InvalidId(IdParseError),
     #[error("invalid agent id: {0}")]
-    InvalidAgentId(#[from] KeyParseError),
+    InvalidAgentId(IdParseError),
     #[error("invalid created_at timestamp: {0}")]
     InvalidCreatedAt(#[from] TimestampConstructionFailure),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Memory {
-    pub agent_id: Key<AgentId, AgentLink>,
+    pub agent_id: AgentId,
     pub level: LevelName,
     pub content: Content,
 }
@@ -48,7 +48,10 @@ impl Memory {
             .parse()
             .map_err(MemoryConstructionError::InvalidId)?;
 
-        let agent_id: Key<AgentId, AgentLink> = agent_id.as_ref().parse()?;
+        let agent_id: AgentId = agent_id
+            .as_ref()
+            .parse()
+            .map_err(MemoryConstructionError::InvalidAgentId)?;
         let memory = Memory {
             agent_id,
             level: LevelName::new(level),
@@ -74,9 +77,9 @@ mod tests {
 
     #[test]
     fn memory_identity() {
-        let agent_id = Key::Id(AgentId::new());
+        let agent_id = AgentId::new();
         let primary = Memory {
-            agent_id: agent_id.clone(),
+            agent_id,
             level: LevelName::new("project"),
             content: Content::new("oneiros is an identity substrate"),
         };

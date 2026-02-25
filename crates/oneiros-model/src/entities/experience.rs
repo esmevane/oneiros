@@ -8,7 +8,7 @@ pub enum ExperienceConstructionError {
     #[error("invalid experience id: {0}")]
     InvalidId(IdParseError),
     #[error("invalid agent id: {0}")]
-    InvalidAgentId(#[from] KeyParseError),
+    InvalidAgentId(IdParseError),
     #[error("invalid created_at timestamp: {0}")]
     InvalidCreatedAt(#[from] TimestampConstructionFailure),
 }
@@ -30,7 +30,7 @@ impl ExperienceRecord {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Experience {
-    pub agent_id: Key<AgentId, AgentLink>,
+    pub agent_id: AgentId,
     pub sensation: SensationName,
 }
 
@@ -78,7 +78,10 @@ impl Experience {
             .parse()
             .map_err(ExperienceConstructionError::InvalidId)?;
 
-        let agent_id: Key<AgentId, AgentLink> = agent_id.as_ref().parse()?;
+        let agent_id: AgentId = agent_id
+            .as_ref()
+            .parse()
+            .map_err(ExperienceConstructionError::InvalidAgentId)?;
         let experience = Experience {
             agent_id,
             sensation: SensationName::new(sensation),
@@ -104,10 +107,10 @@ mod tests {
 
     #[test]
     fn experience_identity() {
-        let agent_id = Key::Id(AgentId::new());
+        let agent_id = AgentId::new();
 
         let primary = Experience {
-            agent_id: agent_id.clone(),
+            agent_id,
             sensation: SensationName::new("continues"),
         };
 

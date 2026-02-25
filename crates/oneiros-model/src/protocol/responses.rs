@@ -4,6 +4,6 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrainInfo {
-    pub entity: Identity<BrainId, HasPath<Brain>>,
+    pub entity: BrainId,
     pub token: Token,
 }
