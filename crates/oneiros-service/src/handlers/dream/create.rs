@@ -45,12 +45,8 @@ pub(crate) async fn handler(
         natures,
     };
 
-    let agent = context.agent.clone().into_inner();
     let complete = Events::Dreaming(DreamingEvents::DreamComplete {
-        agent: Agent {
-            name: agent.name.clone(),
-            persona: agent.persona.clone(),
-        },
+        agent: context.agent.clone(),
     });
 
     ticket.db.log_event(&complete, &[])?;

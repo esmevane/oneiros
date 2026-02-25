@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::StorageEntryRecord;
+use oneiros_model::StorageEntry;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListStorageOutcomes {
     NoEntries,
 
     #[outcome(message("Storage entries: {0:?}"))]
-    Entries(Vec<StorageEntryRecord>),
+    Entries(Vec<StorageEntry>),
 }
 
 #[derive(Clone, Args)]

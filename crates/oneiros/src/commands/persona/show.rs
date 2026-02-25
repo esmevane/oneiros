@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::PersonaRecord;
+use oneiros_model::Persona;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,7 +9,7 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowPersonaOutcomes {
     #[outcome(message("Persona '{}'\n  Description: {}\n  Prompt: {}", .0.name, .0.description, .0.prompt))]
-    PersonaDetails(PersonaRecord),
+    PersonaDetails(Persona),
 }
 
 #[derive(Clone, Args)]

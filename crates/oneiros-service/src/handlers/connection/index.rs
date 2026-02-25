@@ -14,7 +14,7 @@ pub(crate) struct ListParams {
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
-) -> Result<Json<Vec<Record<ConnectionId, Connection>>>, Error> {
+) -> Result<Json<Vec<Connection>>, Error> {
     let connections = match (params.nature, params.link) {
         (Some(nature), Some(link)) => {
             ticket

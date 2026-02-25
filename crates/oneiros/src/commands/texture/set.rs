@@ -38,12 +38,10 @@ impl SetTexture {
         let info = client
             .set_texture(
                 &context.ticket_token()?,
-                TextureRecord::init(
+                Texture::init(
+                    self.name.clone(),
                     self.description.clone(),
                     self.prompt.clone(),
-                    Texture {
-                        name: self.name.clone(),
-                    },
                 ),
             )
             .await?;

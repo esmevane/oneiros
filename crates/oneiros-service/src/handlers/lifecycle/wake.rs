@@ -37,10 +37,7 @@ pub(crate) async fn handler(
     let natures = ticket.db.list_natures()?;
 
     let complete = Events::Dreaming(DreamingEvents::DreamComplete {
-        agent: Agent {
-            name: agent.name.clone(),
-            persona: agent.persona.clone(),
-        },
+        agent: agent.clone(),
     });
 
     let context = DreamContext {

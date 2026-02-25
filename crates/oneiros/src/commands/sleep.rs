@@ -18,7 +18,7 @@ pub enum SleepError {
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SleepOutcomes {
     #[outcome(message("'{}' is sleeping.", .0.name))]
-    Sleeping(AgentRecord),
+    Sleeping(Agent),
 }
 
 /// Put an agent to sleep — record the lifecycle event and introspect.

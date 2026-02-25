@@ -18,22 +18,20 @@ mod texture;
 mod ticket;
 
 pub use actor::{Actor, ActorId, ActorLink, ActorName};
-pub use agent::{Agent, AgentConstructionError, AgentId, AgentLink, AgentName, AgentRecord};
+pub use agent::{Agent, AgentConstructionError, AgentId, AgentLink, AgentName};
 pub use brain::{Brain, BrainId, BrainLink, BrainName, BrainStatus};
-pub use cognition::{Cognition, CognitionConstructionError, CognitionId, CognitionLink};
+pub use cognition::{Cognition, CognitionConstructionError, CognitionId};
 pub use connection::{Connection, ConnectionConstructionError, ConnectionId, ConnectionLink};
 pub use event::{Event, EventId};
-pub use experience::{
-    Experience, ExperienceConstructionError, ExperienceId, ExperienceLink, ExperienceRecord,
-};
-pub use level::{Level, LevelLink, LevelName, LevelRecord};
-pub use memory::{Memory, MemoryConstructionError, MemoryId, MemoryLink};
-pub use nature::{Nature, NatureLink, NatureName, NatureRecord};
-pub use persona::{Persona, PersonaLink, PersonaName, PersonaRecord};
+pub use experience::{Experience, ExperienceConstructionError, ExperienceId, ExperienceLink};
+pub use level::{Level, LevelName};
+pub use memory::{Memory, MemoryConstructionError, MemoryId};
+pub use nature::{Nature, NatureName};
+pub use persona::{Persona, PersonaName};
 pub use resource::{ProjectResource, Resource, SystemResource};
 pub use resource_link::{ProjectResourceLink, ResourceLink, SystemResourceLink};
-pub use sensation::{Sensation, SensationLink, SensationName, SensationRecord};
-pub use storage::{StorageEntry, StorageEntryLink, StorageEntryRecord, StorageKey};
+pub use sensation::{Sensation, SensationName};
+pub use storage::{StorageEntry, StorageEntryLink, StorageKey};
 pub use tenant::{Tenant, TenantId, TenantLink, TenantName};
-pub use texture::{Texture, TextureLink, TextureName, TextureRecord};
+pub use texture::{Texture, TextureName};
 pub use ticket::{Ticket, TicketId};

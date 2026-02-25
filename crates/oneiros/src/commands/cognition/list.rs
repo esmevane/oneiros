@@ -7,7 +7,7 @@ use crate::*;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct CognitionList(pub Vec<Record<CognitionId, Cognition>>);
+pub struct CognitionList(pub Vec<Cognition>);
 
 impl core::fmt::Display for CognitionList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

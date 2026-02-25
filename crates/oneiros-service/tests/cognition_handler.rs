@@ -12,37 +12,29 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
-        Tenant {
-            name: TenantName::new("Test Tenant"),
-        },
-    )));
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        actor_id,
-        Actor {
-            tenant_id,
-            name: ActorName::new("Test Actor"),
-        },
-    )));
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: actor_id,
+        tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
-        brain_id,
-        HasPath::new(
-            brain_path,
-            Brain {
-                tenant_id,
-                name: BrainName::new("test-brain"),
-                status: BrainStatus::Active,
-            },
-        ),
-    )));
+    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
+        id: brain_id,
+        tenant_id,
+        name: BrainName::new("test-brain"),
+        status: BrainStatus::Active,
+        path: brain_path.to_path_buf(),
+    }));
 
     db.log_event(&event, projections::system::ALL).unwrap();
 
@@ -52,13 +44,11 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         actor_id,
     });
 
-    let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
-        TicketId::new(),
-        Ticket {
-            token: token.clone(),
-            created_by: actor_id,
-        },
-    )));
+    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
+        id: TicketId::new(),
+        token: token.clone(),
+        created_by: actor_id,
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
@@ -163,7 +153,7 @@ async fn add_cognition_returns_created() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let cognition: Record<CognitionId, Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let cognition: Cognition = serde_json::from_slice(&bytes).unwrap();
     assert!(!cognition.id.is_empty());
     assert_eq!(cognition.texture, TextureName::new("observation"));
     assert_eq!(
@@ -219,7 +209,7 @@ async fn list_cognitions_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Record<CognitionId, Cognition>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -254,7 +244,7 @@ async fn list_cognitions_after_add() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Record<CognitionId, Cognition>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
@@ -296,7 +286,7 @@ async fn list_cognitions_filtered_by_agent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Record<CognitionId, Cognition>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "Architect thought.");
 }
@@ -337,7 +327,7 @@ async fn list_cognitions_filtered_by_texture() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Record<CognitionId, Cognition>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "An insight.");
 }
@@ -372,7 +362,7 @@ async fn get_cognition_by_id() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Record<CognitionId, Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let created: Cognition = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state);
     let response = app
@@ -382,7 +372,7 @@ async fn get_cognition_by_id() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Record<CognitionId, Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Cognition = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.content.as_str(), "A notable observation.");
 }

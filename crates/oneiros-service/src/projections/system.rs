@@ -20,7 +20,7 @@ const TENANT_PROJECTION: Projection = Projection {
 };
 
 fn apply_tenant(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let tenant: Identity<TenantId, Tenant> = serde_json::from_value(data.clone())?;
+    let tenant: Tenant = serde_json::from_value(data.clone())?;
 
     db.create_tenant(&tenant.id, &tenant.name, &tenant.as_link()?)?;
 
@@ -35,7 +35,7 @@ const ACTOR_PROJECTION: Projection = Projection {
 };
 
 fn apply_actor(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let actor: Identity<ActorId, Actor> = serde_json::from_value(data.clone())?;
+    let actor: Actor = serde_json::from_value(data.clone())?;
     let link = actor.as_link()?;
 
     db.create_actor(&actor.id, &actor.tenant_id, &actor.name, &link)?;
@@ -51,7 +51,7 @@ const BRAIN_PROJECTION: Projection = Projection {
 };
 
 fn apply_brain(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let brain: Identity<BrainId, HasPath<Brain>> = serde_json::from_value(data.clone())?;
+    let brain: Brain = serde_json::from_value(data.clone())?;
     let link = brain.as_link()?;
     let path = brain.path.display().to_string();
 
@@ -68,7 +68,7 @@ const TICKET_ISSUED_PROJECTION: Projection = Projection {
 };
 
 fn apply_ticket_issued(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let ticket: Identity<TicketId, Ticket> = serde_json::from_value(data.clone())?;
+    let ticket: Ticket = serde_json::from_value(data.clone())?;
 
     db.create_ticket(
         ticket.id.to_string(),

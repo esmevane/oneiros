@@ -15,24 +15,20 @@ mod tests {
     use super::*;
     use oneiros_model::*;
 
-    fn test_agent() -> AgentRecord {
-        AgentRecord::init(
+    fn test_agent() -> Agent {
+        Agent::init(
             "A curious explorer agent",
             "You explore and discover.",
-            Agent {
-                name: AgentName::new("atlas"),
-                persona: PersonaName::new("explorer"),
-            },
+            AgentName::new("atlas"),
+            PersonaName::new("explorer"),
         )
     }
 
-    fn test_persona() -> PersonaRecord {
-        PersonaRecord::init(
+    fn test_persona() -> Persona {
+        Persona::init(
+            PersonaName::new("explorer"),
             "An explorer persona.",
             "Explore with curiosity.",
-            Persona {
-                name: PersonaName::new("explorer"),
-            },
         )
     }
 
@@ -92,11 +88,11 @@ mod tests {
         let context = DreamContext {
             agent: test_agent(),
             persona: test_persona(),
-            memories: vec![Record::create(Memory {
-                agent_id: AgentId::new(),
-                level: LevelName::new("core"),
-                content: Content::new("I remember the beginning."),
-            })],
+            memories: vec![Memory::create(
+                AgentId::new(),
+                LevelName::new("core"),
+                Content::new("I remember the beginning."),
+            )],
             cognitions: vec![],
             experiences: vec![],
             connections: vec![],
@@ -117,11 +113,11 @@ mod tests {
             agent: test_agent(),
             persona: test_persona(),
             memories: vec![],
-            cognitions: vec![Record::create(Cognition {
-                agent_id: AgentId::new(),
-                texture: TextureName::new("analytical"),
-                content: Content::new("Patterns emerge from repetition."),
-            })],
+            cognitions: vec![Cognition::create(
+                AgentId::new(),
+                TextureName::new("analytical"),
+                Content::new("Patterns emerge from repetition."),
+            )],
             experiences: vec![],
             connections: vec![],
             textures: vec![],
@@ -144,19 +140,15 @@ mod tests {
             cognitions: vec![],
             experiences: vec![],
             connections: vec![],
-            textures: vec![TextureRecord::init(
+            textures: vec![Texture::init(
+                TextureName::new("analytical"),
                 "Analytical thinking",
                 "Think analytically.",
-                Texture {
-                    name: TextureName::new("analytical"),
-                },
             )],
-            levels: vec![LevelRecord::init(
+            levels: vec![Level::init(
+                LevelName::new("core"),
                 "Core memories",
                 "Fundamental knowledge.",
-                Level {
-                    name: LevelName::new("core"),
-                },
             )],
             sensations: vec![],
             natures: vec![],
@@ -247,19 +239,15 @@ mod tests {
             cognitions: vec![],
             experiences: vec![],
             connections: vec![],
-            textures: vec![TextureRecord::init(
+            textures: vec![Texture::init(
+                TextureName::new("analytical"),
                 "Analytical thinking",
                 "Think analytically.",
-                Texture {
-                    name: TextureName::new("analytical"),
-                },
             )],
-            levels: vec![LevelRecord::init(
+            levels: vec![Level::init(
+                LevelName::new("core"),
                 "Core memories",
                 "Fundamental knowledge.",
-                Level {
-                    name: LevelName::new("core"),
-                },
             )],
             sensations: vec![],
             natures: vec![],

@@ -5,100 +5,100 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TenantEvents {
-    TenantCreated(Identity<TenantId, Tenant>),
+    TenantCreated(Tenant),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ActorEvents {
-    ActorCreated(Identity<ActorId, Actor>),
+    ActorCreated(Actor),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum BrainEvents {
-    BrainCreated(Identity<BrainId, HasPath<Brain>>),
+    BrainCreated(Brain),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum AgentEvents {
-    AgentCreated(AgentRecord),
-    AgentUpdated(AgentRecord),
+    AgentCreated(Agent),
+    AgentUpdated(Agent),
     AgentRemoved { name: AgentName },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum CognitionEvents {
-    CognitionAdded(Record<CognitionId, Cognition>),
+    CognitionAdded(Cognition),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum MemoryEvents {
-    MemoryAdded(Record<MemoryId, Memory>),
+    MemoryAdded(Memory),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum StorageEvents {
-    StorageSet(StorageEntryRecord),
+    StorageSet(StorageEntry),
     StorageRemoved { key: StorageKey },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum PersonaEvents {
-    PersonaSet(PersonaRecord),
+    PersonaSet(Persona),
     PersonaRemoved { name: PersonaName },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TextureEvents {
-    TextureSet(TextureRecord),
+    TextureSet(Texture),
     TextureRemoved { name: TextureName },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum LevelEvents {
-    LevelSet(LevelRecord),
+    LevelSet(Level),
     LevelRemoved { name: LevelName },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TicketEvents {
-    TicketIssued(Identity<TicketId, Ticket>),
+    TicketIssued(Ticket),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum SensationEvents {
-    SensationSet(SensationRecord),
+    SensationSet(Sensation),
     SensationRemoved { name: SensationName },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum NatureEvents {
-    NatureSet(NatureRecord),
+    NatureSet(Nature),
     NatureRemoved { name: NatureName },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionEvents {
-    ConnectionCreated(Record<ConnectionId, Connection>),
+    ConnectionCreated(Connection),
     ConnectionRemoved { id: ConnectionId },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ExperienceEvents {
-    ExperienceCreated(ExperienceRecord),
+    ExperienceCreated(Experience),
     ExperienceRefAdded {
         experience_id: ExperienceId,
         record_ref: RecordRef,

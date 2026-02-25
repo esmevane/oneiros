@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::SensationRecord;
+use oneiros_model::Sensation;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListSensationsOutcomes {
     NoSensations,
 
     #[outcome(message("Sensations: {0:?}"))]
-    Sensations(Vec<SensationRecord>),
+    Sensations(Vec<Sensation>),
 }
 
 #[derive(Clone, Args)]

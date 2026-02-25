@@ -1,17 +1,17 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::{ExperienceId, ExperienceRecord};
+use oneiros_model::{Experience, ExperienceId};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct ExperienceDetail(pub ExperienceRecord);
+pub struct ExperienceDetail(pub Experience);
 
 impl core::fmt::Display for ExperienceDetail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.as_detail(&self.0.description, &self.0.refs))
+        write!(f, "{}", self.0.as_detail())
     }
 }
 

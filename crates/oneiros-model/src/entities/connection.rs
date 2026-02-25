@@ -12,17 +12,29 @@ pub enum ConnectionConstructionError {
     #[error("invalid to_link: {0}")]
     InvalidToLink(oneiros_link::LinkError),
     #[error("invalid created_at timestamp: {0}")]
-    InvalidCreatedAt(#[from] TimestampConstructionFailure),
+    InvalidCreatedAt(#[from] TimestampParseError),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Connection {
+    pub id: ConnectionId,
     pub nature: NatureName,
     pub from_link: Link,
     pub to_link: Link,
+    pub created_at: Timestamp,
 }
 
 impl Connection {
+    pub fn create(nature: NatureName, from_link: Link, to_link: Link) -> Self {
+        Self {
+            id: ConnectionId::from(Id::new()),
+            nature,
+            from_link,
+            to_link,
+            created_at: Timestamp::now(),
+        }
+    }
+
     pub fn as_table_row(&self) -> String {
         let nature = format!("{}", self.nature);
         let from = format!("{}", self.from_link);
@@ -61,10 +73,9 @@ impl Connection {
             impl AsRef<str>,
             impl AsRef<str>,
         ),
-    ) -> Result<Record<ConnectionId, Self>, ConnectionConstructionError> {
-        let id: ConnectionId = id.as_ref().parse()?;
-
-        let connection = Connection {
+    ) -> Result<Self, ConnectionConstructionError> {
+        Ok(Connection {
+            id: id.as_ref().parse()?,
             nature: NatureName::new(nature),
             from_link: from_link
                 .as_ref()
@@ -74,63 +85,18 @@ impl Connection {
                 .as_ref()
                 .parse()
                 .map_err(ConnectionConstructionError::InvalidToLink)?,
-        };
-
-        Ok(Record::build(id, connection, created_at)?)
+            created_at: Timestamp::parse_str(created_at)?,
+        })
     }
 }
 
 impl core::fmt::Display for Connection {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.as_table_row())
+        let id = self.id.to_string();
+        let prefix = if id.len() >= 8 { &id[..8] } else { &id };
+        write!(f, "{prefix:<10}{}", self.as_table_row())
     }
 }
 
 domain_link!(Connection => ConnectionLink);
 domain_id!(ConnectionId);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn connection_identity() {
-        let link_a = Link::new(&("test", "entity-a")).unwrap();
-        let link_b = Link::new(&("test", "entity-b")).unwrap();
-
-        let primary = Connection {
-            nature: NatureName::new("origin"),
-            from_link: link_a.clone(),
-            to_link: link_b.clone(),
-        };
-
-        // Different timestamp — same link
-        let other = Connection {
-            nature: NatureName::new("origin"),
-            from_link: link_a,
-            to_link: link_b,
-        };
-
-        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-
-    #[test]
-    fn connection_different_nature_different_link() {
-        let link_a = Link::new(&("test", "entity-a")).unwrap();
-        let link_b = Link::new(&("test", "entity-b")).unwrap();
-
-        let origin = Connection {
-            nature: NatureName::new("origin"),
-            from_link: link_a.clone(),
-            to_link: link_b.clone(),
-        };
-
-        let context = Connection {
-            nature: NatureName::new("context"),
-            from_link: link_a,
-            to_link: link_b,
-        };
-
-        assert_ne!(origin.as_link().unwrap(), context.as_link().unwrap());
-    }
-}

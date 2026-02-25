@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -10,17 +9,29 @@ pub enum CognitionConstructionError {
     #[error("invalid agent id: {0}")]
     InvalidAgentId(IdParseError),
     #[error("invalid created_at timestamp: {0}")]
-    InvalidCreatedAt(#[from] TimestampConstructionFailure),
+    InvalidCreatedAt(#[from] TimestampParseError),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Cognition {
+    pub id: CognitionId,
     pub agent_id: AgentId,
     pub texture: TextureName,
     pub content: Content,
+    pub created_at: Timestamp,
 }
 
 impl Cognition {
+    pub fn create(agent_id: AgentId, texture: TextureName, content: Content) -> Self {
+        Self {
+            id: CognitionId::from(Id::new()),
+            agent_id,
+            texture,
+            content,
+            created_at: Timestamp::now(),
+        }
+    }
+
     pub fn as_table_row(&self) -> String {
         let texture = format!("{}", self.texture);
         let content = self.content.as_str();
@@ -42,73 +53,29 @@ impl Cognition {
             impl AsRef<str>,
             impl AsRef<str>,
         ),
-    ) -> Result<Record<CognitionId, Self>, CognitionConstructionError> {
-        let id: CognitionId = id
-            .as_ref()
-            .parse()
-            .map_err(CognitionConstructionError::InvalidId)?;
-
-        let agent_id: AgentId = agent_id
-            .as_ref()
-            .parse()
-            .map_err(CognitionConstructionError::InvalidAgentId)?;
-
-        let cognition = Cognition {
-            agent_id,
+    ) -> Result<Self, CognitionConstructionError> {
+        Ok(Cognition {
+            id: id
+                .as_ref()
+                .parse()
+                .map_err(CognitionConstructionError::InvalidId)?,
+            agent_id: agent_id
+                .as_ref()
+                .parse()
+                .map_err(CognitionConstructionError::InvalidAgentId)?,
             texture: TextureName::new(texture),
             content: Content::new(content),
-        };
-
-        Ok(Record::build(id, cognition, created_at)?)
+            created_at: Timestamp::parse_str(created_at)?,
+        })
     }
 }
 
 impl core::fmt::Display for Cognition {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.as_table_row())
+        let id = self.id.to_string();
+        let prefix = if id.len() >= 8 { &id[..8] } else { &id };
+        write!(f, "{prefix:<10}{}", self.as_table_row())
     }
 }
 
-domain_link!(Cognition => CognitionLink);
 domain_id!(CognitionId);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn cognition_identity() {
-        let agent_id = AgentId::new();
-
-        let primary = Cognition {
-            agent_id,
-            texture: TextureName::new("working"),
-            content: Content::new("thinking about links"),
-        };
-
-        let other = Cognition {
-            agent_id,
-            texture: TextureName::new("working"),
-            content: Content::new("thinking about links"),
-        };
-
-        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-
-    #[test]
-    fn cognition_different_content_different_link() {
-        let primary = Cognition {
-            agent_id: AgentId::new(),
-            texture: TextureName::new("working"),
-            content: Content::new("first thought"),
-        };
-
-        let other = Cognition {
-            agent_id: AgentId::new(),
-            texture: TextureName::new("working"),
-            content: Content::new("second thought"),
-        };
-
-        assert_ne!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-}

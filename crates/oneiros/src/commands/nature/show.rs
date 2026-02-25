@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::NatureRecord;
+use oneiros_model::Nature;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,7 +9,7 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowNatureOutcomes {
     #[outcome(message("Nature details: {0:?}"))]
-    NatureDetails(NatureRecord),
+    NatureDetails(Nature),
 }
 
 #[derive(Clone, Args)]

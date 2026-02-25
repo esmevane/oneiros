@@ -38,12 +38,10 @@ impl SetLevel {
         let info = client
             .set_level(
                 &context.ticket_token()?,
-                LevelRecord::init(
+                Level::init(
+                    self.name.clone(),
                     self.description.clone(),
                     self.prompt.clone(),
-                    Level {
-                        name: self.name.clone(),
-                    },
                 ),
             )
             .await?;

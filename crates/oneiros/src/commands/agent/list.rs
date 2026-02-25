@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::AgentRecord;
+use oneiros_model::Agent;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListAgentsOutcomes {
     NoAgents,
 
     #[outcome(message("Agents: {0:?}"))]
-    Agents(Vec<AgentRecord>),
+    Agents(Vec<Agent>),
 }
 
 #[derive(Clone, Args)]

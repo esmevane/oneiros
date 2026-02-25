@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::LevelRecord;
+use oneiros_model::Level;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListLevelsOutcomes {
     NoLevels,
 
     #[outcome(message("Levels: {0:?}"))]
-    Levels(Vec<LevelRecord>),
+    Levels(Vec<Level>),
 }
 
 #[derive(Clone, Args)]

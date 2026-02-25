@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::NatureRecord;
+use oneiros_model::Nature;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -12,7 +12,7 @@ pub enum ListNaturesOutcomes {
     NoNatures,
 
     #[outcome(message("Natures: {0:?}"))]
-    Natures(Vec<NatureRecord>),
+    Natures(Vec<Nature>),
 }
 
 #[derive(Clone, Args)]

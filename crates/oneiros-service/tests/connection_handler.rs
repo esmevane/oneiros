@@ -15,37 +15,29 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
-        Tenant {
-            name: TenantName::new("Test Tenant"),
-        },
-    )));
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        actor_id,
-        Actor {
-            tenant_id,
-            name: ActorName::new("Test Actor"),
-        },
-    )));
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: actor_id,
+        tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
-        brain_id,
-        HasPath::new(
-            brain_path,
-            Brain {
-                tenant_id,
-                name: BrainName::new("test-brain"),
-                status: BrainStatus::Active,
-            },
-        ),
-    )));
+    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
+        id: brain_id,
+        tenant_id,
+        name: BrainName::new("test-brain"),
+        status: BrainStatus::Active,
+        path: brain_path.to_path_buf(),
+    }));
 
     db.log_event(&event, projections::system::ALL).unwrap();
 
@@ -55,13 +47,11 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         actor_id,
     });
 
-    let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
-        TicketId::new(),
-        Ticket {
-            token: token.clone(),
-            created_by: actor_id,
-        },
-    )));
+    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
+        id: TicketId::new(),
+        token: token.clone(),
+        created_by: actor_id,
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
@@ -152,7 +142,7 @@ async fn create_connection_returns_created() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let connection: Identity<ConnectionId, Connection> = serde_json::from_slice(&bytes).unwrap();
+    let connection: Connection = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(connection.nature, NatureName::new("origin"));
     assert_eq!(connection.from_link, link_a);
     assert_eq!(connection.to_link, link_b);
@@ -188,7 +178,7 @@ async fn list_connections_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<ConnectionId, Connection>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Connection> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -216,7 +206,7 @@ async fn list_connections_after_create() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<ConnectionId, Connection>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Connection> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 1);
 }
 
@@ -253,7 +243,7 @@ async fn show_connection_by_id() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Identity<ConnectionId, Connection> = serde_json::from_slice(&bytes).unwrap();
+    let created: Connection = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state);
     let response = app
@@ -263,7 +253,7 @@ async fn show_connection_by_id() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Identity<ConnectionId, Connection> = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Connection = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.nature, NatureName::new("context"));
 }
@@ -288,7 +278,7 @@ async fn remove_connection_then_gone() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Identity<ConnectionId, Connection> = serde_json::from_slice(&bytes).unwrap();
+    let created: Connection = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state.clone());
     let response = app
@@ -344,7 +334,7 @@ async fn list_connections_filters_by_nature() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Identity<ConnectionId, Connection>> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Connection> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].nature, NatureName::new("origin"));
 }

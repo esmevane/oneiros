@@ -1,13 +1,13 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::{Connection, ConnectionId, Identity};
+use oneiros_model::{Connection, ConnectionId};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
 #[derive(Clone, serde::Serialize)]
 #[serde(transparent)]
-pub struct ConnectionDetail(pub Identity<ConnectionId, Connection>);
+pub struct ConnectionDetail(pub Connection);
 
 impl core::fmt::Display for ConnectionDetail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

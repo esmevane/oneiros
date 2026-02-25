@@ -67,10 +67,9 @@ const PERSONA_SET_PROJECTION: Projection = Projection {
 };
 
 fn apply_persona_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let persona: PersonaRecord = serde_json::from_value(data.clone())?;
-    let link = persona.as_link()?;
+    let persona: Persona = serde_json::from_value(data.clone())?;
 
-    db.set_persona(&persona.name, &persona.description, &persona.prompt, &link)?;
+    db.set_persona(&persona.name, &persona.description, &persona.prompt)?;
 
     Ok(())
 }
@@ -98,10 +97,9 @@ const TEXTURE_SET_PROJECTION: Projection = Projection {
 };
 
 fn apply_texture_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let texture: TextureRecord = serde_json::from_value(data.clone())?;
-    let link = texture.as_link()?;
+    let texture: Texture = serde_json::from_value(data.clone())?;
 
-    db.set_texture(&texture.name, &texture.description, &texture.prompt, &link)?;
+    db.set_texture(&texture.name, &texture.description, &texture.prompt)?;
 
     Ok(())
 }
@@ -129,10 +127,9 @@ const LEVEL_SET_PROJECTION: Projection = Projection {
 };
 
 fn apply_level_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let level: LevelRecord = serde_json::from_value(data.clone())?;
-    let link = level.as_link()?;
+    let level: Level = serde_json::from_value(data.clone())?;
 
-    db.set_level(&level.name, &level.description, &level.prompt, &link)?;
+    db.set_level(&level.name, &level.description, &level.prompt)?;
 
     Ok(())
 }
@@ -160,15 +157,9 @@ const SENSATION_SET_PROJECTION: Projection = Projection {
 };
 
 fn apply_sensation_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let sensation: SensationRecord = serde_json::from_value(data.clone())?;
-    let link = sensation.as_link()?;
+    let sensation: Sensation = serde_json::from_value(data.clone())?;
 
-    db.set_sensation(
-        &sensation.name,
-        &sensation.description,
-        &sensation.prompt,
-        &link,
-    )?;
+    db.set_sensation(&sensation.name, &sensation.description, &sensation.prompt)?;
 
     Ok(())
 }
@@ -196,10 +187,9 @@ const NATURE_SET_PROJECTION: Projection = Projection {
 };
 
 fn apply_nature_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let nature: NatureRecord = serde_json::from_value(data.clone())?;
-    let link = nature.as_link()?;
+    let nature: Nature = serde_json::from_value(data.clone())?;
 
-    db.set_nature(&nature.name, &nature.description, &nature.prompt, &link)?;
+    db.set_nature(&nature.name, &nature.description, &nature.prompt)?;
 
     Ok(())
 }
@@ -227,7 +217,7 @@ const CONNECTION_CREATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_connection_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let connection: Record<ConnectionId, Connection> = serde_json::from_value(data.clone())?;
+    let connection: Connection = serde_json::from_value(data.clone())?;
     let link = connection.as_link()?;
     let created_at = connection.created_at.as_string();
 
@@ -265,7 +255,7 @@ const AGENT_CREATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_agent_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let agent: AgentRecord = serde_json::from_value(data.clone())?;
+    let agent: Agent = serde_json::from_value(data.clone())?;
     let link = agent.as_link()?;
 
     db.create_agent_record(
@@ -288,7 +278,7 @@ const AGENT_UPDATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_agent_updated(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let agent: AgentRecord = serde_json::from_value(data.clone())?;
+    let agent: Agent = serde_json::from_value(data.clone())?;
     let link = agent.as_link()?;
 
     db.update_agent(
@@ -325,8 +315,7 @@ const COGNITION_ADDED_PROJECTION: Projection = Projection {
 };
 
 fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let cognition: Record<CognitionId, Cognition> = serde_json::from_value(data.clone())?;
-    let link = cognition.as_link()?;
+    let cognition: Cognition = serde_json::from_value(data.clone())?;
     let created_at = cognition.created_at.as_string();
 
     db.add_cognition(
@@ -335,7 +324,6 @@ fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseErro
         &cognition.texture,
         &cognition.content,
         &created_at,
-        &link,
     )?;
 
     Ok(())
@@ -349,8 +337,7 @@ const MEMORY_ADDED_PROJECTION: Projection = Projection {
 };
 
 fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let memory: Record<MemoryId, Memory> = serde_json::from_value(data.clone())?;
-    let link = memory.as_link()?;
+    let memory: Memory = serde_json::from_value(data.clone())?;
     let created_at = memory.created_at.as_string();
 
     db.add_memory(
@@ -359,7 +346,6 @@ fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> 
         &memory.level,
         &memory.content,
         &created_at,
-        &link,
     )?;
 
     Ok(())
@@ -373,7 +359,7 @@ const STORAGE_SET_PROJECTION: Projection = Projection {
 };
 
 fn apply_storage_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let entry: StorageEntryRecord = serde_json::from_value(data.clone())?;
+    let entry: StorageEntry = serde_json::from_value(data.clone())?;
     let link = entry.as_link()?;
 
     db.set_storage(&entry.key, &entry.description, &entry.hash, &link)?;
@@ -404,7 +390,7 @@ const EXPERIENCE_CREATED_PROJECTION: Projection = Projection {
 };
 
 fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let experience: ExperienceRecord = serde_json::from_value(data.clone())?;
+    let experience: Experience = serde_json::from_value(data.clone())?;
     let created_at = experience.created_at.as_string();
     let link = experience.as_link()?;
 

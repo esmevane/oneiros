@@ -38,12 +38,10 @@ impl SetPersona {
         let info = client
             .set_persona(
                 &context.ticket_token()?,
-                PersonaRecord::init(
+                Persona::init(
+                    self.name.clone(),
                     self.description.clone(),
                     self.prompt.clone(),
-                    Persona {
-                        name: self.name.clone(),
-                    },
                 ),
             )
             .await?;

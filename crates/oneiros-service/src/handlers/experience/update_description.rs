@@ -7,7 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
     Json(request): Json<UpdateExperienceDescriptionRequest>,
-) -> Result<(StatusCode, Json<ExperienceRecord>), Error> {
+) -> Result<(StatusCode, Json<Experience>), Error> {
     // Validate that the experience exists.
     ticket
         .db

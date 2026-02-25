@@ -5,7 +5,17 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Tenant {
+    pub id: TenantId,
     pub name: TenantName,
+}
+
+impl Tenant {
+    pub fn init(name: TenantName) -> Self {
+        Self {
+            id: TenantId::new(),
+            name,
+        }
+    }
 }
 
 domain_link!(Tenant => TenantLink);
@@ -17,12 +27,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tenant_identity() {
+    fn tenant_same_fields_same_link() {
+        let id = TenantId::new();
         let primary = Tenant {
+            id,
             name: TenantName::new("default"),
         };
 
         let other = Tenant {
+            id,
             name: TenantName::new("default"),
         };
 

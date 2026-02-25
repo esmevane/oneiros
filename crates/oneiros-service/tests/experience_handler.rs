@@ -15,37 +15,29 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
-        Tenant {
-            name: TenantName::new("Test Tenant"),
-        },
-    )));
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        actor_id,
-        Actor {
-            tenant_id,
-            name: ActorName::new("Test Actor"),
-        },
-    )));
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: actor_id,
+        tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
-        brain_id,
-        HasPath::new(
-            brain_path,
-            Brain {
-                tenant_id,
-                name: BrainName::new("test-brain"),
-                status: BrainStatus::Active,
-            },
-        ),
-    )));
+    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
+        id: brain_id,
+        tenant_id,
+        name: BrainName::new("test-brain"),
+        status: BrainStatus::Active,
+        path: brain_path.to_path_buf(),
+    }));
 
     db.log_event(&event, projections::system::ALL).unwrap();
 
@@ -55,13 +47,11 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         actor_id,
     });
 
-    let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
-        TicketId::new(),
-        Ticket {
-            token: token.clone(),
-            created_by: actor_id,
-        },
-    )));
+    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
+        id: TicketId::new(),
+        token: token.clone(),
+        created_by: actor_id,
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
@@ -164,7 +154,7 @@ async fn create_experience_returns_created() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert!(!experience.id.is_empty());
     assert_eq!(experience.sensation, SensationName::new("echoes"));
     assert_eq!(
@@ -236,7 +226,7 @@ async fn create_experience_with_refs() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 1);
     assert_eq!(
         experience.refs[0].kind().cloned(),
@@ -257,7 +247,7 @@ async fn list_experiences_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<ExperienceRecord> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Experience> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -292,7 +282,7 @@ async fn list_experiences_after_create() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<ExperienceRecord> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Experience> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
@@ -313,7 +303,7 @@ async fn get_experience_by_id() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state);
     let response = app
@@ -323,7 +313,7 @@ async fn get_experience_by_id() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.description.as_str(), "A notable resonance.");
 }
@@ -359,7 +349,7 @@ async fn add_ref_to_existing_experience() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = serde_json::from_slice(&bytes).unwrap();
     assert!(created.refs.is_empty());
 
     // Add a ref.
@@ -381,7 +371,7 @@ async fn add_ref_to_existing_experience() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let updated: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let updated: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(updated.refs.len(), 1);
     assert_eq!(updated.refs[0].kind().cloned(), Some(RecordKind::Memory));
     assert_eq!(updated.refs[0].role().map(|l| l.as_str()), Some("origin"));
@@ -404,7 +394,7 @@ async fn update_experience_description() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = serde_json::from_slice(&bytes).unwrap();
 
     let app = router(state.clone());
     let body = serde_json::json!({
@@ -421,7 +411,7 @@ async fn update_experience_description() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let updated: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let updated: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(
         updated.description.as_str(),
         "Updated description with deeper understanding."
@@ -452,7 +442,7 @@ async fn create_experience_with_linked_ref() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 1);
     assert_eq!(experience.refs[0].link(), Some(&link));
     assert!(experience.refs[0].id().is_none());
@@ -481,7 +471,7 @@ async fn add_linked_ref_to_existing_experience() {
         .await
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = serde_json::from_slice(&bytes).unwrap();
     assert!(created.refs.is_empty());
 
     // Add a linked ref.
@@ -502,7 +492,7 @@ async fn add_linked_ref_to_existing_experience() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let updated: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let updated: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(updated.refs.len(), 1);
     assert_eq!(updated.refs[0].link(), Some(&link));
     assert_eq!(updated.refs[0].role().map(|l| l.as_str()), Some("origin"));
@@ -534,7 +524,7 @@ async fn create_experience_with_mixed_refs() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: ExperienceRecord = serde_json::from_slice(&bytes).unwrap();
+    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 2);
     // First ref is identified
     assert!(experience.refs[0].id().is_some());

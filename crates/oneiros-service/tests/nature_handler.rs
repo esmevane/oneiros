@@ -12,37 +12,29 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
 
-    let event = Events::Tenant(TenantEvents::TenantCreated(Identity::new(
-        tenant_id,
-        Tenant {
-            name: TenantName::new("Test Tenant"),
-        },
-    )));
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
-    let event = Events::Actor(ActorEvents::ActorCreated(Identity::new(
-        actor_id,
-        Actor {
-            tenant_id,
-            name: ActorName::new("Test Actor"),
-        },
-    )));
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: actor_id,
+        tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
     let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Identity::new(
-        brain_id,
-        HasPath::new(
-            brain_path,
-            Brain {
-                tenant_id,
-                name: BrainName::new("test-brain"),
-                status: BrainStatus::Active,
-            },
-        ),
-    )));
+    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
+        id: brain_id,
+        tenant_id,
+        name: BrainName::new("test-brain"),
+        status: BrainStatus::Active,
+        path: brain_path.to_path_buf(),
+    }));
 
     db.log_event(&event, projections::system::ALL).unwrap();
 
@@ -52,13 +44,11 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         actor_id,
     });
 
-    let event = Events::Ticket(TicketEvents::TicketIssued(Identity::new(
-        TicketId::new(),
-        Ticket {
-            token: token.clone(),
-            created_by: actor_id,
-        },
-    )));
+    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
+        id: TicketId::new(),
+        token: token.clone(),
+        created_by: actor_id,
+    }));
     db.log_event(&event, projections::system::ALL).unwrap();
 
     token.0
@@ -123,7 +113,7 @@ async fn set_nature_returns_ok() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: NatureRecord = serde_json::from_slice(&bytes).unwrap();
+    let info: Nature = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.name, NatureName::new("origin"));
     assert_eq!(
         info.description.as_str(),
@@ -171,7 +161,7 @@ async fn set_nature_is_idempotent() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: NatureRecord = serde_json::from_slice(&bytes).unwrap();
+    let info: Nature = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -185,7 +175,7 @@ async fn list_natures_empty() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<NatureRecord> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Nature> = serde_json::from_slice(&bytes).unwrap();
     assert!(list.is_empty());
 }
 
@@ -210,7 +200,7 @@ async fn list_natures_after_set() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<NatureRecord> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Nature> = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(list.len(), 2);
 }
 
