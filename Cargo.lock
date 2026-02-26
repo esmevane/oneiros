@@ -1255,7 +1255,6 @@ name = "oneiros-service"
 version = "0.0.5"
 dependencies = [
  "axum",
- "chrono",
  "data-encoding",
  "flate2",
  "http-body-util",

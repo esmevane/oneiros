@@ -22,6 +22,7 @@ struct IdOnly<T> {
 struct RefAdded {
     experience_id: ExperienceId,
     record_ref: RecordRef,
+    created_at: Timestamp,
 }
 
 #[derive(serde::Deserialize)]
@@ -419,9 +420,13 @@ const EXPERIENCE_REF_ADDED_PROJECTION: Projection = Projection {
 
 fn apply_experience_ref_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let added: RefAdded = serde_json::from_value(data.clone())?;
-    let now = chrono::Utc::now().to_rfc3339();
+    let created_at = added.created_at.as_string();
 
-    db.add_experience_ref(added.experience_id.to_string(), &added.record_ref, &now)?;
+    db.add_experience_ref(
+        added.experience_id.to_string(),
+        &added.record_ref,
+        &created_at,
+    )?;
 
     Ok(())
 }

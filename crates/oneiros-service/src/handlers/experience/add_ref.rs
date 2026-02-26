@@ -17,6 +17,7 @@ pub(crate) async fn handler(
     let event = Events::Experience(ExperienceEvents::ExperienceRefAdded {
         experience_id: id,
         record_ref: request.clone(),
+        created_at: Timestamp::now(),
     });
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
