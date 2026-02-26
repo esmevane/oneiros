@@ -1,6 +1,7 @@
 mod claim;
 mod content;
 mod content_hash;
+mod correlation;
 mod description;
 mod dream;
 mod dream_context;
@@ -19,6 +20,7 @@ mod token_version;
 pub use claim::TokenClaims;
 pub use content::Content;
 pub use content_hash::ContentHash;
+pub use correlation::CorrelationId;
 pub use description::Description;
 pub use dream::Dream;
 pub use dream_context::DreamContext;
