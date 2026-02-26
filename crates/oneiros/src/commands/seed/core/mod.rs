@@ -62,6 +62,13 @@ pub(crate) fn textures() -> Vec<SetTexture> {
 pub(crate) fn levels() -> Vec<SetLevel> {
     vec![
         SetLevel {
+            name: LevelName::new("core"),
+            description: Description::new(
+                "Identity fundaments — the memories that define how you process everything else.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/core.level.md")),
+        },
+        SetLevel {
             name: LevelName::new("working"),
             description: Description::new("Ephemeral thoughts that expire within a day."),
             prompt: Prompt::new(include_str!("prompts/working.level.md")),
