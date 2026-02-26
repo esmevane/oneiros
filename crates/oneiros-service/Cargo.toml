@@ -8,7 +8,6 @@ license.workspace = true
 
 [dependencies]
 axum.workspace = true
-chrono.workspace = true
 data-encoding.workspace = true
 flate2.workspace = true
 oneiros-db.workspace = true

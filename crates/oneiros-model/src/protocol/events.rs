@@ -102,6 +102,7 @@ pub enum ExperienceEvents {
     ExperienceRefAdded {
         experience_id: ExperienceId,
         record_ref: RecordRef,
+        created_at: Timestamp,
     },
     ExperienceDescriptionUpdated {
         experience_id: ExperienceId,

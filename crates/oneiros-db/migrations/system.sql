@@ -54,7 +54,7 @@ insert into task_status (label, description) values
 create table if not exists tasks (
     id         text primary key default (uuid()) not null,
     kind       text not null,
-    status     text not null references task_status(name) default 'pending',
+    status     text not null references task_status(label) default 'pending',
     input      text not null default '{}',
     cursor     text not null default '{}',
     log        text default '[]',

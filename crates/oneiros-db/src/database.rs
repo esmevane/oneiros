@@ -81,30 +81,23 @@ impl Database {
               END ASC",
         )?;
 
-        enum Attempt {
-            Event(Event),
-            Failure(serde_json::Error),
-        }
-
         let rows = stmt.query_map([], |row| {
             let raw_event: String = row.get(0)?;
-
-            match serde_json::from_str::<Event>(&raw_event) {
-                Ok(event) => Ok(Attempt::Event(event)),
-                Err(error) => Ok(Attempt::Failure(error)),
-            }
+            Ok(raw_event)
         })?;
 
         let mut events = Vec::new();
 
         for row in rows {
-            match row? {
-                Attempt::Event(event) => events.push(event),
-                Attempt::Failure(error) => {
-                    eprintln!("Failed to parse event JSON: {error}");
+            let raw = row?;
+
+            match serde_json::from_str::<Event>(&raw) {
+                Ok(event) => events.push(event),
+                Err(error) => {
+                    eprintln!("Skipping malformed event: {error}");
                     continue;
                 }
-            };
+            }
         }
 
         Ok(events)
@@ -569,24 +562,28 @@ impl Database {
     }
 
     pub fn remove_agent(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
-        self.conn.execute(
+        let tx = self.conn.unchecked_transaction()?;
+        let name = name.as_ref();
+
+        tx.execute(
             "delete from cognition where agent_id in (select id from agent where name = ?1)",
-            params![name.as_ref()],
+            params![name],
         )?;
-        self.conn.execute(
+        tx.execute(
             "delete from memory where agent_id in (select id from agent where name = ?1)",
-            params![name.as_ref()],
+            params![name],
         )?;
-        self.conn.execute(
+        tx.execute(
             "delete from experience_ref where experience_id in (select id from experience where agent_id in (select id from agent where name = ?1))",
-            params![name.as_ref()],
+            params![name],
         )?;
-        self.conn.execute(
+        tx.execute(
             "delete from experience where agent_id in (select id from agent where name = ?1)",
-            params![name.as_ref()],
+            params![name],
         )?;
-        self.conn
-            .execute("delete from agent where name = ?1", params![name.as_ref()])?;
+        tx.execute("delete from agent where name = ?1", params![name])?;
+        tx.commit()?;
+
         Ok(())
     }
 
