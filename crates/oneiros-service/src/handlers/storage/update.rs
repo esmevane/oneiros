@@ -44,7 +44,7 @@ pub(crate) async fn handler(
     let entry = StorageEntry::init(key, description, ContentHash::new(&hash_hex));
 
     let event = Events::Storage(StorageEvents::StorageSet(entry.clone()));
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     Ok((StatusCode::OK, Json(entry)))
 }

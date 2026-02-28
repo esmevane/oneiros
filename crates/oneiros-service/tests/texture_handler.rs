@@ -16,14 +16,14 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         id: tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&event, projections::system::ALL).unwrap();
+    db.log_event(&event, projections::SYSTEM).unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
         id: actor_id,
         tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&event, projections::system::ALL).unwrap();
+    db.log_event(&event, projections::SYSTEM).unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
@@ -36,7 +36,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         path: brain_path.to_path_buf(),
     }));
 
-    db.log_event(&event, projections::system::ALL).unwrap();
+    db.log_event(&event, projections::SYSTEM).unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -49,7 +49,7 @@ fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String 
         token: token.clone(),
         created_by: actor_id,
     }));
-    db.log_event(&event, projections::system::ALL).unwrap();
+    db.log_event(&event, projections::SYSTEM).unwrap();
 
     token.0
 }

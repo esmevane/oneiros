@@ -23,7 +23,7 @@ pub(crate) async fn handler(
 
     let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));
 
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     Ok((StatusCode::CREATED, Json(cognition)))
 }

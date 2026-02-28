@@ -19,7 +19,7 @@ pub(crate) async fn handler(
         sensation: request.sensation.clone(),
     });
 
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     // Re-fetch the full experience (now includes the updated sensation via projection).
     let experience = ticket

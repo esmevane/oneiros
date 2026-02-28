@@ -9,16 +9,18 @@ pub struct Projection {
     pub reset: fn(&Database) -> Result<(), DatabaseError>,
 }
 
-/// Project an event to all relevant projections.
+/// Project an event to all relevant projections across multiple groups.
 pub(crate) fn project(
     conn: &Database,
-    projections: &[Projection],
+    projections: &[&[Projection]],
     event_type: &str,
     data: &Value,
 ) -> Result<(), DatabaseError> {
-    for projection in projections {
-        if projection.events.contains(&event_type) {
-            (projection.apply)(conn, data)?;
+    for group in projections {
+        for projection in *group {
+            if projection.events.contains(&event_type) {
+                (projection.apply)(conn, data)?;
+            }
         }
     }
     Ok(())

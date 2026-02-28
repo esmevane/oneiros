@@ -13,6 +13,7 @@ pub(crate) mod memory;
 pub(crate) mod nature;
 pub(crate) mod persona;
 pub(crate) mod reflect;
+pub(crate) mod search;
 pub(crate) mod sensation;
 pub(crate) mod sense;
 pub(crate) mod storage;

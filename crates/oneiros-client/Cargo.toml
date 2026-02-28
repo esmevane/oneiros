@@ -14,5 +14,6 @@ oneiros-model.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+urlencoding.workspace = true
 tokio.workspace = true
 tracing.workspace = true

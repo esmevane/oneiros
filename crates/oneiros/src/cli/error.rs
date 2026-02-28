@@ -43,6 +43,8 @@ pub enum CliError {
     #[error(transparent)]
     Reflect(#[from] ReflectError),
     #[error(transparent)]
+    Search(#[from] SearchError),
+    #[error(transparent)]
     Seed(#[from] SeedCommandError),
     #[error(transparent)]
     Sense(#[from] SenseError),
