@@ -3,9 +3,6 @@ resolver = "2"
 members = [
   "crates/*",
 ]
-exclude = [
-  "tools/migrate-experience-refs",
-]
 
 [workspace.package]
 version = "0.0.5"
