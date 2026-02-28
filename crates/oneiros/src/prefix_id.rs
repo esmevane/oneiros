@@ -1,4 +1,4 @@
-use oneiros_model::Id;
+use oneiros_model::{Id, RefToken};
 
 #[derive(Debug, thiserror::Error)]
 pub enum PrefixError {
@@ -13,6 +13,9 @@ pub enum PrefixError {
 
     #[error("Prefix contains non-hex characters: '{0}'")]
     InvalidHex(String),
+
+    #[error("RefToken refers to a name-keyed resource, not an ID-keyed one: '{0}'")]
+    NameKeyed(String),
 }
 
 #[derive(Clone, Debug)]
@@ -71,10 +74,21 @@ impl core::str::FromStr for PrefixId {
     type Err = PrefixError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Try full UUID first.
         if let Ok(id) = s.parse::<Id>() {
             return Ok(Self(PrefixIdInner::Full(id)));
         }
 
+        // Try RefToken — extract the UUID from the decoded resource.
+        if let Ok(token) = s.parse::<RefToken>() {
+            let r = token.into_inner();
+            return match r.resource().id() {
+                Some(id) => Ok(Self(PrefixIdInner::Full(id))),
+                None => Err(PrefixError::NameKeyed(s.to_string())),
+            };
+        }
+
+        // Fall back to hex prefix matching.
         let cleaned = s.replace('-', "");
 
         if cleaned.len() < 8 {
@@ -157,5 +171,28 @@ mod tests {
         let prefix: PrefixId = "aabbccdd".parse().unwrap();
         let result = prefix.resolve(&known);
         assert!(matches!(result, Err(PrefixError::NotFound(_))));
+    }
+
+    #[test]
+    fn ref_token_parses_to_full_id() {
+        use oneiros_model::{CognitionId, Ref};
+
+        let id = Id::new();
+        let token = RefToken::new(Ref::cognition(CognitionId::from(id)));
+        let token_str = token.to_string();
+
+        let prefix: PrefixId = token_str.parse().unwrap();
+        assert_eq!(prefix.as_full_id(), Some(id));
+    }
+
+    #[test]
+    fn ref_token_name_keyed_rejected() {
+        use oneiros_model::{Ref, TextureName};
+
+        let token = RefToken::new(Ref::texture(TextureName::new("observation")));
+        let token_str = token.to_string();
+
+        let result: Result<PrefixId, _> = token_str.parse();
+        assert!(matches!(result, Err(PrefixError::NameKeyed(_))));
     }
 }

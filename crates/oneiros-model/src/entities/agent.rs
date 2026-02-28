@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -69,52 +68,5 @@ impl Agent {
     }
 }
 
-domain_link!(Agent => AgentLink);
 domain_id!(AgentId);
 domain_name!(AgentName);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn agent_same_fields_same_link() {
-        let primary = Agent::construct(
-            AgentId::new(),
-            "desc",
-            "prompt",
-            AgentName::new("governor.process"),
-            PersonaName::new("process"),
-        );
-        let other = Agent::construct(
-            primary.id,
-            "desc",
-            "prompt",
-            AgentName::new("governor.process"),
-            PersonaName::new("process"),
-        );
-
-        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-
-    #[test]
-    fn agent_different_persona_different_link() {
-        let id = AgentId::new();
-        let primary = Agent::construct(
-            id,
-            "desc",
-            "prompt",
-            AgentName::new("rust"),
-            PersonaName::new("expert"),
-        );
-        let other = Agent::construct(
-            id,
-            "desc",
-            "prompt",
-            AgentName::new("rust"),
-            PersonaName::new("process"),
-        );
-
-        assert_ne!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-}

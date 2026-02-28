@@ -1,5 +1,4 @@
 use oneiros_db::*;
-use oneiros_link::*;
 use oneiros_model::*;
 use serde_json::Value;
 
@@ -22,7 +21,7 @@ const TENANT_PROJECTION: Projection = Projection {
 fn apply_tenant(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let tenant: Tenant = serde_json::from_value(data.clone())?;
 
-    db.create_tenant(&tenant.id, &tenant.name, &tenant.as_link()?)?;
+    db.create_tenant(&tenant.id, &tenant.name)?;
 
     Ok(())
 }
@@ -36,9 +35,8 @@ const ACTOR_PROJECTION: Projection = Projection {
 
 fn apply_actor(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let actor: Actor = serde_json::from_value(data.clone())?;
-    let link = actor.as_link()?;
 
-    db.create_actor(&actor.id, &actor.tenant_id, &actor.name, &link)?;
+    db.create_actor(&actor.id, &actor.tenant_id, &actor.name)?;
 
     Ok(())
 }
@@ -52,10 +50,9 @@ const BRAIN_PROJECTION: Projection = Projection {
 
 fn apply_brain(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let brain: Brain = serde_json::from_value(data.clone())?;
-    let link = brain.as_link()?;
     let path = brain.path.display().to_string();
 
-    db.create_brain(&brain.id, &brain.tenant_id, &brain.name, &path, &link)?;
+    db.create_brain(&brain.id, &brain.tenant_id, &brain.name, &path)?;
 
     Ok(())
 }

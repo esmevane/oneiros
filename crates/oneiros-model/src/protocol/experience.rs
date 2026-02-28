@@ -8,7 +8,7 @@ pub enum ExperienceEvents {
     ExperienceCreated(Experience),
     ExperienceRefAdded {
         experience_id: ExperienceId,
-        record_ref: RecordRef,
+        experience_ref: ExperienceRef,
         created_at: Timestamp,
     },
     ExperienceDescriptionUpdated {
@@ -23,15 +23,13 @@ pub struct CreateExperienceRequest {
     pub sensation: SensationName,
     pub description: Description,
     #[serde(default)]
-    pub refs: Vec<RecordRef>,
+    pub refs: Vec<ExperienceRef>,
 }
 
 /// A request to add a reference to an experience.
 ///
-/// Accepts either form via serde untagged:
-///   Identified: { "id": "...", "kind": "cognition", "role": "origin" }
-///   Linked:     { "link": "base64url...", "role": "origin" }
-pub type AddExperienceRefRequest = RecordRef;
+/// Accepts: { "entity": "base64url-ref-string", "role": "origin" }
+pub type AddExperienceRefRequest = ExperienceRef;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateExperienceDescriptionRequest {

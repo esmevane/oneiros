@@ -1,6 +1,5 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_link::Link;
 use oneiros_model::Connection;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -39,9 +38,9 @@ pub struct ListConnections {
     #[arg(long)]
     nature: Option<NatureName>,
 
-    /// Filter by link (returns connections where this link is either from or to).
+    /// Filter by entity ref (returns connections where this ref is either from or to).
     #[arg(long)]
-    link: Option<Link>,
+    entity_ref: Option<RefToken>,
 }
 
 impl ListConnections {
@@ -57,7 +56,7 @@ impl ListConnections {
             .list_connections(
                 &context.ticket_token()?,
                 self.nature.as_ref(),
-                self.link.as_ref(),
+                self.entity_ref.as_ref(),
             )
             .await?;
 

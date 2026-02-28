@@ -1,20 +1,27 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::ConnectionId;
+use oneiros_model::{ConnectionId, RefToken};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
+#[derive(Clone, serde::Serialize)]
+pub struct ConnectionRemovedResult {
+    pub id: ConnectionId,
+    #[serde(skip)]
+    pub ref_token: RefToken,
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveConnectionOutcomes {
-    #[outcome(message("Connection {0} removed."))]
-    ConnectionRemoved(ConnectionId),
+    #[outcome(message("Connection {} removed.", .0.ref_token))]
+    ConnectionRemoved(ConnectionRemovedResult),
 }
 
 #[derive(Clone, Args)]
 pub struct RemoveConnection {
-    /// The connection ID (full UUID or 8+ character prefix).
+    /// The connection ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 }
 
@@ -37,8 +44,12 @@ impl RemoveConnection {
             }
         };
 
+        let ref_token = RefToken::new(oneiros_model::Ref::connection(id));
+
         client.remove_connection(&token, &id).await?;
-        outcomes.emit(RemoveConnectionOutcomes::ConnectionRemoved(id));
+        outcomes.emit(RemoveConnectionOutcomes::ConnectionRemoved(
+            ConnectionRemovedResult { id, ref_token },
+        ));
 
         Ok(outcomes)
     }

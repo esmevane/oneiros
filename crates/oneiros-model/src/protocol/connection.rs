@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -13,8 +12,8 @@ pub enum ConnectionEvents {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateConnectionRequest {
     pub nature: NatureName,
-    pub from_link: Link,
-    pub to_link: Link,
+    pub from_ref: Ref,
+    pub to_ref: Ref,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::ExperienceId;
+use oneiros_model::{ExperienceId, RefToken};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,19 +9,21 @@ use crate::*;
 pub struct ExperienceUpdatedResult {
     pub id: ExperienceId,
     #[serde(skip)]
+    pub ref_token: RefToken,
+    #[serde(skip)]
     pub gauge: String,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum UpdateExperienceOutcomes {
-    #[outcome(message("Experience updated: {}", .0.id), prompt("{}", .0.gauge))]
+    #[outcome(message("Experience updated: {}", .0.ref_token), prompt("{}", .0.gauge))]
     ExperienceUpdated(ExperienceUpdatedResult),
 }
 
 #[derive(Clone, Args)]
 pub struct UpdateExperience {
-    /// The experience ID (full UUID or 8+ character prefix).
+    /// The experience ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 
     /// The new description for the experience.
@@ -72,9 +74,12 @@ impl UpdateExperience {
             String::new()
         };
 
+        let ref_token = experience.ref_token();
+
         outcomes.emit(UpdateExperienceOutcomes::ExperienceUpdated(
             ExperienceUpdatedResult {
                 id: experience.id,
+                ref_token,
                 gauge: gauge_str,
             },
         ));

@@ -13,7 +13,7 @@ pub(crate) async fn handler(
         .get_nature(&request.nature)?
         .ok_or(NotFound::Nature(request.nature.clone()))?;
 
-    let connection = Connection::create(request.nature, request.from_link, request.to_link);
+    let connection = Connection::create(request.nature, request.from_ref, request.to_ref);
 
     let event = Events::Connection(ConnectionEvents::ConnectionCreated(connection.clone()));
 

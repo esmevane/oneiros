@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use oneiros_model::*;
 use serde_json::Value;
 use std::path::Path;
@@ -450,14 +449,14 @@ impl Client {
         &self,
         token: &Token,
         nature: Option<&NatureName>,
-        link: Option<&Link>,
+        entity_ref: Option<&RefToken>,
     ) -> Result<Vec<Connection>, Error> {
         let mut params = Vec::new();
         if let Some(nature) = nature {
             params.push(format!("nature={nature}"));
         }
-        if let Some(link) = link {
-            params.push(format!("link={link}"));
+        if let Some(entity_ref) = entity_ref {
+            params.push(format!("entity_ref={entity_ref}"));
         }
 
         let uri = if params.is_empty() {

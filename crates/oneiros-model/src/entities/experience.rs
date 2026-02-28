@@ -1,7 +1,30 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
+
+/// A reference from an experience to any entity, with an optional role label.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ExperienceRef {
+    pub entity: Ref,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<Label>,
+}
+
+impl ExperienceRef {
+    pub fn new(entity: Ref, role: Option<Label>) -> Self {
+        Self { entity, role }
+    }
+}
+
+impl core::fmt::Display for ExperienceRef {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let token = RefToken::new(self.entity.clone());
+        match &self.role {
+            Some(role) => write!(f, "{token} [{role}]"),
+            None => write!(f, "{token}"),
+        }
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum ExperienceConstructionError {
@@ -20,7 +43,7 @@ pub struct Experience {
     pub sensation: SensationName,
     pub description: Description,
     #[serde(default)]
-    pub refs: Vec<RecordRef>,
+    pub refs: Vec<ExperienceRef>,
     pub created_at: Timestamp,
 }
 
@@ -29,7 +52,7 @@ impl Experience {
         agent_id: AgentId,
         sensation: SensationName,
         description: Description,
-        refs: Vec<RecordRef>,
+        refs: Vec<ExperienceRef>,
     ) -> Self {
         Self {
             id: ExperienceId::from(Id::new()),
@@ -39,6 +62,10 @@ impl Experience {
             refs,
             created_at: Timestamp::now(),
         }
+    }
+
+    pub fn ref_token(&self) -> RefToken {
+        RefToken::new(Ref::experience(self.id))
     }
 
     pub fn as_table_row(&self) -> String {
@@ -77,7 +104,7 @@ impl Experience {
             impl AsRef<str>,
             impl AsRef<str>,
         ),
-        refs: Vec<RecordRef>,
+        refs: Vec<ExperienceRef>,
     ) -> Result<Experience, ExperienceConstructionError> {
         Ok(Experience {
             id: id
@@ -98,12 +125,10 @@ impl Experience {
 
 impl core::fmt::Display for Experience {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let prefix = &self.id.to_string()[..8];
-        write!(f, "{prefix} {}", self.as_table_row())
+        write!(f, "{} {}", self.ref_token(), self.as_table_row())
     }
 }
 
-domain_link!(Experience => ExperienceLink);
 domain_id!(ExperienceId);
 
 #[cfg(test)]
@@ -111,16 +136,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn experience_same_fields_same_link() {
-        let experience = Experience::create(
-            AgentId::new(),
-            SensationName::new("continues"),
-            Description::new("desc"),
-            vec![],
+    fn experience_ref_display_with_role() {
+        let r = ExperienceRef::new(
+            Ref::cognition(CognitionId::new()),
+            Some(Label::new("origin")),
         );
+        let display = r.to_string();
+        assert!(display.contains("[origin]"));
+    }
 
-        let clone = experience.clone();
+    #[test]
+    fn experience_ref_display_without_role() {
+        let r = ExperienceRef::new(Ref::memory(MemoryId::new()), None);
+        let display = r.to_string();
+        assert!(!display.contains('['));
+    }
 
-        assert_eq!(experience.as_link().unwrap(), clone.as_link().unwrap());
+    #[test]
+    fn experience_ref_serde_roundtrip() {
+        let r = ExperienceRef::new(Ref::cognition(CognitionId::new()), Some(Label::new("echo")));
+        let json = serde_json::to_string(&r).unwrap();
+        let deserialized: ExperienceRef = serde_json::from_str(&json).unwrap();
+        assert_eq!(r, deserialized);
+    }
+
+    #[test]
+    fn experience_ref_without_role_omits_field() {
+        let r = ExperienceRef::new(Ref::agent(AgentId::new()), None);
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(!json.contains("role"));
     }
 }

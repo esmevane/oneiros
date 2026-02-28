@@ -27,8 +27,7 @@ create index if not exists events_type on events(json_extract(meta, '$.type'));
 create table if not exists persona (
     name        text primary key not null,
     description text not null default '',
-    prompt      text not null default '',
-    link        text
+    prompt      text not null default ''
 );
 
 -- Textures are cognitive categories that classify agent thoughts. Each
@@ -41,8 +40,7 @@ create table if not exists persona (
 create table if not exists texture (
     name        text primary key not null,
     description text not null default '',
-    prompt      text not null default '',
-    link        text
+    prompt      text not null default ''
 );
 
 -- Agents are named participants in a brain's cognition. Each agent adopts
@@ -58,8 +56,7 @@ create table if not exists agent (
     name        text unique not null,
     persona     text not null references persona(name),
     description text not null default '',
-    prompt      text not null default '',
-    link        text
+    prompt      text not null default ''
 );
 
 -- Cognitions are the thoughts agents log. Each cognition is bound to an
@@ -71,8 +68,7 @@ create table if not exists cognition (
     agent_id    text not null references agent(id),
     texture     text not null references texture(name),
     content     text not null,
-    created_at  text not null,
-    link        text
+    created_at  text not null
 );
 
 -- Levels are memory retention tiers that determine how memories surface
@@ -87,8 +83,7 @@ create table if not exists cognition (
 create table if not exists level (
     name        text primary key not null,
     description text not null default '',
-    prompt      text not null default '',
-    link        text
+    prompt      text not null default ''
 );
 
 -- Memories are consolidated knowledge records tied to an agent and
@@ -100,8 +95,7 @@ create table if not exists memory (
     agent_id    text not null references agent(id),
     level       text not null references level(name),
     content     text not null,
-    created_at  text not null,
-    link        text
+    created_at  text not null
 );
 
 -- Blobs are content-addressable binary storage. Each blob is identified
@@ -124,8 +118,7 @@ create table if not exists blob (
 create table if not exists sensation (
     name        text primary key not null,
     description text not null default '',
-    prompt      text not null default '',
-    link        text
+    prompt      text not null default ''
 );
 
 -- Natures classify edges in the cognitive graph. Like textures,
@@ -137,22 +130,19 @@ create table if not exists sensation (
 create table if not exists nature (
     name        text primary key not null,
     description text not null default '',
-    prompt      text not null default '',
-    link        text
+    prompt      text not null default ''
 );
 
 -- Connections are first-class edges between entities in the cognitive
--- graph. Each connection links two entities (via their content-addressed
--- Links) through a nature that describes the relationship type.
--- Identity: nature + from_link + to_link (timestamp is context).
+-- graph. Each connection links two entities (via Refs) through a nature
+-- that describes the relationship type.
 --
 create table if not exists connection (
     id          text primary key not null,
     nature      text not null references nature(name),
-    from_link   text not null,
-    to_link     text not null,
-    created_at  text not null,
-    link        text
+    from_ref    text not null,
+    to_ref      text not null,
+    created_at  text not null
 );
 
 -- Experiences are descriptive edges connecting records in the brain.
@@ -165,23 +155,16 @@ create table if not exists experience (
     agent_id    text not null references agent(id),
     sensation   text not null references sensation(name),
     description text not null,
-    created_at  text not null,
-    link        text
+    created_at  text not null
 );
 
--- Experience refs are the edges themselves — each ref connects an
--- experience to a record. Refs come in two forms:
---   Identified: record_id + record_kind (legacy UUID-based reference)
---   Linked: link (content-addressed reference via oneiros-link)
--- Exactly one of (record_id, record_kind) or (link) should be populated.
+-- Experience refs connect an experience to a record via a Ref.
 -- The role field describes the record's participation in this
 -- experience (e.g. "origin", "outcome", "context").
 --
 create table if not exists experience_ref (
     experience_id text not null references experience(id),
-    record_id     text,
-    record_kind   text,
-    link          text,
+    entity_ref    text,
     role          text,
     created_at    text not null
 );
@@ -193,6 +176,5 @@ create table if not exists experience_ref (
 create table if not exists storage (
     key         text primary key not null,
     description text not null default '',
-    hash        text not null references blob(hash),
-    link        text
+    hash        text not null references blob(hash)
 );

@@ -5,19 +5,31 @@ use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
+#[derive(Clone, serde::Serialize)]
+#[serde(transparent)]
+pub struct CognitionDetail(pub Cognition);
+
+impl core::fmt::Display for CognitionDetail {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.as_detail())
+    }
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowCognitionOutcomes {
     #[outcome(
-        message("Cognition {}\n  Agent: {}\n  Texture: {}\n  Content: {}\n  Created: {}", .0.id, .0.agent_id, .0.texture, .0.content, .0.created_at),
-        prompt("Does this connect to something? Trace it with `oneiros experience create <agent> <sensation> <description>`.")
+        message("{0}"),
+        prompt(
+            "Does this connect to something? Trace it with `oneiros experience create <agent> <sensation> <description>`."
+        )
     )]
-    CognitionDetails(Cognition),
+    CognitionDetails(CognitionDetail),
 }
 
 #[derive(Clone, Args)]
 pub struct ShowCognition {
-    /// The cognition ID (full UUID or 8+ character prefix).
+    /// The cognition ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 }
 
@@ -41,7 +53,9 @@ impl ShowCognition {
         };
 
         let cognition = client.get_cognition(&token, &id).await?;
-        outcomes.emit(ShowCognitionOutcomes::CognitionDetails(cognition));
+        outcomes.emit(ShowCognitionOutcomes::CognitionDetails(CognitionDetail(
+            cognition,
+        )));
 
         Ok(outcomes)
     }

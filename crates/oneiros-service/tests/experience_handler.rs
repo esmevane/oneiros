@@ -4,7 +4,6 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use oneiros_db::Database;
-use oneiros_link::*;
 use oneiros_model::*;
 use oneiros_service::*;
 use std::sync::Arc;
@@ -208,14 +207,14 @@ async fn create_experience_with_refs() {
     seed_agent(&state, &token, "architect", "expert").await;
     seed_sensation(&state, &token, "caused").await;
 
-    let fake_id = Id::new();
+    let cognition_ref = Ref::cognition(CognitionId::new());
     let app = router(state);
     let body = serde_json::json!({
         "agent": "architect",
         "sensation": "caused",
         "description": "One insight led to another.",
         "refs": [
-            { "id": fake_id.to_string(), "kind": "cognition", "role": "origin" }
+            { "entity": serde_json::to_value(&cognition_ref).unwrap(), "role": "origin" }
         ]
     });
 
@@ -228,12 +227,9 @@ async fn create_experience_with_refs() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 1);
+    assert_eq!(experience.refs[0].entity, cognition_ref);
     assert_eq!(
-        experience.refs[0].kind().cloned(),
-        Some(RecordKind::Cognition)
-    );
-    assert_eq!(
-        experience.refs[0].role().map(|l| l.as_str()),
+        experience.refs[0].role.as_ref().map(|l| l.as_str()),
         Some("origin")
     );
 }
@@ -353,11 +349,10 @@ async fn add_ref_to_existing_experience() {
     assert!(created.refs.is_empty());
 
     // Add a ref.
-    let ref_id = Id::new();
+    let memory_ref = Ref::memory(MemoryId::new());
     let app = router(state.clone());
     let body = serde_json::json!({
-        "id": ref_id.to_string(),
-        "kind": "memory",
+        "entity": serde_json::to_value(&memory_ref).unwrap(),
         "role": "origin"
     });
     let response = app
@@ -373,8 +368,11 @@ async fn add_ref_to_existing_experience() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let updated: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].kind().cloned(), Some(RecordKind::Memory));
-    assert_eq!(updated.refs[0].role().map(|l| l.as_str()), Some("origin"));
+    assert_eq!(updated.refs[0].entity, memory_ref);
+    assert_eq!(
+        updated.refs[0].role.as_ref().map(|l| l.as_str()),
+        Some("origin")
+    );
 }
 
 #[tokio::test]
@@ -419,19 +417,19 @@ async fn update_experience_description() {
 }
 
 #[tokio::test]
-async fn create_experience_with_linked_ref() {
+async fn create_experience_with_entity_ref() {
     let (_temp, state, token) = setup();
     seed_agent(&state, &token, "architect", "expert").await;
     seed_sensation(&state, &token, "echoes").await;
 
-    let link = Link::new(&("cognition", "some-thought")).unwrap();
+    let entity_ref = Ref::cognition(CognitionId::new());
     let app = router(state);
     let body = serde_json::json!({
         "agent": "architect",
         "sensation": "echoes",
-        "description": "A resonance traced by link.",
+        "description": "A resonance traced by ref.",
         "refs": [
-            { "link": link.to_string(), "role": "origin" }
+            { "entity": serde_json::to_value(&entity_ref).unwrap(), "role": "origin" }
         ]
     });
 
@@ -444,17 +442,15 @@ async fn create_experience_with_linked_ref() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 1);
-    assert_eq!(experience.refs[0].link(), Some(&link));
-    assert!(experience.refs[0].id().is_none());
-    assert!(experience.refs[0].kind().is_none());
+    assert_eq!(experience.refs[0].entity, entity_ref);
     assert_eq!(
-        experience.refs[0].role().map(|l| l.as_str()),
+        experience.refs[0].role.as_ref().map(|l| l.as_str()),
         Some("origin")
     );
 }
 
 #[tokio::test]
-async fn add_linked_ref_to_existing_experience() {
+async fn add_entity_ref_to_existing_experience() {
     let (_temp, state, token) = setup();
     seed_agent(&state, &token, "architect", "expert").await;
     seed_sensation(&state, &token, "caused").await;
@@ -474,11 +470,11 @@ async fn add_linked_ref_to_existing_experience() {
     let created: Experience = serde_json::from_slice(&bytes).unwrap();
     assert!(created.refs.is_empty());
 
-    // Add a linked ref.
-    let link = Link::new(&("memory", "a-consolidated-insight")).unwrap();
+    // Add a ref.
+    let memory_ref = Ref::memory(MemoryId::new());
     let app = router(state.clone());
     let body = serde_json::json!({
-        "link": link.to_string(),
+        "entity": serde_json::to_value(&memory_ref).unwrap(),
         "role": "origin"
     });
     let response = app
@@ -494,26 +490,29 @@ async fn add_linked_ref_to_existing_experience() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let updated: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].link(), Some(&link));
-    assert_eq!(updated.refs[0].role().map(|l| l.as_str()), Some("origin"));
+    assert_eq!(updated.refs[0].entity, memory_ref);
+    assert_eq!(
+        updated.refs[0].role.as_ref().map(|l| l.as_str()),
+        Some("origin")
+    );
 }
 
 #[tokio::test]
-async fn create_experience_with_mixed_refs() {
+async fn create_experience_with_multiple_refs() {
     let (_temp, state, token) = setup();
     seed_agent(&state, &token, "architect", "expert").await;
     seed_sensation(&state, &token, "tensions").await;
 
-    let fake_id = Id::new();
-    let link = Link::new(&("cognition", "another-thought")).unwrap();
+    let ref_a = Ref::cognition(CognitionId::new());
+    let ref_b = Ref::memory(MemoryId::new());
     let app = router(state);
     let body = serde_json::json!({
         "agent": "architect",
         "sensation": "tensions",
         "description": "Two poles pulling against each other.",
         "refs": [
-            { "id": fake_id.to_string(), "kind": "cognition", "role": "pole-a" },
-            { "link": link.to_string(), "role": "pole-b" }
+            { "entity": serde_json::to_value(&ref_a).unwrap(), "role": "pole-a" },
+            { "entity": serde_json::to_value(&ref_b).unwrap(), "role": "pole-b" }
         ]
     });
 
@@ -526,16 +525,14 @@ async fn create_experience_with_mixed_refs() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let experience: Experience = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(experience.refs.len(), 2);
-    // First ref is identified
-    assert!(experience.refs[0].id().is_some());
+    assert_eq!(experience.refs[0].entity, ref_a);
     assert_eq!(
-        experience.refs[0].role().map(|l| l.as_str()),
+        experience.refs[0].role.as_ref().map(|l| l.as_str()),
         Some("pole-a")
     );
-    // Second ref is linked
-    assert_eq!(experience.refs[1].link(), Some(&link));
+    assert_eq!(experience.refs[1].entity, ref_b);
     assert_eq!(
-        experience.refs[1].role().map(|l| l.as_str()),
+        experience.refs[1].role.as_ref().map(|l| l.as_str()),
         Some("pole-b")
     );
 }

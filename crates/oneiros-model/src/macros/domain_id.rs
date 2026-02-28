@@ -1,6 +1,6 @@
 macro_rules! domain_id {
     ($name:ident) => {
-        #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
         #[serde(transparent)]
         pub struct $name(pub crate::Id);
 

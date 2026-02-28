@@ -9,13 +9,15 @@ use crate::*;
 pub struct CognitionAddedResult {
     pub id: CognitionId,
     #[serde(skip)]
+    pub ref_token: RefToken,
+    #[serde(skip)]
     pub gauge: String,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AddCognitionOutcomes {
-    #[outcome(message("Cognition added: {}", .0.id), prompt("{}", .0.gauge))]
+    #[outcome(message("Cognition added: {}", .0.ref_token), prompt("{}", .0.gauge))]
     CognitionAdded(CognitionAddedResult),
 }
 
@@ -57,8 +59,11 @@ impl AddCognition {
             .await?;
         let gauge = crate::gauge::cognition_gauge(&self.agent, &all);
 
+        let ref_token = cognition.ref_token();
+
         outcomes.emit(AddCognitionOutcomes::CognitionAdded(CognitionAddedResult {
             id: cognition.id,
+            ref_token,
             gauge,
         }));
 

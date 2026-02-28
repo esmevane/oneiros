@@ -21,7 +21,7 @@ pub enum ShowExperienceOutcomes {
     #[outcome(
         message("{0}"),
         prompt(
-            "Does this connect to anything new? Add with `oneiros experience ref add <id> <record_id> <record_kind>`."
+            "Does this connect to anything new? Add with `oneiros experience ref add <experience-ref> <entity-ref>`."
         )
     )]
     ExperienceDetails(ExperienceDetail),
@@ -29,7 +29,7 @@ pub enum ShowExperienceOutcomes {
 
 #[derive(Clone, Args)]
 pub struct ShowExperience {
-    /// The experience ID (full UUID or 8+ character prefix).
+    /// The experience ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 }
 

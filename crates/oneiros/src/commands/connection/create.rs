@@ -1,16 +1,22 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_link::Link;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
+#[derive(Clone, serde::Serialize)]
+pub struct ConnectionCreatedResult {
+    pub id: ConnectionId,
+    #[serde(skip)]
+    pub ref_token: RefToken,
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CreateConnectionOutcomes {
-    #[outcome(message("Connection created: {0}"))]
-    ConnectionCreated(ConnectionId),
+    #[outcome(message("Connection created: {}", .0.ref_token))]
+    ConnectionCreated(ConnectionCreatedResult),
 }
 
 #[derive(Clone, Args)]
@@ -18,11 +24,11 @@ pub struct CreateConnection {
     /// The nature of the connection (must already exist).
     nature: NatureName,
 
-    /// The source link (base64url-encoded content address).
-    from_link: Link,
+    /// The source entity ref (ref:base64url-encoded).
+    from_ref: RefToken,
 
-    /// The target link (base64url-encoded content address).
-    to_link: Link,
+    /// The target entity ref (ref:base64url-encoded).
+    to_ref: RefToken,
 }
 
 impl CreateConnection {
@@ -39,13 +45,20 @@ impl CreateConnection {
                 &context.ticket_token()?,
                 CreateConnectionRequest {
                     nature: self.nature.clone(),
-                    from_link: self.from_link.clone(),
-                    to_link: self.to_link.clone(),
+                    from_ref: self.from_ref.clone().into_inner(),
+                    to_ref: self.to_ref.clone().into_inner(),
                 },
             )
             .await?;
 
-        outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(connection.id));
+        let ref_token = connection.ref_token();
+
+        outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(
+            ConnectionCreatedResult {
+                id: connection.id,
+                ref_token,
+            },
+        ));
 
         Ok(outcomes)
     }

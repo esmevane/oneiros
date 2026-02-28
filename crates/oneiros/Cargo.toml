@@ -23,7 +23,6 @@ oneiros-client.workspace = true
 oneiros-db.workspace = true
 oneiros-detect-project-name.workspace = true
 oneiros-fs.workspace = true
-oneiros-link.workspace = true
 oneiros-model.workspace = true
 oneiros-outcomes.workspace = true
 oneiros-service.workspace = true
