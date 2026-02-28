@@ -1,3 +1,4 @@
+mod collector;
 mod create;
 
 use axum::{Router, routing};

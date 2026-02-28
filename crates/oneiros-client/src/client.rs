@@ -585,8 +585,16 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn search(&self, token: &Token, query: &str) -> Result<SearchResults, Error> {
-        let uri = format!("/search?q={}", urlencoding::encode(query));
+    pub async fn search(
+        &self,
+        token: &Token,
+        query: &str,
+        agent: Option<&AgentName>,
+    ) -> Result<SearchResults, Error> {
+        let mut uri = format!("/search?q={}", urlencoding::encode(query));
+        if let Some(agent) = agent {
+            uri.push_str(&format!("&agent={agent}"));
+        }
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)
     }

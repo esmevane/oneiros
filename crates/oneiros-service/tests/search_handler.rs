@@ -296,3 +296,112 @@ async fn search_across_multiple_entity_types() {
     assert!(kinds.contains(&"cognition-content"));
     assert!(kinds.contains(&"agent-description"));
 }
+
+async fn seed_second_agent(state: &Arc<ServiceState>, token: &str) {
+    let app = router(state.clone());
+    let body = serde_json::json!({ "name": "other-agent", "persona": "tester" });
+    app.oneshot(post_json_auth("/agents", &body, token))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn search_scoped_to_agent_returns_matching() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token).await;
+    seed_second_agent(&state, &token).await;
+
+    // Add cognition for searcher
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "agent": "searcher",
+        "texture": "tester",
+        "content": "Quantum mechanics is fundamental"
+    });
+    app.oneshot(post_json_auth("/cognitions", &body, &token))
+        .await
+        .unwrap();
+
+    // Add cognition for other-agent with same keyword
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "agent": "other-agent",
+        "texture": "tester",
+        "content": "Quantum computing advances rapidly"
+    });
+    app.oneshot(post_json_auth("/cognitions", &body, &token))
+        .await
+        .unwrap();
+
+    // Search WITHOUT agent filter — should find both
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth("/search?q=quantum", &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let all_results: SearchResults = serde_json::from_slice(&body).unwrap();
+    assert_eq!(all_results.results.len(), 2);
+
+    // Search WITH agent filter — should find only searcher's
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth("/search?q=quantum&agent=searcher", &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let filtered_results: SearchResults = serde_json::from_slice(&body).unwrap();
+    assert_eq!(filtered_results.results.len(), 1);
+    assert!(
+        filtered_results.results[0]
+            .content
+            .as_str()
+            .contains("mechanics")
+    );
+}
+
+#[tokio::test]
+async fn search_without_agent_returns_all() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token).await;
+    seed_second_agent(&state, &token).await;
+
+    // Add cognitions for both agents
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "agent": "searcher",
+        "texture": "tester",
+        "content": "Exploring neural pathways"
+    });
+    app.oneshot(post_json_auth("/cognitions", &body, &token))
+        .await
+        .unwrap();
+
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "agent": "other-agent",
+        "texture": "tester",
+        "content": "Neural network architectures"
+    });
+    app.oneshot(post_json_auth("/cognitions", &body, &token))
+        .await
+        .unwrap();
+
+    // Search without agent filter
+    let app = router(state.clone());
+    let response = app
+        .oneshot(get_auth("/search?q=neural", &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+
+    // Both agents' cognitions should appear
+    assert_eq!(results.results.len(), 2);
+}
