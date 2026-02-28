@@ -24,7 +24,7 @@ pub enum ShowConnectionOutcomes {
 
 #[derive(Clone, Args)]
 pub struct ShowConnection {
-    /// The connection ID (full UUID or 8+ character prefix).
+    /// The connection ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 }
 

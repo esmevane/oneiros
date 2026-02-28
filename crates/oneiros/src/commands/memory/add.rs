@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::MemoryId;
+use oneiros_model::{MemoryId, RefToken};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,13 +9,15 @@ use crate::*;
 pub struct MemoryAddedResult {
     pub id: MemoryId,
     #[serde(skip)]
+    pub ref_token: RefToken,
+    #[serde(skip)]
     pub gauge: String,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AddMemoryOutcomes {
-    #[outcome(message("Memory added: {}", .0.id), prompt("{}", .0.gauge))]
+    #[outcome(message("Memory added: {}", .0.ref_token), prompt("{}", .0.gauge))]
     MemoryAdded(MemoryAddedResult),
 }
 
@@ -57,8 +59,11 @@ impl AddMemory {
             .await?;
         let gauge = crate::gauge::memory_gauge(&self.agent, &all);
 
+        let ref_token = memory.ref_token();
+
         outcomes.emit(AddMemoryOutcomes::MemoryAdded(MemoryAddedResult {
             id: memory.id,
+            ref_token,
             gauge,
         }));
 

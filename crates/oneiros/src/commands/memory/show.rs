@@ -5,19 +5,31 @@ use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
+#[derive(Clone, serde::Serialize)]
+#[serde(transparent)]
+pub struct MemoryDetail(pub Memory);
+
+impl core::fmt::Display for MemoryDetail {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.as_detail())
+    }
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowMemoryOutcomes {
     #[outcome(
-        message("Memory {}\n  Agent: {}\n  Level: {}\n  Content: {}\n  Created: {}", .0.id, .0.agent_id, .0.level, .0.content, .0.created_at),
-        prompt("Is this grounded in specific cognitions? Mark it with `oneiros experience create <agent> grounds <description>`.")
+        message("{0}"),
+        prompt(
+            "Is this grounded in specific cognitions? Mark it with `oneiros experience create <agent> grounds <description>`."
+        )
     )]
-    MemoryDetails(Memory),
+    MemoryDetails(MemoryDetail),
 }
 
 #[derive(Clone, Args)]
 pub struct ShowMemory {
-    /// The memory ID (full UUID or 8+ character prefix).
+    /// The memory ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 }
 
@@ -41,7 +53,7 @@ impl ShowMemory {
         };
 
         let memory = client.get_memory(&token, &id).await?;
-        outcomes.emit(ShowMemoryOutcomes::MemoryDetails(memory));
+        outcomes.emit(ShowMemoryOutcomes::MemoryDetails(MemoryDetail(memory)));
 
         Ok(outcomes)
     }

@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -43,44 +42,4 @@ where
     }
 }
 
-domain_link!(StorageEntry => StorageEntryLink);
 domain_name!(StorageKey);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn storage_same_fields_same_link() {
-        let primary = StorageEntry::init(
-            StorageKey::new("config.toml"),
-            "A config file",
-            ContentHash::new("abc123"),
-        );
-
-        let other = StorageEntry::init(
-            StorageKey::new("config.toml"),
-            "A config file",
-            ContentHash::new("abc123"),
-        );
-
-        assert_eq!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-
-    #[test]
-    fn storage_different_hash_different_link() {
-        let primary = StorageEntry::init(
-            StorageKey::new("config.toml"),
-            "A config file",
-            ContentHash::new("abc123"),
-        );
-
-        let other = StorageEntry::init(
-            StorageKey::new("config.toml"),
-            "A config file",
-            ContentHash::new("different-hash"),
-        );
-
-        assert_ne!(primary.as_link().unwrap(), other.as_link().unwrap());
-    }
-}

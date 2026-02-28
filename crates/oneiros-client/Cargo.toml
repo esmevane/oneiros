@@ -10,7 +10,6 @@ license.workspace = true
 http-body-util.workspace = true
 hyper.workspace = true
 hyper-util.workspace = true
-oneiros-link.workspace = true
 oneiros-model.workspace = true
 serde.workspace = true
 serde_json.workspace = true

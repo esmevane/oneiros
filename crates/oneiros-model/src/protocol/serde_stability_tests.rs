@@ -6,8 +6,6 @@
 
 #[cfg(test)]
 mod tests {
-    use oneiros_link::Link;
-
     use crate::*;
 
     /// Extract the `"type"` string from a serialized tagged enum.
@@ -15,16 +13,8 @@ mod tests {
         value.get("type").and_then(|v| v.as_str()).unwrap()
     }
 
-    fn test_id() -> Id {
-        Id::new()
-    }
-
     fn test_timestamp() -> Timestamp {
         Timestamp::now()
-    }
-
-    fn test_link() -> Link {
-        Link::new(&("test", "data")).unwrap()
     }
 
     fn test_agent() -> Agent {
@@ -232,8 +222,8 @@ mod tests {
         let created = serde_json::to_value(ConnectionEvents::ConnectionCreated(Connection {
             id: ConnectionId::new(),
             nature: NatureName::new("caused"),
-            from_link: test_link(),
-            to_link: test_link(),
+            from_ref: Ref::agent(AgentId::new()),
+            to_ref: Ref::cognition(CognitionId::new()),
             created_at: test_timestamp(),
         }))
         .unwrap();
@@ -261,7 +251,7 @@ mod tests {
 
         let ref_added = serde_json::to_value(&ExperienceEvents::ExperienceRefAdded {
             experience_id: ExperienceId::new(),
-            record_ref: RecordRef::identified(test_id(), RecordKind::Cognition, None),
+            experience_ref: ExperienceRef::new(Ref::cognition(CognitionId::new()), None),
             created_at: test_timestamp(),
         })
         .unwrap();

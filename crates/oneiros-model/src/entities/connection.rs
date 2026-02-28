@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -7,10 +6,10 @@ use crate::*;
 pub enum ConnectionConstructionError {
     #[error("invalid connection id: {0}")]
     InvalidId(#[from] IdParseError),
-    #[error("invalid from_link: {0}")]
-    InvalidFromLink(oneiros_link::LinkError),
-    #[error("invalid to_link: {0}")]
-    InvalidToLink(oneiros_link::LinkError),
+    #[error("invalid from_ref: {0}")]
+    InvalidFromRef(String),
+    #[error("invalid to_ref: {0}")]
+    InvalidToRef(String),
     #[error("invalid created_at timestamp: {0}")]
     InvalidCreatedAt(#[from] TimestampParseError),
 }
@@ -19,35 +18,41 @@ pub enum ConnectionConstructionError {
 pub struct Connection {
     pub id: ConnectionId,
     pub nature: NatureName,
-    pub from_link: Link,
-    pub to_link: Link,
+    pub from_ref: Ref,
+    pub to_ref: Ref,
     pub created_at: Timestamp,
 }
 
 impl Connection {
-    pub fn create(nature: NatureName, from_link: Link, to_link: Link) -> Self {
+    pub fn create(nature: NatureName, from_ref: Ref, to_ref: Ref) -> Self {
         Self {
             id: ConnectionId::from(Id::new()),
             nature,
-            from_link,
-            to_link,
+            from_ref,
+            to_ref,
             created_at: Timestamp::now(),
         }
     }
 
+    pub fn ref_token(&self) -> RefToken {
+        RefToken::new(Ref::connection(self.id))
+    }
+
     pub fn as_table_row(&self) -> String {
         let nature = format!("{}", self.nature);
-        let from = format!("{}", self.from_link);
-        let to = format!("{}", self.to_link);
+        let from = RefToken::new(self.from_ref.clone()).to_string();
+        let to = RefToken::new(self.to_ref.clone()).to_string();
 
-        let from_short = if from.len() > 16 {
-            format!("{}...", &from[..16])
+        let from_short = if from.len() > 32 {
+            let end = from.floor_char_boundary(32);
+            format!("{}...", &from[..end])
         } else {
             from
         };
 
-        let to_short = if to.len() > 16 {
-            format!("{}...", &to[..16])
+        let to_short = if to.len() > 32 {
+            let end = to.floor_char_boundary(32);
+            format!("{}...", &to[..end])
         } else {
             to
         };
@@ -56,17 +61,20 @@ impl Connection {
     }
 
     pub fn as_detail(&self) -> String {
+        let from_token = RefToken::new(self.from_ref.clone());
+        let to_token = RefToken::new(self.to_ref.clone());
+
         let lines = [
             format!("  Nature: {}", self.nature),
-            format!("  From: {}", self.from_link),
-            format!("  To: {}", self.to_link),
+            format!("  From: {from_token}"),
+            format!("  To: {to_token}"),
         ];
 
         lines.join("\n")
     }
 
     pub fn construct_from_db(
-        (id, nature, from_link, to_link, created_at): (
+        (id, nature, from_ref, to_ref, created_at): (
             impl AsRef<str>,
             impl AsRef<str>,
             impl AsRef<str>,
@@ -74,29 +82,32 @@ impl Connection {
             impl AsRef<str>,
         ),
     ) -> Result<Self, ConnectionConstructionError> {
+        let from = Self::parse_ref(from_ref.as_ref())
+            .map_err(ConnectionConstructionError::InvalidFromRef)?;
+        let to =
+            Self::parse_ref(to_ref.as_ref()).map_err(ConnectionConstructionError::InvalidToRef)?;
+
         Ok(Connection {
             id: id.as_ref().parse()?,
             nature: NatureName::new(nature),
-            from_link: from_link
-                .as_ref()
-                .parse()
-                .map_err(ConnectionConstructionError::InvalidFromLink)?,
-            to_link: to_link
-                .as_ref()
-                .parse()
-                .map_err(ConnectionConstructionError::InvalidToLink)?,
+            from_ref: from,
+            to_ref: to,
             created_at: Timestamp::parse_str(created_at)?,
         })
+    }
+
+    /// Parse a ref string, trying JSON first (new format), then RefToken (legacy).
+    fn parse_ref(s: &str) -> Result<Ref, String> {
+        serde_json::from_str::<Ref>(s)
+            .or_else(|_| s.parse::<RefToken>().map(RefToken::into_inner))
+            .map_err(|e| e.to_string())
     }
 }
 
 impl core::fmt::Display for Connection {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let id = self.id.to_string();
-        let prefix = if id.len() >= 8 { &id[..8] } else { &id };
-        write!(f, "{prefix:<10}{}", self.as_table_row())
+        write!(f, "{} {}", self.ref_token(), self.as_table_row())
     }
 }
 
-domain_link!(Connection => ConnectionLink);
 domain_id!(ConnectionId);

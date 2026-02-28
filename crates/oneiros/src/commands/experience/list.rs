@@ -14,7 +14,7 @@ impl core::fmt::Display for ExperienceList {
         let display = self
             .0
             .iter()
-            .map(|experience| experience.as_table_row())
+            .map(|experience| format!("{experience}"))
             .collect::<Vec<_>>()
             .join("\n");
 

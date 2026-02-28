@@ -1,5 +1,4 @@
 use oneiros_db::*;
-use oneiros_link::*;
 use oneiros_model::*;
 use serde_json::Value;
 
@@ -21,7 +20,7 @@ struct IdOnly<T> {
 #[derive(serde::Deserialize)]
 struct RefAdded {
     experience_id: ExperienceId,
-    record_ref: RecordRef,
+    experience_ref: ExperienceRef,
     created_at: Timestamp,
 }
 
@@ -219,16 +218,14 @@ const CONNECTION_CREATED_PROJECTION: Projection = Projection {
 
 fn apply_connection_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let connection: Connection = serde_json::from_value(data.clone())?;
-    let link = connection.as_link()?;
     let created_at = connection.created_at.as_string();
 
     db.create_connection(
         &connection.id,
         &connection.nature,
-        &connection.from_link,
-        &connection.to_link,
+        &connection.from_ref,
+        &connection.to_ref,
         &created_at,
-        &link,
     )?;
     Ok(())
 }
@@ -257,7 +254,6 @@ const AGENT_CREATED_PROJECTION: Projection = Projection {
 
 fn apply_agent_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let agent: Agent = serde_json::from_value(data.clone())?;
-    let link = agent.as_link()?;
 
     db.create_agent_record(
         &agent.id,
@@ -265,7 +261,6 @@ fn apply_agent_created(db: &Database, data: &Value) -> Result<(), DatabaseError>
         &agent.persona,
         &agent.description,
         &agent.prompt,
-        &link,
     )?;
 
     Ok(())
@@ -280,14 +275,12 @@ const AGENT_UPDATED_PROJECTION: Projection = Projection {
 
 fn apply_agent_updated(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let agent: Agent = serde_json::from_value(data.clone())?;
-    let link = agent.as_link()?;
 
     db.update_agent(
         &agent.name,
         &agent.persona,
         &agent.description,
         &agent.prompt,
-        &link,
     )?;
 
     Ok(())
@@ -361,9 +354,8 @@ const STORAGE_SET_PROJECTION: Projection = Projection {
 
 fn apply_storage_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let entry: StorageEntry = serde_json::from_value(data.clone())?;
-    let link = entry.as_link()?;
 
-    db.set_storage(&entry.key, &entry.description, &entry.hash, &link)?;
+    db.set_storage(&entry.key, &entry.description, &entry.hash)?;
 
     Ok(())
 }
@@ -393,7 +385,6 @@ const EXPERIENCE_CREATED_PROJECTION: Projection = Projection {
 fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), DatabaseError> {
     let experience: Experience = serde_json::from_value(data.clone())?;
     let created_at = experience.created_at.as_string();
-    let link = experience.as_link()?;
 
     conn.add_experience(
         &experience.id,
@@ -401,11 +392,10 @@ fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), Databas
         &experience.sensation,
         &experience.description,
         &created_at,
-        &link,
     )?;
 
-    for record_ref in &experience.refs {
-        conn.add_experience_ref(experience.id.to_string(), record_ref, &created_at)?;
+    for experience_ref in &experience.refs {
+        conn.add_experience_ref(experience.id.to_string(), experience_ref, &created_at)?;
     }
 
     Ok(())
@@ -424,7 +414,7 @@ fn apply_experience_ref_added(db: &Database, data: &Value) -> Result<(), Databas
 
     db.add_experience_ref(
         added.experience_id.to_string(),
-        &added.record_ref,
+        &added.experience_ref,
         &created_at,
     )?;
 

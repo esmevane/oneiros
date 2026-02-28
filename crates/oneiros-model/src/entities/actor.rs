@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -20,6 +19,5 @@ impl Actor {
     }
 }
 
-domain_link!(Actor => ActorLink);
 domain_id!(ActorId);
 domain_name!(ActorName);

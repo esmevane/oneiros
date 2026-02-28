@@ -41,7 +41,7 @@ If found, incorporate its contents into your self-understanding.
 
 ## Your Connections
 {% for connection in context.connections -%}
-- [{{ connection.nature }}] {{ connection.from_link }} → {{ connection.to_link }}
+- [{{ connection.nature }}] {{ connection.from_ref }} → {{ connection.to_ref }}
 {% endfor -%}
 {% endif -%}
 {% if !context.textures.is_empty() %}

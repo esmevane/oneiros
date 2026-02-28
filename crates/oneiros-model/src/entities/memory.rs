@@ -32,6 +32,20 @@ impl Memory {
         }
     }
 
+    pub fn ref_token(&self) -> RefToken {
+        RefToken::new(Ref::memory(self.id))
+    }
+
+    pub fn as_detail(&self) -> String {
+        let lines = [
+            format!("  Level: {}", self.level),
+            format!("  Content: {}", self.content),
+            format!("  Created: {}", self.created_at),
+        ];
+
+        lines.join("\n")
+    }
+
     pub fn as_table_row(&self) -> String {
         let level = format!("{}", self.level);
         let content = self.content.as_str();
@@ -72,9 +86,7 @@ impl Memory {
 
 impl core::fmt::Display for Memory {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let id = self.id.to_string();
-        let prefix = if id.len() >= 8 { &id[..8] } else { &id };
-        write!(f, "{prefix:<10}{}", self.as_table_row())
+        write!(f, "{} {}", self.ref_token(), self.as_table_row())
     }
 }
 

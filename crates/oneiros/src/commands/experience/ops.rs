@@ -1,6 +1,4 @@
 use clap::{Args, Subcommand};
-use oneiros_client::Client;
-use oneiros_model::{Id, RecordKind, Token};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -86,30 +84,4 @@ impl RefCommands {
             RefCommands::Add(cmd) => cmd.run(context).await?.map_into(),
         })
     }
-}
-
-pub(super) async fn list_ids_for_kind(
-    client: &Client,
-    token: &Token,
-    kind: &RecordKind,
-) -> Result<Vec<Id>, ExperienceCommandError> {
-    let ids = match kind {
-        RecordKind::Cognition => {
-            let all = client.list_cognitions(token, None, None).await?;
-            all.iter().map(|c| c.id.0).collect()
-        }
-        RecordKind::Memory => {
-            let all = client.list_memories(token, None, None).await?;
-            all.iter().map(|m| m.id.0).collect()
-        }
-        RecordKind::Experience => {
-            let all = client.list_experiences(token, None, None).await?;
-            all.iter().map(|e| e.id.0).collect()
-        }
-        RecordKind::Storage => {
-            vec![]
-        }
-    };
-
-    Ok(ids)
 }

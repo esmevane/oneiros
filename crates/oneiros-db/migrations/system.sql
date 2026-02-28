@@ -85,8 +85,7 @@ create index if not exists tasks_kind on tasks(kind);
 --
 create table if not exists tenant (
     id   text primary key default (uuid()) not null,
-    name text not null,
-    link text
+    name text not null
 );
 
 -- Actors are distinct identities that interact with brains through ticket
@@ -97,7 +96,6 @@ create table if not exists actor (
     id         text primary key default (uuid()) not null,
     tenant_id  text not null references tenant(id) on delete cascade,
     name       text not null,
-    link       text,
 
     UNIQUE(tenant_id, name)
 );
@@ -130,7 +128,6 @@ create table if not exists brain (
     name       text not null,
     path       text not null, -- path to brain.db file
     status     text not null references status(label) default 'active',
-    link       text,
 
     unique(tenant_id, name)
 );

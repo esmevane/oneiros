@@ -1043,6 +1043,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
+name = "migrate-refs"
+version = "0.1.0"
+dependencies = [
+ "rusqlite",
+ "serde_json",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1139,7 +1147,6 @@ dependencies = [
  "oneiros-db",
  "oneiros-detect-project-name",
  "oneiros-fs",
- "oneiros-link",
  "oneiros-model",
  "oneiros-outcomes",
  "oneiros-service",
@@ -1163,7 +1170,6 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
- "oneiros-link",
  "oneiros-model",
  "serde",
  "serde_json",
@@ -1176,7 +1182,6 @@ dependencies = [
 name = "oneiros-db"
 version = "0.0.5"
 dependencies = [
- "oneiros-link",
  "oneiros-model",
  "rusqlite",
  "serde",
@@ -1199,25 +1204,11 @@ name = "oneiros-fs"
 version = "0.0.5"
 
 [[package]]
-name = "oneiros-link"
-version = "0.0.5"
-dependencies = [
- "bytes",
- "data-encoding",
- "postcard",
- "pretty_assertions",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "oneiros-model"
 version = "0.0.5"
 dependencies = [
  "chrono",
  "data-encoding",
- "oneiros-link",
  "postcard",
  "pretty_assertions",
  "serde",
@@ -1260,7 +1251,6 @@ dependencies = [
  "http-body-util",
  "oneiros-db",
  "oneiros-fs",
- "oneiros-link",
  "oneiros-model",
  "rusqlite",
  "serde",

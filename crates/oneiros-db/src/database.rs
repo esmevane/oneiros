@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use oneiros_model::*;
 use rusqlite::{Connection, functions::FunctionFlags, params};
 use serde_json::Value;
@@ -145,11 +144,10 @@ impl Database {
         &self,
         tenant_id: &TenantId,
         name: &TenantName,
-        link: &TenantLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into tenant (id, name, link) values (?1, ?2, ?3)",
-            params![tenant_id.to_string(), name.as_ref(), link.to_link_string()?],
+            "insert or ignore into tenant (id, name) values (?1, ?2)",
+            params![tenant_id.to_string(), name.as_ref()],
         )?;
         Ok(())
     }
@@ -164,16 +162,10 @@ impl Database {
         actor_id: &ActorId,
         tenant_id: &TenantId,
         name: &ActorName,
-        link: &ActorLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into actor (id, tenant_id, name, link) values (?1, ?2, ?3, ?4)",
-            params![
-                actor_id.to_string(),
-                tenant_id.to_string(),
-                name.as_ref(),
-                link.to_link_string()?
-            ],
+            "insert or ignore into actor (id, tenant_id, name) values (?1, ?2, ?3)",
+            params![actor_id.to_string(), tenant_id.to_string(), name.as_ref(),],
         )?;
         Ok(())
     }
@@ -228,17 +220,15 @@ impl Database {
         tenant_id: &TenantId,
         name: &BrainName,
         path: &str,
-        link: &BrainLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into brain (id, tenant_id, name, path, link) \
-             values (?1, ?2, ?3, ?4, ?5)",
+            "insert or ignore into brain (id, tenant_id, name, path) \
+             values (?1, ?2, ?3, ?4)",
             params![
                 brain_id.to_string(),
                 tenant_id.to_string(),
                 name.as_ref(),
                 path,
-                link.to_link_string()?
             ],
         )?;
         Ok(())
@@ -522,18 +512,16 @@ impl Database {
         persona: &PersonaName,
         description: &Description,
         prompt: &Prompt,
-        link: &AgentLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into agent (id, name, persona, description, prompt, link) \
-             values (?1, ?2, ?3, ?4, ?5, ?6)",
+            "insert or ignore into agent (id, name, persona, description, prompt) \
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 id.to_string(),
                 name.as_ref(),
                 persona.as_ref(),
                 description.as_str(),
                 prompt.as_str(),
-                link.to_link_string()?
             ],
         )?;
         Ok(())
@@ -545,17 +533,15 @@ impl Database {
         persona: &PersonaName,
         description: &Description,
         prompt: &Prompt,
-        link: &AgentLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "update agent set persona = ?2, description = ?3, prompt = ?4, link = ?5 \
+            "update agent set persona = ?2, description = ?3, prompt = ?4 \
              where name = ?1",
             params![
                 name.as_ref(),
                 persona.as_ref(),
                 description.as_str(),
                 prompt.as_str(),
-                link.to_link_string()?
             ],
         )?;
         Ok(())
@@ -1104,21 +1090,22 @@ impl Database {
         &self,
         id: &ConnectionId,
         nature: &NatureName,
-        from_link: &Link,
-        to_link: &Link,
+        from_ref: &Ref,
+        to_ref: &Ref,
         created_at: &str,
-        link: &ConnectionLink,
     ) -> Result<(), DatabaseError> {
+        let from_json = serde_json::to_string(from_ref)?;
+        let to_json = serde_json::to_string(to_ref)?;
+
         self.conn.execute(
-            "insert or ignore into connection (id, nature, from_link, to_link, created_at, link) \
-             values (?1, ?2, ?3, ?4, ?5, ?6)",
+            "insert or ignore into connection (id, nature, from_ref, to_ref, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 id.to_string(),
                 nature.as_ref(),
-                from_link.to_string(),
-                to_link.to_string(),
+                from_json,
+                to_json,
                 created_at,
-                link.to_link_string()?
             ],
         )?;
         Ok(())
@@ -1129,7 +1116,7 @@ impl Database {
         id: impl AsRef<str>,
     ) -> Result<Option<oneiros_model::Connection>, DatabaseError> {
         let result = self.conn.query_row(
-            "select id, nature, from_link, to_link, created_at from connection where id = ?1",
+            "select id, nature, from_ref, to_ref, created_at from connection where id = ?1",
             params![id.as_ref()],
             |row| {
                 Ok((
@@ -1151,7 +1138,7 @@ impl Database {
 
     pub fn list_connections(&self) -> Result<Vec<oneiros_model::Connection>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "select id, nature, from_link, to_link, created_at from connection order by rowid",
+            "select id, nature, from_ref, to_ref, created_at from connection order by rowid",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -1177,7 +1164,7 @@ impl Database {
         nature: impl AsRef<str>,
     ) -> Result<Vec<oneiros_model::Connection>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "select id, nature, from_link, to_link, created_at from connection \
+            "select id, nature, from_ref, to_ref, created_at from connection \
              where nature = ?1 order by rowid",
         )?;
 
@@ -1199,16 +1186,17 @@ impl Database {
             .map_err(DatabaseError::from)
     }
 
-    pub fn list_connections_by_link(
+    pub fn list_connections_by_ref(
         &self,
-        link: impl AsRef<str>,
+        entity_ref: &Ref,
     ) -> Result<Vec<oneiros_model::Connection>, DatabaseError> {
+        let ref_json = serde_json::to_string(entity_ref)?;
         let mut stmt = self.conn.prepare(
-            "select id, nature, from_link, to_link, created_at from connection \
-             where from_link = ?1 or to_link = ?1 order by rowid",
+            "select id, nature, from_ref, to_ref, created_at from connection \
+             where from_ref = ?1 or to_ref = ?1 order by rowid",
         )?;
 
-        let rows = stmt.query_map(params![link.as_ref()], |row| {
+        let rows = stmt.query_map(params![ref_json], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1246,18 +1234,16 @@ impl Database {
         sensation: &SensationName,
         description: &Description,
         created_at: &str,
-        link: &ExperienceLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert or ignore into experience (id, agent_id, sensation, description, created_at, link) \
-             values (?1, ?2, ?3, ?4, ?5, ?6)",
+            "insert or ignore into experience (id, agent_id, sensation, description, created_at) \
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 id.to_string(),
                 agent_id.to_string(),
                 sensation.as_ref(),
                 description.as_str(),
                 created_at,
-                link.to_link_string()?
             ],
         )?;
         Ok(())
@@ -1378,70 +1364,52 @@ impl Database {
     pub fn add_experience_ref(
         &self,
         experience_id: impl AsRef<str>,
-        record_ref: &RecordRef,
+        experience_ref: &ExperienceRef,
         created_at: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
-        match record_ref {
-            RecordRef::Identified(r) => {
-                self.conn.execute(
-                    "insert or ignore into experience_ref \
-                     (experience_id, record_id, record_kind, role, created_at) \
-                     values (?1, ?2, ?3, ?4, ?5)",
-                    params![
-                        experience_id.as_ref(),
-                        r.id.to_string(),
-                        r.kind.to_string(),
-                        r.role.as_ref().map(|l| l.as_str()),
-                        created_at.as_ref()
-                    ],
-                )?;
-            }
-            RecordRef::Linked(r) => {
-                self.conn.execute(
-                    "insert or ignore into experience_ref \
-                     (experience_id, link, role, created_at) \
-                     values (?1, ?2, ?3, ?4)",
-                    params![
-                        experience_id.as_ref(),
-                        r.link.to_string(),
-                        r.role.as_ref().map(|l| l.as_str()),
-                        created_at.as_ref()
-                    ],
-                )?;
-            }
-        }
+        self.conn.execute(
+            "insert or ignore into experience_ref \
+             (experience_id, entity_ref, role, created_at) \
+             values (?1, ?2, ?3, ?4)",
+            params![
+                experience_id.as_ref(),
+                serde_json::to_string(&experience_ref.entity)?,
+                experience_ref.role.as_ref().map(|l| l.as_str()),
+                created_at.as_ref()
+            ],
+        )?;
         Ok(())
     }
 
     fn collect_experience_refs(
         &self,
         experience_id: &str,
-    ) -> Result<Vec<RecordRef>, DatabaseError> {
+    ) -> Result<Vec<ExperienceRef>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "select record_id, record_kind, role, link \
+            "select entity_ref, role \
              from experience_ref where experience_id = ?1 order by rowid",
         )?;
 
         let rows = stmt.query_map(params![experience_id], |row| {
-            let record_id: Option<String> = row.get(0)?;
-            let record_kind: Option<String> = row.get(1)?;
-            let role: Option<String> = row.get(2)?;
-            let link: Option<String> = row.get(3)?;
-            Ok((record_id, record_kind, role, link))
+            let entity_ref: Option<String> = row.get(0)?;
+            let role: Option<String> = row.get(1)?;
+            Ok((entity_ref, role))
         })?;
 
         let mut refs = Vec::new();
         for row in rows {
-            let (record_id, record_kind, role, link) = row?;
-            let record_ref = if let Some(link_str) = link {
-                let link = link_str.parse().map_err(RecordRefConstructionError::from)?;
-                RecordRef::linked(link, role.map(Label::new))
-            } else {
-                let id_str = record_id.unwrap_or_default();
-                let kind_str = record_kind.unwrap_or_default();
-                IdentifiedRef::construct_from_db((id_str, kind_str, role))?
+            let (entity_ref_str, role) = row?;
+            let Some(entity_ref_str) = entity_ref_str else {
+                continue;
             };
-            refs.push(record_ref);
+            // Try JSON first (new format), fall back to RefToken (legacy format).
+            let entity = match serde_json::from_str::<Ref>(&entity_ref_str) {
+                Ok(r) => r,
+                Err(_) => entity_ref_str
+                    .parse::<RefToken>()
+                    .map(RefToken::into_inner)?,
+            };
+            refs.push(ExperienceRef::new(entity, role.map(Label::new)));
         }
         Ok(refs)
     }
@@ -1512,20 +1480,13 @@ impl Database {
         key: &StorageKey,
         description: &Description,
         hash: &ContentHash,
-        link: &StorageEntryLink,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into storage (key, description, hash, link) \
-             values (?1, ?2, ?3, ?4) \
+            "insert into storage (key, description, hash) \
+             values (?1, ?2, ?3) \
              on conflict(key) do update set \
-             description = excluded.description, hash = excluded.hash, \
-             link = excluded.link",
-            params![
-                key.as_ref(),
-                description.as_str(),
-                hash.as_ref(),
-                link.to_link_string()?
-            ],
+             description = excluded.description, hash = excluded.hash",
+            params![key.as_ref(), description.as_str(), hash.as_ref(),],
         )?;
         Ok(())
     }

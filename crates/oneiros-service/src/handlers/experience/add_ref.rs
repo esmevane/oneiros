@@ -16,7 +16,7 @@ pub(crate) async fn handler(
 
     let event = Events::Experience(ExperienceEvents::ExperienceRefAdded {
         experience_id: id,
-        record_ref: request.clone(),
+        experience_ref: request.clone(),
         created_at: Timestamp::now(),
     });
 

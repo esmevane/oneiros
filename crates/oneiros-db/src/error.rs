@@ -1,4 +1,3 @@
-use oneiros_link::*;
 use oneiros_model::*;
 use thiserror::Error;
 
@@ -16,8 +15,8 @@ pub enum DatabaseError {
     #[error("Failed to construct domain type: {0}")]
     Construction(#[from] ConstructionError),
 
-    #[error("Failed to compute link: {0}")]
-    Link(#[from] LinkError),
+    #[error("Failed to parse ref: {0}")]
+    Ref(#[from] RefError),
 }
 
 impl From<AgentConstructionError> for DatabaseError {
@@ -46,12 +45,6 @@ impl From<MemoryConstructionError> for DatabaseError {
 
 impl From<ExperienceConstructionError> for DatabaseError {
     fn from(e: ExperienceConstructionError) -> Self {
-        Self::Construction(e.into())
-    }
-}
-
-impl From<RecordRefConstructionError> for DatabaseError {
-    fn from(e: RecordRefConstructionError) -> Self {
         Self::Construction(e.into())
     }
 }

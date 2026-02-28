@@ -14,6 +14,4 @@ pub enum ConstructionError {
     Memory(#[from] MemoryConstructionError),
     #[error(transparent)]
     Experience(#[from] ExperienceConstructionError),
-    #[error(transparent)]
-    RecordRef(#[from] RecordRefConstructionError),
 }

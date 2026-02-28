@@ -1,6 +1,6 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::ExperienceId;
+use oneiros_model::{ExperienceId, ExperienceRef, Label, RefToken};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -9,26 +9,25 @@ use crate::*;
 pub struct RefAddedResult {
     pub id: ExperienceId,
     #[serde(skip)]
+    pub ref_token: RefToken,
+    #[serde(skip)]
     pub gauge: String,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RefAddOutcomes {
-    #[outcome(message("Reference added to experience: {}", .0.id), prompt("{}", .0.gauge))]
+    #[outcome(message("Reference added to experience: {}", .0.ref_token), prompt("{}", .0.gauge))]
     RefAdded(RefAddedResult),
 }
 
 #[derive(Clone, Args)]
 pub struct RefAdd {
-    /// The experience ID to add a reference to (full UUID or 8+ character prefix).
+    /// The experience ID to add a reference to (full UUID, 8+ character prefix, or ref:token).
     experience_id: PrefixId,
 
-    /// The ID of the record to reference (full UUID or 8+ character prefix).
-    record_id: PrefixId,
-
-    /// The kind of record being referenced.
-    record_kind: RecordKind,
+    /// The entity reference (ref:base64url-encoded RefToken).
+    entity: RefToken,
 
     /// Optional role label for this reference.
     #[arg(long)]
@@ -54,24 +53,13 @@ impl RefAdd {
             }
         };
 
-        let record_id = match self.record_id.as_full_id() {
-            Some(id) => id,
-            None => {
-                let ids = super::ops::list_ids_for_kind(&client, &token, &self.record_kind).await?;
-                self.record_id.resolve(&ids)?
-            }
-        };
+        let experience_ref = ExperienceRef::new(
+            self.entity.clone().into_inner(),
+            self.role.as_ref().map(Label::new),
+        );
 
         let experience = client
-            .add_experience_ref(
-                &token,
-                &experience_id,
-                RecordRef::identified(
-                    record_id,
-                    self.record_kind.clone(),
-                    self.role.as_ref().map(Label::new),
-                ),
-            )
+            .add_experience_ref(&token, &experience_id, experience_ref)
             .await?;
 
         let agents = client.list_agents(&token).await?;
@@ -89,8 +77,11 @@ impl RefAdd {
             String::new()
         };
 
+        let ref_token = experience.ref_token();
+
         outcomes.emit(RefAddOutcomes::RefAdded(RefAddedResult {
             id: experience.id,
+            ref_token,
             gauge: gauge_str,
         }));
 

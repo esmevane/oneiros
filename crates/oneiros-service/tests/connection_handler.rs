@@ -4,7 +4,6 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use oneiros_db::Database;
-use oneiros_link::*;
 use oneiros_model::*;
 use oneiros_service::*;
 use std::sync::Arc;
@@ -89,16 +88,6 @@ fn post_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<B
         .unwrap()
 }
 
-fn put_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::PUT)
-        .uri(uri)
-        .header("content-type", "application/json")
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::from(serde_json::to_vec(body).unwrap()))
-        .unwrap()
-}
-
 fn delete_auth(uri: &str, token: &str) -> Request<Body> {
     Request::builder()
         .method(Method::DELETE)
@@ -120,18 +109,28 @@ async fn seed_nature(state: &Arc<ServiceState>, token: &str, name: &str) {
     assert_eq!(response.status(), StatusCode::OK);
 }
 
+fn put_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<Body> {
+    Request::builder()
+        .method(Method::PUT)
+        .uri(uri)
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {token}"))
+        .body(Body::from(serde_json::to_vec(body).unwrap()))
+        .unwrap()
+}
+
 #[tokio::test]
 async fn create_connection_returns_created() {
     let (_temp, state, token) = setup();
     seed_nature(&state, &token, "origin").await;
 
-    let link_a = Link::new(&("test", "entity-a")).unwrap();
-    let link_b = Link::new(&("test", "entity-b")).unwrap();
+    let ref_a = Ref::agent(AgentId::new());
+    let ref_b = Ref::cognition(CognitionId::new());
 
     let body = serde_json::json!({
         "nature": "origin",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
 
     let app = router(state);
@@ -144,21 +143,21 @@ async fn create_connection_returns_created() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let connection: Connection = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(connection.nature, NatureName::new("origin"));
-    assert_eq!(connection.from_link, link_a);
-    assert_eq!(connection.to_link, link_b);
+    assert_eq!(connection.from_ref, ref_a);
+    assert_eq!(connection.to_ref, ref_b);
 }
 
 #[tokio::test]
 async fn create_connection_with_unknown_nature_returns_not_found() {
     let (_temp, state, token) = setup();
 
-    let link_a = Link::new(&("test", "entity-a")).unwrap();
-    let link_b = Link::new(&("test", "entity-b")).unwrap();
+    let ref_a = Ref::agent(AgentId::new());
+    let ref_b = Ref::cognition(CognitionId::new());
 
     let body = serde_json::json!({
         "nature": "nonexistent",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
 
     let app = router(state);
@@ -187,13 +186,13 @@ async fn list_connections_after_create() {
     let (_temp, state, token) = setup();
     seed_nature(&state, &token, "origin").await;
 
-    let link_a = Link::new(&("test", "entity-a")).unwrap();
-    let link_b = Link::new(&("test", "entity-b")).unwrap();
+    let ref_a = Ref::agent(AgentId::new());
+    let ref_b = Ref::cognition(CognitionId::new());
 
     let body = serde_json::json!({
         "nature": "origin",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
 
     let app = router(state.clone());
@@ -228,13 +227,13 @@ async fn show_connection_by_id() {
     let (_temp, state, token) = setup();
     seed_nature(&state, &token, "context").await;
 
-    let link_a = Link::new(&("test", "entity-a")).unwrap();
-    let link_b = Link::new(&("test", "entity-b")).unwrap();
+    let ref_a = Ref::agent(AgentId::new());
+    let ref_b = Ref::memory(MemoryId::new());
 
     let body = serde_json::json!({
         "nature": "context",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
 
     let app = router(state.clone());
@@ -263,13 +262,13 @@ async fn remove_connection_then_gone() {
     let (_temp, state, token) = setup();
     seed_nature(&state, &token, "origin").await;
 
-    let link_a = Link::new(&("test", "entity-a")).unwrap();
-    let link_b = Link::new(&("test", "entity-b")).unwrap();
+    let ref_a = Ref::agent(AgentId::new());
+    let ref_b = Ref::cognition(CognitionId::new());
 
     let body = serde_json::json!({
         "nature": "origin",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
 
     let app = router(state.clone());
@@ -301,14 +300,14 @@ async fn list_connections_filters_by_nature() {
     seed_nature(&state, &token, "origin").await;
     seed_nature(&state, &token, "context").await;
 
-    let link_a = Link::new(&("test", "entity-a")).unwrap();
-    let link_b = Link::new(&("test", "entity-b")).unwrap();
+    let ref_a = Ref::agent(AgentId::new());
+    let ref_b = Ref::cognition(CognitionId::new());
 
     // Create one origin and one context connection.
     let body = serde_json::json!({
         "nature": "origin",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
     let app = router(state.clone());
     app.oneshot(post_json_auth("/connections", &body, &token))
@@ -317,8 +316,8 @@ async fn list_connections_filters_by_nature() {
 
     let body = serde_json::json!({
         "nature": "context",
-        "from_link": link_a.to_string(),
-        "to_link": link_b.to_string(),
+        "from_ref": serde_json::to_value(&ref_a).unwrap(),
+        "to_ref": serde_json::to_value(&ref_b).unwrap(),
     });
     let app = router(state.clone());
     app.oneshot(post_json_auth("/connections", &body, &token))
