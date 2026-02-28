@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use axum::{Json, extract::Path};
 use oneiros_model::*;
 
@@ -26,7 +28,21 @@ pub(crate) async fn handler(
     let memories = ticket.db.list_memories_by_agent(agent.id.to_string())?;
     let cognitions = ticket.db.list_cognitions_by_agent(agent.id.to_string())?;
     let experiences = ticket.db.list_experiences_by_agent(agent.id.to_string())?;
-    let connections = ticket.db.list_connections()?;
+
+    let entity_refs: HashSet<Ref> = cognitions
+        .iter()
+        .map(|c| Ref::cognition(c.id))
+        .chain(memories.iter().map(|m| Ref::memory(m.id)))
+        .chain(experiences.iter().map(|e| Ref::experience(e.id)))
+        .collect();
+
+    let connections: Vec<Connection> = ticket
+        .db
+        .list_connections()?
+        .into_iter()
+        .filter(|c| entity_refs.contains(&c.from_ref) || entity_refs.contains(&c.to_ref))
+        .collect();
+
     let textures = ticket.db.list_textures()?;
     let levels = ticket.db.list_levels()?;
     let sensations = ticket.db.list_sensations()?;
