@@ -521,18 +521,6 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    pub async fn add_experience_ref(
-        &self,
-        token: &Token,
-        experience_id: &ExperienceId,
-        request: AddExperienceRefRequest,
-    ) -> Result<Experience, Error> {
-        let uri = format!("/experiences/{experience_id}/refs");
-        let body = serde_json::to_vec(&request)?;
-        let bytes = self.send("POST", &uri, token, Some(body)).await?;
-        Ok(serde_json::from_slice(&bytes)?)
-    }
-
     pub async fn update_experience_description(
         &self,
         token: &Token,
@@ -540,6 +528,18 @@ impl Client {
         request: UpdateExperienceDescriptionRequest,
     ) -> Result<Experience, Error> {
         let uri = format!("/experiences/{experience_id}/description");
+        let body = serde_json::to_vec(&request)?;
+        let bytes = self.send("PUT", &uri, token, Some(body)).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    pub async fn update_experience_sensation(
+        &self,
+        token: &Token,
+        experience_id: &ExperienceId,
+        request: UpdateExperienceSensationRequest,
+    ) -> Result<Experience, Error> {
+        let uri = format!("/experiences/{experience_id}/sensation");
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", &uri, token, Some(body)).await?;
         Ok(serde_json::from_slice(&bytes)?)

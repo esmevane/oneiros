@@ -1,0 +1,12 @@
+[package]
+name = "migrate-experience-refs"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[dependencies]
+oneiros-db.workspace = true
+oneiros-model.workspace = true
+oneiros-service.workspace = true
+rusqlite.workspace = true
+serde_json.workspace = true

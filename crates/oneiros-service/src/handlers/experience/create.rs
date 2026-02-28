@@ -19,12 +19,7 @@ pub(crate) async fn handler(
         .get_sensation(&request.sensation)?
         .ok_or(NotFound::Sensation(request.sensation.clone()))?;
 
-    let experience = Experience::create(
-        agent.id,
-        request.sensation,
-        request.description,
-        request.refs,
-    );
+    let experience = Experience::create(agent.id, request.sensation, request.description);
 
     let event = Events::Experience(ExperienceEvents::ExperienceCreated(experience.clone()));
 

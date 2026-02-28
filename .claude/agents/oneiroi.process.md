@@ -45,5 +45,5 @@ oneiros memory list --agent <name>
 oneiros memory add oneiroi.process <level> "<content>"
 oneiros experience list --agent <name>
 oneiros experience create oneiroi.process <sensation> "<description>"
-oneiros experience ref add <experience-id> <record-kind> <record-id>
+oneiros connection create <nature> <from-ref> <to-ref>
 ```

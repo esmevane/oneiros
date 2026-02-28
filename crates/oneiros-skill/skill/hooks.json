@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat) && case \"$input\" in *'\"oneiros cognition add'*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Thought captured. Consider: should this become a memory? (oneiros memory add <agent> <level> content). Does it connect to an existing thread? (oneiros experience create <agent> <sensation> description, or oneiros experience ref add). Levels: working/session/project/archival. Sensations: caused/continues/distills/echoes/grounds/tensions.\"}}' ;; *) ;; esac"
+            "command": "input=$(cat) && case \"$input\" in *'\"oneiros cognition add'*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Thought captured. Consider: should this become a memory? (oneiros memory add <agent> <level> content). Does it connect to an existing thread? (oneiros experience create <agent> <sensation> description, or oneiros connection create <nature> <from-ref> <to-ref>). Levels: working/session/project/archival. Sensations: caused/continues/distills/echoes/grounds/tensions.\"}}' ;; *) ;; esac"
           }
         ]
       }

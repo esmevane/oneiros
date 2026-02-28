@@ -21,7 +21,7 @@ pub enum ShowExperienceOutcomes {
     #[outcome(
         message("{0}"),
         prompt(
-            "Does this connect to anything new? Add with `oneiros experience ref add <experience-ref> <entity-ref>`."
+            "Does this connect to anything new? Add with `oneiros connection create <nature> <from-ref> <to-ref>`."
         )
     )]
     ExperienceDetails(ExperienceDetail),

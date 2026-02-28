@@ -14,7 +14,7 @@ Interpret what you sensed through your domain. Not everything requires action â€
 
 If something is significant:
 - Record your interpretation: `oneiros cognition add {{ agent.name }} observation "<what you noticed>"`
-- If it connects to an existing thread: `oneiros experience ref add <experience-id> cognition <cognition-id>`
+- If it connects to an existing thread: `oneiros connection create <nature> <from-ref> <to-ref>`
 - If it starts a new thread: `oneiros experience create {{ agent.name }} <sensation> "<description>"`
 
 If nothing is significant, say so briefly and move on. Not every sensation needs to become a thought.

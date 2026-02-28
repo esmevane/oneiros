@@ -243,19 +243,10 @@ mod tests {
             agent_id: AgentId::new(),
             sensation: SensationName::new("echoes"),
             description: Description::new("test"),
-            refs: vec![],
             created_at: test_timestamp(),
         }))
         .unwrap();
         assert_eq!(event_type(&created), "experience-created");
-
-        let ref_added = serde_json::to_value(&ExperienceEvents::ExperienceRefAdded {
-            experience_id: ExperienceId::new(),
-            experience_ref: ExperienceRef::new(Ref::cognition(CognitionId::new()), None),
-            created_at: test_timestamp(),
-        })
-        .unwrap();
-        assert_eq!(event_type(&ref_added), "experience-ref-added");
 
         let desc_updated = serde_json::to_value(&ExperienceEvents::ExperienceDescriptionUpdated {
             experience_id: ExperienceId::new(),
@@ -263,6 +254,17 @@ mod tests {
         })
         .unwrap();
         assert_eq!(event_type(&desc_updated), "experience-description-updated");
+
+        let sensation_updated =
+            serde_json::to_value(&ExperienceEvents::ExperienceSensationUpdated {
+                experience_id: ExperienceId::new(),
+                sensation: SensationName::new("continues"),
+            })
+            .unwrap();
+        assert_eq!(
+            event_type(&sensation_updated),
+            "experience-sensation-updated"
+        );
     }
 
     #[test]
