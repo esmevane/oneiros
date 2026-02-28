@@ -9,7 +9,7 @@ pub(crate) async fn handler(
 ) -> Result<(StatusCode, Json<Nature>), Error> {
     let event = Events::Nature(NatureEvents::NatureSet(nature.clone()));
 
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     Ok((StatusCode::OK, Json(nature)))
 }

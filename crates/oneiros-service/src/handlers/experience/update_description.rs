@@ -19,7 +19,7 @@ pub(crate) async fn handler(
         description: request.description.clone(),
     });
 
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     // Re-fetch the full experience (now includes the updated description via projection).
     let experience = ticket

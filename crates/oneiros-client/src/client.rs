@@ -585,6 +585,12 @@ impl Client {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
+    pub async fn search(&self, token: &Token, query: &str) -> Result<SearchResults, Error> {
+        let uri = format!("/search?q={}", urlencoding::encode(query));
+        let bytes = self.send("GET", &uri, token, None).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
     pub async fn health(&self) -> Result<(), Error> {
         let (status, response_body) = self.client.request("GET", "/health", vec![]).await?;
 

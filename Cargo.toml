@@ -61,6 +61,7 @@ tower = { version = "0.5.3", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 trybuild = "1"
+urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
 whoami = "1"
 

@@ -23,7 +23,7 @@ pub(crate) async fn handler(
 
     let event = Events::Experience(ExperienceEvents::ExperienceCreated(experience.clone()));
 
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     Ok((StatusCode::CREATED, Json(experience)))
 }

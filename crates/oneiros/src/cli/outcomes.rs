@@ -41,6 +41,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Reflect(#[from] ReflectOutcomes),
     #[outcome(transparent)]
+    Search(#[from] SearchOutcomes),
+    #[outcome(transparent)]
     Seed(#[from] SeedOutcomes),
     #[outcome(transparent)]
     Sense(#[from] SenseOutcomes),

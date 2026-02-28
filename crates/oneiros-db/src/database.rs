@@ -1494,10 +1494,70 @@ impl Database {
         Ok(Self { conn })
     }
 
+    // -- Search expressions ---------------------------------------------------
+
+    pub fn insert_expression(
+        &self,
+        resource_ref: &Ref,
+        kind: &str,
+        content: &str,
+    ) -> Result<(), DatabaseError> {
+        let ref_json = serde_json::to_string(resource_ref)?;
+        self.conn.execute(
+            "INSERT INTO expressions (resource_ref, kind, content) VALUES (?1, ?2, ?3)",
+            params![ref_json, kind, content],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_expressions_by_ref(&self, resource_ref: &Ref) -> Result<(), DatabaseError> {
+        let ref_json = serde_json::to_string(resource_ref)?;
+        self.conn.execute(
+            "DELETE FROM expressions WHERE resource_ref = ?1",
+            params![ref_json],
+        )?;
+        Ok(())
+    }
+
+    pub fn search_expressions(&self, query: &str) -> Result<Vec<Expression>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT e.resource_ref, e.kind, e.content \
+             FROM expression_search s \
+             JOIN expressions e ON e.id = s.rowid \
+             WHERE expression_search MATCH ?1 \
+             ORDER BY rank",
+        )?;
+
+        let rows = stmt.query_map(params![query], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })?;
+
+        let mut results = Vec::new();
+        for row in rows {
+            let (ref_json, kind, content) = row?;
+            let resource_ref: Ref = serde_json::from_str(&ref_json)?;
+            results.push(Expression {
+                resource_ref,
+                kind: Label::new(&kind),
+                content: Content::new(&content),
+            });
+        }
+        Ok(results)
+    }
+
+    pub fn reset_expressions(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("DELETE FROM expressions")?;
+        Ok(())
+    }
+
     pub fn log_event(
         &self,
         data: impl serde::Serialize,
-        projections: &[Projection],
+        projections: &[&[Projection]],
     ) -> Result<(), DatabaseError> {
         let event = serde_json::to_value(data)?;
 
@@ -1529,9 +1589,11 @@ impl Database {
         Ok(())
     }
 
-    pub fn replay(&self, projections: &[Projection]) -> Result<usize, DatabaseError> {
-        for projection in projections.iter().rev() {
-            (projection.reset)(self)?;
+    pub fn replay(&self, projections: &[&[Projection]]) -> Result<usize, DatabaseError> {
+        for group in projections.iter().rev() {
+            for projection in group.iter().rev() {
+                (projection.reset)(self)?;
+            }
         }
 
         let mut stmt = self.conn.prepare(
@@ -1569,7 +1631,7 @@ impl Database {
 
     fn run_projections(
         &self,
-        projections: &[Projection],
+        projections: &[&[Projection]],
         event: &Value,
     ) -> Result<(), DatabaseError> {
         let Some(event_type) = event["type"].as_str() else {
@@ -1579,5 +1641,145 @@ impl Database {
         let data = event["data"].clone();
 
         projections::project(self, projections, event_type, &data)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    fn setup_brain() -> (TempDir, Database) {
+        let temp = TempDir::new().unwrap();
+        let db_path = temp.path().join("test-brain.db");
+        let db = Database::create_brain_db(&db_path).unwrap();
+        (temp, db)
+    }
+
+    #[test]
+    fn insert_and_search_expression() {
+        let (_temp, db) = setup_brain();
+        let r = Ref::cognition(CognitionId::new());
+
+        db.insert_expression(&r, "cognition-content", "the quick brown fox")
+            .unwrap();
+
+        let results = db.search_expressions("quick").unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].resource_ref, r);
+        assert_eq!(results[0].kind.as_ref(), "cognition-content");
+        assert!(results[0].content.as_str().contains("quick brown fox"));
+    }
+
+    #[test]
+    fn search_returns_empty_for_no_match() {
+        let (_temp, db) = setup_brain();
+        let r = Ref::cognition(CognitionId::new());
+
+        db.insert_expression(&r, "cognition-content", "hello world")
+            .unwrap();
+
+        let results = db.search_expressions("zebra").unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn delete_expressions_by_ref_removes_all_for_entity() {
+        let (_temp, db) = setup_brain();
+        let r1 = Ref::cognition(CognitionId::new());
+        let r2 = Ref::cognition(CognitionId::new());
+
+        db.insert_expression(&r1, "cognition-content", "alpha beta")
+            .unwrap();
+        db.insert_expression(&r1, "cognition-texture", "observation")
+            .unwrap();
+        db.insert_expression(&r2, "cognition-content", "alpha gamma")
+            .unwrap();
+
+        // Delete r1's expressions — r2 should survive.
+        db.delete_expressions_by_ref(&r1).unwrap();
+
+        let results = db.search_expressions("alpha").unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].resource_ref, r2);
+    }
+
+    #[test]
+    fn fts5_porter_stemming_matches_word_stems() {
+        let (_temp, db) = setup_brain();
+        let r = Ref::memory(MemoryId::new());
+
+        db.insert_expression(&r, "memory-content", "running quickly through the gardens")
+            .unwrap();
+
+        // Porter stemmer: "run" should match "running", "garden" should match "gardens"
+        let results = db.search_expressions("run").unwrap();
+        assert_eq!(results.len(), 1);
+
+        let results = db.search_expressions("garden").unwrap();
+        assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn search_ranks_by_relevance() {
+        let (_temp, db) = setup_brain();
+        let r1 = Ref::cognition(CognitionId::new());
+        let r2 = Ref::cognition(CognitionId::new());
+
+        // r1 mentions "architecture" once among many words
+        db.insert_expression(
+            &r1,
+            "cognition-content",
+            "the project has many concerns including architecture and testing",
+        )
+        .unwrap();
+
+        // r2 is focused on "architecture"
+        db.insert_expression(
+            &r2,
+            "cognition-content",
+            "architecture decisions shape the architecture of the system",
+        )
+        .unwrap();
+
+        let results = db.search_expressions("architecture").unwrap();
+        assert_eq!(results.len(), 2);
+        // BM25 ranking: the more focused document should rank first
+        assert_eq!(results[0].resource_ref, r2);
+    }
+
+    #[test]
+    fn reset_expressions_clears_all() {
+        let (_temp, db) = setup_brain();
+        let r = Ref::cognition(CognitionId::new());
+
+        db.insert_expression(&r, "cognition-content", "hello world")
+            .unwrap();
+        db.insert_expression(&r, "cognition-texture", "observation")
+            .unwrap();
+
+        db.reset_expressions().unwrap();
+
+        let results = db.search_expressions("hello").unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn multiple_expressions_per_entity() {
+        let (_temp, db) = setup_brain();
+        let r = Ref::agent(AgentId::new());
+
+        db.insert_expression(&r, "agent-name", "governor").unwrap();
+        db.insert_expression(&r, "agent-description", "orchestration and routing")
+            .unwrap();
+        db.insert_expression(&r, "agent-prompt", "you are the governor process")
+            .unwrap();
+
+        let results = db.search_expressions("governor").unwrap();
+        assert_eq!(results.len(), 2); // name + prompt both match
+
+        let results = db.search_expressions("orchestration").unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].kind.as_ref(), "agent-description");
     }
 }

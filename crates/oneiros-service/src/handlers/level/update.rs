@@ -9,7 +9,7 @@ pub(crate) async fn handler(
 ) -> Result<(StatusCode, Json<Level>), Error> {
     let event = Events::Level(LevelEvents::LevelSet(level.clone()));
 
-    ticket.db.log_event(&event, projections::brain::ALL)?;
+    ticket.db.log_event(&event, projections::BRAIN)?;
 
     Ok((StatusCode::OK, Json(level)))
 }

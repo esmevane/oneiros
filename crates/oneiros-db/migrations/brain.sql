@@ -166,3 +166,50 @@ create table if not exists storage (
     description text not null default '',
     hash        text not null references blob(hash)
 );
+
+-- Search expressions are normalized text fragments extracted from entities
+-- by projections and indexed for full-text search. Each expression points
+-- back to its source entity via resource_ref (a JSON-encoded Ref).
+--
+-- The kind discriminant allows filtering by expression source type
+-- (e.g., 'cognition-content', 'memory-content', 'agent-description').
+--
+create table if not exists expressions (
+    id            integer primary key,
+    resource_ref  text not null,
+    kind          text not null,
+    content       text not null
+);
+
+create index if not exists idx_expressions_kind on expressions(kind);
+create index if not exists idx_expressions_ref on expressions(resource_ref);
+
+-- FTS5 virtual table using external content pattern. The expressions table
+-- is the source of truth; the FTS index is kept in sync via triggers.
+-- Tokenizer: porter stemming + unicode61 word splitting, prefix indexes
+-- for 2 and 3 character prefixes.
+--
+create virtual table if not exists expression_search using fts5(
+    content,
+    content=expressions,
+    content_rowid=id,
+    tokenize='porter unicode61',
+    prefix='2 3'
+);
+
+-- Sync triggers keep the FTS5 index consistent with the expressions table.
+-- INSERT adds to the index; DELETE removes from it using FTS5's special
+-- delete syntax.
+--
+create trigger if not exists expression_search_insert
+    after insert on expressions
+begin
+    insert into expression_search(rowid, content) values (new.id, new.content);
+end;
+
+create trigger if not exists expression_search_delete
+    after delete on expressions
+begin
+    insert into expression_search(expression_search, rowid, content)
+    values('delete', old.id, old.content);
+end;

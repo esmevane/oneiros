@@ -26,7 +26,7 @@ pub(crate) async fn handler(
         imported += 1;
     }
 
-    let replayed = ticket.db.replay(projections::brain::ALL)?;
+    let replayed = ticket.db.replay(projections::BRAIN)?;
 
     Ok(Json(ImportResponse { imported, replayed }))
 }
