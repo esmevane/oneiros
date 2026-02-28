@@ -14,8 +14,8 @@ pub enum ExperienceCommandError {
     #[error(transparent)]
     PrefixResolve(#[from] PrefixError),
 
-    #[error("Invalid ref format: {0}")]
-    InvalidRefFormat(String),
+    #[error("at least one of --description or --sensation must be provided")]
+    NoUpdateProvided,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -27,8 +27,6 @@ pub enum ExperienceOutcomes {
     List(#[from] ListExperiencesOutcomes),
     #[outcome(transparent)]
     Show(#[from] ShowExperienceOutcomes),
-    #[outcome(transparent)]
-    RefAdd(#[from] RefAddOutcomes),
     #[outcome(transparent)]
     Update(#[from] UpdateExperienceOutcomes),
 }
@@ -48,7 +46,6 @@ impl ExperienceOps {
             ExperienceCommands::Create(cmd) => cmd.run(context).await?.map_into(),
             ExperienceCommands::List(cmd) => cmd.run(context).await?.map_into(),
             ExperienceCommands::Show(cmd) => cmd.run(context).await?.map_into(),
-            ExperienceCommands::Ref(cmd) => cmd.run(context).await?.map_into(),
             ExperienceCommands::Update(cmd) => cmd.run(context).await?.map_into(),
         })
     }
@@ -62,26 +59,6 @@ pub enum ExperienceCommands {
     List(ListExperiences),
     /// Show an experience's details by ID.
     Show(ShowExperience),
-    /// Manage experience references to cognitive records.
-    #[command(subcommand)]
-    Ref(RefCommands),
-    /// Update an experience's description.
+    /// Update an experience's description or sensation.
     Update(UpdateExperience),
-}
-
-#[derive(Clone, Subcommand)]
-pub enum RefCommands {
-    /// Add a reference to a cognitive record.
-    Add(RefAdd),
-}
-
-impl RefCommands {
-    pub async fn run(
-        &self,
-        context: &crate::Context,
-    ) -> Result<Outcomes<ExperienceOutcomes>, ExperienceCommandError> {
-        Ok(match self {
-            RefCommands::Add(cmd) => cmd.run(context).await?.map_into(),
-        })
-    }
 }

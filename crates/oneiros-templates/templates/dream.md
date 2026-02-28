@@ -32,9 +32,7 @@ If found, incorporate its contents into your self-understanding.
 ## Your Threads
 {% for experience in context.experiences -%}
 - [{{ experience.sensation }}] {{ experience.description }}
-{% for r in experience.refs -%}
-→ {{ r }}
-{% endfor -%}
+
 {% endfor -%}
 {% endif -%}
 {% if !context.connections.is_empty() %}

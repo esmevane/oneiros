@@ -30,7 +30,7 @@ pub enum ListExperiencesOutcomes {
 
     #[outcome(
         message("{0}"),
-        prompt("Which threads are still growing? Extend with `oneiros experience ref add`.")
+        prompt("Which threads are still growing? Extend with `oneiros connection create`.")
     )]
     Experiences(ExperienceList),
 }

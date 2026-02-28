@@ -1,8 +1,8 @@
-mod add_ref;
 mod create;
 mod index;
 mod show;
 mod update_description;
+mod update_sensation;
 
 use axum::{Router, routing};
 use std::sync::Arc;
@@ -14,9 +14,9 @@ pub(crate) fn router() -> Router<Arc<ServiceState>> {
         .route("/", routing::post(create::handler))
         .route("/", routing::get(index::handler))
         .route("/{id}", routing::get(show::handler))
-        .route("/{id}/refs", routing::post(add_ref::handler))
         .route(
             "/{id}/description",
             routing::put(update_description::handler),
         )
+        .route("/{id}/sensation", routing::put(update_sensation::handler))
 }

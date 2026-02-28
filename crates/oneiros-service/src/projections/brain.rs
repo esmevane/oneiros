@@ -18,13 +18,6 @@ struct IdOnly<T> {
 }
 
 #[derive(serde::Deserialize)]
-struct RefAdded {
-    experience_id: ExperienceId,
-    experience_ref: ExperienceRef,
-    created_at: Timestamp,
-}
-
-#[derive(serde::Deserialize)]
 struct DescriptionUpdated {
     experience_id: ExperienceId,
     description: Description,
@@ -53,8 +46,8 @@ pub const ALL: &[Projection] = &[
     COGNITION_ADDED_PROJECTION,
     MEMORY_ADDED_PROJECTION,
     EXPERIENCE_CREATED_PROJECTION,
-    EXPERIENCE_REF_ADDED_PROJECTION,
     EXPERIENCE_DESCRIPTION_UPDATED_PROJECTION,
+    EXPERIENCE_SENSATION_UPDATED_PROJECTION,
     STORAGE_SET_PROJECTION,
     STORAGE_REMOVED_PROJECTION,
 ];
@@ -394,30 +387,6 @@ fn apply_experience_created(conn: &Database, data: &Value) -> Result<(), Databas
         &created_at,
     )?;
 
-    for experience_ref in &experience.refs {
-        conn.add_experience_ref(experience.id.to_string(), experience_ref, &created_at)?;
-    }
-
-    Ok(())
-}
-
-const EXPERIENCE_REF_ADDED_PROJECTION: Projection = Projection {
-    name: "experience-ref-added",
-    events: &["experience-ref-added"],
-    apply: apply_experience_ref_added,
-    reset: |db| db.reset_experience_refs(),
-};
-
-fn apply_experience_ref_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let added: RefAdded = serde_json::from_value(data.clone())?;
-    let created_at = added.created_at.as_string();
-
-    db.add_experience_ref(
-        added.experience_id.to_string(),
-        &added.experience_ref,
-        &created_at,
-    )?;
-
     Ok(())
 }
 
@@ -434,6 +403,30 @@ fn apply_experience_description_updated(db: &Database, data: &Value) -> Result<(
     db.update_experience_description(
         updated.experience_id.to_string(),
         updated.description.as_str(),
+    )?;
+
+    Ok(())
+}
+
+#[derive(serde::Deserialize)]
+struct SensationUpdated {
+    experience_id: ExperienceId,
+    sensation: SensationName,
+}
+
+const EXPERIENCE_SENSATION_UPDATED_PROJECTION: Projection = Projection {
+    name: "experience-sensation-updated",
+    events: &["experience-sensation-updated"],
+    apply: apply_experience_sensation_updated,
+    reset: |_| Ok(()),
+};
+
+fn apply_experience_sensation_updated(db: &Database, data: &Value) -> Result<(), DatabaseError> {
+    let updated: SensationUpdated = serde_json::from_value(data.clone())?;
+
+    db.update_experience_sensation(
+        updated.experience_id.to_string(),
+        updated.sensation.as_str(),
     )?;
 
     Ok(())

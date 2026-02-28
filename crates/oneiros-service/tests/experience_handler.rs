@@ -160,7 +160,6 @@ async fn create_experience_returns_created() {
         experience.description.as_str(),
         "Template changes and orientation gap are two approaches to the same problem."
     );
-    assert!(experience.refs.is_empty());
 }
 
 #[tokio::test]
@@ -199,39 +198,6 @@ async fn create_experience_requires_existing_sensation() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
-}
-
-#[tokio::test]
-async fn create_experience_with_refs() {
-    let (_temp, state, token) = setup();
-    seed_agent(&state, &token, "architect", "expert").await;
-    seed_sensation(&state, &token, "caused").await;
-
-    let cognition_ref = Ref::cognition(CognitionId::new());
-    let app = router(state);
-    let body = serde_json::json!({
-        "agent": "architect",
-        "sensation": "caused",
-        "description": "One insight led to another.",
-        "refs": [
-            { "entity": serde_json::to_value(&cognition_ref).unwrap(), "role": "origin" }
-        ]
-    });
-
-    let response = app
-        .oneshot(post_json_auth("/experiences", &body, &token))
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(experience.refs.len(), 1);
-    assert_eq!(experience.refs[0].entity, cognition_ref);
-    assert_eq!(
-        experience.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("origin")
-    );
 }
 
 #[tokio::test]
@@ -328,54 +294,6 @@ async fn get_experience_not_found() {
 }
 
 #[tokio::test]
-async fn add_ref_to_existing_experience() {
-    let (_temp, state, token) = setup();
-    seed_agent(&state, &token, "architect", "expert").await;
-    seed_sensation(&state, &token, "caused").await;
-
-    // Create experience without refs.
-    let app = router(state.clone());
-    let body = serde_json::json!({
-        "agent": "architect",
-        "sensation": "caused",
-        "description": "A causal link."
-    });
-    let response = app
-        .oneshot(post_json_auth("/experiences", &body, &token))
-        .await
-        .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert!(created.refs.is_empty());
-
-    // Add a ref.
-    let memory_ref = Ref::memory(MemoryId::new());
-    let app = router(state.clone());
-    let body = serde_json::json!({
-        "entity": serde_json::to_value(&memory_ref).unwrap(),
-        "role": "origin"
-    });
-    let response = app
-        .oneshot(post_json_auth(
-            &format!("/experiences/{}/refs", created.id),
-            &body,
-            &token,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
-
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let updated: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].entity, memory_ref);
-    assert_eq!(
-        updated.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("origin")
-    );
-}
-
-#[tokio::test]
 async fn update_experience_description() {
     let (_temp, state, token) = setup();
     seed_agent(&state, &token, "architect", "expert").await;
@@ -417,50 +335,17 @@ async fn update_experience_description() {
 }
 
 #[tokio::test]
-async fn create_experience_with_entity_ref() {
+async fn update_experience_sensation() {
     let (_temp, state, token) = setup();
     seed_agent(&state, &token, "architect", "expert").await;
+    seed_sensation(&state, &token, "tensions").await;
     seed_sensation(&state, &token, "echoes").await;
 
-    let entity_ref = Ref::cognition(CognitionId::new());
-    let app = router(state);
-    let body = serde_json::json!({
-        "agent": "architect",
-        "sensation": "echoes",
-        "description": "A resonance traced by ref.",
-        "refs": [
-            { "entity": serde_json::to_value(&entity_ref).unwrap(), "role": "origin" }
-        ]
-    });
-
-    let response = app
-        .oneshot(post_json_auth("/experiences", &body, &token))
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(experience.refs.len(), 1);
-    assert_eq!(experience.refs[0].entity, entity_ref);
-    assert_eq!(
-        experience.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("origin")
-    );
-}
-
-#[tokio::test]
-async fn add_entity_ref_to_existing_experience() {
-    let (_temp, state, token) = setup();
-    seed_agent(&state, &token, "architect", "expert").await;
-    seed_sensation(&state, &token, "caused").await;
-
-    // Create experience without refs.
     let app = router(state.clone());
     let body = serde_json::json!({
         "agent": "architect",
-        "sensation": "caused",
-        "description": "A causal link traced by content address."
+        "sensation": "tensions",
+        "description": "Original experience."
     });
     let response = app
         .oneshot(post_json_auth("/experiences", &body, &token))
@@ -468,18 +353,15 @@ async fn add_entity_ref_to_existing_experience() {
         .unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let created: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert!(created.refs.is_empty());
+    assert_eq!(created.sensation, SensationName::new("tensions"));
 
-    // Add a ref.
-    let memory_ref = Ref::memory(MemoryId::new());
     let app = router(state.clone());
     let body = serde_json::json!({
-        "entity": serde_json::to_value(&memory_ref).unwrap(),
-        "role": "origin"
+        "sensation": "echoes"
     });
     let response = app
-        .oneshot(post_json_auth(
-            &format!("/experiences/{}/refs", created.id),
+        .oneshot(put_json_auth(
+            &format!("/experiences/{}/sensation", created.id),
             &body,
             &token,
         ))
@@ -489,52 +371,8 @@ async fn add_entity_ref_to_existing_experience() {
 
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let updated: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(updated.refs.len(), 1);
-    assert_eq!(updated.refs[0].entity, memory_ref);
-    assert_eq!(
-        updated.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("origin")
-    );
-}
-
-#[tokio::test]
-async fn create_experience_with_multiple_refs() {
-    let (_temp, state, token) = setup();
-    seed_agent(&state, &token, "architect", "expert").await;
-    seed_sensation(&state, &token, "tensions").await;
-
-    let ref_a = Ref::cognition(CognitionId::new());
-    let ref_b = Ref::memory(MemoryId::new());
-    let app = router(state);
-    let body = serde_json::json!({
-        "agent": "architect",
-        "sensation": "tensions",
-        "description": "Two poles pulling against each other.",
-        "refs": [
-            { "entity": serde_json::to_value(&ref_a).unwrap(), "role": "pole-a" },
-            { "entity": serde_json::to_value(&ref_b).unwrap(), "role": "pole-b" }
-        ]
-    });
-
-    let response = app
-        .oneshot(post_json_auth("/experiences", &body, &token))
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(experience.refs.len(), 2);
-    assert_eq!(experience.refs[0].entity, ref_a);
-    assert_eq!(
-        experience.refs[0].role.as_ref().map(|l| l.as_str()),
-        Some("pole-a")
-    );
-    assert_eq!(experience.refs[1].entity, ref_b);
-    assert_eq!(
-        experience.refs[1].role.as_ref().map(|l| l.as_str()),
-        Some("pole-b")
-    );
+    assert_eq!(updated.sensation, SensationName::new("echoes"));
+    assert_eq!(updated.description.as_str(), "Original experience.");
 }
 
 #[tokio::test]

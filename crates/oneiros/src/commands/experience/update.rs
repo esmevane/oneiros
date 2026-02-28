@@ -1,6 +1,9 @@
 use clap::Args;
 use oneiros_client::Client;
-use oneiros_model::{ExperienceId, RefToken};
+use oneiros_model::{
+    Description, ExperienceId, RefToken, SensationName, UpdateExperienceDescriptionRequest,
+    UpdateExperienceSensationRequest,
+};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -26,8 +29,13 @@ pub struct UpdateExperience {
     /// The experience ID (full UUID, 8+ character prefix, or ref:token).
     id: PrefixId,
 
-    /// The new description for the experience.
-    description: Description,
+    /// New description for the experience.
+    #[arg(long)]
+    description: Option<Description>,
+
+    /// New sensation for the experience.
+    #[arg(long)]
+    sensation: Option<SensationName>,
 }
 
 impl UpdateExperience {
@@ -35,6 +43,10 @@ impl UpdateExperience {
         &self,
         context: &Context,
     ) -> Result<Outcomes<UpdateExperienceOutcomes>, ExperienceCommandError> {
+        if self.description.is_none() && self.sensation.is_none() {
+            return Err(ExperienceCommandError::NoUpdateProvided);
+        }
+
         let mut outcomes = Outcomes::new();
 
         let client = Client::new(context.socket_path());
@@ -49,15 +61,38 @@ impl UpdateExperience {
             }
         };
 
-        let experience = client
-            .update_experience_description(
-                &token,
-                &id,
-                UpdateExperienceDescriptionRequest {
-                    description: self.description.clone(),
-                },
-            )
-            .await?;
+        let mut experience = None;
+
+        if let Some(description) = &self.description {
+            experience = Some(
+                client
+                    .update_experience_description(
+                        &token,
+                        &id,
+                        UpdateExperienceDescriptionRequest {
+                            description: description.clone(),
+                        },
+                    )
+                    .await?,
+            );
+        }
+
+        if let Some(sensation) = &self.sensation {
+            experience = Some(
+                client
+                    .update_experience_sensation(
+                        &token,
+                        &id,
+                        UpdateExperienceSensationRequest {
+                            sensation: sensation.clone(),
+                        },
+                    )
+                    .await?,
+            );
+        }
+
+        // At least one flag was provided (checked above), so experience is Some.
+        let experience = experience.unwrap();
 
         let agents = client.list_agents(&token).await?;
         let gauge_str = agents

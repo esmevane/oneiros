@@ -22,7 +22,7 @@ pub use brain::{Brain, BrainId, BrainName, BrainStatus};
 pub use cognition::{Cognition, CognitionConstructionError, CognitionId};
 pub use connection::{Connection, ConnectionConstructionError, ConnectionId};
 pub use event::{Event, EventId};
-pub use experience::{Experience, ExperienceConstructionError, ExperienceId, ExperienceRef};
+pub use experience::{Experience, ExperienceConstructionError, ExperienceId};
 pub use level::{Level, LevelName};
 pub use memory::{Memory, MemoryConstructionError, MemoryId};
 pub use nature::{Nature, NatureName};

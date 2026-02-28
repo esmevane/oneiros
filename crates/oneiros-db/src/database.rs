@@ -560,10 +560,6 @@ impl Database {
             params![name],
         )?;
         tx.execute(
-            "delete from experience_ref where experience_id in (select id from experience where agent_id in (select id from agent where name = ?1))",
-            params![name],
-        )?;
-        tx.execute(
             "delete from experience where agent_id in (select id from agent where name = ?1)",
             params![name],
         )?;
@@ -1266,10 +1262,7 @@ impl Database {
         );
 
         match result {
-            Ok(row) => {
-                let refs = self.collect_experience_refs(id_ref)?;
-                Ok(Some(Experience::construct_from_db(row, refs)?))
-            }
+            Ok(row) => Ok(Some(Experience::construct_from_db(row)?)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -1295,8 +1288,7 @@ impl Database {
 
         let mut experiences = Vec::new();
         for row in raw_rows {
-            let refs = self.collect_experience_refs(&row.0)?;
-            experiences.push(Experience::construct_from_db(row, refs)?);
+            experiences.push(Experience::construct_from_db(row)?);
         }
         Ok(experiences)
     }
@@ -1325,8 +1317,7 @@ impl Database {
 
         let mut experiences = Vec::new();
         for row in raw_rows {
-            let refs = self.collect_experience_refs(&row.0)?;
-            experiences.push(Experience::construct_from_db(row, refs)?);
+            experiences.push(Experience::construct_from_db(row)?);
         }
         Ok(experiences)
     }
@@ -1355,63 +1346,9 @@ impl Database {
 
         let mut experiences = Vec::new();
         for row in raw_rows {
-            let refs = self.collect_experience_refs(&row.0)?;
-            experiences.push(Experience::construct_from_db(row, refs)?);
+            experiences.push(Experience::construct_from_db(row)?);
         }
         Ok(experiences)
-    }
-
-    pub fn add_experience_ref(
-        &self,
-        experience_id: impl AsRef<str>,
-        experience_ref: &ExperienceRef,
-        created_at: impl AsRef<str>,
-    ) -> Result<(), DatabaseError> {
-        self.conn.execute(
-            "insert or ignore into experience_ref \
-             (experience_id, entity_ref, role, created_at) \
-             values (?1, ?2, ?3, ?4)",
-            params![
-                experience_id.as_ref(),
-                serde_json::to_string(&experience_ref.entity)?,
-                experience_ref.role.as_ref().map(|l| l.as_str()),
-                created_at.as_ref()
-            ],
-        )?;
-        Ok(())
-    }
-
-    fn collect_experience_refs(
-        &self,
-        experience_id: &str,
-    ) -> Result<Vec<ExperienceRef>, DatabaseError> {
-        let mut stmt = self.conn.prepare(
-            "select entity_ref, role \
-             from experience_ref where experience_id = ?1 order by rowid",
-        )?;
-
-        let rows = stmt.query_map(params![experience_id], |row| {
-            let entity_ref: Option<String> = row.get(0)?;
-            let role: Option<String> = row.get(1)?;
-            Ok((entity_ref, role))
-        })?;
-
-        let mut refs = Vec::new();
-        for row in rows {
-            let (entity_ref_str, role) = row?;
-            let Some(entity_ref_str) = entity_ref_str else {
-                continue;
-            };
-            // Try JSON first (new format), fall back to RefToken (legacy format).
-            let entity = match serde_json::from_str::<Ref>(&entity_ref_str) {
-                Ok(r) => r,
-                Err(_) => entity_ref_str
-                    .parse::<RefToken>()
-                    .map(RefToken::into_inner)?,
-            };
-            refs.push(ExperienceRef::new(entity, role.map(Label::new)));
-        }
-        Ok(refs)
     }
 
     pub fn update_experience_description(
@@ -1426,14 +1363,20 @@ impl Database {
         Ok(())
     }
 
-    pub fn reset_experiences(&self) -> Result<(), DatabaseError> {
-        self.conn
-            .execute_batch("delete from experience_ref; delete from experience")?;
+    pub fn update_experience_sensation(
+        &self,
+        id: impl AsRef<str>,
+        sensation: impl AsRef<str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "update experience set sensation = ?2 where id = ?1",
+            params![id.as_ref(), sensation.as_ref()],
+        )?;
         Ok(())
     }
 
-    pub fn reset_experience_refs(&self) -> Result<(), DatabaseError> {
-        self.conn.execute_batch("delete from experience_ref")?;
+    pub fn reset_experiences(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from experience")?;
         Ok(())
     }
 

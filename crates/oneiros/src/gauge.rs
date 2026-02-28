@@ -98,7 +98,6 @@ mod tests {
             AgentId::new(),
             SensationName::new(sensation),
             Description::new("test"),
-            vec![],
         )
     }
 

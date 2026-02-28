@@ -6,7 +6,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
-    Json(request): Json<AddExperienceRefRequest>,
+    Json(request): Json<UpdateExperienceSensationRequest>,
 ) -> Result<(StatusCode, Json<Experience>), Error> {
     // Validate that the experience exists.
     ticket
@@ -14,15 +14,14 @@ pub(crate) async fn handler(
         .get_experience(id.to_string())?
         .ok_or(NotFound::Experience(id))?;
 
-    let event = Events::Experience(ExperienceEvents::ExperienceRefAdded {
+    let event = Events::Experience(ExperienceEvents::ExperienceSensationUpdated {
         experience_id: id,
-        experience_ref: request.clone(),
-        created_at: Timestamp::now(),
+        sensation: request.sensation.clone(),
     });
 
     ticket.db.log_event(&event, projections::brain::ALL)?;
 
-    // Re-fetch the full experience (now includes the new ref via projection).
+    // Re-fetch the full experience (now includes the updated sensation via projection).
     let experience = ticket
         .db
         .get_experience(id.to_string())?

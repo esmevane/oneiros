@@ -158,18 +158,6 @@ create table if not exists experience (
     created_at  text not null
 );
 
--- Experience refs connect an experience to a record via a Ref.
--- The role field describes the record's participation in this
--- experience (e.g. "origin", "outcome", "context").
---
-create table if not exists experience_ref (
-    experience_id text not null references experience(id),
-    entity_ref    text,
-    role          text,
-    created_at    text not null
-);
-
-
 -- Storage entries map user-facing keys to content hashes. This table
 -- is a projection from storage-set and storage-removed events.
 --
