@@ -57,6 +57,10 @@ pub struct SearchOp {
     /// The search query (supports FTS5 syntax: AND, OR, NOT, prefix*).
     #[arg(required = true)]
     query: Vec<String>,
+
+    /// Filter results to a specific agent's records.
+    #[arg(long)]
+    agent: Option<AgentName>,
 }
 
 impl SearchOp {
@@ -65,7 +69,9 @@ impl SearchOp {
 
         let query = self.query.join(" ");
         let client = Client::new(context.socket_path());
-        let results = client.search(&context.ticket_token()?, &query).await?;
+        let results = client
+            .search(&context.ticket_token()?, &query, self.agent.as_ref())
+            .await?;
 
         outcomes.emit(SearchOutcomes::Results(SearchResultsDisplay(results)));
 

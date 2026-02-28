@@ -36,6 +36,7 @@ pub use observation::Observation;
 pub use prompt::Prompt;
 pub use ref_token::RefToken;
 pub use reflection::Reflection;
+pub use resource::Resource;
 pub use storage_ref::{StorageRef, StorageRefError};
 pub use timestamp::{Timestamp, TimestampParseError};
 pub use token::{Token, TokenError};

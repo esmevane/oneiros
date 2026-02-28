@@ -724,6 +724,51 @@ impl Database {
             .map_err(DatabaseError::from)
     }
 
+    pub fn list_recent_cognitions_by_agent(
+        &self,
+        agent_id: &AgentId,
+        limit: usize,
+    ) -> Result<Vec<Cognition>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, texture, content, created_at from cognition \
+             where agent_id = ?1 order by created_at desc limit ?2",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id.to_string(), limit as i64], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Cognition::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
+    }
+
+    pub fn list_cognition_ids_by_agent(
+        &self,
+        agent_id: &AgentId,
+    ) -> Result<Vec<CognitionId>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM cognition WHERE agent_id = ?1")?;
+
+        let rows = stmt.query_map(params![agent_id.to_string()], |row| row.get::<_, String>(0))?;
+
+        rows.map(|r| {
+            r.map_err(DatabaseError::from)
+                .and_then(|s| s.parse().map_err(DatabaseError::from))
+        })
+        .collect()
+    }
+
     pub fn list_cognitions_by_texture(
         &self,
         texture: impl AsRef<str>,
@@ -880,6 +925,23 @@ impl Database {
             .map_err(DatabaseError::from)
     }
 
+    pub fn list_memory_ids_by_agent(
+        &self,
+        agent_id: &AgentId,
+    ) -> Result<Vec<MemoryId>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM memory WHERE agent_id = ?1")?;
+
+        let rows = stmt.query_map(params![agent_id.to_string()], |row| row.get::<_, String>(0))?;
+
+        rows.map(|r| {
+            r.map_err(DatabaseError::from)
+                .and_then(|s| s.parse().map_err(DatabaseError::from))
+        })
+        .collect()
+    }
+
     pub fn list_memories_by_level(
         &self,
         level: impl AsRef<str>,
@@ -918,6 +980,34 @@ impl Database {
         )?;
 
         let rows = stmt.query_map(params![agent_id.as_ref(), level.as_ref()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        raw_rows
+            .into_iter()
+            .map(Memory::construct_from_db)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(DatabaseError::from)
+    }
+
+    pub fn list_recent_memories_by_agent(
+        &self,
+        agent_id: &AgentId,
+        limit: usize,
+    ) -> Result<Vec<Memory>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, level, content, created_at from memory \
+             where agent_id = ?1 order by created_at desc limit ?2",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id.to_string(), limit as i64], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1320,6 +1410,51 @@ impl Database {
             experiences.push(Experience::construct_from_db(row)?);
         }
         Ok(experiences)
+    }
+
+    pub fn list_recent_experiences_by_agent(
+        &self,
+        agent_id: &AgentId,
+        limit: usize,
+    ) -> Result<Vec<Experience>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, sensation, description, created_at from experience \
+             where agent_id = ?1 order by created_at desc limit ?2",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id.to_string(), limit as i64], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let raw_rows: Vec<_> = rows.collect::<Result<_, _>>()?;
+        let mut experiences = Vec::new();
+        for row in raw_rows {
+            experiences.push(Experience::construct_from_db(row)?);
+        }
+        Ok(experiences)
+    }
+
+    pub fn list_experience_ids_by_agent(
+        &self,
+        agent_id: &AgentId,
+    ) -> Result<Vec<ExperienceId>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM experience WHERE agent_id = ?1")?;
+
+        let rows = stmt.query_map(params![agent_id.to_string()], |row| row.get::<_, String>(0))?;
+
+        rows.map(|r| {
+            r.map_err(DatabaseError::from)
+                .and_then(|s| s.parse().map_err(DatabaseError::from))
+        })
+        .collect()
     }
 
     pub fn list_experiences_by_sensation(
