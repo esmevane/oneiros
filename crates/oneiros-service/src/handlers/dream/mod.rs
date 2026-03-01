@@ -1,4 +1,4 @@
-mod collector;
+pub(crate) mod collector;
 mod create;
 
 use axum::{Router, routing};
