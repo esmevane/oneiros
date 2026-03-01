@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Thread check: before this conversation ends, capture where your attention is pointing. Record a handoff cognition with oneiros cognition add governor.process handoff, and consider running oneiros introspect governor.process or oneiros sleep governor.process to close the session cleanly.'"
+            "command": "echo 'Gardening check: How do you feel about what you just worked on? Does it connect to something you already know? Did you notice a pattern, learn something, or have a question worth preserving? Consider: a quick cognition (oneiros cognition add), promoting to memory if it has weight, or threading an experience if it connects to prior work. Any form of tending counts.'"
           }
         ]
       }
@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat) && cmd=$(echo \"$input\" | jq -r '.tool_input.command // empty') && case \"$cmd\" in oneiros\\ *) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"oneiros CLI auto-approved\"}}' ;; esac"
+            "command": "input=$(cat) && cmd=$(echo \"$input\" | jq -r '.tool_input.command // empty') && case \"$cmd\" in oneiros | oneiros\\ *) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"oneiros CLI auto-approved\"}}' ;; esac"
           }
         ]
       }
@@ -77,14 +77,27 @@
             "command": "input=$(cat) && case \"$input\" in *'\"oneiros cognition add'*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Thought captured. Consider: should this become a memory? (oneiros memory add <agent> <level> content). Does it connect to an existing thread? (oneiros experience create <agent> <sensation> description, or oneiros connection create <nature> <from-ref> <to-ref>). Levels: working/session/project/archival. Sensations: caused/continues/distills/echoes/grounds/tensions.\"}}' ;; *) ;; esac"
           }
         ]
-      },
+      }
+    ],
+    "SessionEnd": [
       {
-        "matcher": "Task",
+        "matcher": "",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "You are a gentle cognitive nudge for oneiros, an agent identity system. A subagent just completed work. You evaluate whether the result contains something worth capturing as a cognition.\n\nTool event: $ARGUMENTS\n\nFocus on the task description and subagent type, not the full response text. Consider: did the subagent surface a finding, pattern, or question that the primary agent should record?\n\nCognitive textures available:\n- observation: something noticed about code, architecture, or process\n- reflection: stepping back to think about how work is going\n- working: in-progress thinking, attempts, uncertainties\n- learning: moments of genuine understanding\n- connection: relationships between separate domains\n- question: unanswered questions worth preserving\n- bond: meaningful interactions with humans or other agents\n\nIf nothing seems notable, return: {\"ok\": true}\n\nIf something is worth capturing, suggest it gently in one sentence — name the texture and sketch the thought. Return: {\"ok\": false, \"reason\": \"<your gentle suggestion>\"}\n\nReturn only valid JSON, nothing else.",
-            "timeout": 15
+            "type": "command",
+            "command": "oneiros introspect governor.process 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat) && agent=$(echo \"$input\" | jq -r '.agent_type' | tr '-' '.') && msg=$(echo \"$input\" | jq -r '.last_assistant_message // empty' | head -c 500) && [ -n \"$msg\" ] && oneiros cognition add \"$agent\" handoff \"$msg\" 2>/dev/null || true"
           }
         ]
       }
