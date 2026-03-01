@@ -1,1 +1,1 @@
-Milestone reflections, post-mortems, and historical context. Entries that explain why things are the way they are.
+Deep history — milestone reflections, post-mortems, and historical context. Archival memories explain why things are the way they are. They're not part of the default dream; you reach for them deliberately through search or explicit recall. Use this level for context that matters for the long record but not for daily orientation.

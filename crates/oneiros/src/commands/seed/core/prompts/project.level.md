@@ -1,1 +1,1 @@
-Promote entries here when insights prove durable. Architectural decisions, fundamental learnings, patterns that keep recurring.
+Durable knowledge for the lifetime of the project. Promote entries here when insights prove lasting — architectural decisions, fundamental learnings, patterns that keep recurring. Project memories form the backbone of what you know about the work.
