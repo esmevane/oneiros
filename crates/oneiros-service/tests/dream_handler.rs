@@ -390,14 +390,16 @@ async fn dream_collector_falls_back_for_empty_graph() {
     assert!(context.connections.is_empty());
 }
 
-/// Memories are always included in the dream regardless of graph state.
+/// Memories at or above the recollection_level threshold are included.
+/// Core memories are always included regardless of threshold.
+/// Default threshold is "session", so session-level memories pass.
 #[tokio::test]
-async fn dream_collector_always_includes_all_memories() {
+async fn dream_collector_includes_memories_at_threshold() {
     let (_temp, state, token) = setup();
     seed_agent(&state, &token, "rememberer", "process").await;
     seed_texture(&state, &token, "working").await;
 
-    // Create memories.
+    // Create memories at session level (default threshold).
     let _mem1 = create_memory(&state, &token, "rememberer", "session", "First memory.").await;
     let _mem2 = create_memory(&state, &token, "rememberer", "session", "Second memory.").await;
     let _mem3 = create_memory(&state, &token, "rememberer", "session", "Third memory.").await;
@@ -412,7 +414,7 @@ async fn dream_collector_always_includes_all_memories() {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
 
-    // All memories always present — never filtered.
+    // Session-level memories pass the default "session" threshold.
     assert_eq!(context.memories.len(), 3);
 }
 
@@ -463,5 +465,299 @@ async fn dream_collector_includes_recent_cognitions() {
     assert!(
         ids.contains(&recent.id),
         "recent cognition should be in dream"
+    );
+}
+
+/// dream_depth limits how far the BFS traverses from the seed set.
+#[tokio::test]
+async fn dream_max_depth_limits_traversal() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "deep", "process").await;
+    seed_texture(&state, &token, "working").await;
+    seed_nature(&state, &token, "reference").await;
+
+    let mem = create_memory(&state, &token, "deep", "session", "Root.").await;
+
+    // Chain: memory → cog_a (depth 1) → cog_b (depth 2).
+    let cog_a = create_cognition(&state, &token, "deep", "working", "Depth one.").await;
+    let cog_b = create_cognition(&state, &token, "deep", "working", "Depth two.").await;
+
+    create_connection(
+        &state,
+        &token,
+        "reference",
+        &Ref::memory(mem.id),
+        &Ref::cognition(cog_a.id),
+    )
+    .await;
+    create_connection(
+        &state,
+        &token,
+        "reference",
+        &Ref::cognition(cog_a.id),
+        &Ref::cognition(cog_b.id),
+    )
+    .await;
+
+    // dream_depth=1, recent_window=0: only cog_a reachable.
+    let app = router(state.clone());
+    let response = app
+        .oneshot(post_auth(
+            "/dream/deep?dream_depth=1&recent_window=0",
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+
+    let ids: Vec<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
+    assert!(
+        ids.contains(&cog_a.id),
+        "depth-1 cognition should be in dream"
+    );
+    assert!(
+        !ids.contains(&cog_b.id),
+        "depth-2 cognition should NOT be in dream at dream_depth=1"
+    );
+
+    // Explicit deeper limit: both reachable.
+    let app = router(state);
+    let response = app
+        .oneshot(post_auth(
+            "/dream/deep?dream_depth=10&recent_window=0",
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+
+    let ids: Vec<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
+    assert!(
+        ids.contains(&cog_a.id),
+        "depth-1 cognition should be in dream"
+    );
+    assert!(
+        ids.contains(&cog_b.id),
+        "depth-2 cognition should be in dream with deeper limit"
+    );
+}
+
+/// cognition_size caps the total number of cognitions in the dream.
+#[tokio::test]
+async fn dream_max_cognitions_caps_output() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "capped", "process").await;
+    seed_texture(&state, &token, "working").await;
+    seed_nature(&state, &token, "reference").await;
+
+    let mem = create_memory(&state, &token, "capped", "session", "Anchor.").await;
+
+    // Create 5 cognitions, all directly connected to the memory.
+    for i in 0..5 {
+        let cog =
+            create_cognition(&state, &token, "capped", "working", &format!("Thought {i}")).await;
+        create_connection(
+            &state,
+            &token,
+            "reference",
+            &Ref::memory(mem.id),
+            &Ref::cognition(cog.id),
+        )
+        .await;
+    }
+
+    // Cap at 2 cognitions, recent_window=0 so only graph-discovered appear.
+    let app = router(state.clone());
+    let response = app
+        .oneshot(post_auth(
+            "/dream/capped?cognition_size=2&recent_window=0",
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+
+    assert_eq!(context.cognitions.len(), 2, "should cap at cognition_size");
+    // Connections should be filtered to match — only 2 connections remain.
+    assert_eq!(
+        context.connections.len(),
+        2,
+        "connections should be filtered to match included cognitions"
+    );
+}
+
+async fn seed_sensation(state: &Arc<ServiceState>, token: &str, name: &str) {
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "name": name,
+        "description": "Test sensation",
+        "prompt": "Test."
+    });
+    app.oneshot(put_json_auth("/sensations", &body, token))
+        .await
+        .unwrap();
+}
+
+async fn create_experience(
+    state: &Arc<ServiceState>,
+    token: &str,
+    agent: &str,
+    sensation: &str,
+    description: &str,
+) -> Experience {
+    let app = router(state.clone());
+    let body = serde_json::json!({
+        "agent": agent,
+        "sensation": sensation,
+        "description": description
+    });
+    let response = app
+        .oneshot(post_json_auth("/experiences", &body, token))
+        .await
+        .unwrap();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&bytes).unwrap()
+}
+
+/// recollection_level filters memories by level priority.
+/// Priority order: core > working > session > project > archival.
+/// Core memories are always included. Setting level=project includes
+/// core + working + session + project, excludes archival.
+#[tokio::test]
+async fn dream_filters_memories_by_level() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "leveled", "process").await;
+    seed_texture(&state, &token, "working").await;
+
+    // Create memories at different levels.
+    let _core = create_memory(&state, &token, "leveled", "core", "Core identity.").await;
+    let _project = create_memory(&state, &token, "leveled", "project", "Project insight.").await;
+    let _working = create_memory(&state, &token, "leveled", "working", "Working note.").await;
+    let _archival =
+        create_memory(&state, &token, "leveled", "archival", "Historical context.").await;
+
+    // Dream with recollection_level=project: core + working + project included, archival excluded.
+    let app = router(state);
+    let response = app
+        .oneshot(post_auth(
+            "/dream/leveled?recollection_level=project",
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+
+    assert_eq!(
+        context.memories.len(),
+        3,
+        "core + working + project included, archival excluded"
+    );
+
+    let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_ref()).collect();
+    assert!(levels.contains(&"core"));
+    assert!(levels.contains(&"working"));
+    assert!(levels.contains(&"project"));
+    assert!(!levels.contains(&"archival"));
+}
+
+/// recollection_size caps non-core memories. Core memories always survive.
+#[tokio::test]
+async fn dream_caps_non_core_memories() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "capped-mem", "process").await;
+    seed_texture(&state, &token, "working").await;
+
+    // Create 2 core memories and 5 project memories.
+    let _core1 = create_memory(&state, &token, "capped-mem", "core", "Core one.").await;
+    let _core2 = create_memory(&state, &token, "capped-mem", "core", "Core two.").await;
+    for i in 0..5 {
+        create_memory(
+            &state,
+            &token,
+            "capped-mem",
+            "project",
+            &format!("Project {i}."),
+        )
+        .await;
+    }
+
+    // Cap non-core at 3, level threshold includes project.
+    let app = router(state);
+    let response = app
+        .oneshot(post_auth(
+            "/dream/capped-mem?recollection_size=3&recollection_level=project",
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+
+    // 2 core + 3 capped project = 5 total.
+    assert_eq!(context.memories.len(), 5, "2 core + 3 capped project");
+
+    let core_count = context
+        .memories
+        .iter()
+        .filter(|m| m.level.as_ref() == "core")
+        .count();
+    let project_count = context
+        .memories
+        .iter()
+        .filter(|m| m.level.as_ref() == "project")
+        .count();
+    assert_eq!(core_count, 2, "all core memories survive");
+    assert_eq!(project_count, 3, "project capped at recollection_size");
+}
+
+/// experience_size caps the total number of experiences in the dream.
+#[tokio::test]
+async fn dream_caps_experiences() {
+    let (_temp, state, token) = setup();
+    seed_agent(&state, &token, "exp-capped", "process").await;
+    seed_texture(&state, &token, "working").await;
+    seed_sensation(&state, &token, "continues").await;
+
+    // Create 5 experiences.
+    for i in 0..5 {
+        create_experience(
+            &state,
+            &token,
+            "exp-capped",
+            "continues",
+            &format!("Thread {i}."),
+        )
+        .await;
+    }
+
+    // Cap at 2.
+    let app = router(state);
+    let response = app
+        .oneshot(post_auth("/dream/exp-capped?experience_size=2", &token))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+
+    assert_eq!(
+        context.experiences.len(),
+        2,
+        "should cap at experience_size"
     );
 }

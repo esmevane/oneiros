@@ -1,1 +1,1 @@
-Default level. Most cognition entries belong here. Session-relevant learnings, observations, and questions.
+Current session context. Learnings, observations, and decisions from what you're doing now. Session memories orient you within the immediate work — they're the "what am I doing and why" layer. Most cognition entries that consolidate into memory belong here first.

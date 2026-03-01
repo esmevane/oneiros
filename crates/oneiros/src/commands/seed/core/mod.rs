@@ -70,22 +70,30 @@ pub(crate) fn levels() -> Vec<SetLevel> {
         },
         SetLevel {
             name: LevelName::new("working"),
-            description: Description::new("Ephemeral thoughts that expire within a day."),
+            description: Description::new(
+                "Active processing — what you're in the middle of right now.",
+            ),
             prompt: Prompt::new(include_str!("prompts/working.level.md")),
         },
         SetLevel {
             name: LevelName::new("session"),
-            description: Description::new("Insights relevant for about a week."),
+            description: Description::new(
+                "Current session context — learnings and decisions from what you're doing now.",
+            ),
             prompt: Prompt::new(include_str!("prompts/session.level.md")),
         },
         SetLevel {
             name: LevelName::new("project"),
-            description: Description::new("Permanent knowledge for the lifetime of the project."),
+            description: Description::new(
+                "Durable knowledge — insights that persist for the lifetime of the project.",
+            ),
             prompt: Prompt::new(include_str!("prompts/project.level.md")),
         },
         SetLevel {
             name: LevelName::new("archival"),
-            description: Description::new("Historical record preserved indefinitely."),
+            description: Description::new(
+                "Deep history — milestone reflections and context you reach for deliberately.",
+            ),
             prompt: Prompt::new(include_str!("prompts/archival.level.md")),
         },
     ]
