@@ -1,0 +1,15 @@
+[package]
+name = "oneiros-config"
+version.workspace = true
+edition.workspace = true
+description = "Configuration types for oneiros services"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

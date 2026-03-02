@@ -1,10 +1,12 @@
 use axum::Router;
+use axum::routing::get;
 use std::sync::Arc;
 
 use crate::*;
 
 pub fn router(state: Arc<ServiceState>) -> Router {
     Router::new()
+        .route("/activity", get(handlers::activity::handler))
         .nest("/agents", handlers::agent::router())
         .nest("/brains", handlers::brain::router())
         .nest("/cognitions", handlers::cognition::router())

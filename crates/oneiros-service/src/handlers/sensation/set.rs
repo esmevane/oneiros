@@ -10,6 +10,7 @@ pub(crate) async fn handler(
     let event = Events::Sensation(SensationEvents::SensationSet(sensation.clone()));
 
     ticket.db.log_event(&event, projections::BRAIN)?;
+    ticket.broadcast(&event);
 
     Ok((StatusCode::OK, Json(sensation)))
 }

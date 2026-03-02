@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use oneiros_templates::SenseTemplate;
@@ -46,7 +45,7 @@ impl SenseOp {
             input.trim().to_string()
         };
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let agent = client.sense(&context.ticket_token()?, &self.name).await?;
         let prompt = SenseTemplate::new(&agent, &event_data).to_string();
 

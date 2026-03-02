@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_outcomes::{Outcome, Outcomes};
 use service_manager::*;
 
@@ -39,7 +38,7 @@ impl StartService {
         outcomes.emit(StartServiceOutcomes::Started);
 
         // Brief health check with backoff to confirm the service came up.
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let delays = context.health_check_delays();
 
         for delay in delays {

@@ -1,20 +1,15 @@
+use std::net::SocketAddr;
+
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_outcomes::{Outcome, Outcomes};
-use std::path::PathBuf;
 
 use crate::*;
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ServiceStatusOutcomes {
-    #[outcome(message("Socket: {}", .0.display()))]
-    SocketPath(PathBuf),
-    #[outcome(
-        message("No socket file found. Service has not been started."),
-        level = "warn"
-    )]
-    NoSocket,
+    #[outcome(message("Endpoint: {0}"))]
+    Endpoint(SocketAddr),
     #[outcome(message("Service is running."))]
     ServiceRunning,
     #[outcome(message("Service is not running: {0}"), level = "warn")]
@@ -31,16 +26,10 @@ impl Status {
     ) -> Result<Outcomes<ServiceStatusOutcomes>, ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let socket_path = context.socket_path();
+        let addr = context.config().service_addr();
+        outcomes.emit(ServiceStatusOutcomes::Endpoint(addr));
 
-        outcomes.emit(ServiceStatusOutcomes::SocketPath(socket_path.clone()));
-
-        if !socket_path.exists() {
-            outcomes.emit(ServiceStatusOutcomes::NoSocket);
-            return Ok(outcomes);
-        }
-
-        let client = Client::new(&socket_path);
+        let client = context.client();
 
         match client.health().await {
             Ok(()) => outcomes.emit(ServiceStatusOutcomes::ServiceRunning),

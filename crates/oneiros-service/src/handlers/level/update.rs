@@ -10,6 +10,7 @@ pub(crate) async fn handler(
     let event = Events::Level(LevelEvents::LevelSet(level.clone()));
 
     ticket.db.log_event(&event, projections::BRAIN)?;
+    ticket.broadcast(&event);
 
     Ok((StatusCode::OK, Json(level)))
 }

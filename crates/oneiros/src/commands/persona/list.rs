@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::Persona;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl ListPersonas {
     ) -> Result<Outcomes<ListPersonasOutcomes>, PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let personas = client.list_personas(&context.ticket_token()?).await?;
 

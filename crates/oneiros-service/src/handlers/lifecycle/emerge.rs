@@ -28,9 +28,11 @@ pub(crate) async fn handler(
     let emerged = Events::Lifecycle(LifecycleEvents::Emerged { name: agent_name });
 
     ticket.db.log_event(&emerged, &[])?;
+    ticket.broadcast(&emerged);
 
     let created = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
     ticket.db.log_event(&created, projections::BRAIN)?;
+    ticket.broadcast(&created);
 
     Ok((StatusCode::CREATED, Json(agent)))
 }

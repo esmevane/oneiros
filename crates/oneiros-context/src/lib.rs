@@ -1,4 +1,5 @@
 use directories::ProjectDirs;
+use oneiros_config::Config;
 use oneiros_db::{Database, DatabaseError};
 use oneiros_detect_project_name::{ProjectDetector, ProjectRoot};
 use oneiros_fs::FileOps;
@@ -30,65 +31,92 @@ pub enum ContextError {
     MalformedTokenFile(#[from] std::io::Error),
     #[error("Project directory not available")]
     NoProjectDir,
+    #[error("Configuration error: {0}")]
+    Config(#[from] oneiros_config::ConfigError),
 }
 
-pub(crate) struct Context {
+pub struct Context {
     /// The detected project (name and root path), if any.
-    pub(crate) project: Option<ProjectRoot>,
-    pub(crate) config_dir: PathBuf,
-    pub(crate) data_dir: PathBuf,
+    project: Option<ProjectRoot>,
+    config_dir: PathBuf,
+    data_dir: PathBuf,
+    config: Config,
 }
 
 impl Context {
     /// Discover context from the current working directory.
-    pub(crate) fn init() -> Result<Self, ContextError> {
+    pub fn init() -> Result<Self, ContextError> {
         let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
             .ok_or(ContextError::NoProjectDir)?;
         let detector = ProjectDetector::default_chain();
         let cwd = std::env::current_dir()?;
         let project = detector.detect(&cwd);
 
+        let config_dir: PathBuf = project_dirs.config_dir().into();
+        let config = Config::load(&config_dir.join("config.toml"))?;
+
         Ok(Self {
             project,
-            config_dir: project_dirs.config_dir().into(),
+            config_dir,
             data_dir: project_dirs.data_dir().into(),
+            config,
         })
     }
 
+    /// Construct a Context with explicit paths (for testing).
+    pub fn with_paths(data_dir: PathBuf, config_dir: PathBuf) -> Self {
+        Self {
+            project: None,
+            config_dir,
+            data_dir,
+            config: Config::default(),
+        }
+    }
+
+    /// The loaded configuration.
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    /// The data directory.
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
+    /// The config directory.
+    pub fn config_dir(&self) -> &Path {
+        &self.config_dir
+    }
+
     /// The detected project name, if any.
-    pub(crate) fn project_name(&self) -> Option<&str> {
+    pub fn project_name(&self) -> Option<&str> {
         self.project.as_ref().map(|p| p.name.as_str())
     }
 
     /// The detected project root path, if any.
-    pub(crate) fn project_root(&self) -> Option<&Path> {
+    pub fn project_root(&self) -> Option<&Path> {
         self.project.as_ref().map(|p| p.path.as_path())
     }
 
     /// Path to database.
-    pub(crate) fn db_path(&self) -> PathBuf {
+    pub fn db_path(&self) -> PathBuf {
         self.data_dir.join("oneiros.db")
     }
 
     /// Path to config.
-    pub(crate) fn config_path(&self) -> PathBuf {
+    pub fn config_path(&self) -> PathBuf {
         self.config_dir.join("config.toml")
     }
 
-    /// Path to the service Unix socket.
-    pub(crate) fn socket_path(&self) -> PathBuf {
-        self.data_dir.join("oneiros.sock")
-    }
-
     /// Path to the token file for a given brain name.
-    pub(crate) fn ticket_path(&self, brain_name: &str) -> PathBuf {
+    pub fn ticket_path(&self, brain_name: &str) -> PathBuf {
         self.data_dir
             .join("tickets")
             .join(format!("{brain_name}.token"))
     }
 
     /// Store a ticket token for a brain.
-    pub(crate) fn store_ticket(&self, brain_name: &str, token: &str) -> Result<(), std::io::Error> {
+    pub fn store_ticket(&self, brain_name: &str, token: &str) -> Result<(), std::io::Error> {
         let files = self.files();
         let path = self.ticket_path(brain_name);
         if let Some(parent) = path.parent() {
@@ -98,7 +126,7 @@ impl Context {
     }
 
     /// Retrieve the ticket token for the current project's brain.
-    pub(crate) fn ticket_token(&self) -> Result<Token, ContextError> {
+    pub fn ticket_token(&self) -> Result<Token, ContextError> {
         let name = self.project_name().ok_or(ContextError::NoProject)?;
         Ok(self
             .files()
@@ -108,31 +136,31 @@ impl Context {
 
     /// The service manager label, derived from the same qualifier/org/app
     /// constants used for platform directory resolution.
-    pub(crate) fn service_label(&self) -> String {
+    pub fn service_label(&self) -> String {
         format!("{QUALIFIER}.{ORGANIZATION}.{APPLICATION}")
     }
 
     /// Path to the log directory for service stdout/stderr.
-    pub(crate) fn log_dir(&self) -> PathBuf {
+    pub fn log_dir(&self) -> PathBuf {
         self.data_dir.join("logs")
     }
 
     /// Path to the current executable.
-    pub(crate) fn current_exe(&self) -> Result<PathBuf, std::io::Error> {
+    pub fn current_exe(&self) -> Result<PathBuf, std::io::Error> {
         std::env::current_exe()
     }
 
     /// Retry delays for health check polling after service start.
-    pub(crate) fn health_check_delays(&self) -> &[Duration] {
+    pub fn health_check_delays(&self) -> &[Duration] {
         HEALTH_CHECK_DELAYS
     }
 
     /// Check if initialized.
-    pub(crate) fn is_initialized(&self) -> bool {
+    pub fn is_initialized(&self) -> bool {
         self.db_path().exists()
     }
 
-    pub(crate) fn database(&self) -> Result<Database, DatabaseError> {
+    pub fn database(&self) -> Result<Database, DatabaseError> {
         Ok(if self.db_path().exists() {
             Database::open(self.db_path())?
         } else {
@@ -140,11 +168,16 @@ impl Context {
         })
     }
 
-    pub(crate) fn files(&self) -> FileOps {
+    /// Construct a Client configured for the current service endpoint.
+    pub fn client(&self) -> oneiros_client::Client {
+        oneiros_client::Client::new(self.config.service_addr())
+    }
+
+    pub fn files(&self) -> FileOps {
         FileOps
     }
 
-    pub(crate) fn terminal(&self) -> TerminalOps {
+    pub fn terminal(&self) -> TerminalOps {
         TerminalOps
     }
 }

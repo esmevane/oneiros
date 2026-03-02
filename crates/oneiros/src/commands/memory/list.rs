@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -55,7 +54,7 @@ impl ListMemories {
     ) -> Result<Outcomes<ListMemoriesOutcomes>, MemoryCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let memories = client
             .list_memories(

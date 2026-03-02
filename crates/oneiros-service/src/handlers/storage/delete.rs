@@ -15,6 +15,7 @@ pub(crate) async fn handler(
     let event = Events::Storage(StorageEvents::StorageRemoved { key });
 
     ticket.db.log_event(&event, projections::BRAIN)?;
+    ticket.broadcast(&event);
 
     Ok(StatusCode::OK)
 }

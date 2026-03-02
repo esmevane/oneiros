@@ -17,11 +17,13 @@ pub(crate) async fn handler(
         name: agent.name.clone(),
     });
     ticket.db.log_event(&woke, &[])?;
+    ticket.broadcast(&woke);
 
     let begun = Events::Dreaming(DreamingEvents::DreamBegun {
         agent: agent.name.clone(),
     });
     ticket.db.log_event(&begun, &[])?;
+    ticket.broadcast(&begun);
 
     let context = DreamCollector::new(&ticket.db, DreamConfig::default()).collect(&agent)?;
 
@@ -30,6 +32,7 @@ pub(crate) async fn handler(
     });
 
     ticket.db.log_event(&complete, &[])?;
+    ticket.broadcast(&complete);
 
     Ok(Json(context))
 }

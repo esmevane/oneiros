@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::Sensation;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl ListSensations {
     ) -> Result<Outcomes<ListSensationsOutcomes>, SensationCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let sensations = client.list_sensations(&context.ticket_token()?).await?;
 

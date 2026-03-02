@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::Connection;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -50,7 +49,7 @@ impl ListConnections {
     ) -> Result<Outcomes<ListConnectionsOutcomes>, ConnectionCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let connections = client
             .list_connections(

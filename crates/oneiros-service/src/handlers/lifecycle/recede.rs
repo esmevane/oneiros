@@ -14,9 +14,11 @@ pub(crate) async fn handler(
 
     let receded = Events::Lifecycle(LifecycleEvents::Receded { name: name.clone() });
     ticket.db.log_event(&receded, &[])?;
+    ticket.broadcast(&receded);
 
     let removed = Events::Agent(AgentEvents::AgentRemoved { name });
     ticket.db.log_event(&removed, projections::BRAIN)?;
+    ticket.broadcast(&removed);
 
     Ok(StatusCode::OK)
 }

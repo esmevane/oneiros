@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::TextureName;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -33,7 +32,7 @@ impl SetTexture {
     ) -> Result<Outcomes<SetTextureOutcomes>, TextureCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let info = client
             .set_texture(

@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -25,7 +24,8 @@ impl ReplayProject {
 
         outcomes.emit(ReplayProjectOutcomes::Replaying);
 
-        let response = Client::new(context.socket_path())
+        let response = context
+            .client()
             .replay_brain(&context.ticket_token()?)
             .await?;
 

@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use std::fmt;
@@ -100,7 +99,7 @@ impl ActivityStatus {
     ) -> Result<Outcomes<ActivityOutcomes>, ActivityError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let token = context.ticket_token()?;
 
         let agents = client.list_agents(&token).await?;

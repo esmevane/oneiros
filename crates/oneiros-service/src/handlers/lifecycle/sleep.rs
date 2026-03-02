@@ -16,16 +16,19 @@ pub(crate) async fn handler(
         name: agent.name.clone(),
     });
     ticket.db.log_event(&slept, &[])?;
+    ticket.broadcast(&slept);
 
     let begun = Events::Introspecting(IntrospectingEvents::IntrospectionBegun {
         agent: agent.name.clone(),
     });
     ticket.db.log_event(&begun, &[])?;
+    ticket.broadcast(&begun);
 
     let complete = Events::Introspecting(IntrospectingEvents::IntrospectionComplete {
         agent: agent.name.clone(),
     });
     ticket.db.log_event(&complete, &[])?;
+    ticket.broadcast(&complete);
 
     Ok(Json(agent))
 }

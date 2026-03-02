@@ -16,6 +16,7 @@ pub(crate) async fn handler(
         agent: agent.name.clone(),
     });
     ticket.db.log_event(&sensed, &[])?;
+    ticket.broadcast(&sensed);
 
     Ok(Json(agent))
 }

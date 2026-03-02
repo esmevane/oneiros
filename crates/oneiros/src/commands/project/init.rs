@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -30,7 +29,7 @@ impl InitProject {
                 .ok_or(ProjectCommandError::NoProject)?,
         );
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let request = CreateBrainRequest {
             name: project_name.clone(),
