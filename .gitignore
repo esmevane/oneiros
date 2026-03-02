@@ -2,3 +2,6 @@
 /tmp
 *.local.*
 exports
+
+# Deciduous database (local)
+.deciduous/
