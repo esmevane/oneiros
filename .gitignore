@@ -5,3 +5,5 @@ exports
 
 # Deciduous database (local)
 .deciduous/
+graph.json
+narratives.md

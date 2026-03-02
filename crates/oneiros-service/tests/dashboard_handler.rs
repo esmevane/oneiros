@@ -1,57 +1,5 @@
-use axum::{
-    body::Body,
-    http::{Method, Request, StatusCode},
-};
-use http_body_util::BodyExt;
-use oneiros_db::Database;
-use oneiros_model::*;
-use oneiros_service::{ServiceState, projections, router};
-use std::sync::Arc;
-use tempfile::TempDir;
-use tower::util::ServiceExt;
-
-fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) {
-    let tenant_id = TenantId::new();
-    let actor_id = ActorId::new();
-
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
-        id: tenant_id,
-        name: TenantName::new("Test Tenant"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        id: actor_id,
-        tenant_id,
-        name: ActorName::new("Test Actor"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    Database::create_brain_db(brain_path).unwrap();
-
-    let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
-        id: brain_id,
-        tenant_id,
-        name: BrainName::new("test-brain"),
-        status: BrainStatus::Active,
-        path: brain_path.to_path_buf(),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-}
-
-fn setup() -> (TempDir, Arc<ServiceState>) {
-    let temp = TempDir::new().unwrap();
-    let db_path = temp.path().join("service.db");
-    let db = Database::create(db_path).unwrap();
-
-    let brain_path = temp.path().join("brains").join("test-brain.db");
-    std::fs::create_dir_all(brain_path.parent().unwrap()).unwrap();
-    seed_tenant_and_brain(&db, &brain_path);
-
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
-    (temp, state)
-}
+mod common;
+use common::*;
 
 fn seed_agent_in_brain(brain_path: &std::path::Path) {
     let brain_db = Database::open_brain(brain_path).unwrap();
@@ -91,7 +39,7 @@ async fn get_dashboard(state: Arc<ServiceState>, uri: &str) -> (StatusCode, Stri
 
 #[tokio::test]
 async fn dashboard_returns_html() {
-    let (_temp, state) = setup();
+    let (_temp, state, _token) = setup();
 
     let (status, body) = get_dashboard(state, "/").await;
 
@@ -102,7 +50,7 @@ async fn dashboard_returns_html() {
 
 #[tokio::test]
 async fn dashboard_shows_agent_count() {
-    let (temp, state) = setup();
+    let (temp, state, _token) = setup();
 
     let brain_path = temp.path().join("brains").join("test-brain.db");
     seed_agent_in_brain(&brain_path);
@@ -118,7 +66,7 @@ async fn dashboard_shows_agent_count() {
 
 #[tokio::test]
 async fn dashboard_contains_sse_client() {
-    let (_temp, state) = setup();
+    let (_temp, state, _token) = setup();
 
     let (_, body) = get_dashboard(state, "/").await;
 
