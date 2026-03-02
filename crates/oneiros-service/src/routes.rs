@@ -6,6 +6,7 @@ use crate::*;
 
 pub fn router(state: Arc<ServiceState>) -> Router {
     Router::new()
+        .route("/", get(handlers::dashboard::handler))
         .route("/activity", get(handlers::activity::handler))
         .nest("/agents", handlers::agent::router())
         .nest("/brains", handlers::brain::router())

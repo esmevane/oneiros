@@ -230,6 +230,37 @@ impl Database {
         Ok(id.parse()?)
     }
 
+    pub fn list_brains(&self) -> Result<Vec<Brain>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, tenant_id, name, status, path FROM brain ORDER BY name")?;
+
+        let rows = stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let tenant_id: String = row.get(1)?;
+            let name: String = row.get(2)?;
+            let status: String = row.get(3)?;
+            let path: String = row.get(4)?;
+
+            Ok((id, tenant_id, name, status, path))
+        })?;
+
+        let mut brains = Vec::new();
+
+        for row in rows {
+            let (id, tenant_id, name, status, path) = row?;
+            brains.push(Brain {
+                id: id.parse()?,
+                tenant_id: tenant_id.parse()?,
+                name: BrainName::new(name),
+                status: serde_json::from_value(serde_json::Value::String(status))?,
+                path: path.into(),
+            });
+        }
+
+        Ok(brains)
+    }
+
     pub fn create_brain(
         &self,
         brain_id: &BrainId,
@@ -1961,5 +1992,42 @@ mod tests {
         let results = db.search_expressions("orchestration").unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].kind.as_ref(), "agent-description");
+    }
+
+    fn setup_system() -> (TempDir, Database) {
+        let temp = TempDir::new().unwrap();
+        let db_path = temp.path().join("service.db");
+        let db = Database::create(&db_path).unwrap();
+        (temp, db)
+    }
+
+    #[test]
+    fn list_brains_returns_seeded_brains() {
+        let (_temp, db) = setup_system();
+        let tenant_id = TenantId::new();
+        db.create_tenant(&tenant_id, &TenantName::new("test"))
+            .unwrap();
+
+        let brain_id = BrainId::new();
+        db.create_brain(
+            &brain_id,
+            &tenant_id,
+            &BrainName::new("my-brain"),
+            "/tmp/brain.db",
+        )
+        .unwrap();
+
+        let brains = db.list_brains().unwrap();
+        assert_eq!(brains.len(), 1);
+        assert_eq!(brains[0].name.as_str(), "my-brain");
+        assert_eq!(brains[0].id, brain_id);
+        assert_eq!(brains[0].status, BrainStatus::Active);
+    }
+
+    #[test]
+    fn list_brains_empty_when_no_brains() {
+        let (_temp, db) = setup_system();
+        let brains = db.list_brains().unwrap();
+        assert!(brains.is_empty());
     }
 }

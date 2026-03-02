@@ -1266,6 +1266,7 @@ dependencies = [
 name = "oneiros-service"
 version = "0.0.5"
 dependencies = [
+ "askama",
  "axum",
  "data-encoding",
  "flate2",
