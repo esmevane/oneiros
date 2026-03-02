@@ -53,6 +53,7 @@ pub(crate) async fn handler(
     let event = Events::Brain(BrainEvents::BrainCreated(brain));
 
     db.log_event(&event, projections::SYSTEM)?;
+    let _ = state.event_tx.send(event);
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -65,6 +66,7 @@ pub(crate) async fn handler(
     let ticket_event = Events::Ticket(TicketEvents::TicketIssued(ticket));
 
     db.log_event(&ticket_event, projections::SYSTEM)?;
+    let _ = state.event_tx.send(ticket_event);
 
     let info = BrainInfo {
         entity: brain_id,

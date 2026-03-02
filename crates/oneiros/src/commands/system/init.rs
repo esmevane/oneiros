@@ -64,8 +64,8 @@ impl Init {
 
         let file_ops = context.files();
 
-        file_ops.ensure_dir(&context.data_dir)?;
-        file_ops.ensure_dir(&context.config_dir)?;
+        file_ops.ensure_dir(context.data_dir())?;
+        file_ops.ensure_dir(context.config_dir())?;
 
         outcomes.emit(InitSystemOutcomes::EnsuredDirectories);
 
@@ -111,7 +111,8 @@ impl Init {
 
         let config_path = context.config_path();
         if !config_path.exists() {
-            file_ops.write(&config_path, "")?;
+            let defaults = toml::to_string_pretty(context.config()).unwrap_or_default();
+            file_ops.write(&config_path, defaults)?;
             outcomes.emit(InitSystemOutcomes::ConfigurationEnsured(config_path));
         }
 
@@ -124,21 +125,9 @@ impl Init {
 #[cfg(test)]
 mod tests {
     use oneiros_db::Database;
-    use std::path::PathBuf;
     use tempfile::TempDir;
 
     use super::*;
-
-    // We need to be able to construct a Context with custom paths
-    impl Context {
-        pub(crate) fn with_paths(data_dir: PathBuf, config_dir: PathBuf) -> Self {
-            Self {
-                project: None,
-                config_dir,
-                data_dir,
-            }
-        }
-    }
 
     #[tokio::test]
     async fn init_creates_tenant_and_actor() {

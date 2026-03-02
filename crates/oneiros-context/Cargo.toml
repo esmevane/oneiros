@@ -1,0 +1,18 @@
+[package]
+name = "oneiros-context"
+version.workspace = true
+edition.workspace = true
+description = "CLI context and composition for oneiros"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+directories.workspace = true
+oneiros-client.workspace = true
+oneiros-config.workspace = true
+oneiros-db.workspace = true
+oneiros-detect-project-name.workspace = true
+oneiros-fs.workspace = true
+oneiros-model.workspace = true
+oneiros-terminal.workspace = true
+thiserror.workspace = true

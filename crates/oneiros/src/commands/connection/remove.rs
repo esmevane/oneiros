@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::{ConnectionId, RefToken};
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -32,7 +31,7 @@ impl RemoveConnection {
     ) -> Result<Outcomes<RemoveConnectionOutcomes>, ConnectionCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let token = context.ticket_token()?;
 
         let id = match self.id.as_full_id() {

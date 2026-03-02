@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use oneiros_templates::DreamTemplate;
@@ -33,7 +32,7 @@ impl DreamOp {
     pub async fn run(&self, context: &Context) -> Result<Outcomes<DreamOutcomes>, DreamError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let dream_context = client.dream(&context.ticket_token()?, &self.name).await?;
         let prompt = DreamTemplate::new(&dream_context).to_string();
 

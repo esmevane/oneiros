@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -49,7 +48,7 @@ impl CreateAgent {
     ) -> Result<Outcomes<CreateAgentOutcomes>, AgentCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let name = self.normalize_name();
 
         let info = client

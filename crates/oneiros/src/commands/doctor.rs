@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_db::Database;
 use oneiros_outcomes::{Outcome, Outcomes};
 use std::path::PathBuf;
@@ -84,7 +83,7 @@ impl DoctorOp {
             checks.emit(DoctorOutcomes::NoConfigFound(context.config_path()));
         }
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         match client.health().await {
             Ok(()) => checks.emit(DoctorOutcomes::ServiceRunning),

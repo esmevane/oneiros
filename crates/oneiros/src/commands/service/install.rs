@@ -36,7 +36,7 @@ impl InstallService {
             args: vec![OsString::from("service"), OsString::from("run")],
             contents: None,
             username: None,
-            working_directory: Some(context.data_dir.clone()),
+            working_directory: Some(context.data_dir().to_path_buf()),
             environment: None,
             autostart: true,
             restart_policy: RestartPolicy::OnFailure {

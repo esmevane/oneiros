@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::Level;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl ShowLevel {
     ) -> Result<Outcomes<ShowLevelOutcomes>, LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let info = client
             .get_level(&context.ticket_token()?, &self.name)

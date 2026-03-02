@@ -1,6 +1,6 @@
 use oneiros_model::*;
 use serde_json::Value;
-use std::path::Path;
+use std::net::SocketAddr;
 
 use crate::*;
 
@@ -26,9 +26,9 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(socket_path: impl AsRef<Path>) -> Self {
+    pub fn new(addr: SocketAddr) -> Self {
         Self {
-            client: SocketClient::new(socket_path),
+            client: SocketClient::new(addr),
         }
     }
 
@@ -593,7 +593,7 @@ impl Client {
     ) -> Result<SearchResults, Error> {
         let mut uri = format!("/search?q={}", urlencoding::encode(query));
         if let Some(agent) = agent {
-            uri.push_str(&format!("&agent={agent}"));
+            uri.push_str(&format!("&agent={}", urlencoding::encode(agent.as_str())));
         }
         let bytes = self.send("GET", &uri, token, None).await?;
         Ok(serde_json::from_slice(&bytes)?)

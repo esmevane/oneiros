@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::ExperienceId;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -40,7 +39,7 @@ impl CreateExperience {
     ) -> Result<Outcomes<CreateExperienceOutcomes>, ExperienceCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let token = context.ticket_token()?;
 
         let experience = client

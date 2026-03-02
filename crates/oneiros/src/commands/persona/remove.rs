@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::PersonaName;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl RemovePersona {
     ) -> Result<Outcomes<RemovePersonaOutcomes>, PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         client
             .remove_persona(&context.ticket_token()?, &self.name)

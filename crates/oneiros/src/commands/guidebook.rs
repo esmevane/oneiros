@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use oneiros_templates::GuidebookTemplate;
@@ -36,7 +35,7 @@ impl GuidebookOp {
     ) -> Result<Outcomes<GuidebookOutcomes>, GuidebookError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let dream_context = client.dream(&context.ticket_token()?, &self.name).await?;
         let prompt = GuidebookTemplate::new(&dream_context).to_string();
 

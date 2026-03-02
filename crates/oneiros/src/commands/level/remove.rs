@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::LevelName;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl RemoveLevel {
     ) -> Result<Outcomes<RemoveLevelOutcomes>, LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         client
             .remove_level(&context.ticket_token()?, &self.name)

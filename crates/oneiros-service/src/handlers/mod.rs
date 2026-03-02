@@ -1,3 +1,4 @@
+pub(crate) mod activity;
 pub(crate) mod agent;
 pub(crate) mod brain;
 pub(crate) mod cognition;

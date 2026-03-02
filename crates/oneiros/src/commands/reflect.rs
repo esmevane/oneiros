@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use oneiros_templates::ReflectTemplate;
@@ -33,7 +32,7 @@ impl ReflectOp {
     pub async fn run(&self, context: &Context) -> Result<Outcomes<ReflectOutcomes>, ReflectError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let agent = client.reflect(&context.ticket_token()?, &self.name).await?;
         let prompt = ReflectTemplate::new(&agent).to_string();
 

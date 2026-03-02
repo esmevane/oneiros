@@ -18,6 +18,7 @@ pub(crate) async fn handler(
     let event = Events::Connection(ConnectionEvents::ConnectionCreated(connection.clone()));
 
     ticket.db.log_event(&event, projections::BRAIN)?;
+    ticket.broadcast(&event);
 
     Ok((StatusCode::CREATED, Json(connection)))
 }

@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::Texture;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl ListTextures {
     ) -> Result<Outcomes<ListTexturesOutcomes>, TextureCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let textures = client.list_textures(&context.ticket_token()?).await?;
 

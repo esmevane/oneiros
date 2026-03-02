@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -32,7 +31,7 @@ impl SleepOp {
     pub async fn run(&self, context: &Context) -> Result<Outcomes<SleepOutcomes>, SleepError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let agent = client.sleep(&context.ticket_token()?, &self.name).await?;
 
         outcomes.emit(SleepOutcomes::Sleeping(agent));

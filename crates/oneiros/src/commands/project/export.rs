@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 use std::path::PathBuf;
@@ -52,7 +51,8 @@ impl ExportProject {
 
         outcomes.emit(ExportProjectOutcomes::UsingPath(target_directory.clone()));
 
-        let events = Client::new(context.socket_path())
+        let events = context
+            .client()
             .export_brain(&context.ticket_token()?)
             .await?;
 

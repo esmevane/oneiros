@@ -31,6 +31,7 @@ pub(crate) async fn handler(
     let event = Events::Agent(AgentEvents::AgentUpdated(agent.clone()));
 
     ticket.db.log_event(&event, projections::BRAIN)?;
+    ticket.broadcast(&event);
 
     Ok((StatusCode::OK, Json(agent)))
 }

@@ -20,6 +20,7 @@ pub(crate) async fn handler(
     });
 
     ticket.db.log_event(&event, projections::BRAIN)?;
+    ticket.broadcast(&event);
 
     // Re-fetch the full experience (now includes the updated sensation via projection).
     let experience = ticket

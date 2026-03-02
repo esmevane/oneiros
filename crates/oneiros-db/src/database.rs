@@ -6,6 +6,22 @@ use uuid::Uuid;
 
 use crate::*;
 
+/// Strip characters that are FTS5 query operators but not useful for
+/// free-text search. Preserves `*` (prefix), `"` (phrase), and boolean
+/// keywords (AND, OR, NOT, NEAR).
+fn sanitize_fts5_query(query: &str) -> String {
+    query
+        .chars()
+        .map(|c| match c {
+            '.' | ':' | '{' | '}' | '(' | ')' | '^' => ' ',
+            _ => c,
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 pub struct Database {
     conn: Connection,
 }
@@ -1655,6 +1671,8 @@ impl Database {
     }
 
     pub fn search_expressions(&self, query: &str) -> Result<Vec<Expression>, DatabaseError> {
+        let sanitized = sanitize_fts5_query(query);
+
         let mut stmt = self.conn.prepare(
             "SELECT e.resource_ref, e.kind, e.content \
              FROM expression_search s \
@@ -1663,7 +1681,7 @@ impl Database {
              ORDER BY rank",
         )?;
 
-        let rows = stmt.query_map(params![query], |row| {
+        let rows = stmt.query_map(params![sanitized], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -1816,6 +1834,33 @@ mod tests {
 
         let results = db.search_expressions("zebra").unwrap();
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn search_sanitizes_fts5_special_characters() {
+        let (_temp, db) = setup_brain();
+        let r = Ref::cognition(CognitionId::new());
+
+        db.insert_expression(&r, "cognition-content", "governor process agent")
+            .unwrap();
+
+        // Periods in queries should not cause FTS5 syntax errors.
+        let results = db.search_expressions("governor.process").unwrap();
+        assert_eq!(results.len(), 1);
+
+        // Colons and other operators should also be sanitized.
+        let results = db.search_expressions("governor:process").unwrap();
+        assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn sanitize_fts5_query_preserves_search_operators() {
+        assert_eq!(sanitize_fts5_query("hello world"), "hello world");
+        assert_eq!(sanitize_fts5_query("hello AND world"), "hello AND world");
+        assert_eq!(sanitize_fts5_query("prefix*"), "prefix*");
+        assert_eq!(sanitize_fts5_query("governor.process"), "governor process");
+        assert_eq!(sanitize_fts5_query("col:term"), "col term");
+        assert_eq!(sanitize_fts5_query("a.b:c{d}(e)"), "a b c d e");
     }
 
     #[test]

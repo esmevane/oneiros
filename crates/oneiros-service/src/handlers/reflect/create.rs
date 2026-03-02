@@ -16,11 +16,13 @@ pub(crate) async fn handler(
         agent: agent.name.clone(),
     });
     ticket.db.log_event(&begun, &[])?;
+    ticket.broadcast(&begun);
 
     let complete = Events::Reflecting(ReflectingEvents::ReflectionComplete {
         agent: agent.name.clone(),
     });
     ticket.db.log_event(&complete, &[])?;
+    ticket.broadcast(&complete);
 
     Ok(Json(agent))
 }

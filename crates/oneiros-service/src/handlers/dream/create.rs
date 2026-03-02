@@ -22,6 +22,7 @@ pub(crate) async fn handler(
     });
 
     ticket.db.log_event(&begun, &[])?;
+    ticket.broadcast(&begun);
 
     let context = DreamCollector::new(&ticket.db, params.into()).collect(&agent)?;
 
@@ -30,6 +31,7 @@ pub(crate) async fn handler(
     });
 
     ticket.db.log_event(&complete, &[])?;
+    ticket.broadcast(&complete);
 
     Ok(Json(context))
 }

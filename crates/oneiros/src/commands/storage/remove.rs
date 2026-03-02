@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -24,7 +23,7 @@ impl RemoveStorage {
     ) -> Result<Outcomes<RemoveStorageOutcomes>, StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         client
             .remove_storage(&context.ticket_token()?, &self.key)

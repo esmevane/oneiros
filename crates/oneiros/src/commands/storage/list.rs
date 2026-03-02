@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::StorageEntry;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -25,7 +24,7 @@ impl ListStorage {
     ) -> Result<Outcomes<ListStorageOutcomes>, StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let entries = client.list_storage(&context.ticket_token()?).await?;
 

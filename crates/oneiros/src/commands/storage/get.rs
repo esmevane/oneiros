@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_outcomes::{Outcome, Outcomes};
 use std::path::PathBuf;
 
@@ -28,7 +27,7 @@ impl GetStorage {
     ) -> Result<Outcomes<GetStorageOutcomes>, StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
 
         let content = client
             .get_storage_content(&context.ticket_token()?, &self.key)

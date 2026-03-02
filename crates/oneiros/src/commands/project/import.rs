@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_client::{Client, ImportEvent};
+use oneiros_client::ImportEvent;
 use oneiros_outcomes::{Outcome, Outcomes};
 use serde_json::Value;
 use std::io::BufRead;
@@ -62,7 +62,8 @@ impl ImportProject {
             events.push(ImportEvent { timestamp, data });
         }
 
-        let response = Client::new(context.socket_path())
+        let response = context
+            .client()
             .import_events(&context.ticket_token()?, events)
             .await?;
 

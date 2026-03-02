@@ -4,20 +4,18 @@ use hyper::body::Bytes;
 use hyper::client::conn::http1;
 use hyper_util::rt::TokioIo;
 use oneiros_model::Token;
-use std::path::{Path, PathBuf};
-use tokio::net::UnixStream;
+use std::net::SocketAddr;
+use tokio::net::TcpStream;
 
 use crate::*;
 
 pub struct SocketClient {
-    socket_path: PathBuf,
+    addr: SocketAddr,
 }
 
 impl SocketClient {
-    pub fn new(socket_path: impl AsRef<Path>) -> Self {
-        Self {
-            socket_path: socket_path.as_ref().to_path_buf(),
-        }
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr }
     }
 
     pub(crate) async fn request(
@@ -26,7 +24,7 @@ impl SocketClient {
         uri: impl AsRef<str>,
         body: impl Into<Bytes>,
     ) -> Result<(u16, Vec<u8>), Error> {
-        let stream = UnixStream::connect(&self.socket_path).await?;
+        let stream = TcpStream::connect(self.addr).await?;
         let io = TokioIo::new(stream);
         let (mut sender, conn) = http1::handshake(io).await.map_err(ConnectionError::from)?;
 
@@ -39,6 +37,7 @@ impl SocketClient {
         let request = Request::builder()
             .method(method.as_ref())
             .uri(uri.as_ref())
+            .header("host", self.addr.to_string())
             .header("content-type", "application/json")
             .body(Full::new(body.into()))
             .map_err(RequestError::from)?;
@@ -68,7 +67,7 @@ impl SocketClient {
         body: Vec<u8>,
         extra_headers: &[(&str, &str)],
     ) -> Result<(u16, Vec<u8>), Error> {
-        let stream = UnixStream::connect(&self.socket_path).await?;
+        let stream = TcpStream::connect(self.addr).await?;
         let io = TokioIo::new(stream);
         let (mut sender, conn) = http1::handshake(io).await.map_err(ConnectionError::from)?;
 
@@ -81,6 +80,7 @@ impl SocketClient {
         let mut builder = Request::builder()
             .method(method)
             .uri(uri)
+            .header("host", self.addr.to_string())
             .header("content-type", "application/octet-stream")
             .header("authorization", format!("Bearer {token}"));
 
@@ -116,7 +116,7 @@ impl SocketClient {
         token: &Token,
         body: Option<Vec<u8>>,
     ) -> Result<(u16, Vec<u8>), Error> {
-        let stream = UnixStream::connect(&self.socket_path).await?;
+        let stream = TcpStream::connect(self.addr).await?;
         let io = TokioIo::new(stream);
         let (mut sender, conn) = http1::handshake(io).await.map_err(ConnectionError::from)?;
 
@@ -130,6 +130,7 @@ impl SocketClient {
         let request = Request::builder()
             .method(method)
             .uri(uri)
+            .header("host", self.addr.to_string())
             .header("content-type", "application/json")
             .header("authorization", format!("Bearer {token}"))
             .body(Full::new(Bytes::from(body_bytes)))

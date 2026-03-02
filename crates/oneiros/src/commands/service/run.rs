@@ -1,17 +1,17 @@
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use clap::Args;
 use oneiros_outcomes::{Outcome, Outcomes};
 use oneiros_service::ServiceState;
-use std::path::PathBuf;
 
 use crate::*;
 
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RunServiceOutcomes {
-    #[outcome(message("Service starting on {}.", .0.display()))]
-    ServiceStarting(PathBuf),
+    #[outcome(message("Service starting on {0}."))]
+    ServiceStarting(SocketAddr),
     #[outcome(message("Service stopped."))]
     ServiceStopped,
 }
@@ -31,13 +31,16 @@ impl RunService {
         }
 
         let database = context.database()?;
-        let socket_path = context.socket_path();
+        let addr = context.config().service_addr();
 
-        outcomes.emit(RunServiceOutcomes::ServiceStarting(socket_path.clone()));
+        outcomes.emit(RunServiceOutcomes::ServiceStarting(addr));
 
-        let state = Arc::new(ServiceState::new(database, context.data_dir.clone()));
+        let state = Arc::new(ServiceState::new(
+            database,
+            context.data_dir().to_path_buf(),
+        ));
 
-        oneiros_service::serve(state, &socket_path).await?;
+        oneiros_service::serve(state, addr).await?;
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 

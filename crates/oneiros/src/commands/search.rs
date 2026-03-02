@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
@@ -68,7 +67,7 @@ impl SearchOp {
         let mut outcomes = Outcomes::new();
 
         let query = self.query.join(" ");
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let results = client
             .search(&context.ticket_token()?, &query, self.agent.as_ref())
             .await?;

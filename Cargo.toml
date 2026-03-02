@@ -27,6 +27,8 @@ hyper = { version = "1.8", features = ["full"] }
 hyper-util = { version = "0.1.20", features = ["tokio"] }
 inquire = "0.7"
 oneiros-client = { path = "crates/oneiros-client", version = "0.0.5" }
+oneiros-config = { path = "crates/oneiros-config", version = "0.0.5" }
+oneiros-context = { path = "crates/oneiros-context", version = "0.0.5" }
 oneiros-db = { path = "crates/oneiros-db", version = "0.0.5" }
 oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name", version = "0.0.5" }
 oneiros-fs = { path = "crates/oneiros-fs", version = "0.0.5" }
@@ -56,6 +58,7 @@ syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 toml = "0.8"
 tower = { version = "0.5.3", features = ["util"] }
 tracing = "0.1"

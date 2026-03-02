@@ -1,5 +1,4 @@
 use clap::Args;
-use oneiros_client::Client;
 use oneiros_outcomes::{Outcome, Outcomes};
 use std::path::PathBuf;
 
@@ -32,7 +31,7 @@ impl SetStorage {
     ) -> Result<Outcomes<SetStorageOutcomes>, StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
-        let client = Client::new(context.socket_path());
+        let client = context.client();
         let data = context.files().read(&self.file)?;
 
         let entry = client
