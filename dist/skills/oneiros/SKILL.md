@@ -6,7 +6,7 @@ description: >
   mentions of dreaming, introspection, reflection, memory, cognition, personas,
   textures, levels, or brain management.
 allowed-tools: "Read,Bash(oneiros:*)"
-version: "0.0.5"
+version: "0.0.6"
 author: "JC McCormick <https://github.com/esmevane>"
 license: "MIT"
 ---
