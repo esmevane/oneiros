@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/esmevane/oneiros/compare/v0.0.5...v0.0.6) - 2026-03-02
+
+### Other
+
+- HTTP & Activity feed.
+- Dream config.
+- Dream collector.
+- Search.
+- Connections.
+- Refs.
+- Core memories.
+- Flatten out the shape wrappers.
+- Eventful shapes.
+- Move protocol package to model.
+- Export project events to jsonl.
+- Flatten commands and model.
+- Permit key access to row ids.
+- Event commands.
+- Timestamp.
+- Formalize links.
+- Connections and natures.
+- Linked refs.
+- Migrate entities to identity structures.
+- Migrate agent to identity structure.
+- Untagged refs.
+- Agent lifecycle work.
+- Robust agent integration.
+- Move projections to service crate.
+- Introduce oneiroi.process
+- Improve ergonomics for common operations.
+- release v0.0.5-rc4.1
+
 ## [0.0.5](https://github.com/esmevane/oneiros/compare/v0.0.5-rc4...v0.0.5) - 2026-02-16
 
 ### Other
