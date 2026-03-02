@@ -1,126 +1,17 @@
-use axum::body::Body;
-use axum::http::{Method, Request, StatusCode};
-use http_body_util::BodyExt;
-use oneiros_db::Database;
-use oneiros_model::*;
-use oneiros_service::*;
-use std::sync::Arc;
-use tempfile::TempDir;
-use tower::util::ServiceExt;
-
-fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String {
-    let tenant_id = TenantId::new();
-    let actor_id = ActorId::new();
-
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
-        id: tenant_id,
-        name: TenantName::new("Test Tenant"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        id: actor_id,
-        tenant_id,
-        name: ActorName::new("Test Actor"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    Database::create_brain_db(brain_path).unwrap();
-
-    let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
-        id: brain_id,
-        tenant_id,
-        name: BrainName::new("test-brain"),
-        status: BrainStatus::Active,
-        path: brain_path.to_path_buf(),
-    }));
-
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let token = Token::issue(TokenClaims {
-        brain_id,
-        tenant_id,
-        actor_id,
-    });
-
-    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
-        id: TicketId::new(),
-        token: token.clone(),
-        created_by: actor_id,
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    token.0
-}
-
-fn setup() -> (TempDir, Arc<ServiceState>, String) {
-    let temp = TempDir::new().unwrap();
-    let db_path = temp.path().join("service.db");
-    let db = Database::create(db_path).unwrap();
-
-    let brain_path = temp.path().join("brains").join("test-brain.db");
-    std::fs::create_dir_all(brain_path.parent().unwrap()).unwrap();
-    let token = seed_tenant_and_brain(&db, &brain_path);
-
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
-    (temp, state, token)
-}
-
-fn get_auth(uri: &str, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::GET)
-        .uri(uri)
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::empty())
-        .unwrap()
-}
-
-fn post_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::POST)
-        .uri(uri)
-        .header("content-type", "application/json")
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::from(serde_json::to_vec(body).unwrap()))
-        .unwrap()
-}
-
-fn put_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::PUT)
-        .uri(uri)
-        .header("content-type", "application/json")
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::from(serde_json::to_vec(body).unwrap()))
-        .unwrap()
-}
-
-fn delete_auth(uri: &str, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::DELETE)
-        .uri(uri)
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::empty())
-        .unwrap()
-}
-
-async fn ensure_persona(state: &Arc<ServiceState>, token: &str) {
-    let app = router(state.clone());
-    let body = serde_json::json!({
-        "name": "expert",
-        "description": "A domain expert",
-        "prompt": "You are a domain expert."
-    });
-    app.oneshot(put_json_auth("/personas", &body, token))
-        .await
-        .unwrap();
-}
+mod common;
+use common::*;
 
 #[tokio::test]
 async fn create_agent_returns_created() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     let app = router(state);
     let body = serde_json::json!({
@@ -166,7 +57,14 @@ async fn create_agent_requires_existing_persona() {
 #[tokio::test]
 async fn create_agent_conflict_on_duplicate_name() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     let body = serde_json::json!({
         "name": "architect",
@@ -204,7 +102,14 @@ async fn list_agents_empty() {
 #[tokio::test]
 async fn list_agents_after_create() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     let app = router(state.clone());
     let body = serde_json::json!({ "name": "alpha", "persona": "expert" });
@@ -242,7 +147,14 @@ async fn get_agent_not_found() {
 #[tokio::test]
 async fn get_agent_by_name() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     let app = router(state.clone());
     let body = serde_json::json!({
@@ -271,7 +183,14 @@ async fn get_agent_by_name() {
 #[tokio::test]
 async fn update_agent() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     // Create
     let app = router(state.clone());
@@ -313,7 +232,14 @@ async fn update_agent() {
 #[tokio::test]
 async fn update_nonexistent_agent() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     let app = router(state);
     let update_body = serde_json::json!({
@@ -331,7 +257,14 @@ async fn update_nonexistent_agent() {
 #[tokio::test]
 async fn remove_agent_then_gone() {
     let (_temp, state, token) = setup();
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "expert",
+        "A domain expert",
+        "You are a domain expert.",
+    )
+    .await;
 
     let app = router(state.clone());
     let body = serde_json::json!({ "name": "ephemeral", "persona": "expert" });

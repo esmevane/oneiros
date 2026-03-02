@@ -1,104 +1,5 @@
-use axum::{
-    body::Body,
-    http::{Method, Request, StatusCode},
-};
-use http_body_util::BodyExt;
-use oneiros_db::Database;
-use oneiros_model::*;
-use oneiros_service::{ServiceState, projections, router};
-use std::sync::Arc;
-use tempfile::TempDir;
-use tower::util::ServiceExt;
-
-fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String {
-    let tenant_id = TenantId::new();
-    let actor_id = ActorId::new();
-
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
-        id: tenant_id,
-        name: TenantName::new("Test Tenant"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        id: actor_id,
-        tenant_id,
-        name: ActorName::new("Test Actor"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    Database::create_brain_db(brain_path).unwrap();
-
-    let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
-        id: brain_id,
-        tenant_id,
-        name: BrainName::new("test-brain"),
-        status: BrainStatus::Active,
-        path: brain_path.to_path_buf(),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let token = Token::issue(TokenClaims {
-        brain_id,
-        tenant_id,
-        actor_id,
-    });
-
-    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
-        id: TicketId::new(),
-        token: token.clone(),
-        created_by: actor_id,
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    token.0
-}
-
-fn setup() -> (TempDir, Arc<ServiceState>, String) {
-    let temp = TempDir::new().unwrap();
-    let db_path = temp.path().join("service.db");
-    let db = Database::create(db_path).unwrap();
-
-    let brain_path = temp.path().join("brains").join("test-brain.db");
-    std::fs::create_dir_all(brain_path.parent().unwrap()).unwrap();
-    let token = seed_tenant_and_brain(&db, &brain_path);
-
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
-    (temp, state, token)
-}
-
-fn post_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::POST)
-        .uri(uri)
-        .header("content-type", "application/json")
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::from(serde_json::to_vec(body).unwrap()))
-        .unwrap()
-}
-
-fn put_json_auth(uri: &str, body: &serde_json::Value, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::PUT)
-        .uri(uri)
-        .header("content-type", "application/json")
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::from(serde_json::to_vec(body).unwrap()))
-        .unwrap()
-}
-
-async fn ensure_persona(state: &Arc<ServiceState>, token: &str) {
-    let app = router(state.clone());
-    let body = serde_json::json!({
-        "name": "process",
-        "description": "A process agent",
-        "prompt": "You are a process agent."
-    });
-    app.oneshot(put_json_auth("/personas", &body, token))
-        .await
-        .unwrap();
-}
+mod common;
+use common::*;
 
 #[tokio::test]
 async fn activity_endpoint_returns_sse_content_type() {
@@ -132,7 +33,14 @@ async fn broadcast_channel_receives_events_from_handlers() {
     let (_temp, state, token) = setup();
 
     // Seed the persona so agent creation succeeds.
-    ensure_persona(&state, &token).await;
+    ensure_persona(
+        &state,
+        &token,
+        "process",
+        "A process agent",
+        "You are a process agent.",
+    )
+    .await;
 
     // Subscribe to the broadcast channel before triggering events.
     let mut rx = state.subscribe();

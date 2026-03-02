@@ -1,14 +1,5 @@
-use axum::{
-    body::Body,
-    http::{Method, Request, StatusCode},
-};
-use http_body_util::BodyExt;
-use oneiros_db::Database;
-use oneiros_model::*;
-use oneiros_service::{ServiceState, projections, router};
-use std::sync::Arc;
-use tempfile::TempDir;
-use tower::util::ServiceExt;
+mod common;
+use common::*;
 
 fn seed_tenant_and_actor(db: &Database) {
     let tenant_id = TenantId::new();
@@ -35,23 +26,6 @@ fn setup() -> (TempDir, Arc<ServiceState>) {
 
     let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
     (temp, state)
-}
-
-fn get(uri: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::GET)
-        .uri(uri)
-        .body(Body::empty())
-        .unwrap()
-}
-
-fn post_json(uri: &str, body: &serde_json::Value) -> Request<Body> {
-    Request::builder()
-        .method(Method::POST)
-        .uri(uri)
-        .header("content-type", "application/json")
-        .body(Body::from(serde_json::to_vec(body).unwrap()))
-        .unwrap()
 }
 
 #[tokio::test]

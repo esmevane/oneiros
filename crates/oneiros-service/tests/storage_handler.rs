@@ -1,85 +1,10 @@
-use axum::body::Body;
-use axum::http::{Method, Request, StatusCode};
-use http_body_util::BodyExt;
-use oneiros_db::Database;
-use oneiros_model::*;
-use oneiros_service::*;
-use std::sync::Arc;
-use tempfile::TempDir;
-use tower::util::ServiceExt;
-
-fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String {
-    let tenant_id = TenantId::new();
-    let actor_id = ActorId::new();
-
-    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
-        id: tenant_id,
-        name: TenantName::new("Test Tenant"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        id: actor_id,
-        tenant_id,
-        name: ActorName::new("Test Actor"),
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    Database::create_brain_db(brain_path).unwrap();
-
-    let brain_id = BrainId::new();
-    let event = Events::Brain(BrainEvents::BrainCreated(Brain {
-        id: brain_id,
-        tenant_id,
-        name: BrainName::new("test-brain"),
-        status: BrainStatus::Active,
-        path: brain_path.to_path_buf(),
-    }));
-
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    let token = Token::issue(TokenClaims {
-        brain_id,
-        tenant_id,
-        actor_id,
-    });
-
-    let event = Events::Ticket(TicketEvents::TicketIssued(Ticket {
-        id: TicketId::new(),
-        token: token.clone(),
-        created_by: actor_id,
-    }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
-
-    token.0
-}
-
-fn setup() -> (TempDir, Arc<ServiceState>, String) {
-    let temp = TempDir::new().unwrap();
-    let db_path = temp.path().join("service.db");
-    let db = Database::create(db_path).unwrap();
-
-    let brain_path = temp.path().join("brains").join("test-brain.db");
-    std::fs::create_dir_all(brain_path.parent().unwrap()).unwrap();
-    let token = seed_tenant_and_brain(&db, &brain_path);
-
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
-    (temp, state, token)
-}
+mod common;
+use common::*;
 
 /// Encode a storage key into a ref-based URI path segment.
 fn storage_uri(key: &str) -> String {
     let storage_ref = StorageRef::encode(&StorageKey::new(key));
     format!("/storage/{storage_ref}")
-}
-
-fn get_auth(uri: &str, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::GET)
-        .uri(uri)
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::empty())
-        .unwrap()
 }
 
 fn put_binary_auth(uri: &str, body: &[u8], description: &str, token: &str) -> Request<Body> {
@@ -90,15 +15,6 @@ fn put_binary_auth(uri: &str, body: &[u8], description: &str, token: &str) -> Re
         .header("authorization", format!("Bearer {token}"))
         .header("x-storage-description", description)
         .body(Body::from(body.to_vec()))
-        .unwrap()
-}
-
-fn delete_auth(uri: &str, token: &str) -> Request<Body> {
-    Request::builder()
-        .method(Method::DELETE)
-        .uri(uri)
-        .header("authorization", format!("Bearer {token}"))
-        .body(Body::empty())
         .unwrap()
 }
 
