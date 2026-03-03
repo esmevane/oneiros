@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(nature): Json<Nature>,
 ) -> Result<(StatusCode, Json<Nature>), Error> {
-    let event = Events::Nature(NatureEvents::NatureSet(nature.clone()));
-
-    ticket.db.log_event(&event, projections::BRAIN)?;
-    ticket.broadcast(&event);
+    let nature = ticket.service().set_nature(nature)?;
 
     Ok((StatusCode::OK, Json(nature)))
 }

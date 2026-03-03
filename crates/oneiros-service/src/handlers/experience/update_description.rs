@@ -8,25 +8,9 @@ pub(crate) async fn handler(
     Path(id): Path<ExperienceId>,
     Json(request): Json<UpdateExperienceDescriptionRequest>,
 ) -> Result<(StatusCode, Json<Experience>), Error> {
-    // Validate that the experience exists.
-    ticket
-        .db
-        .get_experience(id.to_string())?
-        .ok_or(NotFound::Experience(id))?;
-
-    let event = Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated {
-        experience_id: id,
-        description: request.description.clone(),
-    });
-
-    ticket.db.log_event(&event, projections::BRAIN)?;
-    ticket.broadcast(&event);
-
-    // Re-fetch the full experience (now includes the updated description via projection).
     let experience = ticket
-        .db
-        .get_experience(id.to_string())?
-        .ok_or(NotFound::Experience(id))?;
+        .service()
+        .update_experience_description(&id, request)?;
 
     Ok((StatusCode::OK, Json(experience)))
 }

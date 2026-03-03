@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<Connection>, Error> {
-    let connection = ticket
-        .db
-        .get_connection(id.to_string())?
-        .ok_or(NotFound::Connection(id))?;
+    let connection = ticket.service().get_connection(&id)?;
 
     Ok(Json(connection))
 }

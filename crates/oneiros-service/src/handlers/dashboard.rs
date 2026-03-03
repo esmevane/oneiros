@@ -31,10 +31,7 @@ pub(crate) async fn handler(
     State(state): State<Arc<ServiceState>>,
     Query(params): Query<DashboardParams>,
 ) -> Result<Html<String>, Error> {
-    let brains = {
-        let db = state.database.lock().map_err(|_| Error::DatabasePoisoned)?;
-        db.list_brains()?
-    };
+    let brains = state.system_service()?.list_brains()?;
 
     if brains.is_empty() {
         let html = "<html><body style='background:#0e0e10;color:#c8c8d0;font-family:monospace;padding:48px;text-align:center'>\

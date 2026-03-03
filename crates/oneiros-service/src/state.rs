@@ -5,6 +5,9 @@ use oneiros_db::Database;
 use oneiros_model::Events;
 use tokio::sync::broadcast;
 
+use crate::Error;
+use crate::system_service::SystemService;
+
 pub struct ServiceState {
     pub(crate) database: Mutex<Database>,
     pub(crate) data_dir: PathBuf,
@@ -30,5 +33,14 @@ impl ServiceState {
     /// Send an event to the broadcast channel (for testing).
     pub fn broadcast(&self, event: Events) {
         let _ = self.event_tx.send(event);
+    }
+
+    /// Create a scoped service for system-level domain operations.
+    ///
+    /// Acquires the system database lock; the lock lives as long as the
+    /// returned SystemService does.
+    pub(crate) fn system_service(&self) -> Result<SystemService<'_>, Error> {
+        let db = self.database.lock().map_err(|_| Error::DatabasePoisoned)?;
+        Ok(SystemService::new(db, &self.data_dir, &self.event_tx))
     }
 }

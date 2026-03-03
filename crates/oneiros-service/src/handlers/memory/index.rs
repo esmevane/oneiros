@@ -14,40 +14,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
 ) -> Result<Json<Vec<Memory>>, Error> {
-    let memories = match (params.agent, params.level) {
-        (Some(agent_name), Some(level)) => {
-            let agent = ticket
-                .db
-                .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
-
-            ticket
-                .db
-                .get_level(&level)?
-                .ok_or(NotFound::Level(level.clone()))?;
-
-            ticket
-                .db
-                .list_memories_by_agent_and_level(agent.id.to_string(), &level)?
-        }
-        (Some(agent_name), None) => {
-            let agent = ticket
-                .db
-                .get_agent(&agent_name)?
-                .ok_or(NotFound::Agent(agent_name))?;
-
-            ticket.db.list_memories_by_agent(agent.id.to_string())?
-        }
-        (None, Some(level)) => {
-            ticket
-                .db
-                .get_level(&level)?
-                .ok_or(NotFound::Level(level.clone()))?;
-
-            ticket.db.list_memories_by_level(&level)?
-        }
-        (None, None) => ticket.db.list_memories()?,
-    };
+    let memories = ticket.service().list_memories(params.agent, params.level)?;
 
     Ok(Json(memories))
 }

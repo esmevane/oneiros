@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(sensation): Json<Sensation>,
 ) -> Result<(StatusCode, Json<Sensation>), Error> {
-    let event = Events::Sensation(SensationEvents::SensationSet(sensation.clone()));
-
-    ticket.db.log_event(&event, projections::BRAIN)?;
-    ticket.broadcast(&event);
+    let sensation = ticket.service().set_sensation(sensation)?;
 
     Ok((StatusCode::OK, Json(sensation)))
 }
