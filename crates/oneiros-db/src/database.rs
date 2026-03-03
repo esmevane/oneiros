@@ -29,12 +29,9 @@ pub struct Database {
 impl Database {
     /// Register application-defined functions on a connection.
     fn register_functions(conn: &Connection) -> Result<(), DatabaseError> {
-        conn.create_scalar_function(
-            "uuid",
-            0,
-            FunctionFlags::SQLITE_UTF8 | FunctionFlags::SQLITE_DETERMINISTIC,
-            |_| Ok(Uuid::new_v4().to_string()),
-        )?;
+        conn.create_scalar_function("uuid", 0, FunctionFlags::SQLITE_UTF8, |_| {
+            Ok(Uuid::new_v4().to_string())
+        })?;
         Ok(())
     }
 
@@ -595,23 +592,22 @@ impl Database {
     }
 
     pub fn remove_agent(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
-        let tx = self.conn.unchecked_transaction()?;
         let name = name.as_ref();
 
-        tx.execute(
+        self.conn.execute(
             "delete from cognition where agent_id in (select id from agent where name = ?1)",
             params![name],
         )?;
-        tx.execute(
+        self.conn.execute(
             "delete from memory where agent_id in (select id from agent where name = ?1)",
             params![name],
         )?;
-        tx.execute(
+        self.conn.execute(
             "delete from experience where agent_id in (select id from agent where name = ?1)",
             params![name],
         )?;
-        tx.execute("delete from agent where name = ?1", params![name])?;
-        tx.commit()?;
+        self.conn
+            .execute("delete from agent where name = ?1", params![name])?;
 
         Ok(())
     }
@@ -1686,6 +1682,10 @@ impl Database {
     ) -> Result<(), DatabaseError> {
         let ref_json = serde_json::to_string(resource_ref)?;
         self.conn.execute(
+            "DELETE FROM expressions WHERE resource_ref = ?1 AND kind = ?2",
+            params![ref_json, kind],
+        )?;
+        self.conn.execute(
             "INSERT INTO expressions (resource_ref, kind, content) VALUES (?1, ?2, ?3)",
             params![ref_json, kind, content],
         )?;
@@ -1745,8 +1745,11 @@ impl Database {
     ) -> Result<(), DatabaseError> {
         let event = serde_json::to_value(data)?;
 
+        let tx = self.conn.unchecked_transaction()?;
         self.create_event(&event)?;
-        self.run_projections(projections, &event)
+        self.run_projections(projections, &event)?;
+        tx.commit()?;
+        Ok(())
     }
 
     fn create_event(&self, data: &Value) -> Result<(), DatabaseError> {
@@ -1774,6 +1777,8 @@ impl Database {
     }
 
     pub fn replay(&self, projections: &[&[Projection]]) -> Result<usize, DatabaseError> {
+        let tx = self.conn.unchecked_transaction()?;
+
         for group in projections.iter().rev() {
             for projection in group.iter().rev() {
                 (projection.reset)(self)?;
@@ -1810,6 +1815,7 @@ impl Database {
             count += 1;
         }
 
+        tx.commit()?;
         Ok(count)
     }
 
