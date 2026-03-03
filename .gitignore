@@ -6,4 +6,4 @@ exports
 # Deciduous database (local)
 .deciduous/
 graph.json
-narratives.md
+/narratives.md
