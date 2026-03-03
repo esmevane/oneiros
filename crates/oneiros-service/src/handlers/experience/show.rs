@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
 ) -> Result<Json<Experience>, Error> {
-    let experience = ticket
-        .db
-        .get_experience(id.to_string())?
-        .ok_or(NotFound::Experience(id))?;
+    let experience = ticket.service().get_experience(&id)?;
 
     Ok(Json(experience))
 }

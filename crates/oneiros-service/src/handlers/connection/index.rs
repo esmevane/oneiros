@@ -14,31 +14,10 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
 ) -> Result<Json<Vec<Connection>>, Error> {
-    let connections = match (params.nature, params.entity_ref) {
-        (Some(nature), Some(entity_ref)) => {
-            ticket
-                .db
-                .get_nature(&nature)?
-                .ok_or(NotFound::Nature(nature.clone()))?;
-
-            ticket
-                .db
-                .list_connections_by_ref(entity_ref.inner())?
-                .into_iter()
-                .filter(|c| c.nature == nature)
-                .collect()
-        }
-        (Some(nature), None) => {
-            ticket
-                .db
-                .get_nature(&nature)?
-                .ok_or(NotFound::Nature(nature.clone()))?;
-
-            ticket.db.list_connections_by_nature(&nature)?
-        }
-        (None, Some(entity_ref)) => ticket.db.list_connections_by_ref(entity_ref.inner())?,
-        (None, None) => ticket.db.list_connections()?,
-    };
+    let connections = ticket.service().list_connections(
+        params.nature,
+        params.entity_ref.as_ref().map(RefToken::inner),
+    )?;
 
     Ok(Json(connections))
 }

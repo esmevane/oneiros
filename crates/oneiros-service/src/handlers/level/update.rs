@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(level): Json<Level>,
 ) -> Result<(StatusCode, Json<Level>), Error> {
-    let event = Events::Level(LevelEvents::LevelSet(level.clone()));
-
-    ticket.db.log_event(&event, projections::BRAIN)?;
-    ticket.broadcast(&event);
+    let level = ticket.service().set_level(level)?;
 
     Ok((StatusCode::OK, Json(level)))
 }

@@ -12,10 +12,7 @@ pub(crate) async fn handler(
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
 
-    let event = Events::Storage(StorageEvents::StorageRemoved { key });
-
-    ticket.db.log_event(&event, projections::BRAIN)?;
-    ticket.broadcast(&event);
+    ticket.service().remove_storage(key)?;
 
     Ok(StatusCode::OK)
 }

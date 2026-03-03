@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<NatureName>,
 ) -> Result<StatusCode, Error> {
-    let event = Events::Nature(NatureEvents::NatureRemoved { name });
-
-    ticket.db.log_event(&event, projections::BRAIN)?;
-    ticket.broadcast(&event);
+    ticket.service().remove_nature(name)?;
 
     Ok(StatusCode::OK)
 }

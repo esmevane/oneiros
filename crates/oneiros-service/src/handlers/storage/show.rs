@@ -12,7 +12,7 @@ pub(crate) async fn handler(
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
 
-    let entry = ticket.db.get_storage(&key)?.ok_or(NotFound::Storage(key))?;
+    let entry = ticket.service().get_storage(&key)?;
 
     Ok(Json(entry))
 }

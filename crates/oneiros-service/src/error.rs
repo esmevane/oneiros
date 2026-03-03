@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use oneiros_model::*;
 
 use crate::extractors::ActorContextError;
-use crate::handlers::brain::CreateBrainError;
+use crate::system_service::CreateBrainError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PreconditionFailure {
