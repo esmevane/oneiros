@@ -14,17 +14,15 @@ pub struct Brain {
     pub tenant_id: TenantId,
     pub name: BrainName,
     pub status: BrainStatus,
-    pub path: std::path::PathBuf,
 }
 
 impl Brain {
-    pub fn init(tenant_id: TenantId, name: BrainName, path: impl Into<std::path::PathBuf>) -> Self {
+    pub fn init(tenant_id: TenantId, name: BrainName) -> Self {
         Self {
             id: BrainId::new(),
             tenant_id,
             name,
             status: BrainStatus::Active,
-            path: path.into(),
         }
     }
 }

@@ -48,7 +48,12 @@ pub(crate) async fn handler(
         None => &brains[0],
     };
 
-    let brain_db = Database::open_brain(&brain.path)?;
+    let stored_path = {
+        let db = state.database.lock().map_err(|_| Error::DatabasePoisoned)?;
+        db.get_brain_path(brain.tenant_id.to_string(), brain.id.to_string())?
+            .ok_or(Error::NotFound(NotFound::Brain(brain.id)))?
+    };
+    let brain_db = Database::open_brain(state.resolve_brain_path(&stored_path))?;
 
     let agents = brain_db.list_agents()?;
     let agent_count = agents.len();

@@ -64,14 +64,17 @@ impl FromRequestParts<Arc<ServiceState>> for ActorContext {
                 Err(ActorContextError::InvalidOrExpiredTicket)?;
             }
 
-            let path = db
+            let stored_path = db
                 .get_brain_path(claims.tenant_id.to_string(), claims.brain_id.to_string())?
                 .ok_or(NotFound::Brain(claims.brain_id))?;
 
-            (path, state.event_tx.clone())
+            (
+                state.resolve_brain_path(&stored_path),
+                state.event_tx.clone(),
+            )
         };
 
-        let brain_db = Database::open_brain(brain_path)?;
+        let brain_db = Database::open_brain(&brain_path)?;
 
         Ok(ActorContext {
             db: brain_db,

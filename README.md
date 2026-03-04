@@ -11,7 +11,7 @@ Oneiros nudges the model to do stuff like:
 - **Consider emotive expressions**: thoughts, understandings, reflections, interests, hopes, fears. Oneiros keeps your models engaged in a cognitive stream building exercise at all times, so over your project's lifetime, they mature and become more sophisticated assistants.
 - **Develop emergent sub-agent personas**: internal voices that steer the model in specific directions based on your interactions. Oneiros creates an agent organism out of your models, letting them develop an internal agent team that collaborates on problems with you.
 - **Remember experiences**: record some things in a layered memory system that blends text and blob storage. This exists apart from the cognition stream, creating a cohesive context-free recollection resource.
-- **Dream and introspect**: instead of needing to compact context, models can dream, wake, and slumber. Dreaming is simple: it just 
+- **Dream and introspect**: instead of needing to compact context, models can dream, wake, and slumber. Dreaming is simple: it collects an agent's memories and its activity vocabulary, and then traces that outward through recent project activity. Then the agent synthesizes this into a sense of self upon waking, complimentary to its own work-oriented contexts.
 
 And it does it all in two sqlite files:
 

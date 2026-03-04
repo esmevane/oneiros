@@ -37,7 +37,6 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         tenant_id,
         name: BrainName::new("test-brain"),
         status: BrainStatus::Active,
-        path: brain_path.to_path_buf(),
     }));
     db.log_event(&event, projections::SYSTEM).unwrap();
 

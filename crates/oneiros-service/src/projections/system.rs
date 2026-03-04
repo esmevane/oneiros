@@ -49,10 +49,21 @@ const BRAIN_PROJECTION: Projection = Projection {
 };
 
 fn apply_brain(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let brain: Brain = serde_json::from_value(data.clone())?;
-    let path = brain.path.display().to_string();
+    #[derive(serde::Deserialize)]
+    struct BrainEventData {
+        id: BrainId,
+        tenant_id: TenantId,
+        name: BrainName,
+        #[serde(default)]
+        path: Option<String>,
+    }
 
-    db.create_brain(&brain.id, &brain.tenant_id, &brain.name, &path)?;
+    let data: BrainEventData = serde_json::from_value(data.clone())?;
+    let path = data
+        .path
+        .unwrap_or_else(|| format!("brains/{}.db", data.name));
+
+    db.create_brain(&data.id, &data.tenant_id, &data.name, &path)?;
 
     Ok(())
 }
@@ -74,4 +85,62 @@ fn apply_ticket_issued(db: &Database, data: &Value) -> Result<(), DatabaseError>
     )?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn setup_system_db() -> (tempfile::TempDir, Database) {
+        let temp = tempfile::TempDir::new().unwrap();
+        let db = Database::create(temp.path().join("system.db")).unwrap();
+        let tenant_id = TenantId::new();
+        db.create_tenant(&tenant_id, &TenantName::new("test"))
+            .unwrap();
+        (temp, db)
+    }
+
+    #[test]
+    fn apply_brain_with_absolute_path_preserves_it() {
+        let (_temp, db) = setup_system_db();
+        let brain_id = BrainId::new();
+        let tenant_id: TenantId = db.get_tenant_id().unwrap().unwrap().parse().unwrap();
+
+        let data = json!({
+            "id": brain_id.to_string(),
+            "tenant_id": tenant_id.to_string(),
+            "name": "legacy-brain",
+            "status": "active",
+            "path": "/absolute/path/to/brain.db"
+        });
+
+        apply_brain(&db, &data).unwrap();
+
+        let stored = db
+            .get_brain_path(tenant_id.to_string(), brain_id.to_string())
+            .unwrap();
+        assert_eq!(stored, Some("/absolute/path/to/brain.db".to_string()));
+    }
+
+    #[test]
+    fn apply_brain_without_path_derives_relative() {
+        let (_temp, db) = setup_system_db();
+        let brain_id = BrainId::new();
+        let tenant_id: TenantId = db.get_tenant_id().unwrap().unwrap().parse().unwrap();
+
+        let data = json!({
+            "id": brain_id.to_string(),
+            "tenant_id": tenant_id.to_string(),
+            "name": "new-brain",
+            "status": "active"
+        });
+
+        apply_brain(&db, &data).unwrap();
+
+        let stored = db
+            .get_brain_path(tenant_id.to_string(), brain_id.to_string())
+            .unwrap();
+        assert_eq!(stored, Some("brains/new-brain.db".to_string()));
+    }
 }

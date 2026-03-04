@@ -55,10 +55,29 @@ mod tests {
             tenant_id: TenantId::new(),
             name: BrainName::new("test"),
             status: BrainStatus::Active,
-            path: std::path::PathBuf::from("/tmp/test"),
         });
         let json = serde_json::to_value(&event).unwrap();
         assert_eq!(event_type(&json), "brain-created");
+    }
+
+    /// Old events carry a `path` field that no longer exists on Brain.
+    /// Verify serde silently ignores the extra key during deserialization.
+    #[test]
+    fn brain_created_tolerates_legacy_path_field() {
+        let legacy_json = serde_json::json!({
+            "type": "brain-created",
+            "data": {
+                "id": TenantId::new().to_string(),
+                "tenant_id": TenantId::new().to_string(),
+                "name": "legacy-brain",
+                "status": "active",
+                "path": "/old/absolute/path/brain.db"
+            }
+        });
+        let roundtripped: BrainEvents = serde_json::from_value(legacy_json).unwrap();
+        assert!(
+            matches!(roundtripped, BrainEvents::BrainCreated(b) if b.name.as_str() == "legacy-brain")
+        );
     }
 
     #[test]

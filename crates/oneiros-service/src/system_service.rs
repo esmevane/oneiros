@@ -80,7 +80,7 @@ impl<'a> SystemService<'a> {
 
         Database::create_brain_db(&path)?;
 
-        let brain = Brain::init(tenant_id, request.name, path);
+        let brain = Brain::init(tenant_id, request.name);
         let brain_id = brain.id;
 
         let event = Events::Brain(BrainEvents::BrainCreated(brain));

@@ -230,28 +230,26 @@ impl Database {
     pub fn list_brains(&self) -> Result<Vec<Brain>, DatabaseError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, tenant_id, name, status, path FROM brain ORDER BY name")?;
+            .prepare("SELECT id, tenant_id, name, status FROM brain ORDER BY name")?;
 
         let rows = stmt.query_map([], |row| {
             let id: String = row.get(0)?;
             let tenant_id: String = row.get(1)?;
             let name: String = row.get(2)?;
             let status: String = row.get(3)?;
-            let path: String = row.get(4)?;
 
-            Ok((id, tenant_id, name, status, path))
+            Ok((id, tenant_id, name, status))
         })?;
 
         let mut brains = Vec::new();
 
         for row in rows {
-            let (id, tenant_id, name, status, path) = row?;
+            let (id, tenant_id, name, status) = row?;
             brains.push(Brain {
                 id: id.parse()?,
                 tenant_id: tenant_id.parse()?,
                 name: BrainName::new(name),
                 status: serde_json::from_value(serde_json::Value::String(status))?,
-                path: path.into(),
             });
         }
 
