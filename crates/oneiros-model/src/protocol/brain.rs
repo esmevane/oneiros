@@ -26,3 +26,11 @@ pub enum BrainRequests {
     GetBrain { name: BrainName },
     ListBrains,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum BrainResponses {
+    BrainCreated(BrainInfo),
+    BrainFound(Brain),
+    BrainsListed(Vec<Brain>),
+}

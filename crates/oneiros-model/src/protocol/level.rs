@@ -17,3 +17,12 @@ pub enum LevelRequests {
     GetLevel { name: LevelName },
     ListLevels,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum LevelResponses {
+    LevelSet(Level),
+    LevelFound(Level),
+    LevelsListed(Vec<Level>),
+    LevelRemoved,
+}

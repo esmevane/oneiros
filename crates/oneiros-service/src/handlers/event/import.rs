@@ -1,19 +1,7 @@
 use axum::Json;
-use serde_json::Value;
+use oneiros_model::*;
 
 use crate::*;
-
-#[derive(serde::Deserialize)]
-pub(crate) struct ImportEvent {
-    pub timestamp: String,
-    pub data: Value,
-}
-
-#[derive(serde::Serialize)]
-pub(crate) struct ImportResponse {
-    pub imported: usize,
-    pub replayed: usize,
-}
 
 pub(crate) async fn handler(
     ticket: ActorContext,

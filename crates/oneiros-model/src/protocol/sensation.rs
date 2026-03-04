@@ -17,3 +17,12 @@ pub enum SensationRequests {
     GetSensation { name: SensationName },
     ListSensations,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum SensationResponses {
+    SensationSet(Sensation),
+    SensationFound(Sensation),
+    SensationsListed(Vec<Sensation>),
+    SensationRemoved,
+}
