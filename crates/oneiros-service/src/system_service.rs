@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::MutexGuard;
 use tokio::sync::broadcast;
 
-use crate::error::{BadRequests, Conflicts, PreconditionFailure};
+use crate::error::{BadRequests, PreconditionFailure};
 use crate::{Error, projections};
 
 #[derive(Debug, thiserror::Error)]

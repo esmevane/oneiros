@@ -39,6 +39,22 @@ pub enum ExperienceRequests {
     CreateExperience(CreateExperienceRequest),
     UpdateExperienceDescription(UpdateExperienceDescriptionRequest),
     UpdateExperienceSensation(UpdateExperienceSensationRequest),
-    GetExperience { id: ExperienceId },
-    ListExperiences,
+    GetExperience {
+        id: ExperienceId,
+    },
+    ListExperiences {
+        #[serde(default)]
+        agent: Option<AgentName>,
+        #[serde(default)]
+        sensation: Option<SensationName>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum ExperienceResponses {
+    ExperienceCreated(Experience),
+    ExperienceUpdated(Experience),
+    ExperienceFound(Experience),
+    ExperiencesListed(Vec<Experience>),
 }

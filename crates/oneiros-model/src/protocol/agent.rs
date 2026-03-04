@@ -38,3 +38,13 @@ pub enum AgentRequests {
     GetAgent { name: AgentName },
     ListAgents,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum AgentResponses {
+    AgentCreated(Agent),
+    AgentUpdated(Agent),
+    AgentFound(Agent),
+    AgentsListed(Vec<Agent>),
+    AgentRemoved,
+}

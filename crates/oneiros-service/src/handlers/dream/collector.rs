@@ -41,41 +41,6 @@ impl From<DreamParams> for DreamConfig {
     }
 }
 
-pub(crate) struct DreamConfig {
-    /// Number of recent cognitions and experiences to include
-    /// in the orientation window.
-    pub recent_window: usize,
-    /// Maximum BFS traversal depth from the seed set.
-    /// None means unlimited.
-    pub dream_depth: Option<usize>,
-    /// Maximum number of cognitions in the dream.
-    /// None means unlimited.
-    pub cognition_size: Option<usize>,
-    /// Minimum memory level to include (log-level semantics).
-    /// Core memories are always included regardless of this setting.
-    /// None means include all levels.
-    pub recollection_level: Option<LevelName>,
-    /// Maximum number of non-core memories in the dream.
-    /// None means unlimited.
-    pub recollection_size: Option<usize>,
-    /// Maximum number of experiences in the dream.
-    /// None means unlimited.
-    pub experience_size: Option<usize>,
-}
-
-impl Default for DreamConfig {
-    fn default() -> Self {
-        Self {
-            recent_window: 5,
-            dream_depth: Some(1),
-            cognition_size: Some(20),
-            recollection_level: Some(LevelName::new("project")),
-            recollection_size: Some(30),
-            experience_size: Some(10),
-        }
-    }
-}
-
 fn level_priority(name: &LevelName) -> usize {
     match name.as_ref() {
         "core" => 5,
@@ -102,7 +67,7 @@ impl<'a> DreamCollector<'a> {
         let persona = self
             .db
             .get_persona(&agent.persona)?
-            .ok_or(crate::NotFound::Persona(agent.persona.clone()))?;
+            .ok_or(NotFound::Persona(agent.persona.clone()))?;
 
         // Vocabulary types — system-wide
         let textures = self.db.list_textures()?;

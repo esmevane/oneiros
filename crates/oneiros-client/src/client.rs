@@ -1,25 +1,7 @@
 use oneiros_model::*;
-use serde_json::Value;
 use std::net::SocketAddr;
 
 use crate::*;
-
-#[derive(serde::Serialize)]
-pub struct ImportEvent {
-    pub timestamp: String,
-    pub data: Value,
-}
-
-#[derive(serde::Deserialize)]
-pub struct ImportResponse {
-    pub imported: usize,
-    pub replayed: usize,
-}
-
-#[derive(serde::Deserialize)]
-pub struct ReplayResponse {
-    pub replayed: usize,
-}
 
 pub struct Client {
     client: SocketClient,

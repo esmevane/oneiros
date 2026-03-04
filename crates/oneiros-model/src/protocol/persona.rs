@@ -17,3 +17,12 @@ pub enum PersonaRequests {
     GetPersona { name: PersonaName },
     ListPersonas,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum PersonaResponses {
+    PersonaSet(Persona),
+    PersonaFound(Persona),
+    PersonasListed(Vec<Persona>),
+    PersonaRemoved,
+}

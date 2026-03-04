@@ -17,3 +17,12 @@ pub enum TextureRequests {
     GetTexture { name: TextureName },
     ListTextures,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum TextureResponses {
+    TextureSet(Texture),
+    TextureFound(Texture),
+    TexturesListed(Vec<Texture>),
+    TextureRemoved,
+}

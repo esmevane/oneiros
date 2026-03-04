@@ -17,3 +17,12 @@ pub enum NatureRequests {
     GetNature { name: NatureName },
     ListNatures,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum NatureResponses {
+    NatureSet(Nature),
+    NatureFound(Nature),
+    NaturesListed(Vec<Nature>),
+    NatureRemoved,
+}

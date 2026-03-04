@@ -7,8 +7,7 @@ use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use tokio::sync::broadcast;
 
-use crate::error::{Conflicts, DataIntegrity, NotFound};
-use crate::handlers::dream::collector::{DreamCollector, DreamConfig};
+use crate::handlers::dream::collector::DreamCollector;
 use crate::{Error, projections};
 
 /// Domain service for brain-scoped operations.

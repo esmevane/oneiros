@@ -1,13 +1,12 @@
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use oneiros_db::Database;
-use oneiros_model::{Events, Token, TokenError};
+use oneiros_model::{Events, NotFound, Token, TokenError};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
 use crate::Error;
 use crate::brain_service::BrainService;
-use crate::error::NotFound;
 use crate::state::ServiceState;
 
 #[derive(Debug, thiserror::Error)]
