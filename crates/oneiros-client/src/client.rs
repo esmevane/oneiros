@@ -165,10 +165,10 @@ impl Client {
     ) -> Result<Vec<Cognition>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
-            params.push(format!("agent={agent}"));
+            params.push(format!("agent={}", urlencoding::encode(agent.as_str())));
         }
         if let Some(texture) = texture {
-            params.push(format!("texture={texture}"));
+            params.push(format!("texture={}", urlencoding::encode(texture.as_str())));
         }
 
         let uri = if params.is_empty() {
@@ -205,10 +205,10 @@ impl Client {
     ) -> Result<Vec<Memory>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
-            params.push(format!("agent={agent}"));
+            params.push(format!("agent={}", urlencoding::encode(agent.as_str())));
         }
         if let Some(level) = level {
-            params.push(format!("level={level}"));
+            params.push(format!("level={}", urlencoding::encode(level.as_str())));
         }
 
         let uri = if params.is_empty() {
@@ -453,10 +453,13 @@ impl Client {
     ) -> Result<Vec<Connection>, Error> {
         let mut params = Vec::new();
         if let Some(nature) = nature {
-            params.push(format!("nature={nature}"));
+            params.push(format!("nature={}", urlencoding::encode(nature.as_str())));
         }
         if let Some(entity_ref) = entity_ref {
-            params.push(format!("entity_ref={entity_ref}"));
+            params.push(format!(
+                "entity_ref={}",
+                urlencoding::encode(&entity_ref.to_string())
+            ));
         }
 
         let uri = if params.is_empty() {
@@ -505,10 +508,13 @@ impl Client {
     ) -> Result<Vec<Experience>, Error> {
         let mut params = Vec::new();
         if let Some(agent) = agent {
-            params.push(format!("agent={agent}"));
+            params.push(format!("agent={}", urlencoding::encode(agent.as_str())));
         }
         if let Some(sensation) = sensation {
-            params.push(format!("sensation={sensation}"));
+            params.push(format!(
+                "sensation={}",
+                urlencoding::encode(sensation.as_str())
+            ));
         }
 
         let uri = if params.is_empty() {

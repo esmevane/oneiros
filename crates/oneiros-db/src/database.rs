@@ -307,7 +307,7 @@ impl Database {
         created_by: impl AsRef<str>,
     ) -> Result<(), DatabaseError> {
         self.conn.execute(
-            "insert into tickets (id, token, created_by) values (?1, ?2, ?3)",
+            "insert or ignore into tickets (id, token, created_by) values (?1, ?2, ?3)",
             params![ticket_id.as_ref(), token.as_ref(), created_by.as_ref()],
         )?;
         Ok(())
@@ -1733,8 +1733,21 @@ impl Database {
         Ok(results)
     }
 
+    pub fn count_expressions(&self) -> Result<usize, DatabaseError> {
+        let count: usize = self
+            .conn
+            .query_row("SELECT COUNT(*) FROM expressions", [], |row| row.get(0))?;
+        Ok(count)
+    }
+
     pub fn reset_expressions(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("DELETE FROM expressions")?;
+        Ok(())
+    }
+
+    pub fn reset_expressions_by_kind(&self, kind: &str) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("DELETE FROM expressions WHERE kind = ?1", params![kind])?;
         Ok(())
     }
 

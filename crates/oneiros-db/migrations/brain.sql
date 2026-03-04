@@ -145,6 +145,11 @@ create table if not exists connection (
     created_at  text not null
 );
 
+-- Connection graph traversal indexes (BFS in DreamCollector)
+create index if not exists idx_connection_from_ref on connection(from_ref);
+create index if not exists idx_connection_to_ref on connection(to_ref);
+create index if not exists idx_connection_nature on connection(nature);
+
 -- Experiences are descriptive edges connecting records in the brain.
 -- Each experience is bound to an agent (who created it) and a
 -- sensation (what type of relationship it describes).
@@ -157,6 +162,14 @@ create table if not exists experience (
     description text not null,
     created_at  text not null
 );
+
+-- Agent-scoped query indexes
+create index if not exists idx_cognition_agent on cognition(agent_id);
+create index if not exists idx_cognition_agent_texture on cognition(agent_id, texture);
+create index if not exists idx_memory_agent on memory(agent_id);
+create index if not exists idx_memory_agent_level on memory(agent_id, level);
+create index if not exists idx_experience_agent on experience(agent_id);
+create index if not exists idx_experience_agent_sensation on experience(agent_id, sensation);
 
 -- Storage entries map user-facing keys to content hashes. This table
 -- is a projection from storage-set and storage-removed events.

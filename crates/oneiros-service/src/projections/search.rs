@@ -25,7 +25,7 @@ const COGNITION_ADDED: Projection = Projection {
     name: "search:cognition-added",
     events: &["cognition-added"],
     apply: apply_cognition_added,
-    reset: |db| db.reset_expressions(),
+    reset: |db| db.reset_expressions_by_kind("cognition-content"),
 };
 
 fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
@@ -47,7 +47,7 @@ const MEMORY_ADDED: Projection = Projection {
     name: "search:memory-added",
     events: &["memory-added"],
     apply: apply_memory_added,
-    reset: |_| Ok(()),
+    reset: |db| db.reset_expressions_by_kind("memory-content"),
 };
 
 fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
@@ -65,7 +65,7 @@ const EXPERIENCE_CREATED: Projection = Projection {
     name: "search:experience-created",
     events: &["experience-created"],
     apply: apply_experience_created,
-    reset: |_| Ok(()),
+    reset: |db| db.reset_expressions_by_kind("experience-description"),
 };
 
 fn apply_experience_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
@@ -114,7 +114,10 @@ const AGENT_CREATED: Projection = Projection {
     name: "search:agent-created",
     events: &["agent-created"],
     apply: apply_agent_created,
-    reset: |_| Ok(()),
+    reset: |db| {
+        db.reset_expressions_by_kind("agent-description")?;
+        db.reset_expressions_by_kind("agent-prompt")
+    },
 };
 
 fn apply_agent_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
@@ -182,7 +185,10 @@ const PERSONA_SET: Projection = Projection {
     name: "search:persona-set",
     events: &["persona-set"],
     apply: apply_persona_set,
-    reset: |_| Ok(()),
+    reset: |db| {
+        db.reset_expressions_by_kind("persona-description")?;
+        db.reset_expressions_by_kind("persona-prompt")
+    },
 };
 
 fn apply_persona_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
@@ -219,4 +225,111 @@ fn apply_persona_removed(db: &Database, data: &Value) -> Result<(), DatabaseErro
     db.delete_expressions_by_ref(&resource_ref)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::projections;
+    use oneiros_db::Database;
+    use oneiros_model::*;
+    use tempfile::TempDir;
+
+    fn setup_brain() -> (TempDir, Database) {
+        let temp = TempDir::new().unwrap();
+        let db_path = temp.path().join("test-brain.db");
+        let db = Database::create_brain_db(&db_path).unwrap();
+        (temp, db)
+    }
+
+    #[test]
+    fn replay_produces_same_expression_count() {
+        let (_temp, db) = setup_brain();
+
+        // Seed prerequisites
+        let persona = Persona::init(
+            PersonaName::new("test-persona"),
+            Description::new("A test persona"),
+            Prompt::new("test persona prompt"),
+        );
+        db.log_event(PersonaEvents::PersonaSet(persona), projections::BRAIN)
+            .unwrap();
+
+        let texture = Texture::init(
+            TextureName::new("observation"),
+            Description::new("Observations"),
+            Prompt::default(),
+        );
+        db.log_event(TextureEvents::TextureSet(texture), projections::BRAIN)
+            .unwrap();
+
+        let level = Level::init(
+            LevelName::new("session"),
+            Description::new("Session-level"),
+            Prompt::default(),
+        );
+        db.log_event(LevelEvents::LevelSet(level), projections::BRAIN)
+            .unwrap();
+
+        let sensation = Sensation::init(
+            SensationName::new("caused"),
+            Description::new("Causal connection"),
+            Prompt::default(),
+        );
+        db.log_event(SensationEvents::SensationSet(sensation), projections::BRAIN)
+            .unwrap();
+
+        // Seed entities
+        let agent = Agent::init(
+            "test agent description",
+            "test agent prompt",
+            AgentName::new("test-agent"),
+            PersonaName::new("test-persona"),
+        );
+        db.log_event(AgentEvents::AgentCreated(agent.clone()), projections::BRAIN)
+            .unwrap();
+
+        let cognition = Cognition::create(
+            agent.id,
+            TextureName::new("observation"),
+            Content::new("an interesting observation about architecture"),
+        );
+        db.log_event(
+            CognitionEvents::CognitionAdded(cognition),
+            projections::BRAIN,
+        )
+        .unwrap();
+
+        let memory = Memory::create(
+            agent.id,
+            LevelName::new("session"),
+            Content::new("a consolidated memory about patterns"),
+        );
+        db.log_event(MemoryEvents::MemoryAdded(memory), projections::BRAIN)
+            .unwrap();
+
+        let experience = Experience::create(
+            agent.id,
+            SensationName::new("caused"),
+            Description::new("one thought produced another"),
+        );
+        db.log_event(
+            ExperienceEvents::ExperienceCreated(experience),
+            projections::BRAIN,
+        )
+        .unwrap();
+
+        // Count expressions after initial seeding
+        let count_before = db.count_expressions().unwrap();
+        assert!(count_before > 0, "should have expressions after seeding");
+
+        // Replay all events — resets then re-applies
+        db.replay(projections::BRAIN).unwrap();
+
+        // Count again — must be identical
+        let count_after = db.count_expressions().unwrap();
+        assert_eq!(
+            count_before, count_after,
+            "replay should produce identical expression count"
+        );
+    }
 }
