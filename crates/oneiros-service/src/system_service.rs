@@ -20,7 +20,7 @@ pub enum CreateBrainError {
 /// on the system Database behind a Mutex rather than a per-request brain Database.
 ///
 /// Holds the MutexGuard directly — the lock lives as long as the service does.
-pub(crate) struct SystemService<'a> {
+pub struct SystemService<'a> {
     db: MutexGuard<'a, Database>,
     data_dir: &'a PathBuf,
     event_tx: &'a broadcast::Sender<Events>,

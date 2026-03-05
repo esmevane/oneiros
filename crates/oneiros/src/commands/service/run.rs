@@ -40,7 +40,7 @@ impl RunService {
             context.data_dir().to_path_buf(),
         ));
 
-        oneiros_service::serve(state, addr).await?;
+        oneiros_http::serve(state, addr).await?;
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 

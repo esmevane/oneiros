@@ -2,13 +2,11 @@
 name = "oneiros-service"
 version.workspace = true
 edition.workspace = true
-description = "Provides resource interactions for the database layer via http"
+description = "Domain services and projections for the oneiros event-sourced brain"
 repository.workspace = true
 license.workspace = true
 
 [dependencies]
-askama.workspace = true
-axum.workspace = true
 data-encoding.workspace = true
 flate2.workspace = true
 oneiros-db.workspace = true
@@ -19,13 +17,7 @@ serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-tokio-stream.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-http-body-util.workspace = true
-oneiros-client.workspace = true
-oneiros-fs.workspace = true
-rusqlite.workspace = true
 tempfile.workspace = true
-tower.workspace = true

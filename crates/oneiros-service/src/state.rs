@@ -35,12 +35,27 @@ impl ServiceState {
         let _ = self.event_tx.send(event);
     }
 
+    /// Acquire the system database lock.
+    pub fn lock_database(&self) -> Result<std::sync::MutexGuard<'_, Database>, Error> {
+        self.database.lock().map_err(|_| Error::DatabasePoisoned)
+    }
+
+    /// Access the event broadcast sender.
+    pub fn event_sender(&self) -> &broadcast::Sender<Events> {
+        &self.event_tx
+    }
+
+    /// Access the data directory path.
+    pub fn data_dir(&self) -> &std::path::Path {
+        &self.data_dir
+    }
+
     /// Create a scoped service for system-level domain operations.
     ///
     /// Acquires the system database lock; the lock lives as long as the
     /// returned SystemService does.
-    pub(crate) fn system_service(&self) -> Result<SystemService<'_>, Error> {
-        let db = self.database.lock().map_err(|_| Error::DatabasePoisoned)?;
+    pub fn system_service(&self) -> Result<SystemService<'_>, Error> {
+        let db = self.lock_database()?;
         Ok(SystemService::new(db, &self.data_dir, &self.event_tx))
     }
 }

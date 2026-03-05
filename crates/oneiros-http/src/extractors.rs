@@ -2,12 +2,11 @@ use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use oneiros_db::Database;
 use oneiros_model::{Events, NotFound, Token, TokenError};
+use oneiros_service::{BrainService, ServiceState};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
 use crate::Error;
-use crate::brain_service::BrainService;
-use crate::state::ServiceState;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ActorContextError {
@@ -57,7 +56,7 @@ impl FromRequestParts<Arc<ServiceState>> for ActorContext {
         let claims = token.decode().map_err(ActorContextError::from)?;
 
         let (brain_path, event_tx) = {
-            let db = state.database.lock().map_err(|_| Error::DatabasePoisoned)?;
+            let db = state.lock_database()?;
 
             if !db.validate_ticket(token.as_str())? {
                 Err(ActorContextError::InvalidOrExpiredTicket)?;
@@ -67,7 +66,7 @@ impl FromRequestParts<Arc<ServiceState>> for ActorContext {
                 .get_brain_path(claims.tenant_id.to_string(), claims.brain_id.to_string())?
                 .ok_or(NotFound::Brain(claims.brain_id))?;
 
-            (path, state.event_tx.clone())
+            (path, state.event_sender().clone())
         };
 
         let brain_db = Database::open_brain(brain_path)?;
