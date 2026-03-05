@@ -31,7 +31,7 @@ pub(crate) async fn handler(
     Query(params): Query<DashboardParams>,
 ) -> Result<Html<String>, Error> {
     let BrainResponses::BrainsListed(brains) = state.system_service()?.list_brains()? else {
-        unreachable!()
+        Err(Error::ProjectExtractionFailure)?
     };
 
     if brains.is_empty() {
@@ -59,7 +59,7 @@ pub(crate) async fn handler(
         recent_cognitions,
     }) = state.brain_summary(brain)?
     else {
-        unreachable!()
+        return Err(Error::ProjectSummaryFailure);
     };
 
     let agent_count = agents.len();
