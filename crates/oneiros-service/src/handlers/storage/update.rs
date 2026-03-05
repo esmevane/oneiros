@@ -13,7 +13,7 @@ pub(crate) async fn handler(
     Path(storage_ref): Path<StorageRef>,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<(StatusCode, Json<StorageEntry>), Error> {
+) -> Result<(StatusCode, Json<StorageResponses>), Error> {
     let key = storage_ref
         .decode()
         .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
@@ -23,7 +23,7 @@ pub(crate) async fn handler(
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    let entry = ticket.service().set_storage(key, description, &body)?;
+    let response = ticket.service().set_storage(key, description, &body)?;
 
-    Ok((StatusCode::OK, Json(entry)))
+    Ok((StatusCode::OK, Json(response)))
 }

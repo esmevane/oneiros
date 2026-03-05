@@ -18,8 +18,7 @@ async fn set_persona_returns_ok() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Persona = serde_json::from_slice(&bytes).unwrap();
+    let info: Persona = body_json(response).await;
     assert_eq!(info.name, PersonaName::new("expert"));
     assert_eq!(info.description.as_str(), "A domain expert");
     assert_eq!(info.prompt.as_str(), "You are a domain expert.");
@@ -64,8 +63,7 @@ async fn set_persona_is_idempotent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Persona = serde_json::from_slice(&bytes).unwrap();
+    let info: Persona = body_json(response).await;
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -78,8 +76,7 @@ async fn list_personas_empty() {
     let response = app.oneshot(get_auth("/personas", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Persona> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Persona> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -103,8 +100,7 @@ async fn list_personas_after_set() {
     let response = app.oneshot(get_auth("/personas", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Persona> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Persona> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 

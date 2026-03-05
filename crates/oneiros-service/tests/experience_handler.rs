@@ -20,8 +20,7 @@ async fn create_experience_returns_created() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let experience: Experience = serde_json::from_slice(&bytes).unwrap();
+    let experience: Experience = body_json(response).await;
     assert!(!experience.id.is_empty());
     assert_eq!(experience.sensation, SensationName::new("echoes"));
     assert_eq!(
@@ -76,8 +75,7 @@ async fn list_experiences_empty() {
     let response = app.oneshot(get_auth("/experiences", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Experience> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Experience> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -111,8 +109,7 @@ async fn list_experiences_after_create() {
     let response = app.oneshot(get_auth("/experiences", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Experience> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Experience> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 
@@ -132,8 +129,7 @@ async fn get_experience_by_id() {
         .oneshot(post_json_auth("/experiences", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Experience = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = body_json(response).await;
 
     let app = router(state);
     let response = app
@@ -142,8 +138,7 @@ async fn get_experience_by_id() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Experience = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Experience = body_json(response).await;
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.description.as_str(), "A notable resonance.");
 }
@@ -177,8 +172,7 @@ async fn update_experience_description() {
         .oneshot(post_json_auth("/experiences", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Experience = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = body_json(response).await;
 
     let app = router(state.clone());
     let body = serde_json::json!({
@@ -194,8 +188,7 @@ async fn update_experience_description() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let updated: Experience = serde_json::from_slice(&bytes).unwrap();
+    let updated: Experience = body_json(response).await;
     assert_eq!(
         updated.description.as_str(),
         "Updated description with deeper understanding."
@@ -219,8 +212,7 @@ async fn update_experience_sensation() {
         .oneshot(post_json_auth("/experiences", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Experience = serde_json::from_slice(&bytes).unwrap();
+    let created: Experience = body_json(response).await;
     assert_eq!(created.sensation, SensationName::new("tensions"));
 
     let app = router(state.clone());
@@ -237,8 +229,7 @@ async fn update_experience_sensation() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let updated: Experience = serde_json::from_slice(&bytes).unwrap();
+    let updated: Experience = body_json(response).await;
     assert_eq!(updated.sensation, SensationName::new("echoes"));
     assert_eq!(updated.description.as_str(), "Original experience.");
 }

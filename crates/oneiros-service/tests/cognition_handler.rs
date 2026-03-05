@@ -20,8 +20,7 @@ async fn add_cognition_returns_created() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let cognition: Cognition = serde_json::from_slice(&bytes).unwrap();
+    let cognition: Cognition = body_json(response).await;
     assert!(!cognition.id.is_empty());
     assert_eq!(cognition.texture, TextureName::new("observation"));
     assert_eq!(
@@ -76,8 +75,7 @@ async fn list_cognitions_empty() {
     let response = app.oneshot(get_auth("/cognitions", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -111,8 +109,7 @@ async fn list_cognitions_after_add() {
     let response = app.oneshot(get_auth("/cognitions", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 
@@ -153,8 +150,7 @@ async fn list_cognitions_filtered_by_agent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = body_json(response).await;
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "Architect thought.");
 }
@@ -194,8 +190,7 @@ async fn list_cognitions_filtered_by_texture() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Cognition> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Cognition> = body_json(response).await;
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "An insight.");
 }
@@ -229,8 +224,7 @@ async fn get_cognition_by_id() {
         .oneshot(post_json_auth("/cognitions", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Cognition = serde_json::from_slice(&bytes).unwrap();
+    let created: Cognition = body_json(response).await;
 
     let app = router(state);
     let response = app
@@ -239,8 +233,7 @@ async fn get_cognition_by_id() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Cognition = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Cognition = body_json(response).await;
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.content.as_str(), "A notable observation.");
 }

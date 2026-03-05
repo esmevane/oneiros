@@ -31,7 +31,9 @@ pub(crate) async fn handler(
     State(state): State<Arc<ServiceState>>,
     Query(params): Query<DashboardParams>,
 ) -> Result<Html<String>, Error> {
-    let brains = state.system_service()?.list_brains()?;
+    let BrainResponses::BrainsListed(brains) = state.system_service()?.list_brains()? else {
+        unreachable!()
+    };
 
     if brains.is_empty() {
         let html = "<html><body style='background:#0e0e10;color:#c8c8d0;font-family:monospace;padding:48px;text-align:center'>\

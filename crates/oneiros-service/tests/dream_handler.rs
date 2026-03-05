@@ -16,8 +16,7 @@ async fn dream_returns_agent_context() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
     assert_eq!(context.agent.name, AgentName::new("governor"));
     assert_eq!(context.cognitions.len(), 1);
 }
@@ -69,8 +68,7 @@ async fn dream_scopes_connections_to_agent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     assert_eq!(
         context.connections.len(),
@@ -87,8 +85,7 @@ async fn dream_scopes_connections_to_agent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     assert_eq!(
         context.connections.len(),
@@ -133,8 +130,7 @@ async fn dream_collector_returns_connected_cognitions() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     // Graph traversal is active (connections exist), so not all cognitions
     // are included — only connected + recent 20.
@@ -166,8 +162,7 @@ async fn dream_collector_falls_back_for_empty_graph() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     // Fallback: ALL cognitions included.
     assert_eq!(context.cognitions.len(), 5);
@@ -195,8 +190,7 @@ async fn dream_collector_includes_memories_at_threshold() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     // Session-level memories pass the default "session" threshold.
     assert_eq!(context.memories.len(), 3);
@@ -237,8 +231,7 @@ async fn dream_collector_includes_recent_cognitions() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     // Both the connected cognition and the recent one should be present.
     let ids: Vec<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
@@ -294,8 +287,7 @@ async fn dream_max_depth_limits_traversal() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     let ids: Vec<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
     assert!(
@@ -318,8 +310,7 @@ async fn dream_max_depth_limits_traversal() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     let ids: Vec<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
     assert!(
@@ -367,8 +358,7 @@ async fn dream_max_cognitions_caps_output() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     assert_eq!(context.cognitions.len(), 2, "should cap at cognition_size");
     // Connections should be filtered to match — only 2 connections remain.
@@ -407,8 +397,7 @@ async fn dream_filters_memories_by_level() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     assert_eq!(
         context.memories.len(),
@@ -455,8 +444,7 @@ async fn dream_caps_non_core_memories() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     // 2 core + 3 capped project = 5 total.
     assert_eq!(context.memories.len(), 5, "2 core + 3 capped project");
@@ -503,8 +491,7 @@ async fn dream_caps_experiences() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let context: DreamContext = serde_json::from_slice(&bytes).unwrap();
+    let context: DreamContext = body_json(response).await;
 
     assert_eq!(
         context.experiences.len(),

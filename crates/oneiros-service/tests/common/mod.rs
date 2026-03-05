@@ -136,9 +136,22 @@ pub fn delete_auth(uri: &str, token: &str) -> Request<Body> {
         .unwrap()
 }
 
-// -- Response helper --
+// -- Response helpers --
 
+/// Parse response body, extracting from `{ "type": "...", "data": ... }` envelope
+/// when present, falling back to raw deserialization for non-enveloped responses.
 pub async fn body_json<T: serde::de::DeserializeOwned>(response: axum::response::Response) -> T {
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    if let Some(data) = value.get("data") {
+        serde_json::from_value(data.clone()).unwrap()
+    } else {
+        serde_json::from_value(value).unwrap()
+    }
+}
+
+/// Parse response body as a raw bytes → T (no envelope extraction).
+pub async fn body_bytes<T: serde::de::DeserializeOwned>(response: axum::response::Response) -> T {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     serde_json::from_slice(&bytes).unwrap()
 }

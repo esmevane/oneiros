@@ -3,11 +3,16 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectAgentByName {
+    pub name: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum AgentEvents {
     AgentCreated(Agent),
     AgentUpdated(Agent),
-    AgentRemoved { name: AgentName },
+    AgentRemoved(SelectAgentByName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,8 +39,8 @@ pub struct UpdateAgentRequest {
 pub enum AgentRequests {
     CreateAgent(CreateAgentRequest),
     UpdateAgent(UpdateAgentRequest),
-    RemoveAgent { name: AgentName },
-    GetAgent { name: AgentName },
+    RemoveAgent(SelectAgentByName),
+    GetAgent(SelectAgentByName),
     ListAgents,
 }
 

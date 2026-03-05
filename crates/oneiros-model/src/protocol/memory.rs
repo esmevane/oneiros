@@ -3,6 +3,19 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectMemoryById {
+    pub id: MemoryId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListMemoriesFilter {
+    #[serde(default)]
+    pub agent: Option<AgentName>,
+    #[serde(default)]
+    pub level: Option<LevelName>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum MemoryEvents {
     MemoryAdded(Memory),
@@ -19,15 +32,8 @@ pub struct AddMemoryRequest {
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum MemoryRequests {
     AddMemory(AddMemoryRequest),
-    GetMemory {
-        id: MemoryId,
-    },
-    ListMemories {
-        #[serde(default)]
-        agent: Option<AgentName>,
-        #[serde(default)]
-        level: Option<LevelName>,
-    },
+    GetMemory(SelectMemoryById),
+    ListMemories(ListMemoriesFilter),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

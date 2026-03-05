@@ -6,7 +6,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ConnectionId>,
-) -> Result<Json<Connection>, Error> {
+) -> Result<Json<ConnectionResponses>, Error> {
     let connection = ticket.service().get_connection(&id)?;
 
     Ok(Json(connection))

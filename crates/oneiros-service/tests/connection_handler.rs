@@ -22,8 +22,7 @@ async fn create_connection_returns_created() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let connection: Connection = serde_json::from_slice(&bytes).unwrap();
+    let connection: Connection = body_json(response).await;
     assert_eq!(connection.nature, NatureName::new("origin"));
     assert_eq!(connection.from_ref, ref_a);
     assert_eq!(connection.to_ref, ref_b);
@@ -58,8 +57,7 @@ async fn list_connections_empty() {
     let response = app.oneshot(get_auth("/connections", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Connection> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Connection> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -86,8 +84,7 @@ async fn list_connections_after_create() {
     let response = app.oneshot(get_auth("/connections", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Connection> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Connection> = body_json(response).await;
     assert_eq!(list.len(), 1);
 }
 
@@ -123,8 +120,7 @@ async fn show_connection_by_id() {
         .oneshot(post_json_auth("/connections", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Connection = serde_json::from_slice(&bytes).unwrap();
+    let created: Connection = body_json(response).await;
 
     let app = router(state);
     let response = app
@@ -133,8 +129,7 @@ async fn show_connection_by_id() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Connection = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Connection = body_json(response).await;
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.nature, NatureName::new("context"));
 }
@@ -158,8 +153,7 @@ async fn remove_connection_then_gone() {
         .oneshot(post_json_auth("/connections", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Connection = serde_json::from_slice(&bytes).unwrap();
+    let created: Connection = body_json(response).await;
 
     let app = router(state.clone());
     let response = app
@@ -214,8 +208,7 @@ async fn list_connections_filters_by_nature() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Connection> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Connection> = body_json(response).await;
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].nature, NatureName::new("origin"));
 }

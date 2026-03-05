@@ -6,8 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(agent_name): Path<AgentName>,
-) -> Result<Json<DreamContext>, Error> {
-    let context = ticket.service().wake(&agent_name)?;
+) -> Result<Json<LifecycleResponses>, Error> {
+    let response = ticket.service().wake(&agent_name)?;
 
-    Ok(Json(context))
+    Ok(Json(response))
 }

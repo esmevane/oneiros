@@ -40,7 +40,7 @@ impl<'a> BrainService<'a> {
 
     // ── Agent operations ──────────────────────────────────────────────
 
-    pub fn create_agent(&self, request: CreateAgentRequest) -> Result<Agent, Error> {
+    pub fn create_agent(&self, request: CreateAgentRequest) -> Result<AgentResponses, Error> {
         self.db
             .get_persona(&request.persona)?
             .ok_or(NotFound::Persona(request.persona.clone()))?;
@@ -59,24 +59,26 @@ impl<'a> BrainService<'a> {
         let event = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(agent)
+        Ok(AgentResponses::AgentCreated(agent))
     }
 
-    pub fn list_agents(&self) -> Result<Vec<Agent>, Error> {
-        Ok(self.db.list_agents()?)
+    pub fn list_agents(&self) -> Result<AgentResponses, Error> {
+        Ok(AgentResponses::AgentsListed(self.db.list_agents()?))
     }
 
-    pub fn get_agent(&self, name: &AgentName) -> Result<Agent, Error> {
-        self.db
+    pub fn get_agent(&self, name: &AgentName) -> Result<AgentResponses, Error> {
+        let agent = self
+            .db
             .get_agent(name)?
-            .ok_or_else(|| NotFound::Agent(name.clone()).into())
+            .ok_or(NotFound::Agent(name.clone()))?;
+        Ok(AgentResponses::AgentFound(agent))
     }
 
     pub fn update_agent(
         &self,
         name: &AgentName,
         request: UpdateAgentRequest,
-    ) -> Result<Agent, Error> {
+    ) -> Result<AgentResponses, Error> {
         let existing = self
             .db
             .get_agent(name)?
@@ -97,19 +99,19 @@ impl<'a> BrainService<'a> {
         let event = Events::Agent(AgentEvents::AgentUpdated(agent.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(agent)
+        Ok(AgentResponses::AgentUpdated(agent))
     }
 
-    pub fn remove_agent(&self, name: AgentName) -> Result<(), Error> {
-        let event = Events::Agent(AgentEvents::AgentRemoved { name });
+    pub fn remove_agent(&self, name: AgentName) -> Result<AgentResponses, Error> {
+        let event = Events::Agent(AgentEvents::AgentRemoved(SelectAgentByName { name }));
         self.log_and_broadcast(&event)?;
 
-        Ok(())
+        Ok(AgentResponses::AgentRemoved)
     }
 
     // ── Cognition operations ──────────────────────────────────────────
 
-    pub fn add_cognition(&self, request: AddCognitionRequest) -> Result<Cognition, Error> {
+    pub fn add_cognition(&self, request: AddCognitionRequest) -> Result<CognitionResponses, Error> {
         let agent = self
             .db
             .get_agent(&request.agent)?
@@ -124,20 +126,22 @@ impl<'a> BrainService<'a> {
         let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(cognition)
+        Ok(CognitionResponses::CognitionAdded(cognition))
     }
 
-    pub fn get_cognition(&self, id: &CognitionId) -> Result<Cognition, Error> {
-        self.db
+    pub fn get_cognition(&self, id: &CognitionId) -> Result<CognitionResponses, Error> {
+        let cognition = self
+            .db
             .get_cognition(id.to_string())?
-            .ok_or_else(|| NotFound::Cognition(*id).into())
+            .ok_or(NotFound::Cognition(*id))?;
+        Ok(CognitionResponses::CognitionFound(cognition))
     }
 
     pub fn list_cognitions(
         &self,
         agent: Option<AgentName>,
         texture: Option<TextureName>,
-    ) -> Result<Vec<Cognition>, Error> {
+    ) -> Result<CognitionResponses, Error> {
         let cognitions = match (agent, texture) {
             (Some(agent_name), Some(texture)) => {
                 let agent = self
@@ -170,132 +174,146 @@ impl<'a> BrainService<'a> {
             (None, None) => self.db.list_cognitions()?,
         };
 
-        Ok(cognitions)
+        Ok(CognitionResponses::CognitionsListed(cognitions))
     }
 
     // ── Level operations ────────────────────────────────────────────
 
-    pub fn set_level(&self, level: Level) -> Result<Level, Error> {
+    pub fn set_level(&self, level: Level) -> Result<LevelResponses, Error> {
         let event = Events::Level(LevelEvents::LevelSet(level.clone()));
         self.log_and_broadcast(&event)?;
-        Ok(level)
+        Ok(LevelResponses::LevelSet(level))
     }
 
-    pub fn list_levels(&self) -> Result<Vec<Level>, Error> {
-        Ok(self.db.list_levels()?)
+    pub fn list_levels(&self) -> Result<LevelResponses, Error> {
+        Ok(LevelResponses::LevelsListed(self.db.list_levels()?))
     }
 
-    pub fn get_level(&self, name: &LevelName) -> Result<Level, Error> {
-        self.db
+    pub fn get_level(&self, name: &LevelName) -> Result<LevelResponses, Error> {
+        let level = self
+            .db
             .get_level(name)?
-            .ok_or_else(|| NotFound::Level(name.clone()).into())
+            .ok_or(NotFound::Level(name.clone()))?;
+        Ok(LevelResponses::LevelFound(level))
     }
 
-    pub fn remove_level(&self, name: LevelName) -> Result<(), Error> {
-        let event = Events::Level(LevelEvents::LevelRemoved { name });
+    pub fn remove_level(&self, name: LevelName) -> Result<LevelResponses, Error> {
+        let event = Events::Level(LevelEvents::LevelRemoved(SelectLevelByName { name }));
         self.log_and_broadcast(&event)?;
-        Ok(())
+        Ok(LevelResponses::LevelRemoved)
     }
 
     // ── Nature operations ───────────────────────────────────────────
 
-    pub fn set_nature(&self, nature: Nature) -> Result<Nature, Error> {
+    pub fn set_nature(&self, nature: Nature) -> Result<NatureResponses, Error> {
         let event = Events::Nature(NatureEvents::NatureSet(nature.clone()));
         self.log_and_broadcast(&event)?;
-        Ok(nature)
+        Ok(NatureResponses::NatureSet(nature))
     }
 
-    pub fn list_natures(&self) -> Result<Vec<Nature>, Error> {
-        Ok(self.db.list_natures()?)
+    pub fn list_natures(&self) -> Result<NatureResponses, Error> {
+        Ok(NatureResponses::NaturesListed(self.db.list_natures()?))
     }
 
-    pub fn get_nature(&self, name: &NatureName) -> Result<Nature, Error> {
-        self.db
+    pub fn get_nature(&self, name: &NatureName) -> Result<NatureResponses, Error> {
+        let nature = self
+            .db
             .get_nature(name)?
-            .ok_or_else(|| NotFound::Nature(name.clone()).into())
+            .ok_or(NotFound::Nature(name.clone()))?;
+        Ok(NatureResponses::NatureFound(nature))
     }
 
-    pub fn remove_nature(&self, name: NatureName) -> Result<(), Error> {
-        let event = Events::Nature(NatureEvents::NatureRemoved { name });
+    pub fn remove_nature(&self, name: NatureName) -> Result<NatureResponses, Error> {
+        let event = Events::Nature(NatureEvents::NatureRemoved(SelectNatureByName { name }));
         self.log_and_broadcast(&event)?;
-        Ok(())
+        Ok(NatureResponses::NatureRemoved)
     }
 
     // ── Persona operations ──────────────────────────────────────────
 
-    pub fn set_persona(&self, persona: Persona) -> Result<Persona, Error> {
+    pub fn set_persona(&self, persona: Persona) -> Result<PersonaResponses, Error> {
         let event = Events::Persona(PersonaEvents::PersonaSet(persona.clone()));
         self.log_and_broadcast(&event)?;
-        Ok(persona)
+        Ok(PersonaResponses::PersonaSet(persona))
     }
 
-    pub fn list_personas(&self) -> Result<Vec<Persona>, Error> {
-        Ok(self.db.list_personas()?)
+    pub fn list_personas(&self) -> Result<PersonaResponses, Error> {
+        Ok(PersonaResponses::PersonasListed(self.db.list_personas()?))
     }
 
-    pub fn get_persona(&self, name: &PersonaName) -> Result<Persona, Error> {
-        self.db
+    pub fn get_persona(&self, name: &PersonaName) -> Result<PersonaResponses, Error> {
+        let persona = self
+            .db
             .get_persona(name)?
-            .ok_or_else(|| NotFound::Persona(name.clone()).into())
+            .ok_or(NotFound::Persona(name.clone()))?;
+        Ok(PersonaResponses::PersonaFound(persona))
     }
 
-    pub fn remove_persona(&self, name: PersonaName) -> Result<(), Error> {
-        let event = Events::Persona(PersonaEvents::PersonaRemoved { name });
+    pub fn remove_persona(&self, name: PersonaName) -> Result<PersonaResponses, Error> {
+        let event = Events::Persona(PersonaEvents::PersonaRemoved(SelectPersonaByName { name }));
         self.log_and_broadcast(&event)?;
-        Ok(())
+        Ok(PersonaResponses::PersonaRemoved)
     }
 
     // ── Sensation operations ────────────────────────────────────────
 
-    pub fn set_sensation(&self, sensation: Sensation) -> Result<Sensation, Error> {
+    pub fn set_sensation(&self, sensation: Sensation) -> Result<SensationResponses, Error> {
         let event = Events::Sensation(SensationEvents::SensationSet(sensation.clone()));
         self.log_and_broadcast(&event)?;
-        Ok(sensation)
+        Ok(SensationResponses::SensationSet(sensation))
     }
 
-    pub fn list_sensations(&self) -> Result<Vec<Sensation>, Error> {
-        Ok(self.db.list_sensations()?)
+    pub fn list_sensations(&self) -> Result<SensationResponses, Error> {
+        Ok(SensationResponses::SensationsListed(
+            self.db.list_sensations()?,
+        ))
     }
 
-    pub fn get_sensation(&self, name: &SensationName) -> Result<Sensation, Error> {
-        self.db
+    pub fn get_sensation(&self, name: &SensationName) -> Result<SensationResponses, Error> {
+        let sensation = self
+            .db
             .get_sensation(name)?
-            .ok_or_else(|| NotFound::Sensation(name.clone()).into())
+            .ok_or(NotFound::Sensation(name.clone()))?;
+        Ok(SensationResponses::SensationFound(sensation))
     }
 
-    pub fn remove_sensation(&self, name: SensationName) -> Result<(), Error> {
-        let event = Events::Sensation(SensationEvents::SensationRemoved { name });
+    pub fn remove_sensation(&self, name: SensationName) -> Result<SensationResponses, Error> {
+        let event = Events::Sensation(SensationEvents::SensationRemoved(SelectSensationByName {
+            name,
+        }));
         self.log_and_broadcast(&event)?;
-        Ok(())
+        Ok(SensationResponses::SensationRemoved)
     }
 
     // ── Texture operations ──────────────────────────────────────────
 
-    pub fn set_texture(&self, texture: Texture) -> Result<Texture, Error> {
+    pub fn set_texture(&self, texture: Texture) -> Result<TextureResponses, Error> {
         let event = Events::Texture(TextureEvents::TextureSet(texture.clone()));
         self.log_and_broadcast(&event)?;
-        Ok(texture)
+        Ok(TextureResponses::TextureSet(texture))
     }
 
-    pub fn list_textures(&self) -> Result<Vec<Texture>, Error> {
-        Ok(self.db.list_textures()?)
+    pub fn list_textures(&self) -> Result<TextureResponses, Error> {
+        Ok(TextureResponses::TexturesListed(self.db.list_textures()?))
     }
 
-    pub fn get_texture(&self, name: &TextureName) -> Result<Texture, Error> {
-        self.db
+    pub fn get_texture(&self, name: &TextureName) -> Result<TextureResponses, Error> {
+        let texture = self
+            .db
             .get_texture(name)?
-            .ok_or_else(|| NotFound::Texture(name.clone()).into())
+            .ok_or(NotFound::Texture(name.clone()))?;
+        Ok(TextureResponses::TextureFound(texture))
     }
 
-    pub fn remove_texture(&self, name: TextureName) -> Result<(), Error> {
-        let event = Events::Texture(TextureEvents::TextureRemoved { name });
+    pub fn remove_texture(&self, name: TextureName) -> Result<TextureResponses, Error> {
+        let event = Events::Texture(TextureEvents::TextureRemoved(SelectTextureByName { name }));
         self.log_and_broadcast(&event)?;
-        Ok(())
+        Ok(TextureResponses::TextureRemoved)
     }
 
     // ── Memory operations ───────────────────────────────────────────
 
-    pub fn add_memory(&self, request: AddMemoryRequest) -> Result<Memory, Error> {
+    pub fn add_memory(&self, request: AddMemoryRequest) -> Result<MemoryResponses, Error> {
         let agent = self
             .db
             .get_agent(&request.agent)?
@@ -310,20 +328,22 @@ impl<'a> BrainService<'a> {
         let event = Events::Memory(MemoryEvents::MemoryAdded(memory.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(memory)
+        Ok(MemoryResponses::MemoryAdded(memory))
     }
 
-    pub fn get_memory(&self, id: &MemoryId) -> Result<Memory, Error> {
-        self.db
+    pub fn get_memory(&self, id: &MemoryId) -> Result<MemoryResponses, Error> {
+        let memory = self
+            .db
             .get_memory(id.to_string())?
-            .ok_or_else(|| NotFound::Memory(*id).into())
+            .ok_or(NotFound::Memory(*id))?;
+        Ok(MemoryResponses::MemoryFound(memory))
     }
 
     pub fn list_memories(
         &self,
         agent: Option<AgentName>,
         level: Option<LevelName>,
-    ) -> Result<Vec<Memory>, Error> {
+    ) -> Result<MemoryResponses, Error> {
         let memories = match (agent, level) {
             (Some(agent_name), Some(level)) => {
                 let agent = self
@@ -356,12 +376,15 @@ impl<'a> BrainService<'a> {
             (None, None) => self.db.list_memories()?,
         };
 
-        Ok(memories)
+        Ok(MemoryResponses::MemoriesListed(memories))
     }
 
     // ── Experience operations ───────────────────────────────────────
 
-    pub fn create_experience(&self, request: CreateExperienceRequest) -> Result<Experience, Error> {
+    pub fn create_experience(
+        &self,
+        request: CreateExperienceRequest,
+    ) -> Result<ExperienceResponses, Error> {
         let agent = self
             .db
             .get_agent(&request.agent)?
@@ -376,20 +399,22 @@ impl<'a> BrainService<'a> {
         let event = Events::Experience(ExperienceEvents::ExperienceCreated(experience.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(experience)
+        Ok(ExperienceResponses::ExperienceCreated(experience))
     }
 
-    pub fn get_experience(&self, id: &ExperienceId) -> Result<Experience, Error> {
-        self.db
+    pub fn get_experience(&self, id: &ExperienceId) -> Result<ExperienceResponses, Error> {
+        let experience = self
+            .db
             .get_experience(id.to_string())?
-            .ok_or_else(|| NotFound::Experience(*id).into())
+            .ok_or(NotFound::Experience(*id))?;
+        Ok(ExperienceResponses::ExperienceFound(experience))
     }
 
     pub fn list_experiences(
         &self,
         agent: Option<AgentName>,
         sensation: Option<SensationName>,
-    ) -> Result<Vec<Experience>, Error> {
+    ) -> Result<ExperienceResponses, Error> {
         let experiences = match (agent, sensation) {
             (Some(agent_name), Some(sensation)) => {
                 let agent = self
@@ -425,56 +450,67 @@ impl<'a> BrainService<'a> {
             (None, None) => self.db.list_experiences()?,
         };
 
-        Ok(experiences)
+        Ok(ExperienceResponses::ExperiencesListed(experiences))
     }
 
     pub fn update_experience_description(
         &self,
         id: &ExperienceId,
         request: UpdateExperienceDescriptionRequest,
-    ) -> Result<Experience, Error> {
+    ) -> Result<ExperienceResponses, Error> {
         self.db
             .get_experience(id.to_string())?
             .ok_or(NotFound::Experience(*id))?;
 
-        let event = Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated {
-            experience_id: *id,
-            description: request.description,
-        });
+        let event = Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(
+            ExperienceDescriptionUpdate {
+                experience_id: *id,
+                description: request.description,
+            },
+        ));
 
         self.log_and_broadcast(&event)?;
 
         // Re-fetch to include projection updates.
-        self.db
+        let experience = self
+            .db
             .get_experience(id.to_string())?
-            .ok_or_else(|| NotFound::Experience(*id).into())
+            .ok_or(NotFound::Experience(*id))?;
+        Ok(ExperienceResponses::ExperienceUpdated(experience))
     }
 
     pub fn update_experience_sensation(
         &self,
         id: &ExperienceId,
         request: UpdateExperienceSensationRequest,
-    ) -> Result<Experience, Error> {
+    ) -> Result<ExperienceResponses, Error> {
         self.db
             .get_experience(id.to_string())?
             .ok_or(NotFound::Experience(*id))?;
 
-        let event = Events::Experience(ExperienceEvents::ExperienceSensationUpdated {
-            experience_id: *id,
-            sensation: request.sensation,
-        });
+        let event = Events::Experience(ExperienceEvents::ExperienceSensationUpdated(
+            ExperienceSensationUpdate {
+                experience_id: *id,
+                sensation: request.sensation,
+            },
+        ));
 
         self.log_and_broadcast(&event)?;
 
         // Re-fetch to include projection updates.
-        self.db
+        let experience = self
+            .db
             .get_experience(id.to_string())?
-            .ok_or_else(|| NotFound::Experience(*id).into())
+            .ok_or(NotFound::Experience(*id))?;
+        Ok(ExperienceResponses::ExperienceUpdated(experience))
     }
 
     // ── Connection operations ───────────────────────────────────────
 
-    pub fn create_connection(&self, request: CreateConnectionRequest) -> Result<Connection, Error> {
+    pub fn create_connection(
+        &self,
+        request: CreateConnectionRequest,
+    ) -> Result<ConnectionResponses, Error> {
         self.db
             .get_nature(&request.nature)?
             .ok_or(NotFound::Nature(request.nature.clone()))?;
@@ -484,20 +520,22 @@ impl<'a> BrainService<'a> {
         let event = Events::Connection(ConnectionEvents::ConnectionCreated(connection.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(connection)
+        Ok(ConnectionResponses::ConnectionCreated(connection))
     }
 
-    pub fn get_connection(&self, id: &ConnectionId) -> Result<Connection, Error> {
-        self.db
+    pub fn get_connection(&self, id: &ConnectionId) -> Result<ConnectionResponses, Error> {
+        let connection = self
+            .db
             .get_connection(id.to_string())?
-            .ok_or_else(|| NotFound::Connection(*id).into())
+            .ok_or(NotFound::Connection(*id))?;
+        Ok(ConnectionResponses::ConnectionFound(connection))
     }
 
     pub fn list_connections(
         &self,
         nature: Option<NatureName>,
         entity_ref: Option<&Ref>,
-    ) -> Result<Vec<Connection>, Error> {
+    ) -> Result<ConnectionResponses, Error> {
         let connections = match (nature, entity_ref) {
             (Some(nature), Some(entity_ref)) => {
                 self.db
@@ -521,18 +559,20 @@ impl<'a> BrainService<'a> {
             (None, None) => self.db.list_connections()?,
         };
 
-        Ok(connections)
+        Ok(ConnectionResponses::ConnectionsListed(connections))
     }
 
-    pub fn remove_connection(&self, id: &ConnectionId) -> Result<(), Error> {
+    pub fn remove_connection(&self, id: &ConnectionId) -> Result<ConnectionResponses, Error> {
         self.db
             .get_connection(id.to_string())?
             .ok_or(NotFound::Connection(*id))?;
 
-        let event = Events::Connection(ConnectionEvents::ConnectionRemoved { id: *id });
+        let event = Events::Connection(ConnectionEvents::ConnectionRemoved(SelectConnectionById {
+            id: *id,
+        }));
         self.log_and_broadcast(&event)?;
 
-        Ok(())
+        Ok(ConnectionResponses::ConnectionRemoved)
     }
 
     // ── Storage operations ──────────────────────────────────────────
@@ -542,7 +582,7 @@ impl<'a> BrainService<'a> {
         key: StorageKey,
         description: &str,
         data: &[u8],
-    ) -> Result<StorageEntry, Error> {
+    ) -> Result<StorageResponses, Error> {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let hash_bytes = hasher.finalize();
@@ -559,17 +599,19 @@ impl<'a> BrainService<'a> {
         let event = Events::Storage(StorageEvents::StorageSet(entry.clone()));
         self.log_and_broadcast(&event)?;
 
-        Ok(entry)
+        Ok(StorageResponses::StorageSet(entry))
     }
 
-    pub fn list_storage(&self) -> Result<Vec<StorageEntry>, Error> {
-        Ok(self.db.list_storage()?)
+    pub fn list_storage(&self) -> Result<StorageResponses, Error> {
+        Ok(StorageResponses::StorageListed(self.db.list_storage()?))
     }
 
-    pub fn get_storage(&self, key: &StorageKey) -> Result<StorageEntry, Error> {
-        self.db
+    pub fn get_storage(&self, key: &StorageKey) -> Result<StorageResponses, Error> {
+        let entry = self
+            .db
             .get_storage(key)?
-            .ok_or_else(|| NotFound::Storage(key.clone()).into())
+            .ok_or(NotFound::Storage(key.clone()))?;
+        Ok(StorageResponses::StorageFound(entry))
     }
 
     pub fn get_storage_content(&self, key: &StorageKey) -> Result<Vec<u8>, Error> {
@@ -590,15 +632,15 @@ impl<'a> BrainService<'a> {
         Ok(decompressed)
     }
 
-    pub fn remove_storage(&self, key: StorageKey) -> Result<(), Error> {
-        let event = Events::Storage(StorageEvents::StorageRemoved { key });
+    pub fn remove_storage(&self, key: StorageKey) -> Result<StorageResponses, Error> {
+        let event = Events::Storage(StorageEvents::StorageRemoved(SelectStorageByKey { key }));
         self.log_and_broadcast(&event)?;
-        Ok(())
+        Ok(StorageResponses::StorageRemoved)
     }
 
     // ── Search operations ───────────────────────────────────────────
 
-    pub fn search(&self, query: &str, agent: Option<&AgentName>) -> Result<SearchResults, Error> {
+    pub fn search(&self, query: &str, agent: Option<&AgentName>) -> Result<SearchResponses, Error> {
         let mut results = self.db.search_expressions(query)?;
 
         if let Some(agent_name) = agent {
@@ -630,68 +672,72 @@ impl<'a> BrainService<'a> {
             });
         }
 
-        Ok(SearchResults {
+        Ok(SearchResponses::SearchComplete(SearchResults {
             query: query.to_owned(),
             results,
-        })
+        }))
     }
 
     // ── Sense operations ────────────────────────────────────────────
 
-    pub fn sense(&self, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub fn sense(&self, agent_name: &AgentName) -> Result<SenseResponses, Error> {
         let agent = self
             .db
             .get_agent(agent_name)?
             .ok_or(NotFound::Agent(agent_name.clone()))?;
 
-        let event = Events::Sense(SenseEvents::Sensed {
-            agent: agent.name.clone(),
-        });
+        let event = Events::Sense(SenseEvents::Sensed(SelectAgentByName {
+            name: agent.name.clone(),
+        }));
         self.log_marker(&event)?;
 
-        Ok(agent)
+        Ok(SenseResponses::Sensed(agent))
     }
 
     // ── Introspect operations ───────────────────────────────────────
 
-    pub fn introspect(&self, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub fn introspect(&self, agent_name: &AgentName) -> Result<IntrospectingResponses, Error> {
         let agent = self
             .db
             .get_agent(agent_name)?
             .ok_or(NotFound::Agent(agent_name.clone()))?;
 
-        let begun = Events::Introspecting(IntrospectingEvents::IntrospectionBegun {
-            agent: agent.name.clone(),
-        });
+        let begun =
+            Events::Introspecting(IntrospectingEvents::IntrospectionBegun(SelectAgentByName {
+                name: agent.name.clone(),
+            }));
         self.log_marker(&begun)?;
 
-        let complete = Events::Introspecting(IntrospectingEvents::IntrospectionComplete {
-            agent: agent.name.clone(),
-        });
+        let complete = Events::Introspecting(IntrospectingEvents::IntrospectionComplete(
+            SelectAgentByName {
+                name: agent.name.clone(),
+            },
+        ));
         self.log_marker(&complete)?;
 
-        Ok(agent)
+        Ok(IntrospectingResponses::IntrospectionComplete(agent))
     }
 
     // ── Reflect operations ──────────────────────────────────────────
 
-    pub fn reflect(&self, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub fn reflect(&self, agent_name: &AgentName) -> Result<ReflectingResponses, Error> {
         let agent = self
             .db
             .get_agent(agent_name)?
             .ok_or(NotFound::Agent(agent_name.clone()))?;
 
-        let begun = Events::Reflecting(ReflectingEvents::ReflectionBegun {
-            agent: agent.name.clone(),
-        });
+        let begun = Events::Reflecting(ReflectingEvents::ReflectionBegun(SelectAgentByName {
+            name: agent.name.clone(),
+        }));
         self.log_marker(&begun)?;
 
-        let complete = Events::Reflecting(ReflectingEvents::ReflectionComplete {
-            agent: agent.name.clone(),
-        });
+        let complete =
+            Events::Reflecting(ReflectingEvents::ReflectionComplete(SelectAgentByName {
+                name: agent.name.clone(),
+            }));
         self.log_marker(&complete)?;
 
-        Ok(agent)
+        Ok(ReflectingResponses::ReflectionComplete(agent))
     }
 
     // ── Dream operations ────────────────────────────────────────────
@@ -700,30 +746,30 @@ impl<'a> BrainService<'a> {
         &self,
         agent_name: &AgentName,
         config: DreamConfig,
-    ) -> Result<DreamContext, Error> {
+    ) -> Result<DreamingResponses, Error> {
         let agent = self
             .db
             .get_agent(agent_name)?
             .ok_or(NotFound::Agent(agent_name.clone()))?;
 
-        let begun = Events::Dreaming(DreamingEvents::DreamBegun {
-            agent: agent.name.clone(),
-        });
+        let begun = Events::Dreaming(DreamingEvents::DreamBegun(SelectAgentByName {
+            name: agent.name.clone(),
+        }));
         self.log_marker(&begun)?;
 
         let context = DreamCollector::new(self.db, config).collect(&agent)?;
 
-        let complete = Events::Dreaming(DreamingEvents::DreamComplete {
+        let complete = Events::Dreaming(DreamingEvents::DreamComplete(DreamCompleteEvent {
             agent: context.agent.clone(),
-        });
+        }));
         self.log_marker(&complete)?;
 
-        Ok(context)
+        Ok(DreamingResponses::DreamComplete(Box::new(context)))
     }
 
     // ── Lifecycle operations ────────────────────────────────────────
 
-    pub fn emerge(&self, request: CreateAgentRequest) -> Result<Agent, Error> {
+    pub fn emerge(&self, request: CreateAgentRequest) -> Result<LifecycleResponses, Error> {
         self.db
             .get_persona(&request.persona)?
             .ok_or(NotFound::Persona(request.persona.clone()))?;
@@ -741,76 +787,83 @@ impl<'a> BrainService<'a> {
             request.persona,
         );
 
-        let emerged = Events::Lifecycle(LifecycleEvents::Emerged { name: agent_name });
+        let emerged = Events::Lifecycle(LifecycleEvents::Emerged(SelectAgentByName {
+            name: agent_name,
+        }));
         self.log_marker(&emerged)?;
 
         let created = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
         self.log_and_broadcast(&created)?;
 
-        Ok(agent)
+        Ok(LifecycleResponses::Emerged(agent))
     }
 
-    pub fn wake(&self, agent_name: &AgentName) -> Result<DreamContext, Error> {
+    pub fn wake(&self, agent_name: &AgentName) -> Result<LifecycleResponses, Error> {
         let agent = self
             .db
             .get_agent(agent_name)?
             .ok_or(NotFound::Agent(agent_name.clone()))?;
 
-        let woke = Events::Lifecycle(LifecycleEvents::Woke {
+        let woke = Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
             name: agent.name.clone(),
-        });
+        }));
         self.log_marker(&woke)?;
 
-        let begun = Events::Dreaming(DreamingEvents::DreamBegun {
-            agent: agent.name.clone(),
-        });
+        let begun = Events::Dreaming(DreamingEvents::DreamBegun(SelectAgentByName {
+            name: agent.name.clone(),
+        }));
         self.log_marker(&begun)?;
 
         let context = DreamCollector::new(self.db, DreamConfig::default()).collect(&agent)?;
 
-        let complete = Events::Dreaming(DreamingEvents::DreamComplete {
+        let complete = Events::Dreaming(DreamingEvents::DreamComplete(DreamCompleteEvent {
             agent: context.agent.clone(),
-        });
+        }));
         self.log_marker(&complete)?;
 
-        Ok(context)
+        Ok(LifecycleResponses::Woke(Box::new(context)))
     }
 
-    pub fn sleep(&self, agent_name: &AgentName) -> Result<Agent, Error> {
+    pub fn sleep(&self, agent_name: &AgentName) -> Result<LifecycleResponses, Error> {
         let agent = self
             .db
             .get_agent(agent_name)?
             .ok_or(NotFound::Agent(agent_name.clone()))?;
 
-        let slept = Events::Lifecycle(LifecycleEvents::Slept {
+        let slept = Events::Lifecycle(LifecycleEvents::Slept(SelectAgentByName {
             name: agent.name.clone(),
-        });
+        }));
         self.log_marker(&slept)?;
 
-        let begun = Events::Introspecting(IntrospectingEvents::IntrospectionBegun {
-            agent: agent.name.clone(),
-        });
+        let begun =
+            Events::Introspecting(IntrospectingEvents::IntrospectionBegun(SelectAgentByName {
+                name: agent.name.clone(),
+            }));
         self.log_marker(&begun)?;
 
-        let complete = Events::Introspecting(IntrospectingEvents::IntrospectionComplete {
-            agent: agent.name.clone(),
-        });
+        let complete = Events::Introspecting(IntrospectingEvents::IntrospectionComplete(
+            SelectAgentByName {
+                name: agent.name.clone(),
+            },
+        ));
         self.log_marker(&complete)?;
 
-        Ok(agent)
+        Ok(LifecycleResponses::Slept(agent))
     }
 
-    pub fn recede(&self, name: AgentName) -> Result<(), Error> {
+    pub fn recede(&self, name: AgentName) -> Result<LifecycleResponses, Error> {
         self.db
             .get_agent(&name)?
             .ok_or(NotFound::Agent(name.clone()))?;
 
-        let receded = Events::Lifecycle(LifecycleEvents::Receded { name: name.clone() });
+        let receded = Events::Lifecycle(LifecycleEvents::Receded(SelectAgentByName {
+            name: name.clone(),
+        }));
         self.log_marker(&receded)?;
 
-        let removed = Events::Agent(AgentEvents::AgentRemoved { name });
+        let removed = Events::Agent(AgentEvents::AgentRemoved(SelectAgentByName { name }));
         self.log_and_broadcast(&removed)?;
 
-        Ok(())
+        Ok(LifecycleResponses::Receded)
     }
 }

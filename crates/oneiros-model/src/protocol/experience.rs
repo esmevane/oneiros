@@ -3,17 +3,36 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectExperienceById {
+    pub id: ExperienceId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListExperiencesFilter {
+    #[serde(default)]
+    pub agent: Option<AgentName>,
+    #[serde(default)]
+    pub sensation: Option<SensationName>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExperienceDescriptionUpdate {
+    pub experience_id: ExperienceId,
+    pub description: Description,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExperienceSensationUpdate {
+    pub experience_id: ExperienceId,
+    pub sensation: SensationName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ExperienceEvents {
     ExperienceCreated(Experience),
-    ExperienceDescriptionUpdated {
-        experience_id: ExperienceId,
-        description: Description,
-    },
-    ExperienceSensationUpdated {
-        experience_id: ExperienceId,
-        sensation: SensationName,
-    },
+    ExperienceDescriptionUpdated(ExperienceDescriptionUpdate),
+    ExperienceSensationUpdated(ExperienceSensationUpdate),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,15 +58,8 @@ pub enum ExperienceRequests {
     CreateExperience(CreateExperienceRequest),
     UpdateExperienceDescription(UpdateExperienceDescriptionRequest),
     UpdateExperienceSensation(UpdateExperienceSensationRequest),
-    GetExperience {
-        id: ExperienceId,
-    },
-    ListExperiences {
-        #[serde(default)]
-        agent: Option<AgentName>,
-        #[serde(default)]
-        sensation: Option<SensationName>,
-    },
+    GetExperience(SelectExperienceById),
+    ListExperiences(ListExperiencesFilter),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

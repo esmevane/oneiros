@@ -18,8 +18,7 @@ async fn set_sensation_returns_ok() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Sensation = serde_json::from_slice(&bytes).unwrap();
+    let info: Sensation = body_json(response).await;
     assert_eq!(info.name, SensationName::new("echoes"));
     assert_eq!(
         info.description.as_str(),
@@ -63,8 +62,7 @@ async fn set_sensation_is_idempotent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Sensation = serde_json::from_slice(&bytes).unwrap();
+    let info: Sensation = body_json(response).await;
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -77,8 +75,7 @@ async fn list_sensations_empty() {
     let response = app.oneshot(get_auth("/sensations", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Sensation> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Sensation> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -102,8 +99,7 @@ async fn list_sensations_after_set() {
     let response = app.oneshot(get_auth("/sensations", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Sensation> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Sensation> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 

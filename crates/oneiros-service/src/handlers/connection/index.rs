@@ -13,7 +13,7 @@ pub(crate) struct ListParams {
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<ListParams>,
-) -> Result<Json<Vec<Connection>>, Error> {
+) -> Result<Json<ConnectionResponses>, Error> {
     let connections = ticket.service().list_connections(
         params.nature,
         params.entity_ref.as_ref().map(RefToken::inner),

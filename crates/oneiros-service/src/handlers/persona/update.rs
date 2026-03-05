@@ -1,4 +1,4 @@
-use axum::{Json, http::StatusCode};
+use axum::Json;
 use oneiros_model::*;
 
 use crate::*;
@@ -6,8 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(persona): Json<Persona>,
-) -> Result<(StatusCode, Json<Persona>), Error> {
+) -> Result<Json<PersonaResponses>, Error> {
     let persona = ticket.service().set_persona(persona)?;
 
-    Ok((StatusCode::OK, Json(persona)))
+    Ok(Json(persona))
 }

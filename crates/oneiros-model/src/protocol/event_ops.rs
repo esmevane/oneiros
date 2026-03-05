@@ -20,12 +20,17 @@ pub struct ReplayResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectEventById {
+    pub id: EventId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum EventRequests {
     ImportEvents(Vec<ImportEvent>),
     ReplayEvents,
     ListEvents,
-    GetEvent { id: EventId },
+    GetEvent(SelectEventById),
     ExportEvents,
 }
 
