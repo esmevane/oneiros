@@ -4,7 +4,7 @@ use oneiros_model::*;
 use crate::*;
 
 pub(crate) async fn handler(ticket: ActorContext) -> Result<Json<ReplayResponse>, Error> {
-    let count = ticket.db.replay(projections::BRAIN)?;
+    let response = ticket.service().replay()?;
 
-    Ok(Json(ReplayResponse { replayed: count }))
+    Ok(Json(response))
 }

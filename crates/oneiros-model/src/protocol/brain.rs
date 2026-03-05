@@ -33,9 +33,21 @@ pub enum BrainRequests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BrainSummary {
+    pub agents: Vec<Agent>,
+    pub cognition_count: usize,
+    pub memory_count: usize,
+    pub experience_count: usize,
+    pub connection_count: usize,
+    pub event_count: usize,
+    pub recent_cognitions: Vec<Cognition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum BrainResponses {
     BrainCreated(BrainInfo),
     BrainFound(Brain),
     BrainsListed(Vec<Brain>),
+    BrainSummarized(BrainSummary),
 }

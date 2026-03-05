@@ -7,10 +7,7 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(given_id): Path<EventId>,
 ) -> Result<Json<Event>, Error> {
-    let event = ticket
-        .db
-        .get_event(&given_id)?
-        .ok_or(NotFound::Event(given_id))?;
+    let event = ticket.service().get_event(&given_id)?;
 
     Ok(Json(event))
 }
