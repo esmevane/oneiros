@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use oneiros_db::Database;
-use oneiros_model::Events;
+use oneiros_model::*;
 use tokio::sync::broadcast;
 
 use crate::Error;
@@ -57,5 +57,25 @@ impl ServiceState {
     pub fn system_service(&self) -> Result<SystemService<'_>, Error> {
         let db = self.lock_database()?;
         Ok(SystemService::new(db, &self.data_dir, &self.event_tx))
+    }
+
+    /// Open a brain database and collect aggregate stats for the dashboard.
+    pub fn brain_summary(&self, brain: &Brain) -> Result<BrainResponses, Error> {
+        let db = Database::open_brain(&brain.path)?;
+
+        let agents = db.list_agents()?;
+        let cognitions = db.list_cognitions()?;
+        let cognition_count = cognitions.len();
+        let recent_cognitions = cognitions.into_iter().rev().take(30).collect();
+
+        Ok(BrainResponses::BrainSummarized(BrainSummary {
+            agents,
+            cognition_count,
+            memory_count: db.list_memories()?.len(),
+            experience_count: db.list_experiences()?.len(),
+            connection_count: db.list_connections()?.len(),
+            event_count: db.event_count()?,
+            recent_cognitions,
+        }))
     }
 }

@@ -38,6 +38,38 @@ impl<'a> BrainService<'a> {
         Ok(())
     }
 
+    // ── Event operations ──────────────────────────────────────────────
+
+    pub fn read_events(&self) -> Result<Vec<Event>, Error> {
+        Ok(self.db.read_events()?)
+    }
+
+    pub fn get_event(&self, id: &EventId) -> Result<Event, Error> {
+        self.db.get_event(id)?.ok_or(NotFound::Event(*id).into())
+    }
+
+    pub fn import_events(&self, events: &[ImportEvent]) -> Result<ImportResponse, Error> {
+        for event in events {
+            self.db.import_event(&event.timestamp, &event.data)?;
+        }
+
+        let replayed = self.db.replay(projections::BRAIN)?;
+
+        Ok(ImportResponse {
+            imported: events.len(),
+            replayed,
+        })
+    }
+
+    pub fn replay(&self) -> Result<ReplayResponse, Error> {
+        let count = self.db.replay(projections::BRAIN)?;
+        Ok(ReplayResponse { replayed: count })
+    }
+
+    pub fn event_count(&self) -> Result<usize, Error> {
+        Ok(self.db.event_count()?)
+    }
+
     // ── Agent operations ──────────────────────────────────────────────
 
     pub fn create_agent(&self, request: CreateAgentRequest) -> Result<AgentResponses, Error> {

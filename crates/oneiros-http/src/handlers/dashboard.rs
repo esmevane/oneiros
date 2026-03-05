@@ -1,7 +1,6 @@
 use askama::Template;
 use axum::extract::{Query, State};
 use axum::response::Html;
-use oneiros_db::Database;
 use oneiros_model::*;
 use std::sync::Arc;
 
@@ -50,18 +49,20 @@ pub(crate) async fn handler(
         None => &brains[0],
     };
 
-    let brain_db = Database::open_brain(&brain.path)?;
+    let BrainResponses::BrainSummarized(BrainSummary {
+        agents,
+        cognition_count,
+        memory_count,
+        experience_count,
+        connection_count,
+        event_count,
+        recent_cognitions,
+    }) = state.brain_summary(brain)?
+    else {
+        unreachable!()
+    };
 
-    let agents = brain_db.list_agents()?;
     let agent_count = agents.len();
-    let cognitions = brain_db.list_cognitions()?;
-    let cognition_count = cognitions.len();
-    let memory_count = brain_db.list_memories()?.len();
-    let experience_count = brain_db.list_experiences()?.len();
-    let connection_count = brain_db.list_connections()?.len();
-    let event_count = brain_db.event_count()?;
-
-    let recent_cognitions: Vec<Cognition> = cognitions.into_iter().rev().take(30).collect();
 
     let template = DashboardTemplate {
         brain,

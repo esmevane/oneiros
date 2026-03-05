@@ -10,5 +10,5 @@ pub use brain_service::BrainService;
 pub use dream_collector::DreamCollector;
 pub use error::*;
 pub use projections::{brain, system};
-pub use state::*;
+pub use state::ServiceState;
 pub use system_service::{CreateBrainError, SystemService};

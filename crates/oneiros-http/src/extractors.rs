@@ -21,8 +21,8 @@ pub enum ActorContextError {
 }
 
 pub struct ActorContext {
-    pub db: Database,
-    pub event_tx: broadcast::Sender<Events>,
+    db: Database,
+    event_tx: broadcast::Sender<Events>,
 }
 
 impl ActorContext {
