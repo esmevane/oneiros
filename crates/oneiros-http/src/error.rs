@@ -10,6 +10,12 @@ pub enum Error {
 
     #[error(transparent)]
     Service(#[from] oneiros_service::Error),
+
+    #[error("Unable to access system projects")]
+    ProjectExtractionFailure,
+
+    #[error("Unable to summarize project")]
+    ProjectSummaryFailure,
 }
 
 // Transitive From impls so `?` works in handlers that produce
@@ -63,6 +69,10 @@ impl IntoResponse for Error {
             Error::Unauthorized(err) => {
                 let body = serde_json::json!({ "error": err.to_string() });
                 (StatusCode::UNAUTHORIZED, axum::Json(body)).into_response()
+            }
+            Error::ProjectExtractionFailure | Error::ProjectSummaryFailure => {
+                let body = serde_json::json!({ "error": self.to_string() });
+                (StatusCode::INTERNAL_SERVER_ERROR, axum::Json(body)).into_response()
             }
             Error::Service(err) => {
                 let status = match &err {
