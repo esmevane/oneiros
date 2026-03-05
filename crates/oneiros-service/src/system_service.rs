@@ -48,7 +48,7 @@ impl<'a> SystemService<'a> {
 
     // ── Brain operations ──────────────────────────────────────────────
 
-    pub fn create_brain(&self, request: CreateBrainRequest) -> Result<BrainInfo, Error> {
+    pub fn create_brain(&self, request: CreateBrainRequest) -> Result<BrainResponses, Error> {
         let tenant_id: TenantId = self
             .db
             .get_tenant_id()?
@@ -97,13 +97,13 @@ impl<'a> SystemService<'a> {
         let ticket_event = Events::Ticket(TicketEvents::TicketIssued(ticket));
         self.log_and_broadcast(&ticket_event)?;
 
-        Ok(BrainInfo {
+        Ok(BrainResponses::BrainCreated(BrainInfo {
             entity: brain_id,
             token,
-        })
+        }))
     }
 
-    pub fn list_brains(&self) -> Result<Vec<Brain>, Error> {
-        Ok(self.db.list_brains()?)
+    pub fn list_brains(&self) -> Result<BrainResponses, Error> {
+        Ok(BrainResponses::BrainsListed(self.db.list_brains()?))
     }
 }

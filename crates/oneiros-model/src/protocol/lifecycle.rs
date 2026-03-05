@@ -1,7 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use super::agent::CreateAgentRequest;
+use super::agent::{CreateAgentRequest, SelectAgentByName};
 use crate::*;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DreamCompleteEvent {
+    pub agent: Agent,
+}
 
 /// Configuration for dream assembly — controls BFS traversal depth,
 /// size caps, and memory level filtering.
@@ -44,50 +49,50 @@ impl Default for DreamConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum LifecycleEvents {
-    Woke { name: AgentName },
-    Slept { name: AgentName },
-    Emerged { name: AgentName },
-    Receded { name: AgentName },
+    Woke(SelectAgentByName),
+    Slept(SelectAgentByName),
+    Emerged(SelectAgentByName),
+    Receded(SelectAgentByName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum DreamingEvents {
-    DreamBegun { agent: AgentName },
-    DreamComplete { agent: Agent },
+    DreamBegun(SelectAgentByName),
+    DreamComplete(DreamCompleteEvent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum IntrospectingEvents {
-    IntrospectionBegun { agent: AgentName },
-    IntrospectionComplete { agent: AgentName },
+    IntrospectionBegun(SelectAgentByName),
+    IntrospectionComplete(SelectAgentByName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ReflectingEvents {
-    ReflectionBegun { agent: AgentName },
-    ReflectionComplete { agent: AgentName },
+    ReflectionBegun(SelectAgentByName),
+    ReflectionComplete(SelectAgentByName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum SenseEvents {
-    Sensed { agent: AgentName },
+    Sensed(SelectAgentByName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum LifecycleRequests {
-    Wake { agent: AgentName },
-    Sleep { agent: AgentName },
+    Wake(SelectAgentByName),
+    Sleep(SelectAgentByName),
     Emerge(CreateAgentRequest),
-    Recede { agent: AgentName },
-    Dream { agent: AgentName },
-    Introspect { agent: AgentName },
-    Reflect { agent: AgentName },
-    Sense { agent: AgentName },
+    Recede(SelectAgentByName),
+    Dream(SelectAgentByName),
+    Introspect(SelectAgentByName),
+    Reflect(SelectAgentByName),
+    Sense(SelectAgentByName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

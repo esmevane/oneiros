@@ -84,9 +84,9 @@ async fn sse_stream_receives_broadcast_events() {
     let mut body = response.into_body();
 
     // Inject an event directly via the broadcast channel.
-    let test_event = Events::Lifecycle(LifecycleEvents::Woke {
+    let test_event = Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
         name: AgentName::new("test-agent"),
-    });
+    }));
     state.broadcast(test_event);
 
     // Read the first frame from the SSE stream.

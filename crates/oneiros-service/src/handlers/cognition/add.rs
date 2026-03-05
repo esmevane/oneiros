@@ -6,7 +6,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<AddCognitionRequest>,
-) -> Result<(StatusCode, Json<Cognition>), Error> {
+) -> Result<(StatusCode, Json<CognitionResponses>), Error> {
     let cognition = ticket.service().add_cognition(request)?;
 
     Ok((StatusCode::CREATED, Json(cognition)))

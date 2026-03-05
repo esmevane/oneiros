@@ -13,8 +13,8 @@ pub(crate) struct SearchParams {
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(params): Query<SearchParams>,
-) -> Result<Json<SearchResults>, Error> {
-    let results = ticket.service().search(&params.q, params.agent.as_ref())?;
+) -> Result<Json<SearchResponses>, Error> {
+    let response = ticket.service().search(&params.q, params.agent.as_ref())?;
 
-    Ok(Json(results))
+    Ok(Json(response))
 }

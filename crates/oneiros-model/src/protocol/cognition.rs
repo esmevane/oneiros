@@ -3,6 +3,19 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectCognitionById {
+    pub id: CognitionId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListCognitionsFilter {
+    #[serde(default)]
+    pub agent: Option<AgentName>,
+    #[serde(default)]
+    pub texture: Option<TextureName>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum CognitionEvents {
     CognitionAdded(Cognition),
@@ -19,15 +32,8 @@ pub struct AddCognitionRequest {
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum CognitionRequests {
     AddCognition(AddCognitionRequest),
-    GetCognition {
-        id: CognitionId,
-    },
-    ListCognitions {
-        #[serde(default)]
-        agent: Option<AgentName>,
-        #[serde(default)]
-        texture: Option<TextureName>,
-    },
+    GetCognition(SelectCognitionById),
+    ListCognitions(ListCognitionsFilter),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

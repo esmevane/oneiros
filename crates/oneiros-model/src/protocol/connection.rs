@@ -3,10 +3,23 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectConnectionById {
+    pub id: ConnectionId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListConnectionsFilter {
+    #[serde(default)]
+    pub nature: Option<NatureName>,
+    #[serde(default)]
+    pub entity_ref: Option<RefToken>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionEvents {
     ConnectionCreated(Connection),
-    ConnectionRemoved { id: ConnectionId },
+    ConnectionRemoved(SelectConnectionById),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,18 +33,9 @@ pub struct CreateConnectionRequest {
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionRequests {
     CreateConnection(CreateConnectionRequest),
-    RemoveConnection {
-        id: ConnectionId,
-    },
-    GetConnection {
-        id: ConnectionId,
-    },
-    ListConnections {
-        #[serde(default)]
-        nature: Option<NatureName>,
-        #[serde(default)]
-        entity_ref: Option<RefToken>,
-    },
+    RemoveConnection(SelectConnectionById),
+    GetConnection(SelectConnectionById),
+    ListConnections(ListConnectionsFilter),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

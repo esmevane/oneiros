@@ -6,8 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateAgentRequest>,
-) -> Result<(StatusCode, Json<Agent>), Error> {
-    let agent = ticket.service().emerge(request)?;
+) -> Result<(StatusCode, Json<LifecycleResponses>), Error> {
+    let response = ticket.service().emerge(request)?;
 
-    Ok((StatusCode::CREATED, Json(agent)))
+    Ok((StatusCode::CREATED, Json(response)))
 }

@@ -48,8 +48,7 @@ async fn create_brain_returns_created() {
 
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: BrainInfo = serde_json::from_slice(&bytes).unwrap();
+    let info: BrainInfo = body_json(response).await;
 
     assert!(!info.entity.is_empty());
     assert!(
@@ -111,8 +110,7 @@ async fn create_brain_returns_valid_ticket() {
     let response = app.oneshot(post_json("/brains", &body)).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: BrainInfo = serde_json::from_slice(&bytes).unwrap();
+    let info: BrainInfo = body_json(response).await;
     let token = info.token.as_str();
 
     // Use the returned token to list personas — should succeed with empty list

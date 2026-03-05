@@ -6,7 +6,7 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<MemoryId>,
-) -> Result<Json<Memory>, Error> {
+) -> Result<Json<MemoryResponses>, Error> {
     let memory = ticket.service().get_memory(&id)?;
 
     Ok(Json(memory))

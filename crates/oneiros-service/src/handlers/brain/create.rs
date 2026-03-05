@@ -9,8 +9,8 @@ use crate::*;
 pub(crate) async fn handler(
     State(state): State<Arc<ServiceState>>,
     Json(request): Json<CreateBrainRequest>,
-) -> Result<(StatusCode, Json<BrainInfo>), Error> {
-    let info = state.system_service()?.create_brain(request)?;
+) -> Result<(StatusCode, Json<BrainResponses>), Error> {
+    let response = state.system_service()?.create_brain(request)?;
 
-    Ok((StatusCode::CREATED, Json(info)))
+    Ok((StatusCode::CREATED, Json(response)))
 }

@@ -18,8 +18,7 @@ async fn set_texture_returns_ok() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Texture = serde_json::from_slice(&bytes).unwrap();
+    let info: Texture = body_json(response).await;
     assert_eq!(info.name, TextureName::new("observation"));
     assert_eq!(info.description.as_str(), "Something noticed or perceived");
     assert_eq!(info.prompt.as_str(), "Describe what you observed.");
@@ -61,8 +60,7 @@ async fn set_texture_is_idempotent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let info: Texture = serde_json::from_slice(&bytes).unwrap();
+    let info: Texture = body_json(response).await;
     assert_eq!(info.description.as_str(), "Version 2");
     assert_eq!(info.prompt.as_str(), "Prompt v2");
 }
@@ -75,8 +73,7 @@ async fn list_textures_empty() {
     let response = app.oneshot(get_auth("/textures", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Texture> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Texture> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -100,8 +97,7 @@ async fn list_textures_after_set() {
     let response = app.oneshot(get_auth("/textures", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Texture> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Texture> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 

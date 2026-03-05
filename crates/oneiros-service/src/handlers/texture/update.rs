@@ -1,4 +1,4 @@
-use axum::{Json, http::StatusCode};
+use axum::Json;
 use oneiros_model::*;
 
 use crate::*;
@@ -6,8 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(texture): Json<Texture>,
-) -> Result<(StatusCode, Json<Texture>), Error> {
+) -> Result<Json<TextureResponses>, Error> {
     let texture = ticket.service().set_texture(texture)?;
 
-    Ok((StatusCode::OK, Json(texture)))
+    Ok(Json(texture))
 }

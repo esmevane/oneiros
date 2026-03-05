@@ -13,8 +13,7 @@ async fn sense_returns_agent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let agent: Agent = serde_json::from_slice(&bytes).unwrap();
+    let agent: Agent = body_json(response).await;
     assert_eq!(agent.name, AgentName::new("governor.process"));
 }
 

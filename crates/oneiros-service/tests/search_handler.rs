@@ -32,8 +32,7 @@ async fn search_finds_cognition_content() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let results: SearchResults = body_json(response).await;
 
     assert_eq!(results.query, "fox");
     assert_eq!(results.results.len(), 1);
@@ -63,8 +62,7 @@ async fn search_returns_empty_for_no_match() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let results: SearchResults = body_json(response).await;
 
     assert!(results.results.is_empty());
 }
@@ -95,8 +93,7 @@ async fn search_finds_agent_description() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let results: SearchResults = body_json(response).await;
 
     assert!(!results.results.is_empty());
     let kinds: Vec<&str> = results.results.iter().map(|r| r.kind.as_str()).collect();
@@ -128,8 +125,7 @@ async fn search_finds_persona_content() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let results: SearchResults = body_json(response).await;
 
     assert_eq!(results.results.len(), 1);
     assert_eq!(results.results[0].kind.as_str(), "persona-description");
@@ -170,8 +166,7 @@ async fn search_across_multiple_entity_types() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let results: SearchResults = body_json(response).await;
 
     assert!(results.results.len() >= 2);
     let kinds: Vec<&str> = results.results.iter().map(|r| r.kind.as_str()).collect();
@@ -215,8 +210,7 @@ async fn search_scoped_to_agent_returns_matching() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let all_results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let all_results: SearchResults = body_json(response).await;
     assert_eq!(all_results.results.len(), 2);
 
     // Search WITH agent filter — should find only searcher's
@@ -227,8 +221,7 @@ async fn search_scoped_to_agent_returns_matching() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let filtered_results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let filtered_results: SearchResults = body_json(response).await;
     assert_eq!(filtered_results.results.len(), 1);
     assert!(
         filtered_results.results[0]
@@ -273,8 +266,7 @@ async fn search_without_agent_returns_all() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let results: SearchResults = serde_json::from_slice(&body).unwrap();
+    let results: SearchResults = body_json(response).await;
 
     // Both agents' cognitions should appear
     assert_eq!(results.results.len(), 2);

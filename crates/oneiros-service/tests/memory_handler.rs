@@ -20,8 +20,7 @@ async fn add_memory_returns_created() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let memory: Memory = serde_json::from_slice(&bytes).unwrap();
+    let memory: Memory = body_json(response).await;
     assert!(!memory.id.is_empty());
     assert_eq!(memory.level, LevelName::new("core"));
     assert_eq!(
@@ -76,8 +75,7 @@ async fn list_memories_empty() {
     let response = app.oneshot(get_auth("/memories", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Memory> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Memory> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -111,8 +109,7 @@ async fn list_memories_after_add() {
     let response = app.oneshot(get_auth("/memories", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Memory> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Memory> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 
@@ -150,8 +147,7 @@ async fn list_memories_filtered_by_agent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Memory> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Memory> = body_json(response).await;
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "Architect memory.");
 }
@@ -190,8 +186,7 @@ async fn list_memories_filtered_by_level() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<Memory> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<Memory> = body_json(response).await;
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].content.as_str(), "An active memory.");
 }
@@ -225,8 +220,7 @@ async fn get_memory_by_id() {
         .oneshot(post_json_auth("/memories", &body, &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: Memory = serde_json::from_slice(&bytes).unwrap();
+    let created: Memory = body_json(response).await;
 
     let app = router(state);
     let response = app
@@ -235,8 +229,7 @@ async fn get_memory_by_id() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let fetched: Memory = serde_json::from_slice(&bytes).unwrap();
+    let fetched: Memory = body_json(response).await;
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.content.as_str(), "A notable memory.");
 }

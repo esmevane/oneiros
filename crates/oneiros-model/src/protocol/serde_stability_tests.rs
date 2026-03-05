@@ -71,9 +71,9 @@ mod tests {
         let updated = serde_json::to_value(AgentEvents::AgentUpdated(agent)).unwrap();
         assert_eq!(event_type(&updated), "agent-updated");
 
-        let removed = serde_json::to_value(&AgentEvents::AgentRemoved {
+        let removed = serde_json::to_value(AgentEvents::AgentRemoved(SelectAgentByName {
             name: AgentName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&removed), "agent-removed");
     }
@@ -114,9 +114,9 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&set), "storage-set");
 
-        let removed = serde_json::to_value(&StorageEvents::StorageRemoved {
+        let removed = serde_json::to_value(StorageEvents::StorageRemoved(SelectStorageByKey {
             key: StorageKey::new("test-key"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&removed), "storage-removed");
     }
@@ -131,9 +131,9 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&set), "persona-set");
 
-        let removed = serde_json::to_value(&PersonaEvents::PersonaRemoved {
+        let removed = serde_json::to_value(PersonaEvents::PersonaRemoved(SelectPersonaByName {
             name: PersonaName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&removed), "persona-removed");
     }
@@ -148,9 +148,9 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&set), "texture-set");
 
-        let removed = serde_json::to_value(&TextureEvents::TextureRemoved {
+        let removed = serde_json::to_value(TextureEvents::TextureRemoved(SelectTextureByName {
             name: TextureName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&removed), "texture-removed");
     }
@@ -165,9 +165,9 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&set), "level-set");
 
-        let removed = serde_json::to_value(&LevelEvents::LevelRemoved {
+        let removed = serde_json::to_value(LevelEvents::LevelRemoved(SelectLevelByName {
             name: LevelName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&removed), "level-removed");
     }
@@ -182,10 +182,11 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&set), "sensation-set");
 
-        let removed = serde_json::to_value(&SensationEvents::SensationRemoved {
-            name: SensationName::new("test"),
-        })
-        .unwrap();
+        let removed =
+            serde_json::to_value(SensationEvents::SensationRemoved(SelectSensationByName {
+                name: SensationName::new("test"),
+            }))
+            .unwrap();
         assert_eq!(event_type(&removed), "sensation-removed");
     }
 
@@ -199,9 +200,9 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&set), "nature-set");
 
-        let removed = serde_json::to_value(&NatureEvents::NatureRemoved {
+        let removed = serde_json::to_value(NatureEvents::NatureRemoved(SelectNatureByName {
             name: NatureName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&removed), "nature-removed");
     }
@@ -229,10 +230,11 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&created), "connection-created");
 
-        let removed = serde_json::to_value(&ConnectionEvents::ConnectionRemoved {
-            id: ConnectionId::new(),
-        })
-        .unwrap();
+        let removed =
+            serde_json::to_value(ConnectionEvents::ConnectionRemoved(SelectConnectionById {
+                id: ConnectionId::new(),
+            }))
+            .unwrap();
         assert_eq!(event_type(&removed), "connection-removed");
     }
 
@@ -248,19 +250,22 @@ mod tests {
         .unwrap();
         assert_eq!(event_type(&created), "experience-created");
 
-        let desc_updated = serde_json::to_value(&ExperienceEvents::ExperienceDescriptionUpdated {
-            experience_id: ExperienceId::new(),
-            description: Description::new("updated"),
-        })
+        let desc_updated = serde_json::to_value(ExperienceEvents::ExperienceDescriptionUpdated(
+            ExperienceDescriptionUpdate {
+                experience_id: ExperienceId::new(),
+                description: Description::new("updated"),
+            },
+        ))
         .unwrap();
         assert_eq!(event_type(&desc_updated), "experience-description-updated");
 
-        let sensation_updated =
-            serde_json::to_value(&ExperienceEvents::ExperienceSensationUpdated {
+        let sensation_updated = serde_json::to_value(ExperienceEvents::ExperienceSensationUpdated(
+            ExperienceSensationUpdate {
                 experience_id: ExperienceId::new(),
                 sensation: SensationName::new("continues"),
-            })
-            .unwrap();
+            },
+        ))
+        .unwrap();
         assert_eq!(
             event_type(&sensation_updated),
             "experience-sensation-updated"
@@ -269,81 +274,85 @@ mod tests {
 
     #[test]
     fn lifecycle_event_type_strings() {
-        let woke = serde_json::to_value(&LifecycleEvents::Woke {
+        let woke = serde_json::to_value(LifecycleEvents::Woke(SelectAgentByName {
             name: AgentName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&woke), "woke");
 
-        let slept = serde_json::to_value(&LifecycleEvents::Slept {
+        let slept = serde_json::to_value(LifecycleEvents::Slept(SelectAgentByName {
             name: AgentName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&slept), "slept");
 
-        let emerged = serde_json::to_value(&LifecycleEvents::Emerged {
+        let emerged = serde_json::to_value(LifecycleEvents::Emerged(SelectAgentByName {
             name: AgentName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&emerged), "emerged");
 
-        let receded = serde_json::to_value(&LifecycleEvents::Receded {
+        let receded = serde_json::to_value(LifecycleEvents::Receded(SelectAgentByName {
             name: AgentName::new("test"),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&receded), "receded");
     }
 
     #[test]
     fn dreaming_event_type_strings() {
-        let begun = serde_json::to_value(&DreamingEvents::DreamBegun {
-            agent: AgentName::new("test"),
-        })
+        let begun = serde_json::to_value(DreamingEvents::DreamBegun(SelectAgentByName {
+            name: AgentName::new("test"),
+        }))
         .unwrap();
         assert_eq!(event_type(&begun), "dream-begun");
 
-        let complete = serde_json::to_value(&DreamingEvents::DreamComplete {
+        let complete = serde_json::to_value(DreamingEvents::DreamComplete(DreamCompleteEvent {
             agent: test_agent(),
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&complete), "dream-complete");
     }
 
     #[test]
     fn introspecting_event_type_strings() {
-        let begun = serde_json::to_value(&IntrospectingEvents::IntrospectionBegun {
-            agent: AgentName::new("test"),
-        })
-        .unwrap();
+        let begun =
+            serde_json::to_value(IntrospectingEvents::IntrospectionBegun(SelectAgentByName {
+                name: AgentName::new("test"),
+            }))
+            .unwrap();
         assert_eq!(event_type(&begun), "introspection-begun");
 
-        let complete = serde_json::to_value(&IntrospectingEvents::IntrospectionComplete {
-            agent: AgentName::new("test"),
-        })
+        let complete = serde_json::to_value(IntrospectingEvents::IntrospectionComplete(
+            SelectAgentByName {
+                name: AgentName::new("test"),
+            },
+        ))
         .unwrap();
         assert_eq!(event_type(&complete), "introspection-complete");
     }
 
     #[test]
     fn reflecting_event_type_strings() {
-        let begun = serde_json::to_value(&ReflectingEvents::ReflectionBegun {
-            agent: AgentName::new("test"),
-        })
+        let begun = serde_json::to_value(ReflectingEvents::ReflectionBegun(SelectAgentByName {
+            name: AgentName::new("test"),
+        }))
         .unwrap();
         assert_eq!(event_type(&begun), "reflection-begun");
 
-        let complete = serde_json::to_value(&ReflectingEvents::ReflectionComplete {
-            agent: AgentName::new("test"),
-        })
-        .unwrap();
+        let complete =
+            serde_json::to_value(ReflectingEvents::ReflectionComplete(SelectAgentByName {
+                name: AgentName::new("test"),
+            }))
+            .unwrap();
         assert_eq!(event_type(&complete), "reflection-complete");
     }
 
     #[test]
     fn sense_event_type_strings() {
-        let sensed = serde_json::to_value(&SenseEvents::Sensed {
-            agent: AgentName::new("test"),
-        })
+        let sensed = serde_json::to_value(SenseEvents::Sensed(SelectAgentByName {
+            name: AgentName::new("test"),
+        }))
         .unwrap();
         assert_eq!(event_type(&sensed), "sensed");
     }
@@ -363,7 +372,10 @@ mod tests {
         let list = serde_json::to_value(&EventRequests::ListEvents).unwrap();
         assert_eq!(event_type(&list), "list-events");
 
-        let get = serde_json::to_value(&EventRequests::GetEvent { id: EventId::new() }).unwrap();
+        let get = serde_json::to_value(EventRequests::GetEvent(SelectEventById {
+            id: EventId::new(),
+        }))
+        .unwrap();
         assert_eq!(event_type(&get), "get-event");
 
         let export = serde_json::to_value(&EventRequests::ExportEvents).unwrap();
@@ -742,49 +754,52 @@ mod tests {
 
     #[test]
     fn cognition_requests_list_type_string() {
-        let list = serde_json::to_value(&CognitionRequests::ListCognitions {
+        let list = serde_json::to_value(CognitionRequests::ListCognitions(ListCognitionsFilter {
             agent: None,
             texture: None,
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&list), "list-cognitions");
 
         // With filters — type string unchanged
-        let filtered = serde_json::to_value(&CognitionRequests::ListCognitions {
-            agent: Some(AgentName::new("test")),
-            texture: Some(TextureName::new("observation")),
-        })
-        .unwrap();
+        let filtered =
+            serde_json::to_value(CognitionRequests::ListCognitions(ListCognitionsFilter {
+                agent: Some(AgentName::new("test")),
+                texture: Some(TextureName::new("observation")),
+            }))
+            .unwrap();
         assert_eq!(event_type(&filtered), "list-cognitions");
     }
 
     #[test]
     fn memory_requests_list_type_string() {
-        let list = serde_json::to_value(&MemoryRequests::ListMemories {
+        let list = serde_json::to_value(MemoryRequests::ListMemories(ListMemoriesFilter {
             agent: None,
             level: None,
-        })
+        }))
         .unwrap();
         assert_eq!(event_type(&list), "list-memories");
     }
 
     #[test]
     fn experience_requests_list_type_string() {
-        let list = serde_json::to_value(&ExperienceRequests::ListExperiences {
-            agent: None,
-            sensation: None,
-        })
-        .unwrap();
+        let list =
+            serde_json::to_value(ExperienceRequests::ListExperiences(ListExperiencesFilter {
+                agent: None,
+                sensation: None,
+            }))
+            .unwrap();
         assert_eq!(event_type(&list), "list-experiences");
     }
 
     #[test]
     fn connection_requests_list_type_string() {
-        let list = serde_json::to_value(&ConnectionRequests::ListConnections {
-            nature: None,
-            entity_ref: None,
-        })
-        .unwrap();
+        let list =
+            serde_json::to_value(ConnectionRequests::ListConnections(ListConnectionsFilter {
+                nature: None,
+                entity_ref: None,
+            }))
+            .unwrap();
         assert_eq!(event_type(&list), "list-connections");
     }
 

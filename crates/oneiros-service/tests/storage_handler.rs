@@ -35,8 +35,7 @@ async fn set_storage_returns_ok() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry: StorageEntry = serde_json::from_slice(&bytes).unwrap();
+    let entry: StorageEntry = body_json(response).await;
     assert_eq!(entry.key, StorageKey::new("greeting"));
     assert_eq!(entry.description.as_str(), "A greeting");
     assert!(!entry.hash.as_str().is_empty());
@@ -70,8 +69,7 @@ async fn set_storage_is_idempotent() {
     let response = app.oneshot(get_auth(&uri, &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry: StorageEntry = serde_json::from_slice(&bytes).unwrap();
+    let entry: StorageEntry = body_json(response).await;
     assert_eq!(entry.description.as_str(), "Version 2");
 }
 
@@ -86,16 +84,14 @@ async fn set_storage_deduplicates_content() {
         .oneshot(put_binary_auth(&storage_uri("key-a"), content, "A", &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry_a: StorageEntry = serde_json::from_slice(&bytes).unwrap();
+    let entry_a: StorageEntry = body_json(response).await;
 
     let app = router(state);
     let response = app
         .oneshot(put_binary_auth(&storage_uri("key-b"), content, "B", &token))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry_b: StorageEntry = serde_json::from_slice(&bytes).unwrap();
+    let entry_b: StorageEntry = body_json(response).await;
 
     assert_eq!(entry_a.hash, entry_b.hash);
 }
@@ -144,8 +140,7 @@ async fn list_storage_empty() {
     let response = app.oneshot(get_auth("/storage", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<StorageEntry> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<StorageEntry> = body_json(response).await;
     assert!(list.is_empty());
 }
 
@@ -177,8 +172,7 @@ async fn list_storage_after_set() {
     let response = app.oneshot(get_auth("/storage", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let list: Vec<StorageEntry> = serde_json::from_slice(&bytes).unwrap();
+    let list: Vec<StorageEntry> = body_json(response).await;
     assert_eq!(list.len(), 2);
 }
 
@@ -198,15 +192,13 @@ async fn show_storage_metadata() {
         ))
         .await
         .unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let created: StorageEntry = serde_json::from_slice(&bytes).unwrap();
+    let created: StorageEntry = body_json(response).await;
 
     let app = router(state);
     let response = app.oneshot(get_auth(&uri, &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let entry: StorageEntry = serde_json::from_slice(&bytes).unwrap();
+    let entry: StorageEntry = body_json(response).await;
     assert_eq!(entry.key, StorageKey::new("doc"));
     assert_eq!(entry.description.as_str(), "A document");
     assert_eq!(entry.hash, created.hash);

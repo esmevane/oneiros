@@ -20,10 +20,15 @@ pub struct BrainInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectBrainByName {
+    pub name: BrainName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum BrainRequests {
     CreateBrain(CreateBrainRequest),
-    GetBrain { name: BrainName },
+    GetBrain(SelectBrainByName),
     ListBrains,
 }
 
