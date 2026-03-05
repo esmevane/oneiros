@@ -1,8 +1,9 @@
 use axum::Router;
 use axum::routing::get;
+use oneiros_service::ServiceState;
 use std::sync::Arc;
 
-use crate::*;
+use crate::handlers;
 
 pub fn router(state: Arc<ServiceState>) -> Router {
     Router::new()

@@ -35,6 +35,7 @@ oneiros-fs = { path = "crates/oneiros-fs", version = "0.0.6" }
 oneiros-model = { path = "crates/oneiros-model", version = "0.0.6" }
 oneiros-outcomes = { path = "crates/oneiros-outcomes", version = "0.0.6" }
 oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive", version = "0.0.6" }
+oneiros-http = { path = "crates/oneiros-http", version = "0.0.6" }
 oneiros-service = { path = "crates/oneiros-service", version = "0.0.6" }
 oneiros-skill = { path = "crates/oneiros-skill", version = "0.0.6" }
 oneiros-templates = { path = "crates/oneiros-templates", version = "0.0.6" }

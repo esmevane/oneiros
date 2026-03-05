@@ -7,14 +7,14 @@ use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use tokio::sync::broadcast;
 
-use crate::handlers::dream::collector::DreamCollector;
+use crate::dream_collector::DreamCollector;
 use crate::{Error, projections};
 
 /// Domain service for brain-scoped operations.
 ///
 /// Owns the validate → construct → persist → broadcast pipeline.
 /// Handlers delegate here; they own only HTTP parsing and response formatting.
-pub(crate) struct BrainService<'a> {
+pub struct BrainService<'a> {
     db: &'a Database,
     event_tx: &'a broadcast::Sender<Events>,
 }

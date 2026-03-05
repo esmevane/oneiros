@@ -11,7 +11,7 @@ pub(crate) async fn handler(
 ) -> Result<Response, Error> {
     let key = storage_ref
         .decode()
-        .map_err(|e| Error::BadRequest(BadRequests::StorageRef(e)))?;
+        .map_err(oneiros_service::BadRequests::StorageRef)?;
 
     let data = ticket.service().get_storage_content(&key)?;
 

@@ -5,12 +5,12 @@ use std::sync::Arc;
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::BroadcastStream;
 
-use crate::state::ServiceState;
+use oneiros_service::ServiceState;
 
 pub(crate) async fn handler(
     State(state): State<Arc<ServiceState>>,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, Infallible>>> {
-    let rx = state.event_tx.subscribe();
+    let rx = state.subscribe();
 
     let stream = BroadcastStream::new(rx).filter_map(|result| match result {
         Ok(event) => {
