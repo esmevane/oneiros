@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn event_requests_type_strings() {
-        let import = serde_json::to_value(EventRequests::ImportEvents(vec![ImportEvent {
+        let import = serde_json::to_value(EventRequests::ImportEvents(vec![ImportEvent::Valid {
             id: EventId::new(),
             source: Source {
                 actor_id: ActorId::new(),

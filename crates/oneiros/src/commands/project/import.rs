@@ -1,7 +1,5 @@
 use clap::Args;
-use oneiros_client::{ImportEvent, Source};
 use oneiros_outcomes::{Outcome, Outcomes};
-use serde_json::Value;
 use std::io::BufRead;
 use std::path::PathBuf;
 
@@ -49,35 +47,8 @@ impl ImportProject {
                 continue;
             }
 
-            let envelope: Value = serde_json::from_str(&line)?;
-
-            let id: EventId = envelope
-                .get("id")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .parse()
-                .unwrap_or_default();
-
-            let timestamp = envelope
-                .get("timestamp")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string();
-
-            let source: Source = envelope
-                .get("source")
-                .cloned()
-                .and_then(|v| serde_json::from_value(v).ok())
-                .unwrap_or(Source::default());
-
-            let data = envelope.get("data").cloned().unwrap_or(Value::Null);
-
-            events.push(ImportEvent {
-                id,
-                source,
-                timestamp,
-                data,
-            });
+            let event: ImportEvent = serde_json::from_str(&line)?;
+            events.push(event);
         }
 
         let response = context

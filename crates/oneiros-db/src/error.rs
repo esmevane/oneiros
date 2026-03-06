@@ -17,6 +17,9 @@ pub enum DatabaseError {
 
     #[error("Failed to parse ref: {0}")]
     Ref(#[from] RefError),
+
+    #[error("Cannot import unsourced event — call with_source() first")]
+    UnsourcedImport,
 }
 
 impl From<AgentConstructionError> for DatabaseError {

@@ -3,11 +3,37 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImportEvent {
-    pub id: EventId,
-    pub source: Source,
-    pub timestamp: String,
-    pub data: serde_json::Value,
+#[serde(untagged)]
+pub enum ImportEvent {
+    Valid {
+        id: EventId,
+        source: Source,
+        timestamp: String,
+        data: serde_json::Value,
+    },
+    Unsourced {
+        id: EventId,
+        timestamp: String,
+        data: serde_json::Value,
+    },
+}
+
+impl ImportEvent {
+    pub fn with_source(self, source: Source) -> Self {
+        match self {
+            ImportEvent::Unsourced {
+                id,
+                timestamp,
+                data,
+            } => ImportEvent::Valid {
+                id,
+                source,
+                timestamp,
+                data,
+            },
+            valid @ ImportEvent::Valid { .. } => valid,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

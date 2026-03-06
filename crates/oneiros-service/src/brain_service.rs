@@ -57,10 +57,8 @@ impl<'a> BrainService<'a> {
 
     pub fn import_events(&self, events: &[ImportEvent]) -> Result<ImportResponse, Error> {
         for event in events {
-            let source =
-                serde_json::to_value(event.source).map_err(oneiros_db::DatabaseError::from)?;
-            self.db
-                .import_event(&event.id, &event.timestamp, &source, &event.data)?;
+            let event = event.clone().with_source(self.source);
+            self.db.import_event(&event)?;
         }
 
         let replayed = self.db.replay(projections::BRAIN)?;
