@@ -8,12 +8,14 @@ pragma foreign_keys = ON;
 -- forked, or merged by set-union of events by UUID.
 --
 create table if not exists events (
-    id        text primary key default (uuid()) not null,
+    id        text primary key not null,
+    sequence  integer not null,
     timestamp text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     data      text not null default '{}',
     meta      text not null default '{ "type": "__unmarked" }'
 );
 
+create index if not exists events_sequence on events(sequence);
 create index if not exists events_timestamp on events(timestamp);
 create index if not exists events_type on events(json_extract(meta, '$.type'));
 

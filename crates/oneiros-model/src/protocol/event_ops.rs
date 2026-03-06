@@ -4,6 +4,7 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportEvent {
+    pub id: EventId,
     pub timestamp: String,
     pub data: serde_json::Value,
 }
