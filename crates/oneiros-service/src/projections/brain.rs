@@ -348,9 +348,10 @@ const STORAGE_SET_PROJECTION: Projection = Projection {
 fn apply_storage_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let entry: StorageEntry = serde_json::from_value(data.clone())?;
 
-    db.set_storage(&entry.key, &entry.description, &entry.hash)?;
-
-    Ok(())
+    match db.set_storage(&entry.key, &entry.description, &entry.hash) {
+        Err(DatabaseError::Sqlite(ref e)) if e.to_string().contains("FOREIGN KEY") => Ok(()),
+        other => other,
+    }
 }
 
 const STORAGE_REMOVED_PROJECTION: Projection = Projection {

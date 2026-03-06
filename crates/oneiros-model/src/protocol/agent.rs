@@ -4,6 +4,7 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SelectAgentByName {
+    #[serde(alias = "agent")]
     pub name: AgentName,
 }
 
