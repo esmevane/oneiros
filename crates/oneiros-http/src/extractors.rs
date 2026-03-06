@@ -26,11 +26,6 @@ pub struct ActorContext {
 }
 
 impl ActorContext {
-    /// Fire-and-forget broadcast of an event to all SSE subscribers.
-    pub fn broadcast(&self, event: &Events) {
-        let _ = self.event_tx.send(event.clone());
-    }
-
     /// Create a scoped service for brain-level domain operations.
     pub(crate) fn service(&self) -> BrainService<'_> {
         BrainService::new(&self.db, &self.event_tx)

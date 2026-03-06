@@ -1,6 +1,6 @@
 use oneiros_db::Database;
 use oneiros_model::*;
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::MutexGuard;
 use tokio::sync::broadcast;
 
@@ -22,14 +22,14 @@ pub enum CreateBrainError {
 /// Holds the MutexGuard directly — the lock lives as long as the service does.
 pub struct SystemService<'a> {
     db: MutexGuard<'a, Database>,
-    data_dir: &'a PathBuf,
+    data_dir: &'a Path,
     event_tx: &'a broadcast::Sender<Events>,
 }
 
 impl<'a> SystemService<'a> {
     pub fn new(
         db: MutexGuard<'a, Database>,
-        data_dir: &'a PathBuf,
+        data_dir: &'a Path,
         event_tx: &'a broadcast::Sender<Events>,
     ) -> Self {
         Self {
