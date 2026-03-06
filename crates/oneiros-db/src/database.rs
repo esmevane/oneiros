@@ -1,6 +1,5 @@
 use oneiros_model::*;
 use rusqlite::{Connection, functions::FunctionFlags, params};
-use serde_json::Value;
 use std::path::Path;
 use uuid::Uuid;
 
@@ -1778,15 +1777,20 @@ impl Database {
         Ok(())
     }
 
-    pub fn import_event(
-        &self,
-        id: &EventId,
-        timestamp: &str,
-        source: &Value,
-        data: &Value,
-    ) -> Result<(), DatabaseError> {
+    pub fn import_event(&self, event: &ImportEvent) -> Result<(), DatabaseError> {
+        let ImportEvent::Valid {
+            id,
+            source,
+            timestamp,
+            data,
+        } = event
+        else {
+            return Err(DatabaseError::UnsourcedImport);
+        };
+
         let event_type = data["type"].as_str().unwrap_or("__unmarked");
         let meta = serde_json::json!({ "type": event_type });
+        let source = serde_json::to_value(source)?;
 
         let sequence: i64 = self.conn.query_row(
             "select coalesce(max(sequence), 0) + 1 from events",
