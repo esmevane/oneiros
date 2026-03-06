@@ -97,17 +97,22 @@ impl Init {
         outcomes.emit(InitSystemOutcomes::ResolvedTenant(name.clone()));
 
         let tenant = Tenant::init(name.clone());
-        let tenant_id = tenant.id;
-        let create_tenant = Events::Tenant(TenantEvents::TenantCreated(tenant));
+        let actor = Actor::init(tenant.id, ActorName::new(name.as_str()));
 
-        let known = Event::create(create_tenant);
+        let source = Source {
+            actor_id: actor.id,
+            tenant_id: tenant.id,
+        };
+
+        let create_tenant = Events::Tenant(TenantEvents::TenantCreated(tenant));
+        let known = Event::create(create_tenant, source);
+
         database.log_event(&known, projections::SYSTEM)?;
         outcomes.emit(InitSystemOutcomes::TenantCreated);
 
-        let actor = Actor::init(tenant_id, ActorName::new(name.as_str()));
         let create_actor = Events::Actor(ActorEvents::ActorCreated(actor));
+        let known = Event::create(create_actor, source);
 
-        let known = Event::create(create_actor);
         database.log_event(&known, projections::SYSTEM)?;
         outcomes.emit(InitSystemOutcomes::ActorCreated);
 
@@ -148,22 +153,22 @@ mod tests {
         assert!(
             outcomes
                 .iter()
-                .any(|o| matches!(o, InitSystemOutcomes::EnsuredDirectories))
+                .any(|outcome| matches!(outcome, InitSystemOutcomes::EnsuredDirectories))
         );
         assert!(
             outcomes
                 .iter()
-                .any(|o| matches!(o, InitSystemOutcomes::TenantCreated))
+                .any(|outcome| matches!(outcome, InitSystemOutcomes::TenantCreated))
         );
         assert!(
             outcomes
                 .iter()
-                .any(|o| matches!(o, InitSystemOutcomes::ActorCreated))
+                .any(|outcome| matches!(outcome, InitSystemOutcomes::ActorCreated))
         );
         assert!(
             outcomes
                 .iter()
-                .any(|o| matches!(o, InitSystemOutcomes::SystemInitialized(_)))
+                .any(|outcome| matches!(outcome, InitSystemOutcomes::SystemInitialized(_)))
         );
 
         // Verify database state

@@ -361,6 +361,10 @@ mod tests {
     fn event_requests_type_strings() {
         let import = serde_json::to_value(EventRequests::ImportEvents(vec![ImportEvent {
             id: EventId::new(),
+            source: Source {
+                actor_id: ActorId::new(),
+                tenant_id: TenantId::new(),
+            },
             timestamp: "2024-01-01T00:00:00Z".to_string(),
             data: serde_json::json!({}),
         }]))

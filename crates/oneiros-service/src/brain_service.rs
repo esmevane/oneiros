@@ -17,16 +17,21 @@ use crate::{Error, projections};
 pub struct BrainService<'a> {
     db: &'a Database,
     event_tx: &'a broadcast::Sender<Events>,
+    source: Source,
 }
 
 impl<'a> BrainService<'a> {
-    pub fn new(db: &'a Database, event_tx: &'a broadcast::Sender<Events>) -> Self {
-        Self { db, event_tx }
+    pub fn new(db: &'a Database, event_tx: &'a broadcast::Sender<Events>, source: Source) -> Self {
+        Self {
+            db,
+            event_tx,
+            source,
+        }
     }
 
     /// Persist a state-changing event (runs BRAIN projections) then broadcast.
     fn log_and_broadcast(&self, event: &Events) -> Result<(), Error> {
-        let known = Event::create(event.clone());
+        let known = Event::create(event.clone(), self.source);
         self.db.log_event(&known, projections::BRAIN)?;
         let _ = self.event_tx.send(event.clone());
         Ok(())
@@ -34,7 +39,7 @@ impl<'a> BrainService<'a> {
 
     /// Persist an observational marker event (no projections) then broadcast.
     fn log_marker(&self, event: &Events) -> Result<(), Error> {
-        let known = Event::create(event.clone());
+        let known = Event::create(event.clone(), self.source);
         self.db.log_event(&known, &[])?;
         let _ = self.event_tx.send(event.clone());
         Ok(())
@@ -52,8 +57,10 @@ impl<'a> BrainService<'a> {
 
     pub fn import_events(&self, events: &[ImportEvent]) -> Result<ImportResponse, Error> {
         for event in events {
+            let source =
+                serde_json::to_value(event.source).map_err(oneiros_db::DatabaseError::from)?;
             self.db
-                .import_event(&event.id, &event.timestamp, &event.data)?;
+                .import_event(&event.id, &event.timestamp, &source, &event.data)?;
         }
 
         let replayed = self.db.replay(projections::BRAIN)?;

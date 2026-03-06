@@ -12,16 +12,18 @@ pub struct ServiceState {
     pub(crate) database: Mutex<Database>,
     pub(crate) data_dir: PathBuf,
     pub(crate) event_tx: broadcast::Sender<Events>,
+    pub(crate) source: Source,
 }
 
 impl ServiceState {
-    pub fn new(database: Database, data_dir: PathBuf) -> Self {
+    pub fn new(database: Database, data_dir: PathBuf, source: Source) -> Self {
         let (event_tx, _) = broadcast::channel(256);
 
         Self {
             database: Mutex::new(database),
             data_dir,
             event_tx,
+            source,
         }
     }
 
@@ -53,10 +55,16 @@ impl ServiceState {
     /// Create a scoped service for system-level domain operations.
     ///
     /// Acquires the system database lock; the lock lives as long as the
-    /// returned SystemService does.
+    /// returned SystemService does. Source identity was resolved at
+    /// construction time — it's a system invariant, not request-scoped data.
     pub fn system_service(&self) -> Result<SystemService<'_>, Error> {
         let db = self.lock_database()?;
-        Ok(SystemService::new(db, &self.data_dir, &self.event_tx))
+        Ok(SystemService::new(
+            db,
+            &self.data_dir,
+            &self.event_tx,
+            self.source,
+        ))
     }
 
     /// Open a brain database and collect aggregate stats for the dashboard.

@@ -74,8 +74,8 @@ impl Database {
     /// Read all events in creation order.
     pub fn read_events(&self) -> Result<Vec<Event>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "SELECT json_object('id', id, 'timestamp', timestamp, 'data', json(data))
-             FROM events ORDER BY sequence ASC",
+            "select json_object('id', id, 'timestamp', timestamp, 'source', json(source), 'data', json(data))
+             from events order by sequence asc",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -107,7 +107,7 @@ impl Database {
         }
 
         let result = self.conn.query_row(
-            "select json_object('id', id, 'timestamp', timestamp, 'data', data) from events where id = ?1",
+            "select json_object('id', id, 'timestamp', timestamp, 'source', json(source), 'data', json(data)) from events where id = ?1",
             params![id.to_string()],
             |row| {
                 let raw_event: String = row.get(0)?;
@@ -1741,37 +1741,35 @@ impl Database {
         event: &KnownEvent,
         projections: &[&[Projection]],
     ) -> Result<(), DatabaseError> {
-        let data = serde_json::to_value(&event.data)?;
-
         let tx = self.conn.unchecked_transaction()?;
-        self.create_event(&event.id, &event.timestamp, &data)?;
-        self.run_projections(projections, &data)?;
+
+        self.create_event(event)?;
+        self.run_projections(projections, event)?;
+
         tx.commit()?;
+
         Ok(())
     }
 
-    fn create_event(
-        &self,
-        id: &EventId,
-        timestamp: &Timestamp,
-        data: &Value,
-    ) -> Result<(), DatabaseError> {
-        // TODO: meta re-serde cost — derive event_type from typed enum instead
+    fn create_event(&self, event: &KnownEvent) -> Result<(), DatabaseError> {
+        let data = serde_json::to_value(&event.data)?;
+        let source = serde_json::to_value(event.source)?;
         let event_type = data["type"].as_str().unwrap_or("__unmarked");
         let meta = serde_json::json!({ "type": event_type });
 
         let sequence: i64 = self.conn.query_row(
-            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM events",
+            "select coalesce(max(sequence), 0) + 1 from events",
             [],
             |row| row.get(0),
         )?;
 
         self.conn.execute(
-            "INSERT INTO events (id, sequence, timestamp, data, meta) VALUES (?1, ?2, ?3, ?4, ?5)",
+            "insert into events (id, sequence, timestamp, source, data, meta) values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
-                id.to_string(),
+                event.id.to_string(),
                 sequence,
-                timestamp.as_string(),
+                event.timestamp.as_string(),
+                source.to_string(),
                 data.to_string(),
                 meta.to_string(),
             ],
@@ -1784,27 +1782,28 @@ impl Database {
         &self,
         id: &EventId,
         timestamp: &str,
+        source: &Value,
         data: &Value,
     ) -> Result<(), DatabaseError> {
         let event_type = data["type"].as_str().unwrap_or("__unmarked");
         let meta = serde_json::json!({ "type": event_type });
 
         let sequence: i64 = self.conn.query_row(
-            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM events",
+            "select coalesce(max(sequence), 0) + 1 from events",
             [],
             |row| row.get(0),
         )?;
 
         self.conn.execute(
-            "INSERT OR IGNORE INTO events (id, sequence, timestamp, data, meta) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id.to_string(), sequence, timestamp, data.to_string(), meta.to_string()],
+            "insert or ignore into events (id, sequence, timestamp, source, data, meta) values (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![id.to_string(), sequence, timestamp, source.to_string(), data.to_string(), meta.to_string()],
         )?;
 
         Ok(())
     }
 
     pub fn replay(&self, projections: &[&[Projection]]) -> Result<usize, DatabaseError> {
-        let tx = self.conn.unchecked_transaction()?;
+        let transaction = self.conn.unchecked_transaction()?;
 
         for group in projections.iter().rev() {
             for projection in group.iter().rev() {
@@ -1812,39 +1811,43 @@ impl Database {
             }
         }
 
-        let mut stmt = self
+        let mut statement = self
             .conn
-            .prepare("SELECT data FROM events ORDER BY sequence ASC")?;
+            .prepare("select json_object('id', id, 'data', json(data), 'source', json(source), 'timestamp', timestamp)
+                from events order by sequence asc")?;
 
         let mut count = 0;
 
-        let rows = stmt.query_map([], |row| {
+        let rows = statement.query_map([], |row| {
             let raw: String = row.get(0)?;
             Ok(raw)
         })?;
 
         for row in rows {
             let raw = row?;
-            let event: Value = serde_json::from_str(&raw)?;
+            let event: KnownEvent = serde_json::from_str(&raw)?;
 
             self.run_projections(projections, &event)?;
             count += 1;
         }
 
-        tx.commit()?;
+        transaction.commit()?;
+
         Ok(count)
     }
 
     fn run_projections(
         &self,
         projections: &[&[Projection]],
-        event: &Value,
+        event: &KnownEvent,
     ) -> Result<(), DatabaseError> {
-        let Some(event_type) = event["type"].as_str() else {
+        let data = serde_json::to_value(&event.data)?;
+
+        let Some(event_type) = data["type"].as_str() else {
             return Ok(());
         };
 
-        let data = event["data"].clone();
+        let data = data["data"].clone();
 
         projections::project(self, projections, event_type, &data)
     }

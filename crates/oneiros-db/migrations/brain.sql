@@ -11,6 +11,7 @@ create table if not exists events (
     id        text primary key not null,
     sequence  integer not null,
     timestamp text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    source    text not null default '{}',
     data      text not null default '{}',
     meta      text not null default '{ "type": "__unmarked" }'
 );
