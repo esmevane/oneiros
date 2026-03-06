@@ -10,7 +10,9 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         "A process agent.",
         "You are a process agent.",
     )));
-    brain_db.log_event(&event, projections::BRAIN).unwrap();
+    brain_db
+        .log_event(&Event::create(event), projections::BRAIN)
+        .unwrap();
 
     let event = Events::Agent(AgentEvents::AgentCreated(Agent::init(
         "The governor agent.",
@@ -18,7 +20,9 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         AgentName::new("governor.process"),
         PersonaName::new("process"),
     )));
-    brain_db.log_event(&event, projections::BRAIN).unwrap();
+    brain_db
+        .log_event(&Event::create(event), projections::BRAIN)
+        .unwrap();
 }
 
 async fn get_dashboard(state: Arc<ServiceState>, uri: &str) -> (StatusCode, String) {

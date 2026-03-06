@@ -51,6 +51,13 @@ impl ImportProject {
 
             let envelope: Value = serde_json::from_str(&line)?;
 
+            let id: EventId = envelope
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .parse()
+                .unwrap_or_default();
+
             let timestamp = envelope
                 .get("timestamp")
                 .and_then(Value::as_str)
@@ -59,7 +66,11 @@ impl ImportProject {
 
             let data = envelope.get("data").cloned().unwrap_or(Value::Null);
 
-            events.push(ImportEvent { timestamp, data });
+            events.push(ImportEvent {
+                id,
+                timestamp,
+                data,
+            });
         }
 
         let response = context

@@ -20,14 +20,16 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         id: tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
+    db.log_event(&Event::create(event), projections::SYSTEM)
+        .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
         id: actor_id,
         tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
+    db.log_event(&Event::create(event), projections::SYSTEM)
+        .unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
 
@@ -39,7 +41,8 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         status: BrainStatus::Active,
         path: brain_path.to_path_buf(),
     }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
+    db.log_event(&Event::create(event), projections::SYSTEM)
+        .unwrap();
 
     let token = Token::issue(TokenClaims {
         brain_id,
@@ -52,7 +55,8 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         token: token.clone(),
         created_by: actor_id,
     }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
+    db.log_event(&Event::create(event), projections::SYSTEM)
+        .unwrap();
 
     token.0
 }

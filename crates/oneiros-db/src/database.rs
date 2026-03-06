@@ -71,26 +71,11 @@ impl Database {
         Ok(count as usize)
     }
 
-    /// Read all events in chronological order, with causal tiebreaking.
-    ///
-    /// Events are ordered by `timestamp ASC`. Within the same timestamp,
-    /// seed/vocabulary events sort first (they define names referenced by
-    /// other events), then agent lifecycle, then everything else. This
-    /// ensures FK dependencies are satisfied during replay.
+    /// Read all events in creation order.
     pub fn read_events(&self) -> Result<Vec<Event>, DatabaseError> {
         let mut stmt = self.conn.prepare(
-            "SELECT json_object('id', id, 'timestamp', timestamp, 'data', json(data)) FROM events
-              ORDER BY timestamp ASC,
-              CASE json_extract(meta, '$.type')
-                  WHEN 'texture-set'   THEN 0
-                  WHEN 'level-set'     THEN 0
-                  WHEN 'persona-set'   THEN 0
-                  WHEN 'sensation-set' THEN 0
-                  WHEN 'nature-set'    THEN 0
-                  WHEN 'agent-created' THEN 1
-                  WHEN 'agent-updated' THEN 1
-                  ELSE 2
-              END ASC",
+            "SELECT json_object('id', id, 'timestamp', timestamp, 'data', json(data))
+             FROM events ORDER BY sequence ASC",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -1753,37 +1738,66 @@ impl Database {
 
     pub fn log_event(
         &self,
-        data: impl serde::Serialize,
+        event: &KnownEvent,
         projections: &[&[Projection]],
     ) -> Result<(), DatabaseError> {
-        let event = serde_json::to_value(data)?;
+        let data = serde_json::to_value(&event.data)?;
 
         let tx = self.conn.unchecked_transaction()?;
-        self.create_event(&event)?;
-        self.run_projections(projections, &event)?;
+        self.create_event(&event.id, &event.timestamp, &data)?;
+        self.run_projections(projections, &data)?;
         tx.commit()?;
         Ok(())
     }
 
-    fn create_event(&self, data: &Value) -> Result<(), DatabaseError> {
+    fn create_event(
+        &self,
+        id: &EventId,
+        timestamp: &Timestamp,
+        data: &Value,
+    ) -> Result<(), DatabaseError> {
+        // TODO: meta re-serde cost — derive event_type from typed enum instead
         let event_type = data["type"].as_str().unwrap_or("__unmarked");
         let meta = serde_json::json!({ "type": event_type });
 
+        let sequence: i64 = self.conn.query_row(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM events",
+            [],
+            |row| row.get(0),
+        )?;
+
         self.conn.execute(
-            "insert into events (data, meta) values (?1, ?2)",
-            params![data.to_string(), meta.to_string()],
+            "INSERT INTO events (id, sequence, timestamp, data, meta) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                id.to_string(),
+                sequence,
+                timestamp.as_string(),
+                data.to_string(),
+                meta.to_string(),
+            ],
         )?;
 
         Ok(())
     }
 
-    pub fn import_event(&self, timestamp: &str, data: &Value) -> Result<(), DatabaseError> {
+    pub fn import_event(
+        &self,
+        id: &EventId,
+        timestamp: &str,
+        data: &Value,
+    ) -> Result<(), DatabaseError> {
         let event_type = data["type"].as_str().unwrap_or("__unmarked");
         let meta = serde_json::json!({ "type": event_type });
 
+        let sequence: i64 = self.conn.query_row(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM events",
+            [],
+            |row| row.get(0),
+        )?;
+
         self.conn.execute(
-            "insert into events (timestamp, data, meta) values (?1, ?2, ?3)",
-            params![timestamp, data.to_string(), meta.to_string()],
+            "INSERT OR IGNORE INTO events (id, sequence, timestamp, data, meta) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id.to_string(), sequence, timestamp, data.to_string(), meta.to_string()],
         )?;
 
         Ok(())
@@ -1798,20 +1812,9 @@ impl Database {
             }
         }
 
-        let mut stmt = self.conn.prepare(
-            "SELECT data FROM events
-              ORDER BY timestamp ASC,
-              CASE json_extract(meta, '$.type')
-                  WHEN 'texture-set'   THEN 0
-                  WHEN 'level-set'     THEN 0
-                  WHEN 'persona-set'   THEN 0
-                  WHEN 'sensation-set' THEN 0
-                  WHEN 'nature-set'    THEN 0
-                  WHEN 'agent-created' THEN 1
-                  WHEN 'agent-updated' THEN 1
-                  ELSE 2
-              END ASC",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT data FROM events ORDER BY sequence ASC")?;
 
         let mut count = 0;
 

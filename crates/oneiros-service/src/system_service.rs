@@ -41,7 +41,8 @@ impl<'a> SystemService<'a> {
 
     /// Persist a state-changing event (runs SYSTEM projections) then broadcast.
     fn log_and_broadcast(&self, event: &Events) -> Result<(), Error> {
-        self.db.log_event(event, projections::SYSTEM)?;
+        let known = Event::create(event.clone());
+        self.db.log_event(&known, projections::SYSTEM)?;
         let _ = self.event_tx.send(event.clone());
         Ok(())
     }

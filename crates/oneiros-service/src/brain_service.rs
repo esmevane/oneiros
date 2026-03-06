@@ -26,14 +26,16 @@ impl<'a> BrainService<'a> {
 
     /// Persist a state-changing event (runs BRAIN projections) then broadcast.
     fn log_and_broadcast(&self, event: &Events) -> Result<(), Error> {
-        self.db.log_event(event, projections::BRAIN)?;
+        let known = Event::create(event.clone());
+        self.db.log_event(&known, projections::BRAIN)?;
         let _ = self.event_tx.send(event.clone());
         Ok(())
     }
 
     /// Persist an observational marker event (no projections) then broadcast.
     fn log_marker(&self, event: &Events) -> Result<(), Error> {
-        self.db.log_event(event, &[])?;
+        let known = Event::create(event.clone());
+        self.db.log_event(&known, &[])?;
         let _ = self.event_tx.send(event.clone());
         Ok(())
     }
@@ -50,7 +52,8 @@ impl<'a> BrainService<'a> {
 
     pub fn import_events(&self, events: &[ImportEvent]) -> Result<ImportResponse, Error> {
         for event in events {
-            self.db.import_event(&event.timestamp, &event.data)?;
+            self.db
+                .import_event(&event.id, &event.timestamp, &event.data)?;
         }
 
         let replayed = self.db.replay(projections::BRAIN)?;

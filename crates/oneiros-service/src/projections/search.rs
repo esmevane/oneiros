@@ -251,32 +251,44 @@ mod tests {
             Description::new("A test persona"),
             Prompt::new("test persona prompt"),
         );
-        db.log_event(PersonaEvents::PersonaSet(persona), projections::BRAIN)
-            .unwrap();
+        db.log_event(
+            &Event::create(Events::Persona(PersonaEvents::PersonaSet(persona))),
+            projections::BRAIN,
+        )
+        .unwrap();
 
         let texture = Texture::init(
             TextureName::new("observation"),
             Description::new("Observations"),
             Prompt::default(),
         );
-        db.log_event(TextureEvents::TextureSet(texture), projections::BRAIN)
-            .unwrap();
+        db.log_event(
+            &Event::create(Events::Texture(TextureEvents::TextureSet(texture))),
+            projections::BRAIN,
+        )
+        .unwrap();
 
         let level = Level::init(
             LevelName::new("session"),
             Description::new("Session-level"),
             Prompt::default(),
         );
-        db.log_event(LevelEvents::LevelSet(level), projections::BRAIN)
-            .unwrap();
+        db.log_event(
+            &Event::create(Events::Level(LevelEvents::LevelSet(level))),
+            projections::BRAIN,
+        )
+        .unwrap();
 
         let sensation = Sensation::init(
             SensationName::new("caused"),
             Description::new("Causal connection"),
             Prompt::default(),
         );
-        db.log_event(SensationEvents::SensationSet(sensation), projections::BRAIN)
-            .unwrap();
+        db.log_event(
+            &Event::create(Events::Sensation(SensationEvents::SensationSet(sensation))),
+            projections::BRAIN,
+        )
+        .unwrap();
 
         // Seed entities
         let agent = Agent::init(
@@ -285,8 +297,11 @@ mod tests {
             AgentName::new("test-agent"),
             PersonaName::new("test-persona"),
         );
-        db.log_event(AgentEvents::AgentCreated(agent.clone()), projections::BRAIN)
-            .unwrap();
+        db.log_event(
+            &Event::create(Events::Agent(AgentEvents::AgentCreated(agent.clone()))),
+            projections::BRAIN,
+        )
+        .unwrap();
 
         let cognition = Cognition::create(
             agent.id,
@@ -294,7 +309,9 @@ mod tests {
             Content::new("an interesting observation about architecture"),
         );
         db.log_event(
-            CognitionEvents::CognitionAdded(cognition),
+            &Event::create(Events::Cognition(CognitionEvents::CognitionAdded(
+                cognition,
+            ))),
             projections::BRAIN,
         )
         .unwrap();
@@ -304,8 +321,11 @@ mod tests {
             LevelName::new("session"),
             Content::new("a consolidated memory about patterns"),
         );
-        db.log_event(MemoryEvents::MemoryAdded(memory), projections::BRAIN)
-            .unwrap();
+        db.log_event(
+            &Event::create(Events::Memory(MemoryEvents::MemoryAdded(memory))),
+            projections::BRAIN,
+        )
+        .unwrap();
 
         let experience = Experience::create(
             agent.id,
@@ -313,7 +333,9 @@ mod tests {
             Description::new("one thought produced another"),
         );
         db.log_event(
-            ExperienceEvents::ExperienceCreated(experience),
+            &Event::create(Events::Experience(ExperienceEvents::ExperienceCreated(
+                experience,
+            ))),
             projections::BRAIN,
         )
         .unwrap();

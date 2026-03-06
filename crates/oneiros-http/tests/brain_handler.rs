@@ -8,14 +8,16 @@ fn seed_tenant_and_actor(db: &Database) {
         id: tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
+    db.log_event(&Event::create(event), projections::SYSTEM)
+        .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
         id: ActorId::new(),
         tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&event, projections::SYSTEM).unwrap();
+    db.log_event(&Event::create(event), projections::SYSTEM)
+        .unwrap();
 }
 
 fn setup() -> (TempDir, Arc<ServiceState>) {

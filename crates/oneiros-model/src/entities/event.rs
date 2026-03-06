@@ -23,6 +23,16 @@ pub enum Event {
     Unknown(UnknownEvent),
 }
 
+impl Event {
+    pub fn create(data: Events) -> KnownEvent {
+        KnownEvent {
+            id: EventId::new(),
+            timestamp: Timestamp::now(),
+            data,
+        }
+    }
+}
+
 impl core::fmt::Display for Event {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
