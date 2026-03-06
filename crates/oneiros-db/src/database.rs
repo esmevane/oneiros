@@ -1829,10 +1829,12 @@ impl Database {
 
         for row in rows {
             let raw = row?;
-            let event: KnownEvent = serde_json::from_str(&raw)?;
+            let event: Event = serde_json::from_str(&raw)?;
 
-            self.run_projections(projections, &event)?;
-            count += 1;
+            if let Event::Known(event) = event {
+                self.run_projections(projections, &event)?;
+                count += 1;
+            };
         }
 
         transaction.commit()?;
