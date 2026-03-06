@@ -6,6 +6,7 @@ use crate::*;
 pub struct KnownEvent {
     pub id: EventId,
     pub timestamp: Timestamp,
+    pub source: Source,
     pub data: Events,
 }
 
@@ -13,6 +14,7 @@ pub struct KnownEvent {
 pub struct UnknownEvent {
     pub id: EventId,
     pub timestamp: Timestamp,
+    pub source: Source,
     pub data: serde_json::Value,
 }
 
@@ -24,10 +26,11 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn create(data: Events) -> KnownEvent {
+    pub fn create(data: Events, source: Source) -> KnownEvent {
         KnownEvent {
             id: EventId::new(),
             timestamp: Timestamp::now(),
+            source,
             data,
         }
     }
@@ -39,26 +42,30 @@ impl core::fmt::Display for Event {
             Event::Known(KnownEvent {
                 id,
                 timestamp,
+                source,
                 data,
             }) => {
                 write!(
                     f,
-                    "{{ id: {}, timestamp: {}, data: {} }}",
+                    "{{ id: {}, timestamp: {}, source: {:?}, data: {} }}",
                     id,
                     timestamp,
+                    source,
                     serde_json::to_string(&data).unwrap_or("Malformed event body".to_string())
                 )
             }
             Event::Unknown(UnknownEvent {
                 id,
                 timestamp,
+                source,
                 data,
             }) => {
                 write!(
                     f,
-                    "{{ id: {}, timestamp: {}, data: {} }}",
+                    "{{ id: {}, timestamp: {}, source: {:?}, data: {} }}",
                     id,
                     timestamp,
+                    source,
                     serde_json::to_string(&data).unwrap_or("Malformed event body".to_string())
                 )
             }

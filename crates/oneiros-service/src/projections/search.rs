@@ -244,6 +244,7 @@ mod tests {
     #[test]
     fn replay_produces_same_expression_count() {
         let (_temp, db) = setup_brain();
+        let source = Source::default();
 
         // Seed prerequisites
         let persona = Persona::init(
@@ -252,7 +253,7 @@ mod tests {
             Prompt::new("test persona prompt"),
         );
         db.log_event(
-            &Event::create(Events::Persona(PersonaEvents::PersonaSet(persona))),
+            &Event::create(Events::Persona(PersonaEvents::PersonaSet(persona)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -263,7 +264,7 @@ mod tests {
             Prompt::default(),
         );
         db.log_event(
-            &Event::create(Events::Texture(TextureEvents::TextureSet(texture))),
+            &Event::create(Events::Texture(TextureEvents::TextureSet(texture)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -274,7 +275,7 @@ mod tests {
             Prompt::default(),
         );
         db.log_event(
-            &Event::create(Events::Level(LevelEvents::LevelSet(level))),
+            &Event::create(Events::Level(LevelEvents::LevelSet(level)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -285,7 +286,10 @@ mod tests {
             Prompt::default(),
         );
         db.log_event(
-            &Event::create(Events::Sensation(SensationEvents::SensationSet(sensation))),
+            &Event::create(
+                Events::Sensation(SensationEvents::SensationSet(sensation)),
+                source,
+            ),
             projections::BRAIN,
         )
         .unwrap();
@@ -298,7 +302,10 @@ mod tests {
             PersonaName::new("test-persona"),
         );
         db.log_event(
-            &Event::create(Events::Agent(AgentEvents::AgentCreated(agent.clone()))),
+            &Event::create(
+                Events::Agent(AgentEvents::AgentCreated(agent.clone())),
+                source,
+            ),
             projections::BRAIN,
         )
         .unwrap();
@@ -309,9 +316,10 @@ mod tests {
             Content::new("an interesting observation about architecture"),
         );
         db.log_event(
-            &Event::create(Events::Cognition(CognitionEvents::CognitionAdded(
-                cognition,
-            ))),
+            &Event::create(
+                Events::Cognition(CognitionEvents::CognitionAdded(cognition)),
+                source,
+            ),
             projections::BRAIN,
         )
         .unwrap();
@@ -322,7 +330,7 @@ mod tests {
             Content::new("a consolidated memory about patterns"),
         );
         db.log_event(
-            &Event::create(Events::Memory(MemoryEvents::MemoryAdded(memory))),
+            &Event::create(Events::Memory(MemoryEvents::MemoryAdded(memory)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -333,9 +341,10 @@ mod tests {
             Description::new("one thought produced another"),
         );
         db.log_event(
-            &Event::create(Events::Experience(ExperienceEvents::ExperienceCreated(
-                experience,
-            ))),
+            &Event::create(
+                Events::Experience(ExperienceEvents::ExperienceCreated(experience)),
+                source,
+            ),
             projections::BRAIN,
         )
         .unwrap();

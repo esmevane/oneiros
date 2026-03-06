@@ -10,17 +10,19 @@ pub use std::sync::Arc;
 pub use tempfile::TempDir;
 pub use tower::util::ServiceExt;
 
-// -- Core setup --
-
 pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> String {
     let tenant_id = TenantId::new();
     let actor_id = ActorId::new();
+    let source = Source {
+        actor_id,
+        tenant_id,
+    };
 
     let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
         id: tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&Event::create(event), projections::SYSTEM)
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
         .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
@@ -28,7 +30,7 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&Event::create(event), projections::SYSTEM)
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
         .unwrap();
 
     Database::create_brain_db(brain_path).unwrap();
@@ -41,7 +43,7 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         status: BrainStatus::Active,
         path: brain_path.to_path_buf(),
     }));
-    db.log_event(&Event::create(event), projections::SYSTEM)
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
         .unwrap();
 
     let token = Token::issue(TokenClaims {
@@ -55,7 +57,7 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
         token: token.clone(),
         created_by: actor_id,
     }));
-    db.log_event(&Event::create(event), projections::SYSTEM)
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
         .unwrap();
 
     token.0
@@ -70,7 +72,11 @@ pub fn setup() -> (TempDir, Arc<ServiceState>, String) {
     std::fs::create_dir_all(brain_path.parent().unwrap()).unwrap();
     let token = seed_tenant_and_brain(&db, &brain_path);
 
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
+    let state = Arc::new(ServiceState::new(
+        db,
+        temp.path().to_path_buf(),
+        Source::default(),
+    ));
     (temp, state, token)
 }
 

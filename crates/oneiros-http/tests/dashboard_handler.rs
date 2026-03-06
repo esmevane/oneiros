@@ -3,6 +3,7 @@ use common::*;
 
 fn seed_agent_in_brain(brain_path: &std::path::Path) {
     let brain_db = Database::open_brain(brain_path).unwrap();
+    let source = Source::default();
 
     // Seed persona first (agent has FK to persona).
     let event = Events::Persona(PersonaEvents::PersonaSet(Persona::init(
@@ -11,7 +12,7 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         "You are a process agent.",
     )));
     brain_db
-        .log_event(&Event::create(event), projections::BRAIN)
+        .log_event(&Event::create(event, source), projections::BRAIN)
         .unwrap();
 
     let event = Events::Agent(AgentEvents::AgentCreated(Agent::init(
@@ -21,7 +22,7 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         PersonaName::new("process"),
     )));
     brain_db
-        .log_event(&Event::create(event), projections::BRAIN)
+        .log_event(&Event::create(event, source), projections::BRAIN)
         .unwrap();
 }
 
@@ -85,7 +86,25 @@ async fn dashboard_handles_no_brains() {
     let temp = TempDir::new().unwrap();
     let db_path = temp.path().join("service.db");
     let db = Database::create(db_path).unwrap();
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
+    let source = Source::default();
+
+    // Seed tenant/actor (system invariant) but no brains.
+    let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
+        id: source.tenant_id,
+        name: TenantName::new("Test Tenant"),
+    }));
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
+        .unwrap();
+
+    let event = Events::Actor(ActorEvents::ActorCreated(Actor {
+        id: source.actor_id,
+        tenant_id: source.tenant_id,
+        name: ActorName::new("Test Actor"),
+    }));
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
+        .unwrap();
+
+    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf(), source));
 
     let (status, body) = get_dashboard(state, "/").await;
 

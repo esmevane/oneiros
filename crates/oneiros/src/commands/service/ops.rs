@@ -13,6 +13,12 @@ pub enum ServiceCommandError {
 
     #[error("System not initialized. Run `oneiros system init` first.")]
     NotInitialized,
+
+    #[error("Malformed tenant or actor ID in database.")]
+    MalformedId(#[from] oneiros_model::IdParseError),
+
+    #[error("Missing tenant or actor ID in database.")]
+    MissingId,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]

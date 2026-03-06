@@ -1,7 +1,7 @@
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use oneiros_db::Database;
-use oneiros_model::{Events, NotFound, Token, TokenError};
+use oneiros_model::{Events, NotFound, Source, Token, TokenError};
 use oneiros_service::{BrainService, ServiceState};
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -23,12 +23,13 @@ pub enum ActorContextError {
 pub struct ActorContext {
     db: Database,
     event_tx: broadcast::Sender<Events>,
+    source: Source,
 }
 
 impl ActorContext {
     /// Create a scoped service for brain-level domain operations.
     pub(crate) fn service(&self) -> BrainService<'_> {
-        BrainService::new(&self.db, &self.event_tx)
+        BrainService::new(&self.db, &self.event_tx, self.source)
     }
 }
 
@@ -66,9 +67,15 @@ impl FromRequestParts<Arc<ServiceState>> for ActorContext {
 
         let brain_db = Database::open_brain(brain_path)?;
 
+        let source = Source {
+            actor_id: claims.actor_id,
+            tenant_id: claims.tenant_id,
+        };
+
         Ok(ActorContext {
             db: brain_db,
             event_tx,
+            source,
         })
     }
 }

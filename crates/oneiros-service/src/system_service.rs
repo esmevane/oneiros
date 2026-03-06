@@ -4,7 +4,6 @@ use std::path::Path;
 use std::sync::MutexGuard;
 use tokio::sync::broadcast;
 
-use crate::error::{BadRequests, PreconditionFailure};
 use crate::{Error, projections};
 
 #[derive(Debug, thiserror::Error)]
@@ -20,10 +19,12 @@ pub enum CreateBrainError {
 /// on the system Database behind a Mutex rather than a per-request brain Database.
 ///
 /// Holds the MutexGuard directly — the lock lives as long as the service does.
+/// Source is a system invariant resolved at ServiceState construction time.
 pub struct SystemService<'a> {
     db: MutexGuard<'a, Database>,
     data_dir: &'a Path,
     event_tx: &'a broadcast::Sender<Events>,
+    source: Source,
 }
 
 impl<'a> SystemService<'a> {
@@ -31,17 +32,19 @@ impl<'a> SystemService<'a> {
         db: MutexGuard<'a, Database>,
         data_dir: &'a Path,
         event_tx: &'a broadcast::Sender<Events>,
+        source: Source,
     ) -> Self {
         Self {
             db,
             data_dir,
             event_tx,
+            source,
         }
     }
 
     /// Persist a state-changing event (runs SYSTEM projections) then broadcast.
     fn log_and_broadcast(&self, event: &Events) -> Result<(), Error> {
-        let known = Event::create(event.clone());
+        let known = Event::create(event.clone(), self.source);
         self.db.log_event(&known, projections::SYSTEM)?;
         let _ = self.event_tx.send(event.clone());
         Ok(())
@@ -50,21 +53,8 @@ impl<'a> SystemService<'a> {
     // ── Brain operations ──────────────────────────────────────────────
 
     pub fn create_brain(&self, request: CreateBrainRequest) -> Result<BrainResponses, Error> {
-        let tenant_id: TenantId = self
-            .db
-            .get_tenant_id()?
-            .ok_or(PreconditionFailure::NoTenant)?
-            .parse()
-            .map_err(CreateBrainError::from)
-            .map_err(BadRequests::from)?;
-
-        let actor_id: ActorId = self
-            .db
-            .get_actor_id(tenant_id.to_string())?
-            .ok_or(PreconditionFailure::NoActor)?
-            .parse()
-            .map_err(CreateBrainError::from)
-            .map_err(BadRequests::from)?;
+        let tenant_id = self.source.tenant_id;
+        let actor_id = self.source.actor_id;
 
         if self
             .db

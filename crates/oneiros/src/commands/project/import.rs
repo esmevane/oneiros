@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_client::ImportEvent;
+use oneiros_client::{ImportEvent, Source};
 use oneiros_outcomes::{Outcome, Outcomes};
 use serde_json::Value;
 use std::io::BufRead;
@@ -64,10 +64,17 @@ impl ImportProject {
                 .unwrap_or("")
                 .to_string();
 
+            let source: Source = envelope
+                .get("source")
+                .cloned()
+                .and_then(|v| serde_json::from_value(v).ok())
+                .unwrap_or(Source::default());
+
             let data = envelope.get("data").cloned().unwrap_or(Value::Null);
 
             events.push(ImportEvent {
                 id,
+                source,
                 timestamp,
                 data,
             });

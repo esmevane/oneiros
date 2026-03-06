@@ -1,32 +1,39 @@
 mod common;
 use common::*;
 
-fn seed_tenant_and_actor(db: &Database) {
+fn seed_tenant_and_actor(db: &Database) -> Source {
     let tenant_id = TenantId::new();
+    let actor_id = ActorId::new();
+    let source = Source {
+        actor_id,
+        tenant_id,
+    };
 
     let event = Events::Tenant(TenantEvents::TenantCreated(Tenant {
         id: tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&Event::create(event), projections::SYSTEM)
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
         .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
-        id: ActorId::new(),
+        id: actor_id,
         tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&Event::create(event), projections::SYSTEM)
+    db.log_event(&Event::create(event, source), projections::SYSTEM)
         .unwrap();
+
+    source
 }
 
 fn setup() -> (TempDir, Arc<ServiceState>) {
     let temp = TempDir::new().unwrap();
     let db_path = temp.path().join("service.db");
     let db = Database::create(db_path).unwrap();
-    seed_tenant_and_actor(&db);
+    let source = seed_tenant_and_actor(&db);
 
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
+    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf(), source));
     (temp, state)
 }
 
@@ -85,21 +92,6 @@ async fn create_brain_conflict_on_duplicate() {
     let app = router(state);
     let response = app.oneshot(post_json("/brains", &body)).await.unwrap();
     assert_eq!(response.status(), StatusCode::CONFLICT);
-}
-
-#[tokio::test]
-async fn create_brain_fails_without_tenant() {
-    let temp = TempDir::new().unwrap();
-    let db_path = temp.path().join("service.db");
-    let db = Database::create(db_path).unwrap();
-    // No tenant or actor seeded
-    let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf()));
-    let app = router(state);
-
-    let body = serde_json::json!({ "name": "orphan-brain" });
-    let response = app.oneshot(post_json("/brains", &body)).await.unwrap();
-
-    assert_eq!(response.status(), StatusCode::PRECONDITION_FAILED);
 }
 
 #[tokio::test]
