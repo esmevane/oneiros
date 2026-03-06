@@ -1,7 +1,10 @@
 /target
 /tmp
 .worktrees/
+.claude/worktrees/
+.claude/worktrees/**/target
 *.local.*
+
 exports
 
 # Deciduous database (local)
