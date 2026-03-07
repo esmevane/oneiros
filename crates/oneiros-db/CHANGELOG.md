@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/esmevane/oneiros/compare/oneiros-db-v0.0.6...oneiros-db-v0.0.7) - 2026-03-07
+
+### Other
+
+- Blob storage represented in export/import.
+- Various import fixes.
+- Import Events via serde
+- Source is included in events.
+- Durable events.
+- General fixes.
+- DB correctness fixes.
+
 ## [0.0.6](https://github.com/esmevane/oneiros/compare/oneiros-db-v0.0.5...oneiros-db-v0.0.6) - 2026-03-02
 
 ### Other

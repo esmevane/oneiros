@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/esmevane/oneiros/compare/v0.0.6...v0.0.7) - 2026-03-07
+
+### Other
+
+- Blob storage represented in export/import.
+- Import Events via serde
+- Source is included in events.
+- Durable events.
+- Http / Service crate split.
+
 ## [0.0.6](https://github.com/esmevane/oneiros/compare/v0.0.5...v0.0.6) - 2026-03-02
 
 ### Other
