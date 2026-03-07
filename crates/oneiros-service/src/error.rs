@@ -41,6 +41,12 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    #[error(transparent)]
+    BlobContent(#[from] BlobContentError),
+
+    #[error(transparent)]
+    Blob(#[from] BlobError),
+
     #[error("Failed to acquire database lock")]
     DatabasePoisoned,
 }

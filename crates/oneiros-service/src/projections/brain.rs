@@ -48,6 +48,7 @@ pub const ALL: &[Projection] = &[
     EXPERIENCE_CREATED_PROJECTION,
     EXPERIENCE_DESCRIPTION_UPDATED_PROJECTION,
     EXPERIENCE_SENSATION_UPDATED_PROJECTION,
+    BLOB_STORED_PROJECTION,
     STORAGE_SET_PROJECTION,
     STORAGE_REMOVED_PROJECTION,
 ];
@@ -338,6 +339,22 @@ fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> 
     Ok(())
 }
 
+const BLOB_STORED_PROJECTION: Projection = Projection {
+    name: "blob-stored",
+    events: &["blob-stored"],
+    apply: apply_blob_stored,
+    reset: |db| db.reset_blobs(),
+};
+
+fn apply_blob_stored(db: &Database, data: &Value) -> Result<(), DatabaseError> {
+    let content = serde_json::from_value(data.clone())?;
+
+    db.put_blob(&content)?;
+    db.delete_blob_stored_event(&content.hash)?;
+
+    Ok(())
+}
+
 const STORAGE_SET_PROJECTION: Projection = Projection {
     name: "storage-set",
     events: &["storage-set"],
@@ -349,8 +366,9 @@ fn apply_storage_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
     let entry: StorageEntry = serde_json::from_value(data.clone())?;
 
     match db.set_storage(&entry.key, &entry.description, &entry.hash) {
-        Err(DatabaseError::Sqlite(ref e)) if e.to_string().contains("FOREIGN KEY") => Ok(()),
-        other => other,
+        Ok(()) => Ok(()),
+        Err(err) if err.is_foreign_key_violation() => Ok(()),
+        Err(err) => Err(err),
     }
 }
 

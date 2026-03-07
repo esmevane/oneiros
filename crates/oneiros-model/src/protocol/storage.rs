@@ -10,6 +10,7 @@ pub struct SelectStorageByKey {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum StorageEvents {
+    BlobStored(BlobContent),
     StorageSet(StorageEntry),
     StorageRemoved(SelectStorageByKey),
 }

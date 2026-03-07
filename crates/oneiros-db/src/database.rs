@@ -71,6 +71,14 @@ impl Database {
     }
 
     /// Read all events in creation order.
+    ///
+    /// When a `storage-set` event is encountered and its referenced blob exists
+    /// in the blob store, a synthetic `blob-stored` event is prepended immediately
+    /// before it. This enrichment ensures that an exported event stream is
+    /// self-contained and can be replayed on a fresh database without FK violations.
+    ///
+    /// If the blob is missing (e.g., the entry was created without one), the
+    /// `storage-set` event is emitted without a preceding `blob-stored` event.
     pub fn read_events(&self) -> Result<Vec<Event>, DatabaseError> {
         let mut stmt = self.conn.prepare(
             "select json_object('id', id, 'timestamp', timestamp, 'source', json(source), 'data', json(data))
@@ -88,7 +96,22 @@ impl Database {
             let raw = row?;
 
             match serde_json::from_str::<Event>(&raw) {
-                Ok(event) => events.push(event),
+                Ok(event) => {
+                    if let Event::Known(ref known) = event
+                        && let Events::Storage(StorageEvents::StorageSet(ref entry)) = known.data
+                        && let Ok(Some(blob_content)) = self.get_blob(&entry.hash)
+                    {
+                        let blob_event = Event::Known(KnownEvent {
+                            id: EventId::new(),
+                            timestamp: known.timestamp,
+                            source: known.source,
+                            data: Events::Storage(StorageEvents::BlobStored(blob_content)),
+                        });
+                        events.push(blob_event);
+                    }
+
+                    events.push(event);
+                }
                 Err(error) => {
                     eprintln!("Skipping malformed event: {error}");
                     continue;
@@ -1544,23 +1567,17 @@ impl Database {
 
     // -- Blob operations (content-addressable store) --
 
-    pub fn put_blob(
-        &self,
-        hash: impl AsRef<str>,
-        data: &[u8],
-        original_size: usize,
-    ) -> Result<(), DatabaseError> {
+    pub fn put_blob(&self, content: &BlobContent) -> Result<(), DatabaseError> {
+        let bytes = content.data.decode()?;
+
         self.conn.execute(
             "insert or ignore into blob (hash, data, size) values (?1, ?2, ?3)",
-            params![hash.as_ref(), data, original_size as i64],
+            params![content.hash.as_ref(), &bytes, content.size.as_i64()],
         )?;
         Ok(())
     }
 
-    pub fn get_blob(
-        &self,
-        hash: impl AsRef<str>,
-    ) -> Result<Option<(Vec<u8>, usize)>, DatabaseError> {
+    pub fn get_blob(&self, hash: impl AsRef<str>) -> Result<Option<BlobContent>, DatabaseError> {
         let result = self.conn.query_row(
             "select data, size from blob where hash = ?1",
             params![hash.as_ref()],
@@ -1572,10 +1589,27 @@ impl Database {
         );
 
         match result {
-            Ok(blob) => Ok(Some(blob)),
+            Ok((blob, size)) => Ok(Some(BlobContent {
+                hash: ContentHash::new(hash),
+                data: Blob::encode(&blob),
+                size: size.into(),
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
+    }
+
+    pub fn reset_blobs(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from blob")?;
+        Ok(())
+    }
+
+    pub fn delete_blob_stored_event(&self, hash: &ContentHash) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "delete from events where json_extract(meta, '$.type') = 'blob-stored' and json_extract(data, '$.data.hash') = ?1",
+            params![hash.as_ref()],
+        )?;
+        Ok(())
     }
 
     // -- Storage operations (projection table) --
