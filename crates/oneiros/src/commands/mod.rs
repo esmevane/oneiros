@@ -27,6 +27,7 @@ mod status;
 mod storage;
 mod system;
 mod texture;
+mod trust;
 mod wake;
 
 pub(crate) use activity::*;
@@ -58,4 +59,5 @@ pub(crate) use status::*;
 pub(crate) use storage::*;
 pub(crate) use system::*;
 pub(crate) use texture::*;
+pub(crate) use trust::*;
 pub(crate) use wake::*;

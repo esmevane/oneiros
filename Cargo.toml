@@ -14,6 +14,7 @@ license = "MIT"
 anstream = "0.6.21"
 askama = "0.15"
 axum = "0.8.8"
+axum-server = { version = "0.8", features = ["tls-rustls-no-provider"] }
 bytes = "1.11"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
@@ -37,6 +38,7 @@ oneiros-outcomes = { path = "crates/oneiros-outcomes", version = "0.0.6" }
 oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive", version = "0.0.6" }
 oneiros-http = { path = "crates/oneiros-http", version = "0.0.6" }
 oneiros-service = { path = "crates/oneiros-service", version = "0.0.6" }
+oneiros-trust = { path = "crates/oneiros-trust", version = "0.0.6" }
 oneiros-skill = { path = "crates/oneiros-skill", version = "0.0.6" }
 oneiros-templates = { path = "crates/oneiros-templates", version = "0.0.6" }
 oneiros-terminal = { path = "crates/oneiros-terminal", version = "0.0.6" }
@@ -45,20 +47,29 @@ pretty_assertions = "1"
 prettyplease = "0.2"
 proc-macro2 = "1"
 quote = "1"
+rcgen = { version = "0.14", features = ["ring", "pem"] }
+ring = "0.17"
 rusqlite = { version = "0.31", features = [
   "bundled",
   "functions",
   "serde_json",
   "uuid"
 ] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "tls12"] }
+rustls-pki-types = "1"
+rustls-pemfile = "2"
+webpki-roots = "1"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 service-manager = "0.10"
 sha2 = "0.10"
 syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 tempfile = "3"
+time = "0.3"
 thiserror = "2"
 tokio = { version = "1", features = ["full"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "logging", "tls12"] }
+tokio-rustls-acme = "0.9"
 tokio-stream = { version = "0.1", features = ["sync"] }
 toml = "0.8"
 tower = { version = "0.5.3", features = ["util"] }

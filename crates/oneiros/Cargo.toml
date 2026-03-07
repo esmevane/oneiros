@@ -16,6 +16,7 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 clap-verbosity-flag.workspace = true
+inquire.workspace = true
 colorchoice-clap.workspace = true
 directories.workspace = true
 oneiros-client.workspace = true
@@ -25,6 +26,7 @@ oneiros-http.workspace = true
 oneiros-model.workspace = true
 oneiros-outcomes.workspace = true
 oneiros-service.workspace = true
+oneiros-trust.workspace = true
 oneiros-skill.workspace = true
 oneiros-templates.workspace = true
 serde.workspace = true

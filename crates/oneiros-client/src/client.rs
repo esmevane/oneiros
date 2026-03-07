@@ -1,4 +1,5 @@
 use oneiros_model::*;
+use oneiros_trust::SecureClient;
 use std::net::SocketAddr;
 
 use crate::*;
@@ -11,6 +12,16 @@ impl Client {
     pub fn new(addr: SocketAddr) -> Self {
         Self {
             client: SocketClient::new(addr),
+        }
+    }
+
+    /// Create a [`Client`] that upgrades every connection to TLS.
+    ///
+    /// `hostname` is used as the SNI server name and must match the SAN in the
+    /// server's leaf certificate (e.g. `"localhost"` for local CA certs).
+    pub fn with_tls(addr: SocketAddr, hostname: impl Into<String>, tls: SecureClient) -> Self {
+        Self {
+            client: SocketClient::with_tls(addr, hostname, tls),
         }
     }
 

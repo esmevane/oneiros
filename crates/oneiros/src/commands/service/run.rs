@@ -57,7 +57,7 @@ impl RunService {
             source,
         ));
 
-        oneiros_http::serve(state, addr).await?;
+        oneiros_http::serve(state, addr, None).await?;
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 

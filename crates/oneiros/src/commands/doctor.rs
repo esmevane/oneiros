@@ -35,6 +35,20 @@ pub enum DoctorOutcomes {
     ServiceRunning,
     #[outcome(message("Service is not running: {0}"), level = "warn")]
     ServiceNotRunning(String),
+    #[outcome(message("Trust: CA is valid."))]
+    TrustCaOk,
+    #[outcome(message("Trust: CA is {0}."), level = "warn")]
+    TrustCaIssue(String),
+    #[outcome(message("Trust: Root CA installed in system trust store."))]
+    TrustStoreOk,
+    #[outcome(message("Trust: Root CA NOT installed in system trust store."), level = "warn")]
+    TrustStoreNotInstalled,
+    #[outcome(message("Trust: TLS mode is {0}."))]
+    TrustModeActive(String),
+    #[outcome(message("Trust: {0} known peers."))]
+    TrustPeersKnown(usize),
+    #[outcome(message("Trust: not available: {0}"), level = "warn")]
+    TrustNotAvailable(String),
 }
 
 #[derive(Args, Clone)]
@@ -88,6 +102,37 @@ impl DoctorOp {
         match client.health().await {
             Ok(()) => checks.emit(DoctorOutcomes::ServiceRunning),
             Err(error) => checks.emit(DoctorOutcomes::ServiceNotRunning(error.to_string())),
+        }
+
+        let config = context.config();
+        let hostname = &config.service.host;
+        match oneiros_trust::TrustProvider::init(&config.trust, context.data_dir(), hostname) {
+            Ok(provider) => {
+                let health = provider.health();
+
+                checks.emit(DoctorOutcomes::TrustModeActive(format!(
+                    "{:?}",
+                    health.mode
+                )));
+
+                match health.ca_status {
+                    oneiros_trust::CaStatus::Valid => checks.emit(DoctorOutcomes::TrustCaOk),
+                    other => {
+                        checks.emit(DoctorOutcomes::TrustCaIssue(format!("{other:?}")));
+                    }
+                }
+
+                if health.trust_store_installed {
+                    checks.emit(DoctorOutcomes::TrustStoreOk);
+                } else {
+                    checks.emit(DoctorOutcomes::TrustStoreNotInstalled);
+                }
+
+                checks.emit(DoctorOutcomes::TrustPeersKnown(health.known_peers.len()));
+            }
+            Err(err) => {
+                checks.emit(DoctorOutcomes::TrustNotAvailable(err.to_string()));
+            }
         }
 
         Ok(checks)

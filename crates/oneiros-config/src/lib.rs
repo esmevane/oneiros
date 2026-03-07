@@ -13,6 +13,45 @@ pub enum ConfigError {
 #[serde(default)]
 pub struct Config {
     pub service: ServiceConfig,
+    pub trust: TrustConfig,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TrustMode {
+    Auto,
+    Local,
+    Acme,
+    #[default]
+    Off,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct TrustConfig {
+    pub mode: TrustMode,
+    pub acme: AcmeConfig,
+    pub peers: Vec<PeerConfig>,
+    pub insecure: Vec<InsecureConfig>,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct AcmeConfig {
+    pub contact: Option<String>,
+    pub directory: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct PeerConfig {
+    pub endpoint: String,
+    pub fingerprint: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct InsecureConfig {
+    pub endpoint: String,
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -110,5 +149,47 @@ mod tests {
         let parsed: Config = toml::from_str(&toml_str).unwrap();
         assert_eq!(parsed.service.port, config.service.port);
         assert_eq!(parsed.service.host, config.service.host);
+    }
+
+    #[test]
+    fn trust_config_defaults() {
+        let config = Config::default();
+        assert_eq!(config.trust.mode, TrustMode::Off);
+        assert!(config.trust.acme.contact.is_none());
+        assert!(config.trust.peers.is_empty());
+        assert!(config.trust.insecure.is_empty());
+    }
+
+    #[test]
+    fn trust_config_from_toml() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("config.toml");
+        std::fs::write(
+            &path,
+            r#"
+[trust]
+mode = "local"
+
+[trust.acme]
+contact = "mailto:test@example.com"
+
+[[trust.peers]]
+endpoint = "192.168.1.50:2100"
+fingerprint = "sha256:abc123"
+
+[[trust.insecure]]
+endpoint = "10.0.0.5:2100"
+reason = "Test node"
+"#,
+        )
+        .unwrap();
+        let config = Config::load(&path).unwrap();
+        assert_eq!(config.trust.mode, TrustMode::Local);
+        assert_eq!(
+            config.trust.acme.contact.as_deref(),
+            Some("mailto:test@example.com")
+        );
+        assert_eq!(config.trust.peers.len(), 1);
+        assert_eq!(config.trust.insecure.len(), 1);
     }
 }
