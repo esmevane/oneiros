@@ -12,7 +12,6 @@ axum.workspace = true
 oneiros-db.workspace = true
 oneiros-model.workspace = true
 oneiros-service.workspace = true
-oneiros-templates.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

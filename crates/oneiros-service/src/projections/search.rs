@@ -234,6 +234,183 @@ mod tests {
     use oneiros_model::*;
     use tempfile::TempDir;
 
+    #[test]
+    fn export_enriches_storage_set_with_blob_stored() {
+        let temp = TempDir::new().unwrap();
+        let db_path = temp.path().join("test-enrich.db");
+        let db = Database::create_brain_db(&db_path).unwrap();
+
+        let source = Source::default();
+
+        // Seed a blob directly (bypassing events, as normal workflow does)
+        db.put_blob(&BlobContent {
+            hash: ContentHash::new("test-hash"),
+            data: Blob::encode(b"binary conent here"),
+            size: 19.into(),
+        })
+        .unwrap();
+
+        // Log a storage-set event
+        let event = Event::create(
+            Events::Storage(StorageEvents::StorageSet(StorageEntry::init(
+                StorageKey::new("my-file"),
+                "a test file",
+                ContentHash::new("test-hash"),
+            ))),
+            source,
+        );
+        db.log_event(&event, projections::BRAIN).unwrap();
+
+        // Export should have 2 events: blob-stored then storage-set
+        let exported = db.read_events().unwrap();
+        assert_eq!(exported.len(), 2);
+
+        // First event should be blob-stored
+        if let Event::Known(ref first) = exported[0] {
+            let json = serde_json::to_value(&first.data).unwrap();
+            assert_eq!(json["type"], "blob-stored");
+        } else {
+            panic!("expected known event");
+        }
+
+        // Second event should be storage-set
+        if let Event::Known(ref second) = exported[1] {
+            let json = serde_json::to_value(&second.data).unwrap();
+            assert_eq!(json["type"], "storage-set");
+        } else {
+            panic!("expected known event");
+        }
+    }
+
+    #[test]
+    fn export_skips_blob_stored_when_blob_missing() {
+        let temp = TempDir::new().unwrap();
+        let db_path = temp.path().join("test-skip.db");
+        let db = Database::create_brain_db(&db_path).unwrap();
+
+        let source = Source::default();
+
+        // Log a storage-set event WITHOUT seeding the blob
+        let event = Event::create(
+            Events::Storage(StorageEvents::StorageSet(StorageEntry::init(
+                StorageKey::new("orphaned-file"),
+                "missing blob",
+                ContentHash::new("nonexistent-hash"),
+            ))),
+            source,
+        );
+        db.log_event(&event, projections::BRAIN).unwrap();
+
+        // Export should have just the storage-set, no blob-stored
+        let exported = db.read_events().unwrap();
+        assert_eq!(exported.len(), 1);
+    }
+
+    #[test]
+    fn blob_stored_projection_writes_blob_and_self_cleans() {
+        let temp = TempDir::new().unwrap();
+        let db_path = temp.path().join("test-blob.db");
+        let db = Database::create_brain_db(&db_path).unwrap();
+
+        let source = Source::default();
+        let blob_data = b"test binary content";
+        let blob = Blob::encode(blob_data);
+        let hash = ContentHash::new("test-hash-123");
+
+        let event = Event::create(
+            Events::Storage(StorageEvents::BlobStored(BlobContent {
+                hash: hash.clone(),
+                size: blob_data.len().into(),
+                data: blob,
+            })),
+            source,
+        );
+
+        db.log_event(&event, projections::BRAIN).unwrap();
+
+        // Blob should be in the blob table
+        let blob_content = db.get_blob(&hash).unwrap().expect("blob should exist");
+
+        assert_eq!(blob_content.data, Blob::encode(blob_data));
+        assert_eq!(blob_content.size, blob_data.len().into());
+
+        // Event should have been cleaned from the events table
+        assert_eq!(db.event_count().unwrap(), 0);
+    }
+
+    #[test]
+    fn full_export_import_cycle_preserves_blobs() {
+        // Source brain: seed blob + storage-set
+        let source_temp = TempDir::new().unwrap();
+        let source_path = source_temp.path().join("source.db");
+        let source_db = Database::create_brain_db(&source_path).unwrap();
+        let source = Source::default();
+
+        source_db
+            .put_blob(&BlobContent {
+                hash: ContentHash::new("cycle-hash"),
+                data: Blob::encode(b"portable blob data"),
+                size: 18.into(),
+            })
+            .unwrap();
+
+        let event = Event::create(
+            Events::Storage(StorageEvents::StorageSet(StorageEntry::init(
+                StorageKey::new("cycle-file"),
+                "cycle test",
+                ContentHash::new("cycle-hash"),
+            ))),
+            source,
+        );
+        source_db.log_event(&event, projections::BRAIN).unwrap();
+
+        // Export from source
+        let exported = source_db.read_events().unwrap();
+        assert_eq!(exported.len(), 2, "should have blob-stored + storage-set");
+
+        // Serialize to JSONL (simulating the wire format)
+        let jsonl: Vec<String> = exported
+            .iter()
+            .map(|e| serde_json::to_string(e).unwrap())
+            .collect();
+
+        // Target brain: import from JSONL
+        let target_temp = TempDir::new().unwrap();
+        let target_path = target_temp.path().join("target.db");
+        let target_db = Database::create_brain_db(&target_path).unwrap();
+
+        for line in &jsonl {
+            let import: ImportEvent = serde_json::from_str(line).unwrap();
+            target_db.import_event(&import).unwrap();
+        }
+        target_db.replay(projections::BRAIN).unwrap();
+
+        // Blob should exist in target
+        let blob_content = target_db
+            .get_blob("cycle-hash")
+            .unwrap()
+            .expect("blob should exist in target");
+
+        assert_eq!(blob_content.data, Blob::encode(b"portable blob data"));
+        assert_eq!(blob_content.size, 18.into());
+
+        // Storage entry should resolve
+        let storage = target_db
+            .get_storage(StorageKey::new("cycle-file"))
+            .unwrap();
+        assert!(storage.is_some(), "storage entry should exist");
+
+        // blob-stored event should be cleaned from the durable event store.
+        // Note: read_events() is the export path and synthesizes blob-stored events
+        // dynamically on export — it is not the right surface for this check.
+        // The durable event count should be 1 (just the storage-set).
+        let durable_count = target_db.event_count().unwrap();
+        assert_eq!(
+            durable_count, 1,
+            "only storage-set should remain in the durable event store; blob-stored is transient"
+        );
+    }
+
     fn setup_brain() -> (TempDir, Database) {
         let temp = TempDir::new().unwrap();
         let db_path = temp.path().join("test-brain.db");

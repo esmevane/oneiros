@@ -81,6 +81,8 @@ impl IntoResponse for Error {
                     oneiros_service::Error::BadRequest(_) => StatusCode::BAD_REQUEST,
                     oneiros_service::Error::Conflict(_) => StatusCode::CONFLICT,
                     oneiros_service::Error::DataIntegrity(_)
+                    | oneiros_service::Error::BlobContent(_)
+                    | oneiros_service::Error::Blob(_)
                     | oneiros_service::Error::Database(_)
                     | oneiros_service::Error::Io(_)
                     | oneiros_service::Error::DatabasePoisoned => StatusCode::INTERNAL_SERVER_ERROR,

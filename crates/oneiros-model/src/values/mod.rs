@@ -1,3 +1,4 @@
+mod blob;
 mod claim;
 mod content;
 mod content_hash;
@@ -15,12 +16,14 @@ mod prompt;
 mod ref_token;
 mod reflection;
 mod resource;
+mod size;
 mod source;
 mod storage_ref;
 mod timestamp;
 mod token;
 mod token_version;
 
+pub use blob::{Blob, BlobError};
 pub use claim::TokenClaims;
 pub use content::Content;
 pub use content_hash::ContentHash;
@@ -38,6 +41,7 @@ pub use prompt::Prompt;
 pub use ref_token::RefToken;
 pub use reflection::Reflection;
 pub use resource::Resource;
+pub use size::Size;
 pub use source::Source;
 pub use storage_ref::{StorageRef, StorageRefError};
 pub use timestamp::{Timestamp, TimestampParseError};

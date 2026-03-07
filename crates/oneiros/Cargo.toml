@@ -14,24 +14,19 @@ name = "oneiros"
 path = "src/main.rs"
 
 [dependencies]
-chrono.workspace = true
 clap.workspace = true
 clap-verbosity-flag.workspace = true
 colorchoice-clap.workspace = true
 directories.workspace = true
 oneiros-client.workspace = true
-oneiros-config.workspace = true
 oneiros-context.workspace = true
 oneiros-db.workspace = true
-oneiros-detect-project-name.workspace = true
-oneiros-fs.workspace = true
+oneiros-http.workspace = true
 oneiros-model.workspace = true
 oneiros-outcomes.workspace = true
-oneiros-http.workspace = true
 oneiros-service.workspace = true
 oneiros-skill.workspace = true
 oneiros-templates.workspace = true
-oneiros-terminal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 service-manager.workspace = true

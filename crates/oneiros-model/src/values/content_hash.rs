@@ -1,3 +1,5 @@
+use sha2::{Digest, Sha256};
+
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 pub struct ContentHash(pub String);
@@ -9,6 +11,17 @@ impl ContentHash {
 
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    pub(crate) fn compute(data: &[u8]) -> ContentHash {
+        let mut hasher = Sha256::new();
+
+        hasher.update(data);
+
+        let hash_bytes = hasher.finalize();
+        let hash_hex = data_encoding::HEXLOWER.encode(&hash_bytes);
+
+        Self::new(hash_hex)
     }
 }
 

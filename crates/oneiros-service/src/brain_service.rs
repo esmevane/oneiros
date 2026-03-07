@@ -1,10 +1,5 @@
-use flate2::Compression;
-use flate2::read::ZlibDecoder;
-use flate2::write::ZlibEncoder;
 use oneiros_db::Database;
 use oneiros_model::*;
-use sha2::{Digest, Sha256};
-use std::io::{Read, Write};
 use tokio::sync::broadcast;
 
 use crate::dream_collector::DreamCollector;
@@ -623,20 +618,13 @@ impl<'a> BrainService<'a> {
         description: &str,
         data: &[u8],
     ) -> Result<StorageResponses, Error> {
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        let hash_bytes = hasher.finalize();
-        let hash_hex = data_encoding::HEXLOWER.encode(&hash_bytes);
+        let blob_content = BlobContent::create(data)?;
 
-        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-        encoder.write_all(data)?;
-        let compressed = encoder.finish()?;
+        self.db.put_blob(&blob_content)?;
 
-        self.db.put_blob(&hash_hex, &compressed, data.len())?;
-
-        let entry = StorageEntry::init(key, description, ContentHash::new(&hash_hex));
-
+        let entry = StorageEntry::init(key, description, blob_content.hash);
         let event = Events::Storage(StorageEvents::StorageSet(entry.clone()));
+
         self.log_and_broadcast(&event)?;
 
         Ok(StorageResponses::StorageSet(entry))
@@ -660,14 +648,12 @@ impl<'a> BrainService<'a> {
             .get_storage(key)?
             .ok_or(NotFound::Storage(key.clone()))?;
 
-        let (compressed, _original_size) = self
+        let blob = self
             .db
             .get_blob(&entry.hash)?
             .ok_or(DataIntegrity::BlobMissing(entry.hash.clone()))?;
 
-        let mut decoder = ZlibDecoder::new(&compressed[..]);
-        let mut decompressed = Vec::new();
-        decoder.read_to_end(&mut decompressed)?;
+        let decompressed = blob.data.decompressed()?;
 
         Ok(decompressed)
     }

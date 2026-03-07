@@ -20,6 +20,9 @@ pub enum DatabaseError {
 
     #[error("Cannot import unsourced event — call with_source() first")]
     UnsourcedImport,
+
+    #[error("Blob decode failed: {0}")]
+    Blob(#[from] BlobError),
 }
 
 impl From<AgentConstructionError> for DatabaseError {
@@ -49,5 +52,22 @@ impl From<MemoryConstructionError> for DatabaseError {
 impl From<ExperienceConstructionError> for DatabaseError {
     fn from(e: ExperienceConstructionError) -> Self {
         Self::Construction(e.into())
+    }
+}
+
+impl DatabaseError {
+    /// Returns `true` if this error is a SQLite foreign key constraint violation.
+    ///
+    /// Useful in projection `apply` functions that need to tolerate missing
+    /// referential dependencies during import (e.g., a `storage-set` event
+    /// arriving before its blob).
+    pub fn is_foreign_key_violation(&self) -> bool {
+        match self {
+            Self::Sqlite(rusqlite::Error::SqliteFailure(err, _)) => {
+                // extended_code 787 == SQLITE_CONSTRAINT_FOREIGNKEY
+                err.extended_code == 787
+            }
+            _ => false,
+        }
     }
 }

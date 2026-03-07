@@ -1,5 +1,6 @@
 mod actor;
 mod agent;
+mod blob_content;
 mod brain;
 mod cognition;
 mod connection;
@@ -17,6 +18,7 @@ mod ticket;
 
 pub use actor::{Actor, ActorId, ActorName};
 pub use agent::{Agent, AgentConstructionError, AgentId, AgentName};
+pub use blob_content::{BlobContent, BlobContentError};
 pub use brain::{Brain, BrainId, BrainName, BrainStatus};
 pub use cognition::{Cognition, CognitionConstructionError, CognitionId};
 pub use connection::{Connection, ConnectionConstructionError, ConnectionId};

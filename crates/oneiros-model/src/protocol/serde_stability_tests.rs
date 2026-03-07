@@ -119,6 +119,14 @@ mod tests {
         }))
         .unwrap();
         assert_eq!(event_type(&removed), "storage-removed");
+
+        let blob_stored = serde_json::to_value(StorageEvents::BlobStored(BlobContent {
+            hash: ContentHash::new("abc123"),
+            size: Size::new(42),
+            data: Blob::encode(b"test blob data"),
+        }))
+        .unwrap();
+        assert_eq!(event_type(&blob_stored), "blob-stored");
     }
 
     #[test]
