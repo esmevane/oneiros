@@ -170,3 +170,17 @@ create table if not exists tickets (
 );
 
 create unique index if not exists unique_tickets_token on tickets (token);
+
+-- Trust peer state (projected from trust-peer-accepted / trust-peer-insecure-allowed events)
+CREATE TABLE IF NOT EXISTS trust_peers (
+    endpoint    TEXT PRIMARY KEY NOT NULL,
+    fingerprint TEXT,
+    insecure    INTEGER NOT NULL DEFAULT 0,
+    reason      TEXT
+);
+
+-- Trust configuration state (projected from trust-mode-configured / trust-ca-initialized / etc.)
+CREATE TABLE IF NOT EXISTS trust_state (
+    key   TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL
+);

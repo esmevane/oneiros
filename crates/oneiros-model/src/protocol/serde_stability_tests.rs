@@ -828,6 +828,75 @@ mod tests {
     }
 
     #[test]
+    fn trust_event_type_strings() {
+        let mode_configured = serde_json::to_value(TrustEvents::TrustModeConfigured(
+            TrustModeConfigured {
+                mode: "local".to_string(),
+            },
+        ))
+        .unwrap();
+        assert_eq!(event_type(&mode_configured), "trust-mode-configured");
+
+        let ca_initialized = serde_json::to_value(TrustEvents::TrustCaInitialized(
+            TrustCaInitialized {
+                root_fingerprint: "sha256:abc123".to_string(),
+                root_storage_key: None,
+            },
+        ))
+        .unwrap();
+        assert_eq!(event_type(&ca_initialized), "trust-ca-initialized");
+
+        let leaf_issued =
+            serde_json::to_value(TrustEvents::TrustLeafIssued(TrustLeafIssued {
+                hostname: "localhost".to_string(),
+                not_after: "2026-01-01T00:00:00Z".to_string(),
+            }))
+            .unwrap();
+        assert_eq!(event_type(&leaf_issued), "trust-leaf-issued");
+
+        let store_installed = serde_json::to_value(TrustEvents::TrustStoreInstalled).unwrap();
+        assert_eq!(event_type(&store_installed), "trust-store-installed");
+
+        let store_failed = serde_json::to_value(TrustEvents::TrustStoreInstallFailed(
+            TrustStoreInstallFailed {
+                reason: "permission denied".to_string(),
+            },
+        ))
+        .unwrap();
+        assert_eq!(event_type(&store_failed), "trust-store-install-failed");
+
+        let peer_accepted =
+            serde_json::to_value(TrustEvents::TrustPeerAccepted(TrustPeerAccepted {
+                endpoint: "https://peer.example.com".to_string(),
+                fingerprint: "sha256:def456".to_string(),
+            }))
+            .unwrap();
+        assert_eq!(event_type(&peer_accepted), "trust-peer-accepted");
+
+        let fingerprint_changed = serde_json::to_value(TrustEvents::TrustPeerFingerprintChanged(
+            TrustPeerFingerprintChanged {
+                endpoint: "https://peer.example.com".to_string(),
+                old_fingerprint: "sha256:old".to_string(),
+                new_fingerprint: "sha256:new".to_string(),
+            },
+        ))
+        .unwrap();
+        assert_eq!(
+            event_type(&fingerprint_changed),
+            "trust-peer-fingerprint-changed"
+        );
+
+        let insecure_allowed = serde_json::to_value(TrustEvents::TrustPeerInsecureAllowed(
+            TrustPeerInsecureAllowed {
+                endpoint: "http://dev.local".to_string(),
+                reason: Some("local dev".to_string()),
+            },
+        ))
+        .unwrap();
+        assert_eq!(event_type(&insecure_allowed), "trust-peer-insecure-allowed");
+    }
+
+    #[test]
     fn events_super_enum_roundtrips() {
         // Verify that Events (untagged) can deserialize what its inner enums serialize.
         let agent_event = AgentEvents::AgentCreated(test_agent());

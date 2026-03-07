@@ -1,6 +1,7 @@
 pub mod brain;
 pub mod search;
 pub mod system;
+pub mod trust;
 
 use oneiros_db::Projection;
 
@@ -8,5 +9,5 @@ use oneiros_db::Projection;
 /// Search runs first so it can read entity data before brain projections mutate it.
 pub const BRAIN: &[&[Projection]] = &[search::ALL, brain::ALL];
 
-/// All system-level projections.
-pub const SYSTEM: &[&[Projection]] = &[system::ALL];
+/// All system-level projections: entity materialization + trust lifecycle.
+pub const SYSTEM: &[&[Projection]] = &[system::ALL, trust::ALL];

@@ -19,6 +19,9 @@ pub enum ServiceCommandError {
 
     #[error("Missing tenant or actor ID in database.")]
     MissingId,
+
+    #[error("Trust error: {0}")]
+    Trust(#[from] oneiros_trust::TrustError),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]

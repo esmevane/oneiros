@@ -125,6 +125,26 @@ impl Init {
 
         outcomes.emit(InitSystemOutcomes::SystemInitialized(name));
 
+        if !self.yes && std::io::IsTerminal::is_terminal(&std::io::stdin()) {
+            let setup_trust = inquire::Confirm::new(
+                "Set up local TLS? This creates a local CA for encrypted connections.",
+            )
+            .with_default(false)
+            .prompt()
+            .unwrap_or(false);
+
+            if setup_trust {
+                match TrustInit::auto_quiet().run(context).await {
+                    Ok(_trust_outcomes) => {
+                        tracing::info!("Trust initialized successfully.");
+                    }
+                    Err(e) => {
+                        tracing::warn!("Trust setup failed: {e}");
+                    }
+                }
+            }
+        }
+
         Ok(outcomes)
     }
 }

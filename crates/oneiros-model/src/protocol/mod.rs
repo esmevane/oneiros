@@ -17,6 +17,7 @@ mod storage;
 mod tenant;
 mod texture;
 mod ticket;
+mod trust;
 
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +39,7 @@ pub use storage::*;
 pub use tenant::*;
 pub use texture::*;
 pub use ticket::*;
+pub use trust::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -62,6 +64,7 @@ pub enum Events {
     Tenant(TenantEvents),
     Texture(TextureEvents),
     Ticket(TicketEvents),
+    Trust(TrustEvents),
 }
 
 /// Super-enum over all request types. Serde untagged — each inner enum

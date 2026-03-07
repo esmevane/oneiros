@@ -21,6 +21,9 @@ fn sanitize_fts5_query(query: &str) -> String {
         .join(" ")
 }
 
+/// A row from the `trust_peers` table: (endpoint, fingerprint, insecure, reason).
+pub type TrustPeerRow = (String, Option<String>, bool, Option<String>);
+
 pub struct Database {
     conn: Connection,
 }
@@ -1890,6 +1893,77 @@ impl Database {
         let data = data["data"].clone();
 
         projections::project(self, projections, event_type, &data)
+    }
+
+    // ---- Trust peers ----
+
+    pub fn upsert_trust_peer(
+        &self,
+        endpoint: &str,
+        fingerprint: Option<&str>,
+        insecure: bool,
+        reason: Option<&str>,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "INSERT INTO trust_peers (endpoint, fingerprint, insecure, reason)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(endpoint) DO UPDATE SET
+               fingerprint = COALESCE(?2, fingerprint),
+               insecure = ?3,
+               reason = COALESCE(?4, reason)",
+            params![endpoint, fingerprint, insecure as i32, reason],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_trust_peers(&self) -> Result<Vec<TrustPeerRow>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT endpoint, fingerprint, insecure, reason FROM trust_peers ORDER BY endpoint",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, bool>(2)?,
+                row.get::<_, Option<String>>(3)?,
+            ))
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn reset_trust_peers(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("DELETE FROM trust_peers")?;
+        Ok(())
+    }
+
+    // ---- Trust state ----
+
+    pub fn set_trust_state(&self, key: &str, value: &str) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "INSERT INTO trust_state (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = ?2",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_trust_state(&self, key: &str) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "SELECT value FROM trust_state WHERE key = ?1",
+            params![key],
+            |row| row.get(0),
+        );
+
+        match result {
+            Ok(value) => Ok(Some(value)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn reset_trust_state(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("DELETE FROM trust_state")?;
+        Ok(())
     }
 }
 

@@ -1,0 +1,32 @@
+[package]
+name = "oneiros-trust"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+oneiros-config.workspace = true
+rcgen = { workspace = true, features = ["ring", "pem"] }
+time.workspace = true
+ring.workspace = true
+rustls.workspace = true
+rustls-pki-types.workspace = true
+rustls-pemfile.workspace = true
+webpki-roots.workspace = true
+tokio-rustls.workspace = true
+tokio-rustls-acme = { workspace = true, features = ["axum"] }
+data-encoding.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+pretty_assertions.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "io-util", "net"] }
+tokio-rustls.workspace = true
+rustls.workspace = true
