@@ -1,7 +1,7 @@
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use oneiros_db::Database;
-use oneiros_model::{Events, NotFound, Source, Token, TokenError};
+use oneiros_model::{Event, NotFound, Source, Token, TokenError};
 use oneiros_service::{BrainService, ServiceState};
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -22,7 +22,7 @@ pub enum ActorContextError {
 
 pub struct ActorContext {
     db: Database,
-    event_tx: broadcast::Sender<Events>,
+    event_tx: broadcast::Sender<Event>,
     source: Source,
 }
 

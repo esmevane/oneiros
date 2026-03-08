@@ -13,7 +13,7 @@ fn seed_tenant_and_actor(db: &Database) -> Source {
         id: tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&Event::create(event, source), projections::SYSTEM)
+    db.log_event(&NewEvent::new(event, source), projections::SYSTEM)
         .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
@@ -21,7 +21,7 @@ fn seed_tenant_and_actor(db: &Database) -> Source {
         tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&Event::create(event, source), projections::SYSTEM)
+    db.log_event(&NewEvent::new(event, source), projections::SYSTEM)
         .unwrap();
 
     source

@@ -23,7 +23,7 @@ pub enum CreateBrainError {
 pub struct SystemService<'a> {
     db: MutexGuard<'a, Database>,
     data_dir: &'a Path,
-    event_tx: &'a broadcast::Sender<Events>,
+    event_tx: &'a broadcast::Sender<Event>,
     source: Source,
 }
 
@@ -31,7 +31,7 @@ impl<'a> SystemService<'a> {
     pub fn new(
         db: MutexGuard<'a, Database>,
         data_dir: &'a Path,
-        event_tx: &'a broadcast::Sender<Events>,
+        event_tx: &'a broadcast::Sender<Event>,
         source: Source,
     ) -> Self {
         Self {
@@ -43,11 +43,11 @@ impl<'a> SystemService<'a> {
     }
 
     /// Persist a state-changing event (runs SYSTEM projections) then broadcast.
-    fn log_and_broadcast(&self, event: &Events) -> Result<(), Error> {
-        let known = Event::create(event.clone(), self.source);
-        self.db.log_event(&known, projections::SYSTEM)?;
-        let _ = self.event_tx.send(event.clone());
-        Ok(())
+    fn log_and_broadcast(&self, event: &Events) -> Result<Event, Error> {
+        let new_event = NewEvent::new(event.clone(), self.source);
+        let persisted = self.db.log_event(&new_event, projections::SYSTEM)?;
+        let _ = self.event_tx.send(persisted.clone());
+        Ok(persisted)
     }
 
     // ── Brain operations ──────────────────────────────────────────────

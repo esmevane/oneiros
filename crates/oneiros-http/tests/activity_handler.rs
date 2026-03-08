@@ -58,7 +58,7 @@ async fn broadcast_channel_receives_events_from_handlers() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     // The agent creation event should appear on the broadcast channel.
-    let event: Events = rx.recv().await.unwrap();
+    let event: oneiros_model::Event = rx.recv().await.unwrap();
     let json = serde_json::to_string(&event).unwrap();
     assert!(
         json.contains("agent-created"),
@@ -84,9 +84,16 @@ async fn sse_stream_receives_broadcast_events() {
     let mut body = response.into_body();
 
     // Inject an event directly via the broadcast channel.
-    let test_event = Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+    let inner = Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
         name: AgentName::new("test-agent"),
     }));
+    let test_event = oneiros_model::Event::Known(oneiros_model::KnownEvent {
+        id: oneiros_model::EventId::new(),
+        sequence: 1,
+        timestamp: oneiros_model::Timestamp::now(),
+        source: Source::default(),
+        data: inner,
+    });
     state.broadcast(test_event);
 
     // Read the first frame from the SSE stream.
@@ -102,6 +109,46 @@ async fn sse_stream_receives_broadcast_events() {
     assert!(
         text.contains("test-agent"),
         "SSE frame should contain the event data, got: {text}"
+    );
+}
+
+#[tokio::test]
+async fn sse_events_include_id_field() {
+    let (_temp, state, _token) = setup();
+
+    let app = router(state.clone());
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/activity")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    let mut body = response.into_body();
+
+    let test_event = oneiros_model::Event::Known(oneiros_model::KnownEvent {
+        id: oneiros_model::EventId::new(),
+        sequence: 99,
+        timestamp: oneiros_model::Timestamp::now(),
+        source: Source::default(),
+        data: Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+            name: AgentName::new("test-agent"),
+        })),
+    });
+    state.broadcast(test_event);
+
+    let frame = tokio::time::timeout(std::time::Duration::from_secs(2), body.frame())
+        .await
+        .expect("timed out")
+        .expect("stream ended")
+        .expect("frame error");
+
+    let data = frame.into_data().expect("expected data frame");
+    let text = String::from_utf8(data.to_vec()).unwrap();
+
+    assert!(
+        text.contains("id:99") || text.contains("id: 99"),
+        "SSE frame should contain id field with sequence, got: {text}"
     );
 }
 

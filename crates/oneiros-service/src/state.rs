@@ -11,7 +11,7 @@ use crate::system_service::SystemService;
 pub struct ServiceState {
     pub(crate) database: Mutex<Database>,
     pub(crate) data_dir: PathBuf,
-    pub(crate) event_tx: broadcast::Sender<Events>,
+    pub(crate) event_tx: broadcast::Sender<Event>,
     pub(crate) source: Source,
 }
 
@@ -28,12 +28,12 @@ impl ServiceState {
     }
 
     /// Subscribe to the event broadcast channel.
-    pub fn subscribe(&self) -> broadcast::Receiver<Events> {
+    pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.event_tx.subscribe()
     }
 
     /// Send an event to the broadcast channel (for testing).
-    pub fn broadcast(&self, event: Events) {
+    pub fn broadcast(&self, event: Event) {
         let _ = self.event_tx.send(event);
     }
 
@@ -43,7 +43,7 @@ impl ServiceState {
     }
 
     /// Access the event broadcast sender.
-    pub fn event_sender(&self) -> &broadcast::Sender<Events> {
+    pub fn event_sender(&self) -> &broadcast::Sender<Event> {
         &self.event_tx
     }
 
