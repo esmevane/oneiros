@@ -251,7 +251,7 @@ mod tests {
         .unwrap();
 
         // Log a storage-set event
-        let event = Event::create(
+        let event = NewEvent::new(
             Events::Storage(StorageEvents::StorageSet(StorageEntry::init(
                 StorageKey::new("my-file"),
                 "a test file",
@@ -262,15 +262,15 @@ mod tests {
         db.log_event(&event, projections::BRAIN).unwrap();
 
         // Export should have 2 events: blob-stored then storage-set
-        let exported = db.read_events().unwrap();
+        let exported = db.read_events(None).unwrap();
         assert_eq!(exported.len(), 2);
 
-        // First event should be blob-stored
-        if let Event::Known(ref first) = exported[0] {
+        // First event should be blob-stored (synthetic — no sequence)
+        if let Event::New(ref first) = exported[0] {
             let json = serde_json::to_value(&first.data).unwrap();
             assert_eq!(json["type"], "blob-stored");
         } else {
-            panic!("expected known event");
+            panic!("expected new (synthetic) event");
         }
 
         // Second event should be storage-set
@@ -291,7 +291,7 @@ mod tests {
         let source = Source::default();
 
         // Log a storage-set event WITHOUT seeding the blob
-        let event = Event::create(
+        let event = NewEvent::new(
             Events::Storage(StorageEvents::StorageSet(StorageEntry::init(
                 StorageKey::new("orphaned-file"),
                 "missing blob",
@@ -302,7 +302,7 @@ mod tests {
         db.log_event(&event, projections::BRAIN).unwrap();
 
         // Export should have just the storage-set, no blob-stored
-        let exported = db.read_events().unwrap();
+        let exported = db.read_events(None).unwrap();
         assert_eq!(exported.len(), 1);
     }
 
@@ -317,7 +317,7 @@ mod tests {
         let blob = Blob::encode(blob_data);
         let hash = ContentHash::new("test-hash-123");
 
-        let event = Event::create(
+        let event = NewEvent::new(
             Events::Storage(StorageEvents::BlobStored(BlobContent {
                 hash: hash.clone(),
                 size: blob_data.len().into(),
@@ -354,7 +354,7 @@ mod tests {
             })
             .unwrap();
 
-        let event = Event::create(
+        let event = NewEvent::new(
             Events::Storage(StorageEvents::StorageSet(StorageEntry::init(
                 StorageKey::new("cycle-file"),
                 "cycle test",
@@ -365,7 +365,7 @@ mod tests {
         source_db.log_event(&event, projections::BRAIN).unwrap();
 
         // Export from source
-        let exported = source_db.read_events().unwrap();
+        let exported = source_db.read_events(None).unwrap();
         assert_eq!(exported.len(), 2, "should have blob-stored + storage-set");
 
         // Serialize to JSONL (simulating the wire format)
@@ -401,7 +401,7 @@ mod tests {
         assert!(storage.is_some(), "storage entry should exist");
 
         // blob-stored event should be cleaned from the durable event store.
-        // Note: read_events() is the export path and synthesizes blob-stored events
+        // Note: read_events(None) is the export path and synthesizes blob-stored events
         // dynamically on export — it is not the right surface for this check.
         // The durable event count should be 1 (just the storage-set).
         let durable_count = target_db.event_count().unwrap();
@@ -430,7 +430,7 @@ mod tests {
             Prompt::new("test persona prompt"),
         );
         db.log_event(
-            &Event::create(Events::Persona(PersonaEvents::PersonaSet(persona)), source),
+            &NewEvent::new(Events::Persona(PersonaEvents::PersonaSet(persona)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -441,7 +441,7 @@ mod tests {
             Prompt::default(),
         );
         db.log_event(
-            &Event::create(Events::Texture(TextureEvents::TextureSet(texture)), source),
+            &NewEvent::new(Events::Texture(TextureEvents::TextureSet(texture)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -452,7 +452,7 @@ mod tests {
             Prompt::default(),
         );
         db.log_event(
-            &Event::create(Events::Level(LevelEvents::LevelSet(level)), source),
+            &NewEvent::new(Events::Level(LevelEvents::LevelSet(level)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -463,7 +463,7 @@ mod tests {
             Prompt::default(),
         );
         db.log_event(
-            &Event::create(
+            &NewEvent::new(
                 Events::Sensation(SensationEvents::SensationSet(sensation)),
                 source,
             ),
@@ -479,7 +479,7 @@ mod tests {
             PersonaName::new("test-persona"),
         );
         db.log_event(
-            &Event::create(
+            &NewEvent::new(
                 Events::Agent(AgentEvents::AgentCreated(agent.clone())),
                 source,
             ),
@@ -493,7 +493,7 @@ mod tests {
             Content::new("an interesting observation about architecture"),
         );
         db.log_event(
-            &Event::create(
+            &NewEvent::new(
                 Events::Cognition(CognitionEvents::CognitionAdded(cognition)),
                 source,
             ),
@@ -507,7 +507,7 @@ mod tests {
             Content::new("a consolidated memory about patterns"),
         );
         db.log_event(
-            &Event::create(Events::Memory(MemoryEvents::MemoryAdded(memory)), source),
+            &NewEvent::new(Events::Memory(MemoryEvents::MemoryAdded(memory)), source),
             projections::BRAIN,
         )
         .unwrap();
@@ -518,7 +518,7 @@ mod tests {
             Description::new("one thought produced another"),
         );
         db.log_event(
-            &Event::create(
+            &NewEvent::new(
                 Events::Experience(ExperienceEvents::ExperienceCreated(experience)),
                 source,
             ),

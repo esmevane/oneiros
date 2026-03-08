@@ -79,29 +79,36 @@ impl Database {
     ///
     /// If the blob is missing (e.g., the entry was created without one), the
     /// `storage-set` event is emitted without a preceding `blob-stored` event.
-    pub fn read_events(&self) -> Result<Vec<Event>, DatabaseError> {
-        let mut stmt = self.conn.prepare(
-            "select json_object('id', id, 'timestamp', timestamp, 'source', json(source), 'data', json(data))
-             from events order by sequence asc",
-        )?;
-
-        let rows = stmt.query_map([], |row| {
-            let raw_event: String = row.get(0)?;
-            Ok(raw_event)
-        })?;
+    pub fn read_events(&self, after: Option<u64>) -> Result<Vec<Event>, DatabaseError> {
+        let rows: Vec<String> = match after {
+            None => {
+                let mut stmt = self.conn.prepare(
+                    "select json_object('id', id, 'sequence', sequence, 'timestamp', timestamp, 'source', json(source), 'data', json(data))
+                     from events order by sequence asc",
+                )?;
+                stmt.query_map([], |row| row.get(0))?
+                    .collect::<Result<_, _>>()?
+            }
+            Some(seq) => {
+                let mut stmt = self.conn.prepare(
+                    "select json_object('id', id, 'sequence', sequence, 'timestamp', timestamp, 'source', json(source), 'data', json(data))
+                     from events where sequence > ?1 order by sequence asc",
+                )?;
+                stmt.query_map(params![seq as i64], |row| row.get(0))?
+                    .collect::<Result<_, _>>()?
+            }
+        };
 
         let mut events = Vec::new();
 
-        for row in rows {
-            let raw = row?;
-
+        for raw in rows {
             match serde_json::from_str::<Event>(&raw) {
                 Ok(event) => {
                     if let Event::Known(ref known) = event
                         && let Events::Storage(StorageEvents::StorageSet(ref entry)) = known.data
                         && let Ok(Some(blob_content)) = self.get_blob(&entry.hash)
                     {
-                        let blob_event = Event::Known(KnownEvent {
+                        let blob_event = Event::New(NewEvent {
                             id: EventId::new(),
                             timestamp: known.timestamp,
                             source: known.source,
@@ -129,7 +136,7 @@ impl Database {
         }
 
         let result = self.conn.query_row(
-            "select json_object('id', id, 'timestamp', timestamp, 'source', json(source), 'data', json(data)) from events where id = ?1",
+            "select json_object('id', id, 'sequence', sequence, 'timestamp', timestamp, 'source', json(source), 'data', json(data)) from events where id = ?1",
             params![id.to_string()],
             |row| {
                 let raw_event: String = row.get(0)?;
@@ -1771,20 +1778,20 @@ impl Database {
 
     pub fn log_event(
         &self,
-        event: &KnownEvent,
+        event: &NewEvent,
         projections: &[&[Projection]],
-    ) -> Result<(), DatabaseError> {
+    ) -> Result<Event, DatabaseError> {
         let tx = self.conn.unchecked_transaction()?;
 
-        self.create_event(event)?;
-        self.run_projections(projections, event)?;
+        let known = self.create_event(event)?;
+        self.run_projections(projections, &known)?;
 
         tx.commit()?;
 
-        Ok(())
+        Ok(Event::Known(known))
     }
 
-    fn create_event(&self, event: &KnownEvent) -> Result<(), DatabaseError> {
+    fn create_event(&self, event: &NewEvent) -> Result<KnownEvent, DatabaseError> {
         let data = serde_json::to_value(&event.data)?;
         let source = serde_json::to_value(event.source)?;
         let event_type = data["type"].as_str().unwrap_or("__unmarked");
@@ -1808,7 +1815,13 @@ impl Database {
             ],
         )?;
 
-        Ok(())
+        Ok(KnownEvent {
+            id: event.id,
+            sequence: sequence as u64,
+            timestamp: event.timestamp,
+            source: event.source,
+            data: event.data.clone(),
+        })
     }
 
     pub fn import_event(&self, event: &ImportEvent) -> Result<(), DatabaseError> {
@@ -1851,7 +1864,7 @@ impl Database {
 
         let mut statement = self
             .conn
-            .prepare("select json_object('id', id, 'data', json(data), 'source', json(source), 'timestamp', timestamp)
+            .prepare("select json_object('id', id, 'sequence', sequence, 'data', json(data), 'source', json(source), 'timestamp', timestamp)
                 from events order by sequence asc")?;
 
         let mut count = 0;
@@ -2094,5 +2107,146 @@ mod tests {
         let (_temp, db) = setup_system();
         let brains = db.list_brains().unwrap();
         assert!(brains.is_empty());
+    }
+
+    #[test]
+    fn log_event_returns_event_with_sequence() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let new_event = NewEvent::new(
+            Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                name: AgentName::new("test"),
+            })),
+            source,
+        );
+
+        let event = db.log_event(&new_event, &[]).unwrap();
+
+        match event {
+            Event::Known(known) => {
+                assert_eq!(known.sequence, 1);
+                assert_eq!(known.id, new_event.id);
+            }
+            _ => panic!("expected Known event"),
+        }
+    }
+
+    #[test]
+    fn sequences_are_monotonically_increasing() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+
+        let e1 = db
+            .log_event(
+                &NewEvent::new(
+                    Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                        name: AgentName::new("a"),
+                    })),
+                    source,
+                ),
+                &[],
+            )
+            .unwrap();
+
+        let e2 = db
+            .log_event(
+                &NewEvent::new(
+                    Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                        name: AgentName::new("b"),
+                    })),
+                    source,
+                ),
+                &[],
+            )
+            .unwrap();
+
+        let s1 = match e1 {
+            Event::Known(k) => k.sequence,
+            _ => panic!(),
+        };
+        let s2 = match e2 {
+            Event::Known(k) => k.sequence,
+            _ => panic!(),
+        };
+        assert!(s2 > s1, "sequence {s2} should be greater than {s1}");
+    }
+
+    #[test]
+    fn read_events_after_returns_only_later_events() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+
+        for name in ["a", "b", "c"] {
+            db.log_event(
+                &NewEvent::new(
+                    Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                        name: AgentName::new(name),
+                    })),
+                    source,
+                ),
+                &[],
+            )
+            .unwrap();
+        }
+
+        let all = db.read_events(None).unwrap();
+        assert_eq!(all.len(), 3);
+
+        let after_1 = db.read_events(Some(1)).unwrap();
+        assert_eq!(after_1.len(), 2);
+
+        let after_2 = db.read_events(Some(2)).unwrap();
+        assert_eq!(after_2.len(), 1);
+
+        let after_3 = db.read_events(Some(3)).unwrap();
+        assert!(after_3.is_empty());
+    }
+
+    #[test]
+    fn read_events_includes_sequence_in_output() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+
+        db.log_event(
+            &NewEvent::new(
+                Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                    name: AgentName::new("test"),
+                })),
+                source,
+            ),
+            &[],
+        )
+        .unwrap();
+
+        let events = db.read_events(None).unwrap();
+        match &events[0] {
+            Event::Known(known) => assert_eq!(known.sequence, 1),
+            _ => panic!("expected Known event with sequence"),
+        }
+    }
+
+    #[test]
+    fn get_event_includes_sequence() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+
+        let new = NewEvent::new(
+            Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                name: AgentName::new("test"),
+            })),
+            source,
+        );
+        let id = new.id;
+
+        db.log_event(&new, &[]).unwrap();
+
+        let event = db.get_event(&id).unwrap().unwrap();
+        match event {
+            Event::Known(known) => {
+                assert_eq!(known.sequence, 1);
+                assert_eq!(known.id, id);
+            }
+            _ => panic!("expected Known event"),
+        }
     }
 }

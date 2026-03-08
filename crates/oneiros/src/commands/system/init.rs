@@ -105,15 +105,15 @@ impl Init {
         };
 
         let create_tenant = Events::Tenant(TenantEvents::TenantCreated(tenant));
-        let known = Event::create(create_tenant, source);
+        let new_event = NewEvent::new(create_tenant, source);
 
-        database.log_event(&known, projections::SYSTEM)?;
+        database.log_event(&new_event, projections::SYSTEM)?;
         outcomes.emit(InitSystemOutcomes::TenantCreated);
 
         let create_actor = Events::Actor(ActorEvents::ActorCreated(actor));
-        let known = Event::create(create_actor, source);
+        let new_event = NewEvent::new(create_actor, source);
 
-        database.log_event(&known, projections::SYSTEM)?;
+        database.log_event(&new_event, projections::SYSTEM)?;
         outcomes.emit(InitSystemOutcomes::ActorCreated);
 
         let config_path = context.config_path();

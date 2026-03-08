@@ -12,7 +12,7 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         "You are a process agent.",
     )));
     brain_db
-        .log_event(&Event::create(event, source), projections::BRAIN)
+        .log_event(&NewEvent::new(event, source), projections::BRAIN)
         .unwrap();
 
     let event = Events::Agent(AgentEvents::AgentCreated(Agent::init(
@@ -22,7 +22,7 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         PersonaName::new("process"),
     )));
     brain_db
-        .log_event(&Event::create(event, source), projections::BRAIN)
+        .log_event(&NewEvent::new(event, source), projections::BRAIN)
         .unwrap();
 }
 
@@ -93,7 +93,7 @@ async fn dashboard_handles_no_brains() {
         id: source.tenant_id,
         name: TenantName::new("Test Tenant"),
     }));
-    db.log_event(&Event::create(event, source), projections::SYSTEM)
+    db.log_event(&NewEvent::new(event, source), projections::SYSTEM)
         .unwrap();
 
     let event = Events::Actor(ActorEvents::ActorCreated(Actor {
@@ -101,7 +101,7 @@ async fn dashboard_handles_no_brains() {
         tenant_id: source.tenant_id,
         name: ActorName::new("Test Actor"),
     }));
-    db.log_event(&Event::create(event, source), projections::SYSTEM)
+    db.log_event(&NewEvent::new(event, source), projections::SYSTEM)
         .unwrap();
 
     let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf(), source));

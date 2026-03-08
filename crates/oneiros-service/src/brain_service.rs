@@ -11,12 +11,12 @@ use crate::{Error, projections};
 /// Handlers delegate here; they own only HTTP parsing and response formatting.
 pub struct BrainService<'a> {
     db: &'a Database,
-    event_tx: &'a broadcast::Sender<Events>,
+    event_tx: &'a broadcast::Sender<Event>,
     source: Source,
 }
 
 impl<'a> BrainService<'a> {
-    pub fn new(db: &'a Database, event_tx: &'a broadcast::Sender<Events>, source: Source) -> Self {
+    pub fn new(db: &'a Database, event_tx: &'a broadcast::Sender<Event>, source: Source) -> Self {
         Self {
             db,
             event_tx,
@@ -25,25 +25,25 @@ impl<'a> BrainService<'a> {
     }
 
     /// Persist a state-changing event (runs BRAIN projections) then broadcast.
-    fn log_and_broadcast(&self, event: &Events) -> Result<(), Error> {
-        let known = Event::create(event.clone(), self.source);
-        self.db.log_event(&known, projections::BRAIN)?;
-        let _ = self.event_tx.send(event.clone());
-        Ok(())
+    fn log_and_broadcast(&self, event: &Events) -> Result<Event, Error> {
+        let new_event = NewEvent::new(event.clone(), self.source);
+        let persisted = self.db.log_event(&new_event, projections::BRAIN)?;
+        let _ = self.event_tx.send(persisted.clone());
+        Ok(persisted)
     }
 
     /// Persist an observational marker event (no projections) then broadcast.
-    fn log_marker(&self, event: &Events) -> Result<(), Error> {
-        let known = Event::create(event.clone(), self.source);
-        self.db.log_event(&known, &[])?;
-        let _ = self.event_tx.send(event.clone());
-        Ok(())
+    fn log_marker(&self, event: &Events) -> Result<Event, Error> {
+        let new_event = NewEvent::new(event.clone(), self.source);
+        let persisted = self.db.log_event(&new_event, &[])?;
+        let _ = self.event_tx.send(persisted.clone());
+        Ok(persisted)
     }
 
     // ── Event operations ──────────────────────────────────────────────
 
-    pub fn read_events(&self) -> Result<Vec<Event>, Error> {
-        Ok(self.db.read_events()?)
+    pub fn read_events(&self, after: Option<u64>) -> Result<Vec<Event>, Error> {
+        Ok(self.db.read_events(after)?)
     }
 
     pub fn get_event(&self, id: &EventId) -> Result<Event, Error> {
