@@ -5,6 +5,7 @@ mod routes;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::net::TcpListener;
 
 pub use error::Error;
@@ -17,8 +18,13 @@ pub use oneiros_service::{self, ServiceState, projections};
 /// Start the HTTP service, listening on the given TCP address.
 ///
 /// This function blocks until the server is shut down via SIGINT or
-/// SIGTERM.
-pub async fn serve(state: Arc<ServiceState>, addr: SocketAddr) -> Result<(), std::io::Error> {
+/// SIGTERM. After receiving the signal, in-flight connections have
+/// `grace_period` to close before the process exits.
+pub async fn serve(
+    state: Arc<ServiceState>,
+    addr: SocketAddr,
+    grace_period: Duration,
+) -> Result<(), std::io::Error> {
     let listener = TcpListener::bind(addr).await?;
 
     tracing::info!("Service listening on {addr}");
@@ -26,11 +32,11 @@ pub async fn serve(state: Arc<ServiceState>, addr: SocketAddr) -> Result<(), std
     let app = routes::router(state);
 
     axum::serve(listener, app.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(shutdown_signal(grace_period))
         .await
 }
 
-async fn shutdown_signal() {
+async fn shutdown_signal(grace_period: Duration) {
     let ctrl_c = tokio::signal::ctrl_c();
 
     #[cfg(unix)]
@@ -49,4 +55,12 @@ async fn shutdown_signal() {
         ctrl_c.await.ok();
         tracing::info!("Received SIGINT, shutting down");
     }
+
+    // Force exit after the grace period so long-lived streams (SSE, MCP)
+    // don't block shutdown indefinitely.
+    tokio::spawn(async move {
+        tokio::time::sleep(grace_period).await;
+        tracing::info!("Grace period elapsed, forcing exit");
+        std::process::exit(0);
+    });
 }

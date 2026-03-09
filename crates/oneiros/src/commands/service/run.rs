@@ -57,7 +57,8 @@ impl RunService {
             source,
         ));
 
-        oneiros_http::serve(state, addr).await?;
+        let grace_period = context.config().service.grace_period();
+        oneiros_http::serve(state, addr, grace_period).await?;
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 

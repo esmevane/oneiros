@@ -2,6 +2,7 @@ mod error;
 mod log_config;
 mod outcomes;
 mod output_format;
+mod preflight;
 
 use clap::Parser;
 use clap::Subcommand;
@@ -11,6 +12,7 @@ pub(crate) use error::*;
 pub(crate) use log_config::LogConfig;
 pub(crate) use outcomes::CliOutcomes;
 pub(crate) use output_format::OutputFormat;
+pub(crate) use preflight::Preflight;
 
 use crate::*;
 

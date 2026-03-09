@@ -18,7 +18,8 @@ pub(crate) use prefix_id::*;
 pub use error::*;
 
 pub async fn run() -> Result<(), Error> {
-    logging::init()?;
+    let preflight = Preflight::preflight_parse();
+    logging::init(&preflight.log)?;
 
     let cli = Cli::parse();
     let outcomes = cli.run().await?;
