@@ -1,20 +1,15 @@
 use axum::{Json, extract::Query};
 use oneiros_model::*;
-use serde::Deserialize;
 
 use crate::*;
 
-#[derive(Debug, Deserialize)]
-pub(crate) struct SearchParams {
-    pub q: String,
-    pub agent: Option<AgentName>,
-}
-
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Query(params): Query<SearchParams>,
+    Query(request): Query<SearchRequest>,
 ) -> Result<Json<SearchResponses>, Error> {
-    let response = ticket.service().search(&params.q, params.agent.as_ref())?;
+    let response = ticket
+        .service()
+        .dispatch_search(SearchRequests::Search(request))?;
 
     Ok(Json(response))
 }

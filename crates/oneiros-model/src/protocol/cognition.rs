@@ -7,19 +7,7 @@ pub struct SelectCognitionById {
     pub id: CognitionId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ListCognitionsFilter {
-    #[serde(default)]
-    pub agent: Option<AgentName>,
-    #[serde(default)]
-    pub texture: Option<TextureName>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum CognitionEvents {
-    CognitionAdded(Cognition),
-}
+// ── Request types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddCognitionRequest {
@@ -29,11 +17,32 @@ pub struct AddCognitionRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetCognitionRequest {
+    pub id: CognitionId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListCognitionsRequest {
+    #[serde(default)]
+    pub agent: Option<AgentName>,
+    #[serde(default)]
+    pub texture: Option<TextureName>,
+}
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum CognitionEvents {
+    CognitionAdded(Cognition),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum CognitionRequests {
     AddCognition(AddCognitionRequest),
-    GetCognition(SelectCognitionById),
-    ListCognitions(ListCognitionsFilter),
+    GetCognition(GetCognitionRequest),
+    ListCognitions(ListCognitionsRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

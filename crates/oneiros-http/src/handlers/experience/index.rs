@@ -1,22 +1,15 @@
 use axum::{Json, extract::Query};
 use oneiros_model::*;
-use serde::Deserialize;
 
 use crate::*;
 
-#[derive(Debug, Deserialize)]
-pub(crate) struct ListParams {
-    pub agent: Option<AgentName>,
-    pub sensation: Option<SensationName>,
-}
-
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Query(params): Query<ListParams>,
+    Query(request): Query<ListExperiencesRequest>,
 ) -> Result<Json<ExperienceResponses>, Error> {
-    let experiences = ticket
+    let response = ticket
         .service()
-        .list_experiences(params.agent, params.sensation)?;
+        .dispatch_experience(ExperienceRequests::ListExperiences(request))?;
 
-    Ok(Json(experiences))
+    Ok(Json(response))
 }

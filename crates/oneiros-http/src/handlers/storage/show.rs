@@ -1,6 +1,6 @@
 use axum::Json;
 use axum::extract::Path;
-use oneiros_model::{StorageRef, StorageResponses};
+use oneiros_model::*;
 
 use crate::*;
 
@@ -12,7 +12,9 @@ pub(crate) async fn handler(
         .decode()
         .map_err(oneiros_service::BadRequests::StorageRef)?;
 
-    let response = ticket.service().get_storage(&key)?;
+    let response = ticket
+        .service()
+        .dispatch_storage(StorageRequests::GetStorage(GetStorageRequest { key }))?;
 
     Ok(Json(response))
 }

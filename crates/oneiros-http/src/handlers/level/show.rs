@@ -1,13 +1,15 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{LevelName, LevelResponses};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_name): Path<LevelName>,
+    Path(name): Path<LevelName>,
 ) -> Result<Json<LevelResponses>, Error> {
-    let level = ticket.service().get_level(&given_name)?;
+    let response = ticket
+        .service()
+        .dispatch_level(LevelRequests::GetLevel(GetLevelRequest { name }))?;
 
-    Ok(Json(level))
+    Ok(Json(response))
 }

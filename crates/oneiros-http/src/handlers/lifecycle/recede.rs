@@ -5,9 +5,11 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(name): Path<AgentName>,
+    Path(agent): Path<AgentName>,
 ) -> Result<StatusCode, Error> {
-    ticket.service().recede(name)?;
+    ticket
+        .service()
+        .dispatch_lifecycle(LifecycleRequests::Recede(RecedeRequest { agent }))?;
 
     Ok(StatusCode::OK)
 }

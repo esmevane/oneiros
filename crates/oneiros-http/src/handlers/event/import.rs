@@ -6,8 +6,10 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Json(events): Json<Vec<ImportEvent>>,
-) -> Result<Json<ImportResponse>, Error> {
-    let response = ticket.service().import_events(&events)?;
+) -> Result<Json<EventResponses>, Error> {
+    let response = ticket
+        .service()
+        .dispatch_event(EventRequests::ImportEvents(ImportEventsRequest { events }))?;
 
     Ok(Json(response))
 }

@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<CognitionId>,
 ) -> Result<Json<CognitionResponses>, Error> {
-    let cognition = ticket.service().get_cognition(&id)?;
+    let response = ticket
+        .service()
+        .dispatch_cognition(CognitionRequests::GetCognition(GetCognitionRequest { id }))?;
 
-    Ok(Json(cognition))
+    Ok(Json(response))
 }

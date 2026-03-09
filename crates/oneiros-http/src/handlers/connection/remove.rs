@@ -8,7 +8,11 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ConnectionId>,
 ) -> Result<StatusCode, Error> {
-    ticket.service().remove_connection(&id)?;
+    ticket
+        .service()
+        .dispatch_connection(ConnectionRequests::RemoveConnection(
+            RemoveConnectionRequest { id },
+        ))?;
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -1,20 +1,15 @@
 use axum::{Json, extract::Query};
 use oneiros_model::*;
-use serde::Deserialize;
 
 use crate::*;
 
-#[derive(Debug, Deserialize)]
-pub(crate) struct ListParams {
-    pub agent: Option<AgentName>,
-    pub level: Option<LevelName>,
-}
-
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Query(params): Query<ListParams>,
+    Query(request): Query<ListMemoriesRequest>,
 ) -> Result<Json<MemoryResponses>, Error> {
-    let memories = ticket.service().list_memories(params.agent, params.level)?;
+    let response = ticket
+        .service()
+        .dispatch_memory(MemoryRequests::ListMemories(request))?;
 
-    Ok(Json(memories))
+    Ok(Json(response))
 }

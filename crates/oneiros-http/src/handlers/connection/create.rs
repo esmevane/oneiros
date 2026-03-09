@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateConnectionRequest>,
 ) -> Result<(StatusCode, Json<ConnectionResponses>), Error> {
-    let connection = ticket.service().create_connection(request)?;
+    let response = ticket
+        .service()
+        .dispatch_connection(ConnectionRequests::CreateConnection(request))?;
 
-    Ok((StatusCode::CREATED, Json(connection)))
+    Ok((StatusCode::CREATED, Json(response)))
 }

@@ -1,13 +1,15 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{TextureName, TextureResponses};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_name): Path<TextureName>,
+    Path(name): Path<TextureName>,
 ) -> Result<Json<TextureResponses>, Error> {
-    let texture = ticket.service().get_texture(&given_name)?;
+    let response = ticket
+        .service()
+        .dispatch_texture(TextureRequests::GetTexture(GetTextureRequest { name }))?;
 
-    Ok(Json(texture))
+    Ok(Json(response))
 }

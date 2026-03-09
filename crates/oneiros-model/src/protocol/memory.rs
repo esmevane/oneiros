@@ -7,19 +7,7 @@ pub struct SelectMemoryById {
     pub id: MemoryId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ListMemoriesFilter {
-    #[serde(default)]
-    pub agent: Option<AgentName>,
-    #[serde(default)]
-    pub level: Option<LevelName>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum MemoryEvents {
-    MemoryAdded(Memory),
-}
+// ── Request types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddMemoryRequest {
@@ -29,11 +17,32 @@ pub struct AddMemoryRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetMemoryRequest {
+    pub id: MemoryId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListMemoriesRequest {
+    #[serde(default)]
+    pub agent: Option<AgentName>,
+    #[serde(default)]
+    pub level: Option<LevelName>,
+}
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum MemoryEvents {
+    MemoryAdded(Memory),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum MemoryRequests {
     AddMemory(AddMemoryRequest),
-    GetMemory(SelectMemoryById),
-    ListMemories(ListMemoriesFilter),
+    GetMemory(GetMemoryRequest),
+    ListMemories(ListMemoriesRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

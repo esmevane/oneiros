@@ -5,9 +5,11 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(agent_name): Path<AgentName>,
+    Path(agent): Path<AgentName>,
 ) -> Result<Json<ReflectingResponses>, Error> {
-    let response = ticket.service().reflect(&agent_name)?;
+    let response = ticket
+        .service()
+        .dispatch_reflect(ReflectingRequests::Reflect(ReflectRequest { agent }))?;
 
     Ok(Json(response))
 }

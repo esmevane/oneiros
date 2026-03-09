@@ -1,22 +1,15 @@
 use axum::{Json, extract::Query};
 use oneiros_model::*;
-use serde::Deserialize;
 
 use crate::*;
 
-#[derive(Debug, Deserialize)]
-pub(crate) struct ListParams {
-    pub agent: Option<AgentName>,
-    pub texture: Option<TextureName>,
-}
-
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Query(params): Query<ListParams>,
+    Query(request): Query<ListCognitionsRequest>,
 ) -> Result<Json<CognitionResponses>, Error> {
-    let cognitions = ticket
+    let response = ticket
         .service()
-        .list_cognitions(params.agent, params.texture)?;
+        .dispatch_cognition(CognitionRequests::ListCognitions(request))?;
 
-    Ok(Json(cognitions))
+    Ok(Json(response))
 }

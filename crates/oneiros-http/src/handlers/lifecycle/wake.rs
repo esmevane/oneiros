@@ -5,9 +5,11 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(agent_name): Path<AgentName>,
+    Path(agent): Path<AgentName>,
 ) -> Result<Json<LifecycleResponses>, Error> {
-    let response = ticket.service().wake(&agent_name)?;
+    let response = ticket
+        .service()
+        .dispatch_lifecycle(LifecycleRequests::Wake(WakeRequest { agent }))?;
 
     Ok(Json(response))
 }

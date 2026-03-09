@@ -7,13 +7,7 @@ pub struct SelectExperienceById {
     pub id: ExperienceId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ListExperiencesFilter {
-    #[serde(default)]
-    pub agent: Option<AgentName>,
-    #[serde(default)]
-    pub sensation: Option<SensationName>,
-}
+// ── Event data types ───────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExperienceDescriptionUpdate {
@@ -27,13 +21,7 @@ pub struct ExperienceSensationUpdate {
     pub sensation: SensationName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum ExperienceEvents {
-    ExperienceCreated(Experience),
-    ExperienceDescriptionUpdated(ExperienceDescriptionUpdate),
-    ExperienceSensationUpdated(ExperienceSensationUpdate),
-}
+// ── Request types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateExperienceRequest {
@@ -44,12 +32,39 @@ pub struct CreateExperienceRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateExperienceDescriptionRequest {
+    #[serde(default)]
+    pub id: ExperienceId,
     pub description: Description,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateExperienceSensationRequest {
+    #[serde(default)]
+    pub id: ExperienceId,
     pub sensation: SensationName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetExperienceRequest {
+    pub id: ExperienceId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListExperiencesRequest {
+    #[serde(default)]
+    pub agent: Option<AgentName>,
+    #[serde(default)]
+    pub sensation: Option<SensationName>,
+}
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum ExperienceEvents {
+    ExperienceCreated(Experience),
+    ExperienceDescriptionUpdated(ExperienceDescriptionUpdate),
+    ExperienceSensationUpdated(ExperienceSensationUpdate),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,8 +73,8 @@ pub enum ExperienceRequests {
     CreateExperience(CreateExperienceRequest),
     UpdateExperienceDescription(UpdateExperienceDescriptionRequest),
     UpdateExperienceSensation(UpdateExperienceSensationRequest),
-    GetExperience(SelectExperienceById),
-    ListExperiences(ListExperiencesFilter),
+    GetExperience(GetExperienceRequest),
+    ListExperiences(ListExperiencesRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

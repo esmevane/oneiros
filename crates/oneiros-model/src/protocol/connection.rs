@@ -7,20 +7,7 @@ pub struct SelectConnectionById {
     pub id: ConnectionId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ListConnectionsFilter {
-    #[serde(default)]
-    pub nature: Option<NatureName>,
-    #[serde(default)]
-    pub entity_ref: Option<RefToken>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum ConnectionEvents {
-    ConnectionCreated(Connection),
-    ConnectionRemoved(SelectConnectionById),
-}
+// ── Request types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateConnectionRequest {
@@ -30,12 +17,39 @@ pub struct CreateConnectionRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetConnectionRequest {
+    pub id: ConnectionId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoveConnectionRequest {
+    pub id: ConnectionId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListConnectionsRequest {
+    #[serde(default)]
+    pub nature: Option<NatureName>,
+    #[serde(default)]
+    pub entity_ref: Option<RefToken>,
+}
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum ConnectionEvents {
+    ConnectionCreated(Connection),
+    ConnectionRemoved(SelectConnectionById),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionRequests {
     CreateConnection(CreateConnectionRequest),
-    RemoveConnection(SelectConnectionById),
-    GetConnection(SelectConnectionById),
-    ListConnections(ListConnectionsFilter),
+    RemoveConnection(RemoveConnectionRequest),
+    GetConnection(GetConnectionRequest),
+    ListConnections(ListConnectionsRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

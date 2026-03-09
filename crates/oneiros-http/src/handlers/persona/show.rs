@@ -1,13 +1,15 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{PersonaName, PersonaResponses};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_name): Path<PersonaName>,
+    Path(name): Path<PersonaName>,
 ) -> Result<Json<PersonaResponses>, Error> {
-    let persona = ticket.service().get_persona(&given_name)?;
+    let response = ticket
+        .service()
+        .dispatch_persona(PersonaRequests::GetPersona(GetPersonaRequest { name }))?;
 
-    Ok(Json(persona))
+    Ok(Json(response))
 }

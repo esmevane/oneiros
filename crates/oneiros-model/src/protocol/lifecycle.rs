@@ -46,6 +46,47 @@ impl Default for DreamConfig {
     }
 }
 
+// ── Request types ──────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WakeRequest {
+    pub agent: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SleepRequest {
+    pub agent: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecedeRequest {
+    pub agent: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DreamRequest {
+    pub agent: AgentName,
+    #[serde(default)]
+    pub config: DreamConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntrospectRequest {
+    pub agent: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReflectRequest {
+    pub agent: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SenseRequest {
+    pub agent: AgentName,
+}
+
+// ── Event enums ────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum LifecycleEvents {
@@ -82,18 +123,42 @@ pub enum SenseEvents {
     Sensed(SelectAgentByName),
 }
 
+// ── Request enums ──────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum LifecycleRequests {
-    Wake(SelectAgentByName),
-    Sleep(SelectAgentByName),
+    Wake(WakeRequest),
+    Sleep(SleepRequest),
     Emerge(CreateAgentRequest),
-    Recede(SelectAgentByName),
-    Dream(SelectAgentByName),
-    Introspect(SelectAgentByName),
-    Reflect(SelectAgentByName),
-    Sense(SelectAgentByName),
+    Recede(RecedeRequest),
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum DreamingRequests {
+    Dream(DreamRequest),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum IntrospectingRequests {
+    Introspect(IntrospectRequest),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum ReflectingRequests {
+    Reflect(ReflectRequest),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum SenseRequests {
+    Sense(SenseRequest),
+}
+
+// ── Response enums ─────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]

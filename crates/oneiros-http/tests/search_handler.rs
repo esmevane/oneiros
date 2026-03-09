@@ -27,7 +27,7 @@ async fn search_finds_cognition_content() {
     // Search for it
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=fox", &token))
+        .oneshot(get_auth("/search?query=fox", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -57,7 +57,7 @@ async fn search_returns_empty_for_no_match() {
 
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=nonexistent", &token))
+        .oneshot(get_auth("/search?query=nonexistent", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -88,7 +88,7 @@ async fn search_finds_agent_description() {
     // Search for the description
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=quantum", &token))
+        .oneshot(get_auth("/search?query=quantum", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -120,7 +120,7 @@ async fn search_finds_persona_content() {
     // Search for the description
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=epistemological", &token))
+        .oneshot(get_auth("/search?query=epistemological", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -161,7 +161,7 @@ async fn search_across_multiple_entity_types() {
     // Search — should find both
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=architecture", &token))
+        .oneshot(get_auth("/search?query=architecture", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -205,7 +205,7 @@ async fn search_scoped_to_agent_returns_matching() {
     // Search WITHOUT agent filter — should find both
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=quantum", &token))
+        .oneshot(get_auth("/search?query=quantum", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -216,7 +216,7 @@ async fn search_scoped_to_agent_returns_matching() {
     // Search WITH agent filter — should find only searcher's
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=quantum&agent=searcher", &token))
+        .oneshot(get_auth("/search?query=quantum&agent=searcher", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
@@ -261,7 +261,7 @@ async fn search_without_agent_returns_all() {
     // Search without agent filter
     let app = router(state.clone());
     let response = app
-        .oneshot(get_auth("/search?q=neural", &token))
+        .oneshot(get_auth("/search?query=neural", &token))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);

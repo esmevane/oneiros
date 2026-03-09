@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<NatureName>,
 ) -> Result<StatusCode, Error> {
-    ticket.service().remove_nature(name)?;
+    ticket
+        .service()
+        .dispatch_nature(NatureRequests::RemoveNature(RemoveNatureRequest { name }))?;
 
     Ok(StatusCode::OK)
 }

@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<MemoryId>,
 ) -> Result<Json<MemoryResponses>, Error> {
-    let memory = ticket.service().get_memory(&id)?;
+    let response = ticket
+        .service()
+        .dispatch_memory(MemoryRequests::GetMemory(GetMemoryRequest { id }))?;
 
-    Ok(Json(memory))
+    Ok(Json(response))
 }

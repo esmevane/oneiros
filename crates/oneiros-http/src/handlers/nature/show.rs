@@ -1,13 +1,15 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{NatureName, NatureResponses};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_name): Path<NatureName>,
+    Path(name): Path<NatureName>,
 ) -> Result<Json<NatureResponses>, Error> {
-    let nature = ticket.service().get_nature(&given_name)?;
+    let response = ticket
+        .service()
+        .dispatch_nature(NatureRequests::GetNature(GetNatureRequest { name }))?;
 
-    Ok(Json(nature))
+    Ok(Json(response))
 }

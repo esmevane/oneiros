@@ -7,6 +7,23 @@ pub struct SelectSensationByName {
     pub name: SensationName,
 }
 
+// ── Request types ──────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetSensationRequest {
+    pub name: SensationName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoveSensationRequest {
+    pub name: SensationName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListSensationsRequest;
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum SensationEvents {
@@ -18,9 +35,9 @@ pub enum SensationEvents {
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum SensationRequests {
     SetSensation(Sensation),
-    RemoveSensation(SelectSensationByName),
-    GetSensation(SelectSensationByName),
-    ListSensations,
+    RemoveSensation(RemoveSensationRequest),
+    GetSensation(GetSensationRequest),
+    ListSensations(ListSensationsRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

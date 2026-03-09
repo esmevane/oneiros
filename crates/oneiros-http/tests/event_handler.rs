@@ -20,7 +20,7 @@ async fn cursor_catchup_flow() {
     // Read all events to get sequences
     let app = router(state.clone());
     let response = app.oneshot(get_auth("/events", &token)).await.unwrap();
-    let all_events: Vec<serde_json::Value> = body_bytes(response).await;
+    let all_events: Vec<serde_json::Value> = body_json(response).await;
     assert!(all_events.len() >= 2, "should have multiple events");
 
     // Verify all events have sequence numbers
@@ -50,7 +50,7 @@ async fn cursor_catchup_flow() {
     let app = router(state.clone());
     let uri = format!("/events?after={midpoint}");
     let response = app.oneshot(get_auth(&uri, &token)).await.unwrap();
-    let later_events: Vec<serde_json::Value> = body_bytes(response).await;
+    let later_events: Vec<serde_json::Value> = body_json(response).await;
 
     // All returned events should have sequence > midpoint
     for event in &later_events {
@@ -84,7 +84,7 @@ async fn events_index_returns_all_events() {
     let response = app.oneshot(get_auth("/events", &token)).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let events: Vec<serde_json::Value> = body_bytes(response).await;
+    let events: Vec<serde_json::Value> = body_json(response).await;
     assert!(!events.is_empty(), "should have events from seeding");
 }
 
@@ -107,7 +107,7 @@ async fn events_index_with_after_filters_by_sequence() {
     // Get all events to find a sequence to filter on
     let app = router(state.clone());
     let response = app.oneshot(get_auth("/events", &token)).await.unwrap();
-    let all_events: Vec<serde_json::Value> = body_bytes(response).await;
+    let all_events: Vec<serde_json::Value> = body_json(response).await;
     let total = all_events.len();
     assert!(total >= 2);
 
@@ -118,7 +118,7 @@ async fn events_index_with_after_filters_by_sequence() {
     let app = router(state.clone());
     let uri = format!("/events?after={first_sequence}");
     let response = app.oneshot(get_auth(&uri, &token)).await.unwrap();
-    let filtered: Vec<serde_json::Value> = body_bytes(response).await;
+    let filtered: Vec<serde_json::Value> = body_json(response).await;
 
     assert_eq!(filtered.len(), total - 1, "should exclude the first event");
 }
