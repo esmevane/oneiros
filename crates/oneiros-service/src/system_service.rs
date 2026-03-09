@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::MutexGuard;
 use tokio::sync::broadcast;
 
-use crate::{Error, projections};
+use crate::{BadRequests, Error, projections};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBrainError {
@@ -42,6 +42,19 @@ impl<'a> SystemService<'a> {
         }
     }
 
+    /// Unified dispatch: routes any protocol request to the appropriate domain dispatcher.
+    pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Responses, Error> {
+        match request.into() {
+            Requests::Actor(r) => Ok(self.dispatch_actor(r)?.into()),
+            Requests::Brain(r) => Ok(self.dispatch_brain(r)?.into()),
+            Requests::Tenant(r) => Ok(self.dispatch_tenant(r)?.into()),
+            Requests::Ticket(r) => Ok(self.dispatch_ticket(r)?.into()),
+            _ => {
+                Err(BadRequests::NotHandled("brain-scoped operations require brain service").into())
+            }
+        }
+    }
+
     /// Persist a state-changing event (runs SYSTEM projections) then broadcast.
     fn log_and_broadcast(&self, event: &Events) -> Result<Event, Error> {
         let new_event = NewEvent::new(event.clone(), self.source);
@@ -52,49 +65,108 @@ impl<'a> SystemService<'a> {
 
     // ── Brain operations ──────────────────────────────────────────────
 
-    pub fn create_brain(&self, request: CreateBrainRequest) -> Result<BrainResponses, Error> {
-        let tenant_id = self.source.tenant_id;
-        let actor_id = self.source.actor_id;
+    pub fn dispatch_brain(&self, request: BrainRequests) -> Result<BrainResponses, Error> {
+        match request {
+            BrainRequests::CreateBrain(request) => {
+                let tenant_id = self.source.tenant_id;
+                let actor_id = self.source.actor_id;
 
-        if self
-            .db
-            .brain_exists(tenant_id.to_string(), request.name.as_str())
-            .is_ok()
-        {
-            Err(Conflicts::Brain(request.name.clone()))?;
+                if self
+                    .db
+                    .brain_exists(tenant_id.to_string(), request.name.as_str())
+                    .is_ok()
+                {
+                    Err(Conflicts::Brain(request.name.clone()))?;
+                }
+
+                let brains_dir = self.data_dir.join("brains");
+                oneiros_fs::FileOps.ensure_dir(&brains_dir)?;
+
+                let path = brains_dir.join(format!("{}.db", request.name));
+
+                Database::create_brain_db(&path)?;
+
+                let brain = Brain::init(tenant_id, request.name, path);
+                let brain_id = brain.id;
+
+                let event = Events::Brain(BrainEvents::BrainCreated(brain));
+                self.log_and_broadcast(&event)?;
+
+                let token = Token::issue(TokenClaims {
+                    brain_id,
+                    tenant_id,
+                    actor_id,
+                });
+
+                let ticket = Ticket::init(token.clone(), actor_id);
+
+                let ticket_event = Events::Ticket(TicketEvents::TicketIssued(ticket));
+                self.log_and_broadcast(&ticket_event)?;
+
+                Ok(BrainResponses::BrainCreated(BrainInfo {
+                    entity: brain_id,
+                    token,
+                }))
+            }
+            BrainRequests::GetBrain(request) => {
+                let tenant_id = self.source.tenant_id;
+                let brain = self
+                    .db
+                    .get_brain_by_name(tenant_id.to_string(), &request.name)?
+                    .ok_or(NotFound::BrainByName(request.name))?;
+                Ok(BrainResponses::BrainFound(brain))
+            }
+            BrainRequests::ListBrains(_) => {
+                Ok(BrainResponses::BrainsListed(self.db.list_brains()?))
+            }
         }
-
-        let brains_dir = self.data_dir.join("brains");
-        oneiros_fs::FileOps.ensure_dir(&brains_dir)?;
-
-        let path = brains_dir.join(format!("{}.db", request.name));
-
-        Database::create_brain_db(&path)?;
-
-        let brain = Brain::init(tenant_id, request.name, path);
-        let brain_id = brain.id;
-
-        let event = Events::Brain(BrainEvents::BrainCreated(brain));
-        self.log_and_broadcast(&event)?;
-
-        let token = Token::issue(TokenClaims {
-            brain_id,
-            tenant_id,
-            actor_id,
-        });
-
-        let ticket = Ticket::init(token.clone(), actor_id);
-
-        let ticket_event = Events::Ticket(TicketEvents::TicketIssued(ticket));
-        self.log_and_broadcast(&ticket_event)?;
-
-        Ok(BrainResponses::BrainCreated(BrainInfo {
-            entity: brain_id,
-            token,
-        }))
     }
 
-    pub fn list_brains(&self) -> Result<BrainResponses, Error> {
-        Ok(BrainResponses::BrainsListed(self.db.list_brains()?))
+    // ── Tenant operations ─────────────────────────────────────────────
+
+    pub fn dispatch_tenant(&self, request: TenantRequests) -> Result<TenantResponses, Error> {
+        match request {
+            TenantRequests::GetTenant(request) => {
+                let tenant = self
+                    .db
+                    .get_tenant_by_name(&request.name)?
+                    .ok_or(NotFound::Tenant(request.name))?;
+                Ok(TenantResponses::TenantFound(tenant))
+            }
+            TenantRequests::ListTenants(_) => {
+                Ok(TenantResponses::TenantsListed(self.db.list_tenants()?))
+            }
+        }
+    }
+
+    // ── Actor operations ──────────────────────────────────────────────
+
+    pub fn dispatch_actor(&self, request: ActorRequests) -> Result<ActorResponses, Error> {
+        match request {
+            ActorRequests::GetActor(request) => {
+                let actor = self
+                    .db
+                    .get_actor_by_name(&request.name)?
+                    .ok_or(NotFound::Actor(request.name))?;
+                Ok(ActorResponses::ActorFound(actor))
+            }
+            ActorRequests::ListActors(_) => {
+                Ok(ActorResponses::ActorsListed(self.db.list_actors()?))
+            }
+        }
+    }
+
+    // ── Ticket operations ─────────────────────────────────────────────
+
+    pub fn dispatch_ticket(&self, request: TicketRequests) -> Result<TicketResponses, Error> {
+        match request {
+            TicketRequests::ValidateTicket(request) => {
+                let valid = self.db.validate_ticket(request.token.as_str())?;
+                Ok(TicketResponses::TicketValid(valid))
+            }
+            TicketRequests::ListTickets(_) => {
+                Ok(TicketResponses::TicketsListed(self.db.list_tickets()?))
+            }
+        }
     }
 }
