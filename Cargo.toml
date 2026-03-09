@@ -32,10 +32,10 @@ oneiros-context = { path = "crates/oneiros-context", version = "0.0.6" }
 oneiros-db = { path = "crates/oneiros-db", version = "0.0.6" }
 oneiros-detect-project-name = { path = "crates/oneiros-detect-project-name", version = "0.0.6" }
 oneiros-fs = { path = "crates/oneiros-fs", version = "0.0.6" }
+oneiros-http = { path = "crates/oneiros-http", version = "0.0.6" }
 oneiros-model = { path = "crates/oneiros-model", version = "0.0.6" }
 oneiros-outcomes = { path = "crates/oneiros-outcomes", version = "0.0.6" }
 oneiros-outcomes-derive = { path = "crates/oneiros-outcomes-derive", version = "0.0.6" }
-oneiros-http = { path = "crates/oneiros-http", version = "0.0.6" }
 oneiros-service = { path = "crates/oneiros-service", version = "0.0.6" }
 oneiros-skill = { path = "crates/oneiros-skill", version = "0.0.6" }
 oneiros-templates = { path = "crates/oneiros-templates", version = "0.0.6" }
@@ -45,13 +45,15 @@ pretty_assertions = "1"
 prettyplease = "0.2"
 proc-macro2 = "1"
 quote = "1"
-schemars = { version = "1.0", features = ["uuid1", "chrono04"] }
+oneiros-mcp = { path = "crates/oneiros-mcp", version = "0.0.6" }
+rmcp = { version = "1.1.1", features = ["server", "transport-streamable-http-server"] }
 rusqlite = { version = "0.31", features = [
   "bundled",
   "functions",
   "serde_json",
   "uuid"
 ] }
+schemars = { version = "1.0", features = ["chrono04", "uuid1"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 service-manager = "0.10"

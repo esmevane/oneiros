@@ -1,6 +1,7 @@
+use std::sync::{Arc, Mutex};
+
 use oneiros_db::Database;
 use oneiros_model::*;
-use tokio::sync::broadcast;
 
 use crate::{BrainService, Error, ServiceState};
 
@@ -212,76 +213,147 @@ impl From<SystemDispatchResponse> for Responses {
     }
 }
 
+// ── Brain state ─────────────────────────────────────────────────────
+
+/// Owned brain context — wraps a brain database behind a mutex alongside
+/// the shared service state. Provides `dispatch` for brain-scoped
+/// operations with the lock scoped to a single call.
+#[derive(Clone)]
+pub struct BrainState {
+    state: Arc<ServiceState>,
+    database: Arc<Mutex<Database>>,
+}
+
+impl BrainState {
+    pub fn new(state: Arc<ServiceState>, database: Database) -> Self {
+        Self {
+            state,
+            database: Arc::new(Mutex::new(database)),
+        }
+    }
+
+    /// Dispatch a brain-scoped request. Locks the database for the
+    /// duration of the call.
+    pub fn dispatch(
+        &self,
+        request: impl Into<BrainDispatch>,
+    ) -> Result<BrainDispatchResponse, Error> {
+        let db = self.database.lock().map_err(|_| Error::DatabasePoisoned)?;
+        let service = BrainService::new(&db, self.state.event_sender(), self.state.source());
+
+        match request.into() {
+            BrainDispatch::Agent(r) => Ok(BrainDispatchResponse::Agent(service.dispatch_agent(r)?)),
+            BrainDispatch::Cognition(r) => Ok(BrainDispatchResponse::Cognition(
+                service.dispatch_cognition(r)?,
+            )),
+            BrainDispatch::Connection(r) => Ok(BrainDispatchResponse::Connection(
+                service.dispatch_connection(r)?,
+            )),
+            BrainDispatch::Dreaming(r) => {
+                Ok(BrainDispatchResponse::Dreaming(service.dispatch_dream(r)?))
+            }
+            BrainDispatch::Event(r) => Ok(BrainDispatchResponse::Event(service.dispatch_event(r)?)),
+            BrainDispatch::Experience(r) => Ok(BrainDispatchResponse::Experience(
+                service.dispatch_experience(r)?,
+            )),
+            BrainDispatch::Introspecting(r) => Ok(BrainDispatchResponse::Introspecting(
+                service.dispatch_introspect(r)?,
+            )),
+            BrainDispatch::Level(r) => Ok(BrainDispatchResponse::Level(service.dispatch_level(r)?)),
+            BrainDispatch::Lifecycle(r) => Ok(BrainDispatchResponse::Lifecycle(
+                service.dispatch_lifecycle(r)?,
+            )),
+            BrainDispatch::Memory(r) => {
+                Ok(BrainDispatchResponse::Memory(service.dispatch_memory(r)?))
+            }
+            BrainDispatch::Nature(r) => {
+                Ok(BrainDispatchResponse::Nature(service.dispatch_nature(r)?))
+            }
+            BrainDispatch::Persona(r) => {
+                Ok(BrainDispatchResponse::Persona(service.dispatch_persona(r)?))
+            }
+            BrainDispatch::Reflecting(r) => Ok(BrainDispatchResponse::Reflecting(
+                service.dispatch_reflect(r)?,
+            )),
+            BrainDispatch::Search(r) => {
+                Ok(BrainDispatchResponse::Search(service.dispatch_search(r)?))
+            }
+            BrainDispatch::Sensation(r) => Ok(BrainDispatchResponse::Sensation(
+                service.dispatch_sensation(r)?,
+            )),
+            BrainDispatch::Sense(r) => Ok(BrainDispatchResponse::Sense(service.dispatch_sense(r)?)),
+            BrainDispatch::Storage(r) => {
+                Ok(BrainDispatchResponse::Storage(service.dispatch_storage(r)?))
+            }
+            BrainDispatch::Texture(r) => {
+                Ok(BrainDispatchResponse::Texture(service.dispatch_texture(r)?))
+            }
+        }
+    }
+}
+
 // ── Unified dispatch ─────────────────────────────────────────────────
 
 /// Top-level service dispatcher that routes protocol requests to the
-/// appropriate scoped service: brain-scoped or system-scoped.
+/// appropriate scoped service.
 ///
-/// Constructed with a reference to `ServiceState` (always available) and
-/// optional brain context (available when a brain has been resolved from
-/// an auth token).
-pub struct OneirosService<'a> {
-    state: &'a ServiceState,
-    brain_db: Option<&'a Database>,
-    event_tx: &'a broadcast::Sender<Event>,
-    source: Source,
+/// Variants express the capability level: `Service` handles system-scoped
+/// requests, `Brain` handles everything. Owns its state so it can live
+/// as long as a connection requires — equally usable per-request
+/// (construct, dispatch, drop) or per-connection (hold as a field).
+#[derive(Clone)]
+pub enum OneirosService {
+    /// System-scoped only — can dispatch Actor, Brain, Tenant, Ticket.
+    Service(Arc<ServiceState>),
+    /// Full brain context — can dispatch all request types.
+    Brain(BrainState),
 }
 
-impl<'a> OneirosService<'a> {
-    /// Create a system-only dispatcher (no brain context).
-    pub fn system(state: &'a ServiceState) -> Self {
-        Self {
-            state,
-            brain_db: None,
-            event_tx: state.event_sender(),
-            source: state.source(),
-        }
-    }
-
-    /// Create a full dispatcher with brain context.
-    pub fn with_brain(state: &'a ServiceState, brain_db: &'a Database, source: Source) -> Self {
-        Self {
-            state,
-            brain_db: Some(brain_db),
-            event_tx: state.event_sender(),
-            source,
-        }
-    }
-
+impl OneirosService {
     /// Dispatch any protocol request to the appropriate service.
     pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Responses, Error> {
         match request.into() {
             // System-scoped
-            Requests::Actor(r) => Ok(self.state.system_service()?.dispatch_actor(r)?.into()),
-            Requests::Brain(r) => Ok(self.state.system_service()?.dispatch_brain(r)?.into()),
-            Requests::Tenant(r) => Ok(self.state.system_service()?.dispatch_tenant(r)?.into()),
-            Requests::Ticket(r) => Ok(self.state.system_service()?.dispatch_ticket(r)?.into()),
+            Requests::Actor(r) => Ok(self.state().system_service()?.dispatch(r)?.into()),
+            Requests::Brain(r) => Ok(self.state().system_service()?.dispatch(r)?.into()),
+            Requests::Tenant(r) => Ok(self.state().system_service()?.dispatch(r)?.into()),
+            Requests::Ticket(r) => Ok(self.state().system_service()?.dispatch(r)?.into()),
             // Brain-scoped
-            Requests::Agent(r) => Ok(self.brain_service()?.dispatch_agent(r)?.into()),
-            Requests::Cognition(r) => Ok(self.brain_service()?.dispatch_cognition(r)?.into()),
-            Requests::Connection(r) => Ok(self.brain_service()?.dispatch_connection(r)?.into()),
-            Requests::Dreaming(r) => Ok(self.brain_service()?.dispatch_dream(r)?.into()),
-            Requests::Event(r) => Ok(self.brain_service()?.dispatch_event(r)?.into()),
-            Requests::Experience(r) => Ok(self.brain_service()?.dispatch_experience(r)?.into()),
-            Requests::Introspecting(r) => Ok(self.brain_service()?.dispatch_introspect(r)?.into()),
-            Requests::Level(r) => Ok(self.brain_service()?.dispatch_level(r)?.into()),
-            Requests::Lifecycle(r) => Ok(self.brain_service()?.dispatch_lifecycle(r)?.into()),
-            Requests::Memory(r) => Ok(self.brain_service()?.dispatch_memory(r)?.into()),
-            Requests::Nature(r) => Ok(self.brain_service()?.dispatch_nature(r)?.into()),
-            Requests::Persona(r) => Ok(self.brain_service()?.dispatch_persona(r)?.into()),
-            Requests::Reflecting(r) => Ok(self.brain_service()?.dispatch_reflect(r)?.into()),
-            Requests::Search(r) => Ok(self.brain_service()?.dispatch_search(r)?.into()),
-            Requests::Sensation(r) => Ok(self.brain_service()?.dispatch_sensation(r)?.into()),
-            Requests::Sense(r) => Ok(self.brain_service()?.dispatch_sense(r)?.into()),
-            Requests::Storage(r) => Ok(self.brain_service()?.dispatch_storage(r)?.into()),
-            Requests::Texture(r) => Ok(self.brain_service()?.dispatch_texture(r)?.into()),
+            Requests::Agent(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Cognition(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Connection(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Dreaming(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Event(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Experience(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Introspecting(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Level(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Lifecycle(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Memory(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Nature(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Persona(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Reflecting(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Search(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Sensation(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Sense(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Storage(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Texture(r) => Ok(self.brain()?.dispatch(r)?.into()),
         }
     }
 
-    fn brain_service(&self) -> Result<BrainService<'_>, Error> {
-        let db = self.brain_db.ok_or(crate::BadRequests::NotHandled(
-            "brain-scoped operations require brain context",
-        ))?;
-        Ok(BrainService::new(db, self.event_tx, self.source))
+    fn state(&self) -> &ServiceState {
+        match self {
+            Self::Service(state) => state,
+            Self::Brain(brain) => &brain.state,
+        }
+    }
+
+    fn brain(&self) -> Result<&BrainState, Error> {
+        match self {
+            Self::Service(_) => Err(crate::BadRequests::NotHandled(
+                "brain-scoped operations require brain context",
+            )
+            .into()),
+            Self::Brain(brain) => Ok(brain),
+        }
     }
 }

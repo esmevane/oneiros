@@ -29,5 +29,6 @@ pub fn router(state: Arc<ServiceState>) -> Router {
         .nest("/sense", handlers::sense::router())
         .nest("/storage", handlers::storage::router())
         .nest("/textures", handlers::texture::router())
+        .nest("/mcp", handlers::mcp::router(state.clone()))
         .with_state(state)
 }
