@@ -10,7 +10,9 @@ pub(crate) async fn handler(
     State(state): State<Arc<ServiceState>>,
     Json(request): Json<CreateBrainRequest>,
 ) -> Result<(StatusCode, Json<BrainResponses>), Error> {
-    let response = state.system_service()?.create_brain(request)?;
+    let response = state
+        .system_service()?
+        .dispatch_brain(BrainRequests::CreateBrain(request))?;
 
     Ok((StatusCode::CREATED, Json(response)))
 }

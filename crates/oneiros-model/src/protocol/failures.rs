@@ -2,10 +2,14 @@ use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum NotFound {
+    #[error("Actor not found: {0}")]
+    Actor(ActorName),
     #[error("Agent not found: {0}")]
     Agent(AgentName),
     #[error("Brain not found: {0}")]
     Brain(BrainId),
+    #[error("Brain not found: {0}")]
+    BrainByName(BrainName),
     #[error("Cognition not found: {0}")]
     Cognition(CognitionId),
     #[error("Connection not found: {0}")]
@@ -28,6 +32,8 @@ pub enum NotFound {
     Texture(TextureName),
     #[error("Event not found: {0}")]
     Event(EventId),
+    #[error("Tenant not found: {0}")]
+    Tenant(TenantName),
 }
 
 #[derive(Debug, thiserror::Error)]

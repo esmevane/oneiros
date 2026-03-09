@@ -209,6 +209,49 @@ impl Database {
         }
     }
 
+    pub fn get_tenant_by_name(&self, name: &TenantName) -> Result<Option<Tenant>, DatabaseError> {
+        let result = self.conn.query_row(
+            "SELECT id, name FROM tenant WHERE name = ?1",
+            params![name.as_ref()],
+            |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                Ok((id, name))
+            },
+        );
+
+        match result {
+            Ok((id, name)) => Ok(Some(Tenant {
+                id: id.parse()?,
+                name: TenantName::new(name),
+            })),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_tenants(&self) -> Result<Vec<Tenant>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name FROM tenant ORDER BY name")?;
+
+        let rows = stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let name: String = row.get(1)?;
+            Ok((id, name))
+        })?;
+
+        let mut tenants = Vec::new();
+        for row in rows {
+            let (id, name) = row?;
+            tenants.push(Tenant {
+                id: id.parse()?,
+                name: TenantName::new(name),
+            });
+        }
+        Ok(tenants)
+    }
+
     pub fn get_brain_path(
         &self,
         tenant_id: impl AsRef<str>,
@@ -314,6 +357,53 @@ impl Database {
         }
     }
 
+    pub fn get_actor_by_name(&self, name: &ActorName) -> Result<Option<Actor>, DatabaseError> {
+        let result = self.conn.query_row(
+            "SELECT id, tenant_id, name FROM actor WHERE name = ?1",
+            params![name.as_ref()],
+            |row| {
+                let id: String = row.get(0)?;
+                let tenant_id: String = row.get(1)?;
+                let name: String = row.get(2)?;
+                Ok((id, tenant_id, name))
+            },
+        );
+
+        match result {
+            Ok((id, tenant_id, name)) => Ok(Some(Actor {
+                id: id.parse()?,
+                tenant_id: tenant_id.parse()?,
+                name: ActorName::new(name),
+            })),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_actors(&self) -> Result<Vec<Actor>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, tenant_id, name FROM actor ORDER BY name")?;
+
+        let rows = stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let tenant_id: String = row.get(1)?;
+            let name: String = row.get(2)?;
+            Ok((id, tenant_id, name))
+        })?;
+
+        let mut actors = Vec::new();
+        for row in rows {
+            let (id, tenant_id, name) = row?;
+            actors.push(Actor {
+                id: id.parse()?,
+                tenant_id: tenant_id.parse()?,
+                name: ActorName::new(name),
+            });
+        }
+        Ok(actors)
+    }
+
     pub fn create_ticket(
         &self,
         ticket_id: impl AsRef<str>,
@@ -348,6 +438,61 @@ impl Database {
     pub fn reset_tickets(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from tickets")?;
         Ok(())
+    }
+
+    pub fn list_tickets(&self) -> Result<Vec<Ticket>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, token, created_by FROM tickets ORDER BY id")?;
+
+        let rows = stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let token: String = row.get(1)?;
+            let created_by: String = row.get(2)?;
+            Ok((id, token, created_by))
+        })?;
+
+        let mut tickets = Vec::new();
+        for row in rows {
+            let (id, token, created_by) = row?;
+            tickets.push(Ticket {
+                id: id.parse()?,
+                token: Token(token),
+                created_by: created_by.parse()?,
+            });
+        }
+        Ok(tickets)
+    }
+
+    pub fn get_brain_by_name(
+        &self,
+        tenant_id: impl AsRef<str>,
+        name: &BrainName,
+    ) -> Result<Option<Brain>, DatabaseError> {
+        let result = self.conn.query_row(
+            "SELECT id, tenant_id, name, status, path FROM brain WHERE tenant_id = ?1 AND name = ?2",
+            params![tenant_id.as_ref(), name.as_ref()],
+            |row| {
+                let id: String = row.get(0)?;
+                let tenant_id: String = row.get(1)?;
+                let name: String = row.get(2)?;
+                let status: String = row.get(3)?;
+                let path: String = row.get(4)?;
+                Ok((id, tenant_id, name, status, path))
+            },
+        );
+
+        match result {
+            Ok((id, tenant_id, name, status, path)) => Ok(Some(Brain {
+                id: id.parse()?,
+                tenant_id: tenant_id.parse()?,
+                name: BrainName::new(name),
+                status: serde_json::from_value(serde_json::Value::String(status))?,
+                path: path.into(),
+            })),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     // -- Persona operations --

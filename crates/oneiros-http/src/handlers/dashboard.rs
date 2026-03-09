@@ -30,7 +30,10 @@ pub(crate) async fn handler(
     State(state): State<Arc<ServiceState>>,
     Query(params): Query<DashboardParams>,
 ) -> Result<Html<String>, Error> {
-    let BrainResponses::BrainsListed(brains) = state.system_service()?.list_brains()? else {
+    let BrainResponses::BrainsListed(brains) = state
+        .system_service()?
+        .dispatch_brain(BrainRequests::ListBrains(ListBrainsRequest))?
+    else {
         Err(Error::ProjectExtractionFailure)?
     };
 

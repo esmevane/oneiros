@@ -57,8 +57,11 @@ impl<'a> BrainService<'a> {
             Requests::Sense(r) => Ok(self.dispatch_sense(r)?.into()),
             Requests::Storage(r) => Ok(self.dispatch_storage(r)?.into()),
             Requests::Texture(r) => Ok(self.dispatch_texture(r)?.into()),
-            Requests::Brain(_) => {
-                Err(BadRequests::NotHandled("brain operations require system service").into())
+            Requests::Actor(_) | Requests::Brain(_) | Requests::Tenant(_) | Requests::Ticket(_) => {
+                Err(
+                    BadRequests::NotHandled("system-scoped operations require system service")
+                        .into(),
+                )
             }
         }
     }

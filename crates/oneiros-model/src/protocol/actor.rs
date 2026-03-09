@@ -4,32 +4,32 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum TicketEvents {
-    TicketIssued(Ticket),
+pub enum ActorEvents {
+    ActorCreated(Actor),
 }
 
 // ── Request types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ValidateTicketRequest {
-    pub token: Token,
+pub struct GetActorRequest {
+    pub name: ActorName,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ListTicketsRequest;
+pub struct ListActorsRequest;
 
 // ── Protocol enums ─────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum TicketRequests {
-    ValidateTicket(ValidateTicketRequest),
-    ListTickets(ListTicketsRequest),
+pub enum ActorRequests {
+    GetActor(GetActorRequest),
+    ListActors(ListActorsRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum TicketResponses {
-    TicketValid(bool),
-    TicketsListed(Vec<Ticket>),
+pub enum ActorResponses {
+    ActorFound(Actor),
+    ActorsListed(Vec<Actor>),
 }

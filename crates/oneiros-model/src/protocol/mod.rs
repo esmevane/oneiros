@@ -1,3 +1,4 @@
+mod actor;
 mod agent;
 mod brain;
 mod cognition;
@@ -20,6 +21,7 @@ mod ticket;
 
 use serde::{Deserialize, Serialize};
 
+pub use actor::*;
 pub use agent::*;
 pub use brain::*;
 pub use cognition::*;
@@ -69,6 +71,7 @@ pub enum Events {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Requests {
+    Actor(ActorRequests),
     Agent(AgentRequests),
     Brain(BrainRequests),
     Cognition(CognitionRequests),
@@ -87,9 +90,16 @@ pub enum Requests {
     Sensation(SensationRequests),
     Sense(SenseRequests),
     Storage(StorageRequests),
+    Tenant(TenantRequests),
     Texture(TextureRequests),
+    Ticket(TicketRequests),
 }
 
+impl From<ActorRequests> for Requests {
+    fn from(r: ActorRequests) -> Self {
+        Self::Actor(r)
+    }
+}
 impl From<AgentRequests> for Requests {
     fn from(r: AgentRequests) -> Self {
         Self::Agent(r)
@@ -180,9 +190,19 @@ impl From<StorageRequests> for Requests {
         Self::Storage(r)
     }
 }
+impl From<TenantRequests> for Requests {
+    fn from(r: TenantRequests) -> Self {
+        Self::Tenant(r)
+    }
+}
 impl From<TextureRequests> for Requests {
     fn from(r: TextureRequests) -> Self {
         Self::Texture(r)
+    }
+}
+impl From<TicketRequests> for Requests {
+    fn from(r: TicketRequests) -> Self {
+        Self::Ticket(r)
     }
 }
 
@@ -191,6 +211,7 @@ impl From<TextureRequests> for Requests {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Responses {
+    Actor(ActorResponses),
     Agent(AgentResponses),
     Brain(BrainResponses),
     Cognition(CognitionResponses),
@@ -209,9 +230,16 @@ pub enum Responses {
     Sensation(SensationResponses),
     Sense(SenseResponses),
     Storage(StorageResponses),
+    Tenant(TenantResponses),
     Texture(TextureResponses),
+    Ticket(TicketResponses),
 }
 
+impl From<ActorResponses> for Responses {
+    fn from(r: ActorResponses) -> Self {
+        Self::Actor(r)
+    }
+}
 impl From<AgentResponses> for Responses {
     fn from(r: AgentResponses) -> Self {
         Self::Agent(r)
@@ -302,8 +330,18 @@ impl From<StorageResponses> for Responses {
         Self::Storage(r)
     }
 }
+impl From<TenantResponses> for Responses {
+    fn from(r: TenantResponses) -> Self {
+        Self::Tenant(r)
+    }
+}
 impl From<TextureResponses> for Responses {
     fn from(r: TextureResponses) -> Self {
         Self::Texture(r)
+    }
+}
+impl From<TicketResponses> for Responses {
+    fn from(r: TicketResponses) -> Self {
+        Self::Ticket(r)
     }
 }
