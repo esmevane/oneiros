@@ -2,31 +2,31 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct SelectConnectionById {
     pub id: ConnectionId,
 }
 
 // ── Request types ──────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct CreateConnectionRequest {
     pub nature: NatureName,
     pub from_ref: Ref,
     pub to_ref: Ref,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct GetConnectionRequest {
     pub id: ConnectionId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct RemoveConnectionRequest {
     pub id: ConnectionId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ListConnectionsRequest {
     #[serde(default)]
     pub nature: Option<NatureName>,
@@ -36,14 +36,14 @@ pub struct ListConnectionsRequest {
 
 // ── Protocol enums ─────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionEvents {
     ConnectionCreated(Connection),
     ConnectionRemoved(SelectConnectionById),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionRequests {
     CreateConnection(CreateConnectionRequest),
@@ -52,7 +52,7 @@ pub enum ConnectionRequests {
     ListConnections(ListConnectionsRequest),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum ConnectionResponses {
     ConnectionCreated(Connection),

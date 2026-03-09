@@ -14,7 +14,7 @@ pub enum ConnectionConstructionError {
     InvalidCreatedAt(#[from] TimestampParseError),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 pub struct Connection {
     pub id: ConnectionId,
     pub nature: NatureName,

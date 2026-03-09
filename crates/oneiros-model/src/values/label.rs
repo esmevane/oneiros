@@ -31,3 +31,13 @@ impl AsRef<str> for Label {
         self.as_str()
     }
 }
+
+impl schemars::JsonSchema for Label {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Label")
+    }
+
+    fn json_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({ "type": "string" })
+    }
+}

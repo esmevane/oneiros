@@ -1,4 +1,6 @@
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 #[serde(transparent)]
 pub struct Description(pub String);
 

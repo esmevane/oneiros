@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TenantEvents {
     TenantCreated(Tenant),
@@ -10,24 +10,24 @@ pub enum TenantEvents {
 
 // ── Request types ──────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct GetTenantRequest {
     pub name: TenantName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ListTenantsRequest;
 
 // ── Protocol enums ─────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TenantRequests {
     GetTenant(GetTenantRequest),
     ListTenants(ListTenantsRequest),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum TenantResponses {
     TenantFound(Tenant),

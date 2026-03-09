@@ -29,7 +29,7 @@ pub enum BlobError {
 /// let decoded = blob.decode().unwrap();
 /// assert_eq!(decoded, b"hello \x00\xff binary");
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct Blob(String);
 

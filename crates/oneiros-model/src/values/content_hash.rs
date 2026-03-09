@@ -1,6 +1,8 @@
 use sha2::{Digest, Sha256};
 
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 #[serde(transparent)]
 pub struct ContentHash(pub String);
 

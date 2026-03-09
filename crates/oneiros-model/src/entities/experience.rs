@@ -12,7 +12,7 @@ pub enum ExperienceConstructionError {
     InvalidCreatedAt(#[from] TimestampParseError),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 pub struct Experience {
     pub id: ExperienceId,
     pub agent_id: AgentId,

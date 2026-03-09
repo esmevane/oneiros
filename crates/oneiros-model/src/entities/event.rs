@@ -5,7 +5,7 @@ use crate::*;
 /// A pre-persistence event — has identity and payload, but no sequence number.
 /// Created via [`NewEvent::new`] and promoted to [`KnownEvent`] by the store
 /// after it assigns a sequence position.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct NewEvent {
     pub id: EventId,
     pub timestamp: Timestamp,
@@ -26,7 +26,7 @@ impl NewEvent {
 
 /// A post-persistence event — carries a `sequence` number assigned by the
 /// store, making its position in the log explicit.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct KnownEvent {
     pub id: EventId,
     pub sequence: u64,
@@ -35,7 +35,7 @@ pub struct KnownEvent {
     pub data: Events,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct UnknownEvent {
     pub id: EventId,
     pub sequence: u64,
@@ -44,7 +44,7 @@ pub struct UnknownEvent {
     pub data: serde_json::Value,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(untagged)]
 pub enum Event {
     Known(KnownEvent),

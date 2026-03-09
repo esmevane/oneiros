@@ -8,7 +8,7 @@ pub enum AgentConstructionError {
     InvalidId(#[from] IdParseError),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 pub struct Agent {
     pub id: AgentId,
     pub name: AgentName,

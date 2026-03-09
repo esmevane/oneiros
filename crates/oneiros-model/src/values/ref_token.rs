@@ -65,6 +65,19 @@ impl From<RefToken> for Ref {
     }
 }
 
+impl schemars::JsonSchema for RefToken {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("RefToken")
+    }
+
+    fn json_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({
+            "type": "string",
+            "description": "Opaque base64url-encoded entity reference (format: ref:<base64url>)"
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

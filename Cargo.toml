@@ -45,6 +45,7 @@ pretty_assertions = "1"
 prettyplease = "0.2"
 proc-macro2 = "1"
 quote = "1"
+schemars = { version = "1.0", features = ["uuid1", "chrono04"] }
 rusqlite = { version = "0.31", features = [
   "bundled",
   "functions",

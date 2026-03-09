@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TokenClaims {
     pub brain_id: BrainId,
     pub tenant_id: TenantId,

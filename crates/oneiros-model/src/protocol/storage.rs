@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct SelectStorageByKey {
     pub key: StorageKey,
 }
@@ -19,27 +19,27 @@ pub struct SetStorageRequest {
     pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct GetStorageRequest {
     pub key: StorageKey,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct GetStorageContentRequest {
     pub key: StorageKey,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct RemoveStorageRequest {
     pub key: StorageKey,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ListStorageRequest;
 
 // ── Protocol enums ─────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum StorageEvents {
     BlobStored(BlobContent),
@@ -50,7 +50,7 @@ pub enum StorageEvents {
 // Note: StorageRequests does not include SetStorage because SetStorageRequest
 // carries binary data that doesn't fit the JSON {type, data} envelope.
 // SetStorage is dispatched directly. The enum covers JSON-safe operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum StorageRequests {
     RemoveStorage(RemoveStorageRequest),
@@ -59,7 +59,7 @@ pub enum StorageRequests {
     ListStorage(ListStorageRequest),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum StorageResponses {
     StorageSet(StorageEntry),

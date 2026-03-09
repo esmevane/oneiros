@@ -16,7 +16,7 @@ pub enum RefError {
 ///
 /// Serializes as structural JSON (e.g. `{"V0": {"Agent": "019c-abcd-..."}}`).
 /// For opaque string encoding (DB columns, CLI args, query params), use [`RefToken`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
 pub enum Ref {
     V0(Resource),
 }

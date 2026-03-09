@@ -5,7 +5,16 @@ use chrono::{DateTime, ParseError, Utc};
 pub struct TimestampParseError(#[from] ParseError);
 
 #[derive(
-    Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, serde::Serialize, serde::Deserialize,
+    Clone,
+    Copy,
+    Debug,
+    PartialOrd,
+    Ord,
+    PartialEq,
+    Eq,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 #[serde(transparent)]
 pub struct Timestamp(DateTime<Utc>);
