@@ -4,7 +4,8 @@ use std::path::Path;
 use std::sync::MutexGuard;
 use tokio::sync::broadcast;
 
-use crate::{BadRequests, Error, projections};
+use crate::dispatch::{SystemDispatch, SystemDispatchResponse};
+use crate::{Error, projections};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateBrainError {
@@ -42,15 +43,19 @@ impl<'a> SystemService<'a> {
         }
     }
 
-    /// Unified dispatch: routes any protocol request to the appropriate domain dispatcher.
-    pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Responses, Error> {
+    /// Dispatch any system-scoped request to the appropriate domain dispatcher.
+    pub fn dispatch(
+        &self,
+        request: impl Into<SystemDispatch>,
+    ) -> Result<SystemDispatchResponse, Error> {
         match request.into() {
-            Requests::Actor(r) => Ok(self.dispatch_actor(r)?.into()),
-            Requests::Brain(r) => Ok(self.dispatch_brain(r)?.into()),
-            Requests::Tenant(r) => Ok(self.dispatch_tenant(r)?.into()),
-            Requests::Ticket(r) => Ok(self.dispatch_ticket(r)?.into()),
-            _ => {
-                Err(BadRequests::NotHandled("brain-scoped operations require brain service").into())
+            SystemDispatch::Actor(r) => Ok(SystemDispatchResponse::Actor(self.dispatch_actor(r)?)),
+            SystemDispatch::Brain(r) => Ok(SystemDispatchResponse::Brain(self.dispatch_brain(r)?)),
+            SystemDispatch::Tenant(r) => {
+                Ok(SystemDispatchResponse::Tenant(self.dispatch_tenant(r)?))
+            }
+            SystemDispatch::Ticket(r) => {
+                Ok(SystemDispatchResponse::Ticket(self.dispatch_ticket(r)?))
             }
         }
     }

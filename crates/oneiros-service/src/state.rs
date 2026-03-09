@@ -47,6 +47,11 @@ impl ServiceState {
         &self.event_tx
     }
 
+    /// Access the resolved system identity.
+    pub fn source(&self) -> Source {
+        self.source
+    }
+
     /// Access the data directory path.
     pub fn data_dir(&self) -> &std::path::Path {
         &self.data_dir

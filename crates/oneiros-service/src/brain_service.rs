@@ -2,8 +2,9 @@ use oneiros_db::Database;
 use oneiros_model::*;
 use tokio::sync::broadcast;
 
+use crate::dispatch::{BrainDispatch, BrainDispatchResponse};
 use crate::dream_collector::DreamCollector;
-use crate::{BadRequests, Error, projections};
+use crate::{Error, projections};
 
 /// Domain service for brain-scoped operations.
 ///
@@ -32,36 +33,54 @@ impl<'a> BrainService<'a> {
         Ok(persisted)
     }
 
-    /// Unified dispatch: routes any protocol request to the appropriate domain dispatcher.
+    /// Dispatch any brain-scoped request to the appropriate domain dispatcher.
     ///
-    /// Accepts anything that converts to `Requests`, so callers can pass either
-    /// domain-specific request enums (e.g. `AgentRequests`) or the full `Requests`
-    /// super-enum directly.
-    pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Responses, Error> {
+    /// Accepts anything that converts to `BrainDispatch`, so callers can pass
+    /// domain-specific request enums (e.g. `AgentRequests`) directly.
+    pub fn dispatch(
+        &self,
+        request: impl Into<BrainDispatch>,
+    ) -> Result<BrainDispatchResponse, Error> {
         match request.into() {
-            Requests::Agent(r) => Ok(self.dispatch_agent(r)?.into()),
-            Requests::Cognition(r) => Ok(self.dispatch_cognition(r)?.into()),
-            Requests::Connection(r) => Ok(self.dispatch_connection(r)?.into()),
-            Requests::Dreaming(r) => Ok(self.dispatch_dream(r)?.into()),
-            Requests::Event(r) => Ok(self.dispatch_event(r)?.into()),
-            Requests::Experience(r) => Ok(self.dispatch_experience(r)?.into()),
-            Requests::Introspecting(r) => Ok(self.dispatch_introspect(r)?.into()),
-            Requests::Level(r) => Ok(self.dispatch_level(r)?.into()),
-            Requests::Lifecycle(r) => Ok(self.dispatch_lifecycle(r)?.into()),
-            Requests::Memory(r) => Ok(self.dispatch_memory(r)?.into()),
-            Requests::Nature(r) => Ok(self.dispatch_nature(r)?.into()),
-            Requests::Persona(r) => Ok(self.dispatch_persona(r)?.into()),
-            Requests::Reflecting(r) => Ok(self.dispatch_reflect(r)?.into()),
-            Requests::Search(r) => Ok(self.dispatch_search(r)?.into()),
-            Requests::Sensation(r) => Ok(self.dispatch_sensation(r)?.into()),
-            Requests::Sense(r) => Ok(self.dispatch_sense(r)?.into()),
-            Requests::Storage(r) => Ok(self.dispatch_storage(r)?.into()),
-            Requests::Texture(r) => Ok(self.dispatch_texture(r)?.into()),
-            Requests::Actor(_) | Requests::Brain(_) | Requests::Tenant(_) | Requests::Ticket(_) => {
-                Err(
-                    BadRequests::NotHandled("system-scoped operations require system service")
-                        .into(),
-                )
+            BrainDispatch::Agent(r) => Ok(BrainDispatchResponse::Agent(self.dispatch_agent(r)?)),
+            BrainDispatch::Cognition(r) => Ok(BrainDispatchResponse::Cognition(
+                self.dispatch_cognition(r)?,
+            )),
+            BrainDispatch::Connection(r) => Ok(BrainDispatchResponse::Connection(
+                self.dispatch_connection(r)?,
+            )),
+            BrainDispatch::Dreaming(r) => {
+                Ok(BrainDispatchResponse::Dreaming(self.dispatch_dream(r)?))
+            }
+            BrainDispatch::Event(r) => Ok(BrainDispatchResponse::Event(self.dispatch_event(r)?)),
+            BrainDispatch::Experience(r) => Ok(BrainDispatchResponse::Experience(
+                self.dispatch_experience(r)?,
+            )),
+            BrainDispatch::Introspecting(r) => Ok(BrainDispatchResponse::Introspecting(
+                self.dispatch_introspect(r)?,
+            )),
+            BrainDispatch::Level(r) => Ok(BrainDispatchResponse::Level(self.dispatch_level(r)?)),
+            BrainDispatch::Lifecycle(r) => Ok(BrainDispatchResponse::Lifecycle(
+                self.dispatch_lifecycle(r)?,
+            )),
+            BrainDispatch::Memory(r) => Ok(BrainDispatchResponse::Memory(self.dispatch_memory(r)?)),
+            BrainDispatch::Nature(r) => Ok(BrainDispatchResponse::Nature(self.dispatch_nature(r)?)),
+            BrainDispatch::Persona(r) => {
+                Ok(BrainDispatchResponse::Persona(self.dispatch_persona(r)?))
+            }
+            BrainDispatch::Reflecting(r) => {
+                Ok(BrainDispatchResponse::Reflecting(self.dispatch_reflect(r)?))
+            }
+            BrainDispatch::Search(r) => Ok(BrainDispatchResponse::Search(self.dispatch_search(r)?)),
+            BrainDispatch::Sensation(r) => Ok(BrainDispatchResponse::Sensation(
+                self.dispatch_sensation(r)?,
+            )),
+            BrainDispatch::Sense(r) => Ok(BrainDispatchResponse::Sense(self.dispatch_sense(r)?)),
+            BrainDispatch::Storage(r) => {
+                Ok(BrainDispatchResponse::Storage(self.dispatch_storage(r)?))
+            }
+            BrainDispatch::Texture(r) => {
+                Ok(BrainDispatchResponse::Texture(self.dispatch_texture(r)?))
             }
         }
     }
