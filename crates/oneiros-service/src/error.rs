@@ -16,6 +16,8 @@ pub enum BadRequests {
     Brain(#[from] CreateBrainError),
     #[error("Invalid storage reference: {0}")]
     StorageRef(#[from] oneiros_model::StorageRefError),
+    #[error("Request not handled by this service: {0}")]
+    NotHandled(&'static str),
 }
 
 #[derive(Debug, thiserror::Error)]
