@@ -38,13 +38,23 @@ impl ServerHandler for McpSession {
         request: InitializeRequestParams,
         context: RequestContext<RoleServer>,
     ) -> Result<InitializeResult, ErrorData> {
-        if let Some(parts) = context.extensions.get::<Parts>() {
-            let mut parts = parts.clone();
+        match context.extensions.get::<Parts>() {
+            Some(parts) => {
+                let mut parts = parts.clone();
+                tracing::debug!("MCP initialize: found HTTP parts, attempting auth");
 
-            if let Ok(context) =
-                ActorContext::from_request_parts(&mut parts, self.toolbox.state()).await
-            {
-                self.toolbox.upgrade(context.into_oneiros_state());
+                match ActorContext::from_request_parts(&mut parts, self.toolbox.state()).await {
+                    Ok(actor_context) => {
+                        tracing::info!("MCP initialize: brain context resolved, upgrading");
+                        self.toolbox.upgrade(actor_context.into_oneiros_state());
+                    }
+                    Err(e) => {
+                        tracing::warn!("MCP initialize: auth failed: {e}");
+                    }
+                }
+            }
+            None => {
+                tracing::debug!("MCP initialize: no HTTP parts in context, staying in system mode");
             }
         }
 

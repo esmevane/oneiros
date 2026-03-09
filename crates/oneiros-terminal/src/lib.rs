@@ -21,7 +21,20 @@ impl TerminalOps {
         }
     }
 
-    fn is_interactive(&self) -> bool {
+    /// Prompt the user with a yes/no confirmation. Returns the default if
+    /// the session is non-interactive.
+    pub fn confirm(&self, message: &str, default: bool) -> bool {
+        if self.is_interactive() {
+            inquire::Confirm::new(message)
+                .with_default(default)
+                .prompt()
+                .unwrap_or(default)
+        } else {
+            default
+        }
+    }
+
+    pub fn is_interactive(&self) -> bool {
         std::io::stdin().is_terminal() && std::io::stdout().is_terminal()
     }
 }

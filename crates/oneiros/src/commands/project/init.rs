@@ -1,6 +1,7 @@
 use clap::Args;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
+use oneiros_templates::McpTemplate;
 
 use crate::*;
 
@@ -11,6 +12,12 @@ pub enum InitProjectOutcomes {
     BrainCreated(BrainName),
     #[outcome(message("Brain '{0}' already exists."))]
     BrainAlreadyExists(BrainName),
+    #[outcome(message("MCP config written to {}", .0.display()))]
+    McpConfigWritten(std::path::PathBuf),
+    #[outcome(message("MCP config already exists at {}, skipping.", .0.display()))]
+    McpConfigExists(std::path::PathBuf),
+    #[outcome(message("Added .mcp.json to .gitignore."))]
+    GitignoreUpdated,
 }
 
 #[derive(Clone, Args)]
@@ -35,15 +42,59 @@ impl InitProject {
             name: project_name.clone(),
         };
 
-        match client.create_brain(request).await {
+        let token = match client.create_brain(request).await {
             Ok(info) => {
                 context.store_ticket(project_name.as_str(), info.token.as_str())?;
                 outcomes.emit(InitProjectOutcomes::BrainCreated(project_name.clone()));
+                info.token
             }
             Err(oneiros_client::Error::ServiceResponse(ref e)) if e.status == 409 => {
-                outcomes.emit(InitProjectOutcomes::BrainAlreadyExists(project_name));
+                outcomes.emit(InitProjectOutcomes::BrainAlreadyExists(
+                    project_name.clone(),
+                ));
+                context.ticket_token()?
             }
             Err(error) => return Err(error.into()),
+        };
+
+        if let Some(project_root) = context.project_root() {
+            let mcp_path = project_root.join(".mcp.json");
+
+            if mcp_path.exists() {
+                outcomes.emit(InitProjectOutcomes::McpConfigExists(mcp_path));
+            } else {
+                let terminal = context.terminal();
+
+                if terminal.confirm("Generate .mcp.json for AI agent integration?", true) {
+                    let addr = context.config().service_addr();
+                    let mcp_json = McpTemplate::new(&addr, token.as_str()).to_string();
+                    context.files().write(&mcp_path, mcp_json)?;
+                    outcomes.emit(InitProjectOutcomes::McpConfigWritten(mcp_path));
+
+                    if terminal.confirm("Add .mcp.json to .gitignore? (contains auth token)", true)
+                    {
+                        let gitignore = project_root.join(".gitignore");
+                        let files = context.files();
+
+                        if !files.contains(&gitignore, ".mcp.json")? {
+                            // Ensure we start on a new line if the file exists.
+                            let needs_newline = files
+                                .read_to_string(&gitignore)
+                                .is_ok_and(|c| !c.is_empty() && !c.ends_with('\n'));
+
+                            let entry = if needs_newline {
+                                "\n.mcp.json\n"
+                            } else {
+                                ".mcp.json\n"
+                            };
+
+                            files.append(&gitignore, entry)?;
+                        }
+
+                        outcomes.emit(InitProjectOutcomes::GitignoreUpdated);
+                    }
+                }
+            }
         }
 
         Ok(outcomes)

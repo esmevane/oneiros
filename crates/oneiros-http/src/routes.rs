@@ -2,6 +2,7 @@ use axum::Router;
 use axum::routing::get;
 use oneiros_service::ServiceState;
 use std::sync::Arc;
+use tower_http::trace::TraceLayer;
 
 use crate::handlers;
 
@@ -30,5 +31,6 @@ pub fn router(state: Arc<ServiceState>) -> Router {
         .nest("/storage", handlers::storage::router())
         .nest("/textures", handlers::texture::router())
         .nest("/mcp", handlers::mcp::router(state.clone()))
+        .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

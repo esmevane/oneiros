@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::path::Path;
+use std::time::Duration;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
@@ -20,6 +21,7 @@ pub struct Config {
 pub struct ServiceConfig {
     pub host: String,
     pub port: u16,
+    pub grace_period_secs: u64,
 }
 
 impl Default for ServiceConfig {
@@ -27,6 +29,7 @@ impl Default for ServiceConfig {
         Self {
             host: "127.0.0.1".to_string(),
             port: 2100,
+            grace_period_secs: 5,
         }
     }
 }
@@ -57,6 +60,10 @@ impl ServiceConfig {
             .next()
             .expect("at least one resolved address")
     }
+
+    pub fn grace_period(&self) -> Duration {
+        Duration::from_secs(self.grace_period_secs)
+    }
 }
 
 #[cfg(test)]
@@ -68,6 +75,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.service.host, "127.0.0.1");
         assert_eq!(config.service.port, 2100);
+        assert_eq!(config.service.grace_period_secs, 5);
     }
 
     #[test]
@@ -110,5 +118,11 @@ mod tests {
         let parsed: Config = toml::from_str(&toml_str).unwrap();
         assert_eq!(parsed.service.port, config.service.port);
         assert_eq!(parsed.service.host, config.service.host);
+    }
+
+    #[test]
+    fn grace_period_from_config() {
+        let config = ServiceConfig::default();
+        assert_eq!(config.grace_period(), Duration::from_secs(5));
     }
 }

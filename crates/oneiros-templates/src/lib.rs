@@ -1,12 +1,14 @@
 mod dream;
 mod guidebook;
 mod introspect;
+mod mcp;
 mod reflect;
 mod sense;
 
 pub use dream::DreamTemplate;
 pub use guidebook::GuidebookTemplate;
 pub use introspect::IntrospectTemplate;
+pub use mcp::McpTemplate;
 pub use reflect::ReflectTemplate;
 pub use sense::SenseTemplate;
 
@@ -347,5 +349,18 @@ mod tests {
         let rendered = SenseTemplate::new(&agent, "").to_string();
 
         assert!(!rendered.contains("## What You Sensed"));
+    }
+
+    #[test]
+    fn mcp_template_renders_url_and_token() {
+        use std::net::SocketAddr;
+        let addr: SocketAddr = "127.0.0.1:2100".parse().unwrap();
+        let rendered = McpTemplate::new(&addr, "test-token-123").to_string();
+
+        assert!(rendered.contains("http://127.0.0.1:2100/mcp"));
+        assert!(rendered.contains("Bearer test-token-123"));
+        assert!(rendered.contains("oneiros-local"));
+        // Verify it's valid JSON.
+        let _: serde_json::Value = serde_json::from_str(&rendered).unwrap();
     }
 }
