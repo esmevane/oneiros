@@ -3,7 +3,7 @@ use oneiros_model::*;
 use tokio::sync::broadcast;
 
 use crate::dream_collector::DreamCollector;
-use crate::{Error, projections};
+use crate::{BadRequests, Error, projections};
 
 /// Domain service for brain-scoped operations.
 ///
@@ -30,6 +30,37 @@ impl<'a> BrainService<'a> {
         let persisted = self.db.log_event(&new_event, projections::BRAIN)?;
         let _ = self.event_tx.send(persisted.clone());
         Ok(persisted)
+    }
+
+    /// Unified dispatch: routes any protocol request to the appropriate domain dispatcher.
+    ///
+    /// Accepts anything that converts to `Requests`, so callers can pass either
+    /// domain-specific request enums (e.g. `AgentRequests`) or the full `Requests`
+    /// super-enum directly.
+    pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Responses, Error> {
+        match request.into() {
+            Requests::Agent(r) => Ok(self.dispatch_agent(r)?.into()),
+            Requests::Cognition(r) => Ok(self.dispatch_cognition(r)?.into()),
+            Requests::Connection(r) => Ok(self.dispatch_connection(r)?.into()),
+            Requests::Dreaming(r) => Ok(self.dispatch_dream(r)?.into()),
+            Requests::Event(r) => Ok(self.dispatch_event(r)?.into()),
+            Requests::Experience(r) => Ok(self.dispatch_experience(r)?.into()),
+            Requests::Introspecting(r) => Ok(self.dispatch_introspect(r)?.into()),
+            Requests::Level(r) => Ok(self.dispatch_level(r)?.into()),
+            Requests::Lifecycle(r) => Ok(self.dispatch_lifecycle(r)?.into()),
+            Requests::Memory(r) => Ok(self.dispatch_memory(r)?.into()),
+            Requests::Nature(r) => Ok(self.dispatch_nature(r)?.into()),
+            Requests::Persona(r) => Ok(self.dispatch_persona(r)?.into()),
+            Requests::Reflecting(r) => Ok(self.dispatch_reflect(r)?.into()),
+            Requests::Search(r) => Ok(self.dispatch_search(r)?.into()),
+            Requests::Sensation(r) => Ok(self.dispatch_sensation(r)?.into()),
+            Requests::Sense(r) => Ok(self.dispatch_sense(r)?.into()),
+            Requests::Storage(r) => Ok(self.dispatch_storage(r)?.into()),
+            Requests::Texture(r) => Ok(self.dispatch_texture(r)?.into()),
+            Requests::Brain(_) => {
+                Err(BadRequests::NotHandled("brain operations require system service").into())
+            }
+        }
     }
 
     /// Persist an observational marker event (no projections) then broadcast.
