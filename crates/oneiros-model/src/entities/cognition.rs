@@ -12,7 +12,7 @@ pub enum CognitionConstructionError {
     InvalidCreatedAt(#[from] TimestampParseError),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 pub struct Cognition {
     pub id: CognitionId,
     pub agent_id: AgentId,

@@ -14,7 +14,7 @@ pub enum StorageRefError {
     Format(#[from] postcard::Error),
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct StorageRef(pub String);
 

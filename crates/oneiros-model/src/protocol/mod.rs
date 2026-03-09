@@ -41,7 +41,7 @@ pub use tenant::*;
 pub use texture::*;
 pub use ticket::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(untagged)]
 pub enum Events {
     Actor(ActorEvents),
@@ -68,7 +68,7 @@ pub enum Events {
 
 /// Super-enum over all request types. Serde untagged — each inner enum
 /// carries its own `{type, data}` tag.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(untagged)]
 pub enum Requests {
     Actor(ActorRequests),
@@ -208,7 +208,7 @@ impl From<TicketRequests> for Requests {
 
 /// Super-enum over all response types. Serde untagged — each inner enum
 /// carries its own `{type, data}` tag.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(untagged)]
 pub enum Responses {
     Actor(ActorResponses),

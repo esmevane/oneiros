@@ -12,7 +12,7 @@ pub enum MemoryConstructionError {
     InvalidCreatedAt(#[from] TimestampParseError),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 pub struct Memory {
     pub id: MemoryId,
     pub agent_id: AgentId,

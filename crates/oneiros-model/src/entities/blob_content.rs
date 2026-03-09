@@ -9,7 +9,7 @@ pub enum BlobContentError {
     Blob(#[from] BlobError),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BlobContent {
     pub hash: ContentHash,
     pub size: Size,

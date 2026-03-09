@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct SelectAgentByName {
     #[serde(alias = "agent")]
     pub name: AgentName,
@@ -10,7 +10,7 @@ pub struct SelectAgentByName {
 
 // ── Request types ──────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct CreateAgentRequest {
     pub name: AgentName,
     pub persona: PersonaName,
@@ -20,7 +20,7 @@ pub struct CreateAgentRequest {
     pub prompt: Prompt,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct UpdateAgentRequest {
     #[serde(default)]
     pub name: AgentName,
@@ -31,22 +31,22 @@ pub struct UpdateAgentRequest {
     pub prompt: Prompt,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct GetAgentRequest {
     pub name: AgentName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct RemoveAgentRequest {
     pub name: AgentName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ListAgentsRequest;
 
 // ── Protocol enums ─────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum AgentEvents {
     AgentCreated(Agent),
@@ -54,7 +54,7 @@ pub enum AgentEvents {
     AgentRemoved(SelectAgentByName),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum AgentRequests {
     CreateAgent(CreateAgentRequest),
@@ -64,7 +64,7 @@ pub enum AgentRequests {
     ListAgents(ListAgentsRequest),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum AgentResponses {
     AgentCreated(Agent),
