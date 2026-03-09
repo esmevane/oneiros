@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(sensation): Json<Sensation>,
 ) -> Result<Json<SensationResponses>, Error> {
-    let sensation = ticket.service().set_sensation(sensation)?;
+    let response = ticket
+        .service()
+        .dispatch_sensation(SensationRequests::SetSensation(sensation))?;
 
-    Ok(Json(sensation))
+    Ok(Json(response))
 }

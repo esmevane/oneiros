@@ -12,7 +12,9 @@ pub(crate) async fn handler(
         .decode()
         .map_err(oneiros_service::BadRequests::StorageRef)?;
 
-    ticket.service().remove_storage(key)?;
+    ticket
+        .service()
+        .dispatch_storage(StorageRequests::RemoveStorage(RemoveStorageRequest { key }))?;
 
     Ok(StatusCode::OK)
 }

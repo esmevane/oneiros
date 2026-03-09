@@ -6,11 +6,13 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
-    Json(request): Json<UpdateExperienceDescriptionRequest>,
+    Json(mut request): Json<UpdateExperienceDescriptionRequest>,
 ) -> Result<(StatusCode, Json<ExperienceResponses>), Error> {
-    let experience = ticket
-        .service()
-        .update_experience_description(&id, request)?;
+    request.id = id;
 
-    Ok((StatusCode::OK, Json(experience)))
+    let response = ticket
+        .service()
+        .dispatch_experience(ExperienceRequests::UpdateExperienceDescription(request))?;
+
+    Ok((StatusCode::OK, Json(response)))
 }

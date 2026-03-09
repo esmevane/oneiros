@@ -7,7 +7,11 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<ConnectionResponses>, Error> {
-    let connection = ticket.service().get_connection(&id)?;
+    let response = ticket
+        .service()
+        .dispatch_connection(ConnectionRequests::GetConnection(GetConnectionRequest {
+            id,
+        }))?;
 
-    Ok(Json(connection))
+    Ok(Json(response))
 }

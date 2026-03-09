@@ -69,6 +69,7 @@ impl UpdateExperience {
                         &token,
                         &id,
                         UpdateExperienceDescriptionRequest {
+                            id,
                             description: description.clone(),
                         },
                     )
@@ -83,6 +84,7 @@ impl UpdateExperience {
                         &token,
                         &id,
                         UpdateExperienceSensationRequest {
+                            id,
                             sensation: sensation.clone(),
                         },
                     )

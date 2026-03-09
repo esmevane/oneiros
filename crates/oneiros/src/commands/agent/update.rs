@@ -42,6 +42,7 @@ impl UpdateAgent {
                 &context.ticket_token()?,
                 &self.name,
                 UpdateAgentRequest {
+                    name: self.name.clone(),
                     persona: self.persona.clone(),
                     description: self.description.clone(),
                     prompt: self.prompt.clone(),

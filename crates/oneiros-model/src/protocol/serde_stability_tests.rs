@@ -181,6 +181,32 @@ mod tests {
     }
 
     #[test]
+    fn level_request_type_strings() {
+        let set = serde_json::to_value(LevelRequests::SetLevel(Level {
+            name: LevelName::new("test"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+        assert_eq!(event_type(&set), "set-level");
+
+        let get = serde_json::to_value(LevelRequests::GetLevel(GetLevelRequest {
+            name: LevelName::new("test"),
+        }))
+        .unwrap();
+        assert_eq!(event_type(&get), "get-level");
+
+        let remove = serde_json::to_value(LevelRequests::RemoveLevel(RemoveLevelRequest {
+            name: LevelName::new("test"),
+        }))
+        .unwrap();
+        assert_eq!(event_type(&remove), "remove-level");
+
+        let list = serde_json::to_value(LevelRequests::ListLevels(ListLevelsRequest)).unwrap();
+        assert_eq!(event_type(&list), "list-levels");
+    }
+
+    #[test]
     fn sensation_event_type_strings() {
         let set = serde_json::to_value(SensationEvents::SensationSet(Sensation {
             name: SensationName::new("test"),
@@ -367,31 +393,37 @@ mod tests {
 
     #[test]
     fn event_requests_type_strings() {
-        let import = serde_json::to_value(EventRequests::ImportEvents(vec![ImportEvent::Valid {
-            id: EventId::new(),
-            source: Source {
-                actor_id: ActorId::new(),
-                tenant_id: TenantId::new(),
-            },
-            timestamp: "2024-01-01T00:00:00Z".to_string(),
-            data: serde_json::json!({}),
-        }]))
+        let import = serde_json::to_value(EventRequests::ImportEvents(ImportEventsRequest {
+            events: vec![ImportEvent::Valid {
+                id: EventId::new(),
+                source: Source {
+                    actor_id: ActorId::new(),
+                    tenant_id: TenantId::new(),
+                },
+                timestamp: "2024-01-01T00:00:00Z".to_string(),
+                data: serde_json::json!({}),
+            }],
+        }))
         .unwrap();
         assert_eq!(event_type(&import), "import-events");
 
-        let replay = serde_json::to_value(&EventRequests::ReplayEvents).unwrap();
+        let replay =
+            serde_json::to_value(EventRequests::ReplayEvents(ReplayEventsRequest)).unwrap();
         assert_eq!(event_type(&replay), "replay-events");
 
-        let list = serde_json::to_value(&EventRequests::ListEvents).unwrap();
+        let list =
+            serde_json::to_value(EventRequests::ListEvents(ListEventsRequest { after: None }))
+                .unwrap();
         assert_eq!(event_type(&list), "list-events");
 
-        let get = serde_json::to_value(EventRequests::GetEvent(SelectEventById {
+        let get = serde_json::to_value(EventRequests::GetEvent(GetEventRequest {
             id: EventId::new(),
         }))
         .unwrap();
         assert_eq!(event_type(&get), "get-event");
 
-        let export = serde_json::to_value(&EventRequests::ExportEvents).unwrap();
+        let export =
+            serde_json::to_value(EventRequests::ExportEvents(ExportEventsRequest)).unwrap();
         assert_eq!(event_type(&export), "export-events");
     }
 
@@ -767,7 +799,7 @@ mod tests {
 
     #[test]
     fn cognition_requests_list_type_string() {
-        let list = serde_json::to_value(CognitionRequests::ListCognitions(ListCognitionsFilter {
+        let list = serde_json::to_value(CognitionRequests::ListCognitions(ListCognitionsRequest {
             agent: None,
             texture: None,
         }))
@@ -776,7 +808,7 @@ mod tests {
 
         // With filters — type string unchanged
         let filtered =
-            serde_json::to_value(CognitionRequests::ListCognitions(ListCognitionsFilter {
+            serde_json::to_value(CognitionRequests::ListCognitions(ListCognitionsRequest {
                 agent: Some(AgentName::new("test")),
                 texture: Some(TextureName::new("observation")),
             }))
@@ -786,7 +818,7 @@ mod tests {
 
     #[test]
     fn memory_requests_list_type_string() {
-        let list = serde_json::to_value(MemoryRequests::ListMemories(ListMemoriesFilter {
+        let list = serde_json::to_value(MemoryRequests::ListMemories(ListMemoriesRequest {
             agent: None,
             level: None,
         }))
@@ -796,23 +828,25 @@ mod tests {
 
     #[test]
     fn experience_requests_list_type_string() {
-        let list =
-            serde_json::to_value(ExperienceRequests::ListExperiences(ListExperiencesFilter {
+        let list = serde_json::to_value(ExperienceRequests::ListExperiences(
+            ListExperiencesRequest {
                 agent: None,
                 sensation: None,
-            }))
-            .unwrap();
+            },
+        ))
+        .unwrap();
         assert_eq!(event_type(&list), "list-experiences");
     }
 
     #[test]
     fn connection_requests_list_type_string() {
-        let list =
-            serde_json::to_value(ConnectionRequests::ListConnections(ListConnectionsFilter {
+        let list = serde_json::to_value(ConnectionRequests::ListConnections(
+            ListConnectionsRequest {
                 nature: None,
                 entity_ref: None,
-            }))
-            .unwrap();
+            },
+        ))
+        .unwrap();
         assert_eq!(event_type(&list), "list-connections");
     }
 

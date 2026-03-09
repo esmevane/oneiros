@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<AgentName>,
 ) -> Result<StatusCode, Error> {
-    ticket.service().remove_agent(name)?;
+    ticket
+        .service()
+        .dispatch_agent(AgentRequests::RemoveAgent(RemoveAgentRequest { name }))?;
 
     Ok(StatusCode::OK)
 }

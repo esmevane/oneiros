@@ -5,9 +5,11 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_id): Path<EventId>,
-) -> Result<Json<Event>, Error> {
-    let event = ticket.service().get_event(&given_id)?;
+    Path(id): Path<EventId>,
+) -> Result<Json<EventResponses>, Error> {
+    let response = ticket
+        .service()
+        .dispatch_event(EventRequests::GetEvent(GetEventRequest { id }))?;
 
-    Ok(Json(event))
+    Ok(Json(response))
 }

@@ -21,9 +21,14 @@ pub(crate) async fn handler(
     let description = headers
         .get("x-storage-description")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
+        .unwrap_or("")
+        .to_string();
 
-    let response = ticket.service().set_storage(key, description, &body)?;
+    let response = ticket.service().set_storage(SetStorageRequest {
+        key,
+        description,
+        data: body.to_vec(),
+    })?;
 
     Ok((StatusCode::OK, Json(response)))
 }

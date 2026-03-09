@@ -589,7 +589,7 @@ impl Client {
         query: &str,
         agent: Option<&AgentName>,
     ) -> Result<SearchResults, Error> {
-        let mut uri = format!("/search?q={}", urlencoding::encode(query));
+        let mut uri = format!("/search?query={}", urlencoding::encode(query));
         if let Some(agent) = agent {
             uri.push_str(&format!("&agent={}", urlencoding::encode(agent.as_str())));
         }

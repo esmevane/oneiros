@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateExperienceRequest>,
 ) -> Result<(StatusCode, Json<ExperienceResponses>), Error> {
-    let experience = ticket.service().create_experience(request)?;
+    let response = ticket
+        .service()
+        .dispatch_experience(ExperienceRequests::CreateExperience(request))?;
 
-    Ok((StatusCode::CREATED, Json(experience)))
+    Ok((StatusCode::CREATED, Json(response)))
 }

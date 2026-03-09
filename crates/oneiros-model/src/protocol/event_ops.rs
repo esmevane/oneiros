@@ -52,14 +52,40 @@ pub struct SelectEventById {
     pub id: EventId,
 }
 
+// ── Request types ──────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportEventsRequest {
+    pub events: Vec<ImportEvent>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReplayEventsRequest;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListEventsRequest {
+    #[serde(default)]
+    pub after: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetEventRequest {
+    pub id: EventId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportEventsRequest;
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum EventRequests {
-    ImportEvents(Vec<ImportEvent>),
-    ReplayEvents,
-    ListEvents,
-    GetEvent(SelectEventById),
-    ExportEvents,
+    ImportEvents(ImportEventsRequest),
+    ReplayEvents(ReplayEventsRequest),
+    ListEvents(ListEventsRequest),
+    GetEvent(GetEventRequest),
+    ExportEvents(ExportEventsRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

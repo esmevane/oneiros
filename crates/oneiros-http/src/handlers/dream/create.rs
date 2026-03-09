@@ -9,10 +9,15 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(agent_name): Path<AgentName>,
+    Path(agent): Path<AgentName>,
     Query(params): Query<DreamParams>,
 ) -> Result<Json<DreamingResponses>, Error> {
-    let response = ticket.service().dream(&agent_name, params.into())?;
+    let response = ticket
+        .service()
+        .dispatch_dream(DreamingRequests::Dream(DreamRequest {
+            agent,
+            config: params.into(),
+        }))?;
 
     Ok(Json(response))
 }

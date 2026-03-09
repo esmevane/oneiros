@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<AddMemoryRequest>,
 ) -> Result<(StatusCode, Json<MemoryResponses>), Error> {
-    let memory = ticket.service().add_memory(request)?;
+    let response = ticket
+        .service()
+        .dispatch_memory(MemoryRequests::AddMemory(request))?;
 
-    Ok((StatusCode::CREATED, Json(memory)))
+    Ok((StatusCode::CREATED, Json(response)))
 }

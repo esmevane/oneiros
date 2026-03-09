@@ -14,6 +14,12 @@ impl Label {
     }
 }
 
+impl Default for Label {
+    fn default() -> Self {
+        Self(Arc::from(""))
+    }
+}
+
 impl core::fmt::Display for Label {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)

@@ -14,6 +14,12 @@ macro_rules! domain_name {
             }
         }
 
+        impl Default for $name {
+            fn default() -> Self {
+                Self(crate::Label::default())
+            }
+        }
+
         impl core::fmt::Display for $name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 self.0.fmt(f)

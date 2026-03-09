@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(level): Json<Level>,
 ) -> Result<Json<LevelResponses>, Error> {
-    let level = ticket.service().set_level(level)?;
+    let response = ticket
+        .service()
+        .dispatch_level(LevelRequests::SetLevel(level))?;
 
-    Ok(Json(level))
+    Ok(Json(response))
 }

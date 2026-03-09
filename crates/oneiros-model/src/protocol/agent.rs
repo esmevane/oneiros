@@ -8,13 +8,7 @@ pub struct SelectAgentByName {
     pub name: AgentName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum AgentEvents {
-    AgentCreated(Agent),
-    AgentUpdated(Agent),
-    AgentRemoved(SelectAgentByName),
-}
+// ── Request types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateAgentRequest {
@@ -28,6 +22,8 @@ pub struct CreateAgentRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateAgentRequest {
+    #[serde(default)]
+    pub name: AgentName,
     pub persona: PersonaName,
     #[serde(default)]
     pub description: Description,
@@ -36,13 +32,36 @@ pub struct UpdateAgentRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetAgentRequest {
+    pub name: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoveAgentRequest {
+    pub name: AgentName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListAgentsRequest;
+
+// ── Protocol enums ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum AgentEvents {
+    AgentCreated(Agent),
+    AgentUpdated(Agent),
+    AgentRemoved(SelectAgentByName),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum AgentRequests {
     CreateAgent(CreateAgentRequest),
     UpdateAgent(UpdateAgentRequest),
-    RemoveAgent(SelectAgentByName),
-    GetAgent(SelectAgentByName),
-    ListAgents,
+    RemoveAgent(RemoveAgentRequest),
+    GetAgent(GetAgentRequest),
+    ListAgents(ListAgentsRequest),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

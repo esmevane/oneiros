@@ -7,7 +7,11 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<SensationName>,
 ) -> Result<StatusCode, Error> {
-    ticket.service().remove_sensation(name)?;
+    ticket
+        .service()
+        .dispatch_sensation(SensationRequests::RemoveSensation(RemoveSensationRequest {
+            name,
+        }))?;
 
     Ok(StatusCode::OK)
 }

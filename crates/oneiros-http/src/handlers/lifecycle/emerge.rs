@@ -7,7 +7,9 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Json(request): Json<CreateAgentRequest>,
 ) -> Result<(StatusCode, Json<LifecycleResponses>), Error> {
-    let response = ticket.service().emerge(request)?;
+    let response = ticket
+        .service()
+        .dispatch_lifecycle(LifecycleRequests::Emerge(request))?;
 
     Ok((StatusCode::CREATED, Json(response)))
 }

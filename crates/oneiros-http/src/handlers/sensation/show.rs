@@ -1,13 +1,17 @@
 use axum::{Json, extract::Path};
-use oneiros_model::{SensationName, SensationResponses};
+use oneiros_model::*;
 
 use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_name): Path<SensationName>,
+    Path(name): Path<SensationName>,
 ) -> Result<Json<SensationResponses>, Error> {
-    let sensation = ticket.service().get_sensation(&given_name)?;
+    let response = ticket
+        .service()
+        .dispatch_sensation(SensationRequests::GetSensation(GetSensationRequest {
+            name,
+        }))?;
 
-    Ok(Json(sensation))
+    Ok(Json(response))
 }

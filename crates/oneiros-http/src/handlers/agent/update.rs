@@ -5,10 +5,14 @@ use crate::*;
 
 pub(crate) async fn handler(
     ticket: ActorContext,
-    Path(given_name): Path<AgentName>,
-    Json(request): Json<UpdateAgentRequest>,
+    Path(name): Path<AgentName>,
+    Json(mut request): Json<UpdateAgentRequest>,
 ) -> Result<(StatusCode, Json<AgentResponses>), Error> {
-    let agent = ticket.service().update_agent(&given_name, request)?;
+    request.name = name;
 
-    Ok((StatusCode::OK, Json(agent)))
+    let response = ticket
+        .service()
+        .dispatch_agent(AgentRequests::UpdateAgent(request))?;
+
+    Ok((StatusCode::OK, Json(response)))
 }

@@ -7,7 +7,11 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<TextureName>,
 ) -> Result<StatusCode, Error> {
-    ticket.service().remove_texture(name)?;
+    ticket
+        .service()
+        .dispatch_texture(TextureRequests::RemoveTexture(RemoveTextureRequest {
+            name,
+        }))?;
 
     Ok(StatusCode::OK)
 }
