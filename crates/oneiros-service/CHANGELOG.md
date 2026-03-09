@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/esmevane/oneiros/compare/oneiros-service-v0.0.6...oneiros-service-v0.0.7) - 2026-03-09
+
+### Other
+
+- MCP support.
+- Oneiros service.
+- System services.
+- Project dispatch.
+- Protocol pass.
+- Cursor-based event access.
+- Blob storage represented in export/import.
+- Various import fixes.
+- Import Events via serde
+- Source is included in events.
+- Durable events.
+- Actor drops broadcst, path over buffer in context.
+- ActorContext.db -> BrainService
+- Http / Service crate split.
+- Protocol polish.
+- Formalize protocol further.
+- General fixes.
+- Split handler logic out.
+- Extract some common stuff from service tests.
+
 ## [0.0.6](https://github.com/esmevane/oneiros/compare/oneiros-service-v0.0.5...oneiros-service-v0.0.6) - 2026-03-02
 
 ### Other

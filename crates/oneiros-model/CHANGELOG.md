@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/esmevane/oneiros/compare/oneiros-model-v0.0.6...oneiros-model-v0.0.7) - 2026-03-09
+
+### Other
+
+- JsonSchema derives on models
+- System services.
+- Project dispatch.
+- Protocol pass.
+- Cursor-based event access.
+- Blob storage represented in export/import.
+- Various import fixes.
+- Import Events via serde
+- Source is included in events.
+- Durable events.
+- ActorContext.db -> BrainService
+- Protocol polish.
+- Formalize protocol further.
+
 ## [0.0.6](https://github.com/esmevane/oneiros/compare/oneiros-model-v0.0.5...oneiros-model-v0.0.6) - 2026-03-02
 
 ### Other

@@ -1297,7 +1297,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "oneiros"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -1325,7 +1325,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-client"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "http-body-util",
  "hyper",
@@ -1341,7 +1341,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-config"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "serde",
  "tempfile",
@@ -1351,7 +1351,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-context"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "directories",
  "oneiros-client",
@@ -1366,7 +1366,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-db"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "oneiros-model",
  "rusqlite",
@@ -1378,7 +1378,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-detect-project-name"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "tempfile",
  "toml 0.8.23",
@@ -1386,11 +1386,11 @@ dependencies = [
 
 [[package]]
 name = "oneiros-fs"
-version = "0.0.6"
+version = "0.0.7"
 
 [[package]]
 name = "oneiros-http"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "askama",
  "axum",
@@ -1415,7 +1415,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-mcp"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "oneiros-db",
  "oneiros-model",
@@ -1428,7 +1428,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-model"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "chrono",
  "data-encoding",
@@ -1445,7 +1445,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-outcomes"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "oneiros-outcomes-derive",
  "serde",
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-outcomes-derive"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "oneiros-outcomes",
  "pretty_assertions",
@@ -1469,7 +1469,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-service"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "oneiros-db",
  "oneiros-fs",
@@ -1483,14 +1483,14 @@ dependencies = [
 
 [[package]]
 name = "oneiros-skill"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "oneiros-templates"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "askama",
  "chrono",
@@ -1500,7 +1500,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-terminal"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "inquire",
  "tempfile",
