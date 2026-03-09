@@ -11,6 +11,7 @@ pub(crate) mod health;
 pub(crate) mod introspect;
 pub(crate) mod level;
 pub(crate) mod lifecycle;
+pub(crate) mod mcp;
 pub(crate) mod memory;
 pub(crate) mod nature;
 pub(crate) mod persona;

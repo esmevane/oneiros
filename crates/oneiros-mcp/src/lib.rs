@@ -1,0 +1,721 @@
+use std::sync::{Arc, RwLock};
+
+use oneiros_db::Database;
+use oneiros_model::*;
+use oneiros_service::{BrainState, OneirosService, ServiceState};
+use rmcp::{
+    ErrorData, ServerHandler,
+    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
+    model::*,
+    tool, tool_handler, tool_router,
+};
+
+/// MCP tool server for oneiros.
+///
+/// Each instance is scoped to a capability level expressed by its
+/// `OneirosService` variant: `Service` for system-only operations,
+/// `Brain` for the full catalog.
+///
+/// Transports construct the toolbox with the appropriate service variant.
+/// The service can be upgraded (e.g. from `Service` to `Brain`) via
+/// `upgrade()` — used by the HTTP transport during MCP initialization.
+#[derive(Clone)]
+pub struct OneirosToolBox {
+    state: Arc<ServiceState>,
+    service: Arc<RwLock<OneirosService>>,
+    tool_router: ToolRouter<Self>,
+}
+
+impl OneirosToolBox {
+    /// Create a toolbox with a pre-resolved brain. Used in tests and
+    /// when the brain is known at construction time.
+    pub fn new(brain_db: Database, state: Arc<ServiceState>) -> Self {
+        let service = OneirosService::Brain(BrainState::new(state.clone(), brain_db));
+        Self {
+            state,
+            service: Arc::new(RwLock::new(service)),
+            tool_router: Self::tool_router(),
+        }
+    }
+
+    /// Create a toolbox starting at system-only capability.
+    /// Brain context can be added later via `upgrade()`.
+    pub fn system(state: Arc<ServiceState>) -> Self {
+        let service = OneirosService::Service(state.clone());
+        Self {
+            state,
+            service: Arc::new(RwLock::new(service)),
+            tool_router: Self::tool_router(),
+        }
+    }
+
+    /// Upgrade the service to a new capability level.
+    pub fn upgrade(&self, service: OneirosService) {
+        if let Ok(mut current) = self.service.write() {
+            *current = service;
+        }
+    }
+
+    /// Access the shared service state.
+    pub fn state(&self) -> &Arc<ServiceState> {
+        &self.state
+    }
+
+    /// Dispatch a protocol request through the unified service layer.
+    ///
+    /// Domain errors (NotFound, BadRequest, Conflict) become tool-level
+    /// errors visible to the calling agent. Only serialization failures
+    /// produce protocol-level `ErrorData`.
+    fn dispatch(&self, request: impl Into<Requests>) -> Result<CallToolResult, ErrorData> {
+        let service = self
+            .service
+            .read()
+            .map_err(|_| ErrorData::internal_error("Service lock poisoned", None))?;
+
+        match service.dispatch(request) {
+            Ok(response) => {
+                let value = serde_json::to_value(&response)
+                    .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+                Ok(CallToolResult::structured(value))
+            }
+            Err(e) => Ok(CallToolResult::error(vec![rmcp::model::Content::text(
+                e.to_string(),
+            )])),
+        }
+    }
+}
+
+// ── Tool implementations ────────────────────────────────────────────
+
+#[tool_router]
+impl OneirosToolBox {
+    // ── Agent ───────────────────────────────────────────────────────
+
+    #[tool(description = "List all agents in the brain")]
+    fn list_agents(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(AgentRequests::ListAgents(ListAgentsRequest))
+    }
+
+    #[tool(description = "Get an agent by name")]
+    fn get_agent(
+        &self,
+        Parameters(request): Parameters<GetAgentRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(AgentRequests::GetAgent(request))
+    }
+
+    #[tool(description = "Create a new agent")]
+    fn create_agent(
+        &self,
+        Parameters(request): Parameters<CreateAgentRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(AgentRequests::CreateAgent(request))
+    }
+
+    #[tool(description = "Update an existing agent")]
+    fn update_agent(
+        &self,
+        Parameters(request): Parameters<UpdateAgentRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(AgentRequests::UpdateAgent(request))
+    }
+
+    #[tool(description = "Remove an agent")]
+    fn remove_agent(
+        &self,
+        Parameters(request): Parameters<RemoveAgentRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(AgentRequests::RemoveAgent(request))
+    }
+
+    // ── Cognition ───────────────────────────────────────────────────
+
+    #[tool(description = "Add a cognition entry for an agent")]
+    fn add_cognition(
+        &self,
+        Parameters(request): Parameters<AddCognitionRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(CognitionRequests::AddCognition(request))
+    }
+
+    #[tool(description = "Get a cognition by ID")]
+    fn get_cognition(
+        &self,
+        Parameters(request): Parameters<GetCognitionRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(CognitionRequests::GetCognition(request))
+    }
+
+    #[tool(description = "List cognitions, optionally filtered by agent and texture")]
+    fn list_cognitions(
+        &self,
+        Parameters(request): Parameters<ListCognitionsRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(CognitionRequests::ListCognitions(request))
+    }
+
+    // ── Connection ──────────────────────────────────────────────────
+
+    #[tool(description = "Create a connection between two entities")]
+    fn create_connection(
+        &self,
+        Parameters(request): Parameters<CreateConnectionRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ConnectionRequests::CreateConnection(request))
+    }
+
+    #[tool(description = "Remove a connection")]
+    fn remove_connection(
+        &self,
+        Parameters(request): Parameters<RemoveConnectionRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ConnectionRequests::RemoveConnection(request))
+    }
+
+    #[tool(description = "Get a connection by ID")]
+    fn get_connection(
+        &self,
+        Parameters(request): Parameters<GetConnectionRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ConnectionRequests::GetConnection(request))
+    }
+
+    #[tool(description = "List connections, optionally filtered by nature and entity reference")]
+    fn list_connections(
+        &self,
+        Parameters(request): Parameters<ListConnectionsRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ConnectionRequests::ListConnections(request))
+    }
+
+    // ── Dreaming ────────────────────────────────────────────────────
+
+    #[tool(description = "Assemble a dream context for an agent")]
+    fn dream(
+        &self,
+        Parameters(request): Parameters<DreamRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(DreamingRequests::Dream(request))
+    }
+
+    // ── Event ───────────────────────────────────────────────────────
+
+    #[tool(description = "Import events into the brain")]
+    fn import_events(
+        &self,
+        Parameters(request): Parameters<ImportEventsRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(EventRequests::ImportEvents(request))
+    }
+
+    #[tool(description = "Replay all events through projections")]
+    fn replay_events(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(EventRequests::ReplayEvents(ReplayEventsRequest))
+    }
+
+    #[tool(description = "List events, optionally after a sequence number")]
+    fn list_events(
+        &self,
+        Parameters(request): Parameters<ListEventsRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(EventRequests::ListEvents(request))
+    }
+
+    #[tool(description = "Get an event by ID")]
+    fn get_event(
+        &self,
+        Parameters(request): Parameters<GetEventRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(EventRequests::GetEvent(request))
+    }
+
+    #[tool(description = "Export all events from the brain")]
+    fn export_events(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(EventRequests::ExportEvents(ExportEventsRequest))
+    }
+
+    // ── Experience ──────────────────────────────────────────────────
+
+    #[tool(description = "Create an experience connecting cognitive records")]
+    fn create_experience(
+        &self,
+        Parameters(request): Parameters<CreateExperienceRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ExperienceRequests::CreateExperience(request))
+    }
+
+    #[tool(description = "Update an experience's description")]
+    fn update_experience_description(
+        &self,
+        Parameters(request): Parameters<UpdateExperienceDescriptionRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ExperienceRequests::UpdateExperienceDescription(request))
+    }
+
+    #[tool(description = "Update an experience's sensation")]
+    fn update_experience_sensation(
+        &self,
+        Parameters(request): Parameters<UpdateExperienceSensationRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ExperienceRequests::UpdateExperienceSensation(request))
+    }
+
+    #[tool(description = "Get an experience by ID")]
+    fn get_experience(
+        &self,
+        Parameters(request): Parameters<GetExperienceRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ExperienceRequests::GetExperience(request))
+    }
+
+    #[tool(description = "List experiences, optionally filtered by agent and sensation")]
+    fn list_experiences(
+        &self,
+        Parameters(request): Parameters<ListExperiencesRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ExperienceRequests::ListExperiences(request))
+    }
+
+    // ── Introspect ──────────────────────────────────────────────────
+
+    #[tool(description = "Run introspection for an agent — summarize session state")]
+    fn introspect(
+        &self,
+        Parameters(request): Parameters<IntrospectRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(IntrospectingRequests::Introspect(request))
+    }
+
+    // ── Level ───────────────────────────────────────────────────────
+
+    #[tool(description = "Create or update a memory retention level")]
+    fn set_level(&self, Parameters(level): Parameters<Level>) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LevelRequests::SetLevel(level))
+    }
+
+    #[tool(description = "Remove a level")]
+    fn remove_level(
+        &self,
+        Parameters(request): Parameters<RemoveLevelRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LevelRequests::RemoveLevel(request))
+    }
+
+    #[tool(description = "Get a level by name")]
+    fn get_level(
+        &self,
+        Parameters(request): Parameters<GetLevelRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LevelRequests::GetLevel(request))
+    }
+
+    #[tool(description = "List all levels")]
+    fn list_levels(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LevelRequests::ListLevels(ListLevelsRequest))
+    }
+
+    // ── Lifecycle ───────────────────────────────────────────────────
+
+    #[tool(description = "Wake an agent — start a session with dreaming")]
+    fn wake(
+        &self,
+        Parameters(request): Parameters<WakeRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LifecycleRequests::Wake(request))
+    }
+
+    #[tool(description = "Put an agent to sleep — end a session with introspection")]
+    fn sleep(
+        &self,
+        Parameters(request): Parameters<SleepRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LifecycleRequests::Sleep(request))
+    }
+
+    #[tool(description = "Bring a new agent into existence with full lifecycle ceremony")]
+    fn emerge(
+        &self,
+        Parameters(request): Parameters<CreateAgentRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LifecycleRequests::Emerge(request))
+    }
+
+    #[tool(description = "Retire an agent from active service")]
+    fn recede(
+        &self,
+        Parameters(request): Parameters<RecedeRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(LifecycleRequests::Recede(request))
+    }
+
+    // ── Memory ──────────────────────────────────────────────────────
+
+    #[tool(description = "Add a memory for an agent")]
+    fn add_memory(
+        &self,
+        Parameters(request): Parameters<AddMemoryRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(MemoryRequests::AddMemory(request))
+    }
+
+    #[tool(description = "Get a memory by ID")]
+    fn get_memory(
+        &self,
+        Parameters(request): Parameters<GetMemoryRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(MemoryRequests::GetMemory(request))
+    }
+
+    #[tool(description = "List memories, optionally filtered by agent and level")]
+    fn list_memories(
+        &self,
+        Parameters(request): Parameters<ListMemoriesRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(MemoryRequests::ListMemories(request))
+    }
+
+    // ── Nature ──────────────────────────────────────────────────────
+
+    #[tool(description = "Create or update a connection edge category")]
+    fn set_nature(
+        &self,
+        Parameters(nature): Parameters<Nature>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(NatureRequests::SetNature(nature))
+    }
+
+    #[tool(description = "Remove a nature")]
+    fn remove_nature(
+        &self,
+        Parameters(request): Parameters<RemoveNatureRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(NatureRequests::RemoveNature(request))
+    }
+
+    #[tool(description = "Get a nature by name")]
+    fn get_nature(
+        &self,
+        Parameters(request): Parameters<GetNatureRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(NatureRequests::GetNature(request))
+    }
+
+    #[tool(description = "List all natures")]
+    fn list_natures(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(NatureRequests::ListNatures(ListNaturesRequest))
+    }
+
+    // ── Persona ─────────────────────────────────────────────────────
+
+    #[tool(description = "Create or update an agent category")]
+    fn set_persona(
+        &self,
+        Parameters(persona): Parameters<Persona>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(PersonaRequests::SetPersona(persona))
+    }
+
+    #[tool(description = "Remove a persona")]
+    fn remove_persona(
+        &self,
+        Parameters(request): Parameters<RemovePersonaRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(PersonaRequests::RemovePersona(request))
+    }
+
+    #[tool(description = "Get a persona by name")]
+    fn get_persona(
+        &self,
+        Parameters(request): Parameters<GetPersonaRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(PersonaRequests::GetPersona(request))
+    }
+
+    #[tool(description = "List all personas")]
+    fn list_personas(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(PersonaRequests::ListPersonas(ListPersonasRequest))
+    }
+
+    // ── Reflect ─────────────────────────────────────────────────────
+
+    #[tool(description = "Capture a significant event during a session")]
+    fn reflect(
+        &self,
+        Parameters(request): Parameters<ReflectRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ReflectingRequests::Reflect(request))
+    }
+
+    // ── Search ──────────────────────────────────────────────────────
+
+    #[tool(description = "Full-text search across all brain content")]
+    fn search(
+        &self,
+        Parameters(request): Parameters<SearchRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(SearchRequests::Search(request))
+    }
+
+    // ── Sensation ───────────────────────────────────────────────────
+
+    #[tool(description = "Create or update an experience category")]
+    fn set_sensation(
+        &self,
+        Parameters(sensation): Parameters<Sensation>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(SensationRequests::SetSensation(sensation))
+    }
+
+    #[tool(description = "Remove a sensation")]
+    fn remove_sensation(
+        &self,
+        Parameters(request): Parameters<RemoveSensationRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(SensationRequests::RemoveSensation(request))
+    }
+
+    #[tool(description = "Get a sensation by name")]
+    fn get_sensation(
+        &self,
+        Parameters(request): Parameters<GetSensationRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(SensationRequests::GetSensation(request))
+    }
+
+    #[tool(description = "List all sensations")]
+    fn list_sensations(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(SensationRequests::ListSensations(ListSensationsRequest))
+    }
+
+    // ── Sense ───────────────────────────────────────────────────────
+
+    #[tool(description = "Interpret an external event through an agent's cognitive lens")]
+    fn sense(
+        &self,
+        Parameters(request): Parameters<SenseRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(SenseRequests::Sense(request))
+    }
+
+    // ── Storage ─────────────────────────────────────────────────────
+
+    #[tool(description = "Remove a storage entry")]
+    fn remove_storage(
+        &self,
+        Parameters(request): Parameters<RemoveStorageRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(StorageRequests::RemoveStorage(request))
+    }
+
+    #[tool(description = "Get storage entry metadata")]
+    fn get_storage(
+        &self,
+        Parameters(request): Parameters<GetStorageRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(StorageRequests::GetStorage(request))
+    }
+
+    #[tool(description = "Get storage entry content")]
+    fn get_storage_content(
+        &self,
+        Parameters(request): Parameters<GetStorageContentRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(StorageRequests::GetStorageContent(request))
+    }
+
+    #[tool(description = "List all storage entries")]
+    fn list_storage(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(StorageRequests::ListStorage(ListStorageRequest))
+    }
+
+    // ── Texture ─────────────────────────────────────────────────────
+
+    #[tool(description = "Create or update a cognitive category")]
+    fn set_texture(
+        &self,
+        Parameters(texture): Parameters<Texture>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TextureRequests::SetTexture(texture))
+    }
+
+    #[tool(description = "Remove a texture")]
+    fn remove_texture(
+        &self,
+        Parameters(request): Parameters<RemoveTextureRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TextureRequests::RemoveTexture(request))
+    }
+
+    #[tool(description = "Get a texture by name")]
+    fn get_texture(
+        &self,
+        Parameters(request): Parameters<GetTextureRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TextureRequests::GetTexture(request))
+    }
+
+    #[tool(description = "List all textures")]
+    fn list_textures(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TextureRequests::ListTextures(ListTexturesRequest))
+    }
+
+    // ── System: Actor ───────────────────────────────────────────────
+
+    #[tool(description = "Get an actor by name")]
+    fn get_actor(
+        &self,
+        Parameters(request): Parameters<GetActorRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ActorRequests::GetActor(request))
+    }
+
+    #[tool(description = "List all actors")]
+    fn list_actors(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(ActorRequests::ListActors(ListActorsRequest))
+    }
+
+    // ── System: Brain ───────────────────────────────────────────────
+
+    #[tool(description = "Create a new brain")]
+    fn create_brain(
+        &self,
+        Parameters(request): Parameters<CreateBrainRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(BrainRequests::CreateBrain(request))
+    }
+
+    #[tool(description = "Get a brain by name")]
+    fn get_brain(
+        &self,
+        Parameters(request): Parameters<GetBrainRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(BrainRequests::GetBrain(request))
+    }
+
+    #[tool(description = "List all brains")]
+    fn list_brains(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(BrainRequests::ListBrains(ListBrainsRequest))
+    }
+
+    // ── System: Tenant ──────────────────────────────────────────────
+
+    #[tool(description = "Get a tenant by name")]
+    fn get_tenant(
+        &self,
+        Parameters(request): Parameters<GetTenantRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TenantRequests::GetTenant(request))
+    }
+
+    #[tool(description = "List all tenants")]
+    fn list_tenants(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TenantRequests::ListTenants(ListTenantsRequest))
+    }
+
+    // ── System: Ticket ──────────────────────────────────────────────
+
+    #[tool(description = "Validate a ticket")]
+    fn validate_ticket(
+        &self,
+        Parameters(request): Parameters<ValidateTicketRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TicketRequests::ValidateTicket(request))
+    }
+
+    #[tool(description = "List all tickets")]
+    fn list_tickets(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(TicketRequests::ListTickets(ListTicketsRequest))
+    }
+}
+
+// ── ServerHandler ───────────────────────────────────────────────────
+
+#[tool_handler]
+impl ServerHandler for OneirosToolBox {
+    fn get_info(&self) -> ServerInfo {
+        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+            .with_server_info(Implementation::new("oneiros", env!("CARGO_PKG_VERSION")))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    fn test_state(data_dir: &std::path::Path) -> (Database, Arc<ServiceState>) {
+        let db_path = data_dir.join("system.db");
+        let db = Database::create(&db_path).expect("create system db");
+
+        let source = Source::default();
+        let state = Arc::new(ServiceState::new(db, data_dir.to_path_buf(), source));
+        let brain_path = data_dir.join("test.db");
+        let brain_db = Database::create_brain_db(&brain_path).expect("create brain db");
+
+        (brain_db, state)
+    }
+
+    #[test]
+    fn tool_router_has_all_tools() {
+        let dir = tempfile::tempdir().unwrap();
+        let (brain_db, state) = test_state(dir.path());
+        let toolbox = OneirosToolBox::new(brain_db, state);
+
+        let router = &toolbox.tool_router;
+        let tools = router.list_all();
+
+        // Full catalog: 67 tools across 22 domains
+        assert_eq!(tools.len(), 67, "expected 67 tools, got {}", tools.len());
+
+        // Spot-check key tools from each domain
+        assert!(router.has_route("list_agents"), "missing list_agents");
+        assert!(router.has_route("create_agent"), "missing create_agent");
+        assert!(router.has_route("get_cognition"), "missing get_cognition");
+        assert!(
+            router.has_route("create_connection"),
+            "missing create_connection"
+        );
+        assert!(router.has_route("dream"), "missing dream");
+        assert!(router.has_route("import_events"), "missing import_events");
+        assert!(
+            router.has_route("create_experience"),
+            "missing create_experience"
+        );
+        assert!(router.has_route("introspect"), "missing introspect");
+        assert!(router.has_route("set_level"), "missing set_level");
+        assert!(router.has_route("wake"), "missing wake");
+        assert!(router.has_route("emerge"), "missing emerge");
+        assert!(router.has_route("add_memory"), "missing add_memory");
+        assert!(router.has_route("set_nature"), "missing set_nature");
+        assert!(router.has_route("set_persona"), "missing set_persona");
+        assert!(router.has_route("reflect"), "missing reflect");
+        assert!(router.has_route("search"), "missing search");
+        assert!(router.has_route("set_sensation"), "missing set_sensation");
+        assert!(router.has_route("sense"), "missing sense");
+        assert!(router.has_route("remove_storage"), "missing remove_storage");
+        assert!(router.has_route("set_texture"), "missing set_texture");
+        assert!(router.has_route("get_actor"), "missing get_actor");
+        assert!(router.has_route("create_brain"), "missing create_brain");
+        assert!(router.has_route("get_tenant"), "missing get_tenant");
+        assert!(
+            router.has_route("validate_ticket"),
+            "missing validate_ticket"
+        );
+    }
+
+    #[test]
+    fn system_toolbox_starts_without_brain() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("system.db");
+        let db = Database::create(&db_path).expect("create system db");
+        let source = Source::default();
+        let state = Arc::new(ServiceState::new(db, dir.path().to_path_buf(), source));
+
+        let toolbox = OneirosToolBox::system(state);
+        let service = toolbox.service.read().unwrap();
+        assert!(
+            matches!(&*service, OneirosService::Service(_)),
+            "system toolbox should start in Service mode"
+        );
+    }
+}
