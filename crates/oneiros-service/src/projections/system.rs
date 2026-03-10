@@ -1,6 +1,5 @@
 use oneiros_db::*;
 use oneiros_model::*;
-use serde_json::Value;
 
 /// System projections, ordered by dependency (tenant before actor, actor before brain,
 /// brain before ticket).
@@ -13,13 +12,14 @@ pub const ALL: &[Projection] = &[
 
 const TENANT_PROJECTION: Projection = Projection {
     name: "tenant",
-    events: &["tenant-created"],
     apply: apply_tenant,
     reset: |db| db.reset_tenants(),
 };
 
-fn apply_tenant(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let tenant: Tenant = serde_json::from_value(data.clone())?;
+fn apply_tenant(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Tenant(TenantEvents::TenantCreated(tenant)) = &event.data else {
+        return Ok(());
+    };
 
     db.create_tenant(&tenant.id, &tenant.name)?;
 
@@ -28,13 +28,14 @@ fn apply_tenant(db: &Database, data: &Value) -> Result<(), DatabaseError> {
 
 const ACTOR_PROJECTION: Projection = Projection {
     name: "actor",
-    events: &["actor-created"],
     apply: apply_actor,
     reset: |db| db.reset_actors(),
 };
 
-fn apply_actor(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let actor: Actor = serde_json::from_value(data.clone())?;
+fn apply_actor(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Actor(ActorEvents::ActorCreated(actor)) = &event.data else {
+        return Ok(());
+    };
 
     db.create_actor(&actor.id, &actor.tenant_id, &actor.name)?;
 
@@ -43,13 +44,14 @@ fn apply_actor(db: &Database, data: &Value) -> Result<(), DatabaseError> {
 
 const BRAIN_PROJECTION: Projection = Projection {
     name: "brain",
-    events: &["brain-created"],
     apply: apply_brain,
     reset: |db| db.reset_brains(),
 };
 
-fn apply_brain(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let brain: Brain = serde_json::from_value(data.clone())?;
+fn apply_brain(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Brain(BrainEvents::BrainCreated(brain)) = &event.data else {
+        return Ok(());
+    };
     let path = brain.path.display().to_string();
 
     db.create_brain(&brain.id, &brain.tenant_id, &brain.name, &path)?;
@@ -59,13 +61,14 @@ fn apply_brain(db: &Database, data: &Value) -> Result<(), DatabaseError> {
 
 const TICKET_ISSUED_PROJECTION: Projection = Projection {
     name: "ticket-issued",
-    events: &["ticket-issued"],
     apply: apply_ticket_issued,
     reset: |db| db.reset_tickets(),
 };
 
-fn apply_ticket_issued(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let ticket: Ticket = serde_json::from_value(data.clone())?;
+fn apply_ticket_issued(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Ticket(TicketEvents::TicketIssued(ticket)) = &event.data else {
+        return Ok(());
+    };
 
     db.create_ticket(
         ticket.id.to_string(),
