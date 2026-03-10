@@ -1,26 +1,22 @@
-use serde_json::Value;
+use oneiros_model::KnownEvent;
 
 use crate::*;
 
 pub struct Projection {
     pub name: &'static str,
-    pub events: &'static [&'static str],
-    pub apply: fn(&Database, &Value) -> Result<(), DatabaseError>,
+    pub apply: fn(&Database, &KnownEvent) -> Result<(), DatabaseError>,
     pub reset: fn(&Database) -> Result<(), DatabaseError>,
 }
 
-/// Project an event to all relevant projections across multiple groups.
+/// Project an event to all projections across multiple groups.
 pub(crate) fn project(
     conn: &Database,
     projections: &[&[Projection]],
-    event_type: &str,
-    data: &Value,
+    event: &KnownEvent,
 ) -> Result<(), DatabaseError> {
     for group in projections {
         for projection in *group {
-            if projection.events.contains(&event_type) {
-                (projection.apply)(conn, data)?;
-            }
+            (projection.apply)(conn, event)?;
         }
     }
     Ok(())

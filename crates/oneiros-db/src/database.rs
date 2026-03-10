@@ -1926,10 +1926,10 @@ impl Database {
         event: &NewEvent,
         projections: &[&[Projection]],
     ) -> Result<Event, DatabaseError> {
+        let known = self.create_event(event)?;
         let tx = self.conn.unchecked_transaction()?;
 
-        let known = self.create_event(event)?;
-        self.run_projections(projections, &known)?;
+        projections::project(self, projections, &known)?;
 
         tx.commit()?;
 
@@ -2024,7 +2024,7 @@ impl Database {
             let event: Event = serde_json::from_str(&raw)?;
 
             if let Event::Known(event) = event {
-                self.run_projections(projections, &event)?;
+                projections::project(self, projections, &event)?;
                 count += 1;
             };
         }
@@ -2032,22 +2032,6 @@ impl Database {
         transaction.commit()?;
 
         Ok(count)
-    }
-
-    fn run_projections(
-        &self,
-        projections: &[&[Projection]],
-        event: &KnownEvent,
-    ) -> Result<(), DatabaseError> {
-        let data = serde_json::to_value(&event.data)?;
-
-        let Some(event_type) = data["type"].as_str() else {
-            return Ok(());
-        };
-
-        let data = data["data"].clone();
-
-        projections::project(self, projections, event_type, &data)
     }
 }
 

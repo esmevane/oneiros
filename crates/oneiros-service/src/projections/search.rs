@@ -1,6 +1,5 @@
 use oneiros_db::*;
 use oneiros_model::*;
-use serde_json::Value;
 
 /// Search projections emit expressions into the FTS5 index.
 ///
@@ -23,13 +22,14 @@ pub const ALL: &[Projection] = &[
 
 const COGNITION_ADDED: Projection = Projection {
     name: "search:cognition-added",
-    events: &["cognition-added"],
     apply: apply_cognition_added,
     reset: |db| db.reset_expressions_by_kind("cognition-content"),
 };
 
-fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let cognition: Cognition = serde_json::from_value(data.clone())?;
+fn apply_cognition_added(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Cognition(CognitionEvents::CognitionAdded(cognition)) = &event.data else {
+        return Ok(());
+    };
     let resource_ref = Ref::cognition(cognition.id);
 
     db.insert_expression(
@@ -45,13 +45,14 @@ fn apply_cognition_added(db: &Database, data: &Value) -> Result<(), DatabaseErro
 
 const MEMORY_ADDED: Projection = Projection {
     name: "search:memory-added",
-    events: &["memory-added"],
     apply: apply_memory_added,
     reset: |db| db.reset_expressions_by_kind("memory-content"),
 };
 
-fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let memory: Memory = serde_json::from_value(data.clone())?;
+fn apply_memory_added(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Memory(MemoryEvents::MemoryAdded(memory)) = &event.data else {
+        return Ok(());
+    };
     let resource_ref = Ref::memory(memory.id);
 
     db.insert_expression(&resource_ref, "memory-content", memory.content.as_str())?;
@@ -63,13 +64,14 @@ fn apply_memory_added(db: &Database, data: &Value) -> Result<(), DatabaseError> 
 
 const EXPERIENCE_CREATED: Projection = Projection {
     name: "search:experience-created",
-    events: &["experience-created"],
     apply: apply_experience_created,
     reset: |db| db.reset_expressions_by_kind("experience-description"),
 };
 
-fn apply_experience_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let experience: Experience = serde_json::from_value(data.clone())?;
+fn apply_experience_created(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Experience(ExperienceEvents::ExperienceCreated(experience)) = &event.data else {
+        return Ok(());
+    };
     let resource_ref = Ref::experience(experience.id);
 
     db.insert_expression(
@@ -83,19 +85,18 @@ fn apply_experience_created(db: &Database, data: &Value) -> Result<(), DatabaseE
 
 const EXPERIENCE_DESCRIPTION_UPDATED: Projection = Projection {
     name: "search:experience-description-updated",
-    events: &["experience-description-updated"],
     apply: apply_experience_description_updated,
     reset: |_| Ok(()),
 };
 
-#[derive(serde::Deserialize)]
-struct DescriptionUpdated {
-    experience_id: ExperienceId,
-    description: Description,
-}
-
-fn apply_experience_description_updated(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let updated: DescriptionUpdated = serde_json::from_value(data.clone())?;
+fn apply_experience_description_updated(
+    db: &Database,
+    event: &KnownEvent,
+) -> Result<(), DatabaseError> {
+    let Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(updated)) = &event.data
+    else {
+        return Ok(());
+    };
     let resource_ref = Ref::experience(updated.experience_id);
 
     db.delete_expressions_by_ref(&resource_ref)?;
@@ -112,7 +113,6 @@ fn apply_experience_description_updated(db: &Database, data: &Value) -> Result<(
 
 const AGENT_CREATED: Projection = Projection {
     name: "search:agent-created",
-    events: &["agent-created"],
     apply: apply_agent_created,
     reset: |db| {
         db.reset_expressions_by_kind("agent-description")?;
@@ -120,8 +120,10 @@ const AGENT_CREATED: Projection = Projection {
     },
 };
 
-fn apply_agent_created(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let agent: Agent = serde_json::from_value(data.clone())?;
+fn apply_agent_created(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Agent(AgentEvents::AgentCreated(agent)) = &event.data else {
+        return Ok(());
+    };
     let resource_ref = Ref::agent(agent.id);
 
     db.insert_expression(
@@ -136,13 +138,14 @@ fn apply_agent_created(db: &Database, data: &Value) -> Result<(), DatabaseError>
 
 const AGENT_UPDATED: Projection = Projection {
     name: "search:agent-updated",
-    events: &["agent-updated"],
     apply: apply_agent_updated,
     reset: |_| Ok(()),
 };
 
-fn apply_agent_updated(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let agent: Agent = serde_json::from_value(data.clone())?;
+fn apply_agent_updated(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Agent(AgentEvents::AgentUpdated(agent)) = &event.data else {
+        return Ok(());
+    };
     let resource_ref = Ref::agent(agent.id);
 
     db.delete_expressions_by_ref(&resource_ref)?;
@@ -158,18 +161,14 @@ fn apply_agent_updated(db: &Database, data: &Value) -> Result<(), DatabaseError>
 
 const AGENT_REMOVED: Projection = Projection {
     name: "search:agent-removed",
-    events: &["agent-removed"],
     apply: apply_agent_removed,
     reset: |_| Ok(()),
 };
 
-#[derive(serde::Deserialize)]
-struct AgentRemoved {
-    name: AgentName,
-}
-
-fn apply_agent_removed(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let removed: AgentRemoved = serde_json::from_value(data.clone())?;
+fn apply_agent_removed(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Agent(AgentEvents::AgentRemoved(removed)) = &event.data else {
+        return Ok(());
+    };
 
     if let Some(agent) = db.get_agent(&removed.name)? {
         let resource_ref = Ref::agent(agent.id);
@@ -183,7 +182,6 @@ fn apply_agent_removed(db: &Database, data: &Value) -> Result<(), DatabaseError>
 
 const PERSONA_SET: Projection = Projection {
     name: "search:persona-set",
-    events: &["persona-set"],
     apply: apply_persona_set,
     reset: |db| {
         db.reset_expressions_by_kind("persona-description")?;
@@ -191,8 +189,10 @@ const PERSONA_SET: Projection = Projection {
     },
 };
 
-fn apply_persona_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let persona: Persona = serde_json::from_value(data.clone())?;
+fn apply_persona_set(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Persona(PersonaEvents::PersonaSet(persona)) = &event.data else {
+        return Ok(());
+    };
     let resource_ref = Ref::persona(persona.name.clone());
 
     db.delete_expressions_by_ref(&resource_ref)?;
@@ -208,19 +208,15 @@ fn apply_persona_set(db: &Database, data: &Value) -> Result<(), DatabaseError> {
 
 const PERSONA_REMOVED: Projection = Projection {
     name: "search:persona-removed",
-    events: &["persona-removed"],
     apply: apply_persona_removed,
     reset: |_| Ok(()),
 };
 
-#[derive(serde::Deserialize)]
-struct PersonaRemoved {
-    name: PersonaName,
-}
-
-fn apply_persona_removed(db: &Database, data: &Value) -> Result<(), DatabaseError> {
-    let removed: PersonaRemoved = serde_json::from_value(data.clone())?;
-    let resource_ref = Ref::persona(removed.name);
+fn apply_persona_removed(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Persona(PersonaEvents::PersonaRemoved(removed)) = &event.data else {
+        return Ok(());
+    };
+    let resource_ref = Ref::persona(removed.name.clone());
 
     db.delete_expressions_by_ref(&resource_ref)?;
 
