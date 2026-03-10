@@ -559,6 +559,34 @@ impl OneirosToolBox {
         self.dispatch(TextureRequests::ListTextures(ListTexturesRequest))
     }
 
+    // ── Urge ────────────────────────────────────────────────────────
+
+    #[tool(description = "Create or update an urge")]
+    fn set_urge(&self, Parameters(urge): Parameters<Urge>) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(UrgeRequests::SetUrge(urge))
+    }
+
+    #[tool(description = "Remove an urge")]
+    fn remove_urge(
+        &self,
+        Parameters(request): Parameters<RemoveUrgeRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(UrgeRequests::RemoveUrge(request))
+    }
+
+    #[tool(description = "Get an urge by name")]
+    fn get_urge(
+        &self,
+        Parameters(request): Parameters<GetUrgeRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(UrgeRequests::GetUrge(request))
+    }
+
+    #[tool(description = "List all urges")]
+    fn list_urges(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(UrgeRequests::ListUrges(ListUrgesRequest))
+    }
+
     // ── System: Actor ───────────────────────────────────────────────
 
     #[tool(description = "Get an actor by name")]
@@ -664,8 +692,8 @@ mod tests {
         let router = &toolbox.tool_router;
         let tools = router.list_all();
 
-        // Full catalog: 67 tools across 22 domains
-        assert_eq!(tools.len(), 67, "expected 67 tools, got {}", tools.len());
+        // Full catalog: 71 tools across 23 domains
+        assert_eq!(tools.len(), 71, "expected 71 tools, got {}", tools.len());
 
         // Spot-check key tools from each domain
         assert!(router.has_route("list_agents"), "missing list_agents");
@@ -694,6 +722,7 @@ mod tests {
         assert!(router.has_route("sense"), "missing sense");
         assert!(router.has_route("remove_storage"), "missing remove_storage");
         assert!(router.has_route("set_texture"), "missing set_texture");
+        assert!(router.has_route("set_urge"), "missing set_urge");
         assert!(router.has_route("get_actor"), "missing get_actor");
         assert!(router.has_route("create_brain"), "missing create_brain");
         assert!(router.has_route("get_tenant"), "missing get_tenant");

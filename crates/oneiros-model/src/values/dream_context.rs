@@ -14,4 +14,5 @@ pub struct DreamContext {
     pub levels: Vec<Level>,
     pub sensations: Vec<Sensation>,
     pub natures: Vec<Nature>,
+    pub urges: Vec<Urge>,
 }

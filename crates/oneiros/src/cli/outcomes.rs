@@ -63,5 +63,7 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Texture(#[from] TextureOutcomes),
     #[outcome(transparent)]
+    Urge(#[from] UrgeOutcomes),
+    #[outcome(transparent)]
     Wake(#[from] WakeOutcomes),
 }

@@ -65,5 +65,7 @@ pub enum CliError {
     #[error(transparent)]
     Texture(#[from] TextureCommandError),
     #[error(transparent)]
+    Urge(#[from] UrgeCommandError),
+    #[error(transparent)]
     Wake(#[from] WakeError),
 }

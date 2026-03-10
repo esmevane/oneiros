@@ -69,6 +69,13 @@ If found, incorporate its contents into your self-understanding.
 {% for nature in context.natures -%}
 - {{ nature.name }} — {{ nature.prompt }}
 {% endfor -%}
+{% endif -%}
+{% if !context.urges.is_empty() %}
+
+## Urges
+{% for urge in context.urges -%}
+- {{ urge.name }} — {{ urge.prompt }}
+{% endfor -%}
 {% endif %}
 
 ## Instructions

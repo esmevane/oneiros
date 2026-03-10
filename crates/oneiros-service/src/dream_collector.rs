@@ -38,6 +38,7 @@ impl<'a> DreamCollector<'a> {
         let levels = self.db.list_levels()?;
         let sensations = self.db.list_sensations()?;
         let natures = self.db.list_natures()?;
+        let urges = self.db.list_urges()?;
 
         // MEMORY FILTERING — core always included, rest filtered by level + capped
         let all_memories = self.db.list_memories_by_agent(agent.id.to_string())?;
@@ -172,6 +173,7 @@ impl<'a> DreamCollector<'a> {
             levels,
             sensations,
             natures,
+            urges,
         })
     }
 

@@ -80,6 +80,8 @@ Everything in this system is emergent. You are not confined to what exists:
   `oneiros texture set <name> --description "..." --prompt "..."`
 - **Create new memory levels** when the existing tiers don't fit your needs:
   `oneiros level set <name> --description "..." --prompt "..."`
+- **Create new urges** when the existing ones don't capture what drives action:
+  `oneiros urge set <name> --description "..." --prompt "..."`
 - **Create new agents** when the work calls for specialized perspectives:
   `oneiros agent create <name> <persona> --description "..."`
 

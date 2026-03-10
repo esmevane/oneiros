@@ -18,6 +18,7 @@ mod storage;
 mod tenant;
 mod texture;
 mod ticket;
+mod urge;
 
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +41,7 @@ pub use storage::*;
 pub use tenant::*;
 pub use texture::*;
 pub use ticket::*;
+pub use urge::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(untagged)]
@@ -64,6 +66,7 @@ pub enum Events {
     Tenant(TenantEvents),
     Texture(TextureEvents),
     Ticket(TicketEvents),
+    Urge(UrgeEvents),
 }
 
 /// Super-enum over all request types. Serde untagged — each inner enum
@@ -93,6 +96,7 @@ pub enum Requests {
     Tenant(TenantRequests),
     Texture(TextureRequests),
     Ticket(TicketRequests),
+    Urge(UrgeRequests),
 }
 
 impl From<ActorRequests> for Requests {
@@ -205,6 +209,11 @@ impl From<TicketRequests> for Requests {
         Self::Ticket(r)
     }
 }
+impl From<UrgeRequests> for Requests {
+    fn from(r: UrgeRequests) -> Self {
+        Self::Urge(r)
+    }
+}
 
 /// Super-enum over all response types. Serde untagged — each inner enum
 /// carries its own `{type, data}` tag.
@@ -233,6 +242,7 @@ pub enum Responses {
     Tenant(TenantResponses),
     Texture(TextureResponses),
     Ticket(TicketResponses),
+    Urge(UrgeResponses),
 }
 
 impl From<ActorResponses> for Responses {
@@ -343,5 +353,10 @@ impl From<TextureResponses> for Responses {
 impl From<TicketResponses> for Responses {
     fn from(r: TicketResponses) -> Self {
         Self::Ticket(r)
+    }
+}
+impl From<UrgeResponses> for Responses {
+    fn from(r: UrgeResponses) -> Self {
+        Self::Urge(r)
     }
 }

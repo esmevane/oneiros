@@ -204,6 +204,39 @@ pub(crate) fn natures() -> Vec<SetNature> {
     ]
 }
 
+pub(crate) fn urges() -> Vec<SetUrge> {
+    vec![
+        SetUrge {
+            name: UrgeName::new("introspect"),
+            description: Description::new(
+                "The pull to look inward — examine cognitive state and consolidate.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/introspect.urge.md")),
+        },
+        SetUrge {
+            name: UrgeName::new("catharsis"),
+            description: Description::new(
+                "The need to release accumulated tension and resolve contradictions.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/catharsis.urge.md")),
+        },
+        SetUrge {
+            name: UrgeName::new("recollect"),
+            description: Description::new(
+                "The drive to gather scattered pieces into a coherent whole.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/recollect.urge.md")),
+        },
+        SetUrge {
+            name: UrgeName::new("retrospect"),
+            description: Description::new(
+                "The impulse to look back and extract deeper patterns from the arc.",
+            ),
+            prompt: Prompt::new(include_str!("prompts/retrospect.urge.md")),
+        },
+    ]
+}
+
 pub(crate) fn agents() -> Vec<CreateAgent> {
     vec![
         CreateAgent {

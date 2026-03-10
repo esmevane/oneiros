@@ -46,6 +46,19 @@ create table if not exists texture (
     prompt      text not null default ''
 );
 
+-- Urges are motivational categories that classify agent drives and
+-- intentions. Each urge carries a description (human-readable purpose)
+-- and a prompt (guidance text for agents when acting on this urge).
+--
+-- Examples: explore, protect, connect, create, rest.
+-- Urges are emergent — they can be seeded, added, or removed over time.
+--
+create table if not exists urge (
+    name        text primary key not null,
+    description text not null default '',
+    prompt      text not null default ''
+);
+
 -- Agents are named participants in a brain's cognition. Each agent adopts
 -- a persona (FK to persona.name) and may carry its own description and
 -- prompt that specialize or override the persona's defaults.

@@ -47,6 +47,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -75,6 +76,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -102,6 +104,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -126,6 +129,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -154,6 +158,7 @@ mod tests {
             )],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -176,6 +181,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -196,6 +202,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -220,6 +227,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -253,6 +261,7 @@ mod tests {
             )],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -273,6 +282,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -293,6 +303,7 @@ mod tests {
             levels: vec![],
             sensations: vec![],
             natures: vec![],
+            urges: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 

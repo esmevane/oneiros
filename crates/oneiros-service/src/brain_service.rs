@@ -82,6 +82,7 @@ impl<'a> BrainService<'a> {
             BrainDispatch::Texture(r) => {
                 Ok(BrainDispatchResponse::Texture(self.dispatch_texture(r)?))
             }
+            BrainDispatch::Urge(r) => Ok(BrainDispatchResponse::Urge(self.dispatch_urge(r)?)),
         }
     }
 
@@ -417,6 +418,33 @@ impl<'a> BrainService<'a> {
                 }));
                 self.log_and_broadcast(&event)?;
                 Ok(TextureResponses::TextureRemoved)
+            }
+        }
+    }
+
+    // ── Urge operations ─────────────────────────────────────────────
+
+    pub fn dispatch_urge(&self, request: UrgeRequests) -> Result<UrgeResponses, Error> {
+        match request {
+            UrgeRequests::SetUrge(urge) => {
+                let event = Events::Urge(UrgeEvents::UrgeSet(urge.clone()));
+                self.log_and_broadcast(&event)?;
+                Ok(UrgeResponses::UrgeSet(urge))
+            }
+            UrgeRequests::ListUrges(_) => Ok(UrgeResponses::UrgesListed(self.db.list_urges()?)),
+            UrgeRequests::GetUrge(request) => {
+                let urge = self
+                    .db
+                    .get_urge(&request.name)?
+                    .ok_or(NotFound::Urge(request.name))?;
+                Ok(UrgeResponses::UrgeFound(urge))
+            }
+            UrgeRequests::RemoveUrge(request) => {
+                let event = Events::Urge(UrgeEvents::UrgeRemoved(SelectUrgeByName {
+                    name: request.name,
+                }));
+                self.log_and_broadcast(&event)?;
+                Ok(UrgeResponses::UrgeRemoved)
             }
         }
     }

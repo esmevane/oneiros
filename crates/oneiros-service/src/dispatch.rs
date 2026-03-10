@@ -26,6 +26,7 @@ pub enum BrainDispatch {
     Sense(SenseRequests),
     Storage(StorageRequests),
     Texture(TextureRequests),
+    Urge(UrgeRequests),
 }
 
 pub enum BrainDispatchResponse {
@@ -47,6 +48,7 @@ pub enum BrainDispatchResponse {
     Sense(SenseResponses),
     Storage(StorageResponses),
     Texture(TextureResponses),
+    Urge(UrgeResponses),
 }
 
 impl From<AgentRequests> for BrainDispatch {
@@ -139,6 +141,11 @@ impl From<TextureRequests> for BrainDispatch {
         Self::Texture(r)
     }
 }
+impl From<UrgeRequests> for BrainDispatch {
+    fn from(r: UrgeRequests) -> Self {
+        Self::Urge(r)
+    }
+}
 
 impl From<BrainDispatchResponse> for Responses {
     fn from(r: BrainDispatchResponse) -> Self {
@@ -161,6 +168,7 @@ impl From<BrainDispatchResponse> for Responses {
             BrainDispatchResponse::Sense(r) => Self::Sense(r),
             BrainDispatchResponse::Storage(r) => Self::Storage(r),
             BrainDispatchResponse::Texture(r) => Self::Texture(r),
+            BrainDispatchResponse::Urge(r) => Self::Urge(r),
         }
     }
 }
@@ -288,6 +296,7 @@ impl BrainState {
             BrainDispatch::Texture(r) => {
                 Ok(BrainDispatchResponse::Texture(service.dispatch_texture(r)?))
             }
+            BrainDispatch::Urge(r) => Ok(BrainDispatchResponse::Urge(service.dispatch_urge(r)?)),
         }
     }
 }
@@ -337,6 +346,7 @@ impl OneirosService {
             Requests::Sense(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Storage(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Texture(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Urge(r) => Ok(self.brain()?.dispatch(r)?.into()),
         }
     }
 
