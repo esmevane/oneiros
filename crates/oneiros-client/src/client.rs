@@ -259,6 +259,29 @@ impl Client {
         self.parse(&bytes)
     }
 
+    pub async fn set_urge(&self, token: &Token, request: Urge) -> Result<Urge, Error> {
+        let body = serde_json::to_vec(&request)?;
+        let bytes = self.send("PUT", "/urges", token, Some(body)).await?;
+        self.parse(&bytes)
+    }
+
+    pub async fn remove_urge(&self, token: &Token, name: &UrgeName) -> Result<(), Error> {
+        let uri = format!("/urges/{name}");
+        self.send("DELETE", &uri, token, None).await?;
+        Ok(())
+    }
+
+    pub async fn get_urge(&self, token: &Token, name: &UrgeName) -> Result<Urge, Error> {
+        let uri = format!("/urges/{name}");
+        let bytes = self.send("GET", &uri, token, None).await?;
+        self.parse(&bytes)
+    }
+
+    pub async fn list_urges(&self, token: &Token) -> Result<Vec<Urge>, Error> {
+        let bytes = self.send("GET", "/urges", token, None).await?;
+        self.parse(&bytes)
+    }
+
     pub async fn set_level(&self, token: &Token, request: Level) -> Result<Level, Error> {
         let body = serde_json::to_vec(&request)?;
         let bytes = self.send("PUT", "/levels", token, Some(body)).await?;

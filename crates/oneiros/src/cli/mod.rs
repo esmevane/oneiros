@@ -68,6 +68,7 @@ impl Cli {
             Command::Service(service) => service.run(&context).await?.map_into(),
             Command::Project(project) => project.run(&context).await?.map_into(),
             Command::Texture(texture) => texture.run(&context).await?.map_into(),
+            Command::Urge(urge) => urge.run(&context).await?.map_into(),
             Command::Wake(wake) => wake.run(&context).await?.map_into(),
         })
     }
@@ -133,6 +134,8 @@ pub(crate) enum Command {
     System(SystemOps),
     /// Manage textures (cognitive categories for agent thoughts).
     Texture(TextureOps),
+    /// Manage urges (motivational drives for agent behavior).
+    Urge(UrgeOps),
     /// Wake an agent — start a session with dreaming.
     Wake(WakeOp),
 }

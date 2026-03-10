@@ -30,6 +30,8 @@ pub enum NotFound {
     Storage(StorageKey),
     #[error("Texture not found: {0}")]
     Texture(TextureName),
+    #[error("Urge not found: {0}")]
+    Urge(UrgeName),
     #[error("Event not found: {0}")]
     Event(EventId),
     #[error("Tenant not found: {0}")]

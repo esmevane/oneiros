@@ -15,6 +15,7 @@ mod storage;
 mod tenant;
 mod texture;
 mod ticket;
+mod urge;
 
 pub use actor::{Actor, ActorId, ActorName};
 pub use agent::{Agent, AgentConstructionError, AgentId, AgentName};
@@ -33,3 +34,4 @@ pub use storage::{StorageEntry, StorageKey};
 pub use tenant::{Tenant, TenantId, TenantName};
 pub use texture::{Texture, TextureName};
 pub use ticket::{Ticket, TicketId};
+pub use urge::{Urge, UrgeName};

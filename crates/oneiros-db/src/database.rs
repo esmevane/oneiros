@@ -637,6 +637,75 @@ impl Database {
         Ok(())
     }
 
+    // -- Urge operations --
+
+    pub fn set_urge(
+        &self,
+        name: &UrgeName,
+        description: &Description,
+        prompt: &Prompt,
+    ) -> Result<(), DatabaseError> {
+        self.conn.execute(
+            "insert into urge (name, description, prompt) \
+             values (?1, ?2, ?3) \
+             on conflict(name) do update set \
+             description = excluded.description, prompt = excluded.prompt",
+            params![name.as_ref(), description.as_str(), prompt.as_str()],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_urge(&self, name: impl AsRef<str>) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from urge where name = ?1", params![name.as_ref()])?;
+        Ok(())
+    }
+
+    pub fn get_urge(&self, name: impl AsRef<str>) -> Result<Option<Urge>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select name, description, prompt from urge where name = ?1",
+            params![name.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Urge::construct_from_db(row))),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    pub fn list_urges(&self) -> Result<Vec<Urge>, DatabaseError> {
+        let mut stmt = self
+            .conn
+            .prepare("select name, description, prompt from urge order by name")?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })?;
+
+        let mut urges = Vec::new();
+        for row in rows {
+            urges.push(Urge::construct_from_db(row?));
+        }
+        Ok(urges)
+    }
+
+    pub fn reset_urges(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from urge")?;
+        Ok(())
+    }
+
     // -- Level operations --
 
     pub fn set_level(

@@ -12,6 +12,8 @@ pub const ALL: &[Projection] = &[
     PERSONA_REMOVED_PROJECTION,
     TEXTURE_SET_PROJECTION,
     TEXTURE_REMOVED_PROJECTION,
+    URGE_SET_PROJECTION,
+    URGE_REMOVED_PROJECTION,
     SENSATION_SET_PROJECTION,
     SENSATION_REMOVED_PROJECTION,
     NATURE_SET_PROJECTION,
@@ -124,6 +126,34 @@ fn apply_level_removed(db: &Database, event: &KnownEvent) -> Result<(), Database
 
     db.remove_level(&removed.name)?;
 
+    Ok(())
+}
+
+const URGE_SET_PROJECTION: Projection = Projection {
+    name: "urge-set",
+    apply: apply_urge_set,
+    reset: |db| db.reset_urges(),
+};
+
+fn apply_urge_set(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Urge(UrgeEvents::UrgeSet(urge)) = &event.data else {
+        return Ok(());
+    };
+    db.set_urge(&urge.name, &urge.description, &urge.prompt)?;
+    Ok(())
+}
+
+const URGE_REMOVED_PROJECTION: Projection = Projection {
+    name: "urge-removed",
+    apply: apply_urge_removed,
+    reset: |_| Ok(()),
+};
+
+fn apply_urge_removed(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let Events::Urge(UrgeEvents::UrgeRemoved(removed)) = &event.data else {
+        return Ok(());
+    };
+    db.remove_urge(&removed.name)?;
     Ok(())
 }
 

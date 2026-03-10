@@ -30,6 +30,8 @@ pub enum SeedOutcomes {
     #[outcome(transparent)]
     Nature(#[from] SetNatureOutcomes),
     #[outcome(transparent)]
+    Urge(#[from] SetUrgeOutcomes),
+    #[outcome(transparent)]
     Core(#[from] CoreSeedOutcomes),
 }
 
@@ -113,6 +115,13 @@ async fn run_core(context: &Context) -> Result<Outcomes<SeedOutcomes>, SeedComma
         match command.run(context).await {
             Ok(inner) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("nature", command.name, error)),
+        }
+    }
+
+    for command in core::urges() {
+        match command.run(context).await {
+            Ok(inner) => outcomes.absorb(inner),
+            Err(error) => failures.emit(CoreSeedOutcomes::failed("urge", command.name, error)),
         }
     }
 
