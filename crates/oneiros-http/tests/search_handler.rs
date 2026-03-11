@@ -1,7 +1,7 @@
 mod common;
 use common::*;
 
-async fn seed_search_agent(state: &Arc<ServiceState>, token: &str) {
+async fn seed_search_agent(state: &OneirosService, token: &str) {
     seed_agent(state, token, "searcher", "tester").await;
     seed_texture(state, token, "tester").await;
 }

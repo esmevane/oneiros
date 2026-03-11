@@ -26,7 +26,7 @@ fn seed_agent_in_brain(brain_path: &std::path::Path) {
         .unwrap();
 }
 
-async fn get_dashboard(state: Arc<ServiceState>, uri: &str) -> (StatusCode, String) {
+async fn get_dashboard(state: OneirosService, uri: &str) -> (StatusCode, String) {
     let app = router(state);
     let request = Request::builder()
         .method(Method::GET)
@@ -105,8 +105,9 @@ async fn dashboard_handles_no_brains() {
         .unwrap();
 
     let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf(), source));
+    let service = OneirosService::system(state);
 
-    let (status, body) = get_dashboard(state, "/").await;
+    let (status, body) = get_dashboard(service, "/").await;
 
     assert_eq!(status, StatusCode::OK);
     assert!(

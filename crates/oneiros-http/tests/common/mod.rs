@@ -6,6 +6,7 @@ pub use http_body_util::BodyExt;
 pub use oneiros_db::Database;
 pub use oneiros_http::*;
 pub use oneiros_model::*;
+pub use oneiros_service::{OneirosService, ServiceState, projections};
 pub use std::sync::Arc;
 pub use tempfile::TempDir;
 pub use tower::util::ServiceExt;
@@ -63,7 +64,7 @@ pub fn seed_tenant_and_brain(db: &Database, brain_path: &std::path::Path) -> Str
     token.0
 }
 
-pub fn setup() -> (TempDir, Arc<ServiceState>, String) {
+pub fn setup() -> (TempDir, OneirosService, String) {
     let temp = TempDir::new().unwrap();
     let db_path = temp.path().join("service.db");
     let db = Database::create(db_path).unwrap();
@@ -77,7 +78,8 @@ pub fn setup() -> (TempDir, Arc<ServiceState>, String) {
         temp.path().to_path_buf(),
         Source::default(),
     ));
-    (temp, state, token)
+    let service = OneirosService::system(state);
+    (temp, service, token)
 }
 
 // -- Request builders --
@@ -168,12 +170,7 @@ pub async fn body_bytes<T: serde::de::DeserializeOwned>(response: axum::response
 
 // -- Domain seeders --
 
-pub async fn seed_agent(
-    state: &Arc<ServiceState>,
-    token: &str,
-    agent_name: &str,
-    persona_name: &str,
-) {
+pub async fn seed_agent(state: &OneirosService, token: &str, agent_name: &str, persona_name: &str) {
     let app = router(state.clone());
     let body = serde_json::json!({
         "name": persona_name,
@@ -194,7 +191,7 @@ pub async fn seed_agent(
         .unwrap();
 }
 
-pub async fn seed_texture(state: &Arc<ServiceState>, token: &str, name: &str) {
+pub async fn seed_texture(state: &OneirosService, token: &str, name: &str) {
     let app = router(state.clone());
     let body = serde_json::json!({
         "name": name,
@@ -206,7 +203,7 @@ pub async fn seed_texture(state: &Arc<ServiceState>, token: &str, name: &str) {
         .unwrap();
 }
 
-pub async fn seed_nature(state: &Arc<ServiceState>, token: &str, name: &str) {
+pub async fn seed_nature(state: &OneirosService, token: &str, name: &str) {
     let app = router(state.clone());
     let body = serde_json::json!({
         "name": name,
@@ -218,7 +215,7 @@ pub async fn seed_nature(state: &Arc<ServiceState>, token: &str, name: &str) {
         .unwrap();
 }
 
-pub async fn seed_level(state: &Arc<ServiceState>, token: &str, name: &str) {
+pub async fn seed_level(state: &OneirosService, token: &str, name: &str) {
     let app = router(state.clone());
     let body = serde_json::json!({
         "name": name,
@@ -230,7 +227,7 @@ pub async fn seed_level(state: &Arc<ServiceState>, token: &str, name: &str) {
         .unwrap();
 }
 
-pub async fn seed_sensation(state: &Arc<ServiceState>, token: &str, name: &str) {
+pub async fn seed_sensation(state: &OneirosService, token: &str, name: &str) {
     let app = router(state.clone());
     let body = serde_json::json!({
         "name": name,
@@ -243,7 +240,7 @@ pub async fn seed_sensation(state: &Arc<ServiceState>, token: &str, name: &str) 
 }
 
 pub async fn ensure_persona(
-    state: &Arc<ServiceState>,
+    state: &OneirosService,
     token: &str,
     name: &str,
     description: &str,
@@ -263,7 +260,7 @@ pub async fn ensure_persona(
 // -- Factory helpers --
 
 pub async fn create_cognition(
-    state: &Arc<ServiceState>,
+    state: &OneirosService,
     token: &str,
     agent: &str,
     texture: &str,
@@ -283,7 +280,7 @@ pub async fn create_cognition(
 }
 
 pub async fn create_connection(
-    state: &Arc<ServiceState>,
+    state: &OneirosService,
     token: &str,
     nature: &str,
     from_ref: &Ref,
@@ -303,7 +300,7 @@ pub async fn create_connection(
 }
 
 pub async fn create_memory(
-    state: &Arc<ServiceState>,
+    state: &OneirosService,
     token: &str,
     agent: &str,
     level: &str,
@@ -326,7 +323,7 @@ pub async fn create_memory(
 }
 
 pub async fn create_experience(
-    state: &Arc<ServiceState>,
+    state: &OneirosService,
     token: &str,
     agent: &str,
     sensation: &str,

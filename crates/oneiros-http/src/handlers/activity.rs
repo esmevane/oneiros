@@ -1,15 +1,13 @@
 use axum::extract::State;
 use axum::http::HeaderMap;
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
+use oneiros_service::OneirosService;
 use std::convert::Infallible;
-use std::sync::Arc;
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::BroadcastStream;
 
-use oneiros_service::ServiceState;
-
 pub(crate) async fn handler(
-    State(state): State<Arc<ServiceState>>,
+    State(service): State<OneirosService>,
     headers: HeaderMap,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<SseEvent, Infallible>>> {
     let last_event_id: Option<u64> = headers
@@ -17,7 +15,7 @@ pub(crate) async fn handler(
         .and_then(|v| v.to_str().ok())
         .and_then(|s| s.parse().ok());
 
-    let rx = state.subscribe();
+    let rx = service.state().subscribe();
 
     let mut last_sent = last_event_id.unwrap_or(0);
 

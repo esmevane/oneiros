@@ -1,12 +1,10 @@
-use axum::Router;
-use axum::routing::get;
-use oneiros_service::ServiceState;
-use std::sync::Arc;
+use axum::{Router, routing::get};
+use oneiros_service::*;
 use tower_http::trace::TraceLayer;
 
 use crate::handlers;
 
-pub fn router(state: Arc<ServiceState>) -> Router {
+pub fn router(state: OneirosService) -> Router {
     Router::new()
         .route("/", get(handlers::dashboard::handler))
         .route("/activity", get(handlers::activity::handler))

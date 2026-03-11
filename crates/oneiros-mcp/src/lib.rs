@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 
-use oneiros_db::Database;
 use oneiros_model::*;
-use oneiros_service::{BrainState, OneirosService, ServiceState};
+use oneiros_service::OneirosService;
 use rmcp::{
     ErrorData, RoleServer, ServerHandler,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
@@ -29,46 +28,32 @@ const PRESSURE_NOTIFICATION_THRESHOLD: f64 = 0.80;
 /// `upgrade()` — used by the HTTP transport during MCP initialization.
 #[derive(Clone)]
 pub struct OneirosToolBox {
-    state: Arc<ServiceState>,
-    service: Arc<RwLock<OneirosService>>,
+    state: OneirosService,
     tool_router: ToolRouter<Self>,
     subscriptions: Arc<RwLock<HashSet<String>>>,
 }
 
 impl OneirosToolBox {
-    /// Create a toolbox with a pre-resolved brain. Used in tests and
-    /// when the brain is known at construction time.
-    pub fn new(brain_db: Database, state: Arc<ServiceState>) -> Self {
-        let service = OneirosService::Brain(BrainState::new(state.clone(), brain_db));
-        Self {
-            state,
-            service: Arc::new(RwLock::new(service)),
-            tool_router: Self::tool_router(),
-            subscriptions: Arc::new(RwLock::new(HashSet::new())),
-        }
-    }
-
     /// Create a toolbox starting at system-only capability.
     /// Brain context can be added later via `upgrade()`.
-    pub fn system(state: Arc<ServiceState>) -> Self {
-        let service = OneirosService::Service(state.clone());
+    pub fn system(state: OneirosService) -> Self {
         Self {
             state,
-            service: Arc::new(RwLock::new(service)),
             tool_router: Self::tool_router(),
             subscriptions: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
-    /// Upgrade the service to a new capability level.
-    pub fn upgrade(&self, service: OneirosService) {
-        if let Ok(mut current) = self.service.write() {
-            *current = service;
-        }
+    pub fn upgrade(&self, token: impl Into<Token>) -> Result<Self, oneiros_service::Error> {
+        Ok(Self {
+            state: self.state.upgrade(token)?,
+            tool_router: self.tool_router.clone(),
+            subscriptions: self.subscriptions.clone(),
+        })
     }
 
     /// Access the shared service state.
-    pub fn state(&self) -> &Arc<ServiceState> {
+    pub fn state(&self) -> &OneirosService {
         &self.state
     }
 
@@ -78,24 +63,18 @@ impl OneirosToolBox {
     /// errors visible to the calling agent. Only serialization failures
     /// produce protocol-level `ErrorData`.
     fn dispatch(&self, request: impl Into<Requests>) -> Result<CallToolResult, ErrorData> {
-        let service = self
-            .service
-            .read()
-            .map_err(|_| ErrorData::internal_error("Service lock poisoned", None))?;
-
-        match service.dispatch(request) {
+        match self.state.dispatch(request) {
             Ok(response) => {
                 let value = serde_json::to_value(&response)
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
                 Ok(CallToolResult::structured(value))
             }
+
             Err(e) => Ok(CallToolResult::error(vec![rmcp::model::Content::text(
                 e.to_string(),
             )])),
         }
     }
-
-    // ── Resource helpers ──────────────────────────────────────────────
 
     /// Parse a `oneiroi://pressure/{agent}` URI and return the agent name.
     fn parse_pressure_uri(uri: &str) -> Option<AgentName> {
@@ -109,12 +88,10 @@ impl OneirosToolBox {
 
     /// List all pressure resources — one per agent.
     fn list_pressure_resources(&self) -> Result<Vec<McpResource>, ErrorData> {
-        let service = self
-            .service
-            .read()
-            .map_err(|_| ErrorData::internal_error("Service lock poisoned", None))?;
-
-        let agents = match service.dispatch(AgentRequests::ListAgents(ListAgentsRequest)) {
+        let agents = match self
+            .state
+            .dispatch(AgentRequests::ListAgents(ListAgentsRequest))
+        {
             Ok(response) => match response.data {
                 Responses::Agent(AgentResponses::AgentsListed(agents)) => agents,
                 _ => return Ok(vec![]),
@@ -151,13 +128,8 @@ impl OneirosToolBox {
             ErrorData::invalid_params(format!("Invalid pressure URI: {uri}"), None)
         })?;
 
-        let service = self
-            .service
-            .read()
-            .map_err(|_| ErrorData::internal_error("Service lock poisoned", None))?;
-
         let request = PressureRequests::GetPressure(GetPressureRequest { agent: agent_name });
-        let pressures = match service.dispatch(request) {
+        let pressures = match self.state.dispatch(request) {
             Ok(response) => match response.data {
                 Responses::Pressure(PressureResponses::PressureFound(pressures)) => pressures,
                 _ => return Err(ErrorData::internal_error("Unexpected response", None)),
@@ -183,17 +155,12 @@ impl OneirosToolBox {
             Err(_) => return vec![],
         };
 
-        let service = match self.service.read() {
-            Ok(s) => s,
-            Err(_) => return vec![],
-        };
-
         let mut triggered = Vec::new();
         for uri in &subs {
             if let Some(agent_name) = Self::parse_pressure_uri(uri) {
                 let request =
                     PressureRequests::GetPressure(GetPressureRequest { agent: agent_name });
-                if let Ok(response) = service.dispatch(request)
+                if let Ok(response) = self.state.dispatch(request)
                     && let Responses::Pressure(PressureResponses::PressureFound(pressures)) =
                         response.data
                     && pressures
@@ -898,9 +865,11 @@ impl ServerHandler for OneirosToolBox {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oneiros_db::Database;
+    use oneiros_service::ServiceState;
     use pretty_assertions::assert_eq;
 
-    fn test_state(data_dir: &std::path::Path) -> (Database, Arc<ServiceState>) {
+    fn test_toolbox(data_dir: &std::path::Path) -> OneirosToolBox {
         let db_path = data_dir.join("system.db");
         let db = Database::create(&db_path).expect("create system db");
 
@@ -909,14 +878,14 @@ mod tests {
         let brain_path = data_dir.join("test.db");
         let brain_db = Database::create_brain_db(&brain_path).expect("create brain db");
 
-        (brain_db, state)
+        let service = OneirosService::brain(state, brain_db);
+        OneirosToolBox::system(service)
     }
 
     #[test]
     fn tool_router_has_all_tools() {
         let dir = tempfile::tempdir().unwrap();
-        let (brain_db, state) = test_state(dir.path());
-        let toolbox = OneirosToolBox::new(brain_db, state);
+        let toolbox = test_toolbox(dir.path());
 
         let router = &toolbox.tool_router;
         let tools = router.list_all();
@@ -969,11 +938,11 @@ mod tests {
         let source = Source::default();
         let state = Arc::new(ServiceState::new(db, dir.path().to_path_buf(), source));
 
-        let toolbox = OneirosToolBox::system(state);
-        let service = toolbox.service.read().unwrap();
+        let service = OneirosService::system(state);
+        let toolbox = OneirosToolBox::system(service);
         assert!(
-            matches!(&*service, OneirosService::Service(_)),
-            "system toolbox should start in Service mode"
+            matches!(toolbox.state(), OneirosService::System { .. }),
+            "system toolbox should start in System mode"
         );
     }
 
@@ -1004,8 +973,7 @@ mod tests {
     #[test]
     fn list_pressure_resources_returns_per_agent() {
         let dir = tempfile::tempdir().unwrap();
-        let (brain_db, state) = test_state(dir.path());
-        let toolbox = OneirosToolBox::new(brain_db, state);
+        let toolbox = test_toolbox(dir.path());
 
         // Seed persona + agent
         toolbox
@@ -1033,8 +1001,7 @@ mod tests {
     #[test]
     fn read_pressure_resource_returns_json() {
         let dir = tempfile::tempdir().unwrap();
-        let (brain_db, state) = test_state(dir.path());
-        let toolbox = OneirosToolBox::new(brain_db, state);
+        let toolbox = test_toolbox(dir.path());
 
         // Seed agent + persona (needed for pressure queries)
         toolbox
@@ -1062,8 +1029,7 @@ mod tests {
     #[test]
     fn read_pressure_resource_rejects_invalid_uri() {
         let dir = tempfile::tempdir().unwrap();
-        let (brain_db, state) = test_state(dir.path());
-        let toolbox = OneirosToolBox::new(brain_db, state);
+        let toolbox = test_toolbox(dir.path());
 
         let result = toolbox.read_pressure_resource("invalid://uri");
         assert!(result.is_err());
@@ -1072,8 +1038,7 @@ mod tests {
     #[test]
     fn subscribe_and_unsubscribe_track_uris() {
         let dir = tempfile::tempdir().unwrap();
-        let (brain_db, state) = test_state(dir.path());
-        let toolbox = OneirosToolBox::new(brain_db, state);
+        let toolbox = test_toolbox(dir.path());
 
         assert!(!toolbox.has_subscriptions());
 
@@ -1087,8 +1052,7 @@ mod tests {
     #[test]
     fn server_capabilities_include_resources() {
         let dir = tempfile::tempdir().unwrap();
-        let (brain_db, state) = test_state(dir.path());
-        let toolbox = OneirosToolBox::new(brain_db, state);
+        let toolbox = test_toolbox(dir.path());
 
         let info = toolbox.get_info();
         assert!(

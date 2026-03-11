@@ -160,7 +160,7 @@ async fn remove_connection_then_gone() {
         .oneshot(delete_auth(&format!("/connections/{}", created.id), &token))
         .await
         .unwrap();
-    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    assert_eq!(response.status(), StatusCode::OK);
 
     let app = router(state);
     let response = app

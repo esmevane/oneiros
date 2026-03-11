@@ -4,7 +4,7 @@ use std::sync::Arc;
 use clap::Args;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
-use oneiros_service::ServiceState;
+use oneiros_service::{OneirosService, ServiceState};
 
 use crate::*;
 
@@ -57,8 +57,9 @@ impl RunService {
             source,
         ));
 
+        let service = OneirosService::system(state);
         let grace_period = context.config().service.grace_period();
-        oneiros_http::serve(state, addr, grace_period).await?;
+        oneiros_http::serve(service, addr, grace_period).await?;
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 

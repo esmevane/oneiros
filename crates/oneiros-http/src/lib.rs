@@ -1,19 +1,18 @@
 mod error;
-mod extractors;
 mod handlers;
+mod mcp_session;
+mod oneiros_context;
 mod routes;
 
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
+use oneiros_service::OneirosService;
+use std::{net::SocketAddr, time::Duration};
 use tokio::net::TcpListener;
 
-pub use error::Error;
-pub use extractors::*;
-pub use routes::router;
+use error::Error;
+use mcp_session::McpSession;
+use oneiros_context::{OneirosContext, OneirosContextError};
 
-// Re-export service types that consumers need.
-pub use oneiros_service::{self, ServiceState, projections};
+pub use routes::router;
 
 /// Start the HTTP service, listening on the given TCP address.
 ///
@@ -21,7 +20,7 @@ pub use oneiros_service::{self, ServiceState, projections};
 /// SIGTERM. After receiving the signal, in-flight connections have
 /// `grace_period` to close before the process exits.
 pub async fn serve(
-    state: Arc<ServiceState>,
+    state: OneirosService,
     addr: SocketAddr,
     grace_period: Duration,
 ) -> Result<(), std::io::Error> {

@@ -1,5 +1,5 @@
 use axum::Router;
-use oneiros_service::ServiceState;
+use oneiros_service::OneirosService;
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
@@ -13,7 +13,7 @@ use crate::*;
 /// mode. During the MCP `initialize` handshake, the Bearer token from the
 /// HTTP Authorization header is used to resolve the brain and upgrade the
 /// toolbox to full capability via `ActorContext`.
-pub(crate) fn router<S: Clone + Send + Sync + 'static>(state: Arc<ServiceState>) -> Router<S> {
+pub(crate) fn router<S: Clone + Send + Sync + 'static>(state: OneirosService) -> Router<S> {
     let mcp_service = StreamableHttpService::new(
         move || Ok(McpSession::new(state.clone())),
         Arc::new(LocalSessionManager::default()),
