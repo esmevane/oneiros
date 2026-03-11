@@ -282,10 +282,28 @@ impl Client {
         self.parse(&bytes)
     }
 
+    pub async fn get_pressure(
+        &self,
+        token: &Token,
+        agent: &AgentName,
+    ) -> Result<Vec<Pressure>, Error> {
+        self.parse(
+            &self
+                .send("GET", &format!("/pressures/{agent}"), token, None)
+                .await?,
+        )
+    }
+
+    pub async fn list_pressures(&self, token: &Token) -> Result<Vec<Pressure>, Error> {
+        self.parse(&self.send("GET", "/pressures", token, None).await?)
+    }
+
     pub async fn set_level(&self, token: &Token, request: Level) -> Result<Level, Error> {
-        let body = serde_json::to_vec(&request)?;
-        let bytes = self.send("PUT", "/levels", token, Some(body)).await?;
-        self.parse(&bytes)
+        self.parse(
+            &self
+                .send("PUT", "/levels", token, Some(serde_json::to_vec(&request)?))
+                .await?,
+        )
     }
 
     pub async fn remove_level(&self, token: &Token, name: &LevelName) -> Result<(), Error> {

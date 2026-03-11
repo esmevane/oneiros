@@ -187,6 +187,21 @@ create index if not exists idx_memory_agent_level on memory(agent_id, level);
 create index if not exists idx_experience_agent on experience(agent_id);
 create index if not exists idx_experience_agent_sensation on experience(agent_id, sensation);
 
+-- Pressures are derived state computed by projections from other tables.
+-- Each row represents a single urge's pressure signal for a specific agent.
+-- Pressures are not events — they are mutable read models recomputed on
+-- every relevant event. The data column carries a self-describing Gauge
+-- envelope (tagged JSON) with inputs and computed factors.
+--
+create table if not exists pressure (
+    id          text primary key not null,
+    agent_id    text not null references agent(id),
+    urge        text not null references urge(name),
+    data        text not null default '{}',
+    updated_at  text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    unique(agent_id, urge)
+);
+
 -- Storage entries map user-facing keys to content hashes. This table
 -- is a projection from storage-set and storage-removed events.
 --

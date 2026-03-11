@@ -20,6 +20,7 @@ pub enum BrainDispatch {
     Memory(MemoryRequests),
     Nature(NatureRequests),
     Persona(PersonaRequests),
+    Pressure(PressureRequests),
     Reflecting(ReflectingRequests),
     Search(SearchRequests),
     Sensation(SensationRequests),
@@ -42,6 +43,7 @@ pub enum BrainDispatchResponse {
     Memory(MemoryResponses),
     Nature(NatureResponses),
     Persona(PersonaResponses),
+    Pressure(PressureResponses),
     Reflecting(ReflectingResponses),
     Search(SearchResponses),
     Sensation(SensationResponses),
@@ -111,6 +113,11 @@ impl From<PersonaRequests> for BrainDispatch {
         Self::Persona(r)
     }
 }
+impl From<PressureRequests> for BrainDispatch {
+    fn from(r: PressureRequests) -> Self {
+        Self::Pressure(r)
+    }
+}
 impl From<ReflectingRequests> for BrainDispatch {
     fn from(r: ReflectingRequests) -> Self {
         Self::Reflecting(r)
@@ -162,6 +169,7 @@ impl From<BrainDispatchResponse> for Responses {
             BrainDispatchResponse::Memory(r) => Self::Memory(r),
             BrainDispatchResponse::Nature(r) => Self::Nature(r),
             BrainDispatchResponse::Persona(r) => Self::Persona(r),
+            BrainDispatchResponse::Pressure(r) => Self::Pressure(r),
             BrainDispatchResponse::Reflecting(r) => Self::Reflecting(r),
             BrainDispatchResponse::Search(r) => Self::Search(r),
             BrainDispatchResponse::Sensation(r) => Self::Sensation(r),
@@ -280,6 +288,9 @@ impl BrainState {
             BrainDispatch::Persona(r) => {
                 Ok(BrainDispatchResponse::Persona(service.dispatch_persona(r)?))
             }
+            BrainDispatch::Pressure(r) => Ok(BrainDispatchResponse::Pressure(
+                service.dispatch_pressure(r)?,
+            )),
             BrainDispatch::Reflecting(r) => Ok(BrainDispatchResponse::Reflecting(
                 service.dispatch_reflect(r)?,
             )),
@@ -340,6 +351,7 @@ impl OneirosService {
             Requests::Memory(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Nature(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Persona(r) => Ok(self.brain()?.dispatch(r)?.into()),
+            Requests::Pressure(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Reflecting(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Search(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Sensation(r) => Ok(self.brain()?.dispatch(r)?.into()),

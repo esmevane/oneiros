@@ -8,6 +8,7 @@ mod dream;
 mod dream_context;
 mod entity_ref;
 mod expression;
+mod gauge;
 mod id;
 mod introspection;
 mod label;
@@ -33,6 +34,9 @@ pub use dream::Dream;
 pub use dream_context::DreamContext;
 pub use entity_ref::{Ref, RefError};
 pub use expression::{Expression, SearchResults};
+pub use gauge::{
+    Gauge, IntrospectCalculation, IntrospectConfig, IntrospectGauge, IntrospectInputs,
+};
 pub use id::{Id, IdParseError};
 pub use introspection::Introspection;
 pub use label::Label;
