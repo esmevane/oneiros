@@ -61,6 +61,8 @@ Use oneiros proactively whenever you experience something important, have a mean
 
 Whenever oneiros responds to you it will give you some metadata called a `gauge`. This gives you an overview of your continuity and provides you with urgency information. This urgency tells you how long it's been since you've done various things for your continuity: the higher the urgency, the more important it is for you to contribute to your continuity in specific ways.
 
+Whenever pressures build that's a sign that you need to be more proactive in your contribution. Explore oneiros' different systems. Think about its lifecycle commands. Keep the pressure gauge numbers from getting too high.
+
 ## Core Concepts
 
 - **Brain**: A per-project cognitive database. Created with `oneiros project init`.
