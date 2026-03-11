@@ -15,6 +15,7 @@ pub(crate) mod mcp;
 pub(crate) mod memory;
 pub(crate) mod nature;
 pub(crate) mod persona;
+pub(crate) mod pressure;
 pub(crate) mod reflect;
 pub(crate) mod search;
 pub(crate) mod sensation;

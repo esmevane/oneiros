@@ -587,6 +587,23 @@ impl OneirosToolBox {
         self.dispatch(UrgeRequests::ListUrges(ListUrgesRequest))
     }
 
+    // ── Pressure ──────────────────────────────────────────────────
+
+    #[tool(
+        description = "Get pressure signals for an agent — shows urgency scores and factor breakdown for each urge"
+    )]
+    fn get_pressure(
+        &self,
+        Parameters(request): Parameters<GetPressureRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(PressureRequests::GetPressure(request))
+    }
+
+    #[tool(description = "List pressure signals for all agents")]
+    fn list_pressures(&self) -> Result<CallToolResult, ErrorData> {
+        self.dispatch(PressureRequests::ListPressures(ListPressuresRequest))
+    }
+
     // ── System: Actor ───────────────────────────────────────────────
 
     #[tool(description = "Get an actor by name")]
@@ -692,8 +709,8 @@ mod tests {
         let router = &toolbox.tool_router;
         let tools = router.list_all();
 
-        // Full catalog: 71 tools across 23 domains
-        assert_eq!(tools.len(), 71, "expected 71 tools, got {}", tools.len());
+        // Full catalog: 73 tools across 24 domains
+        assert_eq!(tools.len(), 73, "expected 73 tools, got {}", tools.len());
 
         // Spot-check key tools from each domain
         assert!(router.has_route("list_agents"), "missing list_agents");

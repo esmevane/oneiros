@@ -11,6 +11,7 @@ mod lifecycle;
 mod memory;
 mod nature;
 mod persona;
+mod pressure;
 mod search_ops;
 mod sensation;
 mod serde_stability_tests;
@@ -35,6 +36,7 @@ pub use lifecycle::*;
 pub use memory::*;
 pub use nature::*;
 pub use persona::*;
+pub use pressure::*;
 pub use search_ops::*;
 pub use sensation::*;
 pub use storage::*;
@@ -88,6 +90,7 @@ pub enum Requests {
     Memory(MemoryRequests),
     Nature(NatureRequests),
     Persona(PersonaRequests),
+    Pressure(PressureRequests),
     Reflecting(ReflectingRequests),
     Search(SearchRequests),
     Sensation(SensationRequests),
@@ -169,6 +172,11 @@ impl From<PersonaRequests> for Requests {
         Self::Persona(r)
     }
 }
+impl From<PressureRequests> for Requests {
+    fn from(r: PressureRequests) -> Self {
+        Self::Pressure(r)
+    }
+}
 impl From<ReflectingRequests> for Requests {
     fn from(r: ReflectingRequests) -> Self {
         Self::Reflecting(r)
@@ -234,6 +242,7 @@ pub enum Responses {
     Memory(MemoryResponses),
     Nature(NatureResponses),
     Persona(PersonaResponses),
+    Pressure(PressureResponses),
     Reflecting(ReflectingResponses),
     Search(SearchResponses),
     Sensation(SensationResponses),
@@ -313,6 +322,11 @@ impl From<NatureResponses> for Responses {
 impl From<PersonaResponses> for Responses {
     fn from(r: PersonaResponses) -> Self {
         Self::Persona(r)
+    }
+}
+impl From<PressureResponses> for Responses {
+    fn from(r: PressureResponses) -> Self {
+        Self::Pressure(r)
     }
 }
 impl From<ReflectingResponses> for Responses {

@@ -68,6 +68,9 @@ impl<'a> BrainService<'a> {
             BrainDispatch::Persona(r) => {
                 Ok(BrainDispatchResponse::Persona(self.dispatch_persona(r)?))
             }
+            BrainDispatch::Pressure(r) => {
+                Ok(BrainDispatchResponse::Pressure(self.dispatch_pressure(r)?))
+            }
             BrainDispatch::Reflecting(r) => {
                 Ok(BrainDispatchResponse::Reflecting(self.dispatch_reflect(r)?))
             }
@@ -418,6 +421,36 @@ impl<'a> BrainService<'a> {
                 }));
                 self.log_and_broadcast(&event)?;
                 Ok(TextureResponses::TextureRemoved)
+            }
+        }
+    }
+
+    // ── Pressure operations ──────────────────────────────────────────
+
+    pub fn dispatch_pressure(&self, request: PressureRequests) -> Result<PressureResponses, Error> {
+        match request {
+            PressureRequests::GetPressure(request) => {
+                let agent = self
+                    .db
+                    .get_agent(&request.agent)?
+                    .ok_or(NotFound::Agent(request.agent.clone()))?;
+
+                let pressures = self.db.list_pressures_for_agent(&agent.id.to_string())?;
+
+                Ok(PressureResponses::PressureFound(pressures))
+            }
+            PressureRequests::ListPressures(_) => {
+                let agents = self.db.list_agents()?;
+                let mut pressures = Vec::new();
+
+                for agent in agents {
+                    let mut agent_pressures =
+                        self.db.list_pressures_for_agent(&agent.id.to_string())?;
+
+                    pressures.append(&mut agent_pressures);
+                }
+
+                Ok(PressureResponses::PressuresListed(pressures))
             }
         }
     }

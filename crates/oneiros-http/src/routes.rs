@@ -25,6 +25,7 @@ pub fn router(state: Arc<ServiceState>) -> Router {
         .nest("/levels", handlers::level::router())
         .nest("/memories", handlers::memory::router())
         .nest("/personas", handlers::persona::router())
+        .nest("/pressures", handlers::pressure::router())
         .nest("/reflect", handlers::reflect::router())
         .nest("/search", handlers::search::router())
         .nest("/sense", handlers::sense::router())

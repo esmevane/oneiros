@@ -55,6 +55,12 @@ impl From<ExperienceConstructionError> for DatabaseError {
     }
 }
 
+impl From<PressureConstructionError> for DatabaseError {
+    fn from(e: PressureConstructionError) -> Self {
+        Self::Construction(e.into())
+    }
+}
+
 impl DatabaseError {
     /// Returns `true` if this error is a SQLite foreign key constraint violation.
     ///

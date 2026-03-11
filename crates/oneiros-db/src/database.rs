@@ -840,6 +840,28 @@ impl Database {
         Ok(())
     }
 
+    pub fn get_agent_by_id(&self, id: impl AsRef<str>) -> Result<Option<Agent>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select id, name, persona, description, prompt from agent where id = ?1",
+            params![id.as_ref()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
+
+        match result {
+            Ok(row) => Ok(Some(Agent::construct_from_db(row)?)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
+    }
+
     pub fn get_agent(&self, name: impl AsRef<str>) -> Result<Option<Agent>, DatabaseError> {
         let result = self.conn.query_row(
             "select id, name, persona, description, prompt from agent where name = ?1",
@@ -2101,6 +2123,146 @@ impl Database {
         transaction.commit()?;
 
         Ok(count)
+    }
+
+    // -- Pressure operations --
+
+    pub fn upsert_pressure(&self, pressure: &Pressure) -> Result<(), DatabaseError> {
+        let data = serde_json::to_string(&pressure.data)?;
+        self.conn.execute(
+            "insert into pressure (id, agent_id, urge, data, updated_at) \
+             values (?1, ?2, ?3, ?4, ?5) \
+             on conflict(agent_id, urge) do update set \
+             id = excluded.id, data = excluded.data, \
+             updated_at = excluded.updated_at",
+            params![
+                pressure.id.to_string(),
+                pressure.agent_id.to_string(),
+                pressure.urge.as_ref(),
+                data,
+                pressure.updated_at.to_string(),
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_pressures_for_agent(&self, agent_id: &str) -> Result<Vec<Pressure>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, urge, data, updated_at \
+             from pressure where agent_id = ?1 order by urge",
+        )?;
+
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let mut pressures = Vec::new();
+        for row in rows {
+            let tuple = row?;
+            pressures.push(Pressure::construct_from_db(tuple)?);
+        }
+
+        Ok(pressures)
+    }
+
+    pub fn reset_pressures(&self) -> Result<(), DatabaseError> {
+        self.conn.execute_batch("delete from pressure")?;
+        Ok(())
+    }
+
+    pub fn reset_pressures_by_urge(&self, urge: &str) -> Result<(), DatabaseError> {
+        self.conn
+            .execute("delete from pressure where urge = ?1", params![urge])?;
+        Ok(())
+    }
+
+    // -- Pressure factor query helpers --
+
+    pub fn count_cognitions_for_agent(&self, agent_id: &str) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from cognition where agent_id = ?1",
+            params![agent_id],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn count_cognitions_by_texture_for_agent(
+        &self,
+        agent_id: &str,
+        texture: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from cognition where agent_id = ?1 and texture = ?2",
+            params![agent_id, texture],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn count_cognitions_since(
+        &self,
+        agent_id: &str,
+        since: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from cognition where agent_id = ?1 and created_at > ?2",
+            params![agent_id, since],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn count_memories_since(&self, agent_id: &str, since: &str) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from memory where agent_id = ?1 and created_at > ?2",
+            params![agent_id, since],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn latest_event_timestamp_by_type(
+        &self,
+        event_type: &str,
+    ) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select max(timestamp) from events where json_extract(meta, '$.type') = ?1",
+            params![event_type],
+            |row| row.get::<_, Option<String>>(0),
+        );
+
+        match result {
+            Ok(ts) => Ok(ts),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn latest_lifecycle_timestamp(
+        &self,
+        agent_name: &str,
+        event_type: &str,
+    ) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select max(timestamp) from events \
+             where json_extract(meta, '$.type') = ?1 \
+             and json_extract(data, '$.name') = ?2",
+            params![event_type, agent_name],
+            |row| row.get::<_, Option<String>>(0),
+        );
+
+        match result {
+            Ok(ts) => Ok(ts),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 }
 
