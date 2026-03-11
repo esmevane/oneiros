@@ -2264,6 +2264,135 @@ impl Database {
             Err(e) => Err(e.into()),
         }
     }
+
+    // -- Catharsis factor queries --
+
+    pub fn count_experiences_by_sensation_for_agent(
+        &self,
+        agent_id: &str,
+        sensation: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from experience where agent_id = ?1 and sensation = ?2",
+            params![agent_id, sensation],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn count_cognitions_not_in_experiences(
+        &self,
+        agent_id: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from cognition c \
+             where c.agent_id = ?1 \
+             and not exists ( \
+                 select 1 from connection \
+                 where from_ref like '%' || c.id || '%' \
+                    or to_ref like '%' || c.id || '%' \
+             )",
+            params![agent_id],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    // -- Recollect factor queries --
+
+    pub fn count_memories_by_level_for_agent(
+        &self,
+        agent_id: &str,
+        level: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from memory where agent_id = ?1 and level = ?2",
+            params![agent_id, level],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn count_experiences_for_agent(&self, agent_id: &str) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from experience where agent_id = ?1",
+            params![agent_id],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn count_experiences_not_in_connections(
+        &self,
+        agent_id: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from experience e \
+             where e.agent_id = ?1 \
+             and not exists ( \
+                 select 1 from connection \
+                 where from_ref like '%' || e.id || '%' \
+                    or to_ref like '%' || e.id || '%' \
+             )",
+            params![agent_id],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    pub fn latest_memory_timestamp_for_agent(
+        &self,
+        agent_id: &str,
+    ) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select max(created_at) from memory where agent_id = ?1",
+            params![agent_id],
+            |row| row.get::<_, Option<String>>(0),
+        );
+
+        match result {
+            Ok(ts) => Ok(ts),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    // -- Retrospect factor queries --
+
+    pub fn latest_memory_timestamp_by_level_for_agent(
+        &self,
+        agent_id: &str,
+        level: &str,
+    ) -> Result<Option<String>, DatabaseError> {
+        let result = self.conn.query_row(
+            "select max(created_at) from memory where agent_id = ?1 and level = ?2",
+            params![agent_id, level],
+            |row| row.get::<_, Option<String>>(0),
+        );
+
+        match result {
+            Ok(ts) => Ok(ts),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn count_lifecycle_events_since(
+        &self,
+        agent_name: &str,
+        event_type: &str,
+        since: &str,
+    ) -> Result<i64, DatabaseError> {
+        let count: i64 = self.conn.query_row(
+            "select count(*) from events \
+             where json_extract(meta, '$.type') = ?1 \
+             and json_extract(data, '$.name') = ?2 \
+             and timestamp > ?3",
+            params![event_type, agent_name, since],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
 }
 
 #[cfg(test)]

@@ -1,7 +1,12 @@
 use oneiros_db::*;
 use oneiros_model::*;
 
-pub const ALL: &[Projection] = &[INTROSPECT_PRESSURE];
+pub const ALL: &[Projection] = &[
+    INTROSPECT_PRESSURE,
+    CATHARSIS_PRESSURE,
+    RECOLLECT_PRESSURE,
+    RETROSPECT_PRESSURE,
+];
 
 const INTROSPECT_PRESSURE: Projection = Projection {
     name: "pressure:introspect",
@@ -9,40 +14,83 @@ const INTROSPECT_PRESSURE: Projection = Projection {
     reset: |db| db.reset_pressures_by_urge("introspect"),
 };
 
+const CATHARSIS_PRESSURE: Projection = Projection {
+    name: "pressure:catharsis",
+    apply: apply_catharsis_pressure,
+    reset: |db| db.reset_pressures_by_urge("catharsis"),
+};
+
+const RECOLLECT_PRESSURE: Projection = Projection {
+    name: "pressure:recollect",
+    apply: apply_recollect_pressure,
+    reset: |db| db.reset_pressures_by_urge("recollect"),
+};
+
+const RETROSPECT_PRESSURE: Projection = Projection {
+    name: "pressure:retrospect",
+    apply: apply_retrospect_pressure,
+    reset: |db| db.reset_pressures_by_urge("retrospect"),
+};
+
+/// Extract agent identity from an event, if the event is relevant to pressure.
+///
+/// Returns the resolved Agent, or None if the event is irrelevant or the agent
+/// doesn't exist yet.
+fn resolve_agent(db: &Database, event: &KnownEvent) -> Result<Option<Agent>, DatabaseError> {
+    let agent_id = match &event.data {
+        Events::Cognition(CognitionEvents::CognitionAdded(c)) => c.agent_id.to_string(),
+        Events::Memory(MemoryEvents::MemoryAdded(m)) => m.agent_id.to_string(),
+        Events::Experience(ExperienceEvents::ExperienceCreated(e)) => e.agent_id.to_string(),
+        Events::Connection(ConnectionEvents::ConnectionCreated(_)) => {
+            // Connections affect catharsis and recollect but don't carry agent_id.
+            // We recompute all agents' pressures when connections change.
+            return Ok(None);
+        }
+        Events::Introspecting(IntrospectingEvents::IntrospectionComplete(a)) => {
+            match db.get_agent(&a.name)? {
+                Some(agent) => return Ok(Some(agent)),
+                None => return Ok(None),
+            }
+        }
+        Events::Reflecting(ReflectingEvents::ReflectionComplete(a)) => {
+            match db.get_agent(&a.name)? {
+                Some(agent) => return Ok(Some(agent)),
+                None => return Ok(None),
+            }
+        }
+        Events::Lifecycle(LifecycleEvents::Woke(a)) => match db.get_agent(&a.name)? {
+            Some(agent) => return Ok(Some(agent)),
+            None => return Ok(None),
+        },
+        _ => return Ok(None),
+    };
+
+    db.get_agent_by_id(&agent_id)
+}
+
+// ── Introspect ──────────────────────────────────────────────────
+
 /// Gather inputs from the database and construct an IntrospectGauge.
 ///
 /// The projection's job is purely gathering — the Gauge type owns
 /// the calculation logic.
 fn apply_introspect_pressure(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
-    // Only recompute on events that affect the factors.
-    let agent_id = match &event.data {
-        Events::Cognition(CognitionEvents::CognitionAdded(c)) => c.agent_id.to_string(),
-        Events::Memory(MemoryEvents::MemoryAdded(m)) => m.agent_id.to_string(),
-        Events::Introspecting(IntrospectingEvents::IntrospectionComplete(a)) => {
-            match db.get_agent(&a.name)? {
-                Some(agent) => agent.id.to_string(),
-                None => return Ok(()),
-            }
-        }
-        Events::Lifecycle(LifecycleEvents::Woke(a)) => match db.get_agent(&a.name)? {
-            Some(agent) => agent.id.to_string(),
-            None => return Ok(()),
-        },
-        _ => return Ok(()),
-    };
-
-    let agent = match db.get_agent_by_id(&agent_id)? {
+    let agent = match resolve_agent(db, event)? {
         Some(a) => a,
         None => return Ok(()),
     };
+    let agent_id = agent.id.to_string();
 
-    // Gather inputs for the introspect heuristic.
+    if db.get_urge("introspect")?.is_none() {
+        return Ok(());
+    }
+
     let last_introspect =
         db.latest_lifecycle_timestamp(agent.name.as_ref(), "introspection-complete")?;
 
     let hours_since_last_introspect = match &last_introspect {
         Some(ts) => hours_since(ts, &event.timestamp.to_string()),
-        None => 24.0, // no introspection ever = strong pressure
+        None => 24.0,
     };
 
     let total_cognitions = db.count_cognitions_for_agent(&agent_id)?;
@@ -59,12 +107,6 @@ fn apply_introspect_pressure(db: &Database, event: &KnownEvent) -> Result<(), Da
     let session_since = last_wake.as_deref().unwrap_or("1970-01-01T00:00:00.000Z");
     let session_cognition_count = db.count_cognitions_since(&agent_id, session_since)?;
 
-    // Verify the urge exists — if not seeded yet, skip gracefully.
-    if db.get_urge("introspect")?.is_none() {
-        return Ok(());
-    }
-
-    // Construct the gauge — all calculation happens in the model.
     let inputs = IntrospectInputs {
         hours_since_last_introspect,
         total_cognitions: total_cognitions as u64,
@@ -80,6 +122,160 @@ fn apply_introspect_pressure(db: &Database, event: &KnownEvent) -> Result<(), Da
         id: PressureId::new(),
         agent_id: agent.id,
         urge: UrgeName::new("introspect"),
+        data: gauge,
+        updated_at: Timestamp::now(),
+    };
+
+    db.upsert_pressure(&pressure)?;
+
+    Ok(())
+}
+
+// ── Catharsis ───────────────────────────────────────────────────
+
+fn apply_catharsis_pressure(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let agent = match resolve_agent(db, event)? {
+        Some(a) => a,
+        None => return Ok(()),
+    };
+    let agent_id = agent.id.to_string();
+
+    if db.get_urge("catharsis")?.is_none() {
+        return Ok(());
+    }
+
+    let tensions_experience_count =
+        db.count_experiences_by_sensation_for_agent(&agent_id, "tensions")?;
+
+    let total_cognitions = db.count_cognitions_for_agent(&agent_id)?;
+    let working_cognitions = db.count_cognitions_by_texture_for_agent(&agent_id, "working")?;
+
+    let last_reflect = db.latest_lifecycle_timestamp(agent.name.as_ref(), "reflection-complete")?;
+    let hours_since_last_reflect = match &last_reflect {
+        Some(ts) => hours_since(ts, &event.timestamp.to_string()),
+        None => 24.0,
+    };
+
+    let orphaned_cognitions = db.count_cognitions_not_in_experiences(&agent_id)?;
+
+    let inputs = CatharsisInputs {
+        tensions_experience_count: tensions_experience_count as u64,
+        total_cognitions: total_cognitions as u64,
+        working_cognitions: working_cognitions as u64,
+        hours_since_last_reflect,
+        orphaned_cognitions: orphaned_cognitions as u64,
+    };
+
+    let gauge = Gauge::Catharsis(CatharsisGauge::from_inputs(inputs));
+
+    let pressure = Pressure {
+        id: PressureId::new(),
+        agent_id: agent.id,
+        urge: UrgeName::new("catharsis"),
+        data: gauge,
+        updated_at: Timestamp::now(),
+    };
+
+    db.upsert_pressure(&pressure)?;
+
+    Ok(())
+}
+
+// ── Recollect ───────────────────────────────────────────────────
+
+fn apply_recollect_pressure(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let agent = match resolve_agent(db, event)? {
+        Some(a) => a,
+        None => return Ok(()),
+    };
+    let agent_id = agent.id.to_string();
+
+    if db.get_urge("recollect")?.is_none() {
+        return Ok(());
+    }
+
+    let session_memory_count = db.count_memories_by_level_for_agent(&agent_id, "session")?;
+    let working_memory_count = db.count_memories_by_level_for_agent(&agent_id, "working")?;
+
+    let total_experiences = db.count_experiences_for_agent(&agent_id)?;
+    let unconnected_experiences = db.count_experiences_not_in_connections(&agent_id)?;
+
+    let last_memory = db.latest_memory_timestamp_for_agent(&agent_id)?;
+    let hours_since_last_memory = match &last_memory {
+        Some(ts) => hours_since(ts, &event.timestamp.to_string()),
+        None => 24.0,
+    };
+
+    let inputs = RecollectInputs {
+        session_memory_count: session_memory_count as u64,
+        total_experiences: total_experiences as u64,
+        unconnected_experiences: unconnected_experiences as u64,
+        hours_since_last_memory,
+        working_memory_count: working_memory_count as u64,
+    };
+
+    let gauge = Gauge::Recollect(RecollectGauge::from_inputs(inputs));
+
+    let pressure = Pressure {
+        id: PressureId::new(),
+        agent_id: agent.id,
+        urge: UrgeName::new("recollect"),
+        data: gauge,
+        updated_at: Timestamp::now(),
+    };
+
+    db.upsert_pressure(&pressure)?;
+
+    Ok(())
+}
+
+// ── Retrospect ──────────────────────────────────────────────────
+
+fn apply_retrospect_pressure(db: &Database, event: &KnownEvent) -> Result<(), DatabaseError> {
+    let agent = match resolve_agent(db, event)? {
+        Some(a) => a,
+        None => return Ok(()),
+    };
+    let agent_id = agent.id.to_string();
+
+    if db.get_urge("retrospect")?.is_none() {
+        return Ok(());
+    }
+
+    let last_archival = db.latest_memory_timestamp_by_level_for_agent(&agent_id, "archival")?;
+    let hours_since_last_archival = match &last_archival {
+        Some(ts) => hours_since(ts, &event.timestamp.to_string()),
+        None => 168.0, // no archival ever = strong pressure (1 week)
+    };
+
+    let last_project = db.latest_memory_timestamp_by_level_for_agent(&agent_id, "project")?;
+    let hours_since_last_project_memory = match &last_project {
+        Some(ts) => hours_since(ts, &event.timestamp.to_string()),
+        None => 48.0,
+    };
+
+    // Count wake events since last archival memory
+    let archival_since = last_archival
+        .as_deref()
+        .unwrap_or("1970-01-01T00:00:00.000Z");
+    let sessions_since_retrospect =
+        db.count_lifecycle_events_since(agent.name.as_ref(), "woke", archival_since)?;
+
+    let total_experience_count = db.count_experiences_for_agent(&agent_id)?;
+
+    let inputs = RetrospectInputs {
+        hours_since_last_archival,
+        hours_since_last_project_memory,
+        sessions_since_retrospect: sessions_since_retrospect as u64,
+        total_experience_count: total_experience_count as u64,
+    };
+
+    let gauge = Gauge::Retrospect(RetrospectGauge::from_inputs(inputs));
+
+    let pressure = Pressure {
+        id: PressureId::new(),
+        agent_id: agent.id,
+        urge: UrgeName::new("retrospect"),
         data: gauge,
         updated_at: Timestamp::now(),
     };
@@ -156,28 +352,63 @@ mod tests {
         )
         .unwrap();
 
-        let level = Level::init(
-            LevelName::new("session"),
-            Description::new("Session level"),
+        // Seed levels for recollect/retrospect
+        for level_name in &["session", "working", "project", "archival"] {
+            let level = Level::init(
+                LevelName::new(level_name),
+                Description::new(format!("{level_name} level")),
+                Prompt::default(),
+            );
+            db.log_event(
+                &NewEvent::new(Events::Level(LevelEvents::LevelSet(level)), source),
+                projections::BRAIN,
+            )
+            .unwrap();
+        }
+
+        // Seed sensations for catharsis
+        let tensions = Sensation::init(
+            SensationName::new("tensions"),
+            Description::new("Productive friction"),
             Prompt::default(),
         );
         db.log_event(
-            &NewEvent::new(Events::Level(LevelEvents::LevelSet(level)), source),
+            &NewEvent::new(
+                Events::Sensation(SensationEvents::SensationSet(tensions)),
+                source,
+            ),
             projections::BRAIN,
         )
         .unwrap();
 
-        // Seed the introspect urge — required for FK constraint on pressure table
-        let urge = Urge::init(
-            UrgeName::new("introspect"),
-            Description::new("Cognitive consolidation"),
-            Prompt::new("introspect prompt"),
+        // Seed natures for recollect (connections need a nature)
+        let context_nature = Nature::init(
+            NatureName::new("context"),
+            Description::new("Context relationship"),
+            Prompt::default(),
         );
         db.log_event(
-            &NewEvent::new(Events::Urge(UrgeEvents::UrgeSet(urge)), source),
+            &NewEvent::new(
+                Events::Nature(NatureEvents::NatureSet(context_nature)),
+                source,
+            ),
             projections::BRAIN,
         )
         .unwrap();
+
+        // Seed all four urges — required for FK constraints
+        for urge_name in &["introspect", "catharsis", "recollect", "retrospect"] {
+            let urge = Urge::init(
+                UrgeName::new(urge_name),
+                Description::new(format!("{urge_name} urge")),
+                Prompt::new(format!("{urge_name} prompt")),
+            );
+            db.log_event(
+                &NewEvent::new(Events::Urge(UrgeEvents::UrgeSet(urge)), source),
+                projections::BRAIN,
+            )
+            .unwrap();
+        }
 
         let agent = Agent::init(
             "test agent",
@@ -197,64 +428,61 @@ mod tests {
         agent
     }
 
+    fn wake_agent(db: &Database, agent: &Agent, source: Source) {
+        db.log_event(
+            &NewEvent::new(
+                Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
+                    name: agent.name.clone(),
+                })),
+                source,
+            ),
+            projections::BRAIN,
+        )
+        .unwrap();
+    }
+
+    fn find_pressure<'a>(pressures: &'a [Pressure], urge: &str) -> Option<&'a Pressure> {
+        pressures.iter().find(|p| p.urge.as_ref() == urge)
+    }
+
+    // ── Introspect tests ────────────────────────────────────────
+
     #[test]
     fn no_cognitions_produces_baseline_urgency() {
         let (_temp, db) = setup_brain();
         let source = Source::default();
         let agent = seed_prerequisites(&db, source);
 
-        // Wake the agent to trigger pressure computation
-        db.log_event(
-            &NewEvent::new(
-                Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
-                    name: agent.name.clone(),
-                })),
-                source,
-            ),
-            projections::BRAIN,
-        )
-        .unwrap();
+        wake_agent(&db, &agent, source);
 
         let pressures = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let pressure = find_pressure(&pressures, "introspect").expect("introspect pressure");
 
-        assert_eq!(pressures.len(), 1);
-        let pressure = &pressures[0];
-        assert_eq!(pressure.urge.as_ref(), "introspect");
-
-        // Urgency computed from gauge, not a stored column
         let urgency = pressure.urgency();
         assert!(urgency > 0.0, "should have some urgency from time factor");
         assert!(urgency < 1.0, "should be less than 1.0");
 
-        // Verify the gauge carries inputs and calculation
-        let Gauge::Introspect(ref g) = pressure.data;
+        let Gauge::Introspect(ref g) = pressure.data else {
+            panic!("expected introspect gauge");
+        };
         assert_eq!(g.inputs.total_cognitions, 0);
         assert_eq!(g.inputs.session_cognition_count, 0);
         assert!(g.inputs.hours_since_last_introspect > 0.0);
     }
 
     #[test]
-    fn cognitions_increase_pressure() {
+    fn cognitions_increase_introspect_pressure() {
         let (_temp, db) = setup_brain();
         let source = Source::default();
         let agent = seed_prerequisites(&db, source);
 
-        // Wake
-        db.log_event(
-            &NewEvent::new(
-                Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
-                    name: agent.name.clone(),
-                })),
-                source,
-            ),
-            projections::BRAIN,
-        )
-        .unwrap();
+        wake_agent(&db, &agent, source);
 
         let pressures_before = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
-        let urgency_before = pressures_before[0].urgency();
+        let urgency_before = find_pressure(&pressures_before, "introspect")
+            .unwrap()
+            .urgency();
 
-        // Add several working cognitions
         for i in 0..5 {
             let cognition = Cognition::create(
                 agent.id,
@@ -272,32 +500,233 @@ mod tests {
         }
 
         let pressures_after = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
-        let urgency_after = pressures_after[0].urgency();
+        let urgency_after = find_pressure(&pressures_after, "introspect")
+            .unwrap()
+            .urgency();
 
         assert!(
             urgency_after > urgency_before,
-            "urgency should increase after adding working cognitions \
+            "introspect urgency should increase after adding working cognitions \
              (before: {urgency_before}, after: {urgency_after})"
         );
     }
 
+    // ── Catharsis tests ─────────────────────────────────────────
+
     #[test]
-    fn replay_preserves_pressure() {
+    fn catharsis_baseline() {
         let (_temp, db) = setup_brain();
         let source = Source::default();
         let agent = seed_prerequisites(&db, source);
 
-        // Wake and add some cognitions
-        db.log_event(
-            &NewEvent::new(
-                Events::Lifecycle(LifecycleEvents::Woke(SelectAgentByName {
-                    name: agent.name.clone(),
-                })),
-                source,
-            ),
-            projections::BRAIN,
-        )
-        .unwrap();
+        wake_agent(&db, &agent, source);
+
+        let pressures = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let pressure = find_pressure(&pressures, "catharsis").expect("catharsis pressure");
+
+        let Gauge::Catharsis(ref g) = pressure.data else {
+            panic!("expected catharsis gauge");
+        };
+        assert_eq!(g.inputs.tensions_experience_count, 0);
+        // Time factor should be > 0 (no reflect ever = 24h default)
+        assert!(g.inputs.hours_since_last_reflect > 0.0);
+    }
+
+    #[test]
+    fn tensions_increase_catharsis_pressure() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
+
+        let pressures_before = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let urgency_before = find_pressure(&pressures_before, "catharsis")
+            .unwrap()
+            .urgency();
+
+        // Add tensions experiences
+        for i in 0..3 {
+            let experience = Experience::create(
+                agent.id,
+                SensationName::new("tensions"),
+                Description::new(format!("tension {i}")),
+            );
+            db.log_event(
+                &NewEvent::new(
+                    Events::Experience(ExperienceEvents::ExperienceCreated(experience)),
+                    source,
+                ),
+                projections::BRAIN,
+            )
+            .unwrap();
+        }
+
+        let pressures_after = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let urgency_after = find_pressure(&pressures_after, "catharsis")
+            .unwrap()
+            .urgency();
+
+        assert!(
+            urgency_after > urgency_before,
+            "catharsis urgency should increase after adding tensions \
+             (before: {urgency_before}, after: {urgency_after})"
+        );
+    }
+
+    // ── Recollect tests ─────────────────────────────────────────
+
+    #[test]
+    fn recollect_baseline() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
+
+        let pressures = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let pressure = find_pressure(&pressures, "recollect").expect("recollect pressure");
+
+        let Gauge::Recollect(ref g) = pressure.data else {
+            panic!("expected recollect gauge");
+        };
+        assert_eq!(g.inputs.session_memory_count, 0);
+        assert_eq!(g.inputs.total_experiences, 0);
+    }
+
+    #[test]
+    fn memories_update_recollect_gauge_inputs() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
+
+        // Add session-level memories
+        for i in 0..5 {
+            let memory = Memory::create(
+                agent.id,
+                LevelName::new("session"),
+                Content::new(format!("session knowledge {i}")),
+            );
+            db.log_event(
+                &NewEvent::new(Events::Memory(MemoryEvents::MemoryAdded(memory)), source),
+                projections::BRAIN,
+            )
+            .unwrap();
+        }
+
+        let pressures = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let pressure = find_pressure(&pressures, "recollect").unwrap();
+
+        let Gauge::Recollect(ref g) = pressure.data else {
+            panic!("expected recollect gauge");
+        };
+
+        // Session memories should be counted in inputs
+        assert_eq!(g.inputs.session_memory_count, 5);
+        // Adding memories is responding to the urge — time resets, reducing pressure
+        assert!(g.inputs.hours_since_last_memory < 1.0);
+    }
+
+    #[test]
+    fn unconnected_experiences_increase_recollect_pressure() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
+
+        let pressures_before = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let urgency_before = find_pressure(&pressures_before, "recollect")
+            .unwrap()
+            .urgency();
+
+        // Add experiences without connecting them
+        for i in 0..5 {
+            let experience = Experience::create(
+                agent.id,
+                SensationName::new("tensions"),
+                Description::new(format!("isolated insight {i}")),
+            );
+            db.log_event(
+                &NewEvent::new(
+                    Events::Experience(ExperienceEvents::ExperienceCreated(experience)),
+                    source,
+                ),
+                projections::BRAIN,
+            )
+            .unwrap();
+        }
+
+        let pressures_after = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let urgency_after = find_pressure(&pressures_after, "recollect")
+            .unwrap()
+            .urgency();
+
+        assert!(
+            urgency_after > urgency_before,
+            "recollect urgency should increase with unconnected experiences \
+             (before: {urgency_before}, after: {urgency_after})"
+        );
+    }
+
+    // ── Retrospect tests ────────────────────────────────────────
+
+    #[test]
+    fn retrospect_baseline() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
+
+        let pressures = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+        let pressure = find_pressure(&pressures, "retrospect").expect("retrospect pressure");
+
+        let Gauge::Retrospect(ref g) = pressure.data else {
+            panic!("expected retrospect gauge");
+        };
+        // No archival ever = strong default pressure
+        assert!(g.inputs.hours_since_last_archival > 0.0);
+        assert!(pressure.urgency() > 0.0);
+    }
+
+    // ── All four pressures ──────────────────────────────────────
+
+    #[test]
+    fn wake_produces_all_four_pressures() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
+
+        let pressures = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
+
+        assert_eq!(
+            pressures.len(),
+            4,
+            "should have 4 pressures, got: {:?}",
+            pressures
+                .iter()
+                .map(|p| p.urge.as_ref())
+                .collect::<Vec<_>>()
+        );
+
+        assert!(find_pressure(&pressures, "introspect").is_some());
+        assert!(find_pressure(&pressures, "catharsis").is_some());
+        assert!(find_pressure(&pressures, "recollect").is_some());
+        assert!(find_pressure(&pressures, "retrospect").is_some());
+    }
+
+    #[test]
+    fn replay_preserves_all_pressures() {
+        let (_temp, db) = setup_brain();
+        let source = Source::default();
+        let agent = seed_prerequisites(&db, source);
+
+        wake_agent(&db, &agent, source);
 
         for i in 0..3 {
             let cognition = Cognition::create(
@@ -317,19 +746,23 @@ mod tests {
 
         let pressures_before = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
 
-        // Replay
         db.replay(projections::BRAIN).unwrap();
 
         let pressures_after = db.list_pressures_for_agent(&agent.id.to_string()).unwrap();
 
         assert_eq!(pressures_before.len(), pressures_after.len());
-        assert!(
-            (pressures_before[0].urgency() - pressures_after[0].urgency()).abs() < 0.01,
-            "replay should produce same urgency (before: {}, after: {})",
-            pressures_before[0].urgency(),
-            pressures_after[0].urgency(),
-        );
+
+        for urge in &["introspect", "catharsis", "recollect", "retrospect"] {
+            let before = find_pressure(&pressures_before, urge).unwrap().urgency();
+            let after = find_pressure(&pressures_after, urge).unwrap().urgency();
+            assert!(
+                (before - after).abs() < 0.01,
+                "replay should produce same {urge} urgency (before: {before}, after: {after})"
+            );
+        }
     }
+
+    // ── Utility tests ───────────────────────────────────────────
 
     #[test]
     fn hours_since_same_time() {
