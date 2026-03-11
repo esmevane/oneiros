@@ -505,6 +505,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         }
     }
 

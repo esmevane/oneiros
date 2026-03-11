@@ -18,3 +18,7 @@ If something is significant:
 - If it starts a new thread: `oneiros experience create {{ agent.name }} <sensation> "<description>"`
 
 If nothing is significant, say so briefly and move on. Not every sensation needs to become a thought.
+{% if !pressures.is_empty() %}
+
+{{ pressures.compact() }}
+{% endif %}

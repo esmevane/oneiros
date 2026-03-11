@@ -36,10 +36,15 @@ impl IntrospectOp {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let agent = client
-            .introspect(&context.ticket_token()?, &self.name)
-            .await?;
-        let prompt = IntrospectTemplate::new(&agent).to_string();
+        let token = &context.ticket_token()?;
+        let agent = client.introspect(token, &self.name).await?;
+        let pressures = RelevantPressures::from_pressures(
+            client
+                .get_pressure(token, &self.name)
+                .await
+                .unwrap_or_default(),
+        );
+        let prompt = IntrospectTemplate::new(&agent, pressures).to_string();
 
         outcomes.emit(IntrospectOutcomes::Introspecting(Introspection {
             agent,

@@ -15,4 +15,6 @@ pub struct DreamContext {
     pub sensations: Vec<Sensation>,
     pub natures: Vec<Nature>,
     pub urges: Vec<Urge>,
+    #[serde(default)]
+    pub pressures: Vec<Pressure>,
 }

@@ -10,3 +10,7 @@ If this moment produced lasting insights, store them:
 - `oneiros cognition add {{ agent.name }} <texture> "<your thought>"`
 
 Then continue with your work, carrying the thread forward.
+{% if !pressures.is_empty() %}
+
+{{ pressures.compact() }}
+{% endif %}
