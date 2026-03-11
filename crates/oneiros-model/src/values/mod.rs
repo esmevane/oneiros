@@ -36,7 +36,10 @@ pub use dream_context::DreamContext;
 pub use entity_ref::{Ref, RefError};
 pub use expression::{Expression, SearchResults};
 pub use gauge::{
-    Gauge, IntrospectCalculation, IntrospectConfig, IntrospectGauge, IntrospectInputs,
+    CatharsisCalculation, CatharsisConfig, CatharsisGauge, CatharsisInputs, Gauge,
+    IntrospectCalculation, IntrospectConfig, IntrospectGauge, IntrospectInputs,
+    RecollectCalculation, RecollectConfig, RecollectGauge, RecollectInputs, RetrospectCalculation,
+    RetrospectConfig, RetrospectGauge, RetrospectInputs,
 };
 pub use id::{Id, IdParseError};
 pub use introspection::Introspection;

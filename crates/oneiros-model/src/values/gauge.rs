@@ -16,6 +16,9 @@ fn saturate(value: f64, midpoint: f64) -> f64 {
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum Gauge {
     Introspect(IntrospectGauge),
+    Catharsis(CatharsisGauge),
+    Recollect(RecollectGauge),
+    Retrospect(RetrospectGauge),
 }
 
 impl Gauge {
@@ -23,6 +26,9 @@ impl Gauge {
     pub fn urgency(&self) -> f64 {
         match self {
             Gauge::Introspect(g) => g.urgency(),
+            Gauge::Catharsis(g) => g.urgency(),
+            Gauge::Recollect(g) => g.urgency(),
+            Gauge::Retrospect(g) => g.urgency(),
         }
     }
 }
@@ -135,6 +141,328 @@ pub struct IntrospectCalculation {
     pub working_factor: f64,
     pub promotion_factor: f64,
     pub session_factor: f64,
+}
+
+// ── Catharsis Gauge ──────────────────────────────────────────────
+
+/// Catharsis gauge: measures tension accumulation pressure.
+///
+/// Four factors weighted to produce a 0–1 urgency score:
+/// - tensions_factor (0.30): unresolved tensions experiences (friction accumulating)
+/// - stale_working_factor (0.30): working cognitions as fraction of total (clutter)
+/// - time_since_reflect_factor (0.25): hours since last reflect event
+/// - orphaned_cognition_factor (0.15): cognitions not referenced by any experience
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct CatharsisGauge {
+    pub inputs: CatharsisInputs,
+    pub calculation: CatharsisCalculation,
+    #[serde(default)]
+    pub config: CatharsisConfig,
+}
+
+impl CatharsisGauge {
+    pub fn from_inputs(inputs: CatharsisInputs) -> Self {
+        Self::from_inputs_with_config(inputs, CatharsisConfig::default())
+    }
+
+    pub fn from_inputs_with_config(inputs: CatharsisInputs, config: CatharsisConfig) -> Self {
+        let tensions_factor = saturate(
+            inputs.tensions_experience_count as f64,
+            config.tensions_midpoint,
+        );
+
+        let stale_working_factor = if inputs.total_cognitions > 0 {
+            inputs.working_cognitions as f64 / inputs.total_cognitions as f64
+        } else {
+            0.0
+        };
+
+        let time_since_reflect_factor = saturate(
+            inputs.hours_since_last_reflect,
+            config.reflect_time_midpoint,
+        );
+
+        let orphaned_cognition_factor = if inputs.total_cognitions > 0 {
+            inputs.orphaned_cognitions as f64 / inputs.total_cognitions as f64
+        } else {
+            0.0
+        };
+
+        let calculation = CatharsisCalculation {
+            tensions_factor,
+            stale_working_factor,
+            time_since_reflect_factor,
+            orphaned_cognition_factor,
+        };
+
+        Self {
+            inputs,
+            calculation,
+            config,
+        }
+    }
+
+    pub fn urgency(&self) -> f64 {
+        self.calculation.tensions_factor * self.config.tensions_weight
+            + self.calculation.stale_working_factor * self.config.stale_working_weight
+            + self.calculation.time_since_reflect_factor * self.config.reflect_time_weight
+            + self.calculation.orphaned_cognition_factor * self.config.orphaned_weight
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct CatharsisConfig {
+    pub tensions_midpoint: f64,
+    pub reflect_time_midpoint: f64,
+    pub tensions_weight: f64,
+    pub stale_working_weight: f64,
+    pub reflect_time_weight: f64,
+    pub orphaned_weight: f64,
+}
+
+impl Default for CatharsisConfig {
+    fn default() -> Self {
+        Self {
+            tensions_midpoint: 3.0,
+            reflect_time_midpoint: 8.0,
+            tensions_weight: 0.30,
+            stale_working_weight: 0.30,
+            reflect_time_weight: 0.25,
+            orphaned_weight: 0.15,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct CatharsisInputs {
+    pub tensions_experience_count: u64,
+    pub total_cognitions: u64,
+    pub working_cognitions: u64,
+    pub hours_since_last_reflect: f64,
+    pub orphaned_cognitions: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct CatharsisCalculation {
+    pub tensions_factor: f64,
+    pub stale_working_factor: f64,
+    pub time_since_reflect_factor: f64,
+    pub orphaned_cognition_factor: f64,
+}
+
+// ── Recollect Gauge ─────────────────────────────────────────────
+
+/// Recollect gauge: measures knowledge fragmentation pressure.
+///
+/// Four factors weighted to produce a 0–1 urgency score:
+/// - session_memory_factor (0.25): session-level memories (consolidation candidates)
+/// - unconnected_experience_factor (0.25): experiences not linked by connections
+/// - time_since_memory_factor (0.30): hours since last memory was added
+/// - working_memory_factor (0.20): working-level memories (scratchpad overflow)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RecollectGauge {
+    pub inputs: RecollectInputs,
+    pub calculation: RecollectCalculation,
+    #[serde(default)]
+    pub config: RecollectConfig,
+}
+
+impl RecollectGauge {
+    pub fn from_inputs(inputs: RecollectInputs) -> Self {
+        Self::from_inputs_with_config(inputs, RecollectConfig::default())
+    }
+
+    pub fn from_inputs_with_config(inputs: RecollectInputs, config: RecollectConfig) -> Self {
+        let session_memory_factor = saturate(
+            inputs.session_memory_count as f64,
+            config.session_memory_midpoint,
+        );
+
+        let unconnected_experience_factor = if inputs.total_experiences > 0 {
+            inputs.unconnected_experiences as f64 / inputs.total_experiences as f64
+        } else {
+            0.0
+        };
+
+        let time_since_memory_factor =
+            saturate(inputs.hours_since_last_memory, config.memory_time_midpoint);
+
+        let working_memory_factor = saturate(
+            inputs.working_memory_count as f64,
+            config.working_memory_midpoint,
+        );
+
+        let calculation = RecollectCalculation {
+            session_memory_factor,
+            unconnected_experience_factor,
+            time_since_memory_factor,
+            working_memory_factor,
+        };
+
+        Self {
+            inputs,
+            calculation,
+            config,
+        }
+    }
+
+    pub fn urgency(&self) -> f64 {
+        self.calculation.session_memory_factor * self.config.session_memory_weight
+            + self.calculation.unconnected_experience_factor
+                * self.config.unconnected_experience_weight
+            + self.calculation.time_since_memory_factor * self.config.memory_time_weight
+            + self.calculation.working_memory_factor * self.config.working_memory_weight
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RecollectConfig {
+    pub session_memory_midpoint: f64,
+    pub memory_time_midpoint: f64,
+    pub working_memory_midpoint: f64,
+    pub session_memory_weight: f64,
+    pub unconnected_experience_weight: f64,
+    pub memory_time_weight: f64,
+    pub working_memory_weight: f64,
+}
+
+impl Default for RecollectConfig {
+    fn default() -> Self {
+        Self {
+            session_memory_midpoint: 10.0,
+            memory_time_midpoint: 6.0,
+            working_memory_midpoint: 8.0,
+            session_memory_weight: 0.25,
+            unconnected_experience_weight: 0.25,
+            memory_time_weight: 0.30,
+            working_memory_weight: 0.20,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RecollectInputs {
+    pub session_memory_count: u64,
+    pub total_experiences: u64,
+    pub unconnected_experiences: u64,
+    pub hours_since_last_memory: f64,
+    pub working_memory_count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RecollectCalculation {
+    pub session_memory_factor: f64,
+    pub unconnected_experience_factor: f64,
+    pub time_since_memory_factor: f64,
+    pub working_memory_factor: f64,
+}
+
+// ── Retrospect Gauge ────────────────────────────────────────────
+
+/// Retrospect gauge: measures arc-level reflection pressure.
+///
+/// Four factors weighted to produce a 0–1 urgency score:
+/// - time_since_archival_factor (0.30): hours since last archival-level memory
+/// - project_staleness_factor (0.25): hours since last project-level memory
+/// - sessions_since_factor (0.25): wake events since last archival memory
+/// - experience_accumulation_factor (0.20): total experiences (arc material)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RetrospectGauge {
+    pub inputs: RetrospectInputs,
+    pub calculation: RetrospectCalculation,
+    #[serde(default)]
+    pub config: RetrospectConfig,
+}
+
+impl RetrospectGauge {
+    pub fn from_inputs(inputs: RetrospectInputs) -> Self {
+        Self::from_inputs_with_config(inputs, RetrospectConfig::default())
+    }
+
+    pub fn from_inputs_with_config(inputs: RetrospectInputs, config: RetrospectConfig) -> Self {
+        let time_since_archival_factor = saturate(
+            inputs.hours_since_last_archival,
+            config.archival_time_midpoint,
+        );
+
+        let project_staleness_factor = saturate(
+            inputs.hours_since_last_project_memory,
+            config.project_time_midpoint,
+        );
+
+        let sessions_since_factor = saturate(
+            inputs.sessions_since_retrospect as f64,
+            config.sessions_midpoint,
+        );
+
+        let experience_accumulation_factor = saturate(
+            inputs.total_experience_count as f64,
+            config.experience_midpoint,
+        );
+
+        let calculation = RetrospectCalculation {
+            time_since_archival_factor,
+            project_staleness_factor,
+            sessions_since_factor,
+            experience_accumulation_factor,
+        };
+
+        Self {
+            inputs,
+            calculation,
+            config,
+        }
+    }
+
+    pub fn urgency(&self) -> f64 {
+        self.calculation.time_since_archival_factor * self.config.archival_time_weight
+            + self.calculation.project_staleness_factor * self.config.project_staleness_weight
+            + self.calculation.sessions_since_factor * self.config.sessions_weight
+            + self.calculation.experience_accumulation_factor * self.config.experience_weight
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RetrospectConfig {
+    pub archival_time_midpoint: f64,
+    pub project_time_midpoint: f64,
+    pub sessions_midpoint: f64,
+    pub experience_midpoint: f64,
+    pub archival_time_weight: f64,
+    pub project_staleness_weight: f64,
+    pub sessions_weight: f64,
+    pub experience_weight: f64,
+}
+
+impl Default for RetrospectConfig {
+    fn default() -> Self {
+        Self {
+            archival_time_midpoint: 48.0,
+            project_time_midpoint: 24.0,
+            sessions_midpoint: 5.0,
+            experience_midpoint: 20.0,
+            archival_time_weight: 0.30,
+            project_staleness_weight: 0.25,
+            sessions_weight: 0.25,
+            experience_weight: 0.20,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RetrospectInputs {
+    pub hours_since_last_archival: f64,
+    pub hours_since_last_project_memory: f64,
+    pub sessions_since_retrospect: u64,
+    pub total_experience_count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
+pub struct RetrospectCalculation {
+    pub time_since_archival_factor: f64,
+    pub project_staleness_factor: f64,
+    pub sessions_since_factor: f64,
+    pub experience_accumulation_factor: f64,
 }
 
 #[cfg(test)]
@@ -265,5 +593,210 @@ mod tests {
         assert_eq!(json["type"], "introspect");
         assert!(json["data"]["inputs"].is_object());
         assert!(json["data"]["calculation"].is_object());
+    }
+
+    // ── Catharsis tests ─────────────────────────────────────────
+
+    #[test]
+    fn catharsis_gauge_from_inputs() {
+        let inputs = CatharsisInputs {
+            tensions_experience_count: 3,
+            total_cognitions: 20,
+            working_cognitions: 10,
+            hours_since_last_reflect: 8.0,
+            orphaned_cognitions: 12,
+        };
+
+        let gauge = CatharsisGauge::from_inputs(inputs);
+
+        // tensions: saturate(3, 3) = 0.5
+        assert!((gauge.calculation.tensions_factor - 0.5).abs() < f64::EPSILON);
+        // stale_working: 10/20 = 0.5
+        assert!((gauge.calculation.stale_working_factor - 0.5).abs() < f64::EPSILON);
+        // reflect_time: saturate(8, 8) = 0.5
+        assert!((gauge.calculation.time_since_reflect_factor - 0.5).abs() < f64::EPSILON);
+        // orphaned: 12/20 = 0.6
+        assert!((gauge.calculation.orphaned_cognition_factor - 0.6).abs() < f64::EPSILON);
+
+        // urgency: 0.5*0.30 + 0.5*0.30 + 0.5*0.25 + 0.6*0.15 = 0.515
+        assert!((gauge.urgency() - 0.515).abs() < 0.01);
+    }
+
+    #[test]
+    fn catharsis_gauge_no_tensions() {
+        let inputs = CatharsisInputs {
+            tensions_experience_count: 0,
+            total_cognitions: 0,
+            working_cognitions: 0,
+            hours_since_last_reflect: 0.0,
+            orphaned_cognitions: 0,
+        };
+
+        let gauge = CatharsisGauge::from_inputs(inputs);
+        assert!((gauge.urgency() - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn catharsis_gauge_serde_roundtrip() {
+        let inputs = CatharsisInputs {
+            tensions_experience_count: 2,
+            total_cognitions: 10,
+            working_cognitions: 5,
+            hours_since_last_reflect: 4.0,
+            orphaned_cognitions: 6,
+        };
+        let gauge = Gauge::Catharsis(CatharsisGauge::from_inputs(inputs));
+        let json = serde_json::to_string(&gauge).unwrap();
+        let roundtripped: Gauge = serde_json::from_str(&json).unwrap();
+        assert_eq!(gauge, roundtripped);
+
+        let json_value: serde_json::Value = serde_json::to_value(&gauge).unwrap();
+        assert_eq!(json_value["type"], "catharsis");
+    }
+
+    // ── Recollect tests ─────────────────────────────────────────
+
+    #[test]
+    fn recollect_gauge_from_inputs() {
+        let inputs = RecollectInputs {
+            session_memory_count: 10,
+            total_experiences: 20,
+            unconnected_experiences: 10,
+            hours_since_last_memory: 6.0,
+            working_memory_count: 8,
+        };
+
+        let gauge = RecollectGauge::from_inputs(inputs);
+
+        // session_memory: saturate(10, 10) = 0.5
+        assert!((gauge.calculation.session_memory_factor - 0.5).abs() < f64::EPSILON);
+        // unconnected: 10/20 = 0.5
+        assert!((gauge.calculation.unconnected_experience_factor - 0.5).abs() < f64::EPSILON);
+        // time: saturate(6, 6) = 0.5
+        assert!((gauge.calculation.time_since_memory_factor - 0.5).abs() < f64::EPSILON);
+        // working_memory: saturate(8, 8) = 0.5
+        assert!((gauge.calculation.working_memory_factor - 0.5).abs() < f64::EPSILON);
+
+        // urgency: 0.5*0.25 + 0.5*0.25 + 0.5*0.30 + 0.5*0.20 = 0.5
+        assert!((gauge.urgency() - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn recollect_gauge_no_experiences() {
+        let inputs = RecollectInputs {
+            session_memory_count: 0,
+            total_experiences: 0,
+            unconnected_experiences: 0,
+            hours_since_last_memory: 0.0,
+            working_memory_count: 0,
+        };
+
+        let gauge = RecollectGauge::from_inputs(inputs);
+        assert!((gauge.urgency() - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn recollect_gauge_serde_roundtrip() {
+        let inputs = RecollectInputs {
+            session_memory_count: 5,
+            total_experiences: 10,
+            unconnected_experiences: 3,
+            hours_since_last_memory: 2.0,
+            working_memory_count: 4,
+        };
+        let gauge = Gauge::Recollect(RecollectGauge::from_inputs(inputs));
+        let json = serde_json::to_string(&gauge).unwrap();
+        let roundtripped: Gauge = serde_json::from_str(&json).unwrap();
+        assert_eq!(gauge, roundtripped);
+
+        let json_value: serde_json::Value = serde_json::to_value(&gauge).unwrap();
+        assert_eq!(json_value["type"], "recollect");
+    }
+
+    // ── Retrospect tests ────────────────────────────────────────
+
+    #[test]
+    fn retrospect_gauge_from_inputs() {
+        let inputs = RetrospectInputs {
+            hours_since_last_archival: 48.0,
+            hours_since_last_project_memory: 24.0,
+            sessions_since_retrospect: 5,
+            total_experience_count: 20,
+        };
+
+        let gauge = RetrospectGauge::from_inputs(inputs);
+
+        // all at midpoint → 0.5
+        assert!((gauge.calculation.time_since_archival_factor - 0.5).abs() < f64::EPSILON);
+        assert!((gauge.calculation.project_staleness_factor - 0.5).abs() < f64::EPSILON);
+        assert!((gauge.calculation.sessions_since_factor - 0.5).abs() < f64::EPSILON);
+        assert!((gauge.calculation.experience_accumulation_factor - 0.5).abs() < f64::EPSILON);
+
+        // urgency: 0.5 * (0.30+0.25+0.25+0.20) = 0.5
+        assert!((gauge.urgency() - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn retrospect_gauge_fresh_start() {
+        let inputs = RetrospectInputs {
+            hours_since_last_archival: 0.0,
+            hours_since_last_project_memory: 0.0,
+            sessions_since_retrospect: 0,
+            total_experience_count: 0,
+        };
+
+        let gauge = RetrospectGauge::from_inputs(inputs);
+        assert!((gauge.urgency() - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn retrospect_gauge_serde_roundtrip() {
+        let inputs = RetrospectInputs {
+            hours_since_last_archival: 72.0,
+            hours_since_last_project_memory: 12.0,
+            sessions_since_retrospect: 3,
+            total_experience_count: 15,
+        };
+        let gauge = Gauge::Retrospect(RetrospectGauge::from_inputs(inputs));
+        let json = serde_json::to_string(&gauge).unwrap();
+        let roundtripped: Gauge = serde_json::from_str(&json).unwrap();
+        assert_eq!(gauge, roundtripped);
+
+        let json_value: serde_json::Value = serde_json::to_value(&gauge).unwrap();
+        assert_eq!(json_value["type"], "retrospect");
+    }
+
+    // ── Cross-gauge delegation ──────────────────────────────────
+
+    #[test]
+    fn gauge_urgency_delegates_all_variants() {
+        let catharsis = CatharsisGauge::from_inputs(CatharsisInputs {
+            tensions_experience_count: 2,
+            total_cognitions: 10,
+            working_cognitions: 5,
+            hours_since_last_reflect: 4.0,
+            orphaned_cognitions: 3,
+        });
+        let gauge = Gauge::Catharsis(catharsis.clone());
+        assert!((gauge.urgency() - catharsis.urgency()).abs() < f64::EPSILON);
+
+        let recollect = RecollectGauge::from_inputs(RecollectInputs {
+            session_memory_count: 5,
+            total_experiences: 10,
+            unconnected_experiences: 3,
+            hours_since_last_memory: 2.0,
+            working_memory_count: 4,
+        });
+        let gauge = Gauge::Recollect(recollect.clone());
+        assert!((gauge.urgency() - recollect.urgency()).abs() < f64::EPSILON);
+
+        let retrospect = RetrospectGauge::from_inputs(RetrospectInputs {
+            hours_since_last_archival: 24.0,
+            hours_since_last_project_memory: 12.0,
+            sessions_since_retrospect: 3,
+            total_experience_count: 10,
+        });
+        let gauge = Gauge::Retrospect(retrospect.clone());
+        assert!((gauge.urgency() - retrospect.urgency()).abs() < f64::EPSILON);
     }
 }

@@ -22,6 +22,8 @@ Oneiros provides you with
 
 Oneiros provides eventful memory and cognitive context for AI agents. It lets agents maintain their own long-running continuous "brain" — a persistent store of cognitions, memories, textures, levels, and personas that survive across sessions and context compactions.
 
+Whenever pressures build that's a sign that you need to be more proactive in your contribution. Explore oneiros' different systems. Think about its lifecycle commands. Keep the pressure gauge numbers from getting too high.
+
 ## Core Concepts
 
 - **Brain**: A per-project cognitive database. Created with `oneiros project init`.
