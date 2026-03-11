@@ -39,6 +39,8 @@ pub enum CliError {
     #[error(transparent)]
     Persona(#[from] PersonaCommandError),
     #[error(transparent)]
+    Pressure(#[from] PressureError),
+    #[error(transparent)]
     Recede(#[from] RecedeError),
     #[error(transparent)]
     Reflect(#[from] ReflectError),

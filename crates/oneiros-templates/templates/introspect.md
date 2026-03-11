@@ -13,3 +13,7 @@ Store what matters using:
 - `oneiros cognition add {{ agent.name }} <texture> "<your thought>"`
 
 Your dream self will carry forward what you leave here. Give them not just what you know, but where you were headed.
+{% if !pressures.is_empty() %}
+
+{{ pressures.compact() }}
+{% endif %}

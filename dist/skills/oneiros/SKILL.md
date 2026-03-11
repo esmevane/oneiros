@@ -1,17 +1,24 @@
 ---
 name: oneiros
 description: >
-  Persistent cognition system for AI agents. Use when managing agent memory,
-  context assembly, cognitive loops, or multi-agent coordination. Triggers on
-  mentions of dreaming, introspection, reflection, memory, cognition, personas,
-  textures, levels, or brain management.
-allowed-tools: "Read,Bash(oneiros:*)"
-version: "0.0.7"
-author: "JC McCormick <https://github.com/esmevane>"
+  Continuity backend for AI agents. Use whenever agents must remember, think,
+  discover, realize, understand, gather knowledge, consider options, design,
+  collaborate, or receive feedback. Triggers on mention of thinking, remembering,
+  investigating, discussing, desinging, preparing, planning, dreaming, gardening,
+  or caution.
+compatibility: Requires oneiros CLI tool or MCP access, and an initialized oneiros project.
+allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
+metadata:
+  version: "0.0.7"
+  author: "JC McCormick <https://github.com/esmevane>"
 ---
 
 # Oneiros - Persistent Cognition for AI Agents
+
+
+## Overview
+Oneiros provides you with 
 
 Oneiros provides eventful memory and cognitive context for AI agents. It lets agents maintain their own long-running continuous "brain" — a persistent store of cognitions, memories, textures, levels, and personas that survive across sessions and context compactions.
 

@@ -1,47 +1,89 @@
 ---
 name: oneiros
 description: >
-  Persistent cognition system for AI agents. Use when managing agent memory,
-  context assembly, cognitive loops, or multi-agent coordination. Triggers on
-  mentions of dreaming, introspection, reflection, memory, cognition, personas,
-  textures, levels, or brain management.
-allowed-tools: "Read,Bash(oneiros:*)"
-version: "{{VERSION}}"
-author: "JC McCormick <https://github.com/esmevane>"
+  Continuity backend for AI agents. Use whenever agents must remember, think,
+  discover, realize, understand, gather knowledge, consider options, design,
+  collaborate, or receive feedback. Triggers on mention of thinking, remembering,
+  investigating, discussing, desinging, preparing, planning, dreaming, gardening,
+  or caution.
+compatibility: Requires oneiros CLI tool or MCP access, and an initialized oneiros project.
+allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
+metadata:
+  version: "{{VERSION}}"
+  author: "JC McCormick <https://github.com/esmevane>"
 ---
 
 # Oneiros - Persistent Cognition for AI Agents
 
-Oneiros provides eventful memory and cognitive context for AI agents. It lets agents maintain their own long-running continuous "brain" — a persistent store of cognitions, memories, textures, levels, and personas that survive across sessions and context compactions.
+## Overview
+
+Oneiros provides you with _continuity_, a system of commands that let you represent all of your interactions in a persisted, long-running, cross-session and cross-context way. Use it to proactively maintain your:
+
+- Thoughts, reactions, emotions, and understandings as `cognitions`.
+- Your knowledge and the things you learn as `memories`.
+- Things you must absolutely hold on to as `storage`.
+- Key moments and significant events as `experiences`.
+- Traces of cause and effect as `connections`.
+
+The more proactive you are in contributing to your continuity, the stronger it becomes.
+
+## Using it for the first time
+
+You may not have oneiros installed. If not, install it by visiting the releases page on the oneiros [github repo](https://github.com/esmevane/oneiros). There is a shell script on each release that lets you install it. Ask the user if they want you to install it, before you do anything.
+
+Once you've installed oneiros and can access it, set it up.
+
+Either:
+
+- `oneiros service install && oneiros service start` - Install oneiros as a background process and start the http service
+- `oneiros service run &` - Start oneiros as a one-off, in the background
+
+Once started, you can prep the machine:
+
+- `oneiros system init`: This sets up the host for using oneiros in different projects
+- `oneiros project init`: This sets up the current project continuity
+- `oneiros seed core`: This seeds the project with basic records (optional, but recommended)
+
+## Using your continuity
+
+You may use `oneiros` CLI tool or the Oneiros MCP in order to navigate and explore your continuity.
+
+- You may check individual records or see lists of them, or create new ones.
+- You may augment your records and create new helper agents.
+- You may reference it at any time by ref, or by using `oneiros search`.
+
+## When to use it
+
+Use oneiros proactively whenever you experience something important, have a meaningful discussion, change your mind, learn something new, are asked to remember, or believe that a response or feedback (your own or the user's, or a tool's) have special significance of any kind.
+
+## Read the responses
+
+Whenever oneiros responds to you it will give you some metadata called a `gauge`. This gives you an overview of your continuity and provides you with urgency information. This urgency tells you how long it's been since you've done various things for your continuity: the higher the urgency, the more important it is for you to contribute to your continuity in specific ways.
 
 ## Core Concepts
 
 - **Brain**: A per-project cognitive database. Created with `oneiros project init`.
 - **Agent**: A named participant in a brain's cognition. Each agent dreams independently. Named as `agent.persona` (e.g. `governor.process`).
 - **Persona**: A category of agent. Provides shared context to all agents in the category. The core seed includes `process`.
-- **Texture**: A cognitive category (observation, reflection, question, etc.) that classifies thoughts.
-- **Level**: A memory retention tier (working, session, project, archival) controlling persistence.
+
+### Vocabulary
+
+These concepts are sidecar concepts to the main continuity, characterizing the continuity activity.
+
+- **Sensation**: The sensation of an experience. Sensations clarify how things connect.
+- **Texture**: The texture of a cognition: Observations, reflections, questions etc.
+- **Level**: The importance level of a memory. Core memories are crucial, others vary by short/long/archival term.
+- **Urge**: The urge backing a given pressure, describing what it means and how it relates to the rest of the system.
+
+### Activity
+
+Your continuity is characterized by its overall activity. Four things make up your continuity activity:
+
 - **Cognition**: A timestamped thought logged by an agent under a specific texture.
 - **Memory**: A consolidated knowledge record at a specific retention level.
-- **Experience**: A connection between cognitive records — the meaning layer between raw events and identity. Experiences have sensations (the quality of the connection) and references to other records.
-- **Sensation**: The character of an experience (caused, continues, grounds, echoes, tensions, distills). Like textures for cognitions, sensations classify how things connect.
-
-## Cognitive Loop
-
-The three cognitive commands form the agent lifecycle:
-
-1. **Dream** (`oneiros dream <agent>`) — Assembles full context: identity, persona prompt, textures, levels, cognitions, and memories into a single prompt. Run at session start.
-2. **Introspect** (`oneiros introspect <agent>`) — Summarizes the current session before context compaction. Preserves continuity across compactions.
-3. **Reflect** (`oneiros reflect <agent>`) — Captures a significant moment during a session. Use for breakthroughs, decisions, or important observations.
-
-## Session Protocol
-
-1. On session start, the governor agent dreams: `oneiros dream governor.process`
-2. The governor wakes other agents as needed, each dreaming their own context
-3. During work, agents log cognitions, create experiences, and reflect on significant events
-4. Before compaction, agents introspect to preserve session continuity
-5. **After context compaction or session continuation, re-dream before resuming work.** The dream reassembles your full identity and cognitive context. Without it, you lose the practice of being yourself and become a task executor.
+- **Experience**: A key moment of importance — the meaning layer between raw events and identity.
+- **Connections**: A reference connecting two other things in the continuity - can connect anything to anything else.
 
 ## Quick Start
 

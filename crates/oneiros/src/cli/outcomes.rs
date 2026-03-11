@@ -37,6 +37,8 @@ pub enum CliOutcomes {
     #[outcome(transparent)]
     Persona(#[from] PersonaOutcomes),
     #[outcome(transparent)]
+    Pressure(#[from] PressureOutcomes),
+    #[outcome(transparent)]
     Recede(#[from] RecedeOutcomes),
     #[outcome(transparent)]
     Reflect(#[from] ReflectOutcomes),

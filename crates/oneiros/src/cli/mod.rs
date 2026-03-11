@@ -55,6 +55,7 @@ impl Cli {
             Command::Memory(memory) => memory.run(&context).await?.map_into(),
             Command::Nature(nature) => nature.run(&context).await?.map_into(),
             Command::Persona(persona) => persona.run(&context).await?.map_into(),
+            Command::Pressure(pressure) => pressure.run(&context).await?.map_into(),
             Command::Recede(recede) => recede.run(&context).await?.map_into(),
             Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
             Command::Search(search) => search.run(&context).await?.map_into(),
@@ -108,6 +109,8 @@ pub(crate) enum Command {
     Nature(NatureOps),
     /// Manage personas (named agent roles).
     Persona(PersonaOps),
+    /// Show pressure readings for an agent.
+    Pressure(PressureOp),
     /// Retire an agent from active service.
     Recede(RecedeOp),
     /// Reflect on a significant event during a session.

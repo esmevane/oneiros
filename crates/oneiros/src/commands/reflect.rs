@@ -33,8 +33,15 @@ impl ReflectOp {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let agent = client.reflect(&context.ticket_token()?, &self.name).await?;
-        let prompt = ReflectTemplate::new(&agent).to_string();
+        let token = &context.ticket_token()?;
+        let agent = client.reflect(token, &self.name).await?;
+        let pressures = RelevantPressures::from_pressures(
+            client
+                .get_pressure(token, &self.name)
+                .await
+                .unwrap_or_default(),
+        );
+        let prompt = ReflectTemplate::new(&agent, pressures).to_string();
 
         outcomes.emit(ReflectOutcomes::Reflecting(Reflection { agent, prompt }));
 

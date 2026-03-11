@@ -76,6 +76,14 @@ If found, incorporate its contents into your self-understanding.
 {% for urge in context.urges -%}
 - {{ urge.name }} — {{ urge.prompt }}
 {% endfor -%}
+{% endif -%}
+{% if !pressures.is_empty() %}
+
+## Pressure Gauge
+{{ pressures.compact() }}
+{% for pressure in pressures.0 -%}
+- **{{ pressure.urge }}** ({{ (pressure.urgency() * 100.0)|fmt("{:.0}") }}%) — {% match pressure.data %}{% when oneiros_model::Gauge::Introspect with (g) %}time: {{ (g.calculation.time_factor * 100.0)|fmt("{:.0}") }}%, working: {{ (g.calculation.working_factor * 100.0)|fmt("{:.0}") }}%, promotion: {{ (g.calculation.promotion_factor * 100.0)|fmt("{:.0}") }}%, session: {{ (g.calculation.session_factor * 100.0)|fmt("{:.0}") }}%{% endmatch %}
+{% endfor -%}
 {% endif %}
 
 ## Instructions

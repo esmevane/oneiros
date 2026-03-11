@@ -48,6 +48,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -77,6 +78,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -105,6 +107,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -130,6 +133,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -159,6 +163,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -182,6 +187,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = DreamTemplate::new(&context).to_string();
 
@@ -203,6 +209,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -228,6 +235,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -262,6 +270,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -283,6 +292,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -304,6 +314,7 @@ mod tests {
             sensations: vec![],
             natures: vec![],
             urges: vec![],
+            pressures: vec![],
         };
         let rendered = GuidebookTemplate::new(&context).to_string();
 
@@ -315,7 +326,8 @@ mod tests {
     #[test]
     fn introspect_template_renders_agent_name() {
         let agent = test_agent();
-        let rendered = IntrospectTemplate::new(&agent).to_string();
+        let rendered =
+            IntrospectTemplate::new(&agent, RelevantPressures::from_pressures(vec![])).to_string();
 
         assert!(rendered.contains("You are atlas."));
         assert!(rendered.contains("oneiros memory add atlas"));
@@ -326,7 +338,8 @@ mod tests {
     #[test]
     fn reflect_template_renders_agent_name() {
         let agent = test_agent();
-        let rendered = ReflectTemplate::new(&agent).to_string();
+        let rendered =
+            ReflectTemplate::new(&agent, RelevantPressures::from_pressures(vec![])).to_string();
 
         assert!(rendered.contains("You are atlas."));
         assert!(rendered.contains("oneiros memory add atlas"));
@@ -337,7 +350,8 @@ mod tests {
     #[test]
     fn sense_template_renders_agent_name() {
         let agent = test_agent();
-        let rendered = SenseTemplate::new(&agent, "").to_string();
+        let rendered =
+            SenseTemplate::new(&agent, "", RelevantPressures::from_pressures(vec![])).to_string();
 
         assert!(rendered.contains("You are atlas."));
         assert!(rendered.contains("oneiros cognition add atlas"));
@@ -348,7 +362,12 @@ mod tests {
     fn sense_template_includes_event_data_when_present() {
         let agent = test_agent();
         let event_json = r#"{"event": "PreCompact", "data": {}}"#;
-        let rendered = SenseTemplate::new(&agent, event_json).to_string();
+        let rendered = SenseTemplate::new(
+            &agent,
+            event_json,
+            RelevantPressures::from_pressures(vec![]),
+        )
+        .to_string();
 
         assert!(rendered.contains("## What You Sensed"));
         assert!(rendered.contains("PreCompact"));
@@ -357,7 +376,8 @@ mod tests {
     #[test]
     fn sense_template_omits_event_section_when_empty() {
         let agent = test_agent();
-        let rendered = SenseTemplate::new(&agent, "").to_string();
+        let rendered =
+            SenseTemplate::new(&agent, "", RelevantPressures::from_pressures(vec![])).to_string();
 
         assert!(!rendered.contains("## What You Sensed"));
     }

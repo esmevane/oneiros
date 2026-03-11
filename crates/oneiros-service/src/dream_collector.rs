@@ -162,6 +162,9 @@ impl<'a> DreamCollector<'a> {
             })
             .collect();
 
+        // Pressure readings for this agent
+        let pressures = self.db.list_pressures_for_agent(&agent.id.to_string())?;
+
         Ok(DreamContext {
             agent: agent.clone(),
             persona,
@@ -174,6 +177,7 @@ impl<'a> DreamCollector<'a> {
             sensations,
             natures,
             urges,
+            pressures,
         })
     }
 

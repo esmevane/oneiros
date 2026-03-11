@@ -46,8 +46,15 @@ impl SenseOp {
         };
 
         let client = context.client();
-        let agent = client.sense(&context.ticket_token()?, &self.name).await?;
-        let prompt = SenseTemplate::new(&agent, &event_data).to_string();
+        let token = &context.ticket_token()?;
+        let agent = client.sense(token, &self.name).await?;
+        let pressures = RelevantPressures::from_pressures(
+            client
+                .get_pressure(token, &self.name)
+                .await
+                .unwrap_or_default(),
+        );
+        let prompt = SenseTemplate::new(&agent, &event_data, pressures).to_string();
 
         outcomes.emit(SenseOutcomes::Sensing(Observation { agent, prompt }));
 
