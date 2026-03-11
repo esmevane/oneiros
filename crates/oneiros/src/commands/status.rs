@@ -9,6 +9,9 @@ pub enum StatusError {
     #[error("Client error: {0}")]
     Client(#[from] oneiros_client::Error),
 
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
+
     #[error(transparent)]
     Context(#[from] ContextError),
 }
@@ -40,15 +43,18 @@ impl StatusOp {
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let cognitions = client
+        let cognitions: Vec<Cognition> = client
             .list_cognitions(&token, Some(&self.agent), None)
-            .await?;
-        let memories = client
+            .await?
+            .data()?;
+        let memories: Vec<Memory> = client
             .list_memories(&token, Some(&self.agent), None)
-            .await?;
-        let experiences = client
+            .await?
+            .data()?;
+        let experiences: Vec<Experience> = client
             .list_experiences(&token, Some(&self.agent), None)
-            .await?;
+            .await?
+            .data()?;
 
         let dashboard =
             crate::gauge::full_status(&self.agent, &cognitions, &memories, &experiences);

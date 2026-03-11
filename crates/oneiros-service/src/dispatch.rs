@@ -248,6 +248,38 @@ impl BrainState {
         }
     }
 
+    /// Build pressure readings, scoped to an agent or brain-wide above threshold.
+    pub fn pressure_readings(
+        &self,
+        agent: Option<&AgentName>,
+    ) -> Result<Vec<PressureReading>, Error> {
+        let db = self.database.lock().map_err(|_| Error::DatabasePoisoned)?;
+
+        let pressures = match agent {
+            Some(name) => {
+                let agent = db.get_agent(name)?;
+                match agent {
+                    Some(a) => db.list_pressures_for_agent(&a.id.to_string())?,
+                    None => vec![],
+                }
+            }
+            None => {
+                let agents = db.list_agents()?;
+                let mut all = Vec::new();
+                for a in agents {
+                    let mut ap = db.list_pressures_for_agent(&a.id.to_string())?;
+                    all.append(&mut ap);
+                }
+                all.into_iter()
+                    .filter(|p| p.urgency() >= PRESSURE_THRESHOLD)
+                    .collect()
+            }
+        };
+
+        let urges = db.list_urges()?;
+        Ok(PressureReading::from_pressures_and_urges(pressures, &urges))
+    }
+
     /// Dispatch a brain-scoped request. Locks the database for the
     /// duration of the call.
     pub fn dispatch(
@@ -329,10 +361,23 @@ pub enum OneirosService {
     Brain(BrainState),
 }
 
+/// Pressures below this threshold are excluded from brain-wide meta.
+/// Agent-scoped pressures are always included regardless of threshold.
+const PRESSURE_THRESHOLD: f64 = 0.80;
+
 impl OneirosService {
-    /// Dispatch any protocol request to the appropriate service.
-    pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Responses, Error> {
-        match request.into() {
+    /// Dispatch any protocol request and assemble a Response with pressure meta.
+    pub fn dispatch(&self, request: impl Into<Requests>) -> Result<Response, Error> {
+        let request = request.into();
+        let agent_scope = request.agent_scope().cloned();
+        let data = self.dispatch_data(request)?;
+        let meta = self.assemble_meta(agent_scope.as_ref());
+        Ok(Response { data, meta })
+    }
+
+    /// Dispatch without assembling meta — returns bare Responses.
+    fn dispatch_data(&self, request: Requests) -> Result<Responses, Error> {
+        match request {
             // System-scoped
             Requests::Actor(r) => Ok(self.state().system_service()?.dispatch(r)?.into()),
             Requests::Brain(r) => Ok(self.state().system_service()?.dispatch(r)?.into()),
@@ -359,6 +404,22 @@ impl OneirosService {
             Requests::Storage(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Texture(r) => Ok(self.brain()?.dispatch(r)?.into()),
             Requests::Urge(r) => Ok(self.brain()?.dispatch(r)?.into()),
+        }
+    }
+
+    /// Assemble pressure meta for a response.
+    ///
+    /// Agent-scoped: all pressures for that agent.
+    /// Brain-scoped: only pressures above threshold.
+    /// System-scoped (no brain): None.
+    fn assemble_meta(&self, agent_scope: Option<&AgentName>) -> Option<ResponseMeta> {
+        let brain = self.brain().ok()?;
+        let readings = brain.pressure_readings(agent_scope).ok()?;
+
+        if readings.is_empty() {
+            None
+        } else {
+            Some(ResponseMeta { pressure: readings })
         }
     }
 

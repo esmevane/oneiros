@@ -45,13 +45,14 @@ impl ShowExperience {
         let id = match self.id.as_full_id() {
             Some(id) => ExperienceId(id),
             None => {
-                let all = client.list_experiences(&token, None, None).await?;
+                let all: Vec<Experience> =
+                    client.list_experiences(&token, None, None).await?.data()?;
                 let ids: Vec<_> = all.iter().map(|e| e.id.0).collect();
                 ExperienceId(self.id.resolve(&ids)?)
             }
         };
 
-        let experience = client.get_experience(&token, &id).await?;
+        let experience: Experience = client.get_experience(&token, &id).await?.data()?;
 
         outcomes.emit(ShowExperienceOutcomes::ExperienceDetails(ExperienceDetail(
             experience,

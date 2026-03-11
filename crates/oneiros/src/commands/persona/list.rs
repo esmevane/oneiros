@@ -26,7 +26,10 @@ impl ListPersonas {
 
         let client = context.client();
 
-        let personas = client.list_personas(&context.ticket_token()?).await?;
+        let personas: Vec<Persona> = client
+            .list_personas(&context.ticket_token()?)
+            .await?
+            .data()?;
 
         if personas.is_empty() {
             outcomes.emit(ListPersonasOutcomes::NoPersonas);

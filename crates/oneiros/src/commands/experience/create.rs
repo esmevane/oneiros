@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::ExperienceId;
+use oneiros_model::{Experience, ExperienceId};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -42,7 +42,7 @@ impl CreateExperience {
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let experience = client
+        let experience: Experience = client
             .create_experience(
                 &token,
                 CreateExperienceRequest {
@@ -51,11 +51,13 @@ impl CreateExperience {
                     description: self.description.clone(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
 
-        let all = client
+        let all: Vec<Experience> = client
             .list_experiences(&token, Some(&self.agent), None)
-            .await?;
+            .await?
+            .data()?;
         let gauge = crate::gauge::experience_gauge(&self.agent, &all);
 
         let ref_token = experience.ref_token();

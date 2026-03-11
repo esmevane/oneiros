@@ -10,7 +10,7 @@ pub struct DreamTemplate<'a> {
 
 impl<'a> DreamTemplate<'a> {
     pub fn new(context: &'a DreamContext) -> Self {
-        let pressures = RelevantPressures::from_pressures(context.pressures.clone());
+        let pressures = RelevantPressures::from_readings(context.pressures.clone());
         Self { context, pressures }
     }
 }

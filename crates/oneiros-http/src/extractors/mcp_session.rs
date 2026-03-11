@@ -4,7 +4,10 @@ use rmcp::{
     ErrorData, RoleServer, ServerHandler,
     model::{
         CallToolRequestParams, CallToolResult, InitializeRequestParams, InitializeResult,
-        ListToolsResult, PaginatedRequestParams, ServerInfo,
+        ListResourceTemplatesResult, ListResourcesResult, ListToolsResult, PaginatedRequestParams,
+        ReadResourceRequestParams, ReadResourceResult, ResourceUpdatedNotification,
+        ResourceUpdatedNotificationParam, ServerInfo, ServerNotification, SubscribeRequestParams,
+        UnsubscribeRequestParams,
     },
     service::RequestContext,
 };
@@ -16,6 +19,10 @@ use crate::*;
 ///
 /// Uses `ActorContext::from_request_parts` — the same auth path as all
 /// REST handlers — then upgrades the toolbox to full brain capability.
+///
+/// Also handles pressure threshold notifications after tool calls:
+/// when subscriptions are active and any pressure exceeds 80%,
+/// sends `ResourceUpdatedNotification` to the client.
 pub struct McpSession {
     toolbox: OneirosToolBox,
 }
@@ -24,6 +31,24 @@ impl McpSession {
     pub fn new(state: Arc<ServiceState>) -> Self {
         Self {
             toolbox: OneirosToolBox::system(state),
+        }
+    }
+
+    /// After a state-mutating tool call, check if any subscribed pressure
+    /// resources have crossed the notification threshold and notify.
+    async fn check_and_notify(&self, context: &RequestContext<RoleServer>) {
+        if !self.toolbox.has_subscriptions() {
+            return;
+        }
+
+        let triggered = self.toolbox.check_pressure_thresholds();
+        for uri in triggered {
+            let notification = ServerNotification::ResourceUpdatedNotification(
+                ResourceUpdatedNotification::new(ResourceUpdatedNotificationParam::new(&uri)),
+            );
+            if let Err(e) = context.peer.send_notification(notification).await {
+                tracing::warn!("Failed to send pressure notification for {uri}: {e}");
+            }
         }
     }
 }
@@ -78,6 +103,48 @@ impl ServerHandler for McpSession {
         request: CallToolRequestParams,
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, ErrorData> {
-        self.toolbox.call_tool(request, context).await
+        let result = self.toolbox.call_tool(request, context.clone()).await?;
+        self.check_and_notify(&context).await;
+        Ok(result)
+    }
+
+    async fn list_resources(
+        &self,
+        request: Option<PaginatedRequestParams>,
+        context: RequestContext<RoleServer>,
+    ) -> Result<ListResourcesResult, ErrorData> {
+        self.toolbox.list_resources(request, context).await
+    }
+
+    async fn list_resource_templates(
+        &self,
+        request: Option<PaginatedRequestParams>,
+        context: RequestContext<RoleServer>,
+    ) -> Result<ListResourceTemplatesResult, ErrorData> {
+        self.toolbox.list_resource_templates(request, context).await
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResult, ErrorData> {
+        self.toolbox.read_resource(request, context).await
+    }
+
+    async fn subscribe(
+        &self,
+        request: SubscribeRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<(), ErrorData> {
+        self.toolbox.subscribe(request, context).await
+    }
+
+    async fn unsubscribe(
+        &self,
+        request: UnsubscribeRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<(), ErrorData> {
+        self.toolbox.unsubscribe(request, context).await
     }
 }

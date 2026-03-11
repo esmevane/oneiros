@@ -10,6 +10,9 @@ pub enum ReflectError {
     #[error("Client error: {0}")]
     Client(#[from] oneiros_client::Error),
 
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
+
     #[error(transparent)]
     Context(#[from] ContextError),
 }
@@ -34,13 +37,10 @@ impl ReflectOp {
 
         let client = context.client();
         let token = &context.ticket_token()?;
-        let agent = client.reflect(token, &self.name).await?;
-        let pressures = RelevantPressures::from_pressures(
-            client
-                .get_pressure(token, &self.name)
-                .await
-                .unwrap_or_default(),
-        );
+        let response = client.reflect(token, &self.name).await?;
+        let readings = response.pressure_readings();
+        let agent: Agent = response.data()?;
+        let pressures = RelevantPressures::from_readings(readings);
         let prompt = ReflectTemplate::new(&agent, pressures).to_string();
 
         outcomes.emit(ReflectOutcomes::Reflecting(Reflection { agent, prompt }));

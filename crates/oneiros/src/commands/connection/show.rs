@@ -40,13 +40,14 @@ impl ShowConnection {
         let id = match self.id.as_full_id() {
             Some(id) => ConnectionId(id),
             None => {
-                let all = client.list_connections(&token, None, None).await?;
+                let all: Vec<Connection> =
+                    client.list_connections(&token, None, None).await?.data()?;
                 let ids: Vec<_> = all.iter().map(|c| c.id.0).collect();
                 ConnectionId(self.id.resolve(&ids)?)
             }
         };
 
-        let connection = client.get_connection(&token, &id).await?;
+        let connection: Connection = client.get_connection(&token, &id).await?.data()?;
 
         outcomes.emit(ShowConnectionOutcomes::ConnectionDetails(ConnectionDetail(
             connection,

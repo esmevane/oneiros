@@ -51,13 +51,14 @@ impl ListConnections {
 
         let client = context.client();
 
-        let connections = client
+        let connections: Vec<Connection> = client
             .list_connections(
                 &context.ticket_token()?,
                 self.nature.as_ref(),
                 self.entity_ref.as_ref(),
             )
-            .await?;
+            .await?
+            .data()?;
 
         if connections.is_empty() {
             outcomes.emit(ListConnectionsOutcomes::NoConnections);

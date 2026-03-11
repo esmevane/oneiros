@@ -26,7 +26,10 @@ impl ListNatures {
 
         let client = context.client();
 
-        let natures = client.list_natures(&context.ticket_token()?).await?;
+        let natures: Vec<Nature> = client
+            .list_natures(&context.ticket_token()?)
+            .await?
+            .data()?;
 
         if natures.is_empty() {
             outcomes.emit(ListNaturesOutcomes::NoNatures);

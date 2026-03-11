@@ -3,10 +3,8 @@ use oneiros_model::*;
 
 use crate::*;
 
-pub(crate) async fn handler(ticket: ActorContext) -> Result<Json<SensationResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_sensation(SensationRequests::ListSensations(ListSensationsRequest))?;
-
-    Ok(Json(response))
+pub(crate) async fn handler(ticket: ActorContext) -> Result<Json<Response>, Error> {
+    Ok(Json(ticket.dispatch(SensationRequests::ListSensations(
+        ListSensationsRequest,
+    ))?))
 }

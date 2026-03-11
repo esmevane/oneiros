@@ -26,9 +26,10 @@ impl ShowLevel {
 
         let client = context.client();
 
-        let info = client
+        let info: Level = client
             .get_level(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowLevelOutcomes::LevelDetails(info));
 
         Ok(outcomes)

@@ -3,10 +3,8 @@ use oneiros_model::*;
 
 use crate::*;
 
-pub(crate) async fn handler(ticket: ActorContext) -> Result<Json<PressureResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_pressure(PressureRequests::ListPressures(ListPressuresRequest))?;
-
-    Ok(Json(response))
+pub(crate) async fn handler(ticket: ActorContext) -> Result<Json<Response>, Error> {
+    Ok(Json(ticket.dispatch(PressureRequests::ListPressures(
+        ListPressuresRequest,
+    ))?))
 }

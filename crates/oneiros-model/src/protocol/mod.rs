@@ -23,6 +23,8 @@ mod urge;
 
 use serde::{Deserialize, Serialize};
 
+use crate::*;
+
 pub use actor::*;
 pub use agent::*;
 pub use brain::*;
@@ -372,5 +374,105 @@ impl From<TicketResponses> for Responses {
 impl From<UrgeResponses> for Responses {
     fn from(r: UrgeResponses) -> Self {
         Self::Urge(r)
+    }
+}
+
+// ── Response envelope ─────────────────────────────────────────────
+
+/// Ambient metadata carried alongside every response.
+/// Extensible for future cross-cutting concerns.
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+pub struct ResponseMeta {
+    pub pressure: Vec<PressureReading>,
+}
+
+/// Unified protocol response. Every transport returns this shape.
+///
+/// Flattening `Responses` produces `{ type, data, meta }` — the domain
+/// response's tag and content merge with the optional meta field.
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+pub struct Response {
+    #[serde(flatten)]
+    pub data: Responses,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub meta: Option<ResponseMeta>,
+}
+
+impl Response {
+    pub fn new(data: impl Into<Responses>) -> Self {
+        Self {
+            data: data.into(),
+            meta: None,
+        }
+    }
+
+    pub fn with_meta(mut self, meta: ResponseMeta) -> Self {
+        self.meta = Some(meta);
+        self
+    }
+
+    /// Extract the inner domain data, consuming the response.
+    ///
+    /// Serializes `Responses` to a JSON value, extracts the `data` field
+    /// from the adjacently-tagged inner enum, and deserializes as `T`.
+    ///
+    /// ```ignore
+    /// let agent: Agent = response.data()?;
+    /// ```
+    pub fn data<T: serde::de::DeserializeOwned>(self) -> Result<T, serde_json::Error> {
+        let value = serde_json::to_value(self.data)?;
+        if let Some(inner) = value.get("data") {
+            serde_json::from_value(inner.clone())
+        } else {
+            serde_json::from_value(value)
+        }
+    }
+
+    /// Get pressure readings from the response meta, if present.
+    pub fn pressure_readings(&self) -> Vec<PressureReading> {
+        self.meta
+            .as_ref()
+            .map(|m| m.pressure.clone())
+            .unwrap_or_default()
+    }
+}
+
+// ── Agent scope extraction ────────────────────────────────────────
+
+impl Requests {
+    /// Returns the agent scope for this request, if one is specified.
+    ///
+    /// Used by Response assembly to determine which agent's pressure
+    /// readings to include in ResponseMeta.
+    pub fn agent_scope(&self) -> Option<&AgentName> {
+        match self {
+            // Agent-scoped: required agent field
+            Self::Agent(AgentRequests::CreateAgent(r)) => Some(&r.name),
+            Self::Agent(AgentRequests::UpdateAgent(r)) => Some(&r.name),
+            Self::Agent(AgentRequests::GetAgent(r)) => Some(&r.name),
+            Self::Agent(AgentRequests::RemoveAgent(r)) => Some(&r.name),
+            Self::Cognition(CognitionRequests::AddCognition(r)) => Some(&r.agent),
+            Self::Memory(MemoryRequests::AddMemory(r)) => Some(&r.agent),
+            Self::Experience(ExperienceRequests::CreateExperience(r)) => Some(&r.agent),
+            Self::Lifecycle(LifecycleRequests::Wake(r)) => Some(&r.agent),
+            Self::Lifecycle(LifecycleRequests::Sleep(r)) => Some(&r.agent),
+            Self::Lifecycle(LifecycleRequests::Emerge(r)) => Some(&r.name),
+            Self::Lifecycle(LifecycleRequests::Recede(r)) => Some(&r.agent),
+            Self::Dreaming(DreamingRequests::Dream(r)) => Some(&r.agent),
+            Self::Introspecting(IntrospectingRequests::Introspect(r)) => Some(&r.agent),
+            Self::Reflecting(ReflectingRequests::Reflect(r)) => Some(&r.agent),
+            Self::Sense(SenseRequests::Sense(r)) => Some(&r.agent),
+            Self::Pressure(PressureRequests::GetPressure(r)) => Some(&r.agent),
+
+            // Optionally scoped: use filter if provided
+            Self::Cognition(CognitionRequests::ListCognitions(r)) => r.agent.as_ref(),
+            Self::Memory(MemoryRequests::ListMemories(r)) => r.agent.as_ref(),
+            Self::Experience(ExperienceRequests::ListExperiences(r)) => r.agent.as_ref(),
+            Self::Search(SearchRequests::Search(r)) => r.agent.as_ref(),
+
+            // Everything else: brain-scoped, no agent context
+            _ => None,
+        }
     }
 }

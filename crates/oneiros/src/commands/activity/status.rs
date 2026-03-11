@@ -102,21 +102,24 @@ impl ActivityStatus {
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let agents = client.list_agents(&token).await?;
+        let agents: Vec<Agent> = client.list_agents(&token).await?.data()?;
         let mut rows = Vec::with_capacity(agents.len());
 
         for agent in &agents {
-            let cognitions = client
+            let cognitions: Vec<Cognition> = client
                 .list_cognitions(&token, Some(&agent.name), None)
                 .await
+                .and_then(|r| r.data::<Vec<Cognition>>().map_err(Into::into))
                 .unwrap_or_default();
-            let memories = client
+            let memories: Vec<Memory> = client
                 .list_memories(&token, Some(&agent.name), None)
                 .await
+                .and_then(|r| r.data::<Vec<Memory>>().map_err(Into::into))
                 .unwrap_or_default();
-            let experiences = client
+            let experiences: Vec<Experience> = client
                 .list_experiences(&token, Some(&agent.name), None)
                 .await
+                .and_then(|r| r.data::<Vec<Experience>>().map_err(Into::into))
                 .unwrap_or_default();
 
             rows.push(AgentActivity {

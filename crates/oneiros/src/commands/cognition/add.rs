@@ -42,7 +42,7 @@ impl AddCognition {
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let cognition = client
+        let cognition: Cognition = client
             .add_cognition(
                 &token,
                 AddCognitionRequest {
@@ -51,11 +51,13 @@ impl AddCognition {
                     content: self.content.clone(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
 
-        let all = client
+        let all: Vec<Cognition> = client
             .list_cognitions(&token, Some(&self.agent), None)
-            .await?;
+            .await?
+            .data()?;
         let gauge = crate::gauge::cognition_gauge(&self.agent, &all);
 
         let ref_token = cognition.ref_token();

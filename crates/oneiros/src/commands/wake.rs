@@ -12,6 +12,9 @@ pub enum WakeError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -33,7 +36,10 @@ impl WakeOp {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let dream_context = client.wake(&context.ticket_token()?, &self.name).await?;
+        let dream_context: DreamContext = client
+            .wake(&context.ticket_token()?, &self.name)
+            .await?
+            .data()?;
         let prompt = DreamTemplate::new(&dream_context).to_string();
 
         outcomes.emit(WakeOutcomes::Waking(Dream {

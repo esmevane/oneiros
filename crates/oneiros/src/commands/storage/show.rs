@@ -26,9 +26,10 @@ impl ShowStorage {
 
         let client = context.client();
 
-        let entry = client
+        let entry: StorageEntry = client
             .get_storage(&context.ticket_token()?, &self.key)
-            .await?;
+            .await?
+            .data()?;
 
         outcomes.emit(ShowStorageOutcomes::StorageDetails(entry));
 

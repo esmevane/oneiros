@@ -54,13 +54,14 @@ impl ListExperiences {
 
         let client = context.client();
 
-        let experiences = client
+        let experiences: Vec<Experience> = client
             .list_experiences(
                 &context.ticket_token()?,
                 self.agent.as_ref(),
                 self.sensation.as_ref(),
             )
-            .await?;
+            .await?
+            .data()?;
 
         if experiences.is_empty() {
             outcomes.emit(ListExperiencesOutcomes::NoExperiences);

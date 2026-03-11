@@ -13,6 +13,9 @@ pub enum CognitionCommandError {
 
     #[error(transparent)]
     PrefixResolve(#[from] PrefixError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]

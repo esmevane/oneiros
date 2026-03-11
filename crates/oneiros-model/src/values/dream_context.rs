@@ -16,5 +16,5 @@ pub struct DreamContext {
     pub natures: Vec<Nature>,
     pub urges: Vec<Urge>,
     #[serde(default)]
-    pub pressures: Vec<Pressure>,
+    pub pressures: Vec<PressureReading>,
 }

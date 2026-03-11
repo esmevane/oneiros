@@ -6,10 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<LevelName>,
-) -> Result<Json<LevelResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_level(LevelRequests::GetLevel(GetLevelRequest { name }))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(ticket.dispatch(LevelRequests::GetLevel(
+        GetLevelRequest { name },
+    ))?))
 }

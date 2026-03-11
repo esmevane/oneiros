@@ -6,10 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(request): Query<ListCognitionsRequest>,
-) -> Result<Json<CognitionResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_cognition(CognitionRequests::ListCognitions(request))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(
+        ticket.dispatch(CognitionRequests::ListCognitions(request))?,
+    ))
 }

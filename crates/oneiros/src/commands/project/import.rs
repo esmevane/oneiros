@@ -51,10 +51,11 @@ impl ImportProject {
             events.push(event);
         }
 
-        let response = context
+        let response: ImportResponse = context
             .client()
             .import_events(&context.ticket_token()?, events)
-            .await?;
+            .await?
+            .data()?;
 
         outcomes.emit(ImportProjectOutcomes::Imported(response.imported));
         outcomes.emit(ImportProjectOutcomes::Replayed(response.replayed));

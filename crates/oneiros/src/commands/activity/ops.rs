@@ -8,6 +8,9 @@ pub enum ActivityError {
     #[error("Client error: {0}")]
     Client(#[from] oneiros_client::Error),
 
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
+
     #[error(transparent)]
     Context(#[from] ContextError),
 }

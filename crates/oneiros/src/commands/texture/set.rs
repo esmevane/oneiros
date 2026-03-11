@@ -1,6 +1,6 @@
 use clap::Args;
-use oneiros_model::TextureName;
-use oneiros_outcomes::{Outcome, Outcomes};
+use oneiros_model::*;
+use oneiros_outcomes::*;
 
 use crate::*;
 
@@ -34,7 +34,7 @@ impl SetTexture {
 
         let client = context.client();
 
-        let info = client
+        let info: Texture = client
             .set_texture(
                 &context.ticket_token()?,
                 Texture::init(
@@ -43,7 +43,8 @@ impl SetTexture {
                     self.prompt.clone(),
                 ),
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(SetTextureOutcomes::TextureSet(info.name.clone()));
 
         Ok(outcomes)

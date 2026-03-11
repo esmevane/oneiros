@@ -6,10 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(name): Path<TextureName>,
-) -> Result<Json<TextureResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_texture(TextureRequests::GetTexture(GetTextureRequest { name }))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(ticket.dispatch(TextureRequests::GetTexture(
+        GetTextureRequest { name },
+    ))?))
 }

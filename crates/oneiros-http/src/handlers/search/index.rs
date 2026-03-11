@@ -6,10 +6,6 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(request): Query<SearchRequest>,
-) -> Result<Json<SearchResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_search(SearchRequests::Search(request))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(ticket.dispatch(SearchRequests::Search(request))?))
 }

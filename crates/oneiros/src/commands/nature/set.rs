@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::NatureName;
+use oneiros_model::{Nature, NatureName};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -34,7 +34,7 @@ impl SetNature {
 
         let client = context.client();
 
-        let info = client
+        let info: Nature = client
             .set_nature(
                 &context.ticket_token()?,
                 Nature::init(
@@ -43,7 +43,8 @@ impl SetNature {
                     self.prompt.clone(),
                 ),
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(SetNatureOutcomes::NatureSet(info.name.clone()));
 
         Ok(outcomes)

@@ -25,7 +25,7 @@ impl ListEvents {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let events = client.list_events(&context.ticket_token()?).await?;
+        let events: Vec<Event> = client.list_events(&context.ticket_token()?).await?.data()?;
 
         if events.is_empty() {
             outcomes.emit(ListEventsOutcomes::NoEvents);

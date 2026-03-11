@@ -26,7 +26,10 @@ impl ListSensations {
 
         let client = context.client();
 
-        let sensations = client.list_sensations(&context.ticket_token()?).await?;
+        let sensations: Vec<Sensation> = client
+            .list_sensations(&context.ticket_token()?)
+            .await?
+            .data()?;
 
         if sensations.is_empty() {
             outcomes.emit(ListSensationsOutcomes::NoSensations);

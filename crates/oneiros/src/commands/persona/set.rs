@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::PersonaName;
+use oneiros_model::{Persona, PersonaName};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -34,7 +34,7 @@ impl SetPersona {
 
         let client = context.client();
 
-        let info = client
+        let info: Persona = client
             .set_persona(
                 &context.ticket_token()?,
                 Persona::init(
@@ -43,7 +43,8 @@ impl SetPersona {
                     self.prompt.clone(),
                 ),
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(SetPersonaOutcomes::PersonaSet(info.name.clone()));
 
         Ok(outcomes)

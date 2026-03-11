@@ -26,9 +26,10 @@ impl ShowTexture {
 
         let client = context.client();
 
-        let info = client
+        let info: Texture = client
             .get_texture(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowTextureOutcomes::TextureDetails(info));
 
         Ok(outcomes)

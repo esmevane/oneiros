@@ -13,8 +13,8 @@ async fn sense_returns_agent() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let agent: Agent = body_json(response).await;
-    assert_eq!(agent.name, AgentName::new("governor.process"));
+    let result: Agent = body_json(response).await;
+    assert_eq!(result.name, AgentName::new("governor.process"));
 }
 
 #[tokio::test]

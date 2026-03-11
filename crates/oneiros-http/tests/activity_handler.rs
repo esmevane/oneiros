@@ -189,7 +189,7 @@ async fn full_tcp_pipeline_serves_and_responds() {
         .unwrap();
 
     // Create an agent through the TCP transport.
-    let agent = client
+    let agent: Agent = client
         .create_agent(
             &token,
             CreateAgentRequest {
@@ -200,6 +200,8 @@ async fn full_tcp_pipeline_serves_and_responds() {
             },
         )
         .await
+        .unwrap()
+        .data()
         .unwrap();
 
     assert_eq!(agent.name.as_str(), "tcp-agent");

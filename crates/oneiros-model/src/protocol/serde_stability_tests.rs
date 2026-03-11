@@ -874,4 +874,166 @@ mod tests {
             Events::Agent(AgentEvents::AgentCreated(_))
         ));
     }
+
+    // -- Response envelope tests --
+
+    fn test_gauge() -> Gauge {
+        Gauge::Introspect(IntrospectGauge::from_inputs(IntrospectInputs {
+            hours_since_last_introspect: 4.0,
+            total_cognitions: 10,
+            working_cognitions: 3,
+            cognitions_since_introspect: 5,
+            memories_since_introspect: 1,
+            session_cognition_count: 8,
+        }))
+    }
+
+    fn test_meta() -> ResponseMeta {
+        ResponseMeta {
+            pressure: vec![PressureReading::new(
+                Pressure {
+                    id: PressureId::new(),
+                    agent_id: AgentId::new(),
+                    urge: UrgeName::new("introspect"),
+                    data: test_gauge(),
+                    updated_at: test_timestamp(),
+                },
+                crate::Prompt::new("Consolidate working thoughts."),
+            )],
+        }
+    }
+
+    #[test]
+    fn response_serializes_flattened_with_meta() {
+        let response = Response {
+            data: Responses::Agent(AgentResponses::AgentCreated(test_agent())),
+            meta: Some(test_meta()),
+        };
+        let json = serde_json::to_value(&response).unwrap();
+
+        // Flattened: type and data are top-level siblings of meta
+        assert_eq!(
+            json.get("type").and_then(|v| v.as_str()),
+            Some("agent-created")
+        );
+        assert!(json.get("data").is_some());
+        assert!(json.get("meta").is_some());
+        assert!(json["meta"]["pressure"].is_array());
+    }
+
+    #[test]
+    fn response_serializes_without_meta_when_none() {
+        let response = Response {
+            data: Responses::Level(LevelResponses::LevelsListed(vec![])),
+            meta: None,
+        };
+        let json = serde_json::to_value(&response).unwrap();
+
+        assert_eq!(
+            json.get("type").and_then(|v| v.as_str()),
+            Some("levels-listed")
+        );
+        assert!(
+            json.get("meta").is_none(),
+            "meta should be absent, not null"
+        );
+    }
+
+    #[test]
+    fn response_roundtrip_agent_created() {
+        let response = Response {
+            data: Responses::Agent(AgentResponses::AgentCreated(test_agent())),
+            meta: Some(test_meta()),
+        };
+        let json = serde_json::to_string(&response).unwrap();
+        let deserialized: Response = serde_json::from_str(&json).unwrap();
+        assert!(matches!(
+            deserialized.data,
+            Responses::Agent(AgentResponses::AgentCreated(_))
+        ));
+        assert!(deserialized.meta.is_some());
+    }
+
+    #[test]
+    fn response_roundtrip_cognition_added() {
+        let response = Response::new(CognitionResponses::CognitionAdded(Cognition {
+            id: CognitionId::new(),
+            agent_id: AgentId::new(),
+            texture: TextureName::new("working"),
+            content: Content::new("test"),
+            created_at: test_timestamp(),
+        }));
+        let json = serde_json::to_string(&response).unwrap();
+        let deserialized: Response = serde_json::from_str(&json).unwrap();
+        assert!(matches!(
+            deserialized.data,
+            Responses::Cognition(CognitionResponses::CognitionAdded(_))
+        ));
+        assert!(deserialized.meta.is_none());
+    }
+
+    #[test]
+    fn response_roundtrip_without_meta() {
+        let response = Response::new(LevelResponses::LevelsListed(vec![]));
+        let json = serde_json::to_string(&response).unwrap();
+        let deserialized: Response = serde_json::from_str(&json).unwrap();
+        assert!(matches!(
+            deserialized.data,
+            Responses::Level(LevelResponses::LevelsListed(_))
+        ));
+        assert!(deserialized.meta.is_none());
+    }
+
+    // -- Agent scope extraction tests --
+
+    #[test]
+    fn agent_scope_from_agent_scoped_request() {
+        let request = Requests::from(CognitionRequests::AddCognition(AddCognitionRequest {
+            agent: AgentName::new("governor.process"),
+            texture: TextureName::new("working"),
+            content: Content::new("test"),
+        }));
+        assert_eq!(
+            request.agent_scope(),
+            Some(&AgentName::new("governor.process"))
+        );
+    }
+
+    #[test]
+    fn agent_scope_from_lifecycle_request() {
+        let request = Requests::from(LifecycleRequests::Wake(WakeRequest {
+            agent: AgentName::new("governor.process"),
+        }));
+        assert_eq!(
+            request.agent_scope(),
+            Some(&AgentName::new("governor.process"))
+        );
+    }
+
+    #[test]
+    fn agent_scope_from_optional_filter_present() {
+        let request = Requests::from(CognitionRequests::ListCognitions(ListCognitionsRequest {
+            agent: Some(AgentName::new("governor.process")),
+            texture: None,
+        }));
+        assert_eq!(
+            request.agent_scope(),
+            Some(&AgentName::new("governor.process"))
+        );
+    }
+
+    #[test]
+    fn agent_scope_from_optional_filter_absent() {
+        let request = Requests::from(CognitionRequests::ListCognitions(ListCognitionsRequest {
+            agent: None,
+            texture: None,
+        }));
+        assert_eq!(request.agent_scope(), None);
+    }
+
+    #[test]
+    fn agent_scope_from_brain_scoped_request() {
+        let request = Requests::from(LevelRequests::ListLevels(ListLevelsRequest));
+        assert_eq!(request.agent_scope(), None);
+    }
 }
