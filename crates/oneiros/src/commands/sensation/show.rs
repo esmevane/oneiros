@@ -26,9 +26,10 @@ impl ShowSensation {
 
         let client = context.client();
 
-        let info = client
+        let info: Sensation = client
             .get_sensation(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowSensationOutcomes::SensationDetails(info));
 
         Ok(outcomes)

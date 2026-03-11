@@ -162,8 +162,9 @@ impl<'a> DreamCollector<'a> {
             })
             .collect();
 
-        // Pressure readings for this agent
-        let pressures = self.db.list_pressures_for_agent(&agent.id.to_string())?;
+        // Pressure readings paired with urge CTAs
+        let raw_pressures = self.db.list_pressures_for_agent(&agent.id.to_string())?;
+        let pressures = PressureReading::from_pressures_and_urges(raw_pressures, &urges);
 
         Ok(DreamContext {
             agent: agent.clone(),

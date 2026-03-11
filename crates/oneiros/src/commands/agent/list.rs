@@ -26,7 +26,7 @@ impl ListAgents {
 
         let client = context.client();
 
-        let agents = client.list_agents(&context.ticket_token()?).await?;
+        let agents: Vec<Agent> = client.list_agents(&context.ticket_token()?).await?.data()?;
 
         if agents.is_empty() {
             outcomes.emit(ListAgentsOutcomes::NoAgents);

@@ -39,7 +39,7 @@ impl CreateConnection {
 
         let client = context.client();
 
-        let connection = client
+        let connection: Connection = client
             .create_connection(
                 &context.ticket_token()?,
                 CreateConnectionRequest {
@@ -48,7 +48,8 @@ impl CreateConnection {
                     to_ref: self.to_ref.clone().into_inner(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
 
         let ref_token = connection.ref_token();
 

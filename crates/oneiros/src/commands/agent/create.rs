@@ -51,7 +51,7 @@ impl CreateAgent {
         let client = context.client();
         let name = self.normalize_name();
 
-        let info = client
+        let info: Agent = client
             .create_agent(
                 &context.ticket_token()?,
                 CreateAgentRequest {
@@ -61,7 +61,8 @@ impl CreateAgent {
                     prompt: self.prompt.clone(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(CreateAgentOutcomes::AgentCreated(info.name.clone()));
 
         Ok(outcomes)

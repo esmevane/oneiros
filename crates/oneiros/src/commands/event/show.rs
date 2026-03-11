@@ -26,7 +26,10 @@ impl ShowEvent {
 
         let client = context.client();
 
-        let info = client.get_event(&context.ticket_token()?, &self.id).await?;
+        let info: Event = client
+            .get_event(&context.ticket_token()?, &self.id)
+            .await?
+            .data()?;
         outcomes.emit(ShowEventOutcomes::EventDetails(info));
 
         Ok(outcomes)

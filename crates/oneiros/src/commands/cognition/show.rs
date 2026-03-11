@@ -45,13 +45,14 @@ impl ShowCognition {
         let id = match self.id.as_full_id() {
             Some(id) => CognitionId(id),
             None => {
-                let all = client.list_cognitions(&token, None, None).await?;
+                let all: Vec<Cognition> =
+                    client.list_cognitions(&token, None, None).await?.data()?;
                 let ids: Vec<_> = all.iter().map(|c| c.id.0).collect();
                 CognitionId(self.id.resolve(&ids)?)
             }
         };
 
-        let cognition = client.get_cognition(&token, &id).await?;
+        let cognition: Cognition = client.get_cognition(&token, &id).await?.data()?;
         outcomes.emit(ShowCognitionOutcomes::CognitionDetails(CognitionDetail(
             cognition,
         )));

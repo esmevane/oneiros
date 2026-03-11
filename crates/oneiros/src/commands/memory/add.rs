@@ -1,6 +1,6 @@
 use clap::Args;
-use oneiros_model::{MemoryId, RefToken};
-use oneiros_outcomes::{Outcome, Outcomes};
+use oneiros_model::*;
+use oneiros_outcomes::*;
 
 use crate::*;
 
@@ -42,7 +42,7 @@ impl AddMemory {
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let memory = client
+        let memory: Memory = client
             .add_memory(
                 &token,
                 AddMemoryRequest {
@@ -51,11 +51,13 @@ impl AddMemory {
                     content: self.content.clone(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
 
-        let all = client
+        let all: Vec<Memory> = client
             .list_memories(&token, Some(&self.agent), None)
-            .await?;
+            .await?
+            .data()?;
         let gauge = crate::gauge::memory_gauge(&self.agent, &all);
 
         let ref_token = memory.ref_token();

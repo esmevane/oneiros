@@ -26,7 +26,10 @@ impl ListTextures {
 
         let client = context.client();
 
-        let textures = client.list_textures(&context.ticket_token()?).await?;
+        let textures: Vec<Texture> = client
+            .list_textures(&context.ticket_token()?)
+            .await?
+            .data()?;
 
         if textures.is_empty() {
             outcomes.emit(ListTexturesOutcomes::NoTextures);

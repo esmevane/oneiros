@@ -43,7 +43,8 @@ impl InitProject {
         };
 
         let token = match client.create_brain(request).await {
-            Ok(info) => {
+            Ok(response) => {
+                let info: BrainInfo = response.data()?;
                 context.store_ticket(project_name.as_str(), info.token.as_str())?;
                 outcomes.emit(InitProjectOutcomes::BrainCreated(project_name.clone()));
                 info.token

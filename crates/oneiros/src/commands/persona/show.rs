@@ -26,9 +26,10 @@ impl ShowPersona {
 
         let client = context.client();
 
-        let info = client
+        let info: Persona = client
             .get_persona(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowPersonaOutcomes::PersonaDetails(info));
 
         Ok(outcomes)

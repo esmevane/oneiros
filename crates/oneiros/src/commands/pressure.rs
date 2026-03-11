@@ -11,6 +11,9 @@ pub enum PressureError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -44,7 +47,7 @@ impl PressureOp {
 
         let client = context.client();
         let token = context.ticket_token()?;
-        let pressures = client.get_pressure(&token, &self.name).await?;
+        let pressures: Vec<Pressure> = client.get_pressure(&token, &self.name).await?.data()?;
         let display = RelevantPressures::from_pressures(pressures.clone()).to_string();
 
         outcomes.emit(PressureOutcomes::Readings(PressureResult {

@@ -14,6 +14,9 @@ pub enum ExperienceCommandError {
     #[error(transparent)]
     PrefixResolve(#[from] PrefixError),
 
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
+
     #[error("at least one of --description or --sensation must be provided")]
     NoUpdateProvided,
 }

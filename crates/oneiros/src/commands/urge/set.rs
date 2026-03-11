@@ -1,6 +1,6 @@
 use clap::Args;
-use oneiros_model::UrgeName;
-use oneiros_outcomes::{Outcome, Outcomes};
+use oneiros_model::*;
+use oneiros_outcomes::*;
 
 use crate::*;
 
@@ -34,7 +34,7 @@ impl SetUrge {
 
         let client = context.client();
 
-        let info = client
+        let info: Urge = client
             .set_urge(
                 &context.ticket_token()?,
                 Urge::init(
@@ -43,7 +43,8 @@ impl SetUrge {
                     self.prompt.clone(),
                 ),
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(SetUrgeOutcomes::UrgeSet(info.name.clone()));
 
         Ok(outcomes)

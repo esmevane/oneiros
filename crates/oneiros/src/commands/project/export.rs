@@ -51,10 +51,11 @@ impl ExportProject {
 
         outcomes.emit(ExportProjectOutcomes::UsingPath(target_directory.clone()));
 
-        let events = context
+        let events: Vec<Event> = context
             .client()
             .export_brain(&context.ticket_token()?)
-            .await?;
+            .await?
+            .data()?;
 
         let mut buffer = String::new();
         let mut lines = 0;

@@ -34,9 +34,10 @@ impl SetStorage {
         let client = context.client();
         let data = context.files().read(&self.file)?;
 
-        let entry = client
+        let entry: StorageEntry = client
             .set_storage(&context.ticket_token()?, &self.key, data, &self.description)
-            .await?;
+            .await?
+            .data()?;
 
         outcomes.emit(SetStorageOutcomes::StorageSet(entry.key.clone()));
 

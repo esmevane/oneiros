@@ -24,10 +24,11 @@ impl ReplayProject {
 
         outcomes.emit(ReplayProjectOutcomes::Replaying);
 
-        let response = context
+        let response: ReplayResponse = context
             .client()
             .replay_brain(&context.ticket_token()?)
-            .await?;
+            .await?
+            .data()?;
 
         outcomes.emit(ReplayProjectOutcomes::Replayed(response.replayed));
 

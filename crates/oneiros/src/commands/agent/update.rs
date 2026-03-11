@@ -37,7 +37,7 @@ impl UpdateAgent {
 
         let client = context.client();
 
-        let info = client
+        let info: Agent = client
             .update_agent(
                 &context.ticket_token()?,
                 &self.name,
@@ -48,7 +48,8 @@ impl UpdateAgent {
                     prompt: self.prompt.clone(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(UpdateAgentOutcomes::AgentUpdated(info.name.clone()));
 
         Ok(outcomes)

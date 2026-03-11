@@ -26,7 +26,7 @@ impl ListUrges {
 
         let client = context.client();
 
-        let urges = client.list_urges(&context.ticket_token()?).await?;
+        let urges: Vec<Urge> = client.list_urges(&context.ticket_token()?).await?.data()?;
 
         if urges.is_empty() {
             outcomes.emit(ListUrgesOutcomes::NoUrges);

@@ -10,6 +10,9 @@ pub enum GuidebookError {
     #[error("Client error: {0}")]
     Client(#[from] oneiros_client::Error),
 
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
+
     #[error(transparent)]
     Context(#[from] ContextError),
 }
@@ -36,7 +39,8 @@ impl GuidebookOp {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let dream_context = client.dream(&context.ticket_token()?, &self.name).await?;
+        let response = client.dream(&context.ticket_token()?, &self.name).await?;
+        let dream_context: DreamContext = response.data()?;
         let prompt = GuidebookTemplate::new(&dream_context).to_string();
 
         outcomes.emit(GuidebookOutcomes::Guidebook(Dream {

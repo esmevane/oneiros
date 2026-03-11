@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::{ConnectionId, RefToken};
+use oneiros_model::{Connection, ConnectionId, RefToken};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -37,7 +37,8 @@ impl RemoveConnection {
         let id = match self.id.as_full_id() {
             Some(id) => ConnectionId(id),
             None => {
-                let all = client.list_connections(&token, None, None).await?;
+                let all: Vec<Connection> =
+                    client.list_connections(&token, None, None).await?.data()?;
                 let ids: Vec<_> = all.iter().map(|c| c.id.0).collect();
                 ConnectionId(self.id.resolve(&ids)?)
             }

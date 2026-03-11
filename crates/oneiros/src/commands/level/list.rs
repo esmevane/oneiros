@@ -26,7 +26,7 @@ impl ListLevels {
 
         let client = context.client();
 
-        let levels = client.list_levels(&context.ticket_token()?).await?;
+        let levels: Vec<Level> = client.list_levels(&context.ticket_token()?).await?.data()?;
 
         if levels.is_empty() {
             outcomes.emit(ListLevelsOutcomes::NoLevels);

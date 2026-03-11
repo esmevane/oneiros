@@ -26,9 +26,10 @@ impl ShowNature {
 
         let client = context.client();
 
-        let info = client
+        let info: Nature = client
             .get_nature(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowNatureOutcomes::NatureDetails(info));
 
         Ok(outcomes)

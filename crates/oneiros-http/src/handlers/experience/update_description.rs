@@ -7,12 +7,11 @@ pub(crate) async fn handler(
     ticket: ActorContext,
     Path(id): Path<ExperienceId>,
     Json(mut request): Json<UpdateExperienceDescriptionRequest>,
-) -> Result<(StatusCode, Json<ExperienceResponses>), Error> {
+) -> Result<(StatusCode, Json<Response>), Error> {
     request.id = id;
 
-    let response = ticket
-        .service()
-        .dispatch_experience(ExperienceRequests::UpdateExperienceDescription(request))?;
-
-    Ok((StatusCode::OK, Json(response)))
+    Ok((
+        StatusCode::OK,
+        Json(ticket.dispatch(ExperienceRequests::UpdateExperienceDescription(request))?),
+    ))
 }

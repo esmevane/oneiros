@@ -26,9 +26,10 @@ impl ShowAgent {
 
         let client = context.client();
 
-        let info = client
+        let info: Agent = client
             .get_agent(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowAgentOutcomes::AgentDetails(info));
 
         Ok(outcomes)

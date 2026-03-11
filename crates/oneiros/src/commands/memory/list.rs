@@ -56,13 +56,14 @@ impl ListMemories {
 
         let client = context.client();
 
-        let memories = client
+        let memories: Vec<Memory> = client
             .list_memories(
                 &context.ticket_token()?,
                 self.agent.as_ref(),
                 self.level.as_ref(),
             )
-            .await?;
+            .await?
+            .data()?;
 
         if memories.is_empty() {
             outcomes.emit(ListMemoriesOutcomes::NoMemories);

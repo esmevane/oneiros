@@ -56,13 +56,14 @@ impl ListCognitions {
 
         let client = context.client();
 
-        let cognitions = client
+        let cognitions: Vec<Cognition> = client
             .list_cognitions(
                 &context.ticket_token()?,
                 self.agent.as_ref(),
                 self.texture.as_ref(),
             )
-            .await?;
+            .await?
+            .data()?;
 
         if cognitions.is_empty() {
             outcomes.emit(ListCognitionsOutcomes::NoCognitions);

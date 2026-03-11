@@ -6,10 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Path(agent): Path<AgentName>,
-) -> Result<Json<SenseResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_sense(SenseRequests::Sense(SenseRequest { agent }))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(
+        ticket.dispatch(SenseRequests::Sense(SenseRequest { agent }))?,
+    ))
 }

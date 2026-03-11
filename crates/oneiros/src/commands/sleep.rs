@@ -11,6 +11,9 @@ pub enum SleepError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -32,9 +35,12 @@ impl SleepOp {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let agent = client.sleep(&context.ticket_token()?, &self.name).await?;
+        let result: Agent = client
+            .sleep(&context.ticket_token()?, &self.name)
+            .await?
+            .data()?;
 
-        outcomes.emit(SleepOutcomes::Sleeping(agent));
+        outcomes.emit(SleepOutcomes::Sleeping(result));
 
         Ok(outcomes)
     }

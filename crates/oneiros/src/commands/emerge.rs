@@ -11,6 +11,9 @@ pub enum EmergeError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -54,7 +57,7 @@ impl EmergeOp {
         let client = context.client();
         let name = self.normalize_name();
 
-        let agent = client
+        let agent: Agent = client
             .emerge(
                 &context.ticket_token()?,
                 CreateAgentRequest {
@@ -64,7 +67,8 @@ impl EmergeOp {
                     prompt: self.prompt.clone(),
                 },
             )
-            .await?;
+            .await?
+            .data()?;
 
         outcomes.emit(EmergeOutcomes::Emerged(agent.name.clone()));
 

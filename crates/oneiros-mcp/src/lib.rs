@@ -1,14 +1,22 @@
+use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 
 use oneiros_db::Database;
 use oneiros_model::*;
 use oneiros_service::{BrainState, OneirosService, ServiceState};
 use rmcp::{
-    ErrorData, ServerHandler,
+    ErrorData, RoleServer, ServerHandler,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
     model::*,
+    service::RequestContext,
     tool, tool_handler, tool_router,
 };
+
+// Disambiguate from oneiros_model::Resource
+use rmcp::model::Resource as McpResource;
+
+/// Pressure urgency threshold for resource subscription notifications.
+const PRESSURE_NOTIFICATION_THRESHOLD: f64 = 0.80;
 
 /// MCP tool server for oneiros.
 ///
@@ -24,6 +32,7 @@ pub struct OneirosToolBox {
     state: Arc<ServiceState>,
     service: Arc<RwLock<OneirosService>>,
     tool_router: ToolRouter<Self>,
+    subscriptions: Arc<RwLock<HashSet<String>>>,
 }
 
 impl OneirosToolBox {
@@ -35,6 +44,7 @@ impl OneirosToolBox {
             state,
             service: Arc::new(RwLock::new(service)),
             tool_router: Self::tool_router(),
+            subscriptions: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -46,6 +56,7 @@ impl OneirosToolBox {
             state,
             service: Arc::new(RwLock::new(service)),
             tool_router: Self::tool_router(),
+            subscriptions: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -82,6 +93,140 @@ impl OneirosToolBox {
                 e.to_string(),
             )])),
         }
+    }
+
+    // ── Resource helpers ──────────────────────────────────────────────
+
+    /// Parse a `oneiroi://pressure/{agent}` URI and return the agent name.
+    fn parse_pressure_uri(uri: &str) -> Option<AgentName> {
+        let path = uri.strip_prefix("oneiroi://pressure/")?;
+        let agent = path.split('/').next()?;
+        if agent.is_empty() {
+            return None;
+        }
+        Some(AgentName::new(agent))
+    }
+
+    /// List all pressure resources — one per agent.
+    fn list_pressure_resources(&self) -> Result<Vec<McpResource>, ErrorData> {
+        let service = self
+            .service
+            .read()
+            .map_err(|_| ErrorData::internal_error("Service lock poisoned", None))?;
+
+        let agents = match service.dispatch(AgentRequests::ListAgents(ListAgentsRequest)) {
+            Ok(response) => match response.data {
+                Responses::Agent(AgentResponses::AgentsListed(agents)) => agents,
+                _ => return Ok(vec![]),
+            },
+            _ => return Ok(vec![]),
+        };
+
+        Ok(agents
+            .iter()
+            .map(|agent| {
+                McpResource::new(
+                    RawResource {
+                        uri: format!("oneiroi://pressure/{}", agent.name),
+                        name: format!("{} pressure", agent.name),
+                        title: None,
+                        description: Some(format!(
+                            "Cognitive pressure readings for {}",
+                            agent.name
+                        )),
+                        mime_type: Some("application/json".to_string()),
+                        size: None,
+                        icons: None,
+                        meta: None,
+                    },
+                    None,
+                )
+            })
+            .collect())
+    }
+
+    /// Read pressure data for an agent as JSON text content.
+    fn read_pressure_resource(&self, uri: &str) -> Result<ReadResourceResult, ErrorData> {
+        let agent_name = Self::parse_pressure_uri(uri).ok_or_else(|| {
+            ErrorData::invalid_params(format!("Invalid pressure URI: {uri}"), None)
+        })?;
+
+        let service = self
+            .service
+            .read()
+            .map_err(|_| ErrorData::internal_error("Service lock poisoned", None))?;
+
+        let request = PressureRequests::GetPressure(GetPressureRequest { agent: agent_name });
+        let pressures = match service.dispatch(request) {
+            Ok(response) => match response.data {
+                Responses::Pressure(PressureResponses::PressureFound(pressures)) => pressures,
+                _ => return Err(ErrorData::internal_error("Unexpected response", None)),
+            },
+            Err(e) => {
+                return Err(ErrorData::invalid_params(e.to_string(), None));
+            }
+        };
+
+        let json = serde_json::to_string_pretty(&pressures)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        Ok(ReadResourceResult::new(vec![
+            ResourceContents::text(json, uri).with_mime_type("application/json"),
+        ]))
+    }
+
+    /// Check all subscribed pressure URIs and return those where any
+    /// pressure exceeds the notification threshold.
+    pub fn check_pressure_thresholds(&self) -> Vec<String> {
+        let subs = match self.subscriptions.read() {
+            Ok(s) => s.clone(),
+            Err(_) => return vec![],
+        };
+
+        let service = match self.service.read() {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+
+        let mut triggered = Vec::new();
+        for uri in &subs {
+            if let Some(agent_name) = Self::parse_pressure_uri(uri) {
+                let request =
+                    PressureRequests::GetPressure(GetPressureRequest { agent: agent_name });
+                if let Ok(response) = service.dispatch(request)
+                    && let Responses::Pressure(PressureResponses::PressureFound(pressures)) =
+                        response.data
+                    && pressures
+                        .iter()
+                        .any(|p| p.urgency() >= PRESSURE_NOTIFICATION_THRESHOLD)
+                {
+                    triggered.push(uri.clone());
+                }
+            }
+        }
+        triggered
+    }
+
+    /// Add a subscription URI.
+    pub fn subscribe_uri(&self, uri: &str) {
+        if let Ok(mut subs) = self.subscriptions.write() {
+            subs.insert(uri.to_string());
+        }
+    }
+
+    /// Remove a subscription URI.
+    pub fn unsubscribe_uri(&self, uri: &str) {
+        if let Ok(mut subs) = self.subscriptions.write() {
+            subs.remove(uri);
+        }
+    }
+
+    /// Check if there are any active subscriptions.
+    pub fn has_subscriptions(&self) -> bool {
+        self.subscriptions
+            .read()
+            .map(|s| !s.is_empty())
+            .unwrap_or(false)
     }
 }
 
@@ -678,8 +823,75 @@ impl OneirosToolBox {
 #[tool_handler]
 impl ServerHandler for OneirosToolBox {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_server_info(Implementation::new("oneiros", env!("CARGO_PKG_VERSION")))
+        ServerInfo::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .enable_resources_subscribe()
+                .build(),
+        )
+        .with_server_info(Implementation::new("oneiros", env!("CARGO_PKG_VERSION")))
+    }
+
+    async fn list_resources(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListResourcesResult, ErrorData> {
+        let resources = self.list_pressure_resources()?;
+        Ok(ListResourcesResult {
+            resources,
+            next_cursor: None,
+            meta: None,
+        })
+    }
+
+    async fn list_resource_templates(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListResourceTemplatesResult, ErrorData> {
+        Ok(ListResourceTemplatesResult {
+            resource_templates: vec![ResourceTemplate::new(
+                RawResourceTemplate {
+                    uri_template: "oneiroi://pressure/{agent}".to_string(),
+                    name: "Agent pressure".to_string(),
+                    title: None,
+                    description: Some("Cognitive pressure readings for an agent".to_string()),
+                    mime_type: Some("application/json".to_string()),
+                    icons: None,
+                },
+                None,
+            )],
+            next_cursor: None,
+            meta: None,
+        })
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResult, ErrorData> {
+        self.read_pressure_resource(&request.uri)
+    }
+
+    async fn subscribe(
+        &self,
+        request: SubscribeRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<(), ErrorData> {
+        self.subscribe_uri(&request.uri);
+        Ok(())
+    }
+
+    async fn unsubscribe(
+        &self,
+        request: UnsubscribeRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<(), ErrorData> {
+        self.unsubscribe_uri(&request.uri);
+        Ok(())
     }
 }
 
@@ -763,5 +975,127 @@ mod tests {
             matches!(&*service, OneirosService::Service(_)),
             "system toolbox should start in Service mode"
         );
+    }
+
+    #[test]
+    fn parse_pressure_uri_extracts_agent() {
+        assert_eq!(
+            OneirosToolBox::parse_pressure_uri("oneiroi://pressure/governor.process"),
+            Some(AgentName::new("governor.process"))
+        );
+    }
+
+    #[test]
+    fn parse_pressure_uri_rejects_invalid() {
+        assert_eq!(
+            OneirosToolBox::parse_pressure_uri("https://example.com"),
+            None
+        );
+        assert_eq!(
+            OneirosToolBox::parse_pressure_uri("oneiroi://pressure/"),
+            None
+        );
+        assert_eq!(
+            OneirosToolBox::parse_pressure_uri("oneiroi://other/foo"),
+            None
+        );
+    }
+
+    #[test]
+    fn list_pressure_resources_returns_per_agent() {
+        let dir = tempfile::tempdir().unwrap();
+        let (brain_db, state) = test_state(dir.path());
+        let toolbox = OneirosToolBox::new(brain_db, state);
+
+        // Seed persona + agent
+        toolbox
+            .dispatch(PersonaRequests::SetPersona(Persona::init(
+                PersonaName::new("test-persona"),
+                "Test persona",
+                "Test",
+            )))
+            .unwrap();
+        toolbox
+            .dispatch(AgentRequests::CreateAgent(CreateAgentRequest {
+                name: AgentName::new("test-agent"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Test"),
+                prompt: oneiros_model::Prompt::new("Test"),
+            }))
+            .unwrap();
+
+        let resources = toolbox.list_pressure_resources().unwrap();
+        assert_eq!(resources.len(), 1);
+        assert_eq!(resources[0].uri, "oneiroi://pressure/test-agent");
+        assert_eq!(resources[0].mime_type, Some("application/json".to_string()));
+    }
+
+    #[test]
+    fn read_pressure_resource_returns_json() {
+        let dir = tempfile::tempdir().unwrap();
+        let (brain_db, state) = test_state(dir.path());
+        let toolbox = OneirosToolBox::new(brain_db, state);
+
+        // Seed agent + persona (needed for pressure queries)
+        toolbox
+            .dispatch(PersonaRequests::SetPersona(Persona::init(
+                PersonaName::new("test-persona"),
+                "Test persona",
+                "Test",
+            )))
+            .unwrap();
+        toolbox
+            .dispatch(AgentRequests::CreateAgent(CreateAgentRequest {
+                name: AgentName::new("test-agent"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Test"),
+                prompt: oneiros_model::Prompt::new("Test"),
+            }))
+            .unwrap();
+
+        let result = toolbox
+            .read_pressure_resource("oneiroi://pressure/test-agent")
+            .unwrap();
+        assert_eq!(result.contents.len(), 1);
+    }
+
+    #[test]
+    fn read_pressure_resource_rejects_invalid_uri() {
+        let dir = tempfile::tempdir().unwrap();
+        let (brain_db, state) = test_state(dir.path());
+        let toolbox = OneirosToolBox::new(brain_db, state);
+
+        let result = toolbox.read_pressure_resource("invalid://uri");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn subscribe_and_unsubscribe_track_uris() {
+        let dir = tempfile::tempdir().unwrap();
+        let (brain_db, state) = test_state(dir.path());
+        let toolbox = OneirosToolBox::new(brain_db, state);
+
+        assert!(!toolbox.has_subscriptions());
+
+        toolbox.subscribe_uri("oneiroi://pressure/test-agent");
+        assert!(toolbox.has_subscriptions());
+
+        toolbox.unsubscribe_uri("oneiroi://pressure/test-agent");
+        assert!(!toolbox.has_subscriptions());
+    }
+
+    #[test]
+    fn server_capabilities_include_resources() {
+        let dir = tempfile::tempdir().unwrap();
+        let (brain_db, state) = test_state(dir.path());
+        let toolbox = OneirosToolBox::new(brain_db, state);
+
+        let info = toolbox.get_info();
+        assert!(
+            info.capabilities.resources.is_some(),
+            "server should advertise resource capability"
+        );
+        let resources = info.capabilities.resources.unwrap();
+        assert_eq!(resources.subscribe, Some(true));
     }
 }

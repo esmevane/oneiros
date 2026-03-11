@@ -45,13 +45,13 @@ impl ShowMemory {
         let id = match self.id.as_full_id() {
             Some(id) => MemoryId(id),
             None => {
-                let all = client.list_memories(&token, None, None).await?;
+                let all: Vec<Memory> = client.list_memories(&token, None, None).await?.data()?;
                 let ids: Vec<_> = all.iter().map(|m| m.id.0).collect();
                 MemoryId(self.id.resolve(&ids)?)
             }
         };
 
-        let memory = client.get_memory(&token, &id).await?;
+        let memory: Memory = client.get_memory(&token, &id).await?.data()?;
         outcomes.emit(ShowMemoryOutcomes::MemoryDetails(MemoryDetail(memory)));
 
         Ok(outcomes)

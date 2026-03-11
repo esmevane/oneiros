@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::SensationName;
+use oneiros_model::{Sensation, SensationName};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -34,7 +34,7 @@ impl SetSensation {
 
         let client = context.client();
 
-        let info = client
+        let info: Sensation = client
             .set_sensation(
                 &context.ticket_token()?,
                 Sensation::init(
@@ -43,7 +43,8 @@ impl SetSensation {
                     self.prompt.clone(),
                 ),
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(SetSensationOutcomes::SensationSet(info.name.clone()));
 
         Ok(outcomes)

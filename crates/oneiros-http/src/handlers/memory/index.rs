@@ -6,10 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(request): Query<ListMemoriesRequest>,
-) -> Result<Json<MemoryResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_memory(MemoryRequests::ListMemories(request))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(
+        ticket.dispatch(MemoryRequests::ListMemories(request))?,
+    ))
 }

@@ -1,6 +1,6 @@
 use clap::Args;
-use oneiros_model::LevelName;
-use oneiros_outcomes::{Outcome, Outcomes};
+use oneiros_model::*;
+use oneiros_outcomes::*;
 
 use crate::*;
 
@@ -34,7 +34,7 @@ impl SetLevel {
 
         let client = context.client();
 
-        let info = client
+        let info: Level = client
             .set_level(
                 &context.ticket_token()?,
                 Level::init(
@@ -43,7 +43,8 @@ impl SetLevel {
                     self.prompt.clone(),
                 ),
             )
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(SetLevelOutcomes::LevelSet(info.name.clone()));
 
         Ok(outcomes)

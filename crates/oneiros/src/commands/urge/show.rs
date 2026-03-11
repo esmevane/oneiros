@@ -26,9 +26,10 @@ impl ShowUrge {
 
         let client = context.client();
 
-        let info = client
+        let info: Urge = client
             .get_urge(&context.ticket_token()?, &self.name)
-            .await?;
+            .await?
+            .data()?;
         outcomes.emit(ShowUrgeOutcomes::UrgeDetails(info));
 
         Ok(outcomes)

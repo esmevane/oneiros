@@ -11,6 +11,9 @@ pub enum SearchError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]
@@ -68,9 +71,10 @@ impl SearchOp {
 
         let query = self.query.join(" ");
         let client = context.client();
-        let results = client
+        let results: SearchResults = client
             .search(&context.ticket_token()?, &query, self.agent.as_ref())
-            .await?;
+            .await?
+            .data()?;
 
         outcomes.emit(SearchOutcomes::Results(SearchResultsDisplay(results)));
 

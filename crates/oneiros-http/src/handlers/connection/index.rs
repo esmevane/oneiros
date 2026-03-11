@@ -6,10 +6,8 @@ use crate::*;
 pub(crate) async fn handler(
     ticket: ActorContext,
     Query(request): Query<ListConnectionsRequest>,
-) -> Result<Json<ConnectionResponses>, Error> {
-    let response = ticket
-        .service()
-        .dispatch_connection(ConnectionRequests::ListConnections(request))?;
-
-    Ok(Json(response))
+) -> Result<Json<Response>, Error> {
+    Ok(Json(
+        ticket.dispatch(ConnectionRequests::ListConnections(request))?,
+    ))
 }

@@ -12,6 +12,9 @@ pub enum SenseError {
     #[error("Client error: {0}")]
     Client(#[from] oneiros_client::Error),
 
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
+
     #[error(transparent)]
     Context(#[from] ContextError),
 
@@ -47,13 +50,10 @@ impl SenseOp {
 
         let client = context.client();
         let token = &context.ticket_token()?;
-        let agent = client.sense(token, &self.name).await?;
-        let pressures = RelevantPressures::from_pressures(
-            client
-                .get_pressure(token, &self.name)
-                .await
-                .unwrap_or_default(),
-        );
+        let response = client.sense(token, &self.name).await?;
+        let readings = response.pressure_readings();
+        let agent: Agent = response.data()?;
+        let pressures = RelevantPressures::from_readings(readings);
         let prompt = SenseTemplate::new(&agent, &event_data, pressures).to_string();
 
         outcomes.emit(SenseOutcomes::Sensing(Observation { agent, prompt }));

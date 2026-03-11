@@ -1,8 +1,5 @@
 use clap::Args;
-use oneiros_model::{
-    Description, ExperienceId, RefToken, SensationName, UpdateExperienceDescriptionRequest,
-    UpdateExperienceSensationRequest,
-};
+use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -54,13 +51,14 @@ impl UpdateExperience {
         let id = match self.id.as_full_id() {
             Some(id) => ExperienceId(id),
             None => {
-                let all = client.list_experiences(&token, None, None).await?;
+                let all: Vec<Experience> =
+                    client.list_experiences(&token, None, None).await?.data()?;
                 let ids: Vec<_> = all.iter().map(|e| e.id.0).collect();
                 ExperienceId(self.id.resolve(&ids)?)
             }
         };
 
-        let mut experience = None;
+        let mut experience: Option<Experience> = None;
 
         if let Some(description) = &self.description {
             experience = Some(
@@ -73,7 +71,8 @@ impl UpdateExperience {
                             description: description.clone(),
                         },
                     )
-                    .await?,
+                    .await?
+                    .data()?,
             );
         }
 
@@ -88,23 +87,25 @@ impl UpdateExperience {
                             sensation: sensation.clone(),
                         },
                     )
-                    .await?,
+                    .await?
+                    .data()?,
             );
         }
 
         // At least one flag was provided (checked above), so experience is Some.
         let experience = experience.unwrap();
 
-        let agents = client.list_agents(&token).await?;
+        let agents: Vec<Agent> = client.list_agents(&token).await?.data()?;
         let gauge_str = agents
             .iter()
             .find(|agent| agent.id == experience.agent_id)
             .map(|agent| agent.name.clone());
 
         let gauge_str = if let Some(agent_name) = gauge_str {
-            let all = client
+            let all: Vec<Experience> = client
                 .list_experiences(&token, Some(&agent_name), None)
-                .await?;
+                .await?
+                .data()?;
             crate::gauge::experience_gauge(&agent_name, &all)
         } else {
             String::new()

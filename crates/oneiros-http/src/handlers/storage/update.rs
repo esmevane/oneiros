@@ -13,7 +13,7 @@ pub(crate) async fn handler(
     Path(storage_ref): Path<StorageRef>,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<(StatusCode, Json<StorageResponses>), Error> {
+) -> Result<(StatusCode, Json<Response>), Error> {
     let key = storage_ref
         .decode()
         .map_err(oneiros_service::BadRequests::StorageRef)?;
@@ -24,11 +24,11 @@ pub(crate) async fn handler(
         .unwrap_or("")
         .to_string();
 
-    let response = ticket.service().set_storage(SetStorageRequest {
+    let data = ticket.service().set_storage(SetStorageRequest {
         key,
         description,
         data: body.to_vec(),
     })?;
 
-    Ok((StatusCode::OK, Json(response)))
+    Ok((StatusCode::OK, Json(ticket.respond(data))))
 }

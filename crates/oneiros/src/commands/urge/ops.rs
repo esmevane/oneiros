@@ -10,6 +10,9 @@ pub enum UrgeCommandError {
 
     #[error(transparent)]
     Context(#[from] ContextError),
+
+    #[error("Parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]

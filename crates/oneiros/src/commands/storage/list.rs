@@ -26,7 +26,10 @@ impl ListStorage {
 
         let client = context.client();
 
-        let entries = client.list_storage(&context.ticket_token()?).await?;
+        let entries: Vec<StorageEntry> = client
+            .list_storage(&context.ticket_token()?)
+            .await?
+            .data()?;
 
         if entries.is_empty() {
             outcomes.emit(ListStorageOutcomes::NoEntries);
