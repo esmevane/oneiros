@@ -1,6 +1,10 @@
 use oneiros_model::*;
 
-use crate::system_service::CreateBrainError;
+#[derive(Debug, thiserror::Error)]
+pub enum CreateBrainError {
+    #[error("Malformed input: {0}")]
+    MalformedId(#[from] IdParseError),
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum PreconditionFailure {
@@ -51,4 +55,13 @@ pub enum Error {
 
     #[error("Failed to acquire database lock")]
     DatabasePoisoned,
+
+    #[error("Brain context required for this operation")]
+    NoBrainContext,
+
+    #[error("Malformed token: {0}")]
+    MalformedToken(#[from] TokenError),
+
+    #[error("Invalid or expired ticket")]
+    InvalidOrExpiredTicket,
 }

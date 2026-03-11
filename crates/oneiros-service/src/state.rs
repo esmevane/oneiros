@@ -5,8 +5,7 @@ use oneiros_db::Database;
 use oneiros_model::*;
 use tokio::sync::broadcast;
 
-use crate::Error;
-use crate::system_service::SystemService;
+use crate::*;
 
 pub struct ServiceState {
     pub(crate) database: Mutex<Database>,
@@ -55,21 +54,6 @@ impl ServiceState {
     /// Access the data directory path.
     pub fn data_dir(&self) -> &std::path::Path {
         &self.data_dir
-    }
-
-    /// Create a scoped service for system-level domain operations.
-    ///
-    /// Acquires the system database lock; the lock lives as long as the
-    /// returned SystemService does. Source identity was resolved at
-    /// construction time — it's a system invariant, not request-scoped data.
-    pub fn system_service(&self) -> Result<SystemService<'_>, Error> {
-        let db = self.lock_database()?;
-        Ok(SystemService::new(
-            db,
-            &self.data_dir,
-            &self.event_tx,
-            self.source,
-        ))
     }
 
     /// Open a brain database and collect aggregate stats for the dashboard.

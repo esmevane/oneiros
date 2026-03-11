@@ -27,14 +27,14 @@ fn seed_tenant_and_actor(db: &Database) -> Source {
     source
 }
 
-fn setup() -> (TempDir, Arc<ServiceState>) {
+fn setup() -> (TempDir, OneirosService) {
     let temp = TempDir::new().unwrap();
     let db_path = temp.path().join("service.db");
     let db = Database::create(db_path).unwrap();
     let source = seed_tenant_and_actor(&db);
 
     let state = Arc::new(ServiceState::new(db, temp.path().to_path_buf(), source));
-    (temp, state)
+    (temp, OneirosService::system(state))
 }
 
 #[tokio::test]

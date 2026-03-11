@@ -43,7 +43,7 @@ async fn broadcast_channel_receives_events_from_handlers() {
     .await;
 
     // Subscribe to the broadcast channel before triggering events.
-    let mut rx = state.subscribe();
+    let mut rx = state.state().subscribe();
 
     // Create an agent, which triggers a broadcast.
     let app = router(state.clone());
@@ -94,7 +94,7 @@ async fn sse_stream_receives_broadcast_events() {
         source: Source::default(),
         data: inner,
     });
-    state.broadcast(test_event);
+    state.state().broadcast(test_event);
 
     // Read the first frame from the SSE stream.
     let frame = tokio::time::timeout(std::time::Duration::from_secs(2), body.frame())
@@ -135,7 +135,7 @@ async fn sse_events_include_id_field() {
             name: AgentName::new("test-agent"),
         })),
     });
-    state.broadcast(test_event);
+    state.state().broadcast(test_event);
 
     let frame = tokio::time::timeout(std::time::Duration::from_secs(2), body.frame())
         .await

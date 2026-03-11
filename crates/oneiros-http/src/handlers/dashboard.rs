@@ -2,7 +2,7 @@ use askama::Template;
 use axum::extract::{Query, State};
 use axum::response::Html;
 use oneiros_model::*;
-use std::sync::Arc;
+use oneiros_service::OneirosService;
 
 use crate::*;
 
@@ -27,13 +27,12 @@ struct DashboardTemplate<'a> {
 }
 
 pub(crate) async fn handler(
-    State(state): State<Arc<ServiceState>>,
+    State(service): State<OneirosService>,
     Query(params): Query<DashboardParams>,
 ) -> Result<Html<String>, Error> {
-    let BrainResponses::BrainsListed(brains) = state
-        .system_service()?
-        .dispatch_brain(BrainRequests::ListBrains(ListBrainsRequest))?
-    else {
+    let response = service.dispatch(BrainRequests::ListBrains(ListBrainsRequest))?;
+
+    let Responses::Brain(BrainResponses::BrainsListed(brains)) = response.data else {
         Err(Error::ProjectExtractionFailure)?
     };
 
@@ -60,7 +59,7 @@ pub(crate) async fn handler(
         connection_count,
         event_count,
         recent_cognitions,
-    }) = state.brain_summary(brain)?
+    }) = service.state().brain_summary(brain)?
     else {
         return Err(Error::ProjectSummaryFailure);
     };

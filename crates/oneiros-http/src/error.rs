@@ -1,12 +1,14 @@
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
-use crate::extractors::ActorContextError;
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    Unauthorized(#[from] ActorContextError),
+    Unauthorized(#[from] OneirosContextError),
 
     #[error(transparent)]
     Service(#[from] oneiros_service::Error),
@@ -80,12 +82,15 @@ impl IntoResponse for Error {
                     oneiros_service::Error::NotInitialized(_) => StatusCode::PRECONDITION_FAILED,
                     oneiros_service::Error::BadRequest(_) => StatusCode::BAD_REQUEST,
                     oneiros_service::Error::Conflict(_) => StatusCode::CONFLICT,
+                    oneiros_service::Error::InvalidOrExpiredTicket
+                    | oneiros_service::Error::MalformedToken(_) => StatusCode::UNAUTHORIZED,
                     oneiros_service::Error::DataIntegrity(_)
                     | oneiros_service::Error::BlobContent(_)
                     | oneiros_service::Error::Blob(_)
                     | oneiros_service::Error::Database(_)
                     | oneiros_service::Error::Io(_)
-                    | oneiros_service::Error::DatabasePoisoned => StatusCode::INTERNAL_SERVER_ERROR,
+                    | oneiros_service::Error::DatabasePoisoned
+                    | oneiros_service::Error::NoBrainContext => StatusCode::INTERNAL_SERVER_ERROR,
                 };
 
                 let body = serde_json::json!({ "error": err.to_string() });

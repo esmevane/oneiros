@@ -38,6 +38,15 @@ impl Token {
     }
 }
 
+impl<T> From<T> for Token
+where
+    T: AsRef<str>,
+{
+    fn from(value: T) -> Self {
+        Self(value.as_ref().to_string())
+    }
+}
+
 impl core::fmt::Display for Token {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)
