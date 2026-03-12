@@ -1,10 +1,7 @@
-use std::net::SocketAddr;
-use std::sync::Arc;
-
 use clap::Args;
-use oneiros_model::*;
+use oneiros_http::*;
 use oneiros_outcomes::{Outcome, Outcomes};
-use oneiros_service::{OneirosService, ServiceState};
+use std::net::SocketAddr;
 
 use crate::*;
 
@@ -31,35 +28,12 @@ impl RunService {
             return Err(ServiceCommandError::NotInitialized);
         }
 
-        let database = context.database()?;
-        let addr = context.config().service_addr();
+        let service = HttpService::init(context)?;
+        let address = service.address;
 
-        let tenant_id: TenantId = database
-            .get_tenant_id()?
-            .ok_or(ServiceCommandError::MissingId)?
-            .parse()?;
+        outcomes.emit(RunServiceOutcomes::ServiceStarting(address));
 
-        let actor_id: ActorId = database
-            .get_actor_id(tenant_id.to_string())?
-            .ok_or(ServiceCommandError::MissingId)?
-            .parse()?;
-
-        let source = Source {
-            actor_id,
-            tenant_id,
-        };
-
-        outcomes.emit(RunServiceOutcomes::ServiceStarting(addr));
-
-        let state = Arc::new(ServiceState::new(
-            database,
-            context.data_dir().to_path_buf(),
-            source,
-        ));
-
-        let service = OneirosService::system(state);
-        let grace_period = context.config().service.grace_period();
-        oneiros_http::serve(service, addr, grace_period).await?;
+        service.run().await?;
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 

@@ -1396,6 +1396,7 @@ dependencies = [
  "axum",
  "http-body-util",
  "oneiros-client",
+ "oneiros-context",
  "oneiros-db",
  "oneiros-fs",
  "oneiros-mcp",

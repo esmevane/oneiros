@@ -1,24 +1,19 @@
 use clap::{Args, Subcommand};
+use oneiros_http::*;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ServiceCommandError {
-    #[error("Service error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Http(#[from] HttpServiceError),
 
-    #[error("Database error: {0}")]
-    Database(#[from] oneiros_db::DatabaseError),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 
     #[error("System not initialized. Run `oneiros system init` first.")]
     NotInitialized,
-
-    #[error("Malformed tenant or actor ID in database.")]
-    MalformedId(#[from] oneiros_model::IdParseError),
-
-    #[error("Missing tenant or actor ID in database.")]
-    MissingId,
 }
 
 #[derive(Clone, serde::Serialize, Outcome)]

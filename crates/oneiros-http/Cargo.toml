@@ -9,6 +9,7 @@ license.workspace = true
 [dependencies]
 askama.workspace = true
 axum.workspace = true
+oneiros-context.workspace = true
 oneiros-db.workspace = true
 oneiros-mcp.workspace = true
 oneiros-model.workspace = true
