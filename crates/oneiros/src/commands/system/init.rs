@@ -142,7 +142,10 @@ mod tests {
         let data_dir = temp.path().join("data");
         let config_dir = temp.path().join("config");
 
-        let context = Context::with_paths(data_dir.clone(), config_dir.clone());
+        let context = Context::builder()
+            .data_dir(data_dir.clone())
+            .config_dir(config_dir.clone())
+            .build();
         let init = Init {
             name: Some(TenantName::new("Test User")),
             yes: false,
@@ -189,11 +192,17 @@ mod tests {
         };
 
         // First run
-        let context = Context::with_paths(data_dir.clone(), config_dir.clone());
+        let context = Context::builder()
+            .data_dir(data_dir.clone())
+            .config_dir(config_dir.clone())
+            .build();
         let _ = init.run(&context).await.unwrap();
 
         // Second run
-        let context = Context::with_paths(data_dir.clone(), config_dir.clone());
+        let context = Context::builder()
+            .data_dir(data_dir.clone())
+            .config_dir(config_dir.clone())
+            .build();
         let outcomes = init.run(&context).await.unwrap();
 
         assert!(

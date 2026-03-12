@@ -13,6 +13,7 @@ license = "MIT"
 [workspace.dependencies]
 anstream = "0.6.21"
 askama = "0.15"
+bon = "3.8"
 axum = "0.8.8"
 bytes = "1.11"
 chrono = { version = "0.4", features = ["serde"] }
