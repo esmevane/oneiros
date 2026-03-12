@@ -18,7 +18,7 @@ use crate::*;
 
 #[derive(Clone, Parser)]
 #[command(version)]
-pub(crate) struct Cli {
+pub struct Cli {
     #[command(flatten)]
     pub(crate) log: LogConfig,
     /// Output format: prompt (default), quiet, or json.

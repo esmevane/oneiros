@@ -41,11 +41,17 @@ macro_rules! domain_name {
             }
         }
 
+        impl<'a> From<&'a str> for $name {
+            fn from(given_str: &'a str) -> Self {
+                Self::new(given_str)
+            }
+        }
+
         impl core::str::FromStr for $name {
             type Err = core::convert::Infallible;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                Ok(Self::new(s))
+                Ok(s.into())
             }
         }
     };

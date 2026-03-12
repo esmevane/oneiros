@@ -28,7 +28,7 @@ impl RunService {
             return Err(ServiceCommandError::NotInitialized);
         }
 
-        let service = HttpService::init(context)?;
+        let service = HttpService::init(context.clone())?;
         let address = service.address;
 
         outcomes.emit(RunServiceOutcomes::ServiceStarting(address));

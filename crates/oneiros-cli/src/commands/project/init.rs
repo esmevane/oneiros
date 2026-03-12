@@ -20,8 +20,13 @@ pub enum InitProjectOutcomes {
     GitignoreUpdated,
 }
 
-#[derive(Clone, Args)]
-pub struct InitProject;
+#[derive(Clone, Args, bon::Builder)]
+pub struct InitProject {
+    /// Accept defaults, no prompting.
+    #[arg(short, long)]
+    #[builder(default)]
+    yes: bool,
+}
 
 impl InitProject {
     pub async fn run(
@@ -63,37 +68,39 @@ impl InitProject {
 
             if mcp_path.exists() {
                 outcomes.emit(InitProjectOutcomes::McpConfigExists(mcp_path));
-            } else {
-                let terminal = context.terminal();
+            } else if self.yes
+                || context
+                    .terminal()
+                    .confirm("Generate .mcp.json for AI agent integration?", true)
+            {
+                let addr = context.config().service_addr();
+                let mcp_json = McpTemplate::new(&addr, token.as_str()).to_string();
+                context.files().write(&mcp_path, mcp_json)?;
+                outcomes.emit(InitProjectOutcomes::McpConfigWritten(mcp_path));
 
-                if terminal.confirm("Generate .mcp.json for AI agent integration?", true) {
-                    let addr = context.config().service_addr();
-                    let mcp_json = McpTemplate::new(&addr, token.as_str()).to_string();
-                    context.files().write(&mcp_path, mcp_json)?;
-                    outcomes.emit(InitProjectOutcomes::McpConfigWritten(mcp_path));
+                if self.yes
+                    || context
+                        .terminal()
+                        .confirm("Add .mcp.json to .gitignore? (contains auth token)", true)
+                {
+                    let gitignore = project_root.join(".gitignore");
+                    let files = context.files();
 
-                    if terminal.confirm("Add .mcp.json to .gitignore? (contains auth token)", true)
-                    {
-                        let gitignore = project_root.join(".gitignore");
-                        let files = context.files();
+                    if !files.contains(&gitignore, ".mcp.json")? {
+                        let needs_newline = files
+                            .read_to_string(&gitignore)
+                            .is_ok_and(|c| !c.is_empty() && !c.ends_with('\n'));
 
-                        if !files.contains(&gitignore, ".mcp.json")? {
-                            // Ensure we start on a new line if the file exists.
-                            let needs_newline = files
-                                .read_to_string(&gitignore)
-                                .is_ok_and(|c| !c.is_empty() && !c.ends_with('\n'));
+                        let entry = if needs_newline {
+                            "\n.mcp.json\n"
+                        } else {
+                            ".mcp.json\n"
+                        };
 
-                            let entry = if needs_newline {
-                                "\n.mcp.json\n"
-                            } else {
-                                ".mcp.json\n"
-                            };
-
-                            files.append(&gitignore, entry)?;
-                        }
-
-                        outcomes.emit(InitProjectOutcomes::GitignoreUpdated);
+                        files.append(&gitignore, entry)?;
                     }
+
+                    outcomes.emit(InitProjectOutcomes::GitignoreUpdated);
                 }
             }
         }

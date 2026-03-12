@@ -10,27 +10,26 @@ pub enum ConfigError {
     Parse(#[from] toml::de::Error),
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(bon::Builder, Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub service: ServiceConfig,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(bon::Builder, Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct ServiceConfig {
+    #[builder(default = "127.0.0.1", into)]
     pub host: String,
+    #[builder(default = 2100)]
     pub port: u16,
+    #[builder(default = 5)]
     pub grace_period_secs: u64,
 }
 
 impl Default for ServiceConfig {
     fn default() -> Self {
-        Self {
-            host: "127.0.0.1".to_string(),
-            port: 2100,
-            grace_period_secs: 5,
-        }
+        Self::builder().build()
     }
 }
 
