@@ -36,14 +36,14 @@ mod http_service {
         MissingId,
     }
 
-    pub struct HttpService<'a> {
+    pub struct HttpService {
         pub address: SocketAddr,
         pub source: Source,
-        pub context: &'a Context,
+        pub context: Context,
     }
 
-    impl<'a> HttpService<'a> {
-        pub fn init(context: &'a Context) -> Result<Self, HttpServiceError> {
+    impl HttpService {
+        pub fn init(context: Context) -> Result<Self, HttpServiceError> {
             let database = context.database()?;
 
             let tenant_id: TenantId = database
@@ -68,21 +68,27 @@ mod http_service {
             })
         }
 
-        /// Start the HTTP service, listening on the given TCP address.
+        /// Start the HTTP service, binding and listening on the configured
+        /// TCP address.
         ///
         /// This function blocks until the server is shut down via SIGINT or
         /// SIGTERM. After receiving the signal, in-flight connections have
         /// `grace_period` to close before the process exits.
-        pub async fn run(&self) -> Result<(), HttpServiceError> {
+        pub async fn run(self) -> Result<(), HttpServiceError> {
+            let listener = TcpListener::bind(self.address).await?;
+
+            tracing::info!("Service listening on {}", self.address);
+
+            self.serve(listener).await
+        }
+
+        /// Serve on a pre-bound listener.
+        pub async fn serve(self, listener: TcpListener) -> Result<(), HttpServiceError> {
             let service = OneirosService::system(Arc::new(ServiceState::new(
                 self.context.database()?,
                 self.context.data_dir().to_path_buf(),
                 self.source,
             )));
-
-            let listener = TcpListener::bind(self.address).await?;
-
-            tracing::info!("Service listening on {}", self.address);
 
             let app = crate::routes::router(service);
 

@@ -1328,9 +1328,41 @@ dependencies = [
  "clap-verbosity-flag",
  "colorchoice-clap",
  "directories",
+ "oneiros-cli",
  "oneiros-client",
  "oneiros-context",
  "oneiros-db",
+ "oneiros-http",
+ "oneiros-model",
+ "oneiros-outcomes",
+ "oneiros-service",
+ "oneiros-skill",
+ "oneiros-templates",
+ "serde",
+ "serde_json",
+ "service-manager",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "toml 0.8.23",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "oneiros-cli"
+version = "0.0.7"
+dependencies = [
+ "bon",
+ "clap",
+ "clap-verbosity-flag",
+ "colorchoice-clap",
+ "directories",
+ "oneiros-client",
+ "oneiros-config",
+ "oneiros-context",
+ "oneiros-db",
+ "oneiros-detect-project-name",
  "oneiros-http",
  "oneiros-model",
  "oneiros-outcomes",
@@ -1368,6 +1400,7 @@ dependencies = [
 name = "oneiros-config"
 version = "0.0.7"
 dependencies = [
+ "bon",
  "serde",
  "tempfile",
  "thiserror 2.0.18",

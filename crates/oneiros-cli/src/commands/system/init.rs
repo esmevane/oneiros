@@ -44,14 +44,16 @@ pub enum InitSystemOutcomes {
 
 const UNKNOWN_TENANT: &str = "onerios user";
 
-#[derive(Clone, Args)]
+#[derive(Clone, Args, bon::Builder)]
 pub struct Init {
     /// Your preferred name for your oneiros host.
     #[arg(long, short)]
+    #[builder(into)]
     name: Option<TenantName>,
 
     /// Accept defaults, no prompting.
     #[arg(short, long)]
+    #[builder(default)]
     yes: bool,
 }
 

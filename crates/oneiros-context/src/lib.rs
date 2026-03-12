@@ -35,7 +35,7 @@ pub enum ContextError {
     Config(#[from] oneiros_config::ConfigError),
 }
 
-#[derive(bon::Builder)]
+#[derive(Clone, bon::Builder)]
 pub struct Context {
     /// The detected project (name and root path), if any.
     project: Option<ProjectRoot>,

@@ -120,8 +120,6 @@ impl OneirosService {
         self.state().lock_database()
     }
 
-    // ── Shared helpers ───────────────────────────────────────────────
-
     /// Persist a state-changing event (runs the given projections) then broadcast.
     pub(crate) fn log_and_broadcast(
         &self,
@@ -131,7 +129,9 @@ impl OneirosService {
     ) -> Result<Event, Error> {
         let new_event = NewEvent::new(event.clone(), self.source());
         let persisted = db.log_event(&new_event, projections)?;
+
         let _ = self.state().event_sender().send(persisted.clone());
+
         Ok(persisted)
     }
 
