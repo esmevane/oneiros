@@ -35,11 +35,13 @@ pub enum ContextError {
     Config(#[from] oneiros_config::ConfigError),
 }
 
+#[derive(bon::Builder)]
 pub struct Context {
     /// The detected project (name and root path), if any.
     project: Option<ProjectRoot>,
     config_dir: PathBuf,
     data_dir: PathBuf,
+    #[builder(default)]
     config: Config,
 }
 
@@ -50,27 +52,14 @@ impl Context {
             .ok_or(ContextError::NoProjectDir)?;
         let detector = ProjectDetector::default_chain();
         let cwd = std::env::current_dir()?;
-        let project = detector.detect(&cwd);
-
         let config_dir: PathBuf = project_dirs.config_dir().into();
-        let config = Config::load(&config_dir.join("config.toml"))?;
 
-        Ok(Self {
-            project,
-            config_dir,
-            data_dir: project_dirs.data_dir().into(),
-            config,
-        })
-    }
-
-    /// Construct a Context with explicit paths (for testing).
-    pub fn with_paths(data_dir: PathBuf, config_dir: PathBuf) -> Self {
-        Self {
-            project: None,
-            config_dir,
-            data_dir,
-            config: Config::default(),
-        }
+        Ok(Self::builder()
+            .maybe_project(detector.detect(&cwd))
+            .config_dir(config_dir.clone())
+            .data_dir(project_dirs.data_dir().into())
+            .config(Config::load(&config_dir.join("config.toml"))?)
+            .build())
     }
 
     /// The loaded configuration.
