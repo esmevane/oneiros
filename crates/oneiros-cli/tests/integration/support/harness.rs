@@ -5,6 +5,8 @@ use oneiros_http::HttpService;
 use tempfile::TempDir;
 use tokio::net::TcpListener;
 
+use crate::*;
+
 enum ServerState {
     Idle,
     Running(tokio::task::JoinHandle<()>),
@@ -35,6 +37,10 @@ impl TestHarness {
             context,
             server: ServerState::Idle,
         })
+    }
+
+    pub(crate) async fn bootstrap(self) -> Result<Self, Box<dyn core::error::Error>> {
+        Bootstrap::builder().build().run(self).await
     }
 
     pub(crate) fn with_project(mut self, name: &str) -> Self {
@@ -81,6 +87,14 @@ impl TestHarness {
 
     pub(crate) fn context(&self) -> &Context {
         &self.context
+    }
+
+    pub(crate) fn client(&self) -> oneiros_client::Client {
+        self.context.client()
+    }
+
+    pub(crate) fn token(&self) -> Result<oneiros_model::Token, Box<dyn core::error::Error>> {
+        Ok(self.context.ticket_token()?)
     }
 }
 

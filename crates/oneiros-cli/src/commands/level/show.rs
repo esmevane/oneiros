@@ -11,9 +11,10 @@ pub enum ShowLevelOutcomes {
     LevelDetails(Level),
 }
 
-#[derive(Clone, Args)]
+#[derive(Clone, Args, bon::Builder)]
 pub struct ShowLevel {
     /// The level name to display.
+    #[builder(into)]
     name: LevelName,
 }
 
