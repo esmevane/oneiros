@@ -11,17 +11,20 @@ pub enum SetLevelOutcomes {
     LevelSet(LevelName),
 }
 
-#[derive(Clone, Args)]
+#[derive(Clone, Args, bon::Builder)]
 pub struct SetLevel {
     /// The level name (identity).
+    #[builder(into)]
     pub name: LevelName,
 
     /// A human-readable description of the level's purpose.
     #[arg(long, default_value = "")]
+    #[builder(into)]
     pub description: Description,
 
     /// Guidance text for agents when applying this retention level.
     #[arg(long, default_value = "")]
+    #[builder(into)]
     pub prompt: Prompt,
 }
 

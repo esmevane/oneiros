@@ -11,9 +11,10 @@ pub enum RemoveLevelOutcomes {
     LevelRemoved(LevelName),
 }
 
-#[derive(Clone, Args)]
+#[derive(Clone, Args, bon::Builder)]
 pub struct RemoveLevel {
     /// The level name to remove.
+    #[builder(into)]
     name: LevelName,
 }
 

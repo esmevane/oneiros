@@ -59,10 +59,10 @@ impl CoreSeedOutcomes {
 }
 
 /// Apply predefined seed data.
-#[derive(Clone, Args)]
+#[derive(Clone, Args, bon::Builder)]
 pub struct SeedOps {
     #[command(subcommand)]
-    command: SeedCommands,
+    pub command: SeedCommands,
 }
 
 #[derive(Clone, Subcommand)]
