@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/esmevane/oneiros/compare/oneiros-http-v0.0.7...oneiros-http-v0.0.8) - 2026-03-13
+
+### Other
+
+- Test harness.
+- HttpService.
+- Unify dispatch callers.
+- MCP pressure Resource, pressure CTAs.
+- Pressure calculation & Introspect.
+- Urges
+- General fixes & observability.
+
 ## [0.0.7](https://github.com/esmevane/oneiros/compare/oneiros-http-v0.0.6...oneiros-http-v0.0.7) - 2026-03-09
 
 ### Other

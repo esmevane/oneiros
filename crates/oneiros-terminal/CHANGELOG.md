@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/esmevane/oneiros/compare/oneiros-terminal-v0.0.7...oneiros-terminal-v0.0.8) - 2026-03-13
+
+### Other
+
+- General fixes & observability.
+
 ## [0.0.3](https://github.com/esmevane/oneiros/compare/oneiros-terminal-v0.0.2...oneiros-terminal-v0.0.3) - 2026-02-14
 
 ### Other

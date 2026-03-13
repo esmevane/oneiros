@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/esmevane/oneiros/compare/oneiros-templates-v0.0.7...oneiros-templates-v0.0.8) - 2026-03-13
+
+### Other
+
+- Command update.
+- MCP pressure Resource, pressure CTAs.
+- Other pressures: Catharsis, Recollect, Retrospect.
+- Pressure CLI support.
+- Urges
+- General fixes & observability.
+
 ## [0.0.6](https://github.com/esmevane/oneiros/compare/oneiros-templates-v0.0.5...oneiros-templates-v0.0.6) - 2026-03-02
 
 ### Other
