@@ -1,5 +1,5 @@
 ---
-description: Create or update a texture (cognitive category)
+description: Define a quality of thought
 argument-hint: "<name> [--description <text>] [--prompt <text>]"
 ---
 

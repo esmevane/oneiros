@@ -1,5 +1,5 @@
 ---
-description: Remove an agent
+description: Remove an agent from the brain
 argument-hint: <name>
 ---
 

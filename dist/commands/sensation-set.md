@@ -1,5 +1,5 @@
 ---
-description: Create or update a sensation (experience category)
+description: Define a quality of connection between thoughts
 argument-hint: "<name> [--description <text>] [--prompt <text>]"
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: Assemble an agent's full cognitive context into a dream prompt
+description: "Restore an agent's full identity and cognitive context"
 argument-hint: <agent-name>
 ---
 

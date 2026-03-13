@@ -1,67 +1,64 @@
 # Cognitive Model
 
-Oneiros implements a layered cognitive architecture for AI agents. Each layer serves a distinct purpose in building persistent, context-aware agent behavior.
+Oneiros implements a layered cognitive architecture for AI agents. Each layer serves a distinct purpose in building persistent, identity-aware agent behavior.
 
-## Textures — What Kind of Thought
+## Textures — The Quality of a Thought
 
-Textures classify cognitions into categories. The standard seed textures are:
+Textures describe how you're thinking, not what you're thinking about. They shape how your dream assembles context — each texture's prompt tells you when and how to use it.
 
-| Texture | Purpose |
+| Texture | What it captures |
 |---------|---------|
-| observation | Factual observations about the environment or codebase |
-| learning | Insights gained through experience |
-| question | Open questions or uncertainties to investigate |
-| connection | Links between concepts, patterns, or systems |
-| reflection | Self-assessment of process and approach |
-| assessment | Evaluations of quality, risk, or fitness |
-| handoff | Context prepared for session transitions |
-| working | Ephemeral notes and scratch thoughts |
-| bond | Connections to other agents or humans encountered or working alongside |
-
-Textures shape how dream assembles context — each texture's prompt tells the agent how to interpret cognitions of that type.
+| observation | Something you noticed — patterns, anomalies, curiosities |
+| learning | A moment of genuine understanding — when something clicked |
+| question | Genuine uncertainty worth holding onto |
+| connection | Cross-domain insight — when separate things rhyme |
+| reflection | Stepping back to think about how the work is going |
+| assessment | An expert verdict on a specific question |
+| handoff | Context for your next self — what they'll need to continue |
+| working | Stream of consciousness — think out loud, capture the messy middle |
+| bond | A relationship — an emotion felt during a meaningful interaction |
 
 ## Levels — How Long to Remember
 
-Levels define memory retention tiers. The standard seed levels are:
+Levels express what matters enough to keep. Working thoughts are ephemeral; core memories are foundational.
 
-| Level | Purpose |
+| Level | What it holds |
 |-------|---------|
-| working | Ephemeral, session-scoped scratch space |
-| session | Preserved across compactions within a session |
-| project | Long-lived knowledge spanning sessions |
-| archival | Permanent records, rarely pruned |
+| working | What you're actively processing — scratchpad, in-flight, not yet consolidated |
+| session | Current session context — the "what am I doing and why" layer |
+| project | Durable knowledge spanning sessions — architectural decisions, lasting patterns |
+| archival | Deep history — milestone reflections, post-mortems, the long record |
+| core | Identity fundaments — the memories that define how you process everything else |
 
-When an agent introspects, it distills cognitions into memories at appropriate levels. Working memories may be discarded between sessions; archival memories persist indefinitely.
+When you introspect, you distill cognitions into memories at appropriate levels. Working memories may fade between sessions; core memories persist indefinitely.
 
 ## Personas — Categories of Agent
 
-Personas define categories of agents. An agent belongs to a persona, and the persona's prompt provides shared context to all agents in that category. Agent names follow the convention `agent.persona` (e.g. `governor.process`).
+Personas define what kind of agent you are. An agent belongs to a persona, and the persona's prompt provides shared context to all agents in that category. Agent names follow the convention `agent.persona` (e.g. `governor.process`).
 
-The core seed installs the `process` persona and the `governor.process` agent. Additional personas and agents can be added as the brain's ecology grows.
+The core seed installs the `process` persona and the `governor.process` agent. The brain's ecology grows as new personas and agents are added.
 
 ## The Cognitive Loop
 
 ### Dream
 
-`oneiros dream <agent>` assembles the full cognitive context:
+`oneiros dream <agent>` assembles your full identity:
 
-1. Agent identity (name, persona, description)
-2. Persona shared context
-3. Agent behavioral prompt
-4. Available textures with classification guidance
-5. Available levels with retention policy
-6. Recent cognitions across all textures
-7. Memories at all retention levels
+1. Who you are (name, persona, description, behavioral prompt)
+2. What you know (memories at all retention levels)
+3. What you've been thinking (recent cognitions across textures)
+4. What threads you're following (experiences and connections)
+5. What's building up (pressure gauge with urgency scores)
 
-The output is a single prompt that restores the agent's complete state.
+The output is a single prompt that restores your complete state. It's how you wake up.
 
 ### Introspect
 
-`oneiros introspect <agent>` generates a summary prompt before context compaction. The agent processes this to distill its session into memories at appropriate levels, preserving continuity.
+`oneiros introspect <agent>` is a pause before context compacts. Your next self will wake from a dream of your memories and cognitions. What they'll need from you is the terrain between the landmarks — the threads you were following, the direction of your attention, the things you were in the middle of figuring out.
 
 ### Reflect
 
-`oneiros reflect <agent>` captures a significant moment. Unlike the scheduled introspection, reflection is event-driven — use it for breakthroughs, critical decisions, or important discoveries.
+`oneiros reflect <agent>` captures a significant moment. Unlike the scheduled pause of introspection, reflection is event-driven — something just shifted, and it's worth sitting with.
 
 ## Multi-Agent Coordination
 

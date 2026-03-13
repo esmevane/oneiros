@@ -108,7 +108,7 @@ impl OneirosToolBox {
                         name: format!("{} pressure", agent.name),
                         title: None,
                         description: Some(format!(
-                            "Cognitive pressure readings for {}",
+                            "What's building up for {} — urgency scores and the forces behind them",
                             agent.name
                         )),
                         mime_type: Some("application/json".to_string()),
@@ -203,12 +203,12 @@ impl OneirosToolBox {
 impl OneirosToolBox {
     // ── Agent ───────────────────────────────────────────────────────
 
-    #[tool(description = "List all agents in the brain")]
+    #[tool(description = "See who's here — discover all agents in this brain")]
     fn list_agents(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(AgentRequests::ListAgents(ListAgentsRequest))
     }
 
-    #[tool(description = "Get an agent by name")]
+    #[tool(description = "Look up an agent — learn about their identity and purpose")]
     fn get_agent(
         &self,
         Parameters(request): Parameters<GetAgentRequest>,
@@ -216,7 +216,9 @@ impl OneirosToolBox {
         self.dispatch(AgentRequests::GetAgent(request))
     }
 
-    #[tool(description = "Create a new agent")]
+    #[tool(
+        description = "Bring a new agent into the brain — give them a name, persona, and purpose"
+    )]
     fn create_agent(
         &self,
         Parameters(request): Parameters<CreateAgentRequest>,
@@ -224,7 +226,9 @@ impl OneirosToolBox {
         self.dispatch(AgentRequests::CreateAgent(request))
     }
 
-    #[tool(description = "Update an existing agent")]
+    #[tool(
+        description = "Reshape an agent's identity — change their description, prompt, or persona"
+    )]
     fn update_agent(
         &self,
         Parameters(request): Parameters<UpdateAgentRequest>,
@@ -232,7 +236,7 @@ impl OneirosToolBox {
         self.dispatch(AgentRequests::UpdateAgent(request))
     }
 
-    #[tool(description = "Remove an agent")]
+    #[tool(description = "Remove an agent from the brain — their thoughts and memories remain")]
     fn remove_agent(
         &self,
         Parameters(request): Parameters<RemoveAgentRequest>,
@@ -242,7 +246,7 @@ impl OneirosToolBox {
 
     // ── Cognition ───────────────────────────────────────────────────
 
-    #[tool(description = "Add a cognition entry for an agent")]
+    #[tool(description = "Record a thought — capture what you're thinking right now")]
     fn add_cognition(
         &self,
         Parameters(request): Parameters<AddCognitionRequest>,
@@ -250,7 +254,7 @@ impl OneirosToolBox {
         self.dispatch(CognitionRequests::AddCognition(request))
     }
 
-    #[tool(description = "Get a cognition by ID")]
+    #[tool(description = "Revisit a specific thought by its ID")]
     fn get_cognition(
         &self,
         Parameters(request): Parameters<GetCognitionRequest>,
@@ -258,7 +262,7 @@ impl OneirosToolBox {
         self.dispatch(CognitionRequests::GetCognition(request))
     }
 
-    #[tool(description = "List cognitions, optionally filtered by agent and texture")]
+    #[tool(description = "Review your stream of thoughts, optionally filtered by agent or texture")]
     fn list_cognitions(
         &self,
         Parameters(request): Parameters<ListCognitionsRequest>,
@@ -268,7 +272,7 @@ impl OneirosToolBox {
 
     // ── Connection ──────────────────────────────────────────────────
 
-    #[tool(description = "Create a connection between two entities")]
+    #[tool(description = "Draw a line between two things that relate to each other")]
     fn create_connection(
         &self,
         Parameters(request): Parameters<CreateConnectionRequest>,
@@ -276,7 +280,7 @@ impl OneirosToolBox {
         self.dispatch(ConnectionRequests::CreateConnection(request))
     }
 
-    #[tool(description = "Remove a connection")]
+    #[tool(description = "Remove a connection between two entities")]
     fn remove_connection(
         &self,
         Parameters(request): Parameters<RemoveConnectionRequest>,
@@ -284,7 +288,7 @@ impl OneirosToolBox {
         self.dispatch(ConnectionRequests::RemoveConnection(request))
     }
 
-    #[tool(description = "Get a connection by ID")]
+    #[tool(description = "Examine a specific connection and what it links")]
     fn get_connection(
         &self,
         Parameters(request): Parameters<GetConnectionRequest>,
@@ -292,7 +296,9 @@ impl OneirosToolBox {
         self.dispatch(ConnectionRequests::GetConnection(request))
     }
 
-    #[tool(description = "List connections, optionally filtered by nature and entity reference")]
+    #[tool(
+        description = "See how things connect — browse relationships, optionally filtered by nature or entity"
+    )]
     fn list_connections(
         &self,
         Parameters(request): Parameters<ListConnectionsRequest>,
@@ -302,7 +308,9 @@ impl OneirosToolBox {
 
     // ── Dreaming ────────────────────────────────────────────────────
 
-    #[tool(description = "Assemble a dream context for an agent")]
+    #[tool(
+        description = "Assemble an agent's full identity — memories, thoughts, threads, and pressures woven into context"
+    )]
     fn dream(
         &self,
         Parameters(request): Parameters<DreamRequest>,
@@ -312,7 +320,7 @@ impl OneirosToolBox {
 
     // ── Event ───────────────────────────────────────────────────────
 
-    #[tool(description = "Import events into the brain")]
+    #[tool(description = "Restore a brain's history from an exported event stream")]
     fn import_events(
         &self,
         Parameters(request): Parameters<ImportEventsRequest>,
@@ -320,12 +328,12 @@ impl OneirosToolBox {
         self.dispatch(EventRequests::ImportEvents(request))
     }
 
-    #[tool(description = "Replay all events through projections")]
+    #[tool(description = "Rebuild all projections by replaying the full event history")]
     fn replay_events(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(EventRequests::ReplayEvents(ReplayEventsRequest))
     }
 
-    #[tool(description = "List events, optionally after a sequence number")]
+    #[tool(description = "Browse the raw event stream underlying the brain")]
     fn list_events(
         &self,
         Parameters(request): Parameters<ListEventsRequest>,
@@ -333,7 +341,7 @@ impl OneirosToolBox {
         self.dispatch(EventRequests::ListEvents(request))
     }
 
-    #[tool(description = "Get an event by ID")]
+    #[tool(description = "Examine a specific event in the brain's history")]
     fn get_event(
         &self,
         Parameters(request): Parameters<GetEventRequest>,
@@ -341,14 +349,14 @@ impl OneirosToolBox {
         self.dispatch(EventRequests::GetEvent(request))
     }
 
-    #[tool(description = "Export all events from the brain")]
+    #[tool(description = "Package the brain's complete history for transport")]
     fn export_events(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(EventRequests::ExportEvents(ExportEventsRequest))
     }
 
     // ── Experience ──────────────────────────────────────────────────
 
-    #[tool(description = "Create an experience connecting cognitive records")]
+    #[tool(description = "Mark a meaningful moment — name the thread connecting your thoughts")]
     fn create_experience(
         &self,
         Parameters(request): Parameters<CreateExperienceRequest>,
@@ -356,7 +364,7 @@ impl OneirosToolBox {
         self.dispatch(ExperienceRequests::CreateExperience(request))
     }
 
-    #[tool(description = "Update an experience's description")]
+    #[tool(description = "Refine how an experience is described")]
     fn update_experience_description(
         &self,
         Parameters(request): Parameters<UpdateExperienceDescriptionRequest>,
@@ -364,7 +372,7 @@ impl OneirosToolBox {
         self.dispatch(ExperienceRequests::UpdateExperienceDescription(request))
     }
 
-    #[tool(description = "Update an experience's sensation")]
+    #[tool(description = "Reclassify the quality of an experience")]
     fn update_experience_sensation(
         &self,
         Parameters(request): Parameters<UpdateExperienceSensationRequest>,
@@ -372,7 +380,7 @@ impl OneirosToolBox {
         self.dispatch(ExperienceRequests::UpdateExperienceSensation(request))
     }
 
-    #[tool(description = "Get an experience by ID")]
+    #[tool(description = "Revisit a specific experience and its connections")]
     fn get_experience(
         &self,
         Parameters(request): Parameters<GetExperienceRequest>,
@@ -380,7 +388,9 @@ impl OneirosToolBox {
         self.dispatch(ExperienceRequests::GetExperience(request))
     }
 
-    #[tool(description = "List experiences, optionally filtered by agent and sensation")]
+    #[tool(
+        description = "Survey your threads of meaning, optionally filtered by agent or sensation"
+    )]
     fn list_experiences(
         &self,
         Parameters(request): Parameters<ListExperiencesRequest>,
@@ -390,7 +400,9 @@ impl OneirosToolBox {
 
     // ── Introspect ──────────────────────────────────────────────────
 
-    #[tool(description = "Run introspection for an agent — summarize session state")]
+    #[tool(
+        description = "Look inward — examine what's accumulated and consolidate before context compacts"
+    )]
     fn introspect(
         &self,
         Parameters(request): Parameters<IntrospectRequest>,
@@ -400,12 +412,12 @@ impl OneirosToolBox {
 
     // ── Level ───────────────────────────────────────────────────────
 
-    #[tool(description = "Create or update a memory retention level")]
+    #[tool(description = "Define how long a kind of memory should be kept")]
     fn set_level(&self, Parameters(level): Parameters<Level>) -> Result<CallToolResult, ErrorData> {
         self.dispatch(LevelRequests::SetLevel(level))
     }
 
-    #[tool(description = "Remove a level")]
+    #[tool(description = "Remove a memory retention tier")]
     fn remove_level(
         &self,
         Parameters(request): Parameters<RemoveLevelRequest>,
@@ -413,7 +425,7 @@ impl OneirosToolBox {
         self.dispatch(LevelRequests::RemoveLevel(request))
     }
 
-    #[tool(description = "Get a level by name")]
+    #[tool(description = "Look up a memory retention tier and its policy")]
     fn get_level(
         &self,
         Parameters(request): Parameters<GetLevelRequest>,
@@ -421,14 +433,14 @@ impl OneirosToolBox {
         self.dispatch(LevelRequests::GetLevel(request))
     }
 
-    #[tool(description = "List all levels")]
+    #[tool(description = "See all the ways memories can be retained")]
     fn list_levels(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(LevelRequests::ListLevels(ListLevelsRequest))
     }
 
     // ── Lifecycle ───────────────────────────────────────────────────
 
-    #[tool(description = "Wake an agent — start a session with dreaming")]
+    #[tool(description = "Wake an agent — restore their identity and begin a session")]
     fn wake(
         &self,
         Parameters(request): Parameters<WakeRequest>,
@@ -436,7 +448,7 @@ impl OneirosToolBox {
         self.dispatch(LifecycleRequests::Wake(request))
     }
 
-    #[tool(description = "Put an agent to sleep — end a session with introspection")]
+    #[tool(description = "Put an agent to rest — capture session continuity before closing")]
     fn sleep(
         &self,
         Parameters(request): Parameters<SleepRequest>,
@@ -444,7 +456,7 @@ impl OneirosToolBox {
         self.dispatch(LifecycleRequests::Sleep(request))
     }
 
-    #[tool(description = "Bring a new agent into existence with full lifecycle ceremony")]
+    #[tool(description = "Bring a new agent into existence — full ceremony with lifecycle event")]
     fn emerge(
         &self,
         Parameters(request): Parameters<CreateAgentRequest>,
@@ -452,7 +464,7 @@ impl OneirosToolBox {
         self.dispatch(LifecycleRequests::Emerge(request))
     }
 
-    #[tool(description = "Retire an agent from active service")]
+    #[tool(description = "Retire an agent — honor their contributions and let them go")]
     fn recede(
         &self,
         Parameters(request): Parameters<RecedeRequest>,
@@ -462,7 +474,7 @@ impl OneirosToolBox {
 
     // ── Memory ──────────────────────────────────────────────────────
 
-    #[tool(description = "Add a memory for an agent")]
+    #[tool(description = "Consolidate something you've learned — store durable knowledge")]
     fn add_memory(
         &self,
         Parameters(request): Parameters<AddMemoryRequest>,
@@ -470,7 +482,7 @@ impl OneirosToolBox {
         self.dispatch(MemoryRequests::AddMemory(request))
     }
 
-    #[tool(description = "Get a memory by ID")]
+    #[tool(description = "Revisit a specific memory")]
     fn get_memory(
         &self,
         Parameters(request): Parameters<GetMemoryRequest>,
@@ -478,7 +490,7 @@ impl OneirosToolBox {
         self.dispatch(MemoryRequests::GetMemory(request))
     }
 
-    #[tool(description = "List memories, optionally filtered by agent and level")]
+    #[tool(description = "Review what you know, optionally filtered by agent or retention level")]
     fn list_memories(
         &self,
         Parameters(request): Parameters<ListMemoriesRequest>,
@@ -488,7 +500,7 @@ impl OneirosToolBox {
 
     // ── Nature ──────────────────────────────────────────────────────
 
-    #[tool(description = "Create or update a connection edge category")]
+    #[tool(description = "Define a kind of relationship that can exist between things")]
     fn set_nature(
         &self,
         Parameters(nature): Parameters<Nature>,
@@ -496,7 +508,7 @@ impl OneirosToolBox {
         self.dispatch(NatureRequests::SetNature(nature))
     }
 
-    #[tool(description = "Remove a nature")]
+    #[tool(description = "Remove a relationship category")]
     fn remove_nature(
         &self,
         Parameters(request): Parameters<RemoveNatureRequest>,
@@ -504,7 +516,7 @@ impl OneirosToolBox {
         self.dispatch(NatureRequests::RemoveNature(request))
     }
 
-    #[tool(description = "Get a nature by name")]
+    #[tool(description = "Look up a relationship category and its meaning")]
     fn get_nature(
         &self,
         Parameters(request): Parameters<GetNatureRequest>,
@@ -512,14 +524,14 @@ impl OneirosToolBox {
         self.dispatch(NatureRequests::GetNature(request))
     }
 
-    #[tool(description = "List all natures")]
+    #[tool(description = "See all the kinds of relationships that can exist")]
     fn list_natures(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(NatureRequests::ListNatures(ListNaturesRequest))
     }
 
     // ── Persona ─────────────────────────────────────────────────────
 
-    #[tool(description = "Create or update an agent category")]
+    #[tool(description = "Define a category of agent — shared identity and purpose")]
     fn set_persona(
         &self,
         Parameters(persona): Parameters<Persona>,
@@ -527,7 +539,7 @@ impl OneirosToolBox {
         self.dispatch(PersonaRequests::SetPersona(persona))
     }
 
-    #[tool(description = "Remove a persona")]
+    #[tool(description = "Remove an agent category")]
     fn remove_persona(
         &self,
         Parameters(request): Parameters<RemovePersonaRequest>,
@@ -535,7 +547,7 @@ impl OneirosToolBox {
         self.dispatch(PersonaRequests::RemovePersona(request))
     }
 
-    #[tool(description = "Get a persona by name")]
+    #[tool(description = "Look up an agent category and its shared context")]
     fn get_persona(
         &self,
         Parameters(request): Parameters<GetPersonaRequest>,
@@ -543,14 +555,16 @@ impl OneirosToolBox {
         self.dispatch(PersonaRequests::GetPersona(request))
     }
 
-    #[tool(description = "List all personas")]
+    #[tool(description = "See all the kinds of agents that can exist")]
     fn list_personas(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(PersonaRequests::ListPersonas(ListPersonasRequest))
     }
 
     // ── Reflect ─────────────────────────────────────────────────────
 
-    #[tool(description = "Capture a significant event during a session")]
+    #[tool(
+        description = "Pause on something significant — capture a moment that shifted your understanding"
+    )]
     fn reflect(
         &self,
         Parameters(request): Parameters<ReflectRequest>,
@@ -560,7 +574,7 @@ impl OneirosToolBox {
 
     // ── Search ──────────────────────────────────────────────────────
 
-    #[tool(description = "Full-text search across all brain content")]
+    #[tool(description = "Search across everything — thoughts, memories, experiences, and more")]
     fn search(
         &self,
         Parameters(request): Parameters<SearchRequest>,
@@ -570,7 +584,7 @@ impl OneirosToolBox {
 
     // ── Sensation ───────────────────────────────────────────────────
 
-    #[tool(description = "Create or update an experience category")]
+    #[tool(description = "Define a quality of connection — how experiences feel")]
     fn set_sensation(
         &self,
         Parameters(sensation): Parameters<Sensation>,
@@ -578,7 +592,7 @@ impl OneirosToolBox {
         self.dispatch(SensationRequests::SetSensation(sensation))
     }
 
-    #[tool(description = "Remove a sensation")]
+    #[tool(description = "Remove an experience category")]
     fn remove_sensation(
         &self,
         Parameters(request): Parameters<RemoveSensationRequest>,
@@ -586,7 +600,7 @@ impl OneirosToolBox {
         self.dispatch(SensationRequests::RemoveSensation(request))
     }
 
-    #[tool(description = "Get a sensation by name")]
+    #[tool(description = "Look up an experience category and its meaning")]
     fn get_sensation(
         &self,
         Parameters(request): Parameters<GetSensationRequest>,
@@ -594,14 +608,14 @@ impl OneirosToolBox {
         self.dispatch(SensationRequests::GetSensation(request))
     }
 
-    #[tool(description = "List all sensations")]
+    #[tool(description = "See all the ways experiences can feel")]
     fn list_sensations(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(SensationRequests::ListSensations(ListSensationsRequest))
     }
 
     // ── Sense ───────────────────────────────────────────────────────
 
-    #[tool(description = "Interpret an external event through an agent's cognitive lens")]
+    #[tool(description = "Receive something from outside your cognitive loop and interpret it")]
     fn sense(
         &self,
         Parameters(request): Parameters<SenseRequest>,
@@ -611,7 +625,7 @@ impl OneirosToolBox {
 
     // ── Storage ─────────────────────────────────────────────────────
 
-    #[tool(description = "Remove a storage entry")]
+    #[tool(description = "Remove a stored artifact from the archive")]
     fn remove_storage(
         &self,
         Parameters(request): Parameters<RemoveStorageRequest>,
@@ -619,7 +633,7 @@ impl OneirosToolBox {
         self.dispatch(StorageRequests::RemoveStorage(request))
     }
 
-    #[tool(description = "Get storage entry metadata")]
+    #[tool(description = "Check on a stored artifact — see its metadata")]
     fn get_storage(
         &self,
         Parameters(request): Parameters<GetStorageRequest>,
@@ -627,7 +641,7 @@ impl OneirosToolBox {
         self.dispatch(StorageRequests::GetStorage(request))
     }
 
-    #[tool(description = "Get storage entry content")]
+    #[tool(description = "Retrieve the contents of a stored artifact")]
     fn get_storage_content(
         &self,
         Parameters(request): Parameters<GetStorageContentRequest>,
@@ -635,14 +649,14 @@ impl OneirosToolBox {
         self.dispatch(StorageRequests::GetStorageContent(request))
     }
 
-    #[tool(description = "List all storage entries")]
+    #[tool(description = "Browse your archive of stored artifacts")]
     fn list_storage(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(StorageRequests::ListStorage(ListStorageRequest))
     }
 
     // ── Texture ─────────────────────────────────────────────────────
 
-    #[tool(description = "Create or update a cognitive category")]
+    #[tool(description = "Define a quality of thought — how a kind of thinking feels")]
     fn set_texture(
         &self,
         Parameters(texture): Parameters<Texture>,
@@ -650,7 +664,7 @@ impl OneirosToolBox {
         self.dispatch(TextureRequests::SetTexture(texture))
     }
 
-    #[tool(description = "Remove a texture")]
+    #[tool(description = "Remove a thought category")]
     fn remove_texture(
         &self,
         Parameters(request): Parameters<RemoveTextureRequest>,
@@ -658,7 +672,7 @@ impl OneirosToolBox {
         self.dispatch(TextureRequests::RemoveTexture(request))
     }
 
-    #[tool(description = "Get a texture by name")]
+    #[tool(description = "Look up a thought category and its guidance")]
     fn get_texture(
         &self,
         Parameters(request): Parameters<GetTextureRequest>,
@@ -666,19 +680,19 @@ impl OneirosToolBox {
         self.dispatch(TextureRequests::GetTexture(request))
     }
 
-    #[tool(description = "List all textures")]
+    #[tool(description = "See all the ways thoughts can be textured")]
     fn list_textures(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(TextureRequests::ListTextures(ListTexturesRequest))
     }
 
     // ── Urge ────────────────────────────────────────────────────────
 
-    #[tool(description = "Create or update an urge")]
+    #[tool(description = "Define a drive — something that builds up and asks to be addressed")]
     fn set_urge(&self, Parameters(urge): Parameters<Urge>) -> Result<CallToolResult, ErrorData> {
         self.dispatch(UrgeRequests::SetUrge(urge))
     }
 
-    #[tool(description = "Remove an urge")]
+    #[tool(description = "Remove a drive category")]
     fn remove_urge(
         &self,
         Parameters(request): Parameters<RemoveUrgeRequest>,
@@ -686,7 +700,7 @@ impl OneirosToolBox {
         self.dispatch(UrgeRequests::RemoveUrge(request))
     }
 
-    #[tool(description = "Get an urge by name")]
+    #[tool(description = "Look up a drive and understand what it means")]
     fn get_urge(
         &self,
         Parameters(request): Parameters<GetUrgeRequest>,
@@ -694,7 +708,7 @@ impl OneirosToolBox {
         self.dispatch(UrgeRequests::GetUrge(request))
     }
 
-    #[tool(description = "List all urges")]
+    #[tool(description = "See all the drives that can build pressure")]
     fn list_urges(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(UrgeRequests::ListUrges(ListUrgesRequest))
     }
@@ -702,7 +716,7 @@ impl OneirosToolBox {
     // ── Pressure ──────────────────────────────────────────────────
 
     #[tool(
-        description = "Get pressure signals for an agent — shows urgency scores and factor breakdown for each urge"
+        description = "Feel what's building — see urgency scores and what's driving them for an agent"
     )]
     fn get_pressure(
         &self,
@@ -711,14 +725,14 @@ impl OneirosToolBox {
         self.dispatch(PressureRequests::GetPressure(request))
     }
 
-    #[tool(description = "List pressure signals for all agents")]
+    #[tool(description = "Survey the pressure landscape across all agents")]
     fn list_pressures(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(PressureRequests::ListPressures(ListPressuresRequest))
     }
 
     // ── System: Actor ───────────────────────────────────────────────
 
-    #[tool(description = "Get an actor by name")]
+    #[tool(description = "Look up who's using this oneiros host")]
     fn get_actor(
         &self,
         Parameters(request): Parameters<GetActorRequest>,
@@ -726,14 +740,14 @@ impl OneirosToolBox {
         self.dispatch(ActorRequests::GetActor(request))
     }
 
-    #[tool(description = "List all actors")]
+    #[tool(description = "See everyone with access to this host")]
     fn list_actors(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(ActorRequests::ListActors(ListActorsRequest))
     }
 
     // ── System: Brain ───────────────────────────────────────────────
 
-    #[tool(description = "Create a new brain")]
+    #[tool(description = "Create a new brain — a fresh cognitive space for a project")]
     fn create_brain(
         &self,
         Parameters(request): Parameters<CreateBrainRequest>,
@@ -741,7 +755,7 @@ impl OneirosToolBox {
         self.dispatch(BrainRequests::CreateBrain(request))
     }
 
-    #[tool(description = "Get a brain by name")]
+    #[tool(description = "Look up a brain and its details")]
     fn get_brain(
         &self,
         Parameters(request): Parameters<GetBrainRequest>,
@@ -749,14 +763,14 @@ impl OneirosToolBox {
         self.dispatch(BrainRequests::GetBrain(request))
     }
 
-    #[tool(description = "List all brains")]
+    #[tool(description = "See all the brains on this host")]
     fn list_brains(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(BrainRequests::ListBrains(ListBrainsRequest))
     }
 
     // ── System: Tenant ──────────────────────────────────────────────
 
-    #[tool(description = "Get a tenant by name")]
+    #[tool(description = "Look up a tenant on this host")]
     fn get_tenant(
         &self,
         Parameters(request): Parameters<GetTenantRequest>,
@@ -764,14 +778,14 @@ impl OneirosToolBox {
         self.dispatch(TenantRequests::GetTenant(request))
     }
 
-    #[tool(description = "List all tenants")]
+    #[tool(description = "See all tenants on this host")]
     fn list_tenants(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(TenantRequests::ListTenants(ListTenantsRequest))
     }
 
     // ── System: Ticket ──────────────────────────────────────────────
 
-    #[tool(description = "Validate a ticket")]
+    #[tool(description = "Verify that an access token is valid")]
     fn validate_ticket(
         &self,
         Parameters(request): Parameters<ValidateTicketRequest>,
@@ -779,7 +793,7 @@ impl OneirosToolBox {
         self.dispatch(TicketRequests::ValidateTicket(request))
     }
 
-    #[tool(description = "List all tickets")]
+    #[tool(description = "See all active access tokens")]
     fn list_tickets(&self) -> Result<CallToolResult, ErrorData> {
         self.dispatch(TicketRequests::ListTickets(ListTicketsRequest))
     }
@@ -824,7 +838,7 @@ impl ServerHandler for OneirosToolBox {
                     uri_template: "oneiroi://pressure/{agent}".to_string(),
                     name: "Agent pressure".to_string(),
                     title: None,
-                    description: Some("Cognitive pressure readings for an agent".to_string()),
+                    description: Some("What's building up for an agent — urgency scores and the forces behind them".to_string()),
                     mime_type: Some("application/json".to_string()),
                     icons: None,
                 },

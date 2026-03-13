@@ -1,5 +1,5 @@
 ---
-description: Search the cognitive stream using full-text search
+description: Search across everything in the brain
 argument-hint: "<query>"
 ---
 

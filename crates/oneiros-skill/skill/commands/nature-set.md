@@ -1,5 +1,5 @@
 ---
-description: Create or update a nature (connection edge category)
+description: Define a kind of relationship between things
 argument-hint: "<name> [--description <text>] [--prompt <text>]"
 ---
 

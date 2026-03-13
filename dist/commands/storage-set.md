@@ -1,5 +1,5 @@
 ---
-description: Store a file under a key in content-addressable storage
+description: Archive a file for later
 argument-hint: "<key> <file> [--description <text>]"
 ---
 

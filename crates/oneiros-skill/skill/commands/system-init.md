@@ -1,5 +1,5 @@
 ---
-description: Initialize the local oneiros host
+description: Set up the oneiros host for the first time
 argument-hint: "[--name <name>] [--yes]"
 ---
 

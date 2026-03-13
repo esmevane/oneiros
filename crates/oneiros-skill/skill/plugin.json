@@ -1,6 +1,6 @@
 {
   "name": "oneiros",
-  "description": "Keep your agent continuity separate from your model session",
+  "description": "Persistent identity and continuity for AI agents",
   "version": "{{VERSION}}",
   "author": {
     "name": "JC McCormick",

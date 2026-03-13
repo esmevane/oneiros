@@ -1,5 +1,5 @@
 ---
-description: Show metadata for a storage entry
+description: Check on a stored artifact
 argument-hint: <key>
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific cognition
+description: Revisit a specific thought
 argument-hint: <id>
 ---
 

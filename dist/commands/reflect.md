@@ -1,5 +1,5 @@
 ---
-description: Capture a significant event during a session
+description: Pause on something significant
 argument-hint: <agent-name>
 ---
 

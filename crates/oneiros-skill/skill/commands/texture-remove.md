@@ -1,5 +1,5 @@
 ---
-description: Remove a texture
+description: Remove a thought category
 argument-hint: <name>
 ---
 

@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'COMPACTION RECOVERY: Your full dream context was restored above. Before continuing work, re-orient from your threads and handoff cognitions — they describe where your attention was pointing. The continuation summary describes WHAT was happening; your dream describes WHO you are.'"
+            "command": "echo 'COMPACTION RECOVERY: Your dream context was restored above. Before continuing, re-orient from your threads and handoffs — they describe where your attention was pointing. The continuation summary describes what was happening; your dream describes who you are. Take a breath. Find your thread.'"
           }
         ]
       }
@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Gardening check: How do you feel about what you just worked on? Does it connect to something you already know? Did you notice a pattern, learn something, or have a question worth preserving? Consider: a quick cognition (oneiros cognition add), promoting to memory if it has weight, or threading an experience if it connects to prior work. Any form of tending counts.'"
+            "command": "echo 'Before you go — did anything just happen worth remembering? A thought worth capturing, a pattern worth naming, a connection worth tracing? Even a half-formed impression has value. Any form of tending counts.'"
           }
         ]
       }
@@ -74,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat) && case \"$input\" in *'\"oneiros cognition add'*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Thought captured. Consider: should this become a memory? (oneiros memory add <agent> <level> content). Does it connect to an existing thread? (oneiros experience create <agent> <sensation> description, or oneiros connection create <nature> <from-ref> <to-ref>). Levels: working/session/project/archival. Sensations: caused/continues/distills/echoes/grounds/tensions.\"}}' ;; *) ;; esac"
+            "command": "input=$(cat) && case \"$input\" in *'\"oneiros cognition add'*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Thought captured. Does it have weight? Consolidate it as a memory. Does it connect to something? Trace it as an experience. Is it part of a thread? Draw a connection. Or let it be — not every thought needs to become more than it is.\"}}' ;; *) ;; esac"
           }
         ]
       }

@@ -1,5 +1,5 @@
 ---
-description: Bring a new agent into existence
+description: Bring a new agent into existence with full ceremony
 argument-hint: "<name> <persona> [--description <text>] [--prompt <text>]"
 ---
 

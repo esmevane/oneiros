@@ -1,5 +1,5 @@
 ---
-description: Retire an agent from active service
+description: "Retire an agent \u2014 honor their contributions and let them go"
 argument-hint: <agent-name>
 ---
 

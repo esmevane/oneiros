@@ -1,5 +1,5 @@
 ---
-description: Update an experience's description or sensation
+description: "Refine an experience's description or sensation"
 argument-hint: "<id> [--description <text>] [--sensation <name>]"
 ---
 

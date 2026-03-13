@@ -1,5 +1,5 @@
 ---
-description: Remove a storage entry
+description: Remove a stored artifact
 argument-hint: <key>
 ---
 

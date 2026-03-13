@@ -1,5 +1,5 @@
 ---
-description: Create or update a persona (agent category)
+description: Define a category of agent
 argument-hint: "<name> [--description <text>] [--prompt <text>]"
 ---
 

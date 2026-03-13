@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific level
+description: Look up a memory retention tier
 argument-hint: <name>
 ---
 

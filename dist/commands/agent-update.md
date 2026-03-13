@@ -1,5 +1,5 @@
 ---
-description: Update an existing agent
+description: "Reshape an agent's identity"
 argument-hint: "<name> <persona> [--description <text>] [--prompt <text>]"
 ---
 

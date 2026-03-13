@@ -243,7 +243,7 @@ mod tests {
         assert!(rendered.contains("oneiros memory add atlas"));
         assert!(rendered.contains("oneiros cognition list atlas"));
         assert!(rendered.contains("oneiros memory list atlas"));
-        assert!(rendered.contains("oneiros dream atlas"));
+        assert!(rendered.contains("oneiros wake atlas"));
         assert!(rendered.contains("oneiros reflect atlas"));
         assert!(rendered.contains("oneiros introspect atlas"));
     }
@@ -320,7 +320,7 @@ mod tests {
 
         assert!(rendered.contains("oneiros texture set"));
         assert!(rendered.contains("oneiros level set"));
-        assert!(rendered.contains("oneiros agent create"));
+        assert!(rendered.contains("oneiros emerge"));
     }
 
     #[test]

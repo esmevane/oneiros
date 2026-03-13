@@ -1,5 +1,5 @@
 ---
-description: List all connections
+description: See how things connect
 argument-hint: "[--nature <name>] [--link <link>]"
 ---
 

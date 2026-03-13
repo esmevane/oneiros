@@ -1,5 +1,5 @@
 ---
-description: Create or update a level (memory retention tier)
+description: Define how long a kind of memory should be kept
 argument-hint: "<name> [--description <text>] [--prompt <text>]"
 ---
 

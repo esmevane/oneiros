@@ -1,5 +1,5 @@
 ---
-description: Create a new agent with a persona
+description: Bring a new agent into the brain
 argument-hint: "<name> <persona> [--description <text>] [--prompt <text>]"
 ---
 
