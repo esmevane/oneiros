@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific nature
+description: Look up a relationship category
 argument-hint: <name>
 ---
 

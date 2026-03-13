@@ -1,5 +1,5 @@
 ---
-description: Interpret an external event through an agent's cognitive lens
+description: Receive and interpret something from outside your cognitive loop
 argument-hint: <agent-name>
 ---
 

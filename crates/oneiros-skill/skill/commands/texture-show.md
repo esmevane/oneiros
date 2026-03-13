@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific texture
+description: Look up a thought category
 argument-hint: <name>
 ---
 

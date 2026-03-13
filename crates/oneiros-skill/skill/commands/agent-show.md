@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific agent
+description: Learn about a specific agent
 argument-hint: <name>
 ---
 

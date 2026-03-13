@@ -1,5 +1,5 @@
 ---
-description: Apply predefined seed data (textures, levels, personas, agents)
+description: Plant the initial vocabulary and agents
 argument-hint: "core"
 ---
 

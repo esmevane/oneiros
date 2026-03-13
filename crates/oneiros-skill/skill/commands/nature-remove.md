@@ -1,5 +1,5 @@
 ---
-description: Remove a nature
+description: Remove a relationship category
 argument-hint: <name>
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: Wake an agent — start a session with dreaming
+description: "Wake an agent \u2014 restore identity and begin a session"
 argument-hint: <agent-name>
 ---
 

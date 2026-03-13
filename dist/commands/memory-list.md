@@ -1,5 +1,5 @@
 ---
-description: List memories with optional agent and level filters
+description: Review what you know
 argument-hint: "[--agent <name>] [--level <name>]"
 ---
 

@@ -5,13 +5,13 @@
     "url": "https://esmevane.com"
   },
   "metadata": {
-    "description": "Local-first continuity and collaboration for agents."
+    "description": "Persistent identity and continuity for AI agents."
   },
   "plugins": [
     {
       "name": "oneiros",
       "source": "./dist",
-      "description": "Local-first continuity and collaboration for agents.",
+      "description": "Persistent identity and continuity for AI agents.",
       "version": "0.0.7"
     }
   ]

@@ -1,5 +1,5 @@
 ---
-description: List experiences with optional filters
+description: Survey threads of meaning
 argument-hint: "[--agent <name>] [--sensation <name>]"
 ---
 

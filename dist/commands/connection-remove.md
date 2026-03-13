@@ -1,5 +1,5 @@
 ---
-description: Remove a connection
+description: Remove a connection between two entities
 argument-hint: <id>
 ---
 

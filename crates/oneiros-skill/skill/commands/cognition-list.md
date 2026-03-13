@@ -1,5 +1,5 @@
 ---
-description: List cognitions with optional agent and texture filters
+description: Review a stream of thoughts
 argument-hint: "[--agent <name>] [--texture <name>]"
 ---
 

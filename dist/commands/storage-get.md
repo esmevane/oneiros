@@ -1,5 +1,5 @@
 ---
-description: Download stored content to a file
+description: Retrieve a stored artifact
 argument-hint: <key> <output-path>
 ---
 

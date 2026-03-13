@@ -1,5 +1,5 @@
 ---
-description: Initialize a brain for the current project
+description: Create a brain for this project
 ---
 
 Run `oneiros project init` to create a brain for the current project. The project name is auto-detected from the workspace (Cargo.toml, package.json, git repo name, or directory name).

@@ -1,5 +1,5 @@
 ---
-description: Show a full cognitive status dashboard for an agent
+description: "See an agent's full cognitive dashboard"
 argument-hint: <agent-name>
 ---
 

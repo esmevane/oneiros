@@ -1,5 +1,5 @@
 ---
-description: Remove a level
+description: Remove a memory retention tier
 argument-hint: <name>
 ---
 

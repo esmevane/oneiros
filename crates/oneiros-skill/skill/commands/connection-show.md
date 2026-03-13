@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific connection
+description: Examine a specific connection
 argument-hint: <id>
 ---
 

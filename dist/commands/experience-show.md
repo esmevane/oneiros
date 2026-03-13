@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific experience
+description: Revisit a specific experience
 argument-hint: <id>
 ---
 

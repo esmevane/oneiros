@@ -1,5 +1,5 @@
 ---
-description: Log a cognition (thought) for an agent
+description: Record a thought
 argument-hint: <agent> <texture> <content>
 ---
 

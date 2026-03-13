@@ -1,5 +1,5 @@
 ---
-description: Create a new experience connecting cognitive records
+description: "Mark a meaningful moment \u2014 name a thread between thoughts"
 argument-hint: "<agent> <sensation> <description>"
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: Summarize a session before context compaction
+description: "Look inward before context compacts \u2014 consolidate what matters"
 argument-hint: <agent-name>
 ---
 

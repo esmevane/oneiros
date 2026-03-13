@@ -1,5 +1,5 @@
 ---
-description: Create a connection between two linked entities
+description: Draw a line between two related things
 argument-hint: "<nature> <from-link> <to-link>"
 ---
 

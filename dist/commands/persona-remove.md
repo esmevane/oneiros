@@ -1,5 +1,5 @@
 ---
-description: Remove a persona
+description: Remove an agent category
 argument-hint: <name>
 ---
 

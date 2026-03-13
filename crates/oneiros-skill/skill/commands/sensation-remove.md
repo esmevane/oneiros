@@ -1,5 +1,5 @@
 ---
-description: Remove a sensation
+description: Remove an experience category
 argument-hint: <name>
 ---
 

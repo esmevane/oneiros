@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific memory
+description: Revisit a specific memory
 argument-hint: <id>
 ---
 

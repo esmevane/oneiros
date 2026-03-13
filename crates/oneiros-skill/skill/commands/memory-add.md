@@ -1,5 +1,5 @@
 ---
-description: Store a consolidated memory for an agent
+description: "Consolidate something you've learned"
 argument-hint: <agent> <level> <content>
 ---
 

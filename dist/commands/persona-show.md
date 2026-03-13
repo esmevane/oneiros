@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific persona
+description: Look up an agent category
 argument-hint: <name>
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: Put an agent to sleep — end a session with introspection
+description: "End a session \u2014 capture continuity before resting"
 argument-hint: <agent-name>
 ---
 

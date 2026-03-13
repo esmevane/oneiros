@@ -1,5 +1,5 @@
 ---
-description: Show details of a specific sensation
+description: Look up an experience category
 argument-hint: <name>
 ---
 
