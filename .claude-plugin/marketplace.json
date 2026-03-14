@@ -12,7 +12,7 @@
       "name": "oneiros",
       "source": "./dist",
       "description": "Persistent identity and continuity for AI agents.",
-      "version": "0.0.7"
+      "version": "0.0.8"
     }
   ]
 }

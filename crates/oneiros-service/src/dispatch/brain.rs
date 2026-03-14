@@ -1,9 +1,6 @@
 use oneiros_model::*;
 
-use crate::dream_collector::DreamCollector;
-use crate::{Error, projections};
-
-use super::OneirosService;
+use crate::*;
 
 impl OneirosService {
     // ── Event operations ──────────────────────────────────────────────
@@ -163,33 +160,6 @@ impl OneirosService {
                 };
 
                 Ok(CognitionResponses::CognitionsListed(cognitions))
-            }
-        }
-    }
-
-    // ── Level operations ─────────────────────────────────────────────
-
-    pub fn dispatch_level(&self, request: LevelRequests) -> Result<LevelResponses, Error> {
-        let db = self.lock_brain()?;
-        match request {
-            LevelRequests::SetLevel(level) => {
-                let event = Events::Level(LevelEvents::LevelSet(level.clone()));
-                self.log_and_broadcast(&db, &event, projections::BRAIN)?;
-                Ok(LevelResponses::LevelSet(level))
-            }
-            LevelRequests::ListLevels(_) => Ok(LevelResponses::LevelsListed(db.list_levels()?)),
-            LevelRequests::GetLevel(request) => {
-                let level = db
-                    .get_level(&request.name)?
-                    .ok_or(NotFound::Level(request.name))?;
-                Ok(LevelResponses::LevelFound(level))
-            }
-            LevelRequests::RemoveLevel(request) => {
-                let event = Events::Level(LevelEvents::LevelRemoved(SelectLevelByName {
-                    name: request.name,
-                }));
-                self.log_and_broadcast(&db, &event, projections::BRAIN)?;
-                Ok(LevelResponses::LevelRemoved)
             }
         }
     }

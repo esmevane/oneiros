@@ -1532,6 +1532,7 @@ dependencies = [
 name = "oneiros-service"
 version = "0.0.8"
 dependencies = [
+ "bon",
  "chrono",
  "oneiros-db",
  "oneiros-fs",
