@@ -1,9 +1,7 @@
 use oneiros_db::Database;
 use oneiros_model::*;
 
-use crate::{Error, projections};
-
-use super::OneirosService;
+use crate::*;
 
 impl OneirosService {
     // ── Brain operations ──────────────────────────────────────────────
