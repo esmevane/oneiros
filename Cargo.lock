@@ -1529,6 +1529,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "oneiros-resource"
+version = "0.0.8"
+
+[[package]]
+name = "oneiros-resource-poc"
+version = "0.0.8"
+dependencies = [
+ "oneiros-db",
+ "oneiros-model",
+ "oneiros-resource",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "oneiros-service"
 version = "0.0.8"
 dependencies = [

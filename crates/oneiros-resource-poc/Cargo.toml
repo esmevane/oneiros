@@ -1,0 +1,17 @@
+[package]
+name = "oneiros-resource-poc"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+oneiros-resource = { path = "../oneiros-resource" }
+oneiros-model = { workspace = true }
+oneiros-db = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+tempfile = { workspace = true }
