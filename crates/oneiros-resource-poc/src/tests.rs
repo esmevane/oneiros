@@ -1,8 +1,18 @@
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use axum::Router;
+use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::*;
 use oneiros_resource::Fulfill;
+use tower::ServiceExt;
 
-use crate::*;
+// crate::Agent is the Resource marker type; oneiros_model::Agent is the domain entity.
+// Import selectively to avoid the collision.
+use crate::resource_agent::Agent as AgentResource;
+use crate::{ProjectScope, ProjectScopeError, ServiceState};
+
+// ── Test helpers ───────────────────────────────────────────────────
 
 /// Create a brain database in a temp directory for testing.
 fn test_db(dir: &std::path::Path) -> Database {
@@ -27,6 +37,25 @@ fn test_source() -> Source {
 fn project_scope(db: &Database) -> ProjectScope<'_> {
     ProjectScope::new(db, test_source(), &[crate::projections::AGENT])
 }
+
+fn test_service_state(db: Database) -> ServiceState {
+    ServiceState::new(db, test_source(), &[crate::projections::AGENT])
+}
+
+/// Build the full app router for HTTP tests.
+fn test_app(state: ServiceState) -> Router {
+    Router::new()
+        .nest("/agents", AgentResource::http_router())
+        .with_state(state)
+}
+
+/// Parse a JSON response body.
+async fn json_body<T: serde::de::DeserializeOwned>(response: axum::http::Response<Body>) -> T {
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&bytes).unwrap()
+}
+
+// ── Fulfill (domain logic) tests ──────────────────────────────────
 
 #[tokio::test]
 async fn create_agent_through_fulfill() {
@@ -62,7 +91,6 @@ async fn list_agents_through_fulfill() {
 
     let scope = project_scope(&db);
 
-    // Create two agents
     scope
         .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
             name: AgentName::new("alice"),
@@ -286,4 +314,235 @@ async fn create_agent_missing_persona() {
         matches!(err, ProjectScopeError::NotFound(NotFound::Persona(_))),
         "Expected NotFound::Persona, got {err:?}"
     );
+}
+
+// ── HTTP integration tests ────────────────────────────────────────
+
+#[tokio::test]
+async fn http_create_agent() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let app = test_app(test_service_state(db));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/agents")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_string(&CreateAgentRequest {
+                        name: AgentName::new("governor"),
+                        persona: PersonaName::new("test-persona"),
+                        description: Description::new("The governor"),
+                        prompt: Prompt::new("You govern."),
+                    })
+                    .unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body: AgentResponses = json_body(response).await;
+    match body {
+        AgentResponses::AgentCreated(agent) => {
+            assert_eq!(agent.name, AgentName::new("governor"));
+        }
+        other => panic!("Expected AgentCreated, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_list_agents() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+    // Seed an agent through the service state directly
+    state
+        .fulfill::<AgentResource>(AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("alice"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+
+    let app = test_app(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/agents")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: AgentResponses = json_body(response).await;
+    match body {
+        AgentResponses::AgentsListed(agents) => {
+            assert_eq!(agents.len(), 1);
+            assert_eq!(agents[0].name, AgentName::new("alice"));
+        }
+        other => panic!("Expected AgentsListed, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_get_agent() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<AgentResource>(AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Gov"),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+
+    let app = test_app(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/agents/governor")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: AgentResponses = json_body(response).await;
+    match body {
+        AgentResponses::AgentFound(agent) => {
+            assert_eq!(agent.name, AgentName::new("governor"));
+            assert_eq!(agent.description, Description::new("Gov"));
+        }
+        other => panic!("Expected AgentFound, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_get_agent_not_found() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let app = test_app(test_service_state(db));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/agents/nonexistent")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn http_update_agent() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<AgentResource>(AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Original"),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+
+    let app = test_app(state);
+
+    let request: Request<Body> = Request::builder()
+        .method("PUT")
+        .uri("/agents/governor")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&UpdateAgentRequest {
+                name: AgentName::new("ignored"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Updated"),
+                prompt: Prompt::new("New prompt"),
+            })
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: AgentResponses = json_body(response).await;
+    match body {
+        AgentResponses::AgentUpdated(agent) => {
+            assert_eq!(agent.description, Description::new("Updated"));
+            // Name comes from path, not body
+            assert_eq!(agent.name, AgentName::new("governor"));
+        }
+        other => panic!("Expected AgentUpdated, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_remove_agent() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<AgentResource>(AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+
+    let app = test_app(state.clone());
+
+    let request: Request<Body> = Request::builder()
+        .method("DELETE")
+        .uri("/agents/governor")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Verify it's gone via a second request
+    let app = test_app(state);
+
+    let request: Request<Body> = Request::builder()
+        .uri("/agents/governor")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }

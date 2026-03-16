@@ -1536,12 +1536,18 @@ version = "0.0.8"
 name = "oneiros-resource-poc"
 version = "0.0.8"
 dependencies = [
+ "axum",
+ "http-body-util",
+ "hyper",
  "oneiros-db",
  "oneiros-model",
  "oneiros-resource",
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "tower",
 ]
 
 [[package]]

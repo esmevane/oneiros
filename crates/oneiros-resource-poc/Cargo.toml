@@ -9,9 +9,15 @@ license.workspace = true
 oneiros-resource = { path = "../oneiros-resource" }
 oneiros-model = { workspace = true }
 oneiros-db = { workspace = true }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
 tempfile = { workspace = true }
+hyper = { workspace = true }
+tower = { workspace = true, features = ["util"] }
+http-body-util = { workspace = true }
