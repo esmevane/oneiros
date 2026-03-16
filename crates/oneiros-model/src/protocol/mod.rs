@@ -471,8 +471,27 @@ impl Requests {
             Self::Experience(ExperienceRequests::ListExperiences(r)) => r.agent.as_ref(),
             Self::Search(SearchRequests::Search(r)) => r.agent.as_ref(),
 
-            // Everything else: brain-scoped, no agent context
-            _ => None,
+            // Brain-scoped (or system-scoped): no agent context
+            Self::Actor(_) => None,
+            Self::Agent(AgentRequests::ListAgents(_)) => None,
+            Self::Brain(_) => None,
+            Self::Cognition(CognitionRequests::GetCognition(_)) => None,
+            Self::Connection(_) => None,
+            Self::Event(_) => None,
+            Self::Experience(ExperienceRequests::UpdateExperienceDescription(_)) => None,
+            Self::Experience(ExperienceRequests::UpdateExperienceSensation(_)) => None,
+            Self::Experience(ExperienceRequests::GetExperience(_)) => None,
+            Self::Level(_) => None,
+            Self::Memory(MemoryRequests::GetMemory(_)) => None,
+            Self::Nature(_) => None,
+            Self::Persona(_) => None,
+            Self::Pressure(PressureRequests::ListPressures(_)) => None,
+            Self::Sensation(_) => None,
+            Self::Storage(_) => None,
+            Self::Tenant(_) => None,
+            Self::Texture(_) => None,
+            Self::Ticket(_) => None,
+            Self::Urge(_) => None,
         }
     }
 }

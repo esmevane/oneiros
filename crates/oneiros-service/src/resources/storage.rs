@@ -24,19 +24,6 @@ impl Dispatch<StorageRequests> for StorageStore {
                     .ok_or(NotFound::Storage(request.key))?;
                 Ok(StorageResponses::StorageFound(entry))
             }
-            StorageRequests::GetStorageContent(request) => {
-                let entry = db
-                    .get_storage(&request.key)?
-                    .ok_or(NotFound::Storage(request.key.clone()))?;
-
-                let blob = db
-                    .get_blob(&entry.hash)?
-                    .ok_or(DataIntegrity::BlobMissing(entry.hash.clone()))?;
-
-                let _decompressed = blob.data.decompressed()?;
-
-                Ok(StorageResponses::StorageFound(entry))
-            }
             StorageRequests::RemoveStorage(request) => {
                 let event = Events::Storage(StorageEvents::StorageRemoved(SelectStorageByKey {
                     key: request.key,

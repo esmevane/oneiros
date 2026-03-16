@@ -47,15 +47,14 @@ pub enum StorageEvents {
     StorageRemoved(SelectStorageByKey),
 }
 
-// Note: StorageRequests does not include SetStorage because SetStorageRequest
-// carries binary data that doesn't fit the JSON {type, data} envelope.
-// SetStorage is dispatched directly. The enum covers JSON-safe operations.
+// Note: StorageRequests does not include SetStorage or GetStorageContent
+// because both carry binary data that doesn't fit the JSON {type, data}
+// envelope. They are dispatched directly via OneirosService bypass methods.
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum StorageRequests {
     RemoveStorage(RemoveStorageRequest),
     GetStorage(GetStorageRequest),
-    GetStorageContent(GetStorageContentRequest),
     ListStorage(ListStorageRequest),
 }
 

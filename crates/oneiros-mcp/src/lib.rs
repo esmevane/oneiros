@@ -646,7 +646,17 @@ impl OneirosToolBox {
         &self,
         Parameters(request): Parameters<GetStorageContentRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        self.dispatch(StorageRequests::GetStorageContent(request))
+        match self.state.get_storage_content(&request.key) {
+            Ok(bytes) => {
+                let text = String::from_utf8_lossy(&bytes).into_owned();
+                Ok(CallToolResult::success(vec![rmcp::model::Content::text(
+                    text,
+                )]))
+            }
+            Err(e) => Ok(CallToolResult::error(vec![rmcp::model::Content::text(
+                e.to_string(),
+            )])),
+        }
     }
 
     #[tool(description = "Browse your archive of stored artifacts")]
