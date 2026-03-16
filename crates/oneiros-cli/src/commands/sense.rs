@@ -37,7 +37,10 @@ pub struct SenseOp {
 }
 
 impl SenseOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<SenseOutcomes>, SenseError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<SenseOutcomes>, Vec<PressureSummary>), SenseError> {
         let mut outcomes = Outcomes::new();
 
         let event_data = if std::io::stdin().is_terminal() {
@@ -51,13 +54,13 @@ impl SenseOp {
         let client = context.client();
         let token = &context.ticket_token()?;
         let response = client.sense(token, &self.name).await?;
-        let readings = response.pressure_readings();
+        let summaries = response.pressure_summaries();
         let agent: Agent = response.data()?;
-        let pressures = RelevantPressures::from_readings(readings);
+        let pressures = RelevantPressures::from_summaries(summaries.clone());
         let prompt = SenseTemplate::new(&agent, &event_data, pressures).to_string();
 
         outcomes.emit(SenseOutcomes::Sensing(Observation { agent, prompt }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

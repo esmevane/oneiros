@@ -85,7 +85,10 @@ pub enum DoctorOutcomes {
 pub struct DoctorOp;
 
 impl DoctorOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<DoctorOutcomes>, CheckupError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<DoctorOutcomes>, Vec<PressureSummary>), CheckupError> {
         let mut checks = Outcomes::new();
 
         // --- System checks ---
@@ -205,6 +208,6 @@ impl DoctorOp {
             }
         }
 
-        Ok(checks)
+        Ok((checks, vec![]))
     }
 }

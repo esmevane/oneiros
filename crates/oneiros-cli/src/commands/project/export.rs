@@ -27,7 +27,7 @@ impl ExportProject {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ExportProjectOutcomes>, ProjectCommandError> {
+    ) -> Result<(Outcomes<ExportProjectOutcomes>, Vec<PressureSummary>), ProjectCommandError> {
         let Some(project_name) = context.project_name() else {
             return Err(ProjectCommandError::NoProject);
         };
@@ -51,11 +51,12 @@ impl ExportProject {
 
         outcomes.emit(ExportProjectOutcomes::UsingPath(target_directory.clone()));
 
-        let events: Vec<Event> = context
+        let response = context
             .client()
             .export_brain(&context.ticket_token()?)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let events: Vec<Event> = response.data()?;
 
         let mut buffer = String::new();
         let mut lines = 0;
@@ -80,6 +81,6 @@ impl ExportProject {
 
         outcomes.emit(ExportProjectOutcomes::WroteExport(file_path));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

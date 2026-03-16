@@ -46,19 +46,21 @@ impl ListConnections {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListConnectionsOutcomes>, ConnectionCommandError> {
+    ) -> Result<(Outcomes<ListConnectionsOutcomes>, Vec<PressureSummary>), ConnectionCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let connections: Vec<Connection> = client
+        let response = client
             .list_connections(
                 &context.ticket_token()?,
                 self.nature.as_ref(),
                 self.entity_ref.as_ref(),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let connections: Vec<Connection> = response.data()?;
 
         if connections.is_empty() {
             outcomes.emit(ListConnectionsOutcomes::NoConnections);
@@ -68,6 +70,6 @@ impl ListConnections {
             )));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

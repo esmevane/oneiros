@@ -14,7 +14,15 @@ pub(crate) use outcomes::CliOutcomes;
 pub(crate) use output_format::OutputFormat;
 pub(crate) use preflight::Preflight;
 
+use oneiros_model::PressureSummary;
+
 use crate::*;
+
+/// The result of a CLI command: outcomes for display and ambient pressure summaries.
+pub struct CliResult {
+    pub outcomes: Outcomes<CliOutcomes>,
+    pub summaries: Vec<PressureSummary>,
+}
 
 #[derive(Clone, Parser)]
 #[command(version)]
@@ -29,48 +37,155 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub(crate) fn report(&self, outcomes: &Outcomes<CliOutcomes>) {
-        for outcome in outcomes {
+    pub(crate) fn report(&self, result: &CliResult) {
+        for outcome in &result.outcomes {
             self.output.structured_output(outcome);
+        }
+
+        if !result.summaries.is_empty() {
+            let pressures =
+                oneiros_model::RelevantPressures::from_summaries(result.summaries.clone());
+            eprintln!("{}", pressures.compact());
         }
     }
 
-    pub(crate) async fn run(&self) -> Result<Outcomes<CliOutcomes>, CliError> {
+    pub(crate) async fn run(&self) -> Result<CliResult, CliError> {
         let context = Context::init()?;
 
-        Ok(match &self.command {
-            Command::Activity(activity) => activity.run(&context).await?.map_into(),
-            Command::Agent(agent) => agent.run(&context).await?.map_into(),
-            Command::Cognition(cognition) => cognition.run(&context).await?.map_into(),
-            Command::Connection(connection) => connection.run(&context).await?.map_into(),
-            Command::Doctor(doctor) => doctor.run(&context).await?.map_into(),
-            Command::Dream(dream) => dream.run(&context).await?.map_into(),
-            Command::Emerge(emerge) => emerge.run(&context).await?.map_into(),
-            Command::Experience(experience) => experience.run(&context).await?.map_into(),
-            Command::Event(event) => event.run(&context).await?.map_into(),
-            Command::Sensation(sensation) => sensation.run(&context).await?.map_into(),
-            Command::Guidebook(guidebook) => guidebook.run(&context).await?.map_into(),
-            Command::Introspect(introspect) => introspect.run(&context).await?.map_into(),
-            Command::Level(level) => level.run(&context).await?.map_into(),
-            Command::Memory(memory) => memory.run(&context).await?.map_into(),
-            Command::Nature(nature) => nature.run(&context).await?.map_into(),
-            Command::Persona(persona) => persona.run(&context).await?.map_into(),
-            Command::Pressure(pressure) => pressure.run(&context).await?.map_into(),
-            Command::Recede(recede) => recede.run(&context).await?.map_into(),
-            Command::Reflect(reflect) => reflect.run(&context).await?.map_into(),
-            Command::Search(search) => search.run(&context).await?.map_into(),
-            Command::Seed(seed) => seed.run(&context).await?.map_into(),
-            Command::Sense(sense) => sense.run(&context).await?.map_into(),
-            Command::Skill(skill) => skill.run(&context).await?.map_into(),
-            Command::Sleep(sleep) => sleep.run(&context).await?.map_into(),
-            Command::Status(status) => status.run(&context).await?.map_into(),
-            Command::Storage(storage) => storage.run(&context).await?.map_into(),
-            Command::System(system) => system.run(&context).await?.map_into(),
-            Command::Service(service) => service.run(&context).await?.map_into(),
-            Command::Project(project) => project.run(&context).await?.map_into(),
-            Command::Texture(texture) => texture.run(&context).await?.map_into(),
-            Command::Urge(urge) => urge.run(&context).await?.map_into(),
-            Command::Wake(wake) => wake.run(&context).await?.map_into(),
+        let (outcomes, summaries) = match &self.command {
+            Command::Activity(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Agent(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Cognition(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Connection(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Doctor(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Dream(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Emerge(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Experience(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Event(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Sensation(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Guidebook(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Introspect(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Level(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Memory(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Nature(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Persona(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Pressure(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Recede(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Reflect(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Search(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Seed(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Sense(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Skill(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Sleep(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Status(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Storage(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::System(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Service(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Project(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Texture(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Urge(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+            Command::Wake(cmd) => {
+                let (o, s) = cmd.run(&context).await?;
+                (o.map_into(), s)
+            }
+        };
+
+        Ok(CliResult {
+            outcomes,
+            summaries,
         })
     }
 }

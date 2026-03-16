@@ -877,29 +877,12 @@ mod tests {
 
     // -- Response envelope tests --
 
-    fn test_gauge() -> Gauge {
-        Gauge::Introspect(IntrospectGauge::from_inputs(IntrospectInputs {
-            hours_since_last_introspect: 4.0,
-            total_cognitions: 10,
-            working_cognitions: 3,
-            cognitions_since_introspect: 5,
-            memories_since_introspect: 1,
-            session_cognition_count: 8,
-        }))
-    }
-
     fn test_meta() -> ResponseMeta {
         ResponseMeta {
-            pressure: vec![PressureReading::new(
-                Pressure {
-                    id: PressureId::new(),
-                    agent_id: AgentId::new(),
-                    urge: UrgeName::new("introspect"),
-                    data: test_gauge(),
-                    updated_at: test_timestamp(),
-                },
-                crate::Prompt::new("Consolidate working thoughts."),
-            )],
+            pressure: vec![PressureSummary {
+                urge: UrgeName::new("introspect"),
+                percent: 69,
+            }],
         }
     }
 

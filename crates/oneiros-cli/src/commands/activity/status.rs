@@ -96,13 +96,15 @@ impl ActivityStatus {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ActivityOutcomes>, ActivityError> {
+    ) -> Result<(Outcomes<ActivityOutcomes>, Vec<PressureSummary>), ActivityError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let agents: Vec<Agent> = client.list_agents(&token).await?.data()?;
+        let response = client.list_agents(&token).await?;
+        let summaries = response.pressure_summaries();
+        let agents: Vec<Agent> = response.data()?;
         let mut rows = Vec::with_capacity(agents.len());
 
         for agent in &agents {
@@ -137,7 +139,7 @@ impl ActivityStatus {
             agents: rows,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }
 

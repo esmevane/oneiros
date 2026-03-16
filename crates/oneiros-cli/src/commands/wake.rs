@@ -32,14 +32,16 @@ pub(crate) struct WakeOp {
 }
 
 impl WakeOp {
-    pub(crate) async fn run(&self, context: &Context) -> Result<Outcomes<WakeOutcomes>, WakeError> {
+    pub(crate) async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<WakeOutcomes>, Vec<PressureSummary>), WakeError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let dream_context: DreamContext = client
-            .wake(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+        let response = client.wake(&context.ticket_token()?, &self.name).await?;
+        let summaries = response.pressure_summaries();
+        let dream_context: DreamContext = response.data()?;
         let prompt = DreamTemplate::new(&dream_context).to_string();
 
         outcomes.emit(WakeOutcomes::Waking(Dream {
@@ -47,6 +49,6 @@ impl WakeOp {
             prompt,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

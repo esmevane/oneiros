@@ -36,13 +36,13 @@ impl AddCognition {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<AddCognitionOutcomes>, CognitionCommandError> {
+    ) -> Result<(Outcomes<AddCognitionOutcomes>, Vec<PressureSummary>), CognitionCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let cognition: Cognition = client
+        let add_response = client
             .add_cognition(
                 &token,
                 AddCognitionRequest {
@@ -51,8 +51,9 @@ impl AddCognition {
                     content: self.content.clone(),
                 },
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = add_response.pressure_summaries();
+        let cognition: Cognition = add_response.data()?;
 
         let all: Vec<Cognition> = client
             .list_cognitions(&token, Some(&self.agent), None)
@@ -68,6 +69,6 @@ impl AddCognition {
             gauge,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

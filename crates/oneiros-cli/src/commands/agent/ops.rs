@@ -40,13 +40,28 @@ impl AgentOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<AgentOutcomes>, AgentCommandError> {
+    ) -> Result<(Outcomes<AgentOutcomes>, Vec<PressureSummary>), AgentCommandError> {
         Ok(match &self.command {
-            AgentCommands::Create(cmd) => cmd.run(context).await?.map_into(),
-            AgentCommands::Update(cmd) => cmd.run(context).await?.map_into(),
-            AgentCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            AgentCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            AgentCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            AgentCommands::Create(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            AgentCommands::Update(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            AgentCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            AgentCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            AgentCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

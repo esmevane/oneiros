@@ -28,19 +28,20 @@ impl SetStorage {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetStorageOutcomes>, StorageCommandError> {
+    ) -> Result<(Outcomes<SetStorageOutcomes>, Vec<PressureSummary>), StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let data = context.files().read(&self.file)?;
 
-        let entry: StorageEntry = client
+        let response = client
             .set_storage(&context.ticket_token()?, &self.key, data, &self.description)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let entry: StorageEntry = response.data()?;
 
         outcomes.emit(SetStorageOutcomes::StorageSet(entry.key.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

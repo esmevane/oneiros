@@ -34,10 +34,16 @@ impl EventOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<EventOutcomes>, EventCommandError> {
+    ) -> Result<(Outcomes<EventOutcomes>, Vec<PressureSummary>), EventCommandError> {
         Ok(match &self.command {
-            EventCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            EventCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            EventCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            EventCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

@@ -24,7 +24,7 @@ impl GetStorage {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<GetStorageOutcomes>, StorageCommandError> {
+    ) -> Result<(Outcomes<GetStorageOutcomes>, Vec<PressureSummary>), StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -40,6 +40,6 @@ impl GetStorage {
             self.output.clone(),
         ));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

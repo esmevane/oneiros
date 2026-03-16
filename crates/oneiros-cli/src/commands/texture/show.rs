@@ -21,17 +21,18 @@ impl ShowTexture {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowTextureOutcomes>, TextureCommandError> {
+    ) -> Result<(Outcomes<ShowTextureOutcomes>, Vec<PressureSummary>), TextureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Texture = client
+        let response = client
             .get_texture(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Texture = response.data()?;
         outcomes.emit(ShowTextureOutcomes::TextureDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

@@ -32,12 +32,12 @@ impl SetLevel {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetLevelOutcomes>, LevelCommandError> {
+    ) -> Result<(Outcomes<SetLevelOutcomes>, Vec<PressureSummary>), LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Level = client
+        let response = client
             .set_level(
                 &context.ticket_token()?,
                 Level::init(
@@ -46,10 +46,11 @@ impl SetLevel {
                     self.prompt.clone(),
                 ),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Level = response.data()?;
         outcomes.emit(SetLevelOutcomes::LevelSet(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

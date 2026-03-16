@@ -21,7 +21,8 @@ impl RemoveSensation {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveSensationOutcomes>, SensationCommandError> {
+    ) -> Result<(Outcomes<RemoveSensationOutcomes>, Vec<PressureSummary>), SensationCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +32,6 @@ impl RemoveSensation {
             .await?;
         outcomes.emit(RemoveSensationOutcomes::SensationRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

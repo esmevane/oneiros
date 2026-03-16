@@ -43,14 +43,32 @@ impl ServiceOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<ServiceOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<ServiceOutcomes>, Vec<PressureSummary>), ServiceCommandError> {
         Ok(match &self.command {
-            ServiceCommands::Install(install) => install.run(context).await?.map_into(),
-            ServiceCommands::Uninstall(uninstall) => uninstall.run(context).await?.map_into(),
-            ServiceCommands::Start(start) => start.run(context).await?.map_into(),
-            ServiceCommands::Stop(stop) => stop.run(context).await?.map_into(),
-            ServiceCommands::Run(run) => run.run(context).await?.map_into(),
-            ServiceCommands::Status(status) => status.run(context).await?.map_into(),
+            ServiceCommands::Install(install) => {
+                let (o, s) = install.run(context).await?;
+                (o.map_into(), s)
+            }
+            ServiceCommands::Uninstall(uninstall) => {
+                let (o, s) = uninstall.run(context).await?;
+                (o.map_into(), s)
+            }
+            ServiceCommands::Start(start) => {
+                let (o, s) = start.run(context).await?;
+                (o.map_into(), s)
+            }
+            ServiceCommands::Stop(stop) => {
+                let (o, s) = stop.run(context).await?;
+                (o.map_into(), s)
+            }
+            ServiceCommands::Run(run) => {
+                let (o, s) = run.run(context).await?;
+                (o.map_into(), s)
+            }
+            ServiceCommands::Status(status) => {
+                let (o, s) = status.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

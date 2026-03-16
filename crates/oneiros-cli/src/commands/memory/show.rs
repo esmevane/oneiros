@@ -36,7 +36,7 @@ impl ShowMemory {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowMemoryOutcomes>, MemoryCommandError> {
+    ) -> Result<(Outcomes<ShowMemoryOutcomes>, Vec<PressureSummary>), MemoryCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -51,9 +51,11 @@ impl ShowMemory {
             }
         };
 
-        let memory: Memory = client.get_memory(&token, &id).await?.data()?;
+        let response = client.get_memory(&token, &id).await?;
+        let summaries = response.pressure_summaries();
+        let memory: Memory = response.data()?;
         outcomes.emit(ShowMemoryOutcomes::MemoryDetails(MemoryDetail(memory)));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

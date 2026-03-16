@@ -61,7 +61,7 @@ impl Init {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<InitSystemOutcomes>, InitSystemError> {
+    ) -> Result<(Outcomes<InitSystemOutcomes>, Vec<PressureSummary>), InitSystemError> {
         let mut outcomes = Outcomes::new();
 
         let file_ops = context.files();
@@ -78,7 +78,7 @@ impl Init {
         if database.tenant_exists()? {
             outcomes.emit(InitSystemOutcomes::HostAlreadyInitialized);
 
-            return Ok(outcomes);
+            return Ok((outcomes, vec![]));
         }
 
         let name = match (self.yes, &self.name) {
@@ -127,7 +127,7 @@ impl Init {
 
         outcomes.emit(InitSystemOutcomes::SystemInitialized(name));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }
 
@@ -153,7 +153,7 @@ mod tests {
             yes: false,
         };
 
-        let outcomes = init.run(&context).await.unwrap();
+        let (outcomes, _) = init.run(&context).await.unwrap();
 
         assert!(
             outcomes
@@ -205,7 +205,7 @@ mod tests {
             .data_dir(data_dir.clone())
             .config_dir(config_dir.clone())
             .build();
-        let outcomes = init.run(&context).await.unwrap();
+        let (outcomes, _) = init.run(&context).await.unwrap();
 
         assert!(
             outcomes

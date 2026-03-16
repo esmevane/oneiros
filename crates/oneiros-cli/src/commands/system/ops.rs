@@ -26,9 +26,12 @@ impl SystemOps {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SystemOutcomes>, SystemCommandError> {
+    ) -> Result<(Outcomes<SystemOutcomes>, Vec<PressureSummary>), SystemCommandError> {
         Ok(match &self.command {
-            SystemCommand::Init(init) => init.run(context).await?.map_into(),
+            SystemCommand::Init(init) => {
+                let (o, s) = init.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

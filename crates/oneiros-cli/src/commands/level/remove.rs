@@ -22,7 +22,7 @@ impl RemoveLevel {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveLevelOutcomes>, LevelCommandError> {
+    ) -> Result<(Outcomes<RemoveLevelOutcomes>, Vec<PressureSummary>), LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -32,6 +32,6 @@ impl RemoveLevel {
             .await?;
         outcomes.emit(RemoveLevelOutcomes::LevelRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

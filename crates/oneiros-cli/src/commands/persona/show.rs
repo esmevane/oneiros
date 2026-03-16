@@ -21,17 +21,18 @@ impl ShowPersona {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowPersonaOutcomes>, PersonaCommandError> {
+    ) -> Result<(Outcomes<ShowPersonaOutcomes>, Vec<PressureSummary>), PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Persona = client
+        let response = client
             .get_persona(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Persona = response.data()?;
         outcomes.emit(ShowPersonaOutcomes::PersonaDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

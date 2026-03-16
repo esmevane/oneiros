@@ -20,7 +20,7 @@ impl RemoveStorage {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveStorageOutcomes>, StorageCommandError> {
+    ) -> Result<(Outcomes<RemoveStorageOutcomes>, Vec<PressureSummary>), StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +31,6 @@ impl RemoveStorage {
 
         outcomes.emit(RemoveStorageOutcomes::StorageRemoved(self.key.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

@@ -32,14 +32,16 @@ pub struct DreamOp {
 }
 
 impl DreamOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<DreamOutcomes>, DreamError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<DreamOutcomes>, Vec<PressureSummary>), DreamError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let dream_context: DreamContext = client
-            .dream(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+        let response = client.dream(&context.ticket_token()?, &self.name).await?;
+        let summaries = response.pressure_summaries();
+        let dream_context: DreamContext = response.data()?;
         let prompt = DreamTemplate::new(&dream_context).to_string();
 
         outcomes.emit(DreamOutcomes::Dreaming(Dream {
@@ -47,6 +49,6 @@ impl DreamOp {
             prompt,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

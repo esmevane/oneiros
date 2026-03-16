@@ -32,8 +32,9 @@ impl InitProject {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<InitProjectOutcomes>, ProjectCommandError> {
+    ) -> Result<(Outcomes<InitProjectOutcomes>, Vec<PressureSummary>), ProjectCommandError> {
         let mut outcomes = Outcomes::new();
+        let mut summaries = Vec::new();
 
         let project_name = BrainName::new(
             context
@@ -49,6 +50,7 @@ impl InitProject {
 
         let token = match client.create_brain(request).await {
             Ok(response) => {
+                summaries.extend(response.pressure_summaries());
                 let info: BrainInfo = response.data()?;
                 context.store_ticket(project_name.as_str(), info.token.as_str())?;
                 outcomes.emit(InitProjectOutcomes::BrainCreated(project_name.clone()));
@@ -105,6 +107,6 @@ impl InitProject {
             }
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

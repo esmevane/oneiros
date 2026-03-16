@@ -45,13 +45,13 @@ impl CreateAgent {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<CreateAgentOutcomes>, AgentCommandError> {
+    ) -> Result<(Outcomes<CreateAgentOutcomes>, Vec<PressureSummary>), AgentCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let name = self.normalize_name();
 
-        let info: Agent = client
+        let response = client
             .create_agent(
                 &context.ticket_token()?,
                 CreateAgentRequest {
@@ -61,10 +61,11 @@ impl CreateAgent {
                     prompt: self.prompt.clone(),
                 },
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Agent = response.data()?;
         outcomes.emit(CreateAgentOutcomes::AgentCreated(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

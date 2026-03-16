@@ -29,12 +29,12 @@ impl SetTexture {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetTextureOutcomes>, TextureCommandError> {
+    ) -> Result<(Outcomes<SetTextureOutcomes>, Vec<PressureSummary>), TextureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Texture = client
+        let response = client
             .set_texture(
                 &context.ticket_token()?,
                 Texture::init(
@@ -43,10 +43,11 @@ impl SetTexture {
                     self.prompt.clone(),
                 ),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Texture = response.data()?;
         outcomes.emit(SetTextureOutcomes::TextureSet(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

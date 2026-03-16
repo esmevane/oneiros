@@ -21,7 +21,7 @@ impl RunService {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RunServiceOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<RunServiceOutcomes>, Vec<PressureSummary>), ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
         if !context.is_initialized() {
@@ -37,6 +37,6 @@ impl RunService {
 
         outcomes.emit(RunServiceOutcomes::ServiceStopped);
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

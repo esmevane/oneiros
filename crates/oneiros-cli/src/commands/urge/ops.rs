@@ -38,12 +38,24 @@ impl UrgeOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<UrgeOutcomes>, UrgeCommandError> {
+    ) -> Result<(Outcomes<UrgeOutcomes>, Vec<PressureSummary>), UrgeCommandError> {
         Ok(match &self.command {
-            UrgeCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            UrgeCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            UrgeCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            UrgeCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            UrgeCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            UrgeCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            UrgeCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            UrgeCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

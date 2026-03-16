@@ -21,17 +21,18 @@ impl ShowNature {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowNatureOutcomes>, NatureCommandError> {
+    ) -> Result<(Outcomes<ShowNatureOutcomes>, Vec<PressureSummary>), NatureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Nature = client
+        let response = client
             .get_nature(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Nature = response.data()?;
         outcomes.emit(ShowNatureOutcomes::NatureDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

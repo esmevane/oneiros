@@ -38,12 +38,24 @@ impl SensationOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<SensationOutcomes>, SensationCommandError> {
+    ) -> Result<(Outcomes<SensationOutcomes>, Vec<PressureSummary>), SensationCommandError> {
         Ok(match &self.command {
-            SensationCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            SensationCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            SensationCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            SensationCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            SensationCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            SensationCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            SensationCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            SensationCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

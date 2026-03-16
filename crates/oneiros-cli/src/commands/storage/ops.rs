@@ -43,13 +43,28 @@ impl StorageOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<StorageOutcomes>, StorageCommandError> {
+    ) -> Result<(Outcomes<StorageOutcomes>, Vec<PressureSummary>), StorageCommandError> {
         Ok(match &self.command {
-            StorageCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            StorageCommands::Get(cmd) => cmd.run(context).await?.map_into(),
-            StorageCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            StorageCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            StorageCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            StorageCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            StorageCommands::Get(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            StorageCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            StorageCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            StorageCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

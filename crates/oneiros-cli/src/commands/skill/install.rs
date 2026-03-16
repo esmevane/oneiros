@@ -33,7 +33,7 @@ impl InstallSkill {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<InstallSkillOutcomes>, SkillCommandError> {
+    ) -> Result<(Outcomes<InstallSkillOutcomes>, Vec<PressureSummary>), SkillCommandError> {
         let mut outcomes = Outcomes::new();
         let files = context.files();
 
@@ -80,7 +80,7 @@ impl InstallSkill {
         let display_base = display_path(&base);
         outcomes.emit(InstallSkillOutcomes::Installed(display_base));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }
 

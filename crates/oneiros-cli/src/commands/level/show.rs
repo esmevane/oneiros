@@ -22,17 +22,18 @@ impl ShowLevel {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowLevelOutcomes>, LevelCommandError> {
+    ) -> Result<(Outcomes<ShowLevelOutcomes>, Vec<PressureSummary>), LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Level = client
+        let response = client
             .get_level(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Level = response.data()?;
         outcomes.emit(ShowLevelOutcomes::LevelDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

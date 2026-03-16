@@ -66,18 +66,22 @@ pub struct SearchOp {
 }
 
 impl SearchOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<SearchOutcomes>, SearchError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<SearchOutcomes>, Vec<PressureSummary>), SearchError> {
         let mut outcomes = Outcomes::new();
 
         let query = self.query.join(" ");
         let client = context.client();
-        let results: SearchResults = client
+        let response = client
             .search(&context.ticket_token()?, &query, self.agent.as_ref())
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let results: SearchResults = response.data()?;
 
         outcomes.emit(SearchOutcomes::Results(SearchResultsDisplay(results)));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

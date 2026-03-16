@@ -21,17 +21,19 @@ impl ShowSensation {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowSensationOutcomes>, SensationCommandError> {
+    ) -> Result<(Outcomes<ShowSensationOutcomes>, Vec<PressureSummary>), SensationCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Sensation = client
+        let response = client
             .get_sensation(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Sensation = response.data()?;
         outcomes.emit(ShowSensationOutcomes::SensationDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

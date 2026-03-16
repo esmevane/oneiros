@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::AgentName;
+use oneiros_model::{AgentName, PressureSummary};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -21,7 +21,7 @@ impl RemoveAgent {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveAgentOutcomes>, AgentCommandError> {
+    ) -> Result<(Outcomes<RemoveAgentOutcomes>, Vec<PressureSummary>), AgentCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +31,6 @@ impl RemoveAgent {
             .await?;
         outcomes.emit(RemoveAgentOutcomes::AgentRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

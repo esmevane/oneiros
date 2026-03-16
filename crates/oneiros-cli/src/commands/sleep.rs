@@ -31,17 +31,19 @@ pub struct SleepOp {
 }
 
 impl SleepOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<SleepOutcomes>, SleepError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<SleepOutcomes>, Vec<PressureSummary>), SleepError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let result: Agent = client
-            .sleep(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+        let response = client.sleep(&context.ticket_token()?, &self.name).await?;
+        let summaries = response.pressure_summaries();
+        let result: Agent = response.data()?;
 
         outcomes.emit(SleepOutcomes::Sleeping(result));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

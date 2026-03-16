@@ -37,7 +37,10 @@ pub struct StatusOp {
 }
 
 impl StatusOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<StatusOutcomes>, StatusError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<StatusOutcomes>, Vec<PressureSummary>), StatusError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -51,16 +54,17 @@ impl StatusOp {
             .list_memories(&token, Some(&self.agent), None)
             .await?
             .data()?;
-        let experiences: Vec<Experience> = client
+        let response = client
             .list_experiences(&token, Some(&self.agent), None)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let experiences: Vec<Experience> = response.data()?;
 
         let dashboard =
             crate::gauge::full_status(&self.agent, &cognitions, &memories, &experiences);
 
         outcomes.emit(StatusOutcomes::Status(StatusResult { dashboard }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

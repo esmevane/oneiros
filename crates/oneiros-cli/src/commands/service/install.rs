@@ -20,7 +20,7 @@ impl InstallService {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<InstallServiceOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<InstallServiceOutcomes>, Vec<PressureSummary>), ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
         let label = context.service_label();
@@ -46,6 +46,6 @@ impl InstallService {
 
         outcomes.emit(InstallServiceOutcomes::ServiceInstalled(label));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

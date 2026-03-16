@@ -32,12 +32,12 @@ impl UpdateAgent {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<UpdateAgentOutcomes>, AgentCommandError> {
+    ) -> Result<(Outcomes<UpdateAgentOutcomes>, Vec<PressureSummary>), AgentCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Agent = client
+        let response = client
             .update_agent(
                 &context.ticket_token()?,
                 &self.name,
@@ -48,10 +48,11 @@ impl UpdateAgent {
                     prompt: self.prompt.clone(),
                 },
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Agent = response.data()?;
         outcomes.emit(UpdateAgentOutcomes::AgentUpdated(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

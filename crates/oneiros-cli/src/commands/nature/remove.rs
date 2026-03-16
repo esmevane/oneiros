@@ -21,7 +21,7 @@ impl RemoveNature {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveNatureOutcomes>, NatureCommandError> {
+    ) -> Result<(Outcomes<RemoveNatureOutcomes>, Vec<PressureSummary>), NatureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +31,6 @@ impl RemoveNature {
             .await?;
         outcomes.emit(RemoveNatureOutcomes::NatureRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

@@ -51,19 +51,21 @@ impl ListCognitions {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListCognitionsOutcomes>, CognitionCommandError> {
+    ) -> Result<(Outcomes<ListCognitionsOutcomes>, Vec<PressureSummary>), CognitionCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let cognitions: Vec<Cognition> = client
+        let response = client
             .list_cognitions(
                 &context.ticket_token()?,
                 self.agent.as_ref(),
                 self.texture.as_ref(),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let cognitions: Vec<Cognition> = response.data()?;
 
         if cognitions.is_empty() {
             outcomes.emit(ListCognitionsOutcomes::NoCognitions);
@@ -73,6 +75,6 @@ impl ListCognitions {
             )));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

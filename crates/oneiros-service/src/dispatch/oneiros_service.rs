@@ -274,25 +274,25 @@ impl OneirosService {
 
     // ── Pressure meta ────────────────────────────────────────────────
 
-    /// Build pressure readings, scoped to an agent or brain-wide above threshold.
+    /// Build compact pressure summaries, scoped to an agent or brain-wide above threshold.
     ///
     /// Agent-scoped: all pressures for that agent.
     /// Brain-wide: only pressures above PRESSURE_THRESHOLD.
-    pub fn pressure_readings(
+    pub fn pressure_summaries(
         &self,
         agent_scope: Option<&AgentName>,
-    ) -> Result<Vec<PressureReading>, Error> {
+    ) -> Result<Vec<PressureSummary>, Error> {
         let db = self.lock_brain()?;
-        self.pressure_readings_from(&db, agent_scope)
+        self.pressure_summaries_from(&db, agent_scope)
     }
 
     /// Inner implementation — takes a pre-locked `&Database` to avoid
     /// double-locking when called from a method that already holds the guard.
-    pub(crate) fn pressure_readings_from(
+    pub(crate) fn pressure_summaries_from(
         &self,
         db: &Database,
         agent_scope: Option<&AgentName>,
-    ) -> Result<Vec<PressureReading>, Error> {
+    ) -> Result<Vec<PressureSummary>, Error> {
         let pressures = match agent_scope {
             Some(name) => match db.get_agent(name)? {
                 Some(a) => db.list_pressures_for_agent(&a.id.to_string())?,
@@ -311,8 +311,7 @@ impl OneirosService {
             }
         };
 
-        let urges = db.list_urges()?;
-        Ok(PressureReading::from_pressures_and_urges(pressures, &urges))
+        Ok(pressures.iter().map(PressureSummary::from).collect())
     }
 
     /// Assemble pressure meta for a response.
@@ -321,12 +320,14 @@ impl OneirosService {
     /// Brain-scoped: only pressures above threshold.
     /// System-scoped (no brain): None.
     pub fn assemble_meta(&self, agent_scope: Option<&AgentName>) -> Option<ResponseMeta> {
-        let readings = self.pressure_readings(agent_scope).ok()?;
+        let summaries = self.pressure_summaries(agent_scope).ok()?;
 
-        if readings.is_empty() {
+        if summaries.is_empty() {
             None
         } else {
-            Some(ResponseMeta { pressure: readings })
+            Some(ResponseMeta {
+                pressure: summaries,
+            })
         }
     }
 
@@ -339,12 +340,14 @@ impl OneirosService {
         db: &Database,
         agent_scope: Option<&AgentName>,
     ) -> Option<ResponseMeta> {
-        let readings = self.pressure_readings_from(db, agent_scope).ok()?;
+        let summaries = self.pressure_summaries_from(db, agent_scope).ok()?;
 
-        if readings.is_empty() {
+        if summaries.is_empty() {
             None
         } else {
-            Some(ResponseMeta { pressure: readings })
+            Some(ResponseMeta {
+                pressure: summaries,
+            })
         }
     }
 

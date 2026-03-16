@@ -35,11 +35,12 @@ impl GuidebookOp {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<GuidebookOutcomes>, GuidebookError> {
+    ) -> Result<(Outcomes<GuidebookOutcomes>, Vec<PressureSummary>), GuidebookError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let response = client.dream(&context.ticket_token()?, &self.name).await?;
+        let summaries = response.pressure_summaries();
         let dream_context: DreamContext = response.data()?;
         let prompt = GuidebookTemplate::new(&dream_context).to_string();
 
@@ -48,6 +49,6 @@ impl GuidebookOp {
             prompt,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

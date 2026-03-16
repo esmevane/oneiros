@@ -38,12 +38,24 @@ impl LevelOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<LevelOutcomes>, LevelCommandError> {
+    ) -> Result<(Outcomes<LevelOutcomes>, Vec<PressureSummary>), LevelCommandError> {
         Ok(match &self.command {
-            LevelCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            LevelCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            LevelCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            LevelCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            LevelCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            LevelCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            LevelCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            LevelCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }
