@@ -34,9 +34,42 @@ impl Database {
         Ok(())
     }
 
+    /// Apply schema upgrades to an existing system database.
+    ///
+    /// Unlike brain databases (which re-run the full migration on every open),
+    /// the system database was historically opened without re-running migrations.
+    /// This method adds columns and tables that may be missing from older schemas.
+    /// Each upgrade is idempotent — safe to run on databases that already have the change.
+    fn apply_system_upgrades(conn: &Connection) -> Result<(), DatabaseError> {
+        // Collect existing column names for the events table
+        let columns: Vec<String> = conn
+            .prepare("pragma table_info(events)")?
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let has = |name: &str| columns.iter().any(|c| c == name);
+
+        // v0.0.7+: events table gained a `source` column
+        if !has("source") {
+            conn.execute_batch("alter table events add column source text not null default '{}';")?;
+        }
+
+        // v0.0.8+: events table gained a `sequence` column
+        if !has("sequence") {
+            conn.execute_batch(
+                "alter table events add column sequence integer not null default 0; \
+                 update events set sequence = rowid; \
+                 create index if not exists events_sequence on events(sequence);",
+            )?;
+        }
+
+        Ok(())
+    }
+
     pub fn open(connection_string: impl AsRef<Path>) -> Result<Self, DatabaseError> {
         let conn = Connection::open(connection_string.as_ref())?;
         Self::register_functions(&conn)?;
+        Self::apply_system_upgrades(&conn)?;
 
         Ok(Self { conn })
     }
