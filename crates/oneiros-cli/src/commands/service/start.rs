@@ -25,7 +25,7 @@ impl StartService {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<StartServiceOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<StartServiceOutcomes>, Vec<PressureSummary>), ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
         let label: ServiceLabel = context.service_label().parse()?;
@@ -46,7 +46,7 @@ impl StartService {
 
             if client.health().await.is_ok() {
                 outcomes.emit(StartServiceOutcomes::Healthy);
-                return Ok(outcomes);
+                return Ok((outcomes, vec![]));
             }
         }
 
@@ -55,6 +55,6 @@ impl StartService {
             "health check did not succeed within {total:.0?}"
         )));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

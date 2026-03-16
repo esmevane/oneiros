@@ -383,7 +383,7 @@ impl From<UrgeResponses> for Responses {
 /// Extensible for future cross-cutting concerns.
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ResponseMeta {
-    pub pressure: Vec<PressureReading>,
+    pub pressure: Vec<PressureSummary>,
 }
 
 /// Unified protocol response. Every transport returns this shape.
@@ -429,8 +429,8 @@ impl Response {
         }
     }
 
-    /// Get pressure readings from the response meta, if present.
-    pub fn pressure_readings(&self) -> Vec<PressureReading> {
+    /// Get pressure summaries from the response meta, if present.
+    pub fn pressure_summaries(&self) -> Vec<PressureSummary> {
         self.meta
             .as_ref()
             .map(|m| m.pressure.clone())

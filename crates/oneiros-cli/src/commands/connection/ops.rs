@@ -41,12 +41,24 @@ impl ConnectionOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<ConnectionOutcomes>, ConnectionCommandError> {
+    ) -> Result<(Outcomes<ConnectionOutcomes>, Vec<PressureSummary>), ConnectionCommandError> {
         Ok(match &self.command {
-            ConnectionCommands::Create(cmd) => cmd.run(context).await?.map_into(),
-            ConnectionCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            ConnectionCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            ConnectionCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            ConnectionCommands::Create(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            ConnectionCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            ConnectionCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            ConnectionCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

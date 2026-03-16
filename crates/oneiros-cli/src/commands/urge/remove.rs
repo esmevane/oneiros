@@ -21,7 +21,7 @@ impl RemoveUrge {
     pub(crate) async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveUrgeOutcomes>, UrgeCommandError> {
+    ) -> Result<(Outcomes<RemoveUrgeOutcomes>, Vec<PressureSummary>), UrgeCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +31,6 @@ impl RemoveUrge {
             .await?;
         outcomes.emit(RemoveUrgeOutcomes::UrgeRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

@@ -21,15 +21,14 @@ impl ListStorage {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListStorageOutcomes>, StorageCommandError> {
+    ) -> Result<(Outcomes<ListStorageOutcomes>, Vec<PressureSummary>), StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let entries: Vec<StorageEntry> = client
-            .list_storage(&context.ticket_token()?)
-            .await?
-            .data()?;
+        let response = client.list_storage(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let entries: Vec<StorageEntry> = response.data()?;
 
         if entries.is_empty() {
             outcomes.emit(ListStorageOutcomes::NoEntries);
@@ -37,6 +36,6 @@ impl ListStorage {
             outcomes.emit(ListStorageOutcomes::Entries(entries));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

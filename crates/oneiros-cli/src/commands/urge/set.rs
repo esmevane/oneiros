@@ -29,12 +29,12 @@ impl SetUrge {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetUrgeOutcomes>, UrgeCommandError> {
+    ) -> Result<(Outcomes<SetUrgeOutcomes>, Vec<PressureSummary>), UrgeCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Urge = client
+        let response = client
             .set_urge(
                 &context.ticket_token()?,
                 Urge::init(
@@ -43,10 +43,11 @@ impl SetUrge {
                     self.prompt.clone(),
                 ),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Urge = response.data()?;
         outcomes.emit(SetUrgeOutcomes::UrgeSet(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::Agent;
+use oneiros_model::{Agent, PressureSummary};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -21,12 +21,14 @@ impl ListAgents {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListAgentsOutcomes>, AgentCommandError> {
+    ) -> Result<(Outcomes<ListAgentsOutcomes>, Vec<PressureSummary>), AgentCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let agents: Vec<Agent> = client.list_agents(&context.ticket_token()?).await?.data()?;
+        let response = client.list_agents(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let agents: Vec<Agent> = response.data()?;
 
         if agents.is_empty() {
             outcomes.emit(ListAgentsOutcomes::NoAgents);
@@ -34,6 +36,6 @@ impl ListAgents {
             outcomes.emit(ListAgentsOutcomes::Agents(agents));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

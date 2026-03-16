@@ -38,12 +38,24 @@ impl PersonaOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<PersonaOutcomes>, PersonaCommandError> {
+    ) -> Result<(Outcomes<PersonaOutcomes>, Vec<PressureSummary>), PersonaCommandError> {
         Ok(match &self.command {
-            PersonaCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            PersonaCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            PersonaCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            PersonaCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            PersonaCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            PersonaCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            PersonaCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            PersonaCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

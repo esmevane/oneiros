@@ -21,7 +21,7 @@ impl RemovePersona {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemovePersonaOutcomes>, PersonaCommandError> {
+    ) -> Result<(Outcomes<RemovePersonaOutcomes>, Vec<PressureSummary>), PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +31,6 @@ impl RemovePersona {
             .await?;
         outcomes.emit(RemovePersonaOutcomes::PersonaRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

@@ -36,7 +36,8 @@ impl ShowExperience {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowExperienceOutcomes>, ExperienceCommandError> {
+    ) -> Result<(Outcomes<ShowExperienceOutcomes>, Vec<PressureSummary>), ExperienceCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -52,12 +53,14 @@ impl ShowExperience {
             }
         };
 
-        let experience: Experience = client.get_experience(&token, &id).await?.data()?;
+        let response = client.get_experience(&token, &id).await?;
+        let summaries = response.pressure_summaries();
+        let experience: Experience = response.data()?;
 
         outcomes.emit(ShowExperienceOutcomes::ExperienceDetails(ExperienceDetail(
             experience,
         )));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

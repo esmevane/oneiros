@@ -23,7 +23,7 @@ impl Status {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ServiceStatusOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<ServiceStatusOutcomes>, Vec<PressureSummary>), ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
         let addr = context.config().service_addr();
@@ -38,6 +38,6 @@ impl Status {
             }
         }
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

@@ -39,11 +39,20 @@ impl CognitionOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<CognitionOutcomes>, CognitionCommandError> {
+    ) -> Result<(Outcomes<CognitionOutcomes>, Vec<PressureSummary>), CognitionCommandError> {
         Ok(match &self.command {
-            CognitionCommands::Add(cmd) => cmd.run(context).await?.map_into(),
-            CognitionCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            CognitionCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            CognitionCommands::Add(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            CognitionCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            CognitionCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

@@ -21,15 +21,14 @@ impl ListTextures {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListTexturesOutcomes>, TextureCommandError> {
+    ) -> Result<(Outcomes<ListTexturesOutcomes>, Vec<PressureSummary>), TextureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let textures: Vec<Texture> = client
-            .list_textures(&context.ticket_token()?)
-            .await?
-            .data()?;
+        let response = client.list_textures(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let textures: Vec<Texture> = response.data()?;
 
         if textures.is_empty() {
             outcomes.emit(ListTexturesOutcomes::NoTextures);
@@ -37,6 +36,6 @@ impl ListTextures {
             outcomes.emit(ListTexturesOutcomes::Textures(textures));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

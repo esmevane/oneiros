@@ -1,5 +1,5 @@
 use clap::Args;
-use oneiros_model::Agent;
+use oneiros_model::{Agent, PressureSummary};
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
@@ -21,17 +21,18 @@ impl ShowAgent {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowAgentOutcomes>, AgentCommandError> {
+    ) -> Result<(Outcomes<ShowAgentOutcomes>, Vec<PressureSummary>), AgentCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Agent = client
+        let response = client
             .get_agent(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Agent = response.data()?;
         outcomes.emit(ShowAgentOutcomes::AgentDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

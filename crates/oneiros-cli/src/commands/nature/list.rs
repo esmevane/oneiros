@@ -21,15 +21,14 @@ impl ListNatures {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListNaturesOutcomes>, NatureCommandError> {
+    ) -> Result<(Outcomes<ListNaturesOutcomes>, Vec<PressureSummary>), NatureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let natures: Vec<Nature> = client
-            .list_natures(&context.ticket_token()?)
-            .await?
-            .data()?;
+        let response = client.list_natures(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let natures: Vec<Nature> = response.data()?;
 
         if natures.is_empty() {
             outcomes.emit(ListNaturesOutcomes::NoNatures);
@@ -37,6 +36,6 @@ impl ListNatures {
             outcomes.emit(ListNaturesOutcomes::Natures(natures));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

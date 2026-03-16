@@ -18,7 +18,7 @@ impl StopService {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<StopServiceOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<StopServiceOutcomes>, Vec<PressureSummary>), ServiceCommandError> {
         let mut outcomes = Outcomes::new();
 
         let label: ServiceLabel = context.service_label().parse()?;
@@ -30,6 +30,6 @@ impl StopService {
 
         outcomes.emit(StopServiceOutcomes::ServiceStopped);
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

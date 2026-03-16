@@ -29,12 +29,12 @@ impl SetSensation {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetSensationOutcomes>, SensationCommandError> {
+    ) -> Result<(Outcomes<SetSensationOutcomes>, Vec<PressureSummary>), SensationCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Sensation = client
+        let response = client
             .set_sensation(
                 &context.ticket_token()?,
                 Sensation::init(
@@ -43,10 +43,11 @@ impl SetSensation {
                     self.prompt.clone(),
                 ),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Sensation = response.data()?;
         outcomes.emit(SetSensationOutcomes::SensationSet(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

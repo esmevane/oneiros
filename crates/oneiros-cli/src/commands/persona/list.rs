@@ -21,15 +21,14 @@ impl ListPersonas {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListPersonasOutcomes>, PersonaCommandError> {
+    ) -> Result<(Outcomes<ListPersonasOutcomes>, Vec<PressureSummary>), PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let personas: Vec<Persona> = client
-            .list_personas(&context.ticket_token()?)
-            .await?
-            .data()?;
+        let response = client.list_personas(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let personas: Vec<Persona> = response.data()?;
 
         if personas.is_empty() {
             outcomes.emit(ListPersonasOutcomes::NoPersonas);
@@ -37,6 +36,6 @@ impl ListPersonas {
             outcomes.emit(ListPersonasOutcomes::Personas(personas));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

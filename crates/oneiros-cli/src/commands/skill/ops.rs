@@ -38,9 +38,12 @@ impl SkillOps {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SkillOutcomes>, SkillCommandError> {
+    ) -> Result<(Outcomes<SkillOutcomes>, Vec<PressureSummary>), SkillCommandError> {
         Ok(match &self.command {
-            SkillCommands::Install(install) => install.run(context).await?.map_into(),
+            SkillCommands::Install(install) => {
+                let (o, s) = install.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

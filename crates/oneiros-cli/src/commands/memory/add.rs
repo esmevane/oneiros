@@ -36,13 +36,13 @@ impl AddMemory {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<AddMemoryOutcomes>, MemoryCommandError> {
+    ) -> Result<(Outcomes<AddMemoryOutcomes>, Vec<PressureSummary>), MemoryCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let memory: Memory = client
+        let add_response = client
             .add_memory(
                 &token,
                 AddMemoryRequest {
@@ -51,8 +51,9 @@ impl AddMemory {
                     content: self.content.clone(),
                 },
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = add_response.pressure_summaries();
+        let memory: Memory = add_response.data()?;
 
         let all: Vec<Memory> = client
             .list_memories(&token, Some(&self.agent), None)
@@ -68,6 +69,6 @@ impl AddMemory {
             gauge,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

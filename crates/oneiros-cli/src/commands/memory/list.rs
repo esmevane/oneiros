@@ -51,19 +51,20 @@ impl ListMemories {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListMemoriesOutcomes>, MemoryCommandError> {
+    ) -> Result<(Outcomes<ListMemoriesOutcomes>, Vec<PressureSummary>), MemoryCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let memories: Vec<Memory> = client
+        let response = client
             .list_memories(
                 &context.ticket_token()?,
                 self.agent.as_ref(),
                 self.level.as_ref(),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let memories: Vec<Memory> = response.data()?;
 
         if memories.is_empty() {
             outcomes.emit(ListMemoriesOutcomes::NoMemories);
@@ -71,6 +72,6 @@ impl ListMemories {
             outcomes.emit(ListMemoriesOutcomes::Memories(MemoryList(memories)));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

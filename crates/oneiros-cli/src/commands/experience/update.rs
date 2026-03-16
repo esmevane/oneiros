@@ -38,7 +38,8 @@ impl UpdateExperience {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<UpdateExperienceOutcomes>, ExperienceCommandError> {
+    ) -> Result<(Outcomes<UpdateExperienceOutcomes>, Vec<PressureSummary>), ExperienceCommandError>
+    {
         if self.description.is_none() && self.sensation.is_none() {
             return Err(ExperienceCommandError::NoUpdateProvided);
         }
@@ -59,37 +60,36 @@ impl UpdateExperience {
         };
 
         let mut experience: Option<Experience> = None;
+        let mut summaries: Vec<PressureSummary> = vec![];
 
         if let Some(description) = &self.description {
-            experience = Some(
-                client
-                    .update_experience_description(
-                        &token,
-                        &id,
-                        UpdateExperienceDescriptionRequest {
-                            id,
-                            description: description.clone(),
-                        },
-                    )
-                    .await?
-                    .data()?,
-            );
+            let response = client
+                .update_experience_description(
+                    &token,
+                    &id,
+                    UpdateExperienceDescriptionRequest {
+                        id,
+                        description: description.clone(),
+                    },
+                )
+                .await?;
+            summaries = response.pressure_summaries();
+            experience = Some(response.data()?);
         }
 
         if let Some(sensation) = &self.sensation {
-            experience = Some(
-                client
-                    .update_experience_sensation(
-                        &token,
-                        &id,
-                        UpdateExperienceSensationRequest {
-                            id,
-                            sensation: sensation.clone(),
-                        },
-                    )
-                    .await?
-                    .data()?,
-            );
+            let response = client
+                .update_experience_sensation(
+                    &token,
+                    &id,
+                    UpdateExperienceSensationRequest {
+                        id,
+                        sensation: sensation.clone(),
+                    },
+                )
+                .await?;
+            summaries = response.pressure_summaries();
+            experience = Some(response.data()?);
         }
 
         // At least one flag was provided (checked above), so experience is Some.
@@ -121,6 +121,6 @@ impl UpdateExperience {
             },
         ));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

@@ -21,11 +21,13 @@ impl ListEvents {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListEventsOutcomes>, EventCommandError> {
+    ) -> Result<(Outcomes<ListEventsOutcomes>, Vec<PressureSummary>), EventCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
-        let events: Vec<Event> = client.list_events(&context.ticket_token()?).await?.data()?;
+        let response = client.list_events(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let events: Vec<Event> = response.data()?;
 
         if events.is_empty() {
             outcomes.emit(ListEventsOutcomes::NoEvents);
@@ -35,6 +37,6 @@ impl ListEvents {
             }
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

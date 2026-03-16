@@ -49,19 +49,21 @@ impl ListExperiences {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListExperiencesOutcomes>, ExperienceCommandError> {
+    ) -> Result<(Outcomes<ListExperiencesOutcomes>, Vec<PressureSummary>), ExperienceCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let experiences: Vec<Experience> = client
+        let response = client
             .list_experiences(
                 &context.ticket_token()?,
                 self.agent.as_ref(),
                 self.sensation.as_ref(),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let experiences: Vec<Experience> = response.data()?;
 
         if experiences.is_empty() {
             outcomes.emit(ListExperiencesOutcomes::NoExperiences);
@@ -71,6 +73,6 @@ impl ListExperiences {
             )));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

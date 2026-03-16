@@ -38,12 +38,24 @@ impl TextureOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<TextureOutcomes>, TextureCommandError> {
+    ) -> Result<(Outcomes<TextureOutcomes>, Vec<PressureSummary>), TextureCommandError> {
         Ok(match &self.command {
-            TextureCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            TextureCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            TextureCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            TextureCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            TextureCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            TextureCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            TextureCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            TextureCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

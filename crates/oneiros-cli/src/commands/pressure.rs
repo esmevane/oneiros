@@ -42,12 +42,14 @@ impl PressureOp {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<PressureOutcomes>, PressureError> {
+    ) -> Result<(Outcomes<PressureOutcomes>, Vec<PressureSummary>), PressureError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = context.ticket_token()?;
-        let pressures: Vec<Pressure> = client.get_pressure(&token, &self.name).await?.data()?;
+        let response = client.get_pressure(&token, &self.name).await?;
+        let summaries = response.pressure_summaries();
+        let pressures: Vec<Pressure> = response.data()?;
         let display = RelevantPressures::from_pressures(pressures.clone()).to_string();
 
         outcomes.emit(PressureOutcomes::Readings(PressureResult {
@@ -56,6 +58,6 @@ impl PressureOp {
             display,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

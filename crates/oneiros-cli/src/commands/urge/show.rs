@@ -21,17 +21,18 @@ impl ShowUrge {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowUrgeOutcomes>, UrgeCommandError> {
+    ) -> Result<(Outcomes<ShowUrgeOutcomes>, Vec<PressureSummary>), UrgeCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Urge = client
+        let response = client
             .get_urge(&context.ticket_token()?, &self.name)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Urge = response.data()?;
         outcomes.emit(ShowUrgeOutcomes::UrgeDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

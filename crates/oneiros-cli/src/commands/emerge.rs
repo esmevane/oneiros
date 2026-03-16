@@ -51,13 +51,16 @@ impl EmergeOp {
         }
     }
 
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<EmergeOutcomes>, EmergeError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<EmergeOutcomes>, Vec<PressureSummary>), EmergeError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let name = self.normalize_name();
 
-        let agent: Agent = client
+        let response = client
             .emerge(
                 &context.ticket_token()?,
                 CreateAgentRequest {
@@ -67,11 +70,12 @@ impl EmergeOp {
                     prompt: self.prompt.clone(),
                 },
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let agent: Agent = response.data()?;
 
         outcomes.emit(EmergeOutcomes::Emerged(agent.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

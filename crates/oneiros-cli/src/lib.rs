@@ -23,9 +23,9 @@ pub async fn run() -> Result<(), Error> {
     logging::init(&preflight.log)?;
 
     let cli = Cli::parse();
-    let outcomes = cli.run().await?;
+    let result = cli.run().await?;
 
-    cli.report(&outcomes);
+    cli.report(&result);
 
     Ok(())
 }

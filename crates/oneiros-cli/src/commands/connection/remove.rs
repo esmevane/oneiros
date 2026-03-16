@@ -28,7 +28,8 @@ impl RemoveConnection {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveConnectionOutcomes>, ConnectionCommandError> {
+    ) -> Result<(Outcomes<RemoveConnectionOutcomes>, Vec<PressureSummary>), ConnectionCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -51,6 +52,6 @@ impl RemoveConnection {
             ConnectionRemovedResult { id, ref_token },
         ));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

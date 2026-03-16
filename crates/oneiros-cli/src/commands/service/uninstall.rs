@@ -18,7 +18,8 @@ impl UninstallService {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<UninstallServiceOutcomes>, ServiceCommandError> {
+    ) -> Result<(Outcomes<UninstallServiceOutcomes>, Vec<PressureSummary>), ServiceCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let label: ServiceLabel = context.service_label().parse()?;
@@ -35,6 +36,6 @@ impl UninstallService {
 
         outcomes.emit(UninstallServiceOutcomes::ServiceUninstalled);
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

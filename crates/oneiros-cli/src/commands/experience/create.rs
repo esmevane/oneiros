@@ -36,13 +36,14 @@ impl CreateExperience {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<CreateExperienceOutcomes>, ExperienceCommandError> {
+    ) -> Result<(Outcomes<CreateExperienceOutcomes>, Vec<PressureSummary>), ExperienceCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = context.ticket_token()?;
 
-        let experience: Experience = client
+        let create_response = client
             .create_experience(
                 &token,
                 CreateExperienceRequest {
@@ -51,8 +52,9 @@ impl CreateExperience {
                     description: self.description.clone(),
                 },
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = create_response.pressure_summaries();
+        let experience: Experience = create_response.data()?;
 
         let all: Vec<Experience> = client
             .list_experiences(&token, Some(&self.agent), None)
@@ -70,6 +72,6 @@ impl CreateExperience {
             },
         ));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

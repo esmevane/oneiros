@@ -29,12 +29,12 @@ impl SetPersona {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetPersonaOutcomes>, PersonaCommandError> {
+    ) -> Result<(Outcomes<SetPersonaOutcomes>, Vec<PressureSummary>), PersonaCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Persona = client
+        let response = client
             .set_persona(
                 &context.ticket_token()?,
                 Persona::init(
@@ -43,10 +43,11 @@ impl SetPersona {
                     self.prompt.clone(),
                 ),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Persona = response.data()?;
         outcomes.emit(SetPersonaOutcomes::PersonaSet(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

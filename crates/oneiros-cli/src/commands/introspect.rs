@@ -35,15 +35,15 @@ impl IntrospectOp {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<IntrospectOutcomes>, IntrospectError> {
+    ) -> Result<(Outcomes<IntrospectOutcomes>, Vec<PressureSummary>), IntrospectError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = &context.ticket_token()?;
         let response = client.introspect(token, &self.name).await?;
-        let readings = response.pressure_readings();
+        let summaries = response.pressure_summaries();
         let agent: Agent = response.data()?;
-        let pressures = RelevantPressures::from_readings(readings);
+        let pressures = RelevantPressures::from_summaries(summaries.clone());
         let prompt = IntrospectTemplate::new(&agent, pressures).to_string();
 
         outcomes.emit(IntrospectOutcomes::Introspecting(Introspection {
@@ -51,6 +51,6 @@ impl IntrospectOp {
             prompt,
         }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

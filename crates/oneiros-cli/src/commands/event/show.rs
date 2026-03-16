@@ -21,17 +21,16 @@ impl ShowEvent {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowEventOutcomes>, EventCommandError> {
+    ) -> Result<(Outcomes<ShowEventOutcomes>, Vec<PressureSummary>), EventCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Event = client
-            .get_event(&context.ticket_token()?, &self.id)
-            .await?
-            .data()?;
+        let response = client.get_event(&context.ticket_token()?, &self.id).await?;
+        let summaries = response.pressure_summaries();
+        let info: Event = response.data()?;
         outcomes.emit(ShowEventOutcomes::EventDetails(info));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

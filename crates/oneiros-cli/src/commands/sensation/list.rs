@@ -21,15 +21,15 @@ impl ListSensations {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListSensationsOutcomes>, SensationCommandError> {
+    ) -> Result<(Outcomes<ListSensationsOutcomes>, Vec<PressureSummary>), SensationCommandError>
+    {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let sensations: Vec<Sensation> = client
-            .list_sensations(&context.ticket_token()?)
-            .await?
-            .data()?;
+        let response = client.list_sensations(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let sensations: Vec<Sensation> = response.data()?;
 
         if sensations.is_empty() {
             outcomes.emit(ListSensationsOutcomes::NoSensations);
@@ -37,6 +37,6 @@ impl ListSensations {
             outcomes.emit(ListSensationsOutcomes::Sensations(sensations));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

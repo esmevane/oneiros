@@ -38,12 +38,24 @@ impl NatureOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<NatureOutcomes>, NatureCommandError> {
+    ) -> Result<(Outcomes<NatureOutcomes>, Vec<PressureSummary>), NatureCommandError> {
         Ok(match &self.command {
-            NatureCommands::Set(cmd) => cmd.run(context).await?.map_into(),
-            NatureCommands::Remove(cmd) => cmd.run(context).await?.map_into(),
-            NatureCommands::List(cmd) => cmd.run(context).await?.map_into(),
-            NatureCommands::Show(cmd) => cmd.run(context).await?.map_into(),
+            NatureCommands::Set(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            NatureCommands::Remove(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            NatureCommands::List(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
+            NatureCommands::Show(cmd) => {
+                let (o, s) = cmd.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

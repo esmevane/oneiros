@@ -28,7 +28,10 @@ pub struct RecedeOp {
 }
 
 impl RecedeOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<RecedeOutcomes>, RecedeError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<RecedeOutcomes>, Vec<PressureSummary>), RecedeError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -36,6 +39,6 @@ impl RecedeOp {
 
         outcomes.emit(RecedeOutcomes::Receded(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

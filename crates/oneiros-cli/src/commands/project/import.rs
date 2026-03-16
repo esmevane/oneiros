@@ -26,7 +26,7 @@ impl ImportProject {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ImportProjectOutcomes>, ProjectCommandError> {
+    ) -> Result<(Outcomes<ImportProjectOutcomes>, Vec<PressureSummary>), ProjectCommandError> {
         let mut outcomes = Outcomes::new();
 
         let path = if self.file.is_relative() {
@@ -51,15 +51,16 @@ impl ImportProject {
             events.push(event);
         }
 
-        let response: ImportResponse = context
+        let response = context
             .client()
             .import_events(&context.ticket_token()?, events)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let result: ImportResponse = response.data()?;
 
-        outcomes.emit(ImportProjectOutcomes::Imported(response.imported));
-        outcomes.emit(ImportProjectOutcomes::Replayed(response.replayed));
+        outcomes.emit(ImportProjectOutcomes::Imported(result.imported));
+        outcomes.emit(ImportProjectOutcomes::Replayed(result.replayed));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

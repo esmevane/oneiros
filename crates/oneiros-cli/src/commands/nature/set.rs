@@ -29,12 +29,12 @@ impl SetNature {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<SetNatureOutcomes>, NatureCommandError> {
+    ) -> Result<(Outcomes<SetNatureOutcomes>, Vec<PressureSummary>), NatureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let info: Nature = client
+        let response = client
             .set_nature(
                 &context.ticket_token()?,
                 Nature::init(
@@ -43,10 +43,11 @@ impl SetNature {
                     self.prompt.clone(),
                 ),
             )
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let info: Nature = response.data()?;
         outcomes.emit(SetNatureOutcomes::NatureSet(info.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

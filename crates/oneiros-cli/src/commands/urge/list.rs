@@ -21,12 +21,14 @@ impl ListUrges {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListUrgesOutcomes>, UrgeCommandError> {
+    ) -> Result<(Outcomes<ListUrgesOutcomes>, Vec<PressureSummary>), UrgeCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let urges: Vec<Urge> = client.list_urges(&context.ticket_token()?).await?.data()?;
+        let response = client.list_urges(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let urges: Vec<Urge> = response.data()?;
 
         if urges.is_empty() {
             outcomes.emit(ListUrgesOutcomes::NoUrges);
@@ -34,6 +36,6 @@ impl ListUrges {
             outcomes.emit(ListUrgesOutcomes::Urges(urges));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

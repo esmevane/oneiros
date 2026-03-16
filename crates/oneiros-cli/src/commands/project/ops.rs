@@ -44,12 +44,24 @@ impl ProjectOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<Outcomes<ProjectOutcomes>, ProjectCommandError> {
+    ) -> Result<(Outcomes<ProjectOutcomes>, Vec<PressureSummary>), ProjectCommandError> {
         Ok(match &self.command {
-            ProjectCommands::Init(init) => init.run(context).await?.map_into(),
-            ProjectCommands::Export(export) => export.run(context).await?.map_into(),
-            ProjectCommands::Import(import) => import.run(context).await?.map_into(),
-            ProjectCommands::Replay(replay) => replay.run(context).await?.map_into(),
+            ProjectCommands::Init(init) => {
+                let (o, s) = init.run(context).await?;
+                (o.map_into(), s)
+            }
+            ProjectCommands::Export(export) => {
+                let (o, s) = export.run(context).await?;
+                (o.map_into(), s)
+            }
+            ProjectCommands::Import(import) => {
+                let (o, s) = import.run(context).await?;
+                (o.map_into(), s)
+            }
+            ProjectCommands::Replay(replay) => {
+                let (o, s) = replay.run(context).await?;
+                (o.map_into(), s)
+            }
         })
     }
 }

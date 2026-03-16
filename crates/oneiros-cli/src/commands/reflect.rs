@@ -32,19 +32,22 @@ pub struct ReflectOp {
 }
 
 impl ReflectOp {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<ReflectOutcomes>, ReflectError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<ReflectOutcomes>, Vec<PressureSummary>), ReflectError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
         let token = &context.ticket_token()?;
         let response = client.reflect(token, &self.name).await?;
-        let readings = response.pressure_readings();
+        let summaries = response.pressure_summaries();
         let agent: Agent = response.data()?;
-        let pressures = RelevantPressures::from_readings(readings);
+        let pressures = RelevantPressures::from_summaries(summaries.clone());
         let prompt = ReflectTemplate::new(&agent, pressures).to_string();
 
         outcomes.emit(ReflectOutcomes::Reflecting(Reflection { agent, prompt }));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

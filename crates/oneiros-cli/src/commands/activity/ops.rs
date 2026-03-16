@@ -26,7 +26,7 @@ impl ActivityOps {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ActivityOutcomes>, ActivityError> {
+    ) -> Result<(Outcomes<ActivityOutcomes>, Vec<PressureSummary>), ActivityError> {
         Ok(match &self.command {
             ActivityCommands::Status(cmd) => cmd.run(context).await?,
         })

@@ -19,19 +19,20 @@ impl ReplayProject {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ReplayProjectOutcomes>, ProjectCommandError> {
+    ) -> Result<(Outcomes<ReplayProjectOutcomes>, Vec<PressureSummary>), ProjectCommandError> {
         let mut outcomes = Outcomes::new();
 
         outcomes.emit(ReplayProjectOutcomes::Replaying);
 
-        let response: ReplayResponse = context
+        let response = context
             .client()
             .replay_brain(&context.ticket_token()?)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let replay: ReplayResponse = response.data()?;
 
-        outcomes.emit(ReplayProjectOutcomes::Replayed(response.replayed));
+        outcomes.emit(ReplayProjectOutcomes::Replayed(replay.replayed));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

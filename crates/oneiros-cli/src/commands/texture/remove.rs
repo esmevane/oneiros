@@ -21,7 +21,7 @@ impl RemoveTexture {
     pub(crate) async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<RemoveTextureOutcomes>, TextureCommandError> {
+    ) -> Result<(Outcomes<RemoveTextureOutcomes>, Vec<PressureSummary>), TextureCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -31,6 +31,6 @@ impl RemoveTexture {
             .await?;
         outcomes.emit(RemoveTextureOutcomes::TextureRemoved(self.name.clone()));
 
-        Ok(outcomes)
+        Ok((outcomes, vec![]))
     }
 }

@@ -21,12 +21,14 @@ impl ListLevels {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ListLevelsOutcomes>, LevelCommandError> {
+    ) -> Result<(Outcomes<ListLevelsOutcomes>, Vec<PressureSummary>), LevelCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let levels: Vec<Level> = client.list_levels(&context.ticket_token()?).await?.data()?;
+        let response = client.list_levels(&context.ticket_token()?).await?;
+        let summaries = response.pressure_summaries();
+        let levels: Vec<Level> = response.data()?;
 
         if levels.is_empty() {
             outcomes.emit(ListLevelsOutcomes::NoLevels);
@@ -34,6 +36,6 @@ impl ListLevels {
             outcomes.emit(ListLevelsOutcomes::Levels(levels));
         }
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }

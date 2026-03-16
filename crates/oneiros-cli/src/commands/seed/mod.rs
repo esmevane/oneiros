@@ -72,67 +72,72 @@ pub enum SeedCommands {
 }
 
 impl SeedOps {
-    pub async fn run(&self, context: &Context) -> Result<Outcomes<SeedOutcomes>, SeedCommandError> {
+    pub async fn run(
+        &self,
+        context: &Context,
+    ) -> Result<(Outcomes<SeedOutcomes>, Vec<PressureSummary>), SeedCommandError> {
         match &self.command {
             SeedCommands::Core => run_core(context).await,
         }
     }
 }
 
-async fn run_core(context: &Context) -> Result<Outcomes<SeedOutcomes>, SeedCommandError> {
+async fn run_core(
+    context: &Context,
+) -> Result<(Outcomes<SeedOutcomes>, Vec<PressureSummary>), SeedCommandError> {
     let mut outcomes = Outcomes::new();
     let mut failures = Outcomes::new();
 
     for command in core::textures() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("texture", command.name, error)),
         }
     }
 
     for command in core::levels() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("level", command.name, error)),
         }
     }
 
     for command in core::personas() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("persona", command.name, error)),
         }
     }
 
     for command in core::sensations() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("sensation", command.name, error)),
         }
     }
 
     for command in core::natures() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("nature", command.name, error)),
         }
     }
 
     for command in core::urges() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("urge", command.name, error)),
         }
     }
 
     for command in core::agents() {
         match command.run(context).await {
-            Ok(inner) => outcomes.absorb(inner),
+            Ok((inner, _)) => outcomes.absorb(inner),
             Err(error) => failures.emit(CoreSeedOutcomes::failed("agent", command.name, error)),
         }
     }
 
     outcomes.emit(CoreSeedOutcomes::SeedComplete.into());
 
-    Ok(outcomes)
+    Ok((outcomes, vec![]))
 }

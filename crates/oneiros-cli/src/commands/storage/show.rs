@@ -21,18 +21,19 @@ impl ShowStorage {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<Outcomes<ShowStorageOutcomes>, StorageCommandError> {
+    ) -> Result<(Outcomes<ShowStorageOutcomes>, Vec<PressureSummary>), StorageCommandError> {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
 
-        let entry: StorageEntry = client
+        let response = client
             .get_storage(&context.ticket_token()?, &self.key)
-            .await?
-            .data()?;
+            .await?;
+        let summaries = response.pressure_summaries();
+        let entry: StorageEntry = response.data()?;
 
         outcomes.emit(ShowStorageOutcomes::StorageDetails(entry));
 
-        Ok(outcomes)
+        Ok((outcomes, summaries))
     }
 }
