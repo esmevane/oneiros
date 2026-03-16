@@ -2171,6 +2171,31 @@ impl Database {
         Ok(pressures)
     }
 
+    pub fn list_all_pressures(&self) -> Result<Vec<Pressure>, DatabaseError> {
+        let mut stmt = self.conn.prepare(
+            "select id, agent_id, urge, data, updated_at \
+             from pressure order by agent_id, urge",
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let mut pressures = Vec::new();
+        for row in rows {
+            let tuple = row?;
+            pressures.push(Pressure::construct_from_db(tuple)?);
+        }
+
+        Ok(pressures)
+    }
+
     pub fn reset_pressures(&self) -> Result<(), DatabaseError> {
         self.conn.execute_batch("delete from pressure")?;
         Ok(())

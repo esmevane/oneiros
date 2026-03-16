@@ -298,17 +298,11 @@ impl OneirosService {
                 Some(a) => db.list_pressures_for_agent(&a.id.to_string())?,
                 None => vec![],
             },
-            None => {
-                let agents = db.list_agents()?;
-                let mut all = Vec::new();
-                for a in agents {
-                    let mut ap = db.list_pressures_for_agent(&a.id.to_string())?;
-                    all.append(&mut ap);
-                }
-                all.into_iter()
-                    .filter(|p| p.urgency() >= PRESSURE_THRESHOLD)
-                    .collect()
-            }
+            None => db
+                .list_all_pressures()?
+                .into_iter()
+                .filter(|p| p.urgency() >= PRESSURE_THRESHOLD)
+                .collect(),
         };
 
         Ok(pressures.iter().map(PressureSummary::from).collect())
