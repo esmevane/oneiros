@@ -7,7 +7,8 @@ use axum::{
 };
 use oneiros_model::*;
 
-use crate::{Agent, ServiceState, ServiceStateError};
+use crate::{ServiceState, ServiceStateError};
+use crate::resource_agent::Agent;
 
 // ── Error handling ──────────────────────────────────────────────────
 

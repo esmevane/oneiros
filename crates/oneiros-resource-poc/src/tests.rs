@@ -7,10 +7,8 @@ use oneiros_model::*;
 use oneiros_resource::Fulfill;
 use tower::ServiceExt;
 
-// crate::Agent is the Resource marker type; oneiros_model::Agent is the domain entity.
-// Import selectively to avoid the collision.
-use crate::resource_agent::Agent as AgentResource;
-use crate::{ProjectScope, ProjectScopeError, ServiceState};
+// crate re-exports AgentResource/LevelResource to avoid collision with oneiros_model types.
+use crate::{AgentResource, LevelResource, ProjectScope, ProjectScopeError, ServiceState};
 
 // ── Test helpers ───────────────────────────────────────────────────
 
@@ -34,18 +32,22 @@ fn test_source() -> Source {
     Source::default()
 }
 
+const ALL_PROJECTIONS: &[&[oneiros_db::Projection]] =
+    &[crate::projections::AGENT, crate::projections::LEVEL];
+
 fn project_scope(db: &Database) -> ProjectScope<'_> {
-    ProjectScope::new(db, test_source(), &[crate::projections::AGENT])
+    ProjectScope::new(db, test_source(), ALL_PROJECTIONS)
 }
 
 fn test_service_state(db: Database) -> ServiceState {
-    ServiceState::new(db, test_source(), &[crate::projections::AGENT])
+    ServiceState::new(db, test_source(), ALL_PROJECTIONS)
 }
 
-/// Build the full app router for HTTP tests.
+/// Build the composed app router — multiple resources, one router.
 fn test_app(state: ServiceState) -> Router {
     Router::new()
         .nest("/agents", AgentResource::http_router())
+        .nest("/levels", LevelResource::http_router())
         .with_state(state)
 }
 
@@ -53,6 +55,22 @@ fn test_app(state: ServiceState) -> Router {
 async fn json_body<T: serde::de::DeserializeOwned>(response: axum::http::Response<Body>) -> T {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     serde_json::from_slice(&bytes).unwrap()
+}
+
+/// Convenience: disambiguated fulfill for Agent requests.
+async fn fulfill_agent(
+    scope: &ProjectScope<'_>,
+    request: AgentRequests,
+) -> Result<AgentResponses, ProjectScopeError> {
+    Fulfill::<AgentResource>::fulfill(scope, request).await
+}
+
+/// Convenience: disambiguated fulfill for Level requests.
+async fn fulfill_level(
+    scope: &ProjectScope<'_>,
+    request: LevelRequests,
+) -> Result<LevelResponses, ProjectScopeError> {
+    Fulfill::<LevelResource>::fulfill(scope, request).await
 }
 
 // ── Fulfill (domain logic) tests ──────────────────────────────────
@@ -72,7 +90,7 @@ async fn create_agent_through_fulfill() {
         prompt: Prompt::new("You govern."),
     });
 
-    let response = scope.fulfill(request).await.expect("create agent");
+    let response = fulfill_agent(&scope, request).await.expect("create agent");
 
     match response {
         AgentResponses::AgentCreated(agent) => {
@@ -88,33 +106,24 @@ async fn list_agents_through_fulfill() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
     seed_persona(&db);
-
     let scope = project_scope(&db);
 
-    scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("alice"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::default(),
-            prompt: Prompt::default(),
-        }))
-        .await
-        .unwrap();
+    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("alice"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::default(),
+        prompt: Prompt::default(),
+    })).await.unwrap();
 
-    scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("bob"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::default(),
-            prompt: Prompt::default(),
-        }))
-        .await
-        .unwrap();
+    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("bob"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::default(),
+        prompt: Prompt::default(),
+    })).await.unwrap();
 
-    let response = scope
-        .fulfill(AgentRequests::ListAgents(ListAgentsRequest))
-        .await
-        .expect("list agents");
+    let response = fulfill_agent(&scope, AgentRequests::ListAgents(ListAgentsRequest))
+        .await.expect("list agents");
 
     match response {
         AgentResponses::AgentsListed(agents) => {
@@ -132,25 +141,18 @@ async fn get_agent_through_fulfill() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
     seed_persona(&db);
-
     let scope = project_scope(&db);
 
-    scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::new("Gov"),
-            prompt: Prompt::default(),
-        }))
-        .await
-        .unwrap();
+    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::new("Gov"),
+        prompt: Prompt::default(),
+    })).await.unwrap();
 
-    let response = scope
-        .fulfill(AgentRequests::GetAgent(GetAgentRequest {
-            name: AgentName::new("governor"),
-        }))
-        .await
-        .expect("get agent");
+    let response = fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
+        name: AgentName::new("governor"),
+    })).await.expect("get agent");
 
     match response {
         AgentResponses::AgentFound(agent) => {
@@ -165,14 +167,11 @@ async fn get_agent_through_fulfill() {
 async fn get_agent_not_found() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
-
     let scope = project_scope(&db);
 
-    let result = scope
-        .fulfill(AgentRequests::GetAgent(GetAgentRequest {
-            name: AgentName::new("nonexistent"),
-        }))
-        .await;
+    let result = fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
+        name: AgentName::new("nonexistent"),
+    })).await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -187,28 +186,21 @@ async fn update_agent_through_fulfill() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
     seed_persona(&db);
-
     let scope = project_scope(&db);
 
-    scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::new("Original"),
-            prompt: Prompt::default(),
-        }))
-        .await
-        .unwrap();
+    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::new("Original"),
+        prompt: Prompt::default(),
+    })).await.unwrap();
 
-    let response = scope
-        .fulfill(AgentRequests::UpdateAgent(UpdateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::new("Updated"),
-            prompt: Prompt::new("New prompt"),
-        }))
-        .await
-        .expect("update agent");
+    let response = fulfill_agent(&scope, AgentRequests::UpdateAgent(UpdateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::new("Updated"),
+        prompt: Prompt::new("New prompt"),
+    })).await.expect("update agent");
 
     match response {
         AgentResponses::AgentUpdated(agent) => {
@@ -224,34 +216,25 @@ async fn remove_agent_through_fulfill() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
     seed_persona(&db);
-
     let scope = project_scope(&db);
 
-    scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::default(),
-            prompt: Prompt::default(),
-        }))
-        .await
-        .unwrap();
+    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::default(),
+        prompt: Prompt::default(),
+    })).await.unwrap();
 
-    let response = scope
-        .fulfill(AgentRequests::RemoveAgent(RemoveAgentRequest {
-            name: AgentName::new("governor"),
-        }))
-        .await
-        .expect("remove agent");
+    let response = fulfill_agent(&scope, AgentRequests::RemoveAgent(RemoveAgentRequest {
+        name: AgentName::new("governor"),
+    })).await.expect("remove agent");
 
     assert!(matches!(response, AgentResponses::AgentRemoved));
 
     // Verify it's gone
-    let result = scope
-        .fulfill(AgentRequests::GetAgent(GetAgentRequest {
-            name: AgentName::new("governor"),
-        }))
-        .await;
+    let result = fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
+        name: AgentName::new("governor"),
+    })).await;
 
     assert!(result.is_err());
 }
@@ -261,27 +244,21 @@ async fn create_agent_conflict() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
     seed_persona(&db);
-
     let scope = project_scope(&db);
 
-    scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::default(),
-            prompt: Prompt::default(),
-        }))
-        .await
-        .unwrap();
+    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::default(),
+        prompt: Prompt::default(),
+    })).await.unwrap();
 
-    let result = scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::default(),
-            prompt: Prompt::default(),
-        }))
-        .await;
+    let result = fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::default(),
+        prompt: Prompt::default(),
+    })).await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -296,17 +273,14 @@ async fn create_agent_missing_persona() {
     let dir = tempfile::tempdir().unwrap();
     let db = test_db(dir.path());
     // Deliberately NOT seeding persona
-
     let scope = project_scope(&db);
 
-    let result = scope
-        .fulfill(AgentRequests::CreateAgent(CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("nonexistent-persona"),
-            description: Description::default(),
-            prompt: Prompt::default(),
-        }))
-        .await;
+    let result = fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("nonexistent-persona"),
+        description: Description::default(),
+        prompt: Prompt::default(),
+    })).await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -545,4 +519,302 @@ async fn http_remove_agent() {
     let response = app.oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+// ── Level Fulfill tests ───────────────────────────────────────────
+
+#[tokio::test]
+async fn set_level_through_fulfill() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let scope = project_scope(&db);
+
+    let level = oneiros_model::Level::init("working", "Active work", "Short-term");
+
+    let response = Fulfill::<LevelResource>::fulfill(&scope, LevelRequests::SetLevel(level))
+        .await
+        .expect("set level");
+
+    match response {
+        LevelResponses::LevelSet(level) => {
+            assert_eq!(level.name, LevelName::new("working"));
+        }
+        other => panic!("Expected LevelSet, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn list_levels_through_fulfill() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let scope = project_scope(&db);
+
+    Fulfill::<LevelResource>::fulfill(
+        &scope,
+        LevelRequests::SetLevel(oneiros_model::Level::init("working", "Active", "Short-term")),
+    )
+    .await
+    .unwrap();
+
+    Fulfill::<LevelResource>::fulfill(
+        &scope,
+        LevelRequests::SetLevel(oneiros_model::Level::init("archival", "Long-term", "Permanent")),
+    )
+    .await
+    .unwrap();
+
+    let response =
+        Fulfill::<LevelResource>::fulfill(&scope, LevelRequests::ListLevels(ListLevelsRequest))
+            .await
+            .expect("list levels");
+
+    match response {
+        LevelResponses::LevelsListed(levels) => {
+            assert_eq!(levels.len(), 2);
+        }
+        other => panic!("Expected LevelsListed, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn get_level_not_found() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let scope = project_scope(&db);
+
+    let result = Fulfill::<LevelResource>::fulfill(
+        &scope,
+        LevelRequests::GetLevel(GetLevelRequest {
+            name: LevelName::new("nonexistent"),
+        }),
+    )
+    .await;
+
+    assert!(result.is_err());
+    assert!(matches!(
+        result.unwrap_err(),
+        ProjectScopeError::NotFound(NotFound::Level(_))
+    ));
+}
+
+// ── Level HTTP tests ──────────────────────────────────────────────
+
+#[tokio::test]
+async fn http_set_level() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let app = test_app(test_service_state(db));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri("/levels/working")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_string(&oneiros_model::Level::init(
+                        "ignored",
+                        "Active work",
+                        "Short-term context",
+                    ))
+                    .unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: LevelResponses = json_body(response).await;
+    match body {
+        LevelResponses::LevelSet(level) => {
+            // Name comes from path, not body
+            assert_eq!(level.name, LevelName::new("working"));
+        }
+        other => panic!("Expected LevelSet, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_list_levels() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<LevelResource>(LevelRequests::SetLevel(oneiros_model::Level::init(
+            "working",
+            "Active",
+            "Short-term",
+        )))
+        .unwrap();
+
+    let app = test_app(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/levels")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: LevelResponses = json_body(response).await;
+    match body {
+        LevelResponses::LevelsListed(levels) => {
+            assert_eq!(levels.len(), 1);
+            assert_eq!(levels[0].name, LevelName::new("working"));
+        }
+        other => panic!("Expected LevelsListed, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_get_level() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<LevelResource>(LevelRequests::SetLevel(oneiros_model::Level::init(
+            "working",
+            "Active work",
+            "Short-term",
+        )))
+        .unwrap();
+
+    let app = test_app(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/levels/working")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body: LevelResponses = json_body(response).await;
+    match body {
+        LevelResponses::LevelFound(level) => {
+            assert_eq!(level.name, LevelName::new("working"));
+            assert_eq!(level.description, Description::new("Active work"));
+        }
+        other => panic!("Expected LevelFound, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_remove_level() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<LevelResource>(LevelRequests::SetLevel(oneiros_model::Level::init(
+            "working",
+            "Active",
+            "Short-term",
+        )))
+        .unwrap();
+
+    let app = test_app(state.clone());
+
+    let request: Request<Body> = Request::builder()
+        .method("DELETE")
+        .uri("/levels/working")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Verify it's gone
+    let app = test_app(state);
+
+    let request: Request<Body> = Request::builder()
+        .uri("/levels/working")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+// ── Composed router test ──────────────────────────────────────────
+//
+// The real proof: both resources coexist in one router,
+// each owning their own routes, sharing one ServiceState.
+
+#[tokio::test]
+async fn composed_router_serves_both_resources() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+
+    // Create an agent
+    state
+        .fulfill::<AgentResource>(AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Gov"),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+
+    // Set a level
+    state
+        .fulfill::<LevelResource>(LevelRequests::SetLevel(oneiros_model::Level::init(
+            "working",
+            "Active",
+            "Short-term",
+        )))
+        .unwrap();
+
+    let app = test_app(state);
+
+    // Hit the agent endpoint
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/agents/governor")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body: AgentResponses = json_body(response).await;
+    assert!(matches!(body, AgentResponses::AgentFound(_)));
+
+    // Hit the level endpoint — same app, same state
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/levels/working")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body: LevelResponses = json_body(response).await;
+    assert!(matches!(body, LevelResponses::LevelFound(_)));
 }

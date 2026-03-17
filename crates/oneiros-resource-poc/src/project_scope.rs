@@ -2,7 +2,9 @@ use oneiros_db::{Database, Projection};
 use oneiros_model::*;
 use oneiros_resource::Fulfill;
 
-use crate::{Agent, Effects, PocEffects};
+use crate::{Effects, PocEffects};
+use crate::resource_agent::Agent;
+use crate::resource_level::Level;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProjectScopeError {
@@ -45,6 +47,38 @@ impl<'a> ProjectScope<'a> {
 
     fn effects(&self) -> PocEffects<'_> {
         PocEffects::new(self.source, self.db, self.projections)
+    }
+}
+
+/// Fulfill<Level> for ProjectScope — vocabulary CRUD, no validation complexity.
+impl Fulfill<Level> for ProjectScope<'_> {
+    type Error = ProjectScopeError;
+
+    async fn fulfill(&self, request: LevelRequests) -> Result<LevelResponses, Self::Error> {
+        match request {
+            LevelRequests::SetLevel(level) => {
+                let event = Events::Level(LevelEvents::LevelSet(level.clone()));
+                self.effects().emit(&event)?;
+                Ok(LevelResponses::LevelSet(level))
+            }
+            LevelRequests::ListLevels(_) => {
+                Ok(LevelResponses::LevelsListed(self.db().list_levels()?))
+            }
+            LevelRequests::GetLevel(request) => {
+                let level = self
+                    .db()
+                    .get_level(&request.name)?
+                    .ok_or(NotFound::Level(request.name))?;
+                Ok(LevelResponses::LevelFound(level))
+            }
+            LevelRequests::RemoveLevel(request) => {
+                let event = Events::Level(LevelEvents::LevelRemoved(SelectLevelByName {
+                    name: request.name,
+                }));
+                self.effects().emit(&event)?;
+                Ok(LevelResponses::LevelRemoved)
+            }
+        }
     }
 }
 
