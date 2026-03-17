@@ -8,6 +8,7 @@
 
 use oneiros_actor::Actor;
 use oneiros_model::*;
+use tokio::sync::broadcast;
 
 use crate::database::Db;
 
@@ -21,14 +22,40 @@ pub enum AgentError {
     Conflict(#[from] Conflicts),
 }
 
-/// The Agent actor — holds capabilities (Db handle) and domain logic.
+/// The Agent actor — holds capabilities and domain logic.
+///
+/// Capabilities:
+/// - `db`: persist and query through the database actor
+/// - `events`: broadcast events to subscribers (SSE, projections, etc.)
+/// - `source`: provenance identity for event attribution
 pub struct AgentActor {
     db: Db,
+    events: broadcast::Sender<Event>,
+    source: Source,
 }
 
 impl AgentActor {
     pub fn new(db: Db) -> Self {
-        Self { db }
+        // No event bus — standalone mode (for backward compat with existing tests)
+        let (events, _) = broadcast::channel(16);
+        Self {
+            db,
+            events,
+            source: Source::default(),
+        }
+    }
+
+    pub fn with_bus(db: Db, events: broadcast::Sender<Event>, source: Source) -> Self {
+        Self { db, events, source }
+    }
+
+    /// Emit an event: persist through DB actor, broadcast to subscribers.
+    async fn emit(&self, event_data: Events) -> Event {
+        let new_event = NewEvent::new(event_data, self.source);
+        let persisted = self.db.log_event(new_event).await;
+        // Broadcast — if no subscribers, that's fine (send returns Err on no receivers)
+        let _ = self.events.send(persisted.clone());
+        persisted
     }
 }
 
@@ -61,9 +88,7 @@ impl Actor for AgentActor {
                 );
 
                 // Event emission — through the DB actor
-                let event = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
-                let new_event = NewEvent::new(event, Source::default());
-                self.db.log_event(new_event).await;
+                self.emit(Events::Agent(AgentEvents::AgentCreated(agent.clone()))).await;
 
                 Ok(AgentResponses::AgentCreated(agent))
             }
@@ -102,19 +127,15 @@ impl Actor for AgentActor {
                     request.persona,
                 );
 
-                let event = Events::Agent(AgentEvents::AgentUpdated(agent.clone()));
-                let new_event = NewEvent::new(event, Source::default());
-                self.db.log_event(new_event).await;
+                self.emit(Events::Agent(AgentEvents::AgentUpdated(agent.clone()))).await;
 
                 Ok(AgentResponses::AgentUpdated(agent))
             }
 
             AgentRequests::RemoveAgent(request) => {
-                let event = Events::Agent(AgentEvents::AgentRemoved(SelectAgentByName {
+                self.emit(Events::Agent(AgentEvents::AgentRemoved(SelectAgentByName {
                     name: request.name,
-                }));
-                let new_event = NewEvent::new(event, Source::default());
-                self.db.log_event(new_event).await;
+                }))).await;
 
                 Ok(AgentResponses::AgentRemoved)
             }
