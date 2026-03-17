@@ -8,7 +8,10 @@ use oneiros_resource::Fulfill;
 use tower::ServiceExt;
 
 // crate re-exports AgentResource/LevelResource to avoid collision with oneiros_model types.
-use crate::{AgentResource, LevelResource, ProjectScope, ProjectScopeError, ServiceState};
+use crate::{
+    AgentCliArgs, AgentResource, HttpScope, HttpScopeError, LevelCliArgs, LevelResource,
+    ProjectScope, ProjectScopeError, ServiceState, ToolError, dispatch_tool,
+};
 
 // ── Test helpers ───────────────────────────────────────────────────
 
@@ -32,15 +35,18 @@ fn test_source() -> Source {
     Source::default()
 }
 
-const ALL_PROJECTIONS: &[&[oneiros_db::Projection]] =
-    &[crate::projections::AGENT, crate::projections::LEVEL];
+// Use resource-provided projections. The functions are const-compatible
+// (they return static slices), but we use a fn to avoid const-eval complexity.
+fn all_projections() -> &'static [&'static [oneiros_db::Projection]] {
+    &[crate::projections::AGENT, crate::projections::LEVEL]
+}
 
 fn project_scope(db: &Database) -> ProjectScope<'_> {
-    ProjectScope::new(db, test_source(), ALL_PROJECTIONS)
+    ProjectScope::new(db, test_source(), all_projections())
 }
 
 fn test_service_state(db: Database) -> ServiceState {
-    ServiceState::new(db, test_source(), ALL_PROJECTIONS)
+    ServiceState::new(db, test_source(), all_projections())
 }
 
 /// Build the composed app router — multiple resources, one router.
@@ -70,6 +76,22 @@ async fn fulfill_level(
     scope: &ProjectScope<'_>,
     request: LevelRequests,
 ) -> Result<LevelResponses, ProjectScopeError> {
+    Fulfill::<LevelResource>::fulfill(scope, request).await
+}
+
+/// Convenience: disambiguated fulfill for Agent requests via HttpScope.
+async fn http_fulfill_agent(
+    scope: &HttpScope,
+    request: AgentRequests,
+) -> Result<AgentResponses, HttpScopeError> {
+    Fulfill::<AgentResource>::fulfill(scope, request).await
+}
+
+/// Convenience: disambiguated fulfill for Level requests via HttpScope.
+async fn http_fulfill_level(
+    scope: &HttpScope,
+    request: LevelRequests,
+) -> Result<LevelResponses, HttpScopeError> {
     Fulfill::<LevelResource>::fulfill(scope, request).await
 }
 
@@ -817,4 +839,262 @@ async fn composed_router_serves_both_resources() {
     assert_eq!(response.status(), StatusCode::OK);
     let body: LevelResponses = json_body(response).await;
     assert!(matches!(body, LevelResponses::LevelFound(_)));
+}
+
+// ── HttpScope tests ───────────────────────────────────────────────
+//
+// The mirror proof: Fulfill<Agent> works identically whether the
+// backend is a database (ProjectScope) or HTTP calls (HttpScope).
+// Same trait, same request types, different fulfillment mechanism.
+
+fn test_http_scope(state: ServiceState) -> HttpScope {
+    let router = test_app(state);
+    HttpScope::new(router)
+}
+
+#[tokio::test]
+async fn http_scope_create_and_get_agent() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+    let scope = test_http_scope(test_service_state(db));
+
+    let response = http_fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::new("The governor"),
+        prompt: Prompt::new("You govern."),
+    })).await.expect("create agent via http");
+
+    match response {
+        AgentResponses::AgentCreated(agent) => {
+            assert_eq!(agent.name, AgentName::new("governor"));
+        }
+        other => panic!("Expected AgentCreated, got {other:?}"),
+    }
+
+    // Get through the same scope — proves round-trip
+    let response = http_fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
+        name: AgentName::new("governor"),
+    })).await.expect("get agent via http");
+
+    match response {
+        AgentResponses::AgentFound(agent) => {
+            assert_eq!(agent.name, AgentName::new("governor"));
+            assert_eq!(agent.description, Description::new("The governor"));
+        }
+        other => panic!("Expected AgentFound, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_scope_list_agents() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+    state
+        .fulfill::<AgentResource>(AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("alice"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }))
+        .unwrap();
+
+    let scope = test_http_scope(state);
+
+    let response: AgentResponses = http_fulfill_agent(&scope, AgentRequests::ListAgents(ListAgentsRequest))
+        .await.expect("list agents via http");
+
+    match response {
+        AgentResponses::AgentsListed(agents) => {
+            assert_eq!(agents.len(), 1);
+            assert_eq!(agents[0].name, AgentName::new("alice"));
+        }
+        other => panic!("Expected AgentsListed, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_scope_set_and_get_level() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    let scope = test_http_scope(test_service_state(db));
+
+    let response = http_fulfill_level(&scope, LevelRequests::SetLevel(
+        oneiros_model::Level::init("working", "Active work", "Short-term"),
+    )).await.expect("set level via http");
+
+    assert!(matches!(response, LevelResponses::LevelSet(_)));
+
+    let response = http_fulfill_level(&scope, LevelRequests::GetLevel(GetLevelRequest {
+        name: LevelName::new("working"),
+    })).await.expect("get level via http");
+
+    match response {
+        LevelResponses::LevelFound(level) => {
+            assert_eq!(level.name, LevelName::new("working"));
+            assert_eq!(level.description, Description::new("Active work"));
+        }
+        other => panic!("Expected LevelFound, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn http_scope_error_propagation() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    let scope = test_http_scope(test_service_state(db));
+
+    let result = http_fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
+        name: AgentName::new("nonexistent"),
+    })).await;
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(
+        matches!(err, HttpScopeError::Status(404, _)),
+        "Expected 404 status error, got {err:?}"
+    );
+}
+
+// ── MCP tool tests ────────────────────────────────────────────────
+//
+// Proves that resources can own their MCP tool dispatch logic.
+
+#[tokio::test]
+async fn mcp_create_and_list_agents() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+    let state = test_service_state(db);
+
+    // Create via MCP tool dispatch
+    let params = serde_json::to_string(&CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::new("Gov"),
+        prompt: Prompt::default(),
+    })
+    .unwrap();
+
+    let result = dispatch_tool(&state, "create_agent", &params).unwrap();
+    assert!(result.content.contains("governor"));
+
+    // List via MCP tool dispatch
+    let result = dispatch_tool(&state, "list_agents", "").unwrap();
+    assert!(result.content.contains("governor"));
+}
+
+#[tokio::test]
+async fn mcp_set_and_get_level() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    let state = test_service_state(db);
+
+    let params = serde_json::to_string(&oneiros_model::Level::init(
+        "working",
+        "Active",
+        "Short-term",
+    ))
+    .unwrap();
+
+    let result = dispatch_tool(&state, "set_level", &params).unwrap();
+    assert!(result.content.contains("working"));
+
+    let get_params = serde_json::to_string(&GetLevelRequest {
+        name: LevelName::new("working"),
+    })
+    .unwrap();
+
+    let result = dispatch_tool(&state, "get_level", &get_params).unwrap();
+    assert!(result.content.contains("Active"));
+}
+
+#[test]
+fn mcp_unknown_tool_returns_error() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    let state = test_service_state(db);
+
+    let result = dispatch_tool(&state, "nonexistent_tool", "");
+    assert!(result.is_err());
+    assert!(matches!(result.unwrap_err(), ToolError::UnknownTool(_)));
+}
+
+// ── CLI command tests ─────────────────────────────────────────────
+//
+// Proves that CLI commands go through HttpScope (client layer),
+// which round-trips through the HTTP handlers to ProjectScope.
+// CLI → HttpScope → HTTP → ServiceState → ProjectScope → DB
+
+#[tokio::test]
+async fn cli_create_and_list_agents() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+    let scope = test_http_scope(test_service_state(db));
+
+    // Create via CLI dispatch
+    let output = AgentResource::cli_run(
+        &scope,
+        "create",
+        AgentCliArgs {
+            name: Some(AgentName::new("governor")),
+            persona: Some(PersonaName::new("test-persona")),
+            description: Some(Description::new("Gov")),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+
+    assert!(output.messages[0].contains("governor"));
+    assert!(output.messages[0].contains("created"));
+
+    // List via CLI dispatch — goes through HttpScope
+    let output = AgentResource::cli_run(
+        &scope,
+        "list",
+        AgentCliArgs::default(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(output.messages.len(), 1);
+    assert!(output.messages[0].contains("governor"));
+}
+
+#[tokio::test]
+async fn cli_set_and_list_levels() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    let scope = test_http_scope(test_service_state(db));
+
+    let output = LevelResource::cli_run(
+        &scope,
+        "set",
+        LevelCliArgs {
+            name: Some(LevelName::new("working")),
+            description: Some(Description::new("Active")),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+
+    assert!(output.messages[0].contains("working"));
+
+    let output = LevelResource::cli_run(
+        &scope,
+        "list",
+        LevelCliArgs::default(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(output.messages.len(), 1);
+    assert!(output.messages[0].contains("working"));
 }

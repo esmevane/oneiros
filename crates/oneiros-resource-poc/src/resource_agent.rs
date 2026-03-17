@@ -1,3 +1,4 @@
+use oneiros_db::Projection;
 use oneiros_model::{AgentRequests, AgentResponses};
 use oneiros_resource::Resource;
 
@@ -12,4 +13,11 @@ impl Resource for Agent {
 
     type Request = AgentRequests;
     type Response = AgentResponses;
+}
+
+impl Agent {
+    /// Projections this resource needs to maintain its read model.
+    pub fn projections() -> &'static [Projection] {
+        crate::projections::AGENT
+    }
 }

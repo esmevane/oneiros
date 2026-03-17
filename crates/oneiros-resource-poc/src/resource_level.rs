@@ -1,3 +1,4 @@
+use oneiros_db::Projection;
 use oneiros_model::{LevelRequests, LevelResponses};
 use oneiros_resource::Resource;
 
@@ -12,4 +13,11 @@ impl Resource for Level {
 
     type Request = LevelRequests;
     type Response = LevelResponses;
+}
+
+impl Level {
+    /// Projections this resource needs to maintain its read model.
+    pub fn projections() -> &'static [Projection] {
+        crate::projections::LEVEL
+    }
 }
