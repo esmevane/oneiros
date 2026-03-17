@@ -1350,6 +1350,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "oneiros-actor"
+version = "0.0.8"
+dependencies = [
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "oneiros-actor-poc"
+version = "0.0.8"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "oneiros-actor",
+ "oneiros-db",
+ "oneiros-model",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "oneiros-cli"
 version = "0.0.8"
 dependencies = [
