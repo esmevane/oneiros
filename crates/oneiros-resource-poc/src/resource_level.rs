@@ -1,6 +1,6 @@
 use oneiros_db::Projection;
 use oneiros_model::{LevelRequests, LevelResponses};
-use oneiros_resource::Resource;
+use oneiros_resource::{Feature, Projections, Resource};
 
 /// The Level resource declaration.
 ///
@@ -15,9 +15,16 @@ impl Resource for Level {
     type Response = LevelResponses;
 }
 
-impl Level {
-    /// Projections this resource needs to maintain its read model.
-    pub fn projections() -> &'static [Projection] {
+impl Feature<Projections> for Level {
+    type Surface = &'static [Projection];
+
+    fn feature(&self) -> Self::Surface {
         crate::projections::LEVEL
+    }
+}
+
+impl Level {
+    pub fn projections() -> &'static [Projection] {
+        <Level as Feature<Projections>>::feature(&Level)
     }
 }

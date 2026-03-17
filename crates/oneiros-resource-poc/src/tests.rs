@@ -9,8 +9,8 @@ use tower::ServiceExt;
 
 // crate re-exports AgentResource/LevelResource to avoid collision with oneiros_model types.
 use crate::{
-    AgentCliArgs, AgentResource, HttpScope, HttpScopeError, LevelCliArgs, LevelResource,
-    ProjectScope, ProjectScopeError, ServiceState, ToolError, dispatch_tool,
+    AgentCliArgs, AgentResource, AppBuilder, HttpScope, HttpScopeError, LevelCliArgs,
+    LevelResource, ProjectScope, ProjectScopeError, ServiceState, ToolError, dispatch_tool,
 };
 
 // ── Test helpers ───────────────────────────────────────────────────
@@ -1097,4 +1097,144 @@ async fn cli_set_and_list_levels() {
 
     assert_eq!(output.messages.len(), 1);
     assert!(output.messages[0].contains("working"));
+}
+
+// ── AppBuilder tests ──────────────────────────────────────────────
+//
+// The registry proof: resources mount themselves into the builder,
+// the builder produces composed transport surfaces.
+
+#[tokio::test]
+async fn app_builder_composes_http_router() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+
+    // Build the app via mounting — no manual .nest() calls
+    let app = AppBuilder::new(state)
+        .mount(AgentResource)
+        .mount(LevelResource)
+        .into_router();
+
+    // Create an agent through the composed router
+    let request: Request<Body> = Request::builder()
+        .method("POST")
+        .uri("/agents")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&CreateAgentRequest {
+                name: AgentName::new("governor"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Gov"),
+                prompt: Prompt::default(),
+            })
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Set a level through the same composed router
+    let request: Request<Body> = Request::builder()
+        .method("PUT")
+        .uri("/levels/working")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&oneiros_model::Level::init(
+                "working",
+                "Active",
+                "Short-term",
+            ))
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Read both back — proves both resources are mounted and served
+    let request: Request<Body> = Request::builder()
+        .uri("/agents/governor")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body: AgentResponses = json_body(response).await;
+    assert!(matches!(body, AgentResponses::AgentFound(_)));
+
+    let request: Request<Body> = Request::builder()
+        .uri("/levels/working")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body: LevelResponses = json_body(response).await;
+    assert!(matches!(body, LevelResponses::LevelFound(_)));
+}
+
+#[tokio::test]
+async fn app_builder_composes_mcp_tools() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+    seed_persona(&db);
+
+    let state = test_service_state(db);
+    let app = AppBuilder::new(state)
+        .mount(AgentResource)
+        .mount(LevelResource);
+
+    // Create via app's tool dispatch — not the free function
+    let params = serde_json::to_string(&CreateAgentRequest {
+        name: AgentName::new("governor"),
+        persona: PersonaName::new("test-persona"),
+        description: Description::new("Gov"),
+        prompt: Prompt::default(),
+    })
+    .unwrap();
+
+    let result = app.dispatch_tool("create_agent", &params).unwrap();
+    assert!(result.content.contains("governor"));
+
+    // List levels — different resource, same dispatch
+    let params = serde_json::to_string(&oneiros_model::Level::init(
+        "working",
+        "Active",
+        "Short-term",
+    ))
+    .unwrap();
+
+    let result = app.dispatch_tool("set_level", &params).unwrap();
+    assert!(result.content.contains("working"));
+
+    // Unknown tool returns error
+    let result = app.dispatch_tool("nonexistent", "");
+    assert!(matches!(result.unwrap_err(), ToolError::UnknownTool(_)));
+}
+
+#[test]
+fn app_builder_collects_projections() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = test_db(dir.path());
+
+    let state = test_service_state(db);
+    let app = AppBuilder::new(state)
+        .mount(AgentResource)
+        .mount(LevelResource);
+
+    let projections = app.projection_slices();
+
+    // Two resources mounted, each contributes one projection slice
+    assert_eq!(projections.len(), 2);
+
+    // Agent has 3 projections (created, updated, removed)
+    assert_eq!(projections[0].len(), 3);
+
+    // Level has 2 projections (set, removed)
+    assert_eq!(projections[1].len(), 2);
 }

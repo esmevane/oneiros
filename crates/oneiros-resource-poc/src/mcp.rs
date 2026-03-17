@@ -10,10 +10,11 @@
 //! Instead it demonstrates the dispatch shape manually.
 
 use oneiros_model::*;
+use oneiros_resource::{Feature, Tools};
 
-use crate::{ServiceState, ServiceStateError};
 use crate::resource_agent::Agent;
 use crate::resource_level::Level;
+use crate::{ServiceState, ServiceStateError};
 
 /// The output of an MCP tool call — serialized JSON content.
 ///
@@ -45,6 +46,40 @@ pub enum ToolError {
 
     #[error("Serialization error: {0}")]
     Serialization(String),
+}
+
+/// The surface produced by Feature<Tools> — tool names + handler.
+///
+/// The handler is a function pointer that takes state, tool name, and
+/// params and returns a result. This is what the AppBuilder collects
+/// to build a unified MCP tool router.
+pub struct ToolSurface {
+    pub names: &'static [&'static str],
+    pub handler: fn(&ServiceState, &str, &str) -> Result<ToolResult, ToolError>,
+}
+
+// ── Feature<Tools> ──────────────────────────────────────────────────
+
+impl Feature<Tools> for Agent {
+    type Surface = ToolSurface;
+
+    fn feature(&self) -> ToolSurface {
+        ToolSurface {
+            names: Self::tool_names(),
+            handler: Self::handle_tool,
+        }
+    }
+}
+
+impl Feature<Tools> for Level {
+    type Surface = ToolSurface;
+
+    fn feature(&self) -> ToolSurface {
+        ToolSurface {
+            names: Self::tool_names(),
+            handler: Self::handle_tool,
+        }
+    }
 }
 
 // ── Agent MCP tools ─────────────────────────────────────────────────

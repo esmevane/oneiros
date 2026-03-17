@@ -1,15 +1,18 @@
+pub mod app;
 mod cli;
 mod effects;
 mod http;
 mod http_level;
 mod http_scope;
 mod mcp;
+mod mount;
 pub mod projections;
 mod project_scope;
 mod resource_agent;
 mod resource_level;
 mod service_state;
 
+pub use app::*;
 pub use cli::*;
 pub use effects::*;
 pub use http_scope::*;

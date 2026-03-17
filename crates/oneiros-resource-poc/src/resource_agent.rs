@@ -1,6 +1,6 @@
 use oneiros_db::Projection;
 use oneiros_model::{AgentRequests, AgentResponses};
-use oneiros_resource::Resource;
+use oneiros_resource::{Feature, Projections, Resource};
 
 /// The Agent resource declaration.
 ///
@@ -15,9 +15,16 @@ impl Resource for Agent {
     type Response = AgentResponses;
 }
 
-impl Agent {
-    /// Projections this resource needs to maintain its read model.
-    pub fn projections() -> &'static [Projection] {
+impl Feature<Projections> for Agent {
+    type Surface = &'static [Projection];
+
+    fn feature(&self) -> Self::Surface {
         crate::projections::AGENT
+    }
+}
+
+impl Agent {
+    pub fn projections() -> &'static [Projection] {
+        <Agent as Feature<Projections>>::feature(&Agent)
     }
 }

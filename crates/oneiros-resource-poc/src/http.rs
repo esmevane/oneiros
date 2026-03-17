@@ -7,8 +7,10 @@ use axum::{
 };
 use oneiros_model::*;
 
-use crate::{ServiceState, ServiceStateError};
+use oneiros_resource::{Feature, Server};
+
 use crate::resource_agent::Agent;
+use crate::{ServiceState, ServiceStateError};
 
 // ── Error handling ──────────────────────────────────────────────────
 
@@ -34,18 +36,26 @@ impl IntoResponse for ServiceStateError {
     }
 }
 
-// ── Agent HTTP resource ─────────────────────────────────────────────
+// ── Feature<Server> for Agent ───────────────────────────────────────
+//
+// The Agent resource opts into the HTTP layer. Its surface is an axum
+// Router parameterized by ServiceState — the scope binding happens
+// through axum's state extraction, not through our trait.
 
-impl Agent {
-    /// The Agent resource's HTTP router.
-    ///
-    /// This is the full vertical slice: the resource provides its own
-    /// routes, its own handlers, its own error mapping. The application
-    /// just nests it: `router.nest("/agents", Agent::http_router())`.
-    pub fn http_router() -> Router<ServiceState> {
+impl Feature<Server> for Agent {
+    type Surface = Router<ServiceState>;
+
+    fn feature(&self) -> Self::Surface {
         Router::new()
             .route("/", routing::post(create).get(list))
             .route("/{name}", routing::get(show).put(update).delete(remove))
+    }
+}
+
+// Keep the static method as a convenience — delegates to the trait.
+impl Agent {
+    pub fn http_router() -> Router<ServiceState> {
+        <Agent as Feature<Server>>::feature(&Agent)
     }
 }
 

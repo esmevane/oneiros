@@ -6,20 +6,26 @@ use axum::{
 };
 use oneiros_model::*;
 
+use oneiros_resource::{Feature, Server};
+
 use crate::resource_level::Level;
 use crate::{ServiceState, ServiceStateError};
 
-// ── Level HTTP resource ─────────────────────────────────────────────
+// ── Feature<Server> for Level ───────────────────────────────────────
 
-impl Level {
-    /// The Level resource's HTTP router.
-    ///
-    /// Vocabulary CRUD: set (PUT), get, list, remove.
-    /// No POST — "set" is idempotent, so PUT is the right verb.
-    pub fn http_router() -> Router<ServiceState> {
+impl Feature<Server> for Level {
+    type Surface = Router<ServiceState>;
+
+    fn feature(&self) -> Self::Surface {
         Router::new()
             .route("/", routing::get(list))
             .route("/{name}", routing::put(set).get(show).delete(remove))
+    }
+}
+
+impl Level {
+    pub fn http_router() -> Router<ServiceState> {
+        <Level as Feature<Server>>::feature(&Level)
     }
 }
 
