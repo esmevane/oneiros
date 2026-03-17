@@ -1,1 +1,6 @@
-// Actor-resource POC — exploring the actor model as the unified runtime.
+pub mod agent;
+pub mod database;
+pub mod projections;
+
+#[cfg(test)]
+mod tests;
