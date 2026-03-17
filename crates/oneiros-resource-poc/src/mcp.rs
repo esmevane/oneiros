@@ -142,6 +142,10 @@ impl Agent {
     pub fn tool_names() -> &'static [&'static str] {
         &["list_agents", "get_agent", "create_agent", "update_agent", "remove_agent"]
     }
+
+    pub fn mcp_tools() -> ToolSurface {
+        <Agent as Feature<Tools>>::feature(&Agent)
+    }
 }
 
 // ── Level MCP tools ─────────────────────────────────────────────────
@@ -189,6 +193,10 @@ impl Level {
 
     pub fn tool_names() -> &'static [&'static str] {
         &["list_levels", "get_level", "set_level", "remove_level"]
+    }
+
+    pub fn mcp_tools() -> ToolSurface {
+        <Level as Feature<Tools>>::feature(&Level)
     }
 }
 

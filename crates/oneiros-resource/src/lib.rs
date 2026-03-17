@@ -77,6 +77,29 @@ pub trait Feature<L> {
 /// because not everything that mounts is a resource (middleware,
 /// cross-cutting concerns), and not every resource needs to mount
 /// (internal/derived resources).
+/// Extension trait that provides `self.feature::<L>()` turbofish syntax.
+///
+/// Without this, calling `self.feature()` on a type that implements
+/// multiple `Feature<L>` impls requires UFCS:
+///   `<Agent as Feature<Server>>::feature(&self)`
+///
+/// With this, you can write:
+///   `self.feature::<Server>()`
+pub trait HasFeature {
+    fn feature<L>(&self) -> <Self as Feature<L>>::Surface
+    where
+        Self: Feature<L>;
+}
+
+impl<T> HasFeature for T {
+    fn feature<L>(&self) -> <Self as Feature<L>>::Surface
+    where
+        Self: Feature<L>,
+    {
+        <Self as Feature<L>>::feature(self)
+    }
+}
+
 pub trait Mountable<App> {
     fn mount(&self, app: &mut App);
 }
