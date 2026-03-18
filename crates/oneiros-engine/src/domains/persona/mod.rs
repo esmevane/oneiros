@@ -6,7 +6,7 @@ mod repo;
 mod service;
 
 pub use client::PersonaClient;
-pub use features::{PersonaProjections, PersonaRouter};
+pub use features::{PersonaCli, PersonaCommands, PersonaProjections, PersonaRouter};
 pub use features::mcp as persona_mcp;
 pub use model::{Persona, PersonaName};
 pub use protocol::{

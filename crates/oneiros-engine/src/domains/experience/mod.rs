@@ -7,7 +7,7 @@ mod service;
 
 pub use client::ExperienceClient;
 pub use features::mcp as experience_mcp;
-pub use features::{ExperienceProjections, ExperienceRouter};
+pub use features::{ExperienceCli, ExperienceCommands, ExperienceProjections, ExperienceRouter};
 pub use model::{Experience, ExperienceId};
 pub use protocol::{
     ExperienceDescriptionUpdate, ExperienceError, ExperienceEvents, ExperienceRequest,

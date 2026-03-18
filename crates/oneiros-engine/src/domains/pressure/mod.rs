@@ -7,7 +7,7 @@ mod service;
 
 pub use client::PressureClient;
 pub use features::mcp as pressure_mcp;
-pub use features::{PressureProjections, PressureRouter};
+pub use features::{PressureCli, PressureCommands, PressureProjections, PressureRouter};
 pub use model::{Pressure, PressureSummary};
 pub use protocol::{PressureError, PressureRequest, PressureResponse};
 pub use repo::PressureRepo;

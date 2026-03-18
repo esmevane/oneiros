@@ -6,7 +6,7 @@ mod repo;
 mod service;
 
 pub use client::SensationClient;
-pub use features::{SensationProjections, SensationRouter};
+pub use features::{SensationCli, SensationCommands, SensationProjections, SensationRouter};
 pub use features::mcp as sensation_mcp;
 pub use model::{Sensation, SensationName};
 pub use protocol::{

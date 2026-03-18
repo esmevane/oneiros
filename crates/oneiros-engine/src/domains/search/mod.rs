@@ -7,7 +7,7 @@ mod service;
 
 pub use client::SearchClient;
 pub use features::mcp as search_mcp;
-pub use features::{SearchProjections, SearchRouter};
+pub use features::{SearchCli, SearchCommands, SearchProjections, SearchRouter};
 pub use model::SearchResult;
 pub use protocol::{SearchError, SearchRequest, SearchResponse};
 pub use repo::SearchRepo;

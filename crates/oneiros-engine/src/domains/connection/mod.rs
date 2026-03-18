@@ -7,7 +7,7 @@ mod service;
 
 pub use client::ConnectionClient;
 pub use features::mcp as connection_mcp;
-pub use features::{ConnectionProjections, ConnectionRouter};
+pub use features::{ConnectionCli, ConnectionCommands, ConnectionProjections, ConnectionRouter};
 pub use model::{Connection, ConnectionId};
 pub use protocol::{
     ConnectionError, ConnectionEvents, ConnectionRemoved, ConnectionRequest, ConnectionResponse,

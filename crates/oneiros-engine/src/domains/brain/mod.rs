@@ -6,7 +6,7 @@ mod repo;
 mod service;
 
 pub use client::BrainClient;
-pub use features::{BrainProjections, BrainRouter};
+pub use features::{BrainCli, BrainCommands, BrainProjections, BrainRouter};
 pub use model::{Brain, BrainName};
 pub use protocol::{BrainError, BrainEvents, BrainRequest, BrainResponse};
 pub use repo::BrainRepo;

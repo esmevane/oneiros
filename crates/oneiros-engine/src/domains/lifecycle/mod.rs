@@ -12,7 +12,7 @@ mod service;
 
 pub use client::LifecycleClient;
 pub use features::mcp as lifecycle_mcp;
-pub use features::LifecycleRouter;
+pub use features::{LifecycleCli, LifecycleCommands, LifecycleRouter};
 pub use model::{CognitiveContext, LifecycleMarker};
 pub use protocol::{
     LifecycleError, LifecycleEvent, LifecycleEvents, LifecycleRequest, LifecycleResponse,
