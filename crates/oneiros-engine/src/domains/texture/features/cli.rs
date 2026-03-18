@@ -43,9 +43,7 @@ impl TextureCli {
             TextureCommands::Get { name } => {
                 serde_json::to_string_pretty(&TextureService::get(ctx, &name)?)?
             }
-            TextureCommands::List => {
-                serde_json::to_string_pretty(&TextureService::list(ctx)?)?
-            }
+            TextureCommands::List => serde_json::to_string_pretty(&TextureService::list(ctx)?)?,
             TextureCommands::Remove { name } => {
                 serde_json::to_string_pretty(&TextureService::remove(ctx, &name)?)?
             }

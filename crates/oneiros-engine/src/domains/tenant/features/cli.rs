@@ -1,7 +1,7 @@
 use clap::Subcommand;
 
-use crate::*;
 use crate::contexts::SystemContext;
+use crate::*;
 
 pub struct TenantCli;
 
@@ -24,9 +24,7 @@ impl TenantCli {
             TenantCommands::Get { id } => {
                 serde_json::to_string_pretty(&TenantService::get(ctx, &id)?)?
             }
-            TenantCommands::List => {
-                serde_json::to_string_pretty(&TenantService::list(ctx)?)?
-            }
+            TenantCommands::List => serde_json::to_string_pretty(&TenantService::list(ctx)?)?,
         };
         Ok(result)
     }

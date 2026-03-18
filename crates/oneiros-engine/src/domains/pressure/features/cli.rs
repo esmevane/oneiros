@@ -19,9 +19,7 @@ impl PressureCli {
             PressureCommands::Get { agent } => {
                 serde_json::to_string_pretty(&PressureService::get(ctx, &agent)?)?
             }
-            PressureCommands::List => {
-                serde_json::to_string_pretty(&PressureService::list(ctx)?)?
-            }
+            PressureCommands::List => serde_json::to_string_pretty(&PressureService::list(ctx)?)?,
         };
         Ok(result)
     }

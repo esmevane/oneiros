@@ -87,7 +87,11 @@ impl<'a> PersonaRepo<'a> {
     fn set(&self, persona: &Persona) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO personas (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![persona.name.to_string(), persona.description, persona.prompt],
+            params![
+                persona.name.to_string(),
+                persona.description,
+                persona.prompt
+            ],
         )?;
         Ok(())
     }

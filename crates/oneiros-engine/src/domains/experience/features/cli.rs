@@ -57,11 +57,9 @@ impl ExperienceCli {
                     description,
                 )?)?
             }
-            ExperienceCommands::UpdateSensation { id, sensation } => {
-                serde_json::to_string_pretty(&ExperienceService::update_sensation(
-                    ctx, &id, sensation,
-                )?)?
-            }
+            ExperienceCommands::UpdateSensation { id, sensation } => serde_json::to_string_pretty(
+                &ExperienceService::update_sensation(ctx, &id, sensation)?,
+            )?,
         };
         Ok(result)
     }

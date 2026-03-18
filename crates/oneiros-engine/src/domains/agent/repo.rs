@@ -53,7 +53,13 @@ impl<'a> AgentRepo<'a> {
         let result = stmt.query_row(params![name], |row| {
             let id: String = row.get(0)?;
             let name: String = row.get(1)?;
-            Ok((id, name, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?))
+            Ok((
+                id,
+                name,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
         });
 
         match result {
@@ -76,7 +82,13 @@ impl<'a> AgentRepo<'a> {
 
         let raw: Vec<(String, String, String, String, String)> = stmt
             .query_map([], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?))
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -137,8 +149,10 @@ impl<'a> AgentRepo<'a> {
     }
 
     fn remove(&self, name: &AgentName) -> Result<(), StoreError> {
-        self.conn
-            .execute("DELETE FROM agents WHERE name = ?1", params![name.to_string()])?;
+        self.conn.execute(
+            "DELETE FROM agents WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

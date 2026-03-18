@@ -1,5 +1,5 @@
-use crate::*;
 use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct UrgeClient<'a> {
     client: &'a Client,

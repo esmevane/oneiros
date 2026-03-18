@@ -43,9 +43,7 @@ impl PersonaCli {
             PersonaCommands::Get { name } => {
                 serde_json::to_string_pretty(&PersonaService::get(ctx, &name)?)?
             }
-            PersonaCommands::List => {
-                serde_json::to_string_pretty(&PersonaService::list(ctx)?)?
-            }
+            PersonaCommands::List => serde_json::to_string_pretty(&PersonaService::list(ctx)?)?,
             PersonaCommands::Remove { name } => {
                 serde_json::to_string_pretty(&PersonaService::remove(ctx, &name)?)?
             }

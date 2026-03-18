@@ -87,7 +87,11 @@ impl<'a> TextureRepo<'a> {
     fn set(&self, texture: &Texture) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO textures (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![texture.name.to_string(), texture.description, texture.prompt],
+            params![
+                texture.name.to_string(),
+                texture.description,
+                texture.prompt
+            ],
         )?;
         Ok(())
     }

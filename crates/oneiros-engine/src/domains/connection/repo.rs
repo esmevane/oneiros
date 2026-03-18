@@ -55,7 +55,14 @@ impl<'a> ConnectionRepo<'a> {
 
         let result = stmt.query_row(params![id], |row| {
             let id: String = row.get(0)?;
-            Ok((id, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?, row.get::<_, String>(5)?))
+            Ok((
+                id,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+            ))
         });
 
         match result {

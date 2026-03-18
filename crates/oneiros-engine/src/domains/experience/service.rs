@@ -56,7 +56,9 @@ impl ExperienceService {
 
         ctx.emit(ExperienceEvents::ExperienceDescriptionUpdated(
             ExperienceDescriptionUpdate {
-                id: id.parse().map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
+                id: id
+                    .parse()
+                    .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
                 description,
             },
         ));
@@ -77,7 +79,9 @@ impl ExperienceService {
 
         ctx.emit(ExperienceEvents::ExperienceSensationUpdated(
             ExperienceSensationUpdate {
-                id: id.parse().map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
+                id: id
+                    .parse()
+                    .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
                 sensation,
             },
         ));

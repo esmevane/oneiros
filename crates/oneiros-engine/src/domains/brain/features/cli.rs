@@ -1,7 +1,7 @@
 use clap::Subcommand;
 
-use crate::*;
 use crate::contexts::SystemContext;
+use crate::*;
 
 pub struct BrainCli;
 
@@ -24,9 +24,7 @@ impl BrainCli {
             BrainCommands::Get { name } => {
                 serde_json::to_string_pretty(&BrainService::get(ctx, &name)?)?
             }
-            BrainCommands::List => {
-                serde_json::to_string_pretty(&BrainService::list(ctx)?)?
-            }
+            BrainCommands::List => serde_json::to_string_pretty(&BrainService::list(ctx)?)?,
         };
         Ok(result)
     }

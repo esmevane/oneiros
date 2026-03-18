@@ -30,9 +30,7 @@ impl MemoryCli {
                 agent,
                 level,
                 content,
-            } => {
-                serde_json::to_string_pretty(&MemoryService::add(ctx, agent, level, content)?)?
-            }
+            } => serde_json::to_string_pretty(&MemoryService::add(ctx, agent, level, content)?)?,
             MemoryCommands::Get { id } => {
                 serde_json::to_string_pretty(&MemoryService::get(ctx, &id)?)?
             }

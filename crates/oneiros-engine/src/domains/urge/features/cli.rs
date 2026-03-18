@@ -43,9 +43,7 @@ impl UrgeCli {
             UrgeCommands::Get { name } => {
                 serde_json::to_string_pretty(&UrgeService::get(ctx, &name)?)?
             }
-            UrgeCommands::List => {
-                serde_json::to_string_pretty(&UrgeService::list(ctx)?)?
-            }
+            UrgeCommands::List => serde_json::to_string_pretty(&UrgeService::list(ctx)?)?,
             UrgeCommands::Remove { name } => {
                 serde_json::to_string_pretty(&UrgeService::remove(ctx, &name)?)?
             }

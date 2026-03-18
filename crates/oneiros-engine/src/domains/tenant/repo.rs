@@ -89,7 +89,11 @@ impl<'a> TenantRepo<'a> {
     fn create_record(&self, tenant: &Tenant) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO tenants (id, name, created_at) VALUES (?1, ?2, ?3)",
-            params![tenant.id.to_string(), tenant.name.to_string(), tenant.created_at],
+            params![
+                tenant.id.to_string(),
+                tenant.name.to_string(),
+                tenant.created_at
+            ],
         )?;
         Ok(())
     }

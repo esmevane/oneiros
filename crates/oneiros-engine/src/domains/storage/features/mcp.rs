@@ -36,8 +36,8 @@ pub fn dispatch(
         "remove_storage" => {
             let p: IdParam =
                 serde_json::from_str(params).map_err(|e| ToolError::Parameter(e.to_string()))?;
-            let response = StorageService::remove(ctx, &p.id)
-                .map_err(|e| ToolError::Domain(e.to_string()))?;
+            let response =
+                StorageService::remove(ctx, &p.id).map_err(|e| ToolError::Domain(e.to_string()))?;
             serde_json::to_value(response)
         }
         _ => return Err(ToolError::UnknownTool(tool_name.to_string())),

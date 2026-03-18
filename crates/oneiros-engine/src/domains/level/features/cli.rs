@@ -43,9 +43,7 @@ impl LevelCli {
             LevelCommands::Get { name } => {
                 serde_json::to_string_pretty(&LevelService::get(ctx, &name)?)?
             }
-            LevelCommands::List => {
-                serde_json::to_string_pretty(&LevelService::list(ctx)?)?
-            }
+            LevelCommands::List => serde_json::to_string_pretty(&LevelService::list(ctx)?)?,
             LevelCommands::Remove { name } => {
                 serde_json::to_string_pretty(&LevelService::remove(ctx, &name)?)?
             }

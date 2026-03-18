@@ -32,9 +32,9 @@ impl CognitionCli {
                 agent,
                 texture,
                 content,
-            } => serde_json::to_string_pretty(&CognitionService::add(
-                ctx, agent, texture, content,
-            )?)?,
+            } => {
+                serde_json::to_string_pretty(&CognitionService::add(ctx, agent, texture, content)?)?
+            }
             CognitionCommands::Get { id } => {
                 serde_json::to_string_pretty(&CognitionService::get(ctx, &id)?)?
             }

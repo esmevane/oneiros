@@ -1,7 +1,7 @@
 use clap::Subcommand;
 
-use crate::*;
 use crate::contexts::SystemContext;
+use crate::*;
 
 pub struct ActorCli;
 
@@ -30,9 +30,7 @@ impl ActorCli {
             ActorCommands::Get { id } => {
                 serde_json::to_string_pretty(&ActorService::get(ctx, &id)?)?
             }
-            ActorCommands::List => {
-                serde_json::to_string_pretty(&ActorService::list(ctx)?)?
-            }
+            ActorCommands::List => serde_json::to_string_pretty(&ActorService::list(ctx)?)?,
         };
         Ok(result)
     }

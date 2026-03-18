@@ -6,22 +6,11 @@ pub struct LifecycleCli;
 
 #[derive(Debug, Subcommand)]
 pub enum LifecycleCommands {
-    Dream {
-        agent: String,
-    },
-    Introspect {
-        agent: String,
-    },
-    Reflect {
-        agent: String,
-    },
-    Sense {
-        agent: String,
-        content: String,
-    },
-    Sleep {
-        agent: String,
-    },
+    Dream { agent: String },
+    Introspect { agent: String },
+    Reflect { agent: String },
+    Sense { agent: String, content: String },
+    Sleep { agent: String },
 }
 
 impl LifecycleCli {

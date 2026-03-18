@@ -18,9 +18,7 @@ impl<'a> SensationRepo<'a> {
         if let Events::Sensation(sensation_event) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
-                SensationEvents::SensationRemoved(removed) => {
-                    self.remove(removed.name.as_str())?
-                }
+                SensationEvents::SensationRemoved(removed) => self.remove(removed.name.as_str())?,
             }
         }
         Ok(())

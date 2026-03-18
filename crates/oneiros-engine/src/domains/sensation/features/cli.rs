@@ -43,9 +43,7 @@ impl SensationCli {
             SensationCommands::Get { name } => {
                 serde_json::to_string_pretty(&SensationService::get(ctx, &name)?)?
             }
-            SensationCommands::List => {
-                serde_json::to_string_pretty(&SensationService::list(ctx)?)?
-            }
+            SensationCommands::List => serde_json::to_string_pretty(&SensationService::list(ctx)?)?,
             SensationCommands::Remove { name } => {
                 serde_json::to_string_pretty(&SensationService::remove(ctx, &name)?)?
             }

@@ -43,9 +43,7 @@ impl NatureCli {
             NatureCommands::Get { name } => {
                 serde_json::to_string_pretty(&NatureService::get(ctx, &name)?)?
             }
-            NatureCommands::List => {
-                serde_json::to_string_pretty(&NatureService::list(ctx)?)?
-            }
+            NatureCommands::List => serde_json::to_string_pretty(&NatureService::list(ctx)?)?,
             NatureCommands::Remove { name } => {
                 serde_json::to_string_pretty(&NatureService::remove(ctx, &name)?)?
             }

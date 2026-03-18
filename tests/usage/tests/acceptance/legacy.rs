@@ -34,10 +34,7 @@ impl Backend for Legacy {
         })
     }
 
-    async fn exec(
-        &self,
-        command: &str,
-    ) -> Result<serde_json::Value, Box<dyn core::error::Error>> {
+    async fn exec(&self, command: &str) -> Result<serde_json::Value, Box<dyn core::error::Error>> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros"];
         full_args.extend(args.iter().map(String::as_str));
@@ -138,6 +135,26 @@ async fn level_set_creates_a_new_level() -> TestResult {
 }
 
 #[tokio::test]
+async fn level_set_updates_existing_level() -> TestResult {
+    cases::level::set_updates_existing_level::<Legacy>().await
+}
+
+#[tokio::test]
+async fn level_list_returns_empty_when_none_exist() -> TestResult {
+    cases::level::list_returns_empty_when_none_exist::<Legacy>().await
+}
+
+#[tokio::test]
 async fn level_list_returns_created_levels() -> TestResult {
     cases::level::list_returns_created_levels::<Legacy>().await
+}
+
+#[tokio::test]
+async fn level_remove_makes_it_unlisted() -> TestResult {
+    cases::level::remove_makes_it_unlisted::<Legacy>().await
+}
+
+#[tokio::test]
+async fn seed_core_creates_default_levels() -> TestResult {
+    cases::seed::core_creates_default_levels::<Legacy>().await
 }

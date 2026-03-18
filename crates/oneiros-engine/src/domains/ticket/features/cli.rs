@@ -1,7 +1,7 @@
 use clap::Subcommand;
 
-use crate::*;
 use crate::contexts::SystemContext;
+use crate::*;
 
 pub struct TicketCli;
 
@@ -28,15 +28,11 @@ impl TicketCli {
             TicketCommands::Issue {
                 actor_id,
                 brain_name,
-            } => serde_json::to_string_pretty(&TicketService::create(
-                ctx, actor_id, brain_name,
-            )?)?,
+            } => serde_json::to_string_pretty(&TicketService::create(ctx, actor_id, brain_name)?)?,
             TicketCommands::Validate { id } => {
                 serde_json::to_string_pretty(&TicketService::validate(ctx, &id)?)?
             }
-            TicketCommands::List => {
-                serde_json::to_string_pretty(&TicketService::list(ctx)?)?
-            }
+            TicketCommands::List => serde_json::to_string_pretty(&TicketService::list(ctx)?)?,
         };
         Ok(result)
     }

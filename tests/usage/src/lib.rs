@@ -32,7 +32,5 @@ pub trait Backend: Sized {
     ///
     /// Must be called after `system init` and `project init` have
     /// created the necessary database state.
-    fn start_service(
-        &mut self,
-    ) -> impl Future<Output = Result<(), Box<dyn core::error::Error>>>;
+    fn start_service(&mut self) -> impl Future<Output = Result<(), Box<dyn core::error::Error>>>;
 }

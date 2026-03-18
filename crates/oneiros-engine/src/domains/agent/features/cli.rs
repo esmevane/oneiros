@@ -54,9 +54,7 @@ impl AgentCli {
             AgentCommands::Get { name } => {
                 serde_json::to_string_pretty(&AgentService::get(ctx, &name)?)?
             }
-            AgentCommands::List => {
-                serde_json::to_string_pretty(&AgentService::list(ctx)?)?
-            }
+            AgentCommands::List => serde_json::to_string_pretty(&AgentService::list(ctx)?)?,
             AgentCommands::Update {
                 name,
                 persona,
