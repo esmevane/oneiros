@@ -71,11 +71,11 @@ fn level_crud() {
     .unwrap();
     assert!(matches!(
         LevelService::get(&ctx, "working").unwrap(),
-        LevelResponse::Found(_)
+        LevelResponse::LevelDetails(_)
     ));
 
     match LevelService::list(&ctx).unwrap() {
-        LevelResponse::Listed(levels) => assert_eq!(levels.len(), 1),
+        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 1),
         other => panic!("Expected Listed, got {other:?}"),
     }
 
@@ -264,7 +264,7 @@ fn replay_reconstructs_read_models() {
 
     // Verify read models before replay
     match LevelService::list(&ctx).unwrap() {
-        LevelResponse::Listed(levels) => assert_eq!(levels.len(), 2),
+        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed, got {other:?}"),
     }
     assert!(matches!(
@@ -277,7 +277,7 @@ fn replay_reconstructs_read_models() {
 
     // Read models should be identical after replay
     match LevelService::list(&ctx).unwrap() {
-        LevelResponse::Listed(levels) => assert_eq!(levels.len(), 2),
+        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
     match AgentService::get(&ctx, "gov").unwrap() {

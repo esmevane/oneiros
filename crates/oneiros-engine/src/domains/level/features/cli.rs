@@ -13,7 +13,7 @@ pub enum LevelCommands {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
@@ -40,7 +40,7 @@ impl LevelCli {
                     prompt,
                 },
             )?)?,
-            LevelCommands::Get { name } => {
+            LevelCommands::Show { name } => {
                 serde_json::to_string_pretty(&LevelService::get(ctx, &name)?)?
             }
             LevelCommands::List => serde_json::to_string_pretty(&LevelService::list(ctx)?)?,

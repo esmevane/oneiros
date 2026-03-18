@@ -12,6 +12,8 @@ oneiros-cli = { workspace = true }
 oneiros-config = { workspace = true }
 oneiros-context = { workspace = true }
 oneiros-detect-project-name = { workspace = true }
+oneiros-engine = { workspace = true }
 oneiros-http = { workspace = true }
+rusqlite = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true }

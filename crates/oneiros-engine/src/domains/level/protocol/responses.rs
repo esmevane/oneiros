@@ -5,8 +5,9 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum LevelResponse {
-    Set(Level),
-    Found(Level),
-    Listed(Vec<Level>),
-    Removed,
+    LevelSet(LevelName),
+    LevelDetails(Level),
+    Levels(Vec<Level>),
+    NoLevels,
+    LevelRemoved(LevelName),
 }
