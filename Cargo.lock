@@ -1949,6 +1949,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "oneiros-usage"
+version = "0.0.8"
+dependencies = [
+ "clap",
+ "oneiros-cli",
+ "oneiros-config",
+ "oneiros-context",
+ "oneiros-detect-project-name",
+ "oneiros-http",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "openssl-probe"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

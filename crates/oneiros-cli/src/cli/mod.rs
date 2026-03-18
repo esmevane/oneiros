@@ -10,7 +10,7 @@ use oneiros_outcomes::Outcomes;
 
 pub(crate) use error::*;
 pub(crate) use log_config::LogConfig;
-pub(crate) use outcomes::CliOutcomes;
+pub use outcomes::CliOutcomes;
 pub(crate) use output_format::OutputFormat;
 pub(crate) use preflight::Preflight;
 
@@ -49,9 +49,12 @@ impl Cli {
         }
     }
 
-    pub(crate) async fn run(&self) -> Result<CliResult, CliError> {
+    pub async fn run(&self) -> Result<CliResult, CliError> {
         let context = Context::init()?;
+        self.run_with(&context).await
+    }
 
+    pub async fn run_with(&self, context: &Context) -> Result<CliResult, CliError> {
         let (outcomes, summaries) = match &self.command {
             Command::Activity(cmd) => {
                 let (o, s) = cmd.run(&context).await?;
