@@ -6,98 +6,16 @@ use crate::cases;
 
 pub struct Engine {
     _temp: tempfile::TempDir,
-    system_ctx: SystemContext,
-    project_ctx: Option<ProjectContext>,
+    ctx: EngineContext,
     server: Option<tokio::task::JoinHandle<()>>,
 }
 
-/// Unified CLI wrapper for parsing engine commands from strings.
-///
-/// The engine doesn't have a unified CLI entry point — it has separate
-/// `Commands` (project) and `SystemCommands` (system) enums. This wrapper
-/// adds the top-level routing the test harness needs.
+/// Wrapper to parse command strings into the engine's `Command` enum.
 #[derive(Debug, Parser)]
 #[command(name = "oneiros")]
-struct EngineCli {
+struct Cli {
     #[command(subcommand)]
-    command: EngineCommand,
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum EngineCommand {
-    /// System-scoped commands.
-    #[command(subcommand)]
-    System(EngineSystemCommands),
-
-    /// Project-level commands.
-    #[command(subcommand)]
-    Project(EngineProjectCommands),
-
-    /// Seed commands.
-    #[command(subcommand)]
-    Seed(EngineSeedCommands),
-
-    /// Project-scoped commands — delegates to engine Commands.
-    #[command(subcommand)]
-    Level(LevelCommands),
-    #[command(subcommand)]
-    Texture(TextureCommands),
-    #[command(subcommand)]
-    Sensation(SensationCommands),
-    #[command(subcommand)]
-    Nature(NatureCommands),
-    #[command(subcommand)]
-    Persona(PersonaCommands),
-    #[command(subcommand)]
-    Urge(UrgeCommands),
-    #[command(subcommand)]
-    Agent(AgentCommands),
-    #[command(subcommand)]
-    Cognition(CognitionCommands),
-    #[command(subcommand)]
-    Memory(MemoryCommands),
-    #[command(subcommand)]
-    Experience(ExperienceCommands),
-    #[command(subcommand)]
-    Connection(ConnectionCommands),
-    #[command(subcommand)]
-    Lifecycle(LifecycleCommands),
-    #[command(subcommand)]
-    Search(SearchCommands),
-    #[command(subcommand)]
-    Pressure(PressureCommands),
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum EngineProjectCommands {
-    Init {
-        #[arg(long, short)]
-        yes: bool,
-    },
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum EngineSeedCommands {
-    Core,
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum EngineSystemCommands {
-    /// Initialize the system (create tenant + actor).
-    Init {
-        #[arg(long, short)]
-        name: Option<String>,
-        #[arg(long, short)]
-        yes: bool,
-    },
-    #[command(subcommand)]
-    Tenant(TenantCommands),
-    #[command(subcommand)]
-    Actor(ActorCommands),
-    #[command(subcommand)]
-    Brain(BrainCommands),
-    #[command(subcommand)]
-    Ticket(TicketCommands),
+    command: Command,
 }
 
 /// Project-level projections for the engine.
@@ -135,86 +53,30 @@ impl Backend for Engine {
 
         let system_ctx = SystemContext::new(conn, SYSTEM_PROJECTIONS);
 
+        let ctx = EngineContext {
+            system: system_ctx,
+            project: None,
+            brain_name: "test-project".to_string(),
+        };
+
         Ok(Self {
             _temp: temp,
-            system_ctx,
-            project_ctx: None,
+            ctx,
             server: None,
         })
     }
 
-    async fn exec(
-        &self,
-        command: &str,
-    ) -> Result<serde_json::Value, Box<dyn core::error::Error>> {
+    async fn exec(&self, command: &str) -> Result<serde_json::Value, Box<dyn core::error::Error>> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        // Strip --output json / -o json since the engine always returns JSON
         let full_args = strip_output_flag(full_args);
 
-        let cli = EngineCli::try_parse_from(&full_args)?;
-
-        let json_string = match cli.command {
-            EngineCommand::System(sys_cmd) => {
-                let engine_cmd = match sys_cmd {
-                    EngineSystemCommands::Init { name, yes } => {
-                        SystemCommands::Init { name, yes }
-                    }
-                    EngineSystemCommands::Tenant(cmd) => SystemCommands::Tenant(cmd),
-                    EngineSystemCommands::Actor(cmd) => SystemCommands::Actor(cmd),
-                    EngineSystemCommands::Brain(cmd) => SystemCommands::Brain(cmd),
-                    EngineSystemCommands::Ticket(cmd) => SystemCommands::Ticket(cmd),
-                };
-                execute_system(&self.system_ctx, engine_cmd)?
-            }
-            EngineCommand::Project(proj_cmd) => match proj_cmd {
-                EngineProjectCommands::Init { .. } => {
-                    let result =
-                        init_project(&self.system_ctx, "test-project".to_string())?;
-                    serde_json::to_string_pretty(&result)?
-                }
-            },
-            EngineCommand::Seed(seed_cmd) => match seed_cmd {
-                EngineSeedCommands::Core => {
-                    let project_ctx = self
-                        .project_ctx
-                        .as_ref()
-                        .expect("project context required — call start_service first");
-                    let result = seed_core(project_ctx)?;
-                    serde_json::to_string_pretty(&result)?
-                }
-            },
-            cmd => {
-                let project_ctx = self.project_ctx.as_ref()
-                    .expect("project context required — call start_service first");
-                let engine_cmd = match cmd {
-                    EngineCommand::Level(c) => Commands::Level(c),
-                    EngineCommand::Texture(c) => Commands::Texture(c),
-                    EngineCommand::Sensation(c) => Commands::Sensation(c),
-                    EngineCommand::Nature(c) => Commands::Nature(c),
-                    EngineCommand::Persona(c) => Commands::Persona(c),
-                    EngineCommand::Urge(c) => Commands::Urge(c),
-                    EngineCommand::Agent(c) => Commands::Agent(c),
-                    EngineCommand::Cognition(c) => Commands::Cognition(c),
-                    EngineCommand::Memory(c) => Commands::Memory(c),
-                    EngineCommand::Experience(c) => Commands::Experience(c),
-                    EngineCommand::Connection(c) => Commands::Connection(c),
-                    EngineCommand::Lifecycle(c) => Commands::Lifecycle(c),
-                    EngineCommand::Search(c) => Commands::Search(c),
-                    EngineCommand::Pressure(c) => Commands::Pressure(c),
-                    EngineCommand::System(_)
-                    | EngineCommand::Project(_)
-                    | EngineCommand::Seed(_) => unreachable!(),
-                };
-                execute(project_ctx, engine_cmd)?
-            }
-        };
-
+        let cli = Cli::try_parse_from(&full_args)?;
+        let json_string = execute(&self.ctx, cli.command)?;
         let value: serde_json::Value = serde_json::from_str(&json_string)?;
 
-        // Wrap in array to match legacy output format
         Ok(serde_json::Value::Array(vec![value]))
     }
 
@@ -224,11 +86,7 @@ impl Backend for Engine {
         let conn = rusqlite::Connection::open(&brain_db_path)?;
         migrate_project(&conn)?;
 
-        self.project_ctx = Some(ProjectContext::new(conn, PROJECT_PROJECTIONS));
-
-        // The engine has project_router() but for now the CLI dispatches directly
-        // through execute(). When the test cases require HTTP client→server path,
-        // we'll start the server here.
+        self.ctx.project = Some(ProjectContext::new(conn, PROJECT_PROJECTIONS));
 
         Ok(())
     }
