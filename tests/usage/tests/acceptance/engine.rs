@@ -157,41 +157,33 @@ impl Backend for Engine {
         let cli = EngineCli::try_parse_from(&full_args)?;
 
         let json_string = match cli.command {
-            EngineCommand::System(sys_cmd) => match sys_cmd {
-                EngineSystemCommands::Init { name, .. } => {
-                    let tenant_name = name.unwrap_or_else(|| "onerios user".to_string());
-                    execute_system(
-                        &self.system_ctx,
-                        SystemCommands::Tenant(TenantCommands::Create {
-                            name: tenant_name,
-                        }),
-                    )?
-                }
-                EngineSystemCommands::Tenant(cmd) => {
-                    execute_system(&self.system_ctx, SystemCommands::Tenant(cmd))?
-                }
-                EngineSystemCommands::Actor(cmd) => {
-                    execute_system(&self.system_ctx, SystemCommands::Actor(cmd))?
-                }
-                EngineSystemCommands::Brain(cmd) => {
-                    execute_system(&self.system_ctx, SystemCommands::Brain(cmd))?
-                }
-                EngineSystemCommands::Ticket(cmd) => {
-                    execute_system(&self.system_ctx, SystemCommands::Ticket(cmd))?
-                }
-            },
+            EngineCommand::System(sys_cmd) => {
+                let engine_cmd = match sys_cmd {
+                    EngineSystemCommands::Init { name, yes } => {
+                        SystemCommands::Init { name, yes }
+                    }
+                    EngineSystemCommands::Tenant(cmd) => SystemCommands::Tenant(cmd),
+                    EngineSystemCommands::Actor(cmd) => SystemCommands::Actor(cmd),
+                    EngineSystemCommands::Brain(cmd) => SystemCommands::Brain(cmd),
+                    EngineSystemCommands::Ticket(cmd) => SystemCommands::Ticket(cmd),
+                };
+                execute_system(&self.system_ctx, engine_cmd)?
+            }
             EngineCommand::Project(proj_cmd) => match proj_cmd {
                 EngineProjectCommands::Init { .. } => {
-                    // project init is a no-op in the engine — the brain DB
-                    // is created in start_service(). Return a synthetic response.
-                    r#"{"type": "init", "data": "test-project"}"#.to_string()
+                    let result =
+                        init_project(&self.system_ctx, "test-project".to_string())?;
+                    serde_json::to_string_pretty(&result)?
                 }
             },
             EngineCommand::Seed(seed_cmd) => match seed_cmd {
                 EngineSeedCommands::Core => {
-                    // Seed is not implemented in the engine yet.
-                    // Return an error so the test failure is clear.
-                    return Err("seed core is not implemented in the engine".into());
+                    let project_ctx = self
+                        .project_ctx
+                        .as_ref()
+                        .expect("project context required — call start_service first");
+                    let result = seed_core(project_ctx)?;
+                    serde_json::to_string_pretty(&result)?
                 }
             },
             cmd => {
