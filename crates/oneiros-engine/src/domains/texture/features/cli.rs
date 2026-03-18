@@ -13,7 +13,7 @@ pub enum TextureCommands {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
@@ -40,7 +40,7 @@ impl TextureCli {
                     prompt,
                 },
             )?)?,
-            TextureCommands::Get { name } => {
+            TextureCommands::Show { name } => {
                 serde_json::to_string_pretty(&TextureService::get(ctx, &name)?)?
             }
             TextureCommands::List => serde_json::to_string_pretty(&TextureService::list(ctx)?)?,

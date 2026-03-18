@@ -98,7 +98,7 @@ fn persona_crud() {
     .unwrap();
     assert!(matches!(
         PersonaService::get(&ctx, "process").unwrap(),
-        PersonaResponse::Found(_)
+        PersonaResponse::PersonaDetails(_)
     ));
 }
 

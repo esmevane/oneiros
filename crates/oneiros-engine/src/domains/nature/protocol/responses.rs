@@ -5,8 +5,9 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum NatureResponse {
-    Set(Nature),
-    Found(Nature),
-    Listed(Vec<Nature>),
-    Removed,
+    NatureSet(NatureName),
+    NatureDetails(Nature),
+    Natures(Vec<Nature>),
+    NoNatures,
+    NatureRemoved(NatureName),
 }

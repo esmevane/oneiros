@@ -190,3 +190,113 @@ async fn level_remove_makes_it_unlisted() -> TestResult {
 async fn seed_core_creates_default_levels() -> TestResult {
     cases::seed::core_creates_default_levels::<Engine>().await
 }
+
+// Texture
+#[tokio::test]
+async fn texture_set_creates() -> TestResult {
+    cases::texture::set_creates::<Engine>().await
+}
+#[tokio::test]
+async fn texture_set_updates() -> TestResult {
+    cases::texture::set_updates::<Engine>().await
+}
+#[tokio::test]
+async fn texture_list_empty() -> TestResult {
+    cases::texture::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn texture_list_populated() -> TestResult {
+    cases::texture::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn texture_remove() -> TestResult {
+    cases::texture::remove::<Engine>().await
+}
+
+// Sensation
+#[tokio::test]
+async fn sensation_set_creates() -> TestResult {
+    cases::sensation::set_creates::<Engine>().await
+}
+#[tokio::test]
+async fn sensation_set_updates() -> TestResult {
+    cases::sensation::set_updates::<Engine>().await
+}
+#[tokio::test]
+async fn sensation_list_empty() -> TestResult {
+    cases::sensation::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn sensation_list_populated() -> TestResult {
+    cases::sensation::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn sensation_remove() -> TestResult {
+    cases::sensation::remove::<Engine>().await
+}
+
+// Nature
+#[tokio::test]
+async fn nature_set_creates() -> TestResult {
+    cases::nature::set_creates::<Engine>().await
+}
+#[tokio::test]
+async fn nature_set_updates() -> TestResult {
+    cases::nature::set_updates::<Engine>().await
+}
+#[tokio::test]
+async fn nature_list_empty() -> TestResult {
+    cases::nature::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn nature_list_populated() -> TestResult {
+    cases::nature::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn nature_remove() -> TestResult {
+    cases::nature::remove::<Engine>().await
+}
+
+// Persona
+#[tokio::test]
+async fn persona_set_creates() -> TestResult {
+    cases::persona::set_creates::<Engine>().await
+}
+#[tokio::test]
+async fn persona_set_updates() -> TestResult {
+    cases::persona::set_updates::<Engine>().await
+}
+#[tokio::test]
+async fn persona_list_empty() -> TestResult {
+    cases::persona::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn persona_list_populated() -> TestResult {
+    cases::persona::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn persona_remove() -> TestResult {
+    cases::persona::remove::<Engine>().await
+}
+
+// Urge
+#[tokio::test]
+async fn urge_set_creates() -> TestResult {
+    cases::urge::set_creates::<Engine>().await
+}
+#[tokio::test]
+async fn urge_set_updates() -> TestResult {
+    cases::urge::set_updates::<Engine>().await
+}
+#[tokio::test]
+async fn urge_list_empty() -> TestResult {
+    cases::urge::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn urge_list_populated() -> TestResult {
+    cases::urge::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn urge_remove() -> TestResult {
+    cases::urge::remove::<Engine>().await
+}

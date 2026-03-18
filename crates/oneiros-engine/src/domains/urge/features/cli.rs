@@ -13,7 +13,7 @@ pub enum UrgeCommands {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
@@ -40,7 +40,7 @@ impl UrgeCli {
                     prompt,
                 },
             )?)?,
-            UrgeCommands::Get { name } => {
+            UrgeCommands::Show { name } => {
                 serde_json::to_string_pretty(&UrgeService::get(ctx, &name)?)?
             }
             UrgeCommands::List => serde_json::to_string_pretty(&UrgeService::list(ctx)?)?,

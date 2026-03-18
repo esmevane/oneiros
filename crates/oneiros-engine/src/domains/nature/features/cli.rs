@@ -13,7 +13,7 @@ pub enum NatureCommands {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
@@ -40,7 +40,7 @@ impl NatureCli {
                     prompt,
                 },
             )?)?,
-            NatureCommands::Get { name } => {
+            NatureCommands::Show { name } => {
                 serde_json::to_string_pretty(&NatureService::get(ctx, &name)?)?
             }
             NatureCommands::List => serde_json::to_string_pretty(&NatureService::list(ctx)?)?,

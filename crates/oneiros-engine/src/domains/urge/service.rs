@@ -4,8 +4,9 @@ pub struct UrgeService;
 
 impl UrgeService {
     pub fn set(ctx: &ProjectContext, urge: Urge) -> Result<UrgeResponse, UrgeError> {
-        ctx.emit(UrgeEvents::UrgeSet(urge.clone()));
-        Ok(UrgeResponse::Set(urge))
+        let name = urge.name.clone();
+        ctx.emit(UrgeEvents::UrgeSet(urge));
+        Ok(UrgeResponse::UrgeSet(name))
     }
 
     pub fn get(ctx: &ProjectContext, name: &str) -> Result<UrgeResponse, UrgeError> {
@@ -13,20 +14,25 @@ impl UrgeService {
             .with_db(|conn| UrgeRepo::new(conn).get(name))
             .map_err(UrgeError::Database)?
             .ok_or_else(|| UrgeError::NotFound(name.to_string()))?;
-        Ok(UrgeResponse::Found(urge))
+        Ok(UrgeResponse::UrgeDetails(urge))
     }
 
     pub fn list(ctx: &ProjectContext) -> Result<UrgeResponse, UrgeError> {
         let urges = ctx
             .with_db(|conn| UrgeRepo::new(conn).list())
             .map_err(UrgeError::Database)?;
-        Ok(UrgeResponse::Listed(urges))
+        if urges.is_empty() {
+            Ok(UrgeResponse::NoUrges)
+        } else {
+            Ok(UrgeResponse::Urges(urges))
+        }
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<UrgeResponse, UrgeError> {
+        let urge_name = UrgeName::new(name);
         ctx.emit(UrgeEvents::UrgeRemoved(UrgeRemoved {
-            name: UrgeName::new(name),
+            name: urge_name.clone(),
         }));
-        Ok(UrgeResponse::Removed)
+        Ok(UrgeResponse::UrgeRemoved(urge_name))
     }
 }

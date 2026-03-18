@@ -7,8 +7,9 @@ impl SensationService {
         ctx: &ProjectContext,
         sensation: Sensation,
     ) -> Result<SensationResponse, SensationError> {
-        ctx.emit(SensationEvents::SensationSet(sensation.clone()));
-        Ok(SensationResponse::Set(sensation))
+        let name = sensation.name.clone();
+        ctx.emit(SensationEvents::SensationSet(sensation));
+        Ok(SensationResponse::SensationSet(name))
     }
 
     pub fn get(ctx: &ProjectContext, name: &str) -> Result<SensationResponse, SensationError> {
@@ -16,20 +17,25 @@ impl SensationService {
             .with_db(|conn| SensationRepo::new(conn).get(name))
             .map_err(SensationError::Database)?
             .ok_or_else(|| SensationError::NotFound(name.to_string()))?;
-        Ok(SensationResponse::Found(sensation))
+        Ok(SensationResponse::SensationDetails(sensation))
     }
 
     pub fn list(ctx: &ProjectContext) -> Result<SensationResponse, SensationError> {
         let sensations = ctx
             .with_db(|conn| SensationRepo::new(conn).list())
             .map_err(SensationError::Database)?;
-        Ok(SensationResponse::Listed(sensations))
+        if sensations.is_empty() {
+            Ok(SensationResponse::NoSensations)
+        } else {
+            Ok(SensationResponse::Sensations(sensations))
+        }
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<SensationResponse, SensationError> {
+        let sensation_name = SensationName::new(name);
         ctx.emit(SensationEvents::SensationRemoved(SensationRemoved {
-            name: SensationName::new(name),
+            name: sensation_name.clone(),
         }));
-        Ok(SensationResponse::Removed)
+        Ok(SensationResponse::SensationRemoved(sensation_name))
     }
 }

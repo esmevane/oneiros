@@ -13,7 +13,7 @@ pub enum SensationCommands {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
@@ -40,7 +40,7 @@ impl SensationCli {
                     prompt,
                 },
             )?)?,
-            SensationCommands::Get { name } => {
+            SensationCommands::Show { name } => {
                 serde_json::to_string_pretty(&SensationService::get(ctx, &name)?)?
             }
             SensationCommands::List => serde_json::to_string_pretty(&SensationService::list(ctx)?)?,

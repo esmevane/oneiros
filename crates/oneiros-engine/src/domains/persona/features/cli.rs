@@ -13,7 +13,7 @@ pub enum PersonaCommands {
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
@@ -40,7 +40,7 @@ impl PersonaCli {
                     prompt,
                 },
             )?)?,
-            PersonaCommands::Get { name } => {
+            PersonaCommands::Show { name } => {
                 serde_json::to_string_pretty(&PersonaService::get(ctx, &name)?)?
             }
             PersonaCommands::List => serde_json::to_string_pretty(&PersonaService::list(ctx)?)?,

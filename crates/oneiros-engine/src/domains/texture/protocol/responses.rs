@@ -5,8 +5,9 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum TextureResponse {
-    Set(Texture),
-    Found(Texture),
-    Listed(Vec<Texture>),
-    Removed,
+    TextureSet(TextureName),
+    TextureDetails(Texture),
+    Textures(Vec<Texture>),
+    NoTextures,
+    TextureRemoved(TextureName),
 }
