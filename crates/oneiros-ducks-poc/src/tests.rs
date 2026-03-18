@@ -11,7 +11,7 @@ use crate::ports::AppContext;
 // ── Helpers ───────────────────────────────────────────────────────
 
 fn test_db(dir: &std::path::Path) -> Database {
-    Database::create_brain_db(&dir.join("test-brain.db")).expect("create brain db")
+    Database::create_brain_db(dir.join("test-brain.db")).expect("create brain db")
 }
 
 const PROJECTIONS: &[&[oneiros_db::Projection]] = &[crate::domains::agent::PROJECTIONS];

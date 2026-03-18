@@ -3,7 +3,7 @@ use axum::body::Body;
 use axum::http::Request;
 use http_body_util::BodyExt;
 use oneiros_model::*;
-use oneiros_resource::{Fulfill, Resource};
+use oneiros_resource::Fulfill;
 use tower::ServiceExt;
 
 use crate::resource_agent::Agent;

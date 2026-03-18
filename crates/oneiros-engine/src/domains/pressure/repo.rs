@@ -54,7 +54,7 @@ impl<'a> PressureRepo<'a> {
 
                 // More cognitions = lower pressure to introspect (already active)
                 // Fewer cognitions = higher pressure
-                let percent = ((100.0 - (cognition_count as f64 * 10.0).min(100.0)) as u8).max(0);
+                let percent = (100.0 - (cognition_count as f64 * 10.0).min(100.0)) as u8;
 
                 self.conn.execute(
                     "INSERT OR REPLACE INTO pressures (agent, urge, percent, updated_at) VALUES (?1, ?2, ?3, ?4)",

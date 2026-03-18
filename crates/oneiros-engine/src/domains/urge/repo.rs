@@ -20,11 +20,10 @@ impl<'a> UrgeRepo<'a> {
         if event.event_type == "urge-set" {
             let urge: Urge = serde_json::from_value(event.data.clone())?;
             self.set(&urge)?;
-        } else if event.event_type == "urge-removed" {
-            if let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
+        } else if event.event_type == "urge-removed"
+            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
                 self.remove(name)?;
             }
-        }
         Ok(())
     }
 

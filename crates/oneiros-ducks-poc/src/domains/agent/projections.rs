@@ -1,4 +1,4 @@
-use oneiros_db::{Database, DatabaseError, Projection};
+use oneiros_db::Projection;
 use oneiros_model::*;
 
 pub const PROJECTIONS: &[Projection] = &[CREATED, UPDATED, REMOVED];

@@ -7,7 +7,7 @@ use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
-use crate::store::{self, NewEvent, Projection, StoreError, StoredEvent};
+use crate::store::{self, NewEvent, Projection, StoredEvent};
 
 /// The system-scoped application context.
 #[derive(Clone)]

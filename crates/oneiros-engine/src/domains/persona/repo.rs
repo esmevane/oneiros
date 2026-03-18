@@ -20,11 +20,10 @@ impl<'a> PersonaRepo<'a> {
         if event.event_type == "persona-set" {
             let persona: Persona = serde_json::from_value(event.data.clone())?;
             self.set(&persona)?;
-        } else if event.event_type == "persona-removed" {
-            if let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
+        } else if event.event_type == "persona-removed"
+            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
                 self.remove(name)?;
             }
-        }
         Ok(())
     }
 

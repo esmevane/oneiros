@@ -20,11 +20,10 @@ impl<'a> SensationRepo<'a> {
         if event.event_type == "sensation-set" {
             let sensation: Sensation = serde_json::from_value(event.data.clone())?;
             self.set(&sensation)?;
-        } else if event.event_type == "sensation-removed" {
-            if let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
+        } else if event.event_type == "sensation-removed"
+            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
                 self.remove(name)?;
             }
-        }
         Ok(())
     }
 

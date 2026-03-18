@@ -20,11 +20,10 @@ impl<'a> NatureRepo<'a> {
         if event.event_type == "nature-set" {
             let nature: Nature = serde_json::from_value(event.data.clone())?;
             self.set(&nature)?;
-        } else if event.event_type == "nature-removed" {
-            if let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
+        } else if event.event_type == "nature-removed"
+            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
                 self.remove(name)?;
             }
-        }
         Ok(())
     }
 
