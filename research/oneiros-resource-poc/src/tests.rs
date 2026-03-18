@@ -71,14 +71,6 @@ async fn fulfill_agent(
     Fulfill::<AgentResource>::fulfill(scope, request).await
 }
 
-/// Convenience: disambiguated fulfill for Level requests.
-async fn fulfill_level(
-    scope: &ProjectScope<'_>,
-    request: LevelRequests,
-) -> Result<LevelResponses, ProjectScopeError> {
-    Fulfill::<LevelResource>::fulfill(scope, request).await
-}
-
 /// Convenience: disambiguated fulfill for Agent requests via HttpScope.
 async fn http_fulfill_agent(
     scope: &HttpScope,
