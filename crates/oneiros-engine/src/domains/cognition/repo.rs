@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Cognition;
 
 /// Cognition read model — queries, projection handling, and lifecycle.
@@ -17,9 +19,10 @@ impl<'a> CognitionRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "cognition-added" {
-            let cognition: Cognition = serde_json::from_value(event.data.clone())?;
-            self.insert(&cognition)?;
+        if let Events::Cognition(cognition_event) = &event.data {
+            match cognition_event {
+                CognitionEvents::CognitionAdded(cognition) => self.insert(cognition)?,
+            }
         }
         Ok(())
     }

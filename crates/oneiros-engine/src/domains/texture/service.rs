@@ -1,6 +1,7 @@
 use crate::contexts::ProjectContext;
 
 use super::errors::TextureError;
+use super::events::{TextureEvents, TextureRemoved};
 use super::model::Texture;
 use super::repo::TextureRepo;
 use super::responses::TextureResponse;
@@ -9,7 +10,7 @@ pub struct TextureService;
 
 impl TextureService {
     pub fn set(ctx: &ProjectContext, texture: Texture) -> Result<TextureResponse, TextureError> {
-        ctx.emit("texture-set", &texture);
+        ctx.emit(TextureEvents::TextureSet(texture.clone()));
         Ok(TextureResponse::Set(texture))
     }
 
@@ -29,7 +30,9 @@ impl TextureService {
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<TextureResponse, TextureError> {
-        ctx.emit("texture-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(TextureEvents::TextureRemoved(TextureRemoved {
+            name: name.to_string(),
+        }));
         Ok(TextureResponse::Removed)
     }
 }

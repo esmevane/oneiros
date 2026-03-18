@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::SystemContext;
 
 use super::errors::ActorError;
+use super::events::*;
 use super::model::Actor;
 use super::repo::ActorRepo;
 use super::responses::ActorResponse;
@@ -23,7 +24,7 @@ impl ActorService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("actor-created", &actor);
+        ctx.emit(ActorEvents::ActorCreated(actor.clone()));
         Ok(ActorResponse::Created(actor))
     }
 

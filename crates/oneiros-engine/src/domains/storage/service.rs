@@ -1,12 +1,11 @@
-use std::path::Path;
-
 use chrono::Utc;
 use uuid::Uuid;
 
 use crate::contexts::ProjectContext;
 
 use super::errors::StorageError;
-use super::model::StorageEntry;
+use super::events::{BlobRemoved, StorageEvents};
+use super::model::{StorageContent, StorageEntry};
 use super::repo::StorageRepo;
 use super::responses::StorageResponse;
 
@@ -19,11 +18,12 @@ impl StorageService {
     /// via a `blob-stored` event which runs through projections.
     pub fn upload(
         ctx: &ProjectContext,
-        data_dir: &Path,
         name: String,
         content_type: String,
         data: Vec<u8>,
     ) -> Result<StorageResponse, StorageError> {
+        let data_dir = ctx.data_dir().ok_or(StorageError::NoDataDir)?;
+
         let id = Uuid::now_v7().to_string();
         let blobs_dir = data_dir.join("blobs");
         std::fs::create_dir_all(&blobs_dir)?;
@@ -39,7 +39,7 @@ impl StorageService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("blob-stored", &entry);
+        ctx.emit(StorageEvents::BlobStored(entry.clone()));
         Ok(StorageResponse::Uploaded(entry))
     }
 
@@ -51,6 +51,21 @@ impl StorageService {
         Ok(StorageResponse::Found(entry))
     }
 
+    /// Retrieve the binary content of a stored blob.
+    pub fn get_content(ctx: &ProjectContext, id: &str) -> Result<StorageResponse, StorageError> {
+        let data_dir = ctx.data_dir().ok_or(StorageError::NoDataDir)?;
+
+        let entry = ctx
+            .with_db(|conn| StorageRepo::new(conn).get(id))
+            .map_err(StorageError::Database)?
+            .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
+
+        let blob_path = data_dir.join("blobs").join(id);
+        let data = std::fs::read(&blob_path)?;
+
+        Ok(StorageResponse::Content(StorageContent { entry, data }))
+    }
+
     pub fn list(ctx: &ProjectContext) -> Result<StorageResponse, StorageError> {
         let entries = ctx
             .with_db(|conn| StorageRepo::new(conn).list())
@@ -59,11 +74,9 @@ impl StorageService {
     }
 
     /// Remove the metadata record and delete the blob file from the filesystem.
-    pub fn remove(
-        ctx: &ProjectContext,
-        data_dir: &Path,
-        id: &str,
-    ) -> Result<StorageResponse, StorageError> {
+    pub fn remove(ctx: &ProjectContext, id: &str) -> Result<StorageResponse, StorageError> {
+        let data_dir = ctx.data_dir().ok_or(StorageError::NoDataDir)?;
+
         // Confirm existence before emitting.
         let _ = ctx
             .with_db(|conn| StorageRepo::new(conn).get(id))
@@ -76,7 +89,9 @@ impl StorageService {
             std::fs::remove_file(&blob_path)?;
         }
 
-        ctx.emit("blob-removed", &serde_json::json!({ "id": id }));
+        ctx.emit(StorageEvents::BlobRemoved(BlobRemoved {
+            id: id.to_string(),
+        }));
         Ok(StorageResponse::Removed)
     }
 }

@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::SensationEvents;
 use super::model::Sensation;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,13 +19,12 @@ impl<'a> SensationRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "sensation-set" {
-            let sensation: Sensation = serde_json::from_value(event.data.clone())?;
-            self.set(&sensation)?;
-        } else if event.event_type == "sensation-removed"
-            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                self.remove(name)?;
+        if let Events::Sensation(sensation_event) = &event.data {
+            match sensation_event {
+                SensationEvents::SensationSet(sensation) => self.set(sensation)?,
+                SensationEvents::SensationRemoved(removed) => self.remove(&removed.name)?,
             }
+        }
         Ok(())
     }
 

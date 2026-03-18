@@ -1780,9 +1780,12 @@ version = "0.0.8"
 dependencies = [
  "axum",
  "chrono",
+ "clap",
  "http-body-util",
  "reqwest",
+ "rmcp",
  "rusqlite",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",

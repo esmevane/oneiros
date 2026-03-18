@@ -1,7 +1,8 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// A pressure reading — derived state computed from cross-domain queries.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Pressure {
     pub agent: String,
     pub urge: String,
@@ -10,7 +11,7 @@ pub struct Pressure {
 }
 
 /// Summary for wire format.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PressureSummary {
     pub urge: String,
     pub percent: u8,

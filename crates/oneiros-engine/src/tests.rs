@@ -1,73 +1,37 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use http_body_util::BodyExt;
 use rusqlite::Connection;
 use tower::ServiceExt;
 
-use crate::contexts::ProjectContext;
+use crate::contexts::{ProjectContext, SystemContext};
 use crate::domains;
+use crate::events::Events;
+use crate::migrations;
 use crate::store;
 
 // ── Helpers ───────────────────────────────────────────────────────
 
+/// All project-scoped projections in registration order.
+static PROJECTIONS: &[&[store::Projection]] = &[
+    domains::level::PROJECTIONS,
+    domains::texture::PROJECTIONS,
+    domains::sensation::PROJECTIONS,
+    domains::nature::PROJECTIONS,
+    domains::persona::PROJECTIONS,
+    domains::urge::PROJECTIONS,
+    domains::agent::PROJECTIONS,
+    domains::cognition::PROJECTIONS,
+    domains::memory::PROJECTIONS,
+    domains::experience::PROJECTIONS,
+    domains::connection::PROJECTIONS,
+    domains::pressure::PROJECTIONS,
+    domains::storage::PROJECTIONS,
+    domains::search::PROJECTIONS,
+];
+
 fn project_ctx() -> ProjectContext {
     let conn = Connection::open_in_memory().expect("open db");
-    store::initialize(&conn).expect("init store");
-
-    // Migrate all project-scoped repos
-    domains::level::repo::LevelRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::texture::repo::TextureRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::sensation::repo::SensationRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::nature::repo::NatureRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::persona::repo::PersonaRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::urge::repo::UrgeRepo::new(&conn).migrate().unwrap();
-    domains::agent::repo::AgentRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::cognition::repo::CognitionRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::memory::repo::MemoryRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::experience::repo::ExperienceRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::connection::repo::ConnectionRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::pressure::repo::PressureRepo::new(&conn)
-        .migrate()
-        .unwrap();
-    domains::search::repo::SearchRepo::new(&conn)
-        .migrate()
-        .unwrap();
-
-    static PROJECTIONS: &[&[store::Projection]] = &[
-        domains::level::PROJECTIONS,
-        domains::texture::PROJECTIONS,
-        domains::sensation::PROJECTIONS,
-        domains::nature::PROJECTIONS,
-        domains::persona::PROJECTIONS,
-        domains::urge::PROJECTIONS,
-        domains::agent::PROJECTIONS,
-        domains::cognition::PROJECTIONS,
-        domains::memory::PROJECTIONS,
-        domains::experience::PROJECTIONS,
-        domains::connection::PROJECTIONS,
-        domains::pressure::PROJECTIONS,
-    ];
-
+    migrations::migrate_project(&conn).expect("migrate");
     ProjectContext::new(conn, PROJECTIONS)
 }
 
@@ -94,11 +58,6 @@ fn seed_agent(ctx: &ProjectContext) {
         "You govern.".into(),
     )
     .unwrap();
-}
-
-async fn json_body<T: serde::de::DeserializeOwned>(response: axum::http::Response<Body>) -> T {
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    serde_json::from_slice(&bytes).unwrap()
 }
 
 // ── Vocabulary domain tests ───────────────────────────────────────
@@ -239,11 +198,13 @@ fn cognition_add_and_list() {
     }
 }
 
-// ── Broadcast test ────────────────────────────────────────────────
+// ── Typed event tests ────────────────────────────────────────────
 
 #[test]
-fn broadcast_receives_events_across_domains() {
+fn broadcast_events_are_typed() {
+    use domains::agent::events::AgentEvents;
     use domains::agent::service::AgentService;
+    use domains::level::events::LevelEvents;
     use domains::level::{model::Level, service::LevelService};
     let ctx = project_ctx();
     seed_persona(&ctx);
@@ -261,6 +222,10 @@ fn broadcast_receives_events_across_domains() {
     .unwrap();
     let event = sub.try_recv().unwrap();
     assert_eq!(event.event_type, "level-set");
+    assert!(matches!(
+        event.data,
+        Events::Level(LevelEvents::LevelSet(_))
+    ));
 
     AgentService::create(
         &ctx,
@@ -272,6 +237,76 @@ fn broadcast_receives_events_across_domains() {
     .unwrap();
     let event = sub.try_recv().unwrap();
     assert_eq!(event.event_type, "agent-created");
+    assert!(matches!(
+        event.data,
+        Events::Agent(AgentEvents::AgentCreated(_))
+    ));
+}
+
+// ── Replay test ──────────────────────────────────────────────────
+
+#[test]
+fn replay_reconstructs_read_models() {
+    use domains::agent::{responses::AgentResponse, service::AgentService};
+    use domains::cognition::{responses::CognitionResponse, service::CognitionService};
+    use domains::level::{model::Level, responses::LevelResponse, service::LevelService};
+    let ctx = project_ctx();
+
+    // Seed data across multiple domains
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "working".into(),
+            description: "Active".into(),
+            prompt: "".into(),
+        },
+    )
+    .unwrap();
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "session".into(),
+            description: "Session".into(),
+            prompt: "".into(),
+        },
+    )
+    .unwrap();
+    seed_persona(&ctx);
+    seed_agent(&ctx);
+    CognitionService::add(
+        &ctx,
+        "gov".into(),
+        "observation".into(),
+        "Test thought".into(),
+    )
+    .unwrap();
+
+    // Verify read models before replay
+    match LevelService::list(&ctx).unwrap() {
+        LevelResponse::Listed(levels) => assert_eq!(levels.len(), 2),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+    assert!(matches!(
+        AgentService::get(&ctx, "gov").unwrap(),
+        AgentResponse::Found(_)
+    ));
+
+    // Replay — this resets all projections and re-applies all events
+    ctx.with_db(|conn| store::replay(conn, PROJECTIONS).unwrap());
+
+    // Read models should be identical after replay
+    match LevelService::list(&ctx).unwrap() {
+        LevelResponse::Listed(levels) => assert_eq!(levels.len(), 2),
+        other => panic!("Expected Listed after replay, got {other:?}"),
+    }
+    match AgentService::get(&ctx, "gov").unwrap() {
+        AgentResponse::Found(a) => assert_eq!(a.name, "gov"),
+        other => panic!("Expected Found after replay, got {other:?}"),
+    }
+    match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
+        CognitionResponse::Listed(cogs) => assert_eq!(cogs.len(), 1),
+        other => panic!("Expected Listed after replay, got {other:?}"),
+    }
 }
 
 // ── HTTP collector tests ──────────────────────────────────────────
@@ -346,6 +381,8 @@ async fn http_not_found() {
 
 #[tokio::test]
 async fn full_integration() {
+    use domains::agent::events::AgentEvents;
+
     let ctx = project_ctx();
     seed_persona(&ctx);
     let app = crate::http::project_router(ctx.clone());
@@ -373,7 +410,267 @@ async fn full_integration() {
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
-    // Broadcast received the agent-created event
+    // Broadcast received a typed agent-created event
     let agent_event = sub.try_recv().unwrap();
     assert_eq!(agent_event.event_type, "agent-created");
+    assert!(matches!(
+        agent_event.data,
+        Events::Agent(AgentEvents::AgentCreated(_))
+    ));
+}
+
+// ── Event serialization round-trip ───────────────────────────────
+
+#[test]
+fn events_serialize_and_deserialize() {
+    use domains::level::events::LevelEvents;
+    use domains::level::model::Level;
+
+    let event = Events::Level(LevelEvents::LevelSet(Level {
+        name: "test".into(),
+        description: "desc".into(),
+        prompt: "p".into(),
+    }));
+
+    // Serialize
+    let json = serde_json::to_string(&event).unwrap();
+    assert!(json.contains(r#""type":"level-set""#));
+
+    // Deserialize
+    let back: Events = serde_json::from_str(&json).unwrap();
+    assert!(matches!(back, Events::Level(LevelEvents::LevelSet(_))));
+
+    // Unknown events deserialize to Unknown
+    let unknown_json = r#"{"type":"future-event","data":{"x":1}}"#;
+    let unknown: Events = serde_json::from_str(unknown_json).unwrap();
+    assert!(matches!(unknown, Events::Unknown(_)));
+}
+
+// ── Search projection test ───────────────────────────────────────
+
+#[test]
+fn search_indexes_across_domains() {
+    use domains::cognition::service::CognitionService;
+    use domains::search::responses::SearchResponse;
+    use domains::search::service::SearchService;
+    let ctx = project_ctx();
+    seed_persona(&ctx);
+    seed_agent(&ctx);
+
+    // Add cognitions
+    CognitionService::add(
+        &ctx,
+        "gov".into(),
+        "observation".into(),
+        "The architecture is clean".into(),
+    )
+    .unwrap();
+    CognitionService::add(
+        &ctx,
+        "gov".into(),
+        "working".into(),
+        "Working on typed events".into(),
+    )
+    .unwrap();
+
+    // Search should find them
+    match SearchService::search(&ctx, "architecture", None).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+    }
+
+    // Agent itself should be indexed too (from seed_agent)
+    match SearchService::search(&ctx, "Governor", None).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+    }
+
+    // Search with agent filter
+    match SearchService::search(&ctx, "typed", Some("gov")).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+    }
+
+    // Replay should rebuild the search index correctly
+    ctx.with_db(|conn| store::replay(conn, PROJECTIONS).unwrap());
+    match SearchService::search(&ctx, "architecture", None).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+    }
+}
+
+// ── System context tests ─────────────────────────────────────────
+
+static SYSTEM_PROJECTIONS: &[&[store::Projection]] = &[
+    domains::tenant::PROJECTIONS,
+    domains::actor::PROJECTIONS,
+    domains::brain::PROJECTIONS,
+    domains::ticket::PROJECTIONS,
+];
+
+fn system_ctx() -> SystemContext {
+    let conn = Connection::open_in_memory().expect("open db");
+    migrations::migrate_system(&conn).expect("migrate");
+    SystemContext::new(conn, SYSTEM_PROJECTIONS)
+}
+
+#[test]
+fn tenant_create_and_list() {
+    use domains::tenant::{responses::TenantResponse, service::TenantService};
+    let ctx = system_ctx();
+
+    match TenantService::create(&ctx, "acme".into()).unwrap() {
+        TenantResponse::Created(t) => assert_eq!(t.name, "acme"),
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    match TenantService::list(&ctx).unwrap() {
+        TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 1),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+}
+
+#[test]
+fn actor_create_and_get() {
+    use domains::actor::{responses::ActorResponse, service::ActorService};
+    use domains::tenant::{responses::TenantResponse, service::TenantService};
+    let ctx = system_ctx();
+
+    // Create a tenant first
+    let tenant_id = match TenantService::create(&ctx, "acme".into()).unwrap() {
+        TenantResponse::Created(t) => t.id,
+        other => panic!("Expected Created, got {other:?}"),
+    };
+
+    match ActorService::create(&ctx, tenant_id.clone(), "alice".into()).unwrap() {
+        ActorResponse::Created(a) => {
+            assert_eq!(a.name, "alice");
+            assert_eq!(a.tenant_id, tenant_id);
+        }
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    match ActorService::list(&ctx).unwrap() {
+        ActorResponse::Listed(actors) => assert_eq!(actors.len(), 1),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+}
+
+#[test]
+fn brain_create_and_conflict() {
+    use domains::brain::{errors::BrainError, responses::BrainResponse, service::BrainService};
+    let ctx = system_ctx();
+
+    match BrainService::create(&ctx, "test-brain".into()).unwrap() {
+        BrainResponse::Created(b) => assert_eq!(b.name, "test-brain"),
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    // Duplicate name should conflict
+    assert!(matches!(
+        BrainService::create(&ctx, "test-brain".into()),
+        Err(BrainError::Conflict(_))
+    ));
+
+    match BrainService::get(&ctx, "test-brain").unwrap() {
+        BrainResponse::Found(b) => assert_eq!(b.name, "test-brain"),
+        other => panic!("Expected Found, got {other:?}"),
+    }
+}
+
+#[test]
+fn ticket_issue_and_validate() {
+    use domains::actor::{responses::ActorResponse, service::ActorService};
+    use domains::brain::{responses::BrainResponse, service::BrainService};
+    use domains::tenant::{responses::TenantResponse, service::TenantService};
+    use domains::ticket::{responses::TicketResponse, service::TicketService};
+    let ctx = system_ctx();
+
+    // Set up tenant + actor + brain
+    let tenant_id = match TenantService::create(&ctx, "acme".into()).unwrap() {
+        TenantResponse::Created(t) => t.id,
+        other => panic!("Expected Created, got {other:?}"),
+    };
+    let actor_id = match ActorService::create(&ctx, tenant_id, "alice".into()).unwrap() {
+        ActorResponse::Created(a) => a.id,
+        other => panic!("Expected Created, got {other:?}"),
+    };
+    match BrainService::create(&ctx, "test-brain".into()).unwrap() {
+        BrainResponse::Created(_) => {}
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    // Issue a ticket
+    let token = match TicketService::create(&ctx, actor_id, "test-brain".into()).unwrap() {
+        TicketResponse::Created(t) => {
+            assert_eq!(t.brain_name, "test-brain");
+            t.token
+        }
+        other => panic!("Expected Created, got {other:?}"),
+    };
+
+    // Validate the token
+    match TicketService::validate(&ctx, &token).unwrap() {
+        TicketResponse::Validated(t) => assert_eq!(t.brain_name, "test-brain"),
+        other => panic!("Expected Validated, got {other:?}"),
+    }
+}
+
+// ── Storage IO test ──────────────────────────────────────────────
+
+#[test]
+fn storage_upload_and_retrieve_content() {
+    use domains::storage::{
+        model::StorageContent, responses::StorageResponse, service::StorageService,
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let ctx = project_ctx().with_config(crate::config::Config::new(dir.path()));
+
+    let content = b"Hello, oneiros!";
+
+    // Upload
+    let id = match StorageService::upload(
+        &ctx,
+        "test.txt".into(),
+        "text/plain".into(),
+        content.to_vec(),
+    )
+    .unwrap()
+    {
+        StorageResponse::Uploaded(entry) => {
+            assert_eq!(entry.name, "test.txt");
+            assert_eq!(entry.size, content.len() as u64);
+            entry.id
+        }
+        other => panic!("Expected Uploaded, got {other:?}"),
+    };
+
+    // Get metadata
+    match StorageService::get(&ctx, &id).unwrap() {
+        StorageResponse::Found(entry) => assert_eq!(entry.name, "test.txt"),
+        other => panic!("Expected Found, got {other:?}"),
+    }
+
+    // Get content
+    match StorageService::get_content(&ctx, &id).unwrap() {
+        StorageResponse::Content(StorageContent { entry, data }) => {
+            assert_eq!(entry.name, "test.txt");
+            assert_eq!(data, content);
+        }
+        other => panic!("Expected Content, got {other:?}"),
+    }
+
+    // List
+    match StorageService::list(&ctx).unwrap() {
+        StorageResponse::Listed(entries) => assert_eq!(entries.len(), 1),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+
+    // Remove
+    assert!(matches!(
+        StorageService::remove(&ctx, &id).unwrap(),
+        StorageResponse::Removed
+    ));
+
+    // File should be gone
+    assert!(!dir.path().join("blobs").join(&id).exists());
+
+    // Metadata should be gone
+    assert!(StorageService::get(&ctx, &id).is_err());
 }

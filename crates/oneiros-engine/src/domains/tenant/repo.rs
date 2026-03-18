@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Tenant;
 
 /// Tenant read model — queries, projection handling, and lifecycle.
@@ -17,9 +19,8 @@ impl<'a> TenantRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "tenant-created" {
-            let tenant: Tenant = serde_json::from_value(event.data.clone())?;
-            self.create_record(&tenant)?;
+        if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = &event.data {
+            self.create_record(tenant)?;
         }
         Ok(())
     }

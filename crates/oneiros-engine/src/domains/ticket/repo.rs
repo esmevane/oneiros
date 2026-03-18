@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Ticket;
 
 /// Ticket read model — queries, projection handling, and lifecycle.
@@ -17,9 +19,8 @@ impl<'a> TicketRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "ticket-created" {
-            let ticket: Ticket = serde_json::from_value(event.data.clone())?;
-            self.create_record(&ticket)?;
+        if let Events::Ticket(TicketEvents::TicketIssued(ticket)) = &event.data {
+            self.create_record(ticket)?;
         }
         Ok(())
     }

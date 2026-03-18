@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Actor;
 
 /// Actor read model — queries, projection handling, and lifecycle.
@@ -17,9 +19,8 @@ impl<'a> ActorRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "actor-created" {
-            let actor: Actor = serde_json::from_value(event.data.clone())?;
-            self.create_record(&actor)?;
+        if let Events::Actor(ActorEvents::ActorCreated(actor)) = &event.data {
+            self.create_record(actor)?;
         }
         Ok(())
     }

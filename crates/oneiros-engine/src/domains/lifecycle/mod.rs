@@ -4,7 +4,9 @@
 //! services into higher-level operations: dream, introspect, reflect, sense, sleep.
 //! Each produces lifecycle events and returns composed results.
 
+pub mod client;
 pub mod errors;
+pub mod events;
 pub mod features;
 pub mod model;
 pub mod requests;

@@ -31,6 +31,8 @@ pub fn project_router(ctx: ProjectContext) -> Router {
             "/connections",
             domains::connection::features::http::routes(),
         )
+        // Storage
+        .nest("/storage", domains::storage::features::http::routes())
         // Derived
         .nest("/pressures", domains::pressure::features::http::routes())
         // Lifecycle

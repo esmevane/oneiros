@@ -1,10 +1,18 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct StorageEntry {
     pub id: String,
     pub name: String,
     pub content_type: String,
     pub size: u64,
     pub created_at: String,
+}
+
+/// Binary content retrieved from storage.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct StorageContent {
+    pub entry: StorageEntry,
+    pub data: Vec<u8>,
 }

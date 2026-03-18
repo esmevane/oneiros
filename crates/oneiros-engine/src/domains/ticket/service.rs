@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::SystemContext;
 
 use super::errors::TicketError;
+use super::events::*;
 use super::model::Ticket;
 use super::repo::TicketRepo;
 use super::responses::TicketResponse;
@@ -24,7 +25,7 @@ impl TicketService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("ticket-created", &ticket);
+        ctx.emit(TicketEvents::TicketIssued(ticket.clone()));
         Ok(TicketResponse::Created(ticket))
     }
 

@@ -1,6 +1,7 @@
 use crate::contexts::ProjectContext;
 
 use super::errors::SensationError;
+use super::events::{SensationEvents, SensationRemoved};
 use super::model::Sensation;
 use super::repo::SensationRepo;
 use super::responses::SensationResponse;
@@ -12,7 +13,7 @@ impl SensationService {
         ctx: &ProjectContext,
         sensation: Sensation,
     ) -> Result<SensationResponse, SensationError> {
-        ctx.emit("sensation-set", &sensation);
+        ctx.emit(SensationEvents::SensationSet(sensation.clone()));
         Ok(SensationResponse::Set(sensation))
     }
 
@@ -32,7 +33,9 @@ impl SensationService {
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<SensationResponse, SensationError> {
-        ctx.emit("sensation-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(SensationEvents::SensationRemoved(SensationRemoved {
+            name: name.to_string(),
+        }));
         Ok(SensationResponse::Removed)
     }
 }

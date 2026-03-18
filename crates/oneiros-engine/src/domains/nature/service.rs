@@ -1,6 +1,7 @@
 use crate::contexts::ProjectContext;
 
 use super::errors::NatureError;
+use super::events::{NatureEvents, NatureRemoved};
 use super::model::Nature;
 use super::repo::NatureRepo;
 use super::responses::NatureResponse;
@@ -9,7 +10,7 @@ pub struct NatureService;
 
 impl NatureService {
     pub fn set(ctx: &ProjectContext, nature: Nature) -> Result<NatureResponse, NatureError> {
-        ctx.emit("nature-set", &nature);
+        ctx.emit(NatureEvents::NatureSet(nature.clone()));
         Ok(NatureResponse::Set(nature))
     }
 
@@ -29,7 +30,9 @@ impl NatureService {
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<NatureResponse, NatureError> {
-        ctx.emit("nature-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(NatureEvents::NatureRemoved(NatureRemoved {
+            name: name.to_string(),
+        }));
         Ok(NatureResponse::Removed)
     }
 }

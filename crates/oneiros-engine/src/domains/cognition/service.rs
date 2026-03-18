@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::ProjectContext;
 
 use super::errors::CognitionError;
+use super::events::CognitionEvents;
 use super::model::Cognition;
 use super::repo::CognitionRepo;
 use super::responses::CognitionResponse;
@@ -25,7 +26,7 @@ impl CognitionService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("cognition-added", &cognition);
+        ctx.emit(CognitionEvents::CognitionAdded(cognition.clone()));
         Ok(CognitionResponse::Added(cognition))
     }
 

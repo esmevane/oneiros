@@ -4,6 +4,7 @@ use crate::contexts::ProjectContext;
 use crate::domains::persona::repo::PersonaRepo;
 
 use super::errors::AgentError;
+use super::events::{AgentEvents, AgentRemoved};
 use super::model::Agent;
 use super::repo::AgentRepo;
 use super::responses::AgentResponse;
@@ -44,7 +45,7 @@ impl AgentService {
             prompt,
         };
 
-        ctx.emit("agent-created", &agent);
+        ctx.emit(AgentEvents::AgentCreated(agent.clone()));
         Ok(AgentResponse::Created(agent))
     }
 
@@ -84,7 +85,7 @@ impl AgentService {
             prompt,
         };
 
-        ctx.emit("agent-updated", &agent);
+        ctx.emit(AgentEvents::AgentUpdated(agent.clone()));
         Ok(AgentResponse::Updated(agent))
     }
 
@@ -98,7 +99,9 @@ impl AgentService {
             return Err(AgentError::NotFound(name.to_string()));
         }
 
-        ctx.emit("agent-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(AgentEvents::AgentRemoved(AgentRemoved {
+            name: name.to_string(),
+        }));
         Ok(AgentResponse::Removed)
     }
 }

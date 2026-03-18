@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::ProjectContext;
 
 use super::errors::ConnectionError;
+use super::events::{ConnectionEvents, ConnectionRemoved};
 use super::model::Connection;
 use super::repo::ConnectionRepo;
 use super::responses::ConnectionResponse;
@@ -27,7 +28,7 @@ impl ConnectionService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("connection-created", &connection);
+        ctx.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
         Ok(ConnectionResponse::Created(connection))
     }
 
@@ -60,7 +61,9 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(id.to_string()));
         }
 
-        ctx.emit("connection-removed", &serde_json::json!({ "id": id }));
+        ctx.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
+            id: id.to_string(),
+        }));
         Ok(ConnectionResponse::Removed)
     }
 }

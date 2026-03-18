@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Memory;
 
 /// Memory read model — queries, projection handling, and lifecycle.
@@ -17,9 +19,10 @@ impl<'a> MemoryRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "memory-added" {
-            let memory: Memory = serde_json::from_value(event.data.clone())?;
-            self.insert(&memory)?;
+        if let Events::Memory(memory_event) = &event.data {
+            match memory_event {
+                MemoryEvents::MemoryAdded(memory) => self.insert(memory)?,
+            }
         }
         Ok(())
     }

@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::UrgeEvents;
 use super::model::Urge;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,13 +19,12 @@ impl<'a> UrgeRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "urge-set" {
-            let urge: Urge = serde_json::from_value(event.data.clone())?;
-            self.set(&urge)?;
-        } else if event.event_type == "urge-removed"
-            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                self.remove(name)?;
+        if let Events::Urge(urge_event) = &event.data {
+            match urge_event {
+                UrgeEvents::UrgeSet(urge) => self.set(urge)?,
+                UrgeEvents::UrgeRemoved(removed) => self.remove(&removed.name)?,
             }
+        }
         Ok(())
     }
 

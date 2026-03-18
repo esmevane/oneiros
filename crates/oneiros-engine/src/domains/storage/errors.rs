@@ -7,6 +7,9 @@ pub enum StorageError {
     #[error("Storage entry not found: {0}")]
     NotFound(String),
 
+    #[error("No data directory configured")]
+    NoDataDir,
+
     #[error("IO error: {0}")]
     IoError(String),
 
@@ -24,6 +27,7 @@ impl IntoResponse for StorageError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             StorageError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            StorageError::NoDataDir => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::IoError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };

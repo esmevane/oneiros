@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::LevelEvents;
 use super::model::Level;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,13 +19,12 @@ impl<'a> LevelRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "level-set" {
-            let level: Level = serde_json::from_value(event.data.clone())?;
-            self.set(&level)?;
-        } else if event.event_type == "level-removed"
-            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                self.remove(name)?;
+        if let Events::Level(level_event) = &event.data {
+            match level_event {
+                LevelEvents::LevelSet(level) => self.set(level)?,
+                LevelEvents::LevelRemoved(removed) => self.remove(&removed.name)?,
             }
+        }
         Ok(())
     }
 

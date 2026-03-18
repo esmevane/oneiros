@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Experience;
 
 /// Experience read model — queries, projection handling, and lifecycle.
@@ -17,28 +19,16 @@ impl<'a> ExperienceRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        match event.event_type.as_str() {
-            "experience-created" => {
-                let experience: Experience = serde_json::from_value(event.data.clone())?;
-                self.insert(&experience)?;
-            }
-            "experience-description-updated" => {
-                if let (Some(id), Some(description)) = (
-                    event.data.get("id").and_then(|v| v.as_str()),
-                    event.data.get("description").and_then(|v| v.as_str()),
-                ) {
-                    self.update_description(id, description)?;
+        if let Events::Experience(experience_event) = &event.data {
+            match experience_event {
+                ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
+                ExperienceEvents::ExperienceDescriptionUpdated(update) => {
+                    self.update_description(&update.id, &update.description)?
+                }
+                ExperienceEvents::ExperienceSensationUpdated(update) => {
+                    self.update_sensation(&update.id, &update.sensation)?
                 }
             }
-            "experience-sensation-updated" => {
-                if let (Some(id), Some(sensation)) = (
-                    event.data.get("id").and_then(|v| v.as_str()),
-                    event.data.get("sensation").and_then(|v| v.as_str()),
-                ) {
-                    self.update_sensation(id, sensation)?;
-                }
-            }
-            _ => {}
         }
         Ok(())
     }

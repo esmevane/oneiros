@@ -1,6 +1,7 @@
 use crate::contexts::ProjectContext;
 
 use super::errors::UrgeError;
+use super::events::{UrgeEvents, UrgeRemoved};
 use super::model::Urge;
 use super::repo::UrgeRepo;
 use super::responses::UrgeResponse;
@@ -9,7 +10,7 @@ pub struct UrgeService;
 
 impl UrgeService {
     pub fn set(ctx: &ProjectContext, urge: Urge) -> Result<UrgeResponse, UrgeError> {
-        ctx.emit("urge-set", &urge);
+        ctx.emit(UrgeEvents::UrgeSet(urge.clone()));
         Ok(UrgeResponse::Set(urge))
     }
 
@@ -29,7 +30,9 @@ impl UrgeService {
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<UrgeResponse, UrgeError> {
-        ctx.emit("urge-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(UrgeEvents::UrgeRemoved(UrgeRemoved {
+            name: name.to_string(),
+        }));
         Ok(UrgeResponse::Removed)
     }
 }

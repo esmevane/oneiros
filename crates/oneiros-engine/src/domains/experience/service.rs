@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::ProjectContext;
 
 use super::errors::ExperienceError;
+use super::events::{ExperienceDescriptionUpdate, ExperienceEvents, ExperienceSensationUpdate};
 use super::model::Experience;
 use super::repo::ExperienceRepo;
 use super::responses::ExperienceResponse;
@@ -25,7 +26,7 @@ impl ExperienceService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("experience-created", &experience);
+        ctx.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
         Ok(ExperienceResponse::Created(experience))
     }
 
@@ -60,10 +61,12 @@ impl ExperienceService {
 
         experience.description = description.clone();
 
-        ctx.emit(
-            "experience-description-updated",
-            &serde_json::json!({ "id": id, "description": description }),
-        );
+        ctx.emit(ExperienceEvents::ExperienceDescriptionUpdated(
+            ExperienceDescriptionUpdate {
+                id: id.to_string(),
+                description: description.clone(),
+            },
+        ));
         Ok(ExperienceResponse::Updated(experience))
     }
 
@@ -79,10 +82,12 @@ impl ExperienceService {
 
         experience.sensation = sensation.clone();
 
-        ctx.emit(
-            "experience-sensation-updated",
-            &serde_json::json!({ "id": id, "sensation": sensation }),
-        );
+        ctx.emit(ExperienceEvents::ExperienceSensationUpdated(
+            ExperienceSensationUpdate {
+                id: id.to_string(),
+                sensation: sensation.clone(),
+            },
+        ));
         Ok(ExperienceResponse::Updated(experience))
     }
 }

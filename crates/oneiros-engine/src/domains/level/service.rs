@@ -1,6 +1,7 @@
 use crate::contexts::ProjectContext;
 
 use super::errors::LevelError;
+use super::events::{LevelEvents, LevelRemoved};
 use super::model::Level;
 use super::repo::LevelRepo;
 use super::responses::LevelResponse;
@@ -9,7 +10,7 @@ pub struct LevelService;
 
 impl LevelService {
     pub fn set(ctx: &ProjectContext, level: Level) -> Result<LevelResponse, LevelError> {
-        ctx.emit("level-set", &level);
+        ctx.emit(LevelEvents::LevelSet(level.clone()));
         Ok(LevelResponse::Set(level))
     }
 
@@ -29,7 +30,9 @@ impl LevelService {
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<LevelResponse, LevelError> {
-        ctx.emit("level-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(LevelEvents::LevelRemoved(LevelRemoved {
+            name: name.to_string(),
+        }));
         Ok(LevelResponse::Removed)
     }
 }

@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::NatureEvents;
 use super::model::Nature;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,13 +19,12 @@ impl<'a> NatureRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "nature-set" {
-            let nature: Nature = serde_json::from_value(event.data.clone())?;
-            self.set(&nature)?;
-        } else if event.event_type == "nature-removed"
-            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                self.remove(name)?;
+        if let Events::Nature(nature_event) = &event.data {
+            match nature_event {
+                NatureEvents::NatureSet(nature) => self.set(nature)?,
+                NatureEvents::NatureRemoved(removed) => self.remove(&removed.name)?,
             }
+        }
         Ok(())
     }
 

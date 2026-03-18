@@ -1,12 +1,16 @@
 //! Project context — brain-scoped infrastructure.
 //!
-//! Carries the brain database, projections, event broadcast, and source.
+//! Carries the brain database, projections, event broadcast, config, and source.
 //! All project-scoped domain services receive this as their first argument.
+
+use std::path::Path;
 
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
+use crate::config::Config;
+use crate::events::Events;
 use crate::store::{self, NewEvent, Projection, StoredEvent};
 
 /// The project-scoped application context.
@@ -19,6 +23,7 @@ pub struct ProjectContext {
     db: Arc<Mutex<Connection>>,
     projections: &'static [&'static [Projection]],
     events: broadcast::Sender<StoredEvent>,
+    config: Option<Arc<Config>>,
     source: String,
 }
 
@@ -29,6 +34,7 @@ impl ProjectContext {
             db: Arc::new(Mutex::new(conn)),
             projections,
             events,
+            config: None,
             source: String::new(),
         }
     }
@@ -38,6 +44,16 @@ impl ProjectContext {
         self
     }
 
+    pub fn with_config(mut self, config: Config) -> Self {
+        self.config = Some(Arc::new(config));
+        self
+    }
+
+    /// The data directory for filesystem operations (blobs, exports).
+    pub fn data_dir(&self) -> Option<&Path> {
+        self.config.as_ref().map(|c| c.data_dir.as_path())
+    }
+
     /// Execute a read operation against the database.
     pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
         let conn = self.db.lock().expect("db lock");
@@ -45,11 +61,9 @@ impl ProjectContext {
     }
 
     /// Emit an event: persist + run projections + broadcast.
-    pub fn emit(&self, event_type: &str, data: &impl serde::Serialize) -> StoredEvent {
-        let data_value = serde_json::to_value(data).expect("serialize event data");
+    pub fn emit(&self, event: impl Into<Events>) -> StoredEvent {
         let new_event = NewEvent {
-            event_type: event_type.to_string(),
-            data: data_value,
+            data: event.into(),
             source: self.source.clone(),
         };
 

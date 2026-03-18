@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::SystemContext;
 
 use super::errors::TenantError;
+use super::events::*;
 use super::model::Tenant;
 use super::repo::TenantRepo;
 use super::responses::TenantResponse;
@@ -18,7 +19,7 @@ impl TenantService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("tenant-created", &tenant);
+        ctx.emit(TenantEvents::TenantCreated(tenant.clone()));
         Ok(TenantResponse::Created(tenant))
     }
 

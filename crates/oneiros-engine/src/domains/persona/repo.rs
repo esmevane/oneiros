@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::PersonaEvents;
 use super::model::Persona;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,13 +19,12 @@ impl<'a> PersonaRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "persona-set" {
-            let persona: Persona = serde_json::from_value(event.data.clone())?;
-            self.set(&persona)?;
-        } else if event.event_type == "persona-removed"
-            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                self.remove(name)?;
+        if let Events::Persona(persona_event) = &event.data {
+            match persona_event {
+                PersonaEvents::PersonaSet(persona) => self.set(persona)?,
+                PersonaEvents::PersonaRemoved(removed) => self.remove(&removed.name)?,
             }
+        }
         Ok(())
     }
 

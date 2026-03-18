@@ -1,4 +1,6 @@
+pub mod client;
 pub mod errors;
+pub mod events;
 pub mod features;
 pub mod model;
 pub mod repo;

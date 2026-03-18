@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::TextureEvents;
 use super::model::Texture;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,13 +19,12 @@ impl<'a> TextureRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "texture-set" {
-            let texture: Texture = serde_json::from_value(event.data.clone())?;
-            self.set(&texture)?;
-        } else if event.event_type == "texture-removed"
-            && let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                self.remove(name)?;
+        if let Events::Texture(texture_event) = &event.data {
+            match texture_event {
+                TextureEvents::TextureSet(texture) => self.set(texture)?,
+                TextureEvents::TextureRemoved(removed) => self.remove(&removed.name)?,
             }
+        }
         Ok(())
     }
 

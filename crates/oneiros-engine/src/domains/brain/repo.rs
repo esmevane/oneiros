@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Brain;
 
 /// Brain read model — queries, projection handling, and lifecycle.
@@ -17,9 +19,8 @@ impl<'a> BrainRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        if event.event_type == "brain-created" {
-            let brain: Brain = serde_json::from_value(event.data.clone())?;
-            self.create_record(&brain)?;
+        if let Events::Brain(BrainEvents::BrainCreated(brain)) = &event.data {
+            self.create_record(brain)?;
         }
         Ok(())
     }

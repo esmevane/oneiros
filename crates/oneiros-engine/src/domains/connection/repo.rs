@@ -1,7 +1,9 @@
 use rusqlite::{Connection as DbConn, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Connection;
 
 /// Connection read model — queries, projection handling, and lifecycle.
@@ -17,17 +19,11 @@ impl<'a> ConnectionRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        match event.event_type.as_str() {
-            "connection-created" => {
-                let connection: Connection = serde_json::from_value(event.data.clone())?;
-                self.insert(&connection)?;
+        if let Events::Connection(connection_event) = &event.data {
+            match connection_event {
+                ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
+                ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id)?,
             }
-            "connection-removed" => {
-                if let Some(id) = event.data.get("id").and_then(|v| v.as_str()) {
-                    self.remove(id)?;
-                }
-            }
-            _ => {}
         }
         Ok(())
     }

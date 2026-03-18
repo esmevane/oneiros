@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::StorageEntry;
 
 /// Storage read model — queries, projection handling, and lifecycle.
@@ -19,17 +21,11 @@ impl<'a> StorageRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        match event.event_type.as_str() {
-            "blob-stored" => {
-                let entry: StorageEntry = serde_json::from_value(event.data.clone())?;
-                self.create_record(&entry)?;
+        if let Events::Storage(storage_event) = &event.data {
+            match storage_event {
+                StorageEvents::BlobStored(entry) => self.create_record(entry)?,
+                StorageEvents::BlobRemoved(removed) => self.remove(&removed.id)?,
             }
-            "blob-removed" => {
-                if let Some(id) = event.data.get("id").and_then(|v| v.as_str()) {
-                    self.remove(id)?;
-                }
-            }
-            _ => {}
         }
         Ok(())
     }

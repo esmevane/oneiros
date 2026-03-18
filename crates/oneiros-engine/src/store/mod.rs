@@ -10,6 +10,8 @@ use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::events::{self, Events};
+
 pub use schema::initialize;
 
 /// A projection — transforms events into read model state.
@@ -26,8 +28,7 @@ pub struct Projection {
 /// A new event to be persisted.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewEvent {
-    pub event_type: String,
-    pub data: serde_json::Value,
+    pub data: Events,
     pub source: String,
 }
 
@@ -36,7 +37,7 @@ pub struct NewEvent {
 pub struct StoredEvent {
     pub sequence: i64,
     pub event_type: String,
-    pub data: serde_json::Value,
+    pub data: Events,
     pub source: String,
     pub created_at: DateTime<Utc>,
 }
@@ -63,13 +64,14 @@ pub fn log_event(
 ) -> Result<StoredEvent, StoreError> {
     let id = Uuid::now_v7();
     let data_json = serde_json::to_string(&event.data)?;
+    let event_type = events::event_type(&event.data);
     let now = Utc::now();
 
     conn.execute(
         "INSERT INTO events (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
         params![
             id.to_string(),
-            event.event_type,
+            event_type,
             data_json,
             event.source,
             now.to_rfc3339()
@@ -80,7 +82,7 @@ pub fn log_event(
 
     let stored = StoredEvent {
         sequence,
-        event_type: event.event_type.clone(),
+        event_type,
         data: event.data.clone(),
         source: event.source.clone(),
         created_at: now,
@@ -107,7 +109,9 @@ pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, StoreError> {
             Ok(StoredEvent {
                 sequence: row.get(0)?,
                 event_type: row.get(1)?,
-                data: serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
+                data: serde_json::from_str(&data_str).unwrap_or(Events::Unknown(
+                    serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
+                )),
                 source: row.get(3)?,
                 created_at: {
                     let s: String = row.get(4)?;

@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::contexts::ProjectContext;
 
 use super::errors::MemoryError;
+use super::events::MemoryEvents;
 use super::model::Memory;
 use super::repo::MemoryRepo;
 use super::responses::MemoryResponse;
@@ -25,7 +26,7 @@ impl MemoryService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("memory-added", &memory);
+        ctx.emit(MemoryEvents::MemoryAdded(memory.clone()));
         Ok(MemoryResponse::Added(memory))
     }
 

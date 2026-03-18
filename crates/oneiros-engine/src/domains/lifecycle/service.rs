@@ -12,7 +12,8 @@ use crate::domains::experience::repo::ExperienceRepo;
 use crate::domains::memory::repo::MemoryRepo;
 
 use super::errors::LifecycleError;
-use super::model::{CognitiveContext, LifecycleMarker};
+use super::events::{LifecycleEvent, LifecycleEvents, SensedEvent};
+use super::model::CognitiveContext;
 use super::responses::LifecycleResponse;
 
 pub struct LifecycleService;
@@ -25,14 +26,10 @@ impl LifecycleService {
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(
-            "dreamed",
-            &LifecycleMarker {
-                agent: agent_name.to_string(),
-                operation: "dream".to_string(),
-                created_at: Utc::now().to_rfc3339(),
-            },
-        );
+        ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
+            agent: agent_name.to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        }));
 
         Ok(LifecycleResponse::Dreamed(context))
     }
@@ -44,14 +41,10 @@ impl LifecycleService {
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(
-            "introspected",
-            &LifecycleMarker {
-                agent: agent_name.to_string(),
-                operation: "introspect".to_string(),
-                created_at: Utc::now().to_rfc3339(),
-            },
-        );
+        ctx.emit(LifecycleEvents::Introspected(LifecycleEvent {
+            agent: agent_name.to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        }));
 
         Ok(LifecycleResponse::Introspected(context))
     }
@@ -63,14 +56,10 @@ impl LifecycleService {
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(
-            "reflected",
-            &LifecycleMarker {
-                agent: agent_name.to_string(),
-                operation: "reflect".to_string(),
-                created_at: Utc::now().to_rfc3339(),
-            },
-        );
+        ctx.emit(LifecycleEvents::Reflected(LifecycleEvent {
+            agent: agent_name.to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        }));
 
         Ok(LifecycleResponse::Reflected(context))
     }
@@ -86,14 +75,11 @@ impl LifecycleService {
             .map_err(LifecycleError::Database)?
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
-        ctx.emit(
-            "sensed",
-            &serde_json::json!({
-                "agent": agent_name,
-                "content": content,
-                "created_at": Utc::now().to_rfc3339(),
-            }),
-        );
+        ctx.emit(LifecycleEvents::Sensed(SensedEvent {
+            agent: agent_name.to_string(),
+            content: content.to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        }));
 
         Ok(LifecycleResponse::Sensed {
             agent: agent_name.to_string(),
@@ -110,14 +96,10 @@ impl LifecycleService {
             .map_err(LifecycleError::Database)?
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
-        ctx.emit(
-            "slept",
-            &LifecycleMarker {
-                agent: agent_name.to_string(),
-                operation: "sleep".to_string(),
-                created_at: Utc::now().to_rfc3339(),
-            },
-        );
+        ctx.emit(LifecycleEvents::Slept(LifecycleEvent {
+            agent: agent_name.to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        }));
 
         Ok(LifecycleResponse::Slept {
             agent: agent_name.to_string(),

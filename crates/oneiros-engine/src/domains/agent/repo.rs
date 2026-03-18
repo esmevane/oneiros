@@ -1,7 +1,9 @@
 use rusqlite::{Connection, params};
 
+use crate::events::Events;
 use crate::store::{StoreError, StoredEvent};
 
+use super::events::*;
 use super::model::Agent;
 
 /// Agent read model — queries, projection handling, and lifecycle.
@@ -17,21 +19,12 @@ impl<'a> AgentRepo<'a> {
     // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
-        match event.event_type.as_str() {
-            "agent-created" => {
-                let agent: Agent = serde_json::from_value(event.data.clone())?;
-                self.create_record(&agent)?;
+        if let Events::Agent(agent_event) = &event.data {
+            match agent_event {
+                AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
+                AgentEvents::AgentUpdated(agent) => self.update(agent)?,
+                AgentEvents::AgentRemoved(removed) => self.remove(&removed.name)?,
             }
-            "agent-updated" => {
-                let agent: Agent = serde_json::from_value(event.data.clone())?;
-                self.update(&agent)?;
-            }
-            "agent-removed" => {
-                if let Some(name) = event.data.get("name").and_then(|v| v.as_str()) {
-                    self.remove(name)?;
-                }
-            }
-            _ => {}
         }
         Ok(())
     }

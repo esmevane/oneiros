@@ -7,6 +7,7 @@ use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
+use crate::events::Events;
 use crate::store::{self, NewEvent, Projection, StoredEvent};
 
 /// The system-scoped application context.
@@ -15,6 +16,7 @@ pub struct SystemContext {
     db: Arc<Mutex<Connection>>,
     projections: &'static [&'static [Projection]],
     events: broadcast::Sender<StoredEvent>,
+    source: String,
 }
 
 impl SystemContext {
@@ -24,7 +26,13 @@ impl SystemContext {
             db: Arc::new(Mutex::new(conn)),
             projections,
             events,
+            source: String::new(),
         }
+    }
+
+    pub fn with_source(mut self, source: impl Into<String>) -> Self {
+        self.source = source.into();
+        self
     }
 
     pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
@@ -32,12 +40,10 @@ impl SystemContext {
         f(&conn)
     }
 
-    pub fn emit(&self, event_type: &str, data: &impl serde::Serialize) -> StoredEvent {
-        let data_value = serde_json::to_value(data).expect("serialize event data");
+    pub fn emit(&self, event: impl Into<Events>) -> StoredEvent {
         let new_event = NewEvent {
-            event_type: event_type.to_string(),
-            data: data_value,
-            source: String::new(),
+            data: event.into(),
+            source: self.source.clone(),
         };
 
         let stored = self.with_db(|conn| {

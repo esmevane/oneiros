@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -14,14 +12,7 @@ use super::super::errors::StorageError;
 use super::super::responses::StorageResponse;
 use super::super::service::StorageService;
 
-/// State for storage routes — wraps the project context with the blob data directory.
-#[derive(Clone)]
-pub struct StorageState {
-    pub ctx: ProjectContext,
-    pub data_dir: PathBuf,
-}
-
-pub fn routes() -> Router<StorageState> {
+pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(upload))
         .route("/{id}", routing::get(show).delete(remove))
@@ -36,37 +27,27 @@ struct UploadBody {
 }
 
 async fn upload(
-    State(state): State<StorageState>,
+    State(ctx): State<ProjectContext>,
     Json(body): Json<UploadBody>,
 ) -> Result<(StatusCode, Json<StorageResponse>), StorageError> {
-    let response = StorageService::upload(
-        &state.ctx,
-        &state.data_dir,
-        body.name,
-        body.content_type,
-        body.data,
-    )?;
+    let response = StorageService::upload(&ctx, body.name, body.content_type, body.data)?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(State(state): State<StorageState>) -> Result<Json<StorageResponse>, StorageError> {
-    Ok(Json(StorageService::list(&state.ctx)?))
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<StorageResponse>, StorageError> {
+    Ok(Json(StorageService::list(&ctx)?))
 }
 
 async fn show(
-    State(state): State<StorageState>,
+    State(ctx): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    Ok(Json(StorageService::get(&state.ctx, &id)?))
+    Ok(Json(StorageService::get(&ctx, &id)?))
 }
 
 async fn remove(
-    State(state): State<StorageState>,
+    State(ctx): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    Ok(Json(StorageService::remove(
-        &state.ctx,
-        &state.data_dir,
-        &id,
-    )?))
+    Ok(Json(StorageService::remove(&ctx, &id)?))
 }

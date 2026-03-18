@@ -3,6 +3,7 @@ use chrono::Utc;
 use crate::contexts::SystemContext;
 
 use super::errors::BrainError;
+use super::events::*;
 use super::model::Brain;
 use super::repo::BrainRepo;
 use super::responses::BrainResponse;
@@ -24,7 +25,7 @@ impl BrainService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit("brain-created", &brain);
+        ctx.emit(BrainEvents::BrainCreated(brain.clone()));
         Ok(BrainResponse::Created(brain))
     }
 

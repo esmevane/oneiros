@@ -1,6 +1,7 @@
 use crate::contexts::ProjectContext;
 
 use super::errors::PersonaError;
+use super::events::{PersonaEvents, PersonaRemoved};
 use super::model::Persona;
 use super::repo::PersonaRepo;
 use super::responses::PersonaResponse;
@@ -9,7 +10,7 @@ pub struct PersonaService;
 
 impl PersonaService {
     pub fn set(ctx: &ProjectContext, persona: Persona) -> Result<PersonaResponse, PersonaError> {
-        ctx.emit("persona-set", &persona);
+        ctx.emit(PersonaEvents::PersonaSet(persona.clone()));
         Ok(PersonaResponse::Set(persona))
     }
 
@@ -29,7 +30,9 @@ impl PersonaService {
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<PersonaResponse, PersonaError> {
-        ctx.emit("persona-removed", &serde_json::json!({ "name": name }));
+        ctx.emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
+            name: name.to_string(),
+        }));
         Ok(PersonaResponse::Removed)
     }
 }
