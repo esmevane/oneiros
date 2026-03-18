@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Experience;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
@@ -12,12 +12,12 @@ pub enum ExperienceEvents {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExperienceDescriptionUpdate {
-    pub id: String,
+    pub id: ExperienceId,
     pub description: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExperienceSensationUpdate {
-    pub id: String,
+    pub id: ExperienceId,
     pub sensation: String,
 }

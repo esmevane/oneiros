@@ -1,10 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::NatureError;
-use super::events::{NatureEvents, NatureRemoved};
-use super::model::Nature;
-use super::repo::NatureRepo;
-use super::responses::NatureResponse;
+use crate::*;
 
 pub struct NatureService;
 
@@ -31,7 +25,7 @@ impl NatureService {
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<NatureResponse, NatureError> {
         ctx.emit(NatureEvents::NatureRemoved(NatureRemoved {
-            name: name.to_string(),
+            name: NatureName::new(name),
         }));
         Ok(NatureResponse::Removed)
     }

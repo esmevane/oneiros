@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::SystemContext;
+use crate::*;
 
-use super::super::errors::BrainError;
-use super::super::responses::BrainResponse;
-use super::super::service::BrainService;
+pub struct BrainRouter;
 
-pub const PATH: &str = "/brains";
-
-pub fn routes() -> Router<SystemContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{name}", routing::get(show))
+impl BrainRouter {
+    pub fn routes(&self) -> Router<SystemContext> {
+        Router::new().nest(
+            "/brains",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{name}", routing::get(show)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

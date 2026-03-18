@@ -1,5 +1,4 @@
-use super::responses::AgentResponse;
-use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct AgentClient<'a> {
     client: &'a Client,

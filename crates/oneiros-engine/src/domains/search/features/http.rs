@@ -5,16 +5,14 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::SearchError;
-use super::super::responses::SearchResponse;
-use super::super::service::SearchService;
+pub struct SearchRouter;
 
-pub const PATH: &str = "/search";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new().route("/", routing::get(search))
+impl SearchRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest("/search", Router::new().route("/", routing::get(search)))
+    }
 }
 
 #[derive(Debug, Deserialize)]

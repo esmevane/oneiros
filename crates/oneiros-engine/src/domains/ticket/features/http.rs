@@ -8,19 +8,18 @@ use serde::Deserialize;
 
 use crate::*;
 
-use crate::contexts::SystemContext;
+pub struct TicketRouter;
 
-use super::super::errors::TicketError;
-use super::super::responses::TicketResponse;
-use super::super::service::TicketService;
-
-pub const PATH: &str = "/tickets";
-
-pub fn routes() -> Router<SystemContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{id}", routing::get(show))
-        .route("/validate", routing::post(validate))
+impl TicketRouter {
+    pub fn routes(&self) -> Router<SystemContext> {
+        Router::new().nest(
+            "/tickets",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{id}", routing::get(show))
+                .route("/validate", routing::post(validate)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,5 +1,4 @@
-use super::responses::MemoryResponse;
-use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct MemoryClient<'a> {
     client: &'a Client,

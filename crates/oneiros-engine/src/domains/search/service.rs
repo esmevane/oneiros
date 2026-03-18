@@ -1,8 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::SearchError;
-use super::repo::SearchRepo;
-use super::responses::SearchResponse;
+use crate::*;
 
 pub struct SearchService;
 

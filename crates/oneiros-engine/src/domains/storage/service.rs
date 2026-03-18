@@ -1,13 +1,6 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::ProjectContext;
-
-use super::errors::StorageError;
-use super::events::{BlobRemoved, StorageEvents};
-use super::model::{StorageContent, StorageEntry};
-use super::repo::StorageRepo;
-use super::responses::StorageResponse;
+use crate::*;
 
 pub struct StorageService;
 
@@ -24,16 +17,16 @@ impl StorageService {
     ) -> Result<StorageResponse, StorageError> {
         let data_dir = ctx.data_dir().ok_or(StorageError::NoDataDir)?;
 
-        let id = Uuid::now_v7().to_string();
+        let id = StorageId::new();
         let blobs_dir = data_dir.join("blobs");
         std::fs::create_dir_all(&blobs_dir)?;
 
-        let blob_path = blobs_dir.join(&id);
+        let blob_path = blobs_dir.join(id.to_string());
         std::fs::write(&blob_path, &data)?;
 
         let entry = StorageEntry {
             id,
-            name,
+            name: StorageName::new(name),
             content_type,
             size: data.len() as u64,
             created_at: Utc::now().to_rfc3339(),

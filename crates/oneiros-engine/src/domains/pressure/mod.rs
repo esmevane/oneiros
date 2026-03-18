@@ -1,10 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::PressureClient;
+pub use features::mcp as pressure_mcp;
+pub use features::{PressureProjections, PressureRouter};
+pub use model::{Pressure, PressureSummary};
+pub use protocol::{PressureError, PressureRequest, PressureResponse};
+pub use repo::PressureRepo;
+pub use service::PressureService;

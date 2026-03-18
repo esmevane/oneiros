@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domains::pressure::model::PressureSummary;
+use crate::PressureSummary;
 
 /// A response envelope that wraps domain data with optional metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]

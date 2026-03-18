@@ -1,5 +1,4 @@
-use super::model::Sensation;
-use super::responses::SensationResponse;
+use crate::*;
 use crate::client::{Client, ClientError};
 
 pub struct SensationClient<'a> {

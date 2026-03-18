@@ -8,23 +8,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-use crate::domains::agent::events::AgentEvents;
-use crate::domains::brain::events::BrainEvents;
-use crate::domains::cognition::events::CognitionEvents;
-use crate::domains::connection::events::ConnectionEvents;
-use crate::domains::experience::events::ExperienceEvents;
-use crate::domains::level::events::LevelEvents;
-use crate::domains::lifecycle::events::LifecycleEvents;
-use crate::domains::memory::events::MemoryEvents;
-use crate::domains::nature::events::NatureEvents;
-use crate::domains::persona::events::PersonaEvents;
-use crate::domains::sensation::events::SensationEvents;
-use crate::domains::storage::events::StorageEvents;
-use crate::domains::tenant::events::TenantEvents;
-use crate::domains::texture::events::TextureEvents;
-use crate::domains::ticket::events::TicketEvents;
-use crate::domains::urge::events::UrgeEvents;
-
 /// All known event types across every domain.
 ///
 /// Uses `#[serde(untagged)]` so the JSON representation is just the inner

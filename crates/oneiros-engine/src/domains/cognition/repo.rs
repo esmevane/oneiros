@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Cognition;
+use crate::*;
 
 /// Cognition read model — queries, projection handling, and lifecycle.
 pub struct CognitionRepo<'a> {
@@ -54,17 +50,18 @@ impl<'a> CognitionRepo<'a> {
         )?;
 
         let result = stmt.query_row(params![id], |row| {
-            Ok(Cognition {
-                id: row.get(0)?,
-                agent_id: row.get(1)?,
-                texture: row.get(2)?,
-                content: row.get(3)?,
-                created_at: row.get(4)?,
-            })
+            let id: String = row.get(0)?;
+            Ok((id, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?))
         });
 
         match result {
-            Ok(c) => Ok(Some(c)),
+            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(Cognition {
+                id: id.parse()?,
+                agent_id,
+                texture,
+                content,
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -105,22 +102,33 @@ impl<'a> CognitionRepo<'a> {
         let mut stmt = self.conn.prepare(sql)?;
 
         let map_row = |row: &rusqlite::Row<'_>| {
-            Ok(Cognition {
-                id: row.get(0)?,
-                agent_id: row.get(1)?,
-                texture: row.get(2)?,
-                content: row.get(3)?,
-                created_at: row.get(4)?,
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
         };
 
-        let cognitions = match (agent, texture) {
+        let raw = match (agent, texture) {
             (Some(a), Some(t)) => stmt.query_map(params![a, t], map_row),
             (Some(a), None) => stmt.query_map(params![a], map_row),
             (None, Some(t)) => stmt.query_map(params![t], map_row),
             (None, None) => stmt.query_map([], map_row),
         }?
         .collect::<Result<Vec<_>, _>>()?;
+
+        let mut cognitions = vec![];
+        for (id, agent_id, texture, content, created_at) in raw {
+            cognitions.push(Cognition {
+                id: id.parse()?,
+                agent_id,
+                texture,
+                content,
+                created_at,
+            });
+        }
 
         Ok(cognitions)
     }
@@ -132,7 +140,7 @@ impl<'a> CognitionRepo<'a> {
             "INSERT OR REPLACE INTO cognitions (id, agent_id, texture, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                cognition.id,
+                cognition.id.to_string(),
                 cognition.agent_id,
                 cognition.texture,
                 cognition.content,

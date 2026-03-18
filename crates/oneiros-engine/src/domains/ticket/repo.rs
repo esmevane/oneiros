@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Ticket;
+use crate::*;
 
 /// Ticket read model — queries, projection handling, and lifecycle.
 pub struct TicketRepo<'a> {
@@ -63,7 +59,7 @@ impl<'a> TicketRepo<'a> {
 
         match raw {
             Ok((id, actor_id, brain_name, token, created_at)) => Ok(Some(Ticket {
-                id,
+                id: id.parse()?,
                 actor_id: actor_id.parse()?,
                 brain_name,
                 token,
@@ -95,7 +91,7 @@ impl<'a> TicketRepo<'a> {
 
         for (id, actor_id, brain_name, token, created_at) in raw {
             tickets.push(Ticket {
-                id,
+                id: id.parse()?,
                 actor_id: actor_id.parse()?,
                 brain_name,
                 token,
@@ -124,7 +120,7 @@ impl<'a> TicketRepo<'a> {
 
         match raw {
             Ok((id, actor_id, brain_name, token, created_at)) => Ok(Some(Ticket {
-                id,
+                id: id.parse()?,
                 actor_id: actor_id.parse()?,
                 brain_name,
                 token,
@@ -142,7 +138,7 @@ impl<'a> TicketRepo<'a> {
             "insert or replace into tickets (id, actor_id, brain_name, token, created_at)
              values (?1, ?2, ?3, ?4, ?5)",
             params![
-                ticket.id,
+                ticket.id.to_string(),
                 ticket.actor_id.to_string(),
                 ticket.brain_name,
                 ticket.token,

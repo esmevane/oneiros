@@ -1,6 +1,12 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::ExperienceRepo;
+pub struct ExperienceProjections;
+
+impl ExperienceProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
 
 pub const PROJECTIONS: &[Projection] = &[Projection {
     name: "experience",

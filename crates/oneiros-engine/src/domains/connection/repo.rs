@@ -1,10 +1,6 @@
 use rusqlite::{Connection as DbConn, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Connection;
+use crate::*;
 
 /// Connection read model — queries, projection handling, and lifecycle.
 pub struct ConnectionRepo<'a> {
@@ -22,7 +18,9 @@ impl<'a> ConnectionRepo<'a> {
         if let Events::Connection(connection_event) = &event.data {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
-                ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id)?,
+                ConnectionEvents::ConnectionRemoved(removed) => {
+                    self.remove(&removed.id.to_string())?
+                }
             }
         }
         Ok(())
@@ -56,18 +54,21 @@ impl<'a> ConnectionRepo<'a> {
         )?;
 
         let result = stmt.query_row(params![id], |row| {
-            Ok(Connection {
-                id: row.get(0)?,
-                from_entity: row.get(1)?,
-                to_entity: row.get(2)?,
-                nature: row.get(3)?,
-                description: row.get(4)?,
-                created_at: row.get(5)?,
-            })
+            let id: String = row.get(0)?;
+            Ok((id, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?, row.get::<_, String>(5)?))
         });
 
         match result {
-            Ok(c) => Ok(Some(c)),
+            Ok((id, from_entity, to_entity, nature, description, created_at)) => {
+                Ok(Some(Connection {
+                    id: id.parse()?,
+                    from_entity,
+                    to_entity,
+                    nature,
+                    description,
+                    created_at,
+                }))
+            }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -88,21 +89,33 @@ impl<'a> ConnectionRepo<'a> {
         };
 
         let map_row = |row: &rusqlite::Row<'_>| {
-            Ok(Connection {
-                id: row.get(0)?,
-                from_entity: row.get(1)?,
-                to_entity: row.get(2)?,
-                nature: row.get(3)?,
-                description: row.get(4)?,
-                created_at: row.get(5)?,
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+            ))
         };
 
-        let connections = match entity {
+        let raw = match entity {
             Some(e) => stmt.query_map(params![e], map_row),
             None => stmt.query_map([], map_row),
         }?
         .collect::<Result<Vec<_>, _>>()?;
+
+        let mut connections = vec![];
+        for (id, from_entity, to_entity, nature, description, created_at) in raw {
+            connections.push(Connection {
+                id: id.parse()?,
+                from_entity,
+                to_entity,
+                nature,
+                description,
+                created_at,
+            });
+        }
 
         Ok(connections)
     }
@@ -115,7 +128,7 @@ impl<'a> ConnectionRepo<'a> {
              (id, from_entity, to_entity, nature, description, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
-                connection.id,
+                connection.id.to_string(),
                 connection.from_entity,
                 connection.to_entity,
                 connection.nature,

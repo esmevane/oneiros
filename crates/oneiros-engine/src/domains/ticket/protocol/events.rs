@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Cognition;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum CognitionEvents {
-    CognitionAdded(Cognition),
+pub enum TicketEvents {
+    TicketIssued(Ticket),
 }

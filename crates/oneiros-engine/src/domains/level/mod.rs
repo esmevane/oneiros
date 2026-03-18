@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::LevelClient;
+pub use features::{LevelProjections, LevelRouter};
+pub use features::mcp as level_mcp;
+pub use model::{Level, LevelName};
+pub use protocol::{LevelError, LevelEvents, LevelRemoved, LevelRequest, LevelResponse};
+pub use repo::LevelRepo;
+pub use service::LevelService;

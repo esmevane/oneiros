@@ -1,8 +1,6 @@
 //! HTTP client for lifecycle operations.
 
-use crate::client::{Client, ClientError};
-
-use super::responses::LifecycleResponse;
+use crate::*;
 
 /// Client scoped to lifecycle operations.
 pub struct LifecycleClient<'a> {

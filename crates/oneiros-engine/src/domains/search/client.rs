@@ -1,5 +1,4 @@
-use super::responses::SearchResponse;
-use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct SearchClient<'a> {
     client: &'a Client,

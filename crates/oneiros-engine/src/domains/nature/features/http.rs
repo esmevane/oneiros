@@ -5,19 +5,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::NatureError;
-use super::super::model::Nature;
-use super::super::responses::NatureResponse;
-use super::super::service::NatureService;
+pub struct NatureRouter;
 
-pub const PATH: &str = "/natures";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{name}", routing::put(set).get(show).delete(remove))
+impl NatureRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/natures",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{name}", routing::put(set).get(show).delete(remove)),
+        )
+    }
 }
 
 async fn set(
@@ -25,7 +25,7 @@ async fn set(
     Path(name): Path<String>,
     Json(mut nature): Json<Nature>,
 ) -> Result<(StatusCode, Json<NatureResponse>), NatureError> {
-    nature.name = name;
+    nature.name = NatureName::new(name);
     Ok((StatusCode::OK, Json(NatureService::set(&ctx, nature)?)))
 }
 

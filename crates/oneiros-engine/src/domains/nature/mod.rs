@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::NatureClient;
+pub use features::{NatureProjections, NatureRouter};
+pub use features::mcp as nature_mcp;
+pub use model::{Nature, NatureName};
+pub use protocol::{NatureError, NatureEvents, NatureRemoved, NatureRequest, NatureResponse};
+pub use repo::NatureRepo;
+pub use service::NatureService;

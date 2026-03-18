@@ -1,16 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Agent;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum AgentEvents {
-    AgentCreated(Agent),
-    AgentUpdated(Agent),
-    AgentRemoved(AgentRemoved),
+pub enum PersonaEvents {
+    PersonaSet(Persona),
+    PersonaRemoved(PersonaRemoved),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentRemoved {
-    pub name: String,
+pub struct PersonaRemoved {
+    pub name: PersonaName,
 }

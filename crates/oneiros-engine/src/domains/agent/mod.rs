@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::AgentClient;
+pub use features::mcp as agent_mcp;
+pub use features::{AgentProjections, AgentRouter};
+pub use model::{Agent, AgentId, AgentName};
+pub use protocol::{AgentError, AgentEvents, AgentRemoved, AgentRequest, AgentResponse};
+pub use repo::AgentRepo;
+pub use service::AgentService;

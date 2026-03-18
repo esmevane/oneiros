@@ -1,12 +1,6 @@
 use chrono::Utc;
 
-use crate::contexts::SystemContext;
-
-use super::errors::BrainError;
-use super::events::*;
-use super::model::Brain;
-use super::repo::BrainRepo;
-use super::responses::BrainResponse;
+use crate::*;
 
 pub struct BrainService;
 
@@ -21,7 +15,7 @@ impl BrainService {
         }
 
         let brain = Brain {
-            name,
+            name: BrainName::new(name),
             created_at: Utc::now().to_rfc3339(),
         };
 

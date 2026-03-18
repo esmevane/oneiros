@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::TextureClient;
+pub use features::{TextureProjections, TextureRouter};
+pub use features::mcp as texture_mcp;
+pub use model::{Texture, TextureName};
+pub use protocol::{TextureError, TextureEvents, TextureRemoved, TextureRequest, TextureResponse};
+pub use repo::TextureRepo;
+pub use service::TextureService;

@@ -5,19 +5,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::LevelError;
-use super::super::model::Level;
-use super::super::responses::LevelResponse;
-use super::super::service::LevelService;
+pub struct LevelRouter;
 
-pub const PATH: &str = "/levels";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{name}", routing::put(set).get(show).delete(remove))
+impl LevelRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/levels",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{name}", routing::put(set).get(show).delete(remove)),
+        )
+    }
 }
 
 async fn set(
@@ -25,7 +25,7 @@ async fn set(
     Path(name): Path<String>,
     Json(mut level): Json<Level>,
 ) -> Result<(StatusCode, Json<LevelResponse>), LevelError> {
-    level.name = name;
+    level.name = LevelName::new(name);
     Ok((StatusCode::OK, Json(LevelService::set(&ctx, level)?)))
 }
 

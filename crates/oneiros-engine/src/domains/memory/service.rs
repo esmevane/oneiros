@@ -1,13 +1,6 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::ProjectContext;
-
-use super::errors::MemoryError;
-use super::events::MemoryEvents;
-use super::model::Memory;
-use super::repo::MemoryRepo;
-use super::responses::MemoryResponse;
+use crate::*;
 
 pub struct MemoryService;
 
@@ -19,7 +12,7 @@ impl MemoryService {
         content: String,
     ) -> Result<MemoryResponse, MemoryError> {
         let memory = Memory {
-            id: Uuid::now_v7().to_string(),
+            id: MemoryId::new(),
             agent_id: agent,
             level,
             content,

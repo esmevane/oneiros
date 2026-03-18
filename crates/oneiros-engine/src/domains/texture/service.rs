@@ -1,10 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::TextureError;
-use super::events::{TextureEvents, TextureRemoved};
-use super::model::Texture;
-use super::repo::TextureRepo;
-use super::responses::TextureResponse;
+use crate::*;
 
 pub struct TextureService;
 
@@ -31,7 +25,7 @@ impl TextureService {
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<TextureResponse, TextureError> {
         ctx.emit(TextureEvents::TextureRemoved(TextureRemoved {
-            name: name.to_string(),
+            name: TextureName::new(name),
         }));
         Ok(TextureResponse::Removed)
     }

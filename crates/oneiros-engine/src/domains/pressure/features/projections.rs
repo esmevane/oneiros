@@ -2,9 +2,15 @@
 //! This is the cross-domain projection: it reads from agents, urges,
 //! and cognitions tables to derive pressure state.
 
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::PressureRepo;
+pub struct PressureProjections;
+
+impl PressureProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
 
 pub const PROJECTIONS: &[Projection] = &[Projection {
     name: "pressure",

@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Brain;
+use crate::*;
 
 /// Brain read model — queries, projection handling, and lifecycle.
 pub struct BrainRepo<'a> {
@@ -47,15 +43,17 @@ impl<'a> BrainRepo<'a> {
             .conn
             .prepare("SELECT name, created_at FROM brains WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
-            Ok(Brain {
-                name: row.get(0)?,
-                created_at: row.get(1)?,
-            })
+        let raw = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
+            let created_at: String = row.get(1)?;
+            Ok((name, created_at))
         });
 
-        match result {
-            Ok(brain) => Ok(Some(brain)),
+        match raw {
+            Ok((name, created_at)) => Ok(Some(Brain {
+                name: BrainName::new(name),
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -66,14 +64,18 @@ impl<'a> BrainRepo<'a> {
             .conn
             .prepare("SELECT name, created_at FROM brains ORDER BY name")?;
 
-        let brains = stmt
-            .query_map([], |row| {
-                Ok(Brain {
-                    name: row.get(0)?,
-                    created_at: row.get(1)?,
-                })
-            })?
+        let raw: Vec<(String, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
             .collect::<Result<Vec<_>, _>>()?;
+
+        let mut brains = vec![];
+
+        for (name, created_at) in raw {
+            brains.push(Brain {
+                name: BrainName::new(name),
+                created_at,
+            });
+        }
 
         Ok(brains)
     }
@@ -92,7 +94,7 @@ impl<'a> BrainRepo<'a> {
     fn create_record(&self, brain: &Brain) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO brains (name, created_at) VALUES (?1, ?2)",
-            params![brain.name, brain.created_at],
+            params![brain.name.to_string(), brain.created_at],
         )?;
         Ok(())
     }

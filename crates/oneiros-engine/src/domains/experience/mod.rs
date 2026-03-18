@@ -1,11 +1,17 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::ExperienceClient;
+pub use features::mcp as experience_mcp;
+pub use features::{ExperienceProjections, ExperienceRouter};
+pub use model::{Experience, ExperienceId};
+pub use protocol::{
+    ExperienceDescriptionUpdate, ExperienceError, ExperienceEvents, ExperienceRequest,
+    ExperienceResponse, ExperienceSensationUpdate,
+};
+pub use repo::ExperienceRepo;
+pub use service::ExperienceService;

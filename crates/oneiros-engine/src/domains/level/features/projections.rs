@@ -1,8 +1,14 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::LevelRepo;
+pub struct LevelProjections;
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+impl LevelProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
+
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "level",
     apply: |conn, event| LevelRepo::new(conn).handle(event),
     reset: |conn| LevelRepo::new(conn).reset(),

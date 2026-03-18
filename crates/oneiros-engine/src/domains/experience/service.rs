@@ -1,13 +1,6 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::ProjectContext;
-
-use super::errors::ExperienceError;
-use super::events::{ExperienceDescriptionUpdate, ExperienceEvents, ExperienceSensationUpdate};
-use super::model::Experience;
-use super::repo::ExperienceRepo;
-use super::responses::ExperienceResponse;
+use crate::*;
 
 pub struct ExperienceService;
 
@@ -19,7 +12,7 @@ impl ExperienceService {
         description: String,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let experience = Experience {
-            id: Uuid::now_v7().to_string(),
+            id: ExperienceId::new(),
             agent_id: agent,
             sensation,
             description,
@@ -63,8 +56,8 @@ impl ExperienceService {
 
         ctx.emit(ExperienceEvents::ExperienceDescriptionUpdated(
             ExperienceDescriptionUpdate {
-                id: id.to_string(),
-                description: description.clone(),
+                id: id.parse().map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
+                description,
             },
         ));
         Ok(ExperienceResponse::Updated(experience))
@@ -84,8 +77,8 @@ impl ExperienceService {
 
         ctx.emit(ExperienceEvents::ExperienceSensationUpdated(
             ExperienceSensationUpdate {
-                id: id.to_string(),
-                sensation: sensation.clone(),
+                id: id.parse().map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
+                sensation,
             },
         ));
         Ok(ExperienceResponse::Updated(experience))

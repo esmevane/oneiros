@@ -1,8 +1,6 @@
 //! HTTP client for the ticket domain.
 
-use crate::client::{Client, ClientError};
-
-use super::responses::TicketResponse;
+use crate::*;
 
 /// Client scoped to ticket operations.
 pub struct TicketClient<'a> {

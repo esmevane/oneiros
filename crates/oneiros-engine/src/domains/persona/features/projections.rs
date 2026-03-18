@@ -1,8 +1,14 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::PersonaRepo;
+pub struct PersonaProjections;
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+impl PersonaProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
+
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "persona",
     apply: |conn, event| PersonaRepo::new(conn).handle(event),
     reset: |conn| PersonaRepo::new(conn).reset(),

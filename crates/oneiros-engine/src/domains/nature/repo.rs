@@ -1,12 +1,8 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
+use crate::*;
 
-use super::events::NatureEvents;
-use super::model::Nature;
-
-/// Agent read model — queries, projection handling, and lifecycle.
+/// Nature read model — queries, projection handling, and lifecycle.
 pub struct NatureRepo<'a> {
     conn: &'a Connection,
 }
@@ -22,7 +18,7 @@ impl<'a> NatureRepo<'a> {
         if let Events::Nature(nature_event) = &event.data {
             match nature_event {
                 NatureEvents::NatureSet(nature) => self.set(nature)?,
-                NatureEvents::NatureRemoved(removed) => self.remove(&removed.name)?,
+                NatureEvents::NatureRemoved(removed) => self.remove(removed.name.as_str())?,
             }
         }
         Ok(())
@@ -52,8 +48,9 @@ impl<'a> NatureRepo<'a> {
             .prepare("SELECT name, description, prompt FROM natures WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
             Ok(Nature {
-                name: row.get(0)?,
+                name: NatureName::new(name),
                 description: row.get(1)?,
                 prompt: row.get(2)?,
             })
@@ -73,8 +70,9 @@ impl<'a> NatureRepo<'a> {
 
         let natures = stmt
             .query_map([], |row| {
+                let name: String = row.get(0)?;
                 Ok(Nature {
-                    name: row.get(0)?,
+                    name: NatureName::new(name),
                     description: row.get(1)?,
                     prompt: row.get(2)?,
                 })
@@ -89,7 +87,7 @@ impl<'a> NatureRepo<'a> {
     fn set(&self, nature: &Nature) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO natures (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![nature.name, nature.description, nature.prompt],
+            params![nature.name.to_string(), nature.description, nature.prompt],
         )?;
         Ok(())
     }

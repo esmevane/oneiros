@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Connection;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
@@ -11,5 +11,5 @@ pub enum ConnectionEvents {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionRemoved {
-    pub id: String,
+    pub id: ConnectionId,
 }

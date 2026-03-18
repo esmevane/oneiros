@@ -1,6 +1,12 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::BrainRepo;
+pub struct BrainProjections;
+
+impl BrainProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
 
 pub const PROJECTIONS: &[Projection] = &[Projection {
     name: "brain",

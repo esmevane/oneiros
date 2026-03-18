@@ -1,12 +1,14 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{Projection, StoreError, StoredEvent};
+use crate::*;
 
-use crate::domains::agent::events::AgentEvents;
-use crate::domains::cognition::events::CognitionEvents;
-use crate::domains::experience::events::ExperienceEvents;
-use crate::domains::memory::events::MemoryEvents;
+pub struct SearchProjections;
+
+impl SearchProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
 
 pub const PROJECTIONS: &[Projection] = &[Projection {
     name: "search",
@@ -19,25 +21,25 @@ fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), StoreError> {
         Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["cognition", c.id, c.content, c.agent_id],
+                params!["cognition", c.id.to_string(), c.content, c.agent_id],
             )?;
         }
         Events::Memory(MemoryEvents::MemoryAdded(m)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["memory", m.id, m.content, m.agent_id],
+                params!["memory", m.id.to_string(), m.content, m.agent_id],
             )?;
         }
         Events::Agent(AgentEvents::AgentCreated(a)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["agent", a.id, format!("{} {}", a.name, a.description), a.name],
+                params!["agent", a.id.to_string(), format!("{} {}", a.name, a.description), a.name.to_string()],
             )?;
         }
         Events::Experience(ExperienceEvents::ExperienceCreated(e)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["experience", e.id, e.description, e.agent_id],
+                params!["experience", e.id.to_string(), e.description, e.agent_id],
             )?;
         }
         _ => {}

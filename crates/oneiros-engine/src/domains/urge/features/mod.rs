@@ -1,3 +1,6 @@
-pub mod http;
+mod http;
 pub mod mcp;
-pub mod projections;
+mod projections;
+
+pub use http::UrgeRouter;
+pub use projections::UrgeProjections;

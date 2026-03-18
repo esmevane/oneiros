@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Experience;
+use crate::*;
 
 /// Experience read model — queries, projection handling, and lifecycle.
 pub struct ExperienceRepo<'a> {
@@ -23,10 +19,10 @@ impl<'a> ExperienceRepo<'a> {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
                 ExperienceEvents::ExperienceDescriptionUpdated(update) => {
-                    self.update_description(&update.id, &update.description)?
+                    self.update_description(&update.id.to_string(), &update.description)?
                 }
                 ExperienceEvents::ExperienceSensationUpdated(update) => {
-                    self.update_sensation(&update.id, &update.sensation)?
+                    self.update_sensation(&update.id.to_string(), &update.sensation)?
                 }
             }
         }
@@ -60,17 +56,18 @@ impl<'a> ExperienceRepo<'a> {
         )?;
 
         let result = stmt.query_row(params![id], |row| {
-            Ok(Experience {
-                id: row.get(0)?,
-                agent_id: row.get(1)?,
-                sensation: row.get(2)?,
-                description: row.get(3)?,
-                created_at: row.get(4)?,
-            })
+            let id: String = row.get(0)?;
+            Ok((id, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?))
         });
 
         match result {
-            Ok(e) => Ok(Some(e)),
+            Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(Experience {
+                id: id.parse()?,
+                agent_id,
+                sensation,
+                description,
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -89,20 +86,31 @@ impl<'a> ExperienceRepo<'a> {
         };
 
         let map_row = |row: &rusqlite::Row<'_>| {
-            Ok(Experience {
-                id: row.get(0)?,
-                agent_id: row.get(1)?,
-                sensation: row.get(2)?,
-                description: row.get(3)?,
-                created_at: row.get(4)?,
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
         };
 
-        let experiences = match agent {
+        let raw = match agent {
             Some(a) => stmt.query_map(params![a], map_row),
             None => stmt.query_map([], map_row),
         }?
         .collect::<Result<Vec<_>, _>>()?;
+
+        let mut experiences = vec![];
+        for (id, agent_id, sensation, description, created_at) in raw {
+            experiences.push(Experience {
+                id: id.parse()?,
+                agent_id,
+                sensation,
+                description,
+                created_at,
+            });
+        }
 
         Ok(experiences)
     }
@@ -114,7 +122,7 @@ impl<'a> ExperienceRepo<'a> {
             "INSERT OR REPLACE INTO experiences (id, agent_id, sensation, description, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                experience.id,
+                experience.id.to_string(),
                 experience.agent_id,
                 experience.sensation,
                 experience.description,

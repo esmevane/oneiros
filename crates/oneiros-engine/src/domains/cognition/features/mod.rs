@@ -1,3 +1,6 @@
 pub mod http;
 pub mod mcp;
-pub mod projections;
+mod projections;
+
+pub use http::CognitionRouter;
+pub use projections::CognitionProjections;

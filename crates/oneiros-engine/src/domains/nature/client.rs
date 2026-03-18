@@ -1,5 +1,4 @@
-use super::model::Nature;
-use super::responses::NatureResponse;
+use crate::*;
 use crate::client::{Client, ClientError};
 
 pub struct NatureClient<'a> {

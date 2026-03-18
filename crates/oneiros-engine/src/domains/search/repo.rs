@@ -1,8 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::StoreError;
-
-use super::model::SearchResult;
+use crate::*;
 
 /// Search read model — queries only.
 ///

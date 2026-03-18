@@ -7,9 +7,7 @@
 use chrono::Utc;
 use rusqlite::{Connection, params};
 
-use crate::store::{StoreError, StoredEvent};
-
-use super::model::Pressure;
+use crate::*;
 
 pub struct PressureRepo<'a> {
     conn: &'a Connection,

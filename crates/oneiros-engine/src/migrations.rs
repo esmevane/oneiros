@@ -4,44 +4,41 @@ use rusqlite::Connection;
 
 use crate::*;
 
-use crate::domains;
-use crate::store::{self, StoreError};
-
 /// Initialize the event store and run all project-scoped migrations.
 pub fn migrate_project(conn: &Connection) -> Result<(), StoreError> {
-    store::initialize(conn)?;
+    initialize(conn)?;
 
     // Vocabulary domains
-    domains::level::repo::LevelRepo::new(conn).migrate()?;
-    domains::texture::repo::TextureRepo::new(conn).migrate()?;
-    domains::sensation::repo::SensationRepo::new(conn).migrate()?;
-    domains::nature::repo::NatureRepo::new(conn).migrate()?;
-    domains::persona::repo::PersonaRepo::new(conn).migrate()?;
-    domains::urge::repo::UrgeRepo::new(conn).migrate()?;
+    LevelRepo::new(conn).migrate()?;
+    TextureRepo::new(conn).migrate()?;
+    SensationRepo::new(conn).migrate()?;
+    NatureRepo::new(conn).migrate()?;
+    PersonaRepo::new(conn).migrate()?;
+    UrgeRepo::new(conn).migrate()?;
 
     // Entity domains
-    domains::agent::repo::AgentRepo::new(conn).migrate()?;
-    domains::cognition::repo::CognitionRepo::new(conn).migrate()?;
-    domains::memory::repo::MemoryRepo::new(conn).migrate()?;
-    domains::experience::repo::ExperienceRepo::new(conn).migrate()?;
-    domains::connection::repo::ConnectionRepo::new(conn).migrate()?;
+    AgentRepo::new(conn).migrate()?;
+    CognitionRepo::new(conn).migrate()?;
+    MemoryRepo::new(conn).migrate()?;
+    ExperienceRepo::new(conn).migrate()?;
+    ConnectionRepo::new(conn).migrate()?;
 
     // Derived / infrastructure
-    domains::pressure::repo::PressureRepo::new(conn).migrate()?;
-    domains::search::repo::SearchRepo::new(conn).migrate()?;
-    domains::storage::repo::StorageRepo::new(conn).migrate()?;
+    PressureRepo::new(conn).migrate()?;
+    SearchRepo::new(conn).migrate()?;
+    StorageRepo::new(conn).migrate()?;
 
     Ok(())
 }
 
 /// Initialize the event store and run all system-scoped migrations.
 pub fn migrate_system(conn: &Connection) -> Result<(), StoreError> {
-    store::initialize(conn)?;
+    initialize(conn)?;
 
-    domains::tenant::repo::TenantRepo::new(conn).migrate()?;
+    TenantRepo::new(conn).migrate()?;
     ActorRepo::new(conn).migrate()?;
-    domains::brain::repo::BrainRepo::new(conn).migrate()?;
-    domains::ticket::repo::TicketRepo::new(conn).migrate()?;
+    BrainRepo::new(conn).migrate()?;
+    TicketRepo::new(conn).migrate()?;
 
     Ok(())
 }

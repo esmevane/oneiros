@@ -4,18 +4,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::PressureError;
-use super::super::responses::PressureResponse;
-use super::super::service::PressureService;
+pub struct PressureRouter;
 
-pub const PATH: &str = "/pressures";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{agent}", routing::get(get))
+impl PressureRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/pressures",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{agent}", routing::get(get)),
+        )
+    }
 }
 
 async fn get(
@@ -25,6 +26,8 @@ async fn get(
     Ok(Json(PressureService::get(&ctx, &agent)?))
 }
 
-async fn list(State(ctx): State<ProjectContext>) -> Result<Json<PressureResponse>, PressureError> {
+async fn list(
+    State(ctx): State<ProjectContext>,
+) -> Result<Json<PressureResponse>, PressureError> {
     Ok(Json(PressureService::list(&ctx)?))
 }

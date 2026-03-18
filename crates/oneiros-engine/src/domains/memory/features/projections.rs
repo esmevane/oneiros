@@ -1,6 +1,12 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::MemoryRepo;
+pub struct MemoryProjections;
+
+impl MemoryProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
 
 pub const PROJECTIONS: &[Projection] = &[Projection {
     name: "memory",

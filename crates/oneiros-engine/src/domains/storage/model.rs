@@ -1,10 +1,12 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::*;
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct StorageEntry {
-    pub id: String,
-    pub name: String,
+    pub id: StorageId,
+    pub name: StorageName,
     pub content_type: String,
     pub size: u64,
     pub created_at: String,
@@ -16,3 +18,6 @@ pub struct StorageContent {
     pub entry: StorageEntry,
     pub data: Vec<u8>,
 }
+
+resource_id!(StorageId);
+resource_name!(StorageName);

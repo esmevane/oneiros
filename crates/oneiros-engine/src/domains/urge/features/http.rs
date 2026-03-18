@@ -5,19 +5,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::UrgeError;
-use super::super::model::Urge;
-use super::super::responses::UrgeResponse;
-use super::super::service::UrgeService;
+pub struct UrgeRouter;
 
-pub const PATH: &str = "/urges";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{name}", routing::put(set).get(show).delete(remove))
+impl UrgeRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/urges",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{name}", routing::put(set).get(show).delete(remove)),
+        )
+    }
 }
 
 async fn set(
@@ -25,7 +25,7 @@ async fn set(
     Path(name): Path<String>,
     Json(mut urge): Json<Urge>,
 ) -> Result<(StatusCode, Json<UrgeResponse>), UrgeError> {
-    urge.name = name;
+    urge.name = UrgeName::new(name);
     Ok((StatusCode::OK, Json(UrgeService::set(&ctx, urge)?)))
 }
 

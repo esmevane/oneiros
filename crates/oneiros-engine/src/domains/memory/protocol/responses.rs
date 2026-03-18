@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Connection;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ConnectionResponse {
-    Created(Connection),
-    Found(Connection),
-    Listed(Vec<Connection>),
-    Removed,
+pub enum MemoryResponse {
+    Added(Memory),
+    Found(Memory),
+    Listed(Vec<Memory>),
 }

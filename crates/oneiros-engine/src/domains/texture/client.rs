@@ -1,5 +1,4 @@
-use super::model::Texture;
-use super::responses::TextureResponse;
+use crate::*;
 use crate::client::{Client, ClientError};
 
 pub struct TextureClient<'a> {

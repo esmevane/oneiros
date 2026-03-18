@@ -1,10 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::LevelError;
-use super::events::{LevelEvents, LevelRemoved};
-use super::model::Level;
-use super::repo::LevelRepo;
-use super::responses::LevelResponse;
+use crate::*;
 
 pub struct LevelService;
 
@@ -31,7 +25,7 @@ impl LevelService {
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<LevelResponse, LevelError> {
         ctx.emit(LevelEvents::LevelRemoved(LevelRemoved {
-            name: name.to_string(),
+            name: LevelName::new(name),
         }));
         Ok(LevelResponse::Removed)
     }

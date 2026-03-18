@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Memory;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]

@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::StorageClient;
+pub use features::mcp as storage_mcp;
+pub use features::{StorageProjections, StorageRouter};
+pub use model::{StorageContent, StorageEntry, StorageId, StorageName};
+pub use protocol::{BlobRemoved, StorageError, StorageEvents, StorageRequest, StorageResponse};
+pub use repo::StorageRepo;
+pub use service::StorageService;

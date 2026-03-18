@@ -4,19 +4,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::LifecycleError;
-use super::super::responses::LifecycleResponse;
-use super::super::service::LifecycleService;
+pub struct LifecycleRouter;
 
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/dream/{agent}", routing::post(dream))
-        .route("/introspect/{agent}", routing::post(introspect))
-        .route("/reflect/{agent}", routing::post(reflect))
-        .route("/sense/{agent}", routing::post(sense))
-        .route("/sleep/{agent}", routing::post(sleep))
+impl LifecycleRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new()
+            .route("/dream/{agent}", routing::post(dream))
+            .route("/introspect/{agent}", routing::post(introspect))
+            .route("/reflect/{agent}", routing::post(reflect))
+            .route("/sense/{agent}", routing::post(sense))
+            .route("/sleep/{agent}", routing::post(sleep))
+    }
 }
 
 async fn dream(

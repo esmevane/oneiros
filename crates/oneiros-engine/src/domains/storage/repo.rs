@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::StorageEntry;
+use crate::*;
 
 /// Storage read model — queries, projection handling, and lifecycle.
 ///
@@ -55,18 +51,23 @@ impl<'a> StorageRepo<'a> {
             "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE id = ?1",
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
-            Ok(StorageEntry {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                content_type: row.get(2)?,
-                size: row.get::<_, i64>(3)? as u64,
-                created_at: row.get(4)?,
-            })
+        let raw = stmt.query_row(params![id], |row| {
+            let id: String = row.get(0)?;
+            let name: String = row.get(1)?;
+            let content_type: String = row.get(2)?;
+            let size: i64 = row.get(3)?;
+            let created_at: String = row.get(4)?;
+            Ok((id, name, content_type, size, created_at))
         });
 
-        match result {
-            Ok(entry) => Ok(Some(entry)),
+        match raw {
+            Ok((id, name, content_type, size, created_at)) => Ok(Some(StorageEntry {
+                id: id.parse()?,
+                name: StorageName::new(name),
+                content_type,
+                size: size as u64,
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -77,17 +78,29 @@ impl<'a> StorageRepo<'a> {
             "SELECT id, name, content_type, size, created_at FROM storage_entries ORDER BY name",
         )?;
 
-        let entries = stmt
+        let raw: Vec<(String, String, String, i64, String)> = stmt
             .query_map([], |row| {
-                Ok(StorageEntry {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    content_type: row.get(2)?,
-                    size: row.get::<_, i64>(3)? as u64,
-                    created_at: row.get(4)?,
-                })
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
+
+        let mut entries = vec![];
+
+        for (id, name, content_type, size, created_at) in raw {
+            entries.push(StorageEntry {
+                id: id.parse()?,
+                name: StorageName::new(name),
+                content_type,
+                size: size as u64,
+                created_at,
+            });
+        }
 
         Ok(entries)
     }
@@ -99,8 +112,8 @@ impl<'a> StorageRepo<'a> {
             "INSERT OR REPLACE INTO storage_entries (id, name, content_type, size, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                entry.id,
-                entry.name,
+                entry.id.to_string(),
+                entry.name.to_string(),
                 entry.content_type,
                 entry.size as i64,
                 entry.created_at

@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::MemoryClient;
+pub use features::mcp as memory_mcp;
+pub use features::{MemoryProjections, MemoryRouter};
+pub use model::{Memory, MemoryId};
+pub use protocol::{MemoryError, MemoryEvents, MemoryRequest, MemoryResponse};
+pub use repo::MemoryRepo;
+pub use service::MemoryService;

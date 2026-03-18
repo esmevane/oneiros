@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Cognition;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum CognitionResponse {
-    Added(Cognition),
-    Found(Cognition),
-    Listed(Vec<Cognition>),
+pub enum SensationRequest {
+    Set(Sensation),
+    Get { name: SensationName },
+    List,
+    Remove { name: SensationName },
 }

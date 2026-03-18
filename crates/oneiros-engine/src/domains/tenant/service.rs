@@ -1,21 +1,14 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::SystemContext;
-
-use super::errors::TenantError;
-use super::events::*;
-use super::model::Tenant;
-use super::repo::TenantRepo;
-use super::responses::TenantResponse;
+use crate::*;
 
 pub struct TenantService;
 
 impl TenantService {
     pub fn create(ctx: &SystemContext, name: String) -> Result<TenantResponse, TenantError> {
         let tenant = Tenant {
-            id: Uuid::now_v7().to_string(),
-            name,
+            id: TenantId::new(),
+            name: TenantName::new(name),
             created_at: Utc::now().to_rfc3339(),
         };
 

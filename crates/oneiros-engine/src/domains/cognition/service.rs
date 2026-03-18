@@ -1,13 +1,6 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::ProjectContext;
-
-use super::errors::CognitionError;
-use super::events::CognitionEvents;
-use super::model::Cognition;
-use super::repo::CognitionRepo;
-use super::responses::CognitionResponse;
+use crate::*;
 
 pub struct CognitionService;
 
@@ -19,7 +12,7 @@ impl CognitionService {
         content: String,
     ) -> Result<CognitionResponse, CognitionError> {
         let cognition = Cognition {
-            id: Uuid::now_v7().to_string(),
+            id: CognitionId::new(),
             agent_id: agent,
             texture,
             content,

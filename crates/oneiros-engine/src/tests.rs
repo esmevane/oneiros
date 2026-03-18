@@ -5,30 +5,24 @@ use tower::ServiceExt;
 
 use crate::*;
 
-use crate::contexts::{ProjectContext, SystemContext};
-use crate::domains;
-use crate::events::Events;
-use crate::migrations;
-use crate::store;
-
 // ── Helpers ───────────────────────────────────────────────────────
 
 /// All project-scoped projections in registration order.
-static PROJECTIONS: &[&[store::Projection]] = &[
-    domains::level::PROJECTIONS,
-    domains::texture::PROJECTIONS,
-    domains::sensation::PROJECTIONS,
-    domains::nature::PROJECTIONS,
-    domains::persona::PROJECTIONS,
-    domains::urge::PROJECTIONS,
-    domains::agent::PROJECTIONS,
-    domains::cognition::PROJECTIONS,
-    domains::memory::PROJECTIONS,
-    domains::experience::PROJECTIONS,
-    domains::connection::PROJECTIONS,
-    domains::pressure::PROJECTIONS,
-    domains::storage::PROJECTIONS,
-    domains::search::PROJECTIONS,
+static PROJECTIONS: &[&[Projection]] = &[
+    LevelProjections.all(),
+    TextureProjections.all(),
+    SensationProjections.all(),
+    NatureProjections.all(),
+    PersonaProjections.all(),
+    UrgeProjections.all(),
+    AgentProjections.all(),
+    CognitionProjections.all(),
+    MemoryProjections.all(),
+    ExperienceProjections.all(),
+    ConnectionProjections.all(),
+    PressureProjections.all(),
+    StorageProjections.all(),
+    SearchProjections.all(),
 ];
 
 fn project_ctx() -> ProjectContext {
@@ -38,7 +32,6 @@ fn project_ctx() -> ProjectContext {
 }
 
 fn seed_persona(ctx: &ProjectContext) {
-    use domains::persona::{model::Persona, service::PersonaService};
     PersonaService::set(
         ctx,
         Persona {
@@ -51,7 +44,6 @@ fn seed_persona(ctx: &ProjectContext) {
 }
 
 fn seed_agent(ctx: &ProjectContext) {
-    use domains::agent::service::AgentService;
     AgentService::create(
         ctx,
         "gov".into(),
@@ -66,7 +58,6 @@ fn seed_agent(ctx: &ProjectContext) {
 
 #[test]
 fn level_crud() {
-    use domains::level::{model::Level, responses::LevelResponse, service::LevelService};
     let ctx = project_ctx();
 
     LevelService::set(
@@ -94,7 +85,6 @@ fn level_crud() {
 
 #[test]
 fn persona_crud() {
-    use domains::persona::{model::Persona, responses::PersonaResponse, service::PersonaService};
     let ctx = project_ctx();
 
     PersonaService::set(
@@ -116,7 +106,6 @@ fn persona_crud() {
 
 #[test]
 fn agent_create_and_get() {
-    use domains::agent::{responses::AgentResponse, service::AgentService};
     let ctx = project_ctx();
     seed_persona(&ctx);
 
@@ -132,7 +121,7 @@ fn agent_create_and_get() {
 
     match AgentService::get(&ctx, "governor").unwrap() {
         AgentResponse::Found(a) => {
-            assert_eq!(a.name, "governor");
+            assert_eq!(a.name, AgentName::new("governor"));
             assert_eq!(a.persona, "test-persona");
         }
         other => panic!("Expected Found, got {other:?}"),
@@ -141,7 +130,6 @@ fn agent_create_and_get() {
 
 #[test]
 fn agent_persona_validation() {
-    use domains::agent::{errors::AgentError, service::AgentService};
     let ctx = project_ctx();
 
     let result = AgentService::create(
@@ -156,7 +144,6 @@ fn agent_persona_validation() {
 
 #[test]
 fn agent_name_conflict() {
-    use domains::agent::{errors::AgentError, service::AgentService};
     let ctx = project_ctx();
     seed_persona(&ctx);
 
@@ -180,7 +167,6 @@ fn agent_name_conflict() {
 
 #[test]
 fn cognition_add_and_list() {
-    use domains::cognition::{responses::CognitionResponse, service::CognitionService};
     let ctx = project_ctx();
     seed_persona(&ctx);
     seed_agent(&ctx);
@@ -204,10 +190,6 @@ fn cognition_add_and_list() {
 
 #[test]
 fn broadcast_events_are_typed() {
-    use domains::agent::events::AgentEvents;
-    use domains::agent::service::AgentService;
-    use domains::level::events::LevelEvents;
-    use domains::level::{model::Level, service::LevelService};
     let ctx = project_ctx();
     seed_persona(&ctx);
 
@@ -249,9 +231,6 @@ fn broadcast_events_are_typed() {
 
 #[test]
 fn replay_reconstructs_read_models() {
-    use domains::agent::{responses::AgentResponse, service::AgentService};
-    use domains::cognition::{responses::CognitionResponse, service::CognitionService};
-    use domains::level::{model::Level, responses::LevelResponse, service::LevelService};
     let ctx = project_ctx();
 
     // Seed data across multiple domains
@@ -302,7 +281,7 @@ fn replay_reconstructs_read_models() {
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
     match AgentService::get(&ctx, "gov").unwrap() {
-        AgentResponse::Found(a) => assert_eq!(a.name, "gov"),
+        AgentResponse::Found(a) => assert_eq!(a.name, AgentName::new("gov")),
         other => panic!("Expected Found after replay, got {other:?}"),
     }
     match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
@@ -383,8 +362,6 @@ async fn http_not_found() {
 
 #[tokio::test]
 async fn full_integration() {
-    use domains::agent::events::AgentEvents;
-
     let ctx = project_ctx();
     seed_persona(&ctx);
     let app = crate::http::project_router(ctx.clone());
@@ -425,9 +402,6 @@ async fn full_integration() {
 
 #[test]
 fn events_serialize_and_deserialize() {
-    use domains::level::events::LevelEvents;
-    use domains::level::model::Level;
-
     let event = Events::Level(LevelEvents::LevelSet(Level {
         name: "test".into(),
         description: "desc".into(),
@@ -452,9 +426,6 @@ fn events_serialize_and_deserialize() {
 
 #[test]
 fn search_indexes_across_domains() {
-    use domains::cognition::service::CognitionService;
-    use domains::search::responses::SearchResponse;
-    use domains::search::service::SearchService;
     let ctx = project_ctx();
     seed_persona(&ctx);
     seed_agent(&ctx);
@@ -499,11 +470,11 @@ fn search_indexes_across_domains() {
 
 // ── System context tests ─────────────────────────────────────────
 
-static SYSTEM_PROJECTIONS: &[&[store::Projection]] = &[
-    domains::tenant::PROJECTIONS,
+static SYSTEM_PROJECTIONS: &[&[Projection]] = &[
+    TenantProjections.all(),
     ActorProjections.all(),
-    domains::brain::PROJECTIONS,
-    domains::ticket::PROJECTIONS,
+    BrainProjections.all(),
+    TicketProjections.all(),
 ];
 
 fn system_ctx() -> SystemContext {
@@ -514,11 +485,10 @@ fn system_ctx() -> SystemContext {
 
 #[test]
 fn tenant_create_and_list() {
-    use domains::tenant::{responses::TenantResponse, service::TenantService};
     let ctx = system_ctx();
 
     match TenantService::create(&ctx, "acme".into()).unwrap() {
-        TenantResponse::Created(t) => assert_eq!(t.name, "acme"),
+        TenantResponse::Created(t) => assert_eq!(t.name, TenantName::new("acme")),
         other => panic!("Expected Created, got {other:?}"),
     }
 
@@ -530,12 +500,11 @@ fn tenant_create_and_list() {
 
 #[test]
 fn actor_create_and_get() {
-    use domains::tenant::{responses::TenantResponse, service::TenantService};
     let ctx = system_ctx();
 
     // Create a tenant first
     let tenant_id = match TenantService::create(&ctx, "acme".into()).unwrap() {
-        TenantResponse::Created(t) => t.id,
+        TenantResponse::Created(t) => t.id.to_string(),
         other => panic!("Expected Created, got {other:?}"),
     };
 
@@ -555,11 +524,10 @@ fn actor_create_and_get() {
 
 #[test]
 fn brain_create_and_conflict() {
-    use domains::brain::{errors::BrainError, responses::BrainResponse, service::BrainService};
     let ctx = system_ctx();
 
     match BrainService::create(&ctx, "test-brain".into()).unwrap() {
-        BrainResponse::Created(b) => assert_eq!(b.name, "test-brain"),
+        BrainResponse::Created(b) => assert_eq!(b.name, BrainName::new("test-brain")),
         other => panic!("Expected Created, got {other:?}"),
     }
 
@@ -570,21 +538,18 @@ fn brain_create_and_conflict() {
     ));
 
     match BrainService::get(&ctx, "test-brain").unwrap() {
-        BrainResponse::Found(b) => assert_eq!(b.name, "test-brain"),
+        BrainResponse::Found(b) => assert_eq!(b.name, BrainName::new("test-brain")),
         other => panic!("Expected Found, got {other:?}"),
     }
 }
 
 #[test]
 fn ticket_issue_and_validate() {
-    use domains::brain::{responses::BrainResponse, service::BrainService};
-    use domains::tenant::{responses::TenantResponse, service::TenantService};
-    use domains::ticket::{responses::TicketResponse, service::TicketService};
     let ctx = system_ctx();
 
     // Set up tenant + actor + brain
     let tenant_id = match TenantService::create(&ctx, "acme".into()).unwrap() {
-        TenantResponse::Created(t) => t.id,
+        TenantResponse::Created(t) => t.id.to_string(),
         other => panic!("Expected Created, got {other:?}"),
     };
     let actor_id = match ActorService::create(&ctx, tenant_id, "alice".into()).unwrap() {
@@ -616,9 +581,6 @@ fn ticket_issue_and_validate() {
 
 #[test]
 fn storage_upload_and_retrieve_content() {
-    use domains::storage::{
-        model::StorageContent, responses::StorageResponse, service::StorageService,
-    };
     let dir = tempfile::tempdir().unwrap();
     let ctx = project_ctx().with_config(crate::config::Config::new(dir.path()));
 
@@ -634,23 +596,25 @@ fn storage_upload_and_retrieve_content() {
     .unwrap()
     {
         StorageResponse::Uploaded(entry) => {
-            assert_eq!(entry.name, "test.txt");
+            assert_eq!(entry.name, StorageName::new("test.txt"));
             assert_eq!(entry.size, content.len() as u64);
             entry.id
         }
         other => panic!("Expected Uploaded, got {other:?}"),
     };
 
+    let id_str = id.to_string();
+
     // Get metadata
-    match StorageService::get(&ctx, &id).unwrap() {
-        StorageResponse::Found(entry) => assert_eq!(entry.name, "test.txt"),
+    match StorageService::get(&ctx, &id_str).unwrap() {
+        StorageResponse::Found(entry) => assert_eq!(entry.name, StorageName::new("test.txt")),
         other => panic!("Expected Found, got {other:?}"),
     }
 
     // Get content
-    match StorageService::get_content(&ctx, &id).unwrap() {
+    match StorageService::get_content(&ctx, &id_str).unwrap() {
         StorageResponse::Content(StorageContent { entry, data }) => {
-            assert_eq!(entry.name, "test.txt");
+            assert_eq!(entry.name, StorageName::new("test.txt"));
             assert_eq!(data, content);
         }
         other => panic!("Expected Content, got {other:?}"),
@@ -664,13 +628,13 @@ fn storage_upload_and_retrieve_content() {
 
     // Remove
     assert!(matches!(
-        StorageService::remove(&ctx, &id).unwrap(),
+        StorageService::remove(&ctx, &id_str).unwrap(),
         StorageResponse::Removed
     ));
 
     // File should be gone
-    assert!(!dir.path().join("blobs").join(&id).exists());
+    assert!(!dir.path().join("blobs").join(&id_str).exists());
 
     // Metadata should be gone
-    assert!(StorageService::get(&ctx, &id).is_err());
+    assert!(StorageService::get(&ctx, &id_str).is_err());
 }

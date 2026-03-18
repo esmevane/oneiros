@@ -6,20 +6,21 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::ExperienceError;
-use super::super::responses::ExperienceResponse;
-use super::super::service::ExperienceService;
+pub struct ExperienceRouter;
 
-pub const PATH: &str = "/experiences";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{id}", routing::get(show))
-        .route("/{id}/description", routing::put(update_description))
-        .route("/{id}/sensation", routing::put(update_sensation))
+impl ExperienceRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/experiences",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{id}", routing::get(show))
+                .route("/{id}/description", routing::put(update_description))
+                .route("/{id}/sensation", routing::put(update_sensation)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

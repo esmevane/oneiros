@@ -5,19 +5,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::PersonaError;
-use super::super::model::Persona;
-use super::super::responses::PersonaResponse;
-use super::super::service::PersonaService;
+pub struct PersonaRouter;
 
-pub const PATH: &str = "/personas";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{name}", routing::put(set).get(show).delete(remove))
+impl PersonaRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/personas",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{name}", routing::put(set).get(show).delete(remove)),
+        )
+    }
 }
 
 async fn set(
@@ -25,7 +25,7 @@ async fn set(
     Path(name): Path<String>,
     Json(mut persona): Json<Persona>,
 ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
-    persona.name = name;
+    persona.name = PersonaName::new(name);
     Ok((StatusCode::OK, Json(PersonaService::set(&ctx, persona)?)))
 }
 

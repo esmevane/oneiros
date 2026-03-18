@@ -1,11 +1,16 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::PersonaClient;
+pub use features::{PersonaProjections, PersonaRouter};
+pub use features::mcp as persona_mcp;
+pub use model::{Persona, PersonaName};
+pub use protocol::{
+    PersonaError, PersonaEvents, PersonaRemoved, PersonaRequest, PersonaResponse,
+};
+pub use repo::PersonaRepo;
+pub use service::PersonaService;

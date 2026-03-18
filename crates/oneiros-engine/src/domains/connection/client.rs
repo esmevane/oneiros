@@ -1,5 +1,4 @@
-use super::responses::ConnectionResponse;
-use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct ConnectionClient<'a> {
     client: &'a Client,

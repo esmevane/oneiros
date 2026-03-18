@@ -7,25 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-use crate::domains::agent::requests::AgentRequest;
-use crate::domains::brain::requests::BrainRequest;
-use crate::domains::cognition::requests::CognitionRequest;
-use crate::domains::connection::requests::ConnectionRequest;
-use crate::domains::experience::requests::ExperienceRequest;
-use crate::domains::level::requests::LevelRequest;
-use crate::domains::lifecycle::requests::LifecycleRequest;
-use crate::domains::memory::requests::MemoryRequest;
-use crate::domains::nature::requests::NatureRequest;
-use crate::domains::persona::requests::PersonaRequest;
-use crate::domains::pressure::requests::PressureRequest;
-use crate::domains::search::requests::SearchRequest;
-use crate::domains::sensation::requests::SensationRequest;
-use crate::domains::storage::requests::StorageRequest;
-use crate::domains::tenant::requests::TenantRequest;
-use crate::domains::texture::requests::TextureRequest;
-use crate::domains::ticket::requests::TicketRequest;
-use crate::domains::urge::requests::UrgeRequest;
-
 /// All known request types across every domain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]

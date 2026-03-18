@@ -6,8 +6,6 @@
 use clap::Subcommand;
 
 use crate::*;
-
-use crate::contexts::ProjectContext;
 use crate::contexts::SystemContext;
 
 /// Top-level CLI commands for the engine.
@@ -283,7 +281,7 @@ pub fn execute(
 
         // ── Agent ────────────────────────────────────────────────
         Commands::Agent(cmd) => {
-            use crate::domains::agent::service::AgentService;
+            use crate::AgentService;
             let result = match cmd {
                 AgentCommands::Create {
                     name,
@@ -322,7 +320,7 @@ pub fn execute(
 
         // ── Cognition ────────────────────────────────────────────
         Commands::Cognition(cmd) => {
-            use crate::domains::cognition::service::CognitionService;
+
             let result = match cmd {
                 CognitionCommands::Add {
                     agent,
@@ -343,7 +341,7 @@ pub fn execute(
 
         // ── Memory ───────────────────────────────────────────────
         Commands::Memory(cmd) => {
-            use crate::domains::memory::service::MemoryService;
+
             let result = match cmd {
                 MemoryCommands::Add {
                     agent,
@@ -364,7 +362,7 @@ pub fn execute(
 
         // ── Experience ───────────────────────────────────────────
         Commands::Experience(cmd) => {
-            use crate::domains::experience::service::ExperienceService;
+
             let result = match cmd {
                 ExperienceCommands::Create {
                     agent,
@@ -400,7 +398,7 @@ pub fn execute(
 
         // ── Connection ───────────────────────────────────────────
         Commands::Connection(cmd) => {
-            use crate::domains::connection::service::ConnectionService;
+
             let result = match cmd {
                 ConnectionCommands::Create {
                     from,
@@ -429,31 +427,26 @@ pub fn execute(
 
         // ── Lifecycle ────────────────────────────────────────────
         Commands::Dream { agent } => {
-            use crate::domains::lifecycle::service::LifecycleService;
             Ok(serde_json::to_string_pretty(&LifecycleService::dream(
                 ctx, &agent,
             )?)?)
         }
         Commands::Introspect { agent } => {
-            use crate::domains::lifecycle::service::LifecycleService;
             Ok(serde_json::to_string_pretty(
                 &LifecycleService::introspect(ctx, &agent)?,
             )?)
         }
         Commands::Reflect { agent } => {
-            use crate::domains::lifecycle::service::LifecycleService;
             Ok(serde_json::to_string_pretty(&LifecycleService::reflect(
                 ctx, &agent,
             )?)?)
         }
         Commands::Sense { agent, content } => {
-            use crate::domains::lifecycle::service::LifecycleService;
             Ok(serde_json::to_string_pretty(&LifecycleService::sense(
                 ctx, &agent, &content,
             )?)?)
         }
         Commands::Sleep { agent } => {
-            use crate::domains::lifecycle::service::LifecycleService;
             Ok(serde_json::to_string_pretty(&LifecycleService::sleep(
                 ctx, &agent,
             )?)?)
@@ -461,7 +454,6 @@ pub fn execute(
 
         // ── Search ───────────────────────────────────────────────
         Commands::Search { query, agent } => {
-            use crate::domains::search::service::SearchService;
             Ok(serde_json::to_string_pretty(&SearchService::search(
                 ctx,
                 &query,
@@ -471,7 +463,6 @@ pub fn execute(
 
         // ── Pressure ─────────────────────────────────────────────
         Commands::Pressure(cmd) => {
-            use crate::domains::pressure::service::PressureService;
             let result = match cmd {
                 PressureCommands::Get { agent } => {
                     serde_json::to_string_pretty(&PressureService::get(ctx, &agent)?)?
@@ -492,7 +483,6 @@ pub fn execute_system(
 ) -> Result<String, Box<dyn std::error::Error>> {
     match command {
         SystemCommands::Tenant(cmd) => {
-            use crate::domains::tenant::service::TenantService;
             let result = match cmd {
                 TenantCommands::Create { name } => {
                     serde_json::to_string_pretty(&TenantService::create(ctx, name)?)?
@@ -517,7 +507,6 @@ pub fn execute_system(
             Ok(result)
         }
         SystemCommands::Brain(cmd) => {
-            use crate::domains::brain::service::BrainService;
             let result = match cmd {
                 BrainCommands::Create { name } => {
                     serde_json::to_string_pretty(&BrainService::create(ctx, name)?)?
@@ -530,7 +519,6 @@ pub fn execute_system(
             Ok(result)
         }
         SystemCommands::Ticket(cmd) => {
-            use crate::domains::ticket::service::TicketService;
             let result = match cmd {
                 TicketCommands::Issue {
                     actor_id,
@@ -566,7 +554,7 @@ fn execute_vocab(
 ) -> Result<String, Box<dyn std::error::Error>> {
     match domain {
         VocabDomain::Level => {
-            use crate::domains::level::{model::Level, service::LevelService};
+
             match cmd {
                 VocabCommands::Set {
                     name,
@@ -575,7 +563,7 @@ fn execute_vocab(
                 } => Ok(serde_json::to_string_pretty(&LevelService::set(
                     ctx,
                     Level {
-                        name,
+                        name: LevelName::new(name),
                         description,
                         prompt,
                     },
@@ -590,7 +578,7 @@ fn execute_vocab(
             }
         }
         VocabDomain::Texture => {
-            use crate::domains::texture::{model::Texture, service::TextureService};
+
             match cmd {
                 VocabCommands::Set {
                     name,
@@ -599,7 +587,7 @@ fn execute_vocab(
                 } => Ok(serde_json::to_string_pretty(&TextureService::set(
                     ctx,
                     Texture {
-                        name,
+                        name: TextureName::new(name),
                         description,
                         prompt,
                     },
@@ -616,7 +604,7 @@ fn execute_vocab(
             }
         }
         VocabDomain::Sensation => {
-            use crate::domains::sensation::{model::Sensation, service::SensationService};
+
             match cmd {
                 VocabCommands::Set {
                     name,
@@ -625,7 +613,7 @@ fn execute_vocab(
                 } => Ok(serde_json::to_string_pretty(&SensationService::set(
                     ctx,
                     Sensation {
-                        name,
+                        name: SensationName::new(name),
                         description,
                         prompt,
                     },
@@ -642,7 +630,7 @@ fn execute_vocab(
             }
         }
         VocabDomain::Nature => {
-            use crate::domains::nature::{model::Nature, service::NatureService};
+
             match cmd {
                 VocabCommands::Set {
                     name,
@@ -651,7 +639,7 @@ fn execute_vocab(
                 } => Ok(serde_json::to_string_pretty(&NatureService::set(
                     ctx,
                     Nature {
-                        name,
+                        name: NatureName::new(name),
                         description,
                         prompt,
                     },
@@ -668,7 +656,7 @@ fn execute_vocab(
             }
         }
         VocabDomain::Persona => {
-            use crate::domains::persona::{model::Persona, service::PersonaService};
+
             match cmd {
                 VocabCommands::Set {
                     name,
@@ -677,7 +665,7 @@ fn execute_vocab(
                 } => Ok(serde_json::to_string_pretty(&PersonaService::set(
                     ctx,
                     Persona {
-                        name,
+                        name: PersonaName::new(name),
                         description,
                         prompt,
                     },
@@ -694,7 +682,7 @@ fn execute_vocab(
             }
         }
         VocabDomain::Urge => {
-            use crate::domains::urge::{model::Urge, service::UrgeService};
+
             match cmd {
                 VocabCommands::Set {
                     name,
@@ -703,7 +691,7 @@ fn execute_vocab(
                 } => Ok(serde_json::to_string_pretty(&UrgeService::set(
                     ctx,
                     Urge {
-                        name,
+                        name: UrgeName::new(name),
                         description,
                         prompt,
                     },

@@ -1,5 +1,4 @@
-use super::responses::CognitionResponse;
-use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct CognitionClient<'a> {
     client: &'a Client,

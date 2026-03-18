@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::ConnectionError;
-use super::super::responses::ConnectionResponse;
-use super::super::service::ConnectionService;
+pub struct ConnectionRouter;
 
-pub const PATH: &str = "/connections";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{id}", routing::get(show).delete(remove))
+impl ConnectionRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/connections",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{id}", routing::get(show).delete(remove)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Agent;
+use crate::*;
 
 /// Agent read model — queries, projection handling, and lifecycle.
 pub struct AgentRepo<'a> {
@@ -55,17 +51,19 @@ impl<'a> AgentRepo<'a> {
             .prepare("SELECT id, name, persona, description, prompt FROM agents WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
-            Ok(Agent {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                persona: row.get(2)?,
-                description: row.get(3)?,
-                prompt: row.get(4)?,
-            })
+            let id: String = row.get(0)?;
+            let name: String = row.get(1)?;
+            Ok((id, name, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?))
         });
 
         match result {
-            Ok(agent) => Ok(Some(agent)),
+            Ok((id, name, persona, description, prompt)) => Ok(Some(Agent {
+                id: id.parse()?,
+                name: AgentName::new(name),
+                persona,
+                description,
+                prompt,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -76,17 +74,23 @@ impl<'a> AgentRepo<'a> {
             .conn
             .prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
 
-        let agents = stmt
+        let raw: Vec<(String, String, String, String, String)> = stmt
             .query_map([], |row| {
-                Ok(Agent {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    persona: row.get(2)?,
-                    description: row.get(3)?,
-                    prompt: row.get(4)?,
-                })
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?))
             })?
             .collect::<Result<Vec<_>, _>>()?;
+
+        let mut agents = vec![];
+
+        for (id, name, persona, description, prompt) in raw {
+            agents.push(Agent {
+                id: id.parse()?,
+                name: AgentName::new(name),
+                persona,
+                description,
+                prompt,
+            });
+        }
 
         Ok(agents)
     }
@@ -107,8 +111,8 @@ impl<'a> AgentRepo<'a> {
             "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                agent.id,
-                agent.name,
+                agent.id.to_string(),
+                agent.name.to_string(),
                 agent.persona,
                 agent.description,
                 agent.prompt
@@ -122,8 +126,8 @@ impl<'a> AgentRepo<'a> {
             "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                agent.id,
-                agent.name,
+                agent.id.to_string(),
+                agent.name.to_string(),
                 agent.persona,
                 agent.description,
                 agent.prompt
@@ -132,9 +136,9 @@ impl<'a> AgentRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &AgentName) -> Result<(), StoreError> {
         self.conn
-            .execute("DELETE FROM agents WHERE name = ?1", params![name])?;
+            .execute("DELETE FROM agents WHERE name = ?1", params![name.to_string()])?;
         Ok(())
     }
 }

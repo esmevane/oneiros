@@ -1,2 +1,5 @@
-pub mod http;
-pub mod projections;
+mod http;
+mod projections;
+
+pub use http::TicketRouter;
+pub use projections::TicketProjections;

@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::AgentError;
-use super::super::responses::AgentResponse;
-use super::super::service::AgentService;
+pub struct AgentRouter;
 
-pub const PATH: &str = "/agents";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{name}", routing::get(show).put(update).delete(remove))
+impl AgentRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/agents",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{name}", routing::get(show).put(update).delete(remove)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

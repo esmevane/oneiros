@@ -1,12 +1,8 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
+use crate::*;
 
-use super::events::PersonaEvents;
-use super::model::Persona;
-
-/// Agent read model — queries, projection handling, and lifecycle.
+/// Persona read model — queries, projection handling, and lifecycle.
 pub struct PersonaRepo<'a> {
     conn: &'a Connection,
 }
@@ -22,7 +18,7 @@ impl<'a> PersonaRepo<'a> {
         if let Events::Persona(persona_event) = &event.data {
             match persona_event {
                 PersonaEvents::PersonaSet(persona) => self.set(persona)?,
-                PersonaEvents::PersonaRemoved(removed) => self.remove(&removed.name)?,
+                PersonaEvents::PersonaRemoved(removed) => self.remove(removed.name.as_str())?,
             }
         }
         Ok(())
@@ -52,8 +48,9 @@ impl<'a> PersonaRepo<'a> {
             .prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
             Ok(Persona {
-                name: row.get(0)?,
+                name: PersonaName::new(name),
                 description: row.get(1)?,
                 prompt: row.get(2)?,
             })
@@ -73,8 +70,9 @@ impl<'a> PersonaRepo<'a> {
 
         let personas = stmt
             .query_map([], |row| {
+                let name: String = row.get(0)?;
                 Ok(Persona {
-                    name: row.get(0)?,
+                    name: PersonaName::new(name),
                     description: row.get(1)?,
                     prompt: row.get(2)?,
                 })
@@ -89,7 +87,7 @@ impl<'a> PersonaRepo<'a> {
     fn set(&self, persona: &Persona) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO personas (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![persona.name, persona.description, persona.prompt],
+            params![persona.name.to_string(), persona.description, persona.prompt],
         )?;
         Ok(())
     }

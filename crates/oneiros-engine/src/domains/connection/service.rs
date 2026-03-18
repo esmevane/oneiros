@@ -1,13 +1,6 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::ProjectContext;
-
-use super::errors::ConnectionError;
-use super::events::{ConnectionEvents, ConnectionRemoved};
-use super::model::Connection;
-use super::repo::ConnectionRepo;
-use super::responses::ConnectionResponse;
+use crate::*;
 
 pub struct ConnectionService;
 
@@ -20,7 +13,7 @@ impl ConnectionService {
         description: String,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let connection = Connection {
-            id: Uuid::now_v7().to_string(),
+            id: ConnectionId::new(),
             from_entity,
             to_entity,
             nature,
@@ -61,8 +54,12 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(id.to_string()));
         }
 
+        let id_parsed = id
+            .parse()
+            .map_err(|e: IdParseError| ConnectionError::Database(e.into()))?;
+
         ctx.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
-            id: id.to_string(),
+            id: id_parsed,
         }));
         Ok(ConnectionResponse::Removed)
     }

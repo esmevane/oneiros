@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::CognitionError;
-use super::super::responses::CognitionResponse;
-use super::super::service::CognitionService;
+pub struct CognitionRouter;
 
-pub const PATH: &str = "/cognitions";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list).post(add))
-        .route("/{id}", routing::get(show))
+impl CognitionRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/cognitions",
+            Router::new()
+                .route("/", routing::get(list).post(add))
+                .route("/{id}", routing::get(show)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

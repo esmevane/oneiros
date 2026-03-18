@@ -1,13 +1,4 @@
-use uuid::Uuid;
-
-use crate::contexts::ProjectContext;
-use crate::domains::persona::repo::PersonaRepo;
-
-use super::errors::AgentError;
-use super::events::{AgentEvents, AgentRemoved};
-use super::model::Agent;
-use super::repo::AgentRepo;
-use super::responses::AgentResponse;
+use crate::*;
 
 pub struct AgentService;
 
@@ -38,8 +29,8 @@ impl AgentService {
         }
 
         let agent = Agent {
-            id: Uuid::now_v7().to_string(),
-            name,
+            id: AgentId::new(),
+            name: AgentName::new(&name),
             persona,
             description,
             prompt,
@@ -79,7 +70,7 @@ impl AgentService {
 
         let agent = Agent {
             id: existing.id,
-            name,
+            name: AgentName::new(&name),
             persona,
             description,
             prompt,
@@ -100,7 +91,7 @@ impl AgentService {
         }
 
         ctx.emit(AgentEvents::AgentRemoved(AgentRemoved {
-            name: name.to_string(),
+            name: AgentName::new(name),
         }));
         Ok(AgentResponse::Removed)
     }

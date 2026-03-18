@@ -1,10 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::SearchClient;
+pub use features::mcp as search_mcp;
+pub use features::{SearchProjections, SearchRouter};
+pub use model::SearchResult;
+pub use protocol::{SearchError, SearchRequest, SearchResponse};
+pub use repo::SearchRepo;
+pub use service::SearchService;

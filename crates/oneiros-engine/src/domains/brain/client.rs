@@ -1,8 +1,6 @@
 //! HTTP client for the brain domain.
 
-use crate::client::{Client, ClientError};
-
-use super::responses::BrainResponse;
+use crate::*;
 
 /// Client scoped to brain operations.
 pub struct BrainClient<'a> {

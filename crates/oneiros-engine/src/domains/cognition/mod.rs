@@ -1,11 +1,14 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::CognitionClient;
+pub use features::mcp as cognition_mcp;
+pub use features::{CognitionProjections, CognitionRouter};
+pub use model::{Cognition, CognitionId};
+pub use protocol::{CognitionError, CognitionEvents, CognitionRequest, CognitionResponse};
+pub use repo::CognitionRepo;
+pub use service::CognitionService;

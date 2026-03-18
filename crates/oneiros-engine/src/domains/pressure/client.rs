@@ -1,8 +1,6 @@
 //! HTTP client for the pressure domain.
 
-use crate::client::{Client, ClientError};
-
-use super::responses::PressureResponse;
+use crate::*;
 
 /// Client scoped to pressure operations.
 pub struct PressureClient<'a> {

@@ -8,9 +8,7 @@ use rmcp::model::{CallToolResult, Content, Implementation, ServerCapabilities, S
 use rmcp::{ErrorData, ServerHandler};
 use serde_json::json;
 
-use crate::contexts::ProjectContext;
-use crate::domains;
-use crate::mcp_support::ToolError;
+use crate::*;
 
 /// Tool description — name + human-readable description.
 struct ToolDef {
@@ -259,6 +257,8 @@ fn all_tools() -> Vec<ToolDef> {
     ]
 }
 
+type Dispatcher = fn(&ProjectContext, &str, &str) -> Result<serde_json::Value, ToolError>;
+
 /// Domain dispatch table — routes tool names to domain dispatchers.
 fn dispatch(
     ctx: &ProjectContext,
@@ -266,50 +266,28 @@ fn dispatch(
     params: &str,
 ) -> Result<serde_json::Value, ToolError> {
     // Check each domain's tool catalog
-    if domains::level::features::mcp::tool_names().contains(&tool_name) {
-        return domains::level::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::texture::features::mcp::tool_names().contains(&tool_name) {
-        return domains::texture::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::sensation::features::mcp::tool_names().contains(&tool_name) {
-        return domains::sensation::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::nature::features::mcp::tool_names().contains(&tool_name) {
-        return domains::nature::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::persona::features::mcp::tool_names().contains(&tool_name) {
-        return domains::persona::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::urge::features::mcp::tool_names().contains(&tool_name) {
-        return domains::urge::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::agent::features::mcp::tool_names().contains(&tool_name) {
-        return domains::agent::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::cognition::features::mcp::tool_names().contains(&tool_name) {
-        return domains::cognition::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::memory::features::mcp::tool_names().contains(&tool_name) {
-        return domains::memory::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::experience::features::mcp::tool_names().contains(&tool_name) {
-        return domains::experience::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::connection::features::mcp::tool_names().contains(&tool_name) {
-        return domains::connection::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::lifecycle::features::mcp::tool_names().contains(&tool_name) {
-        return domains::lifecycle::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::search::features::mcp::tool_names().contains(&tool_name) {
-        return domains::search::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::storage::features::mcp::tool_names().contains(&tool_name) {
-        return domains::storage::features::mcp::dispatch(ctx, tool_name, params);
-    }
-    if domains::pressure::features::mcp::tool_names().contains(&tool_name) {
-        return domains::pressure::features::mcp::dispatch(ctx, tool_name, params);
+    let dispatchers: &[(&[&str], Dispatcher)] = &[
+        (level_mcp::tool_names(), level_mcp::dispatch),
+        (texture_mcp::tool_names(), texture_mcp::dispatch),
+        (sensation_mcp::tool_names(), sensation_mcp::dispatch),
+        (nature_mcp::tool_names(), nature_mcp::dispatch),
+        (persona_mcp::tool_names(), persona_mcp::dispatch),
+        (urge_mcp::tool_names(), urge_mcp::dispatch),
+        (agent_mcp::tool_names(), agent_mcp::dispatch),
+        (cognition_mcp::tool_names(), cognition_mcp::dispatch),
+        (memory_mcp::tool_names(), memory_mcp::dispatch),
+        (experience_mcp::tool_names(), experience_mcp::dispatch),
+        (connection_mcp::tool_names(), connection_mcp::dispatch),
+        (lifecycle_mcp::tool_names(), lifecycle_mcp::dispatch),
+        (search_mcp::tool_names(), search_mcp::dispatch),
+        (storage_mcp::tool_names(), storage_mcp::dispatch),
+        (pressure_mcp::tool_names(), pressure_mcp::dispatch),
+    ];
+
+    for (names, handler) in dispatchers {
+        if names.contains(&tool_name) {
+            return handler(ctx, tool_name, params);
+        }
     }
 
     Err(ToolError::UnknownTool(tool_name.to_string()))

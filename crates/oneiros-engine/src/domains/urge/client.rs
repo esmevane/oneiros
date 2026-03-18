@@ -1,5 +1,4 @@
-use super::model::Urge;
-use super::responses::UrgeResponse;
+use crate::*;
 use crate::client::{Client, ClientError};
 
 pub struct UrgeClient<'a> {

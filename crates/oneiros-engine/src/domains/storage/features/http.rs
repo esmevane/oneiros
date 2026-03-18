@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::StorageError;
-use super::super::responses::StorageResponse;
-use super::super::service::StorageService;
+pub struct StorageRouter;
 
-pub const PATH: &str = "/storage";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list).post(upload))
-        .route("/{id}", routing::get(show).delete(remove))
+impl StorageRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/storage",
+            Router::new()
+                .route("/", routing::get(list).post(upload))
+                .route("/{id}", routing::get(show).delete(remove)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

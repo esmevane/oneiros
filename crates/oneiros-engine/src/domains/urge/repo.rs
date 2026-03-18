@@ -1,12 +1,8 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
+use crate::*;
 
-use super::events::UrgeEvents;
-use super::model::Urge;
-
-/// Agent read model — queries, projection handling, and lifecycle.
+/// Urge read model — queries, projection handling, and lifecycle.
 pub struct UrgeRepo<'a> {
     conn: &'a Connection,
 }
@@ -22,7 +18,7 @@ impl<'a> UrgeRepo<'a> {
         if let Events::Urge(urge_event) = &event.data {
             match urge_event {
                 UrgeEvents::UrgeSet(urge) => self.set(urge)?,
-                UrgeEvents::UrgeRemoved(removed) => self.remove(&removed.name)?,
+                UrgeEvents::UrgeRemoved(removed) => self.remove(removed.name.as_str())?,
             }
         }
         Ok(())
@@ -52,8 +48,9 @@ impl<'a> UrgeRepo<'a> {
             .prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
             Ok(Urge {
-                name: row.get(0)?,
+                name: UrgeName::new(name),
                 description: row.get(1)?,
                 prompt: row.get(2)?,
             })
@@ -73,8 +70,9 @@ impl<'a> UrgeRepo<'a> {
 
         let urges = stmt
             .query_map([], |row| {
+                let name: String = row.get(0)?;
                 Ok(Urge {
-                    name: row.get(0)?,
+                    name: UrgeName::new(name),
                     description: row.get(1)?,
                     prompt: row.get(2)?,
                 })
@@ -89,7 +87,7 @@ impl<'a> UrgeRepo<'a> {
     fn set(&self, urge: &Urge) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO urges (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![urge.name, urge.description, urge.prompt],
+            params![urge.name.to_string(), urge.description, urge.prompt],
         )?;
         Ok(())
     }

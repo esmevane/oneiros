@@ -1,10 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::domains::agent::model::Agent;
-use crate::domains::cognition::model::Cognition;
-use crate::domains::experience::model::Experience;
-use crate::domains::memory::model::Memory;
+use crate::*;
 
 /// The full cognitive context for an agent — assembled by dream/introspect.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

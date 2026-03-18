@@ -1,8 +1,6 @@
 //! HTTP client for the tenant domain.
 
-use crate::client::{Client, ClientError};
-
-use super::responses::TenantResponse;
+use crate::*;
 
 /// Client scoped to tenant operations.
 pub struct TenantClient<'a> {

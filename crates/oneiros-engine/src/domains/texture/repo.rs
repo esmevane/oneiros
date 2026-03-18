@@ -1,12 +1,8 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
+use crate::*;
 
-use super::events::TextureEvents;
-use super::model::Texture;
-
-/// Agent read model — queries, projection handling, and lifecycle.
+/// Texture read model — queries, projection handling, and lifecycle.
 pub struct TextureRepo<'a> {
     conn: &'a Connection,
 }
@@ -22,7 +18,7 @@ impl<'a> TextureRepo<'a> {
         if let Events::Texture(texture_event) = &event.data {
             match texture_event {
                 TextureEvents::TextureSet(texture) => self.set(texture)?,
-                TextureEvents::TextureRemoved(removed) => self.remove(&removed.name)?,
+                TextureEvents::TextureRemoved(removed) => self.remove(removed.name.as_str())?,
             }
         }
         Ok(())
@@ -52,8 +48,9 @@ impl<'a> TextureRepo<'a> {
             .prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
             Ok(Texture {
-                name: row.get(0)?,
+                name: TextureName::new(name),
                 description: row.get(1)?,
                 prompt: row.get(2)?,
             })
@@ -73,8 +70,9 @@ impl<'a> TextureRepo<'a> {
 
         let textures = stmt
             .query_map([], |row| {
+                let name: String = row.get(0)?;
                 Ok(Texture {
-                    name: row.get(0)?,
+                    name: TextureName::new(name),
                     description: row.get(1)?,
                     prompt: row.get(2)?,
                 })
@@ -89,7 +87,7 @@ impl<'a> TextureRepo<'a> {
     fn set(&self, texture: &Texture) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO textures (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![texture.name, texture.description, texture.prompt],
+            params![texture.name.to_string(), texture.description, texture.prompt],
         )?;
         Ok(())
     }

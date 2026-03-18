@@ -1,10 +1,6 @@
 //! Level MCP driving adapter — translates tool calls into domain service calls.
 
-use crate::contexts::ProjectContext;
-use crate::mcp_support::ToolError;
-
-use super::super::model::Level;
-use super::super::service::LevelService;
+use crate::*;
 
 #[derive(serde::Deserialize)]
 struct NameParam {

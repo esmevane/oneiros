@@ -1,12 +1,8 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
+use crate::*;
 
-use super::events::SensationEvents;
-use super::model::Sensation;
-
-/// Agent read model — queries, projection handling, and lifecycle.
+/// Sensation read model — queries, projection handling, and lifecycle.
 pub struct SensationRepo<'a> {
     conn: &'a Connection,
 }
@@ -22,7 +18,9 @@ impl<'a> SensationRepo<'a> {
         if let Events::Sensation(sensation_event) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
-                SensationEvents::SensationRemoved(removed) => self.remove(&removed.name)?,
+                SensationEvents::SensationRemoved(removed) => {
+                    self.remove(removed.name.as_str())?
+                }
             }
         }
         Ok(())
@@ -52,8 +50,9 @@ impl<'a> SensationRepo<'a> {
             .prepare("SELECT name, description, prompt FROM sensations WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
             Ok(Sensation {
-                name: row.get(0)?,
+                name: SensationName::new(name),
                 description: row.get(1)?,
                 prompt: row.get(2)?,
             })
@@ -73,8 +72,9 @@ impl<'a> SensationRepo<'a> {
 
         let sensations = stmt
             .query_map([], |row| {
+                let name: String = row.get(0)?;
                 Ok(Sensation {
-                    name: row.get(0)?,
+                    name: SensationName::new(name),
                     description: row.get(1)?,
                     prompt: row.get(2)?,
                 })
@@ -89,7 +89,11 @@ impl<'a> SensationRepo<'a> {
     fn set(&self, sensation: &Sensation) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO sensations (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![sensation.name, sensation.description, sensation.prompt],
+            params![
+                sensation.name.to_string(),
+                sensation.description,
+                sensation.prompt
+            ],
         )?;
         Ok(())
     }

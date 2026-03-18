@@ -1,10 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::PersonaError;
-use super::events::{PersonaEvents, PersonaRemoved};
-use super::model::Persona;
-use super::repo::PersonaRepo;
-use super::responses::PersonaResponse;
+use crate::*;
 
 pub struct PersonaService;
 
@@ -31,7 +25,7 @@ impl PersonaService {
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<PersonaResponse, PersonaError> {
         ctx.emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
-            name: name.to_string(),
+            name: PersonaName::new(name),
         }));
         Ok(PersonaResponse::Removed)
     }

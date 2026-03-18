@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::SystemContext;
+use crate::*;
 
-use super::super::errors::TenantError;
-use super::super::responses::TenantResponse;
-use super::super::service::TenantService;
+pub struct TenantRouter;
 
-pub const PATH: &str = "/tenants";
-
-pub fn routes() -> Router<SystemContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{id}", routing::get(show))
+impl TenantRouter {
+    pub fn routes(&self) -> Router<SystemContext> {
+        Router::new().nest(
+            "/tenants",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{id}", routing::get(show)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

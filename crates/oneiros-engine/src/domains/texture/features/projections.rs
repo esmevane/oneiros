@@ -1,8 +1,14 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::TextureRepo;
+pub struct TextureProjections;
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+impl TextureProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
+
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "texture",
     apply: |conn, event| TextureRepo::new(conn).handle(event),
     reset: |conn| TextureRepo::new(conn).reset(),

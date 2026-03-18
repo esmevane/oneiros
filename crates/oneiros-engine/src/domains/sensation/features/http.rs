@@ -5,19 +5,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::SensationError;
-use super::super::model::Sensation;
-use super::super::responses::SensationResponse;
-use super::super::service::SensationService;
+pub struct SensationRouter;
 
-pub const PATH: &str = "/sensations";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{name}", routing::put(set).get(show).delete(remove))
+impl SensationRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/sensations",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{name}", routing::put(set).get(show).delete(remove)),
+        )
+    }
 }
 
 async fn set(
@@ -25,7 +25,7 @@ async fn set(
     Path(name): Path<String>,
     Json(mut sensation): Json<Sensation>,
 ) -> Result<(StatusCode, Json<SensationResponse>), SensationError> {
-    sensation.name = name;
+    sensation.name = SensationName::new(name);
     Ok((
         StatusCode::OK,
         Json(SensationService::set(&ctx, sensation)?),

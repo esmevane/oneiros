@@ -1,8 +1,14 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::SensationRepo;
+pub struct SensationProjections;
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+impl SensationProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
+
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "sensation",
     apply: |conn, event| SensationRepo::new(conn).handle(event),
     reset: |conn| SensationRepo::new(conn).reset(),

@@ -1,3 +1,6 @@
 pub mod http;
 pub mod mcp;
-pub mod projections;
+mod projections;
+
+pub use http::ExperienceRouter;
+pub use projections::ExperienceProjections;

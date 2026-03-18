@@ -4,13 +4,18 @@
 //! services into higher-level operations: dream, introspect, reflect, sense, sleep.
 //! Each produces lifecycle events and returns composed results.
 
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::LifecycleClient;
+pub use features::mcp as lifecycle_mcp;
+pub use features::LifecycleRouter;
+pub use model::{CognitiveContext, LifecycleMarker};
+pub use protocol::{
+    LifecycleError, LifecycleEvent, LifecycleEvents, LifecycleRequest, LifecycleResponse,
+    SensedEvent,
+};
+pub use service::LifecycleService;

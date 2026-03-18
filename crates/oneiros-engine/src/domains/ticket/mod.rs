@@ -1,11 +1,13 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::TicketClient;
+pub use features::{TicketProjections, TicketRouter};
+pub use model::{Ticket, TicketId};
+pub use protocol::{TicketError, TicketEvents, TicketRequest, TicketResponse};
+pub use repo::TicketRepo;
+pub use service::TicketService;

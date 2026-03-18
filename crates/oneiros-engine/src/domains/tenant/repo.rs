@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Tenant;
+use crate::*;
 
 /// Tenant read model — queries, projection handling, and lifecycle.
 pub struct TenantRepo<'a> {
@@ -48,16 +44,19 @@ impl<'a> TenantRepo<'a> {
             .conn
             .prepare("SELECT id, name, created_at FROM tenants WHERE id = ?1")?;
 
-        let result = stmt.query_row(params![id], |row| {
-            Ok(Tenant {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                created_at: row.get(2)?,
-            })
+        let raw = stmt.query_row(params![id], |row| {
+            let id: String = row.get(0)?;
+            let name: String = row.get(1)?;
+            let created_at: String = row.get(2)?;
+            Ok((id, name, created_at))
         });
 
-        match result {
-            Ok(tenant) => Ok(Some(tenant)),
+        match raw {
+            Ok((id, name, created_at)) => Ok(Some(Tenant {
+                id: id.parse()?,
+                name: TenantName::new(name),
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -68,15 +67,19 @@ impl<'a> TenantRepo<'a> {
             .conn
             .prepare("SELECT id, name, created_at FROM tenants ORDER BY name")?;
 
-        let tenants = stmt
-            .query_map([], |row| {
-                Ok(Tenant {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    created_at: row.get(2)?,
-                })
-            })?
+        let raw: Vec<(String, String, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
             .collect::<Result<Vec<_>, _>>()?;
+
+        let mut tenants = vec![];
+
+        for (id, name, created_at) in raw {
+            tenants.push(Tenant {
+                id: id.parse()?,
+                name: TenantName::new(name),
+                created_at,
+            });
+        }
 
         Ok(tenants)
     }
@@ -86,7 +89,7 @@ impl<'a> TenantRepo<'a> {
     fn create_record(&self, tenant: &Tenant) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO tenants (id, name, created_at) VALUES (?1, ?2, ?3)",
-            params![tenant.id, tenant.name, tenant.created_at],
+            params![tenant.id.to_string(), tenant.name.to_string(), tenant.created_at],
         )?;
         Ok(())
     }

@@ -1,12 +1,8 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
+use crate::*;
 
-use super::events::LevelEvents;
-use super::model::Level;
-
-/// Agent read model — queries, projection handling, and lifecycle.
+/// Level read model — queries, projection handling, and lifecycle.
 pub struct LevelRepo<'a> {
     conn: &'a Connection,
 }
@@ -22,7 +18,7 @@ impl<'a> LevelRepo<'a> {
         if let Events::Level(level_event) = &event.data {
             match level_event {
                 LevelEvents::LevelSet(level) => self.set(level)?,
-                LevelEvents::LevelRemoved(removed) => self.remove(&removed.name)?,
+                LevelEvents::LevelRemoved(removed) => self.remove(removed.name.as_str())?,
             }
         }
         Ok(())
@@ -52,8 +48,9 @@ impl<'a> LevelRepo<'a> {
             .prepare("SELECT name, description, prompt FROM levels WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
+            let name: String = row.get(0)?;
             Ok(Level {
-                name: row.get(0)?,
+                name: LevelName::new(name),
                 description: row.get(1)?,
                 prompt: row.get(2)?,
             })
@@ -73,8 +70,9 @@ impl<'a> LevelRepo<'a> {
 
         let levels = stmt
             .query_map([], |row| {
+                let name: String = row.get(0)?;
                 Ok(Level {
-                    name: row.get(0)?,
+                    name: LevelName::new(name),
                     description: row.get(1)?,
                     prompt: row.get(2)?,
                 })
@@ -89,7 +87,7 @@ impl<'a> LevelRepo<'a> {
     fn set(&self, level: &Level) -> Result<(), StoreError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO levels (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![level.name, level.description, level.prompt],
+            params![level.name.to_string(), level.description, level.prompt],
         )?;
         Ok(())
     }

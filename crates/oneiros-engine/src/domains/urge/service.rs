@@ -1,10 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::UrgeError;
-use super::events::{UrgeEvents, UrgeRemoved};
-use super::model::Urge;
-use super::repo::UrgeRepo;
-use super::responses::UrgeResponse;
+use crate::*;
 
 pub struct UrgeService;
 
@@ -31,7 +25,7 @@ impl UrgeService {
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<UrgeResponse, UrgeError> {
         ctx.emit(UrgeEvents::UrgeRemoved(UrgeRemoved {
-            name: name.to_string(),
+            name: UrgeName::new(name),
         }));
         Ok(UrgeResponse::Removed)
     }

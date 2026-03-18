@@ -3,14 +3,6 @@ use uuid::Uuid;
 
 use crate::*;
 
-use crate::contexts::SystemContext;
-
-use super::errors::TicketError;
-use super::events::*;
-use super::model::Ticket;
-use super::repo::TicketRepo;
-use super::responses::TicketResponse;
-
 pub struct TicketService;
 
 impl TicketService {
@@ -20,7 +12,7 @@ impl TicketService {
         brain_name: String,
     ) -> Result<TicketResponse, TicketError> {
         let ticket = Ticket {
-            id: Uuid::now_v7().to_string(),
+            id: TicketId::new(),
             actor_id,
             brain_name,
             token: Uuid::now_v7().to_string(),

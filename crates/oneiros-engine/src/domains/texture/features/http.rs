@@ -5,19 +5,19 @@ use axum::{
     routing,
 };
 
-use crate::contexts::ProjectContext;
+use crate::*;
 
-use super::super::errors::TextureError;
-use super::super::model::Texture;
-use super::super::responses::TextureResponse;
-use super::super::service::TextureService;
+pub struct TextureRouter;
 
-pub const PATH: &str = "/textures";
-
-pub fn routes() -> Router<ProjectContext> {
-    Router::new()
-        .route("/", routing::get(list))
-        .route("/{name}", routing::put(set).get(show).delete(remove))
+impl TextureRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/textures",
+            Router::new()
+                .route("/", routing::get(list))
+                .route("/{name}", routing::put(set).get(show).delete(remove)),
+        )
+    }
 }
 
 async fn set(
@@ -25,7 +25,7 @@ async fn set(
     Path(name): Path<String>,
     Json(mut texture): Json<Texture>,
 ) -> Result<(StatusCode, Json<TextureResponse>), TextureError> {
-    texture.name = name;
+    texture.name = TextureName::new(name);
     Ok((StatusCode::OK, Json(TextureService::set(&ctx, texture)?)))
 }
 

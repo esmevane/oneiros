@@ -1,10 +1,4 @@
-use crate::contexts::ProjectContext;
-
-use super::errors::SensationError;
-use super::events::{SensationEvents, SensationRemoved};
-use super::model::Sensation;
-use super::repo::SensationRepo;
-use super::responses::SensationResponse;
+use crate::*;
 
 pub struct SensationService;
 
@@ -34,7 +28,7 @@ impl SensationService {
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<SensationResponse, SensationError> {
         ctx.emit(SensationEvents::SensationRemoved(SensationRemoved {
-            name: name.to_string(),
+            name: SensationName::new(name),
         }));
         Ok(SensationResponse::Removed)
     }

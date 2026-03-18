@@ -1,11 +1,16 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::ConnectionClient;
+pub use features::mcp as connection_mcp;
+pub use features::{ConnectionProjections, ConnectionRouter};
+pub use model::{Connection, ConnectionId};
+pub use protocol::{
+    ConnectionError, ConnectionEvents, ConnectionRemoved, ConnectionRequest, ConnectionResponse,
+};
+pub use repo::ConnectionRepo;
+pub use service::ConnectionService;

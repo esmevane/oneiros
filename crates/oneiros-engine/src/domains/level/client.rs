@@ -1,5 +1,4 @@
-use super::model::Level;
-use super::responses::LevelResponse;
+use crate::*;
 use crate::client::{Client, ClientError};
 
 pub struct LevelClient<'a> {

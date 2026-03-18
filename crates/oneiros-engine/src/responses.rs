@@ -7,25 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-use crate::domains::agent::responses::AgentResponse;
-use crate::domains::brain::responses::BrainResponse;
-use crate::domains::cognition::responses::CognitionResponse;
-use crate::domains::connection::responses::ConnectionResponse;
-use crate::domains::experience::responses::ExperienceResponse;
-use crate::domains::level::responses::LevelResponse;
-use crate::domains::lifecycle::responses::LifecycleResponse;
-use crate::domains::memory::responses::MemoryResponse;
-use crate::domains::nature::responses::NatureResponse;
-use crate::domains::persona::responses::PersonaResponse;
-use crate::domains::pressure::responses::PressureResponse;
-use crate::domains::search::responses::SearchResponse;
-use crate::domains::sensation::responses::SensationResponse;
-use crate::domains::storage::responses::StorageResponse;
-use crate::domains::tenant::responses::TenantResponse;
-use crate::domains::texture::responses::TextureResponse;
-use crate::domains::ticket::responses::TicketResponse;
-use crate::domains::urge::responses::UrgeResponse;
-
 /// All known response types across every domain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]

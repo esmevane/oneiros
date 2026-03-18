@@ -1,8 +1,14 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::NatureRepo;
+pub struct NatureProjections;
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+impl NatureProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
+
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "nature",
     apply: |conn, event| NatureRepo::new(conn).handle(event),
     reset: |conn| NatureRepo::new(conn).reset(),

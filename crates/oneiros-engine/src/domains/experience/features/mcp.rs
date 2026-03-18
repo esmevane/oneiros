@@ -1,9 +1,6 @@
 //! Experience MCP driving adapter — translates tool calls into domain service calls.
 
-use crate::contexts::ProjectContext;
-use crate::mcp_support::ToolError;
-
-use super::super::service::ExperienceService;
+use crate::*;
 
 #[derive(serde::Deserialize)]
 struct IdParam {

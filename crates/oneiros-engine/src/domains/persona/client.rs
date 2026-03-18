@@ -1,5 +1,4 @@
-use super::model::Persona;
-use super::responses::PersonaResponse;
+use crate::*;
 use crate::client::{Client, ClientError};
 
 pub struct PersonaClient<'a> {

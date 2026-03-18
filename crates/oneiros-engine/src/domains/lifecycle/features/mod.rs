@@ -1,3 +1,4 @@
-pub mod http;
+mod http;
 pub mod mcp;
-pub mod projections;
+
+pub use http::LifecycleRouter;

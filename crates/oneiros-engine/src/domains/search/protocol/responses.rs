@@ -1,11 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use super::model::Memory;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum MemoryResponse {
-    Added(Memory),
-    Found(Memory),
-    Listed(Vec<Memory>),
+pub enum SearchResponse {
+    Results(Vec<SearchResult>),
 }

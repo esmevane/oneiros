@@ -1,8 +1,14 @@
-use crate::store::Projection;
+use crate::*;
 
-use super::super::repo::UrgeRepo;
+pub struct UrgeProjections;
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+impl UrgeProjections {
+    pub const fn all(&self) -> &'static [Projection] {
+        PROJECTIONS
+    }
+}
+
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "urge",
     apply: |conn, event| UrgeRepo::new(conn).handle(event),
     reset: |conn| UrgeRepo::new(conn).reset(),

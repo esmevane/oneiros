@@ -1,5 +1,4 @@
-use super::responses::StorageResponse;
-use crate::client::{Client, ClientError};
+use crate::*;
 
 pub struct StorageClient<'a> {
     client: &'a Client,
