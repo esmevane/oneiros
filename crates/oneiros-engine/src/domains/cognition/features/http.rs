@@ -12,6 +12,8 @@ use super::super::errors::CognitionError;
 use super::super::responses::CognitionResponse;
 use super::super::service::CognitionService;
 
+pub const PATH: &str = "/cognitions";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(add))

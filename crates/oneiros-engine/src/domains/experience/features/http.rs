@@ -12,6 +12,8 @@ use super::super::errors::ExperienceError;
 use super::super::responses::ExperienceResponse;
 use super::super::service::ExperienceService;
 
+pub const PATH: &str = "/experiences";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(create))

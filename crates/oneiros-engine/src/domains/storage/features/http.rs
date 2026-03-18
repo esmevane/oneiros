@@ -12,6 +12,8 @@ use super::super::errors::StorageError;
 use super::super::responses::StorageResponse;
 use super::super::service::StorageService;
 
+pub const PATH: &str = "/storage";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(upload))

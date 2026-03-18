@@ -1,800 +1,380 @@
-//! MCP tool server — exposes all domain services as MCP tools.
+//! MCP tool server — thin rmcp adapter delegating to per-domain dispatchers.
 //!
-//! Uses rmcp's `#[tool_router]` and `#[tool_handler]` macros to register
-//! tools and handle the MCP protocol. Each tool delegates to a domain
-//! service via the project or system context.
+//! Each domain owns its tool catalog in `features/mcp.rs`. This module
+//! collects them into an rmcp ServerHandler, routing tool calls to the
+//! appropriate domain dispatcher.
 
-use rmcp::handler::server::router::tool::ToolRouter;
-use rmcp::handler::server::wrapper::Parameters;
-use rmcp::model::{CallToolResult, Implementation, ServerCapabilities, ServerInfo};
-use rmcp::{ErrorData, ServerHandler, tool, tool_handler, tool_router};
-use serde::Deserialize;
+use rmcp::model::{CallToolResult, Content, Implementation, ServerCapabilities, ServerInfo, Tool};
+use rmcp::{ErrorData, ServerHandler};
 use serde_json::json;
 
 use crate::contexts::ProjectContext;
+use crate::domains;
+use crate::mcp_support::ToolError;
+
+/// Tool description — name + human-readable description.
+struct ToolDef {
+    name: &'static str,
+    description: &'static str,
+}
+
+/// All tool definitions across all domains.
+fn all_tools() -> Vec<ToolDef> {
+    vec![
+        // Level
+        ToolDef {
+            name: "set_level",
+            description: "Define how long a kind of memory should be kept",
+        },
+        ToolDef {
+            name: "get_level",
+            description: "Look up a memory retention tier",
+        },
+        ToolDef {
+            name: "list_levels",
+            description: "See all memory retention tiers",
+        },
+        ToolDef {
+            name: "remove_level",
+            description: "Remove a memory retention tier",
+        },
+        // Texture
+        ToolDef {
+            name: "set_texture",
+            description: "Define a quality of thought",
+        },
+        ToolDef {
+            name: "get_texture",
+            description: "Look up a thought category",
+        },
+        ToolDef {
+            name: "list_textures",
+            description: "See all thought categories",
+        },
+        ToolDef {
+            name: "remove_texture",
+            description: "Remove a thought category",
+        },
+        // Sensation
+        ToolDef {
+            name: "set_sensation",
+            description: "Define a quality of connection between thoughts",
+        },
+        ToolDef {
+            name: "get_sensation",
+            description: "Look up an experience category",
+        },
+        ToolDef {
+            name: "list_sensations",
+            description: "See all experience categories",
+        },
+        ToolDef {
+            name: "remove_sensation",
+            description: "Remove an experience category",
+        },
+        // Nature
+        ToolDef {
+            name: "set_nature",
+            description: "Define a kind of relationship between things",
+        },
+        ToolDef {
+            name: "get_nature",
+            description: "Look up a relationship category",
+        },
+        ToolDef {
+            name: "list_natures",
+            description: "See all relationship categories",
+        },
+        ToolDef {
+            name: "remove_nature",
+            description: "Remove a relationship category",
+        },
+        // Persona
+        ToolDef {
+            name: "set_persona",
+            description: "Define a category of agent",
+        },
+        ToolDef {
+            name: "get_persona",
+            description: "Look up an agent category",
+        },
+        ToolDef {
+            name: "list_personas",
+            description: "See all agent categories",
+        },
+        ToolDef {
+            name: "remove_persona",
+            description: "Remove an agent category",
+        },
+        // Urge
+        ToolDef {
+            name: "set_urge",
+            description: "Define a cognitive drive",
+        },
+        ToolDef {
+            name: "get_urge",
+            description: "Look up a cognitive drive",
+        },
+        ToolDef {
+            name: "list_urges",
+            description: "See all cognitive drives",
+        },
+        ToolDef {
+            name: "remove_urge",
+            description: "Remove a cognitive drive",
+        },
+        // Agent
+        ToolDef {
+            name: "create_agent",
+            description: "Bring a new agent into the brain",
+        },
+        ToolDef {
+            name: "get_agent",
+            description: "Learn about a specific agent",
+        },
+        ToolDef {
+            name: "list_agents",
+            description: "See who's here",
+        },
+        ToolDef {
+            name: "update_agent",
+            description: "Reshape an agent's identity",
+        },
+        ToolDef {
+            name: "remove_agent",
+            description: "Remove an agent from the brain",
+        },
+        // Cognition
+        ToolDef {
+            name: "add_cognition",
+            description: "Record a thought",
+        },
+        ToolDef {
+            name: "get_cognition",
+            description: "Revisit a specific thought",
+        },
+        ToolDef {
+            name: "list_cognitions",
+            description: "Review a stream of thoughts",
+        },
+        // Memory
+        ToolDef {
+            name: "add_memory",
+            description: "Consolidate something you've learned",
+        },
+        ToolDef {
+            name: "get_memory",
+            description: "Revisit a specific memory",
+        },
+        ToolDef {
+            name: "list_memories",
+            description: "Review what you know",
+        },
+        // Experience
+        ToolDef {
+            name: "create_experience",
+            description: "Mark a meaningful moment",
+        },
+        ToolDef {
+            name: "get_experience",
+            description: "Revisit a specific experience",
+        },
+        ToolDef {
+            name: "list_experiences",
+            description: "Survey threads of meaning",
+        },
+        ToolDef {
+            name: "update_experience_description",
+            description: "Refine an experience's description",
+        },
+        ToolDef {
+            name: "update_experience_sensation",
+            description: "Refine an experience's sensation",
+        },
+        // Connection
+        ToolDef {
+            name: "create_connection",
+            description: "Draw a line between two related things",
+        },
+        ToolDef {
+            name: "get_connection",
+            description: "Examine a specific connection",
+        },
+        ToolDef {
+            name: "list_connections",
+            description: "See how things connect",
+        },
+        ToolDef {
+            name: "remove_connection",
+            description: "Remove a connection between two entities",
+        },
+        // Lifecycle
+        ToolDef {
+            name: "dream",
+            description: "Restore an agent's full identity and cognitive context",
+        },
+        ToolDef {
+            name: "introspect",
+            description: "Look inward — consolidate what matters",
+        },
+        ToolDef {
+            name: "reflect",
+            description: "Pause on something significant",
+        },
+        ToolDef {
+            name: "sense",
+            description: "Receive and interpret something from outside",
+        },
+        ToolDef {
+            name: "sleep",
+            description: "End a session — capture continuity before resting",
+        },
+        // Search
+        ToolDef {
+            name: "search",
+            description: "Search across everything in the brain",
+        },
+        // Storage
+        ToolDef {
+            name: "list_storage",
+            description: "Browse your archive",
+        },
+        ToolDef {
+            name: "get_storage",
+            description: "Check on a stored artifact",
+        },
+        ToolDef {
+            name: "remove_storage",
+            description: "Remove a stored artifact",
+        },
+        // Pressure
+        ToolDef {
+            name: "get_pressure",
+            description: "Check pressure for an agent",
+        },
+        ToolDef {
+            name: "list_pressures",
+            description: "See all pressure readings",
+        },
+    ]
+}
+
+/// Domain dispatch table — routes tool names to domain dispatchers.
+fn dispatch(
+    ctx: &ProjectContext,
+    tool_name: &str,
+    params: &str,
+) -> Result<serde_json::Value, ToolError> {
+    // Check each domain's tool catalog
+    if domains::level::features::mcp::tool_names().contains(&tool_name) {
+        return domains::level::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::texture::features::mcp::tool_names().contains(&tool_name) {
+        return domains::texture::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::sensation::features::mcp::tool_names().contains(&tool_name) {
+        return domains::sensation::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::nature::features::mcp::tool_names().contains(&tool_name) {
+        return domains::nature::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::persona::features::mcp::tool_names().contains(&tool_name) {
+        return domains::persona::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::urge::features::mcp::tool_names().contains(&tool_name) {
+        return domains::urge::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::agent::features::mcp::tool_names().contains(&tool_name) {
+        return domains::agent::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::cognition::features::mcp::tool_names().contains(&tool_name) {
+        return domains::cognition::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::memory::features::mcp::tool_names().contains(&tool_name) {
+        return domains::memory::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::experience::features::mcp::tool_names().contains(&tool_name) {
+        return domains::experience::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::connection::features::mcp::tool_names().contains(&tool_name) {
+        return domains::connection::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::lifecycle::features::mcp::tool_names().contains(&tool_name) {
+        return domains::lifecycle::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::search::features::mcp::tool_names().contains(&tool_name) {
+        return domains::search::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::storage::features::mcp::tool_names().contains(&tool_name) {
+        return domains::storage::features::mcp::dispatch(ctx, tool_name, params);
+    }
+    if domains::pressure::features::mcp::tool_names().contains(&tool_name) {
+        return domains::pressure::features::mcp::dispatch(ctx, tool_name, params);
+    }
+
+    Err(ToolError::UnknownTool(tool_name.to_string()))
+}
 
 /// MCP tool server wrapping the project context.
 #[derive(Clone)]
 pub struct EngineToolBox {
     ctx: ProjectContext,
-    tool_router: ToolRouter<Self>,
 }
 
 impl EngineToolBox {
     pub fn new(ctx: ProjectContext) -> Self {
-        Self {
-            ctx,
-            tool_router: Self::tool_router(),
-        }
-    }
-
-    fn ok(&self, value: impl serde::Serialize) -> Result<CallToolResult, ErrorData> {
-        Ok(CallToolResult::success(vec![
-            rmcp::model::Content::json(serde_json::to_value(value).unwrap_or(json!(null)))
-                .expect("content"),
-        ]))
-    }
-
-    fn err(&self, e: impl std::fmt::Display) -> Result<CallToolResult, ErrorData> {
-        Ok(CallToolResult::error(vec![rmcp::model::Content::text(
-            e.to_string(),
-        )]))
+        Self { ctx }
     }
 }
 
-// ── Request types for multi-parameter tools ─────────────────────
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct CreateAgentParams {
-    name: String,
-    persona: String,
-    description: String,
-    prompt: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct UpdateAgentParams {
-    name: String,
-    persona: String,
-    description: String,
-    prompt: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct NameParam {
-    name: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct IdParam {
-    id: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct AgentParam {
-    agent: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct AddCognitionParams {
-    agent: String,
-    texture: String,
-    content: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct ListCognitionsParams {
-    agent: Option<String>,
-    texture: Option<String>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct AddMemoryParams {
-    agent: String,
-    level: String,
-    content: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct ListFilterParams {
-    agent: Option<String>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct CreateExperienceParams {
-    agent: String,
-    sensation: String,
-    description: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct UpdateDescriptionParams {
-    id: String,
-    description: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct UpdateSensationParams {
-    id: String,
-    sensation: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct CreateConnectionParams {
-    from_entity: String,
-    to_entity: String,
-    nature: String,
-    description: String,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct ListConnectionsParams {
-    entity: Option<String>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct SearchParams {
-    query: String,
-    agent: Option<String>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-struct SenseParams {
-    agent: String,
-    content: String,
-}
-
-// ── Tool registration ────────────────────────────────────────────
-
-#[tool_router]
-impl EngineToolBox {
-    // ── Level ────────────────────────────────────────────────────
-
-    #[tool(description = "Define how long a kind of memory should be kept")]
-    fn set_level(
-        &self,
-        Parameters(level): Parameters<crate::domains::level::model::Level>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::level::service::LevelService;
-        match LevelService::set(&self.ctx, level) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look up a memory retention tier")]
-    fn get_level(&self, Parameters(p): Parameters<NameParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::level::service::LevelService;
-        match LevelService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all memory retention tiers")]
-    fn list_levels(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::level::service::LevelService;
-        match LevelService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove a memory retention tier")]
-    fn remove_level(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::level::service::LevelService;
-        match LevelService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Texture ──────────────────────────────────────────────────
-
-    #[tool(description = "Define a quality of thought")]
-    fn set_texture(
-        &self,
-        Parameters(texture): Parameters<crate::domains::texture::model::Texture>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::texture::service::TextureService;
-        match TextureService::set(&self.ctx, texture) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look up a thought category")]
-    fn get_texture(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::texture::service::TextureService;
-        match TextureService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all thought categories")]
-    fn list_textures(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::texture::service::TextureService;
-        match TextureService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove a thought category")]
-    fn remove_texture(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::texture::service::TextureService;
-        match TextureService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Sensation ────────────────────────────────────────────────
-
-    #[tool(description = "Define a quality of connection between thoughts")]
-    fn set_sensation(
-        &self,
-        Parameters(s): Parameters<crate::domains::sensation::model::Sensation>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::sensation::service::SensationService;
-        match SensationService::set(&self.ctx, s) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look up an experience category")]
-    fn get_sensation(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::sensation::service::SensationService;
-        match SensationService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all experience categories")]
-    fn list_sensations(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::sensation::service::SensationService;
-        match SensationService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove an experience category")]
-    fn remove_sensation(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::sensation::service::SensationService;
-        match SensationService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Nature ───────────────────────────────────────────────────
-
-    #[tool(description = "Define a kind of relationship between things")]
-    fn set_nature(
-        &self,
-        Parameters(n): Parameters<crate::domains::nature::model::Nature>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::nature::service::NatureService;
-        match NatureService::set(&self.ctx, n) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look up a relationship category")]
-    fn get_nature(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::nature::service::NatureService;
-        match NatureService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all relationship categories")]
-    fn list_natures(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::nature::service::NatureService;
-        match NatureService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove a relationship category")]
-    fn remove_nature(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::nature::service::NatureService;
-        match NatureService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Persona ──────────────────────────────────────────────────
-
-    #[tool(description = "Define a category of agent")]
-    fn set_persona(
-        &self,
-        Parameters(p): Parameters<crate::domains::persona::model::Persona>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::persona::service::PersonaService;
-        match PersonaService::set(&self.ctx, p) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look up an agent category")]
-    fn get_persona(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::persona::service::PersonaService;
-        match PersonaService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all agent categories")]
-    fn list_personas(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::persona::service::PersonaService;
-        match PersonaService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove an agent category")]
-    fn remove_persona(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::persona::service::PersonaService;
-        match PersonaService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Urge ─────────────────────────────────────────────────────
-
-    #[tool(description = "Define a cognitive drive")]
-    fn set_urge(
-        &self,
-        Parameters(u): Parameters<crate::domains::urge::model::Urge>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::urge::service::UrgeService;
-        match UrgeService::set(&self.ctx, u) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look up a cognitive drive")]
-    fn get_urge(&self, Parameters(p): Parameters<NameParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::urge::service::UrgeService;
-        match UrgeService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all cognitive drives")]
-    fn list_urges(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::urge::service::UrgeService;
-        match UrgeService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove a cognitive drive")]
-    fn remove_urge(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::urge::service::UrgeService;
-        match UrgeService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Agent ────────────────────────────────────────────────────
-
-    #[tool(description = "Bring a new agent into the brain")]
-    fn create_agent(
-        &self,
-        Parameters(p): Parameters<CreateAgentParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::agent::service::AgentService;
-        match AgentService::create(&self.ctx, p.name, p.persona, p.description, p.prompt) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Learn about a specific agent")]
-    fn get_agent(&self, Parameters(p): Parameters<NameParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::agent::service::AgentService;
-        match AgentService::get(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See who's here")]
-    fn list_agents(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::agent::service::AgentService;
-        match AgentService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Reshape an agent's identity")]
-    fn update_agent(
-        &self,
-        Parameters(p): Parameters<UpdateAgentParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::agent::service::AgentService;
-        match AgentService::update(&self.ctx, p.name, p.persona, p.description, p.prompt) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove an agent from the brain")]
-    fn remove_agent(
-        &self,
-        Parameters(p): Parameters<NameParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::agent::service::AgentService;
-        match AgentService::remove(&self.ctx, &p.name) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Cognition ────────────────────────────────────────────────
-
-    #[tool(description = "Record a thought")]
-    fn add_cognition(
-        &self,
-        Parameters(p): Parameters<AddCognitionParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::cognition::service::CognitionService;
-        match CognitionService::add(&self.ctx, p.agent, p.texture, p.content) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Revisit a specific thought")]
-    fn get_cognition(
-        &self,
-        Parameters(p): Parameters<IdParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::cognition::service::CognitionService;
-        match CognitionService::get(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Review a stream of thoughts")]
-    fn list_cognitions(
-        &self,
-        Parameters(p): Parameters<ListCognitionsParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::cognition::service::CognitionService;
-        match CognitionService::list(&self.ctx, p.agent.as_deref(), p.texture.as_deref()) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Memory ───────────────────────────────────────────────────
-
-    #[tool(description = "Consolidate something you've learned")]
-    fn add_memory(
-        &self,
-        Parameters(p): Parameters<AddMemoryParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::memory::service::MemoryService;
-        match MemoryService::add(&self.ctx, p.agent, p.level, p.content) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Revisit a specific memory")]
-    fn get_memory(&self, Parameters(p): Parameters<IdParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::memory::service::MemoryService;
-        match MemoryService::get(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Review what you know")]
-    fn list_memories(
-        &self,
-        Parameters(p): Parameters<ListFilterParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::memory::service::MemoryService;
-        match MemoryService::list(&self.ctx, p.agent.as_deref()) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Experience ───────────────────────────────────────────────
-
-    #[tool(description = "Mark a meaningful moment")]
-    fn create_experience(
-        &self,
-        Parameters(p): Parameters<CreateExperienceParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::experience::service::ExperienceService;
-        match ExperienceService::create(&self.ctx, p.agent, p.sensation, p.description) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Revisit a specific experience")]
-    fn get_experience(
-        &self,
-        Parameters(p): Parameters<IdParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::experience::service::ExperienceService;
-        match ExperienceService::get(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Survey threads of meaning")]
-    fn list_experiences(
-        &self,
-        Parameters(p): Parameters<ListFilterParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::experience::service::ExperienceService;
-        match ExperienceService::list(&self.ctx, p.agent.as_deref()) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Refine an experience's description")]
-    fn update_experience_description(
-        &self,
-        Parameters(p): Parameters<UpdateDescriptionParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::experience::service::ExperienceService;
-        match ExperienceService::update_description(&self.ctx, &p.id, p.description) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Refine an experience's sensation")]
-    fn update_experience_sensation(
-        &self,
-        Parameters(p): Parameters<UpdateSensationParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::experience::service::ExperienceService;
-        match ExperienceService::update_sensation(&self.ctx, &p.id, p.sensation) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Connection ───────────────────────────────────────────────
-
-    #[tool(description = "Draw a line between two related things")]
-    fn create_connection(
-        &self,
-        Parameters(p): Parameters<CreateConnectionParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::connection::service::ConnectionService;
-        match ConnectionService::create(
-            &self.ctx,
-            p.from_entity,
-            p.to_entity,
-            p.nature,
-            p.description,
-        ) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Examine a specific connection")]
-    fn get_connection(
-        &self,
-        Parameters(p): Parameters<IdParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::connection::service::ConnectionService;
-        match ConnectionService::get(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See how things connect")]
-    fn list_connections(
-        &self,
-        Parameters(p): Parameters<ListConnectionsParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::connection::service::ConnectionService;
-        match ConnectionService::list(&self.ctx, p.entity.as_deref()) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove a connection between two entities")]
-    fn remove_connection(
-        &self,
-        Parameters(p): Parameters<IdParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::connection::service::ConnectionService;
-        match ConnectionService::remove(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Lifecycle ────────────────────────────────────────────────
-
-    #[tool(description = "Restore an agent's full identity and cognitive context")]
-    fn dream(&self, Parameters(p): Parameters<AgentParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::lifecycle::service::LifecycleService;
-        match LifecycleService::dream(&self.ctx, &p.agent) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Look inward — consolidate what matters")]
-    fn introspect(
-        &self,
-        Parameters(p): Parameters<AgentParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::lifecycle::service::LifecycleService;
-        match LifecycleService::introspect(&self.ctx, &p.agent) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Pause on something significant")]
-    fn reflect(&self, Parameters(p): Parameters<AgentParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::lifecycle::service::LifecycleService;
-        match LifecycleService::reflect(&self.ctx, &p.agent) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Receive and interpret something from outside")]
-    fn sense(&self, Parameters(p): Parameters<SenseParams>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::lifecycle::service::LifecycleService;
-        match LifecycleService::sense(&self.ctx, &p.agent, &p.content) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "End a session — capture continuity before resting")]
-    fn sleep(&self, Parameters(p): Parameters<AgentParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::lifecycle::service::LifecycleService;
-        match LifecycleService::sleep(&self.ctx, &p.agent) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Search ───────────────────────────────────────────────────
-
-    #[tool(description = "Search across everything in the brain")]
-    fn search(&self, Parameters(p): Parameters<SearchParams>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::search::service::SearchService;
-        match SearchService::search(&self.ctx, &p.query, p.agent.as_deref()) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Storage ──────────────────────────────────────────────────
-
-    #[tool(description = "Browse your archive")]
-    fn list_storage(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::storage::service::StorageService;
-        match StorageService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Check on a stored artifact")]
-    fn get_storage(&self, Parameters(p): Parameters<IdParam>) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::storage::service::StorageService;
-        match StorageService::get(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "Remove a stored artifact")]
-    fn remove_storage(
-        &self,
-        Parameters(p): Parameters<IdParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::storage::service::StorageService;
-        match StorageService::remove(&self.ctx, &p.id) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    // ── Pressure ─────────────────────────────────────────────────
-
-    #[tool(description = "Check pressure for an agent")]
-    fn get_pressure(
-        &self,
-        Parameters(p): Parameters<AgentParam>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::pressure::service::PressureService;
-        match PressureService::get(&self.ctx, &p.agent) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-
-    #[tool(description = "See all pressure readings")]
-    fn list_pressures(&self) -> Result<CallToolResult, ErrorData> {
-        use crate::domains::pressure::service::PressureService;
-        match PressureService::list(&self.ctx) {
-            Ok(r) => self.ok(r),
-            Err(e) => self.err(e),
-        }
-    }
-}
-
-// ── Server handler ───────────────────────────────────────────────
-
-#[tool_handler]
 impl ServerHandler for EngineToolBox {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build()).with_server_info(
             Implementation::new("oneiros-engine", env!("CARGO_PKG_VERSION")),
         )
+    }
+
+    async fn list_tools(
+        &self,
+        _request: Option<rmcp::model::PaginatedRequestParams>,
+        _context: rmcp::service::RequestContext<rmcp::RoleServer>,
+    ) -> Result<rmcp::model::ListToolsResult, ErrorData> {
+        let tools = all_tools()
+            .into_iter()
+            .map(|t| {
+                let mut tool = Tool::default();
+                tool.name = t.name.into();
+                tool.description = Some(t.description.into());
+                tool.input_schema = serde_json::from_value(json!({
+                    "type": "object",
+                    "properties": {},
+                }))
+                .unwrap();
+                tool
+            })
+            .collect();
+
+        Ok(rmcp::model::ListToolsResult {
+            tools,
+            next_cursor: None,
+            meta: None,
+        })
+    }
+
+    async fn call_tool(
+        &self,
+        request: rmcp::model::CallToolRequestParams,
+        _context: rmcp::service::RequestContext<rmcp::RoleServer>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let tool_name = request.name.as_ref();
+        let params = serde_json::to_string(&request.arguments.unwrap_or_default())
+            .unwrap_or_else(|_| "{}".to_string());
+
+        match dispatch(&self.ctx, tool_name, &params) {
+            Ok(value) => Ok(CallToolResult::success(vec![
+                Content::json(value).expect("content"),
+            ])),
+            Err(e) => Ok(CallToolResult::error(vec![Content::text(e.to_string())])),
+        }
     }
 }

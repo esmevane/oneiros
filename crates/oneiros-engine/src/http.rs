@@ -8,47 +8,84 @@ use crate::domains;
 
 /// Build the project-scoped HTTP router.
 ///
-/// Each domain contributes its own routes. Domains without http.rs
-/// simply don't appear here.
+/// Each domain contributes its own routes and path prefix.
+/// Domains without http.rs simply don't appear here.
 pub fn project_router(ctx: ProjectContext) -> Router {
+    use domains::*;
+
     Router::new()
         // Vocabulary domains
-        .nest("/levels", domains::level::features::http::routes())
-        .nest("/textures", domains::texture::features::http::routes())
-        .nest("/sensations", domains::sensation::features::http::routes())
-        .nest("/natures", domains::nature::features::http::routes())
-        .nest("/personas", domains::persona::features::http::routes())
-        .nest("/urges", domains::urge::features::http::routes())
-        // Entity domains
-        .nest("/agents", domains::agent::features::http::routes())
-        .nest("/cognitions", domains::cognition::features::http::routes())
-        .nest("/memories", domains::memory::features::http::routes())
+        .nest(level::features::http::PATH, level::features::http::routes())
         .nest(
-            "/experiences",
-            domains::experience::features::http::routes(),
+            texture::features::http::PATH,
+            texture::features::http::routes(),
         )
         .nest(
-            "/connections",
-            domains::connection::features::http::routes(),
+            sensation::features::http::PATH,
+            sensation::features::http::routes(),
+        )
+        .nest(
+            nature::features::http::PATH,
+            nature::features::http::routes(),
+        )
+        .nest(
+            persona::features::http::PATH,
+            persona::features::http::routes(),
+        )
+        .nest(urge::features::http::PATH, urge::features::http::routes())
+        // Entity domains
+        .nest(agent::features::http::PATH, agent::features::http::routes())
+        .nest(
+            cognition::features::http::PATH,
+            cognition::features::http::routes(),
+        )
+        .nest(
+            memory::features::http::PATH,
+            memory::features::http::routes(),
+        )
+        .nest(
+            experience::features::http::PATH,
+            experience::features::http::routes(),
+        )
+        .nest(
+            connection::features::http::PATH,
+            connection::features::http::routes(),
         )
         // Storage
-        .nest("/storage", domains::storage::features::http::routes())
+        .nest(
+            storage::features::http::PATH,
+            storage::features::http::routes(),
+        )
         // Derived
-        .nest("/pressures", domains::pressure::features::http::routes())
+        .nest(
+            pressure::features::http::PATH,
+            pressure::features::http::routes(),
+        )
         // Lifecycle
-        .merge(domains::lifecycle::features::http::routes())
+        .merge(lifecycle::features::http::routes())
         // Search
-        .nest("/search", domains::search::features::http::routes())
+        .nest(
+            search::features::http::PATH,
+            search::features::http::routes(),
+        )
         // State
         .with_state(ctx)
 }
 
 /// Build the system-scoped HTTP router.
 pub fn system_router(ctx: SystemContext) -> Router {
+    use domains::*;
+
     Router::new()
-        .nest("/tenants", domains::tenant::features::http::routes())
-        .nest("/actors", domains::actor::features::http::routes())
-        .nest("/tickets", domains::ticket::features::http::routes())
-        .nest("/brains", domains::brain::features::http::routes())
+        .nest(
+            tenant::features::http::PATH,
+            tenant::features::http::routes(),
+        )
+        .nest(actor::features::http::PATH, actor::features::http::routes())
+        .nest(
+            ticket::features::http::PATH,
+            ticket::features::http::routes(),
+        )
+        .nest(brain::features::http::PATH, brain::features::http::routes())
         .with_state(ctx)
 }

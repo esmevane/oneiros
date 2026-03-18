@@ -12,6 +12,8 @@ use super::super::model::Sensation;
 use super::super::responses::SensationResponse;
 use super::super::service::SensationService;
 
+pub const PATH: &str = "/sensations";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

@@ -11,6 +11,8 @@ use super::super::errors::SearchError;
 use super::super::responses::SearchResponse;
 use super::super::service::SearchService;
 
+pub const PATH: &str = "/search";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new().route("/", routing::get(search))
 }

@@ -12,6 +12,8 @@ use super::super::model::Nature;
 use super::super::responses::NatureResponse;
 use super::super::service::NatureService;
 
+pub const PATH: &str = "/natures";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

@@ -12,6 +12,8 @@ use super::super::errors::AgentError;
 use super::super::responses::AgentResponse;
 use super::super::service::AgentService;
 
+pub const PATH: &str = "/agents";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(create))

@@ -12,6 +12,8 @@ use super::super::model::Urge;
 use super::super::responses::UrgeResponse;
 use super::super::service::UrgeService;
 
+pub const PATH: &str = "/urges";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

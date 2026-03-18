@@ -10,6 +10,8 @@ use super::super::errors::PressureError;
 use super::super::responses::PressureResponse;
 use super::super::service::PressureService;
 
+pub const PATH: &str = "/pressures";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

@@ -12,6 +12,8 @@ use super::super::errors::BrainError;
 use super::super::responses::BrainResponse;
 use super::super::service::BrainService;
 
+pub const PATH: &str = "/brains";
+
 pub fn routes() -> Router<SystemContext> {
     Router::new()
         .route("/", routing::get(list).post(create))

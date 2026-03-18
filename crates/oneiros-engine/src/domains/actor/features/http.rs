@@ -12,6 +12,8 @@ use super::super::errors::ActorError;
 use super::super::responses::ActorResponse;
 use super::super::service::ActorService;
 
+pub const PATH: &str = "/actors";
+
 pub fn routes() -> Router<SystemContext> {
     Router::new()
         .route("/", routing::get(list).post(create))

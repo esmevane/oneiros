@@ -12,6 +12,8 @@ use super::super::model::Persona;
 use super::super::responses::PersonaResponse;
 use super::super::service::PersonaService;
 
+pub const PATH: &str = "/personas";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

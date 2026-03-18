@@ -12,6 +12,8 @@ use super::super::model::Level;
 use super::super::responses::LevelResponse;
 use super::super::service::LevelService;
 
+pub const PATH: &str = "/levels";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

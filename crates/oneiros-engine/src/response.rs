@@ -5,6 +5,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::domains::pressure::model::PressureSummary;
+
 /// A response envelope that wraps domain data with optional metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Response<T> {
@@ -37,11 +39,4 @@ impl<T> From<T> for Response<T> {
 pub struct ResponseMeta {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub pressures: Vec<PressureSummary>,
-}
-
-/// Compact pressure reading for the wire format.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PressureSummary {
-    pub urge: String,
-    pub percent: u8,
 }

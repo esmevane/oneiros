@@ -12,6 +12,8 @@ use super::super::errors::TenantError;
 use super::super::responses::TenantResponse;
 use super::super::service::TenantService;
 
+pub const PATH: &str = "/tenants";
+
 pub fn routes() -> Router<SystemContext> {
     Router::new()
         .route("/", routing::get(list).post(create))

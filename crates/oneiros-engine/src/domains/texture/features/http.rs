@@ -12,6 +12,8 @@ use super::super::model::Texture;
 use super::super::responses::TextureResponse;
 use super::super::service::TextureService;
 
+pub const PATH: &str = "/textures";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list))

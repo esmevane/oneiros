@@ -12,6 +12,8 @@ use super::super::errors::MemoryError;
 use super::super::responses::MemoryResponse;
 use super::super::service::MemoryService;
 
+pub const PATH: &str = "/memories";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(add))

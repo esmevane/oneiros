@@ -12,6 +12,8 @@ use super::super::errors::ConnectionError;
 use super::super::responses::ConnectionResponse;
 use super::super::service::ConnectionService;
 
+pub const PATH: &str = "/connections";
+
 pub fn routes() -> Router<ProjectContext> {
     Router::new()
         .route("/", routing::get(list).post(create))

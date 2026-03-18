@@ -12,6 +12,8 @@ use super::super::errors::TicketError;
 use super::super::responses::TicketResponse;
 use super::super::service::TicketService;
 
+pub const PATH: &str = "/tickets";
+
 pub fn routes() -> Router<SystemContext> {
     Router::new()
         .route("/", routing::get(list).post(create))
