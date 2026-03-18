@@ -1,6 +1,6 @@
 use rusqlite::{Connection as DbConn, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Connection;
 

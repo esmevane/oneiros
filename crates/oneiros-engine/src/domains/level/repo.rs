@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Level;
 
@@ -39,7 +39,7 @@ impl<'a> LevelRepo<'a> {
                 name TEXT PRIMARY KEY,
                 description TEXT NOT NULL DEFAULT '',
                 prompt TEXT NOT NULL DEFAULT ''
-            )"
+            )",
         )?;
         Ok(())
     }
@@ -47,9 +47,9 @@ impl<'a> LevelRepo<'a> {
     // ── Read queries ────────────────────────────────────────────
 
     pub fn get(&self, name: &str) -> Result<Option<Level>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT name, description, prompt FROM levels WHERE name = ?1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name, description, prompt FROM levels WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
             Ok(Level {
@@ -67,18 +67,19 @@ impl<'a> LevelRepo<'a> {
     }
 
     pub fn list(&self) -> Result<Vec<Level>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT name, description, prompt FROM levels ORDER BY name",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name, description, prompt FROM levels ORDER BY name")?;
 
-        let levels = stmt.query_map([], |row| {
-            Ok(Level {
-                name: row.get(0)?,
-                description: row.get(1)?,
-                prompt: row.get(2)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let levels = stmt
+            .query_map([], |row| {
+                Ok(Level {
+                    name: row.get(0)?,
+                    description: row.get(1)?,
+                    prompt: row.get(2)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(levels)
     }
@@ -94,7 +95,8 @@ impl<'a> LevelRepo<'a> {
     }
 
     fn remove(&self, name: &str) -> Result<(), StoreError> {
-        self.conn.execute("DELETE FROM levels WHERE name = ?1", params![name])?;
+        self.conn
+            .execute("DELETE FROM levels WHERE name = ?1", params![name])?;
         Ok(())
     }
 }

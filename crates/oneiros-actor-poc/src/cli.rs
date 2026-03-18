@@ -4,9 +4,9 @@
 //! For the POC, CLI → tower::oneshot on in-memory Router → Actor.
 //! Same code path, no TCP.
 
+use axum::Router;
 use axum::body::Body;
 use axum::http::Request;
-use axum::Router;
 use http_body_util::BodyExt;
 use oneiros_model::*;
 use tower::ServiceExt;
@@ -41,10 +41,7 @@ impl RemoteAgents {
         Self { router }
     }
 
-    async fn send_request(
-        &self,
-        request: Request<Body>,
-    ) -> Result<(u16, Vec<u8>), RemoteError> {
+    async fn send_request(&self, request: Request<Body>) -> Result<(u16, Vec<u8>), RemoteError> {
         let response = self
             .router
             .clone()

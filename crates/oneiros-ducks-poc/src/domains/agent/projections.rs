@@ -9,7 +9,13 @@ const CREATED: Projection = Projection {
         let Events::Agent(AgentEvents::AgentCreated(agent)) = &event.data else {
             return Ok(());
         };
-        db.create_agent_record(&agent.id, &agent.name, &agent.persona, &agent.description, &agent.prompt)
+        db.create_agent_record(
+            &agent.id,
+            &agent.name,
+            &agent.persona,
+            &agent.description,
+            &agent.prompt,
+        )
     },
     reset: |db| db.reset_agents(),
 };
@@ -20,7 +26,12 @@ const UPDATED: Projection = Projection {
         let Events::Agent(AgentEvents::AgentUpdated(agent)) = &event.data else {
             return Ok(());
         };
-        db.update_agent(&agent.name, &agent.persona, &agent.description, &agent.prompt)
+        db.update_agent(
+            &agent.name,
+            &agent.persona,
+            &agent.description,
+            &agent.prompt,
+        )
     },
     reset: |_| Ok(()),
 };

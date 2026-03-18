@@ -5,10 +5,10 @@
 //! Each produces lifecycle events and returns composed results.
 
 pub mod errors;
+pub mod features;
 pub mod model;
 pub mod requests;
 pub mod responses;
 pub mod service;
-pub mod features;
 
 pub use features::projections::PROJECTIONS;

@@ -46,8 +46,7 @@ async fn create(
     State(ctx): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ExperienceResponse>), ExperienceError> {
-    let response =
-        ExperienceService::create(&ctx, body.agent, body.sensation, body.description)?;
+    let response = ExperienceService::create(&ctx, body.agent, body.sensation, body.description)?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

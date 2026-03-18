@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Actor;
 
@@ -44,9 +44,9 @@ impl<'a> ActorRepo<'a> {
     // ── Read queries ────────────────────────────────────────────
 
     pub fn get(&self, id: &str) -> Result<Option<Actor>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, tenant_id, name, created_at FROM actors WHERE id = ?1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, tenant_id, name, created_at FROM actors WHERE id = ?1")?;
 
         let result = stmt.query_row(params![id], |row| {
             Ok(Actor {
@@ -65,9 +65,9 @@ impl<'a> ActorRepo<'a> {
     }
 
     pub fn list(&self) -> Result<Vec<Actor>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, tenant_id, name, created_at FROM actors ORDER BY name",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, tenant_id, name, created_at FROM actors ORDER BY name")?;
 
         let actors = stmt
             .query_map([], |row| {

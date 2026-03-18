@@ -102,6 +102,7 @@ async fn remove(
     State(state): State<ServiceState>,
     Path(name): Path<AgentName>,
 ) -> Result<Json<AgentResponses>, ServiceStateError> {
-    let response = state.fulfill::<Agent>(AgentRequests::RemoveAgent(RemoveAgentRequest { name }))?;
+    let response =
+        state.fulfill::<Agent>(AgentRequests::RemoveAgent(RemoveAgentRequest { name }))?;
     Ok(Json(response))
 }

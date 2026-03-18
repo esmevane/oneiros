@@ -71,10 +71,7 @@ impl AgentService {
         Ok(AgentResponses::AgentsListed(agents))
     }
 
-    pub fn get(
-        ctx: &AppContext,
-        name: &AgentName,
-    ) -> Result<AgentResponses, AgentError> {
+    pub fn get(ctx: &AppContext, name: &AgentName) -> Result<AgentResponses, AgentError> {
         let agent = ctx
             .with_db(|db| db.get_agent(name))?
             .ok_or(NotFound::Agent(name.clone()))?;
@@ -107,10 +104,7 @@ impl AgentService {
         Ok(AgentResponses::AgentUpdated(agent))
     }
 
-    pub fn remove(
-        ctx: &AppContext,
-        name: AgentName,
-    ) -> Result<AgentResponses, AgentError> {
+    pub fn remove(ctx: &AppContext, name: AgentName) -> Result<AgentResponses, AgentError> {
         ctx.emit(Events::Agent(AgentEvents::AgentRemoved(
             SelectAgentByName { name },
         )));

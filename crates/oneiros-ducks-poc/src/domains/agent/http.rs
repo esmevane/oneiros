@@ -39,9 +39,7 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(ctx): State<AppContext>,
-) -> Result<Json<AgentResponses>, AgentError> {
+async fn list(State(ctx): State<AppContext>) -> Result<Json<AgentResponses>, AgentError> {
     Ok(Json(AgentService::list(&ctx)?))
 }
 

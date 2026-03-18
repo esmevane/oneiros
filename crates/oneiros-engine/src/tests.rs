@@ -15,19 +15,43 @@ fn project_ctx() -> ProjectContext {
     store::initialize(&conn).expect("init store");
 
     // Migrate all project-scoped repos
-    domains::level::repo::LevelRepo::new(&conn).migrate().unwrap();
-    domains::texture::repo::TextureRepo::new(&conn).migrate().unwrap();
-    domains::sensation::repo::SensationRepo::new(&conn).migrate().unwrap();
-    domains::nature::repo::NatureRepo::new(&conn).migrate().unwrap();
-    domains::persona::repo::PersonaRepo::new(&conn).migrate().unwrap();
+    domains::level::repo::LevelRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::texture::repo::TextureRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::sensation::repo::SensationRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::nature::repo::NatureRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::persona::repo::PersonaRepo::new(&conn)
+        .migrate()
+        .unwrap();
     domains::urge::repo::UrgeRepo::new(&conn).migrate().unwrap();
-    domains::agent::repo::AgentRepo::new(&conn).migrate().unwrap();
-    domains::cognition::repo::CognitionRepo::new(&conn).migrate().unwrap();
-    domains::memory::repo::MemoryRepo::new(&conn).migrate().unwrap();
-    domains::experience::repo::ExperienceRepo::new(&conn).migrate().unwrap();
-    domains::connection::repo::ConnectionRepo::new(&conn).migrate().unwrap();
-    domains::pressure::repo::PressureRepo::new(&conn).migrate().unwrap();
-    domains::search::repo::SearchRepo::new(&conn).migrate().unwrap();
+    domains::agent::repo::AgentRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::cognition::repo::CognitionRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::memory::repo::MemoryRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::experience::repo::ExperienceRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::connection::repo::ConnectionRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::pressure::repo::PressureRepo::new(&conn)
+        .migrate()
+        .unwrap();
+    domains::search::repo::SearchRepo::new(&conn)
+        .migrate()
+        .unwrap();
 
     static PROJECTIONS: &[&[store::Projection]] = &[
         domains::level::PROJECTIONS,
@@ -49,16 +73,27 @@ fn project_ctx() -> ProjectContext {
 
 fn seed_persona(ctx: &ProjectContext) {
     use domains::persona::{model::Persona, service::PersonaService};
-    PersonaService::set(ctx, Persona {
-        name: "test-persona".into(),
-        description: "A test persona".into(),
-        prompt: "You are a test.".into(),
-    }).unwrap();
+    PersonaService::set(
+        ctx,
+        Persona {
+            name: "test-persona".into(),
+            description: "A test persona".into(),
+            prompt: "You are a test.".into(),
+        },
+    )
+    .unwrap();
 }
 
 fn seed_agent(ctx: &ProjectContext) {
     use domains::agent::service::AgentService;
-    AgentService::create(ctx, "gov".into(), "test-persona".into(), "Governor".into(), "You govern.".into()).unwrap();
+    AgentService::create(
+        ctx,
+        "gov".into(),
+        "test-persona".into(),
+        "Governor".into(),
+        "You govern.".into(),
+    )
+    .unwrap();
 }
 
 async fn json_body<T: serde::de::DeserializeOwned>(response: axum::http::Response<Body>) -> T {
@@ -70,11 +105,22 @@ async fn json_body<T: serde::de::DeserializeOwned>(response: axum::http::Respons
 
 #[test]
 fn level_crud() {
-    use domains::level::{model::Level, service::LevelService, responses::LevelResponse};
+    use domains::level::{model::Level, responses::LevelResponse, service::LevelService};
     let ctx = project_ctx();
 
-    LevelService::set(&ctx, Level { name: "working".into(), description: "Active".into(), prompt: "".into() }).unwrap();
-    assert!(matches!(LevelService::get(&ctx, "working").unwrap(), LevelResponse::Found(_)));
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "working".into(),
+            description: "Active".into(),
+            prompt: "".into(),
+        },
+    )
+    .unwrap();
+    assert!(matches!(
+        LevelService::get(&ctx, "working").unwrap(),
+        LevelResponse::Found(_)
+    ));
 
     match LevelService::list(&ctx).unwrap() {
         LevelResponse::Listed(levels) => assert_eq!(levels.len(), 1),
@@ -87,22 +133,40 @@ fn level_crud() {
 
 #[test]
 fn persona_crud() {
-    use domains::persona::{model::Persona, service::PersonaService, responses::PersonaResponse};
+    use domains::persona::{model::Persona, responses::PersonaResponse, service::PersonaService};
     let ctx = project_ctx();
 
-    PersonaService::set(&ctx, Persona { name: "process".into(), description: "Process agents".into(), prompt: "".into() }).unwrap();
-    assert!(matches!(PersonaService::get(&ctx, "process").unwrap(), PersonaResponse::Found(_)));
+    PersonaService::set(
+        &ctx,
+        Persona {
+            name: "process".into(),
+            description: "Process agents".into(),
+            prompt: "".into(),
+        },
+    )
+    .unwrap();
+    assert!(matches!(
+        PersonaService::get(&ctx, "process").unwrap(),
+        PersonaResponse::Found(_)
+    ));
 }
 
 // ── Entity domain tests ──────────────────────────────────────────
 
 #[test]
 fn agent_create_and_get() {
-    use domains::agent::{service::AgentService, responses::AgentResponse};
+    use domains::agent::{responses::AgentResponse, service::AgentService};
     let ctx = project_ctx();
     seed_persona(&ctx);
 
-    let resp = AgentService::create(&ctx, "governor".into(), "test-persona".into(), "The governor".into(), "You govern.".into()).unwrap();
+    let resp = AgentService::create(
+        &ctx,
+        "governor".into(),
+        "test-persona".into(),
+        "The governor".into(),
+        "You govern.".into(),
+    )
+    .unwrap();
     assert!(matches!(resp, AgentResponse::Created(_)));
 
     match AgentService::get(&ctx, "governor").unwrap() {
@@ -116,32 +180,57 @@ fn agent_create_and_get() {
 
 #[test]
 fn agent_persona_validation() {
-    use domains::agent::{service::AgentService, errors::AgentError};
+    use domains::agent::{errors::AgentError, service::AgentService};
     let ctx = project_ctx();
 
-    let result = AgentService::create(&ctx, "gov".into(), "nonexistent".into(), "".into(), "".into());
+    let result = AgentService::create(
+        &ctx,
+        "gov".into(),
+        "nonexistent".into(),
+        "".into(),
+        "".into(),
+    );
     assert!(matches!(result, Err(AgentError::PersonaNotFound(_))));
 }
 
 #[test]
 fn agent_name_conflict() {
-    use domains::agent::{service::AgentService, errors::AgentError};
+    use domains::agent::{errors::AgentError, service::AgentService};
     let ctx = project_ctx();
     seed_persona(&ctx);
 
-    AgentService::create(&ctx, "gov".into(), "test-persona".into(), "".into(), "".into()).unwrap();
-    let result = AgentService::create(&ctx, "gov".into(), "test-persona".into(), "".into(), "".into());
+    AgentService::create(
+        &ctx,
+        "gov".into(),
+        "test-persona".into(),
+        "".into(),
+        "".into(),
+    )
+    .unwrap();
+    let result = AgentService::create(
+        &ctx,
+        "gov".into(),
+        "test-persona".into(),
+        "".into(),
+        "".into(),
+    );
     assert!(matches!(result, Err(AgentError::Conflict(_))));
 }
 
 #[test]
 fn cognition_add_and_list() {
-    use domains::cognition::{service::CognitionService, responses::CognitionResponse};
+    use domains::cognition::{responses::CognitionResponse, service::CognitionService};
     let ctx = project_ctx();
     seed_persona(&ctx);
     seed_agent(&ctx);
 
-    let resp = CognitionService::add(&ctx, "gov".into(), "observation".into(), "Something interesting".into()).unwrap();
+    let resp = CognitionService::add(
+        &ctx,
+        "gov".into(),
+        "observation".into(),
+        "Something interesting".into(),
+    )
+    .unwrap();
     assert!(matches!(resp, CognitionResponse::Added(_)));
 
     match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
@@ -154,18 +243,33 @@ fn cognition_add_and_list() {
 
 #[test]
 fn broadcast_receives_events_across_domains() {
-    use domains::level::{model::Level, service::LevelService};
     use domains::agent::service::AgentService;
+    use domains::level::{model::Level, service::LevelService};
     let ctx = project_ctx();
     seed_persona(&ctx);
 
     let mut sub = ctx.subscribe();
 
-    LevelService::set(&ctx, Level { name: "working".into(), description: "".into(), prompt: "".into() }).unwrap();
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "working".into(),
+            description: "".into(),
+            prompt: "".into(),
+        },
+    )
+    .unwrap();
     let event = sub.try_recv().unwrap();
     assert_eq!(event.event_type, "level-set");
 
-    AgentService::create(&ctx, "gov".into(), "test-persona".into(), "".into(), "".into()).unwrap();
+    AgentService::create(
+        &ctx,
+        "gov".into(),
+        "test-persona".into(),
+        "".into(),
+        "".into(),
+    )
+    .unwrap();
     let event = sub.try_recv().unwrap();
     assert_eq!(event.event_type, "agent-created");
 }
@@ -180,28 +284,40 @@ async fn http_serves_multiple_domains() {
 
     // Set a level
     let req: Request<Body> = Request::builder()
-        .method("PUT").uri("/levels/working")
+        .method("PUT")
+        .uri("/levels/working")
         .header("content-type", "application/json")
-        .body(Body::from(r#"{"name":"working","description":"Active","prompt":""}"#))
+        .body(Body::from(
+            r#"{"name":"working","description":"Active","prompt":""}"#,
+        ))
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
     // Create an agent
     let req: Request<Body> = Request::builder()
-        .method("POST").uri("/agents")
+        .method("POST")
+        .uri("/agents")
         .header("content-type", "application/json")
-        .body(Body::from(r#"{"name":"gov","persona":"test-persona","description":"Gov","prompt":""}"#))
+        .body(Body::from(
+            r#"{"name":"gov","persona":"test-persona","description":"Gov","prompt":""}"#,
+        ))
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
 
     // Read both back
-    let req: Request<Body> = Request::builder().uri("/levels/working").body(Body::empty()).unwrap();
+    let req: Request<Body> = Request::builder()
+        .uri("/levels/working")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
-    let req: Request<Body> = Request::builder().uri("/agents/gov").body(Body::empty()).unwrap();
+    let req: Request<Body> = Request::builder()
+        .uri("/agents/gov")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 }
@@ -211,11 +327,17 @@ async fn http_not_found() {
     let ctx = project_ctx();
     let app = crate::http::project_router(ctx);
 
-    let req: Request<Body> = Request::builder().uri("/agents/nope").body(Body::empty()).unwrap();
+    let req: Request<Body> = Request::builder()
+        .uri("/agents/nope")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
-    let req: Request<Body> = Request::builder().uri("/levels/nope").body(Body::empty()).unwrap();
+    let req: Request<Body> = Request::builder()
+        .uri("/levels/nope")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
@@ -233,15 +355,21 @@ async fn full_integration() {
 
     // Create agent via HTTP
     let req: Request<Body> = Request::builder()
-        .method("POST").uri("/agents")
+        .method("POST")
+        .uri("/agents")
         .header("content-type", "application/json")
-        .body(Body::from(r#"{"name":"gov","persona":"test-persona","description":"Gov","prompt":""}"#))
+        .body(Body::from(
+            r#"{"name":"gov","persona":"test-persona","description":"Gov","prompt":""}"#,
+        ))
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
 
     // Read back via HTTP
-    let req: Request<Body> = Request::builder().uri("/agents/gov").body(Body::empty()).unwrap();
+    let req: Request<Body> = Request::builder()
+        .uri("/agents/gov")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 

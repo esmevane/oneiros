@@ -23,8 +23,14 @@ pub fn project_router(ctx: ProjectContext) -> Router {
         .nest("/agents", domains::agent::features::http::routes())
         .nest("/cognitions", domains::cognition::features::http::routes())
         .nest("/memories", domains::memory::features::http::routes())
-        .nest("/experiences", domains::experience::features::http::routes())
-        .nest("/connections", domains::connection::features::http::routes())
+        .nest(
+            "/experiences",
+            domains::experience::features::http::routes(),
+        )
+        .nest(
+            "/connections",
+            domains::connection::features::http::routes(),
+        )
         // Derived
         .nest("/pressures", domains::pressure::features::http::routes())
         // Lifecycle

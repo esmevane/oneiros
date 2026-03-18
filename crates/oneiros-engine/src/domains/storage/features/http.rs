@@ -49,9 +49,7 @@ async fn upload(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(state): State<StorageState>,
-) -> Result<Json<StorageResponse>, StorageError> {
+async fn list(State(state): State<StorageState>) -> Result<Json<StorageResponse>, StorageError> {
     Ok(Json(StorageService::list(&state.ctx)?))
 }
 
@@ -66,5 +64,9 @@ async fn remove(
     State(state): State<StorageState>,
     Path(id): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    Ok(Json(StorageService::remove(&state.ctx, &state.data_dir, &id)?))
+    Ok(Json(StorageService::remove(
+        &state.ctx,
+        &state.data_dir,
+        &id,
+    )?))
 }

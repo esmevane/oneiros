@@ -27,8 +27,8 @@ pub struct ToolResult {
 
 impl ToolResult {
     fn json<T: serde::Serialize>(value: &T) -> Result<Self, ToolError> {
-        let content = serde_json::to_string(value)
-            .map_err(|e| ToolError::Serialization(e.to_string()))?;
+        let content =
+            serde_json::to_string(value).map_err(|e| ToolError::Serialization(e.to_string()))?;
         Ok(Self { content })
     }
 }
@@ -96,41 +96,32 @@ impl Agent {
     ) -> Result<ToolResult, ToolError> {
         match tool_name {
             "list_agents" => {
-                let response = state.fulfill::<Agent>(
-                    AgentRequests::ListAgents(ListAgentsRequest),
-                )?;
+                let response =
+                    state.fulfill::<Agent>(AgentRequests::ListAgents(ListAgentsRequest))?;
                 ToolResult::json(&response)
             }
             "get_agent" => {
                 let request: GetAgentRequest = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Agent>(
-                    AgentRequests::GetAgent(request),
-                )?;
+                let response = state.fulfill::<Agent>(AgentRequests::GetAgent(request))?;
                 ToolResult::json(&response)
             }
             "create_agent" => {
                 let request: CreateAgentRequest = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Agent>(
-                    AgentRequests::CreateAgent(request),
-                )?;
+                let response = state.fulfill::<Agent>(AgentRequests::CreateAgent(request))?;
                 ToolResult::json(&response)
             }
             "update_agent" => {
                 let request: UpdateAgentRequest = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Agent>(
-                    AgentRequests::UpdateAgent(request),
-                )?;
+                let response = state.fulfill::<Agent>(AgentRequests::UpdateAgent(request))?;
                 ToolResult::json(&response)
             }
             "remove_agent" => {
                 let request: RemoveAgentRequest = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Agent>(
-                    AgentRequests::RemoveAgent(request),
-                )?;
+                let response = state.fulfill::<Agent>(AgentRequests::RemoveAgent(request))?;
                 ToolResult::json(&response)
             }
             _ => Err(ToolError::UnknownTool(tool_name.to_string())),
@@ -140,7 +131,13 @@ impl Agent {
     /// Tool names this resource provides. In production, derived from
     /// the rmcp #[tool] attributes.
     pub fn tool_names() -> &'static [&'static str] {
-        &["list_agents", "get_agent", "create_agent", "update_agent", "remove_agent"]
+        &[
+            "list_agents",
+            "get_agent",
+            "create_agent",
+            "update_agent",
+            "remove_agent",
+        ]
     }
 
     pub fn mcp_tools() -> ToolSurface {
@@ -158,33 +155,26 @@ impl Level {
     ) -> Result<ToolResult, ToolError> {
         match tool_name {
             "list_levels" => {
-                let response = state.fulfill::<Level>(
-                    LevelRequests::ListLevels(ListLevelsRequest),
-                )?;
+                let response =
+                    state.fulfill::<Level>(LevelRequests::ListLevels(ListLevelsRequest))?;
                 ToolResult::json(&response)
             }
             "get_level" => {
                 let request: GetLevelRequest = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Level>(
-                    LevelRequests::GetLevel(request),
-                )?;
+                let response = state.fulfill::<Level>(LevelRequests::GetLevel(request))?;
                 ToolResult::json(&response)
             }
             "set_level" => {
                 let level: oneiros_model::Level = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Level>(
-                    LevelRequests::SetLevel(level),
-                )?;
+                let response = state.fulfill::<Level>(LevelRequests::SetLevel(level))?;
                 ToolResult::json(&response)
             }
             "remove_level" => {
                 let request: RemoveLevelRequest = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = state.fulfill::<Level>(
-                    LevelRequests::RemoveLevel(request),
-                )?;
+                let response = state.fulfill::<Level>(LevelRequests::RemoveLevel(request))?;
                 ToolResult::json(&response)
             }
             _ => Err(ToolError::UnknownTool(tool_name.to_string())),

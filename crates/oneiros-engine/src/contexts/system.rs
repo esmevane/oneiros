@@ -7,7 +7,7 @@ use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
-use crate::store::{self, NewEvent, Projection, StoredEvent, StoreError};
+use crate::store::{self, NewEvent, Projection, StoreError, StoredEvent};
 
 /// The system-scoped application context.
 #[derive(Clone)]
@@ -18,10 +18,7 @@ pub struct SystemContext {
 }
 
 impl SystemContext {
-    pub fn new(
-        conn: Connection,
-        projections: &'static [&'static [Projection]],
-    ) -> Self {
+    pub fn new(conn: Connection, projections: &'static [&'static [Projection]]) -> Self {
         let (events, _) = broadcast::channel(256);
         Self {
             db: Arc::new(Mutex::new(conn)),

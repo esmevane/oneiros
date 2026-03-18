@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Brain;
 
@@ -42,9 +42,9 @@ impl<'a> BrainRepo<'a> {
     // ── Read queries ────────────────────────────────────────────
 
     pub fn get(&self, name: &str) -> Result<Option<Brain>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT name, created_at FROM brains WHERE name = ?1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name, created_at FROM brains WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
             Ok(Brain {
@@ -61,9 +61,9 @@ impl<'a> BrainRepo<'a> {
     }
 
     pub fn list(&self) -> Result<Vec<Brain>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT name, created_at FROM brains ORDER BY name",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name, created_at FROM brains ORDER BY name")?;
 
         let brains = stmt
             .query_map([], |row| {

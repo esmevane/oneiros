@@ -23,8 +23,6 @@ async fn get(
     Ok(Json(PressureService::get(&ctx, &agent)?))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<PressureResponse>, PressureError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<PressureResponse>, PressureError> {
     Ok(Json(PressureService::list(&ctx)?))
 }

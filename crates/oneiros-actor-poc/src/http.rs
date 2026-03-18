@@ -46,7 +46,9 @@ fn agent_routes() -> Router<Registry> {
         .route("/", routing::post(create_agent).get(list_agents))
         .route(
             "/{name}",
-            routing::get(get_agent).put(update_agent).delete(remove_agent),
+            routing::get(get_agent)
+                .put(update_agent)
+                .delete(remove_agent),
         )
 }
 
@@ -68,9 +70,7 @@ async fn create_agent(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list_agents(
-    State(registry): State<Registry>,
-) -> Result<Json<AgentResponses>, AgentError> {
+async fn list_agents(State(registry): State<Registry>) -> Result<Json<AgentResponses>, AgentError> {
     let response = registry
         .agents
         .send(AgentRequests::ListAgents(ListAgentsRequest))

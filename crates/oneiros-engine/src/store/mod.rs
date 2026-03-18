@@ -67,7 +67,13 @@ pub fn log_event(
 
     conn.execute(
         "INSERT INTO events (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![id.to_string(), event.event_type, data_json, event.source, now.to_rfc3339()],
+        params![
+            id.to_string(),
+            event.event_type,
+            data_json,
+            event.source,
+            now.to_rfc3339()
+        ],
     )?;
 
     let sequence = conn.last_insert_rowid();
@@ -92,26 +98,26 @@ pub fn log_event(
 
 /// Load all events from the store.
 pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, StoreError> {
-    let mut stmt = conn.prepare(
-        "SELECT rowid, event_type, data, source, created_at FROM events ORDER BY rowid",
-    )?;
+    let mut stmt = conn
+        .prepare("SELECT rowid, event_type, data, source, created_at FROM events ORDER BY rowid")?;
 
-    let events = stmt.query_map([], |row| {
-        let data_str: String = row.get(2)?;
-        Ok(StoredEvent {
-            sequence: row.get(0)?,
-            event_type: row.get(1)?,
-            data: serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
-            source: row.get(3)?,
-            created_at: {
-                let s: String = row.get(4)?;
-                DateTime::parse_from_rfc3339(&s)
-                    .map(|dt| dt.with_timezone(&Utc))
-                    .unwrap_or_default()
-            },
-        })
-    })?
-    .collect::<Result<Vec<_>, _>>()?;
+    let events = stmt
+        .query_map([], |row| {
+            let data_str: String = row.get(2)?;
+            Ok(StoredEvent {
+                sequence: row.get(0)?,
+                event_type: row.get(1)?,
+                data: serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
+                source: row.get(3)?,
+                created_at: {
+                    let s: String = row.get(4)?;
+                    DateTime::parse_from_rfc3339(&s)
+                        .map(|dt| dt.with_timezone(&Utc))
+                        .unwrap_or_default()
+                },
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(events)
 }

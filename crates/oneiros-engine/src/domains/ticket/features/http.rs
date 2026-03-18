@@ -38,9 +38,7 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(ctx): State<SystemContext>,
-) -> Result<Json<TicketResponse>, TicketError> {
+async fn list(State(ctx): State<SystemContext>) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(TicketService::list(&ctx)?))
 }
 

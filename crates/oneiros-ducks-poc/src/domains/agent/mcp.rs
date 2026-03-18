@@ -23,7 +23,13 @@ pub struct ToolResult {
 }
 
 pub fn tool_names() -> &'static [&'static str] {
-    &["list_agents", "get_agent", "create_agent", "update_agent", "remove_agent"]
+    &[
+        "list_agents",
+        "get_agent",
+        "create_agent",
+        "update_agent",
+        "remove_agent",
+    ]
 }
 
 pub fn dispatch(ctx: &AppContext, tool_name: &str, params: &str) -> Result<ToolResult, ToolError> {

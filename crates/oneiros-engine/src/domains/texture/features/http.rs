@@ -27,9 +27,7 @@ async fn set(
     Ok((StatusCode::OK, Json(TextureService::set(&ctx, texture)?)))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<TextureResponse>, TextureError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(TextureService::list(&ctx)?))
 }
 

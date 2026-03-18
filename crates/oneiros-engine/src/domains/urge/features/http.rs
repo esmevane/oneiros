@@ -27,9 +27,7 @@ async fn set(
     Ok((StatusCode::OK, Json(UrgeService::set(&ctx, urge)?)))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<UrgeResponse>, UrgeError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(UrgeService::list(&ctx)?))
 }
 

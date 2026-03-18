@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Ticket;
 

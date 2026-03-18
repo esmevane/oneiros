@@ -31,9 +31,7 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(ctx): State<SystemContext>,
-) -> Result<Json<BrainResponse>, BrainError> {
+async fn list(State(ctx): State<SystemContext>) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(BrainService::list(&ctx)?))
 }
 

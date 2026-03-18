@@ -6,10 +6,8 @@ use crate::store::Projection;
 
 use super::super::repo::PressureRepo;
 
-pub const PROJECTIONS: &[Projection] = &[
-    Projection {
-        name: "pressure",
-        apply: |conn, event| PressureRepo::new(conn).handle(event),
-        reset: |conn| PressureRepo::new(conn).reset(),
-    },
-];
+pub const PROJECTIONS: &[Projection] = &[Projection {
+    name: "pressure",
+    apply: |conn, event| PressureRepo::new(conn).handle(event),
+    reset: |conn| PressureRepo::new(conn).reset(),
+}];

@@ -4,7 +4,7 @@
 //! The Mountable impl is the integration point — it calls the
 //! AppBuilder's typed collection methods to register features.
 
-use oneiros_resource::{HasFeature, Mountable, Server, Tools, Projections};
+use oneiros_resource::{HasFeature, Mountable, Projections, Server, Tools};
 
 use crate::app::AppBuilder;
 use crate::resource_agent::Agent;

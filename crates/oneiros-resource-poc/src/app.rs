@@ -7,8 +7,8 @@ use axum::Router;
 use oneiros_db::Projection;
 use oneiros_resource::Mountable;
 
-use crate::mcp::{ToolError, ToolResult, ToolSurface};
 use crate::ServiceState;
+use crate::mcp::{ToolError, ToolResult, ToolSurface};
 
 /// The application builder. Resources mount into this, and it produces
 /// the composed transport surfaces.
@@ -67,11 +67,7 @@ impl AppBuilder {
     }
 
     /// Dispatch an MCP tool call through the collected tool surfaces.
-    pub fn dispatch_tool(
-        &self,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<ToolResult, ToolError> {
+    pub fn dispatch_tool(&self, tool_name: &str, params: &str) -> Result<ToolResult, ToolError> {
         for surface in &self.tools {
             if surface.names.contains(&tool_name) {
                 return (surface.handler)(&self.state, tool_name, params);

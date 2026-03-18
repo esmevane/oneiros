@@ -37,10 +37,7 @@ impl MemoryService {
         Ok(MemoryResponse::Found(memory))
     }
 
-    pub fn list(
-        ctx: &ProjectContext,
-        agent: Option<&str>,
-    ) -> Result<MemoryResponse, MemoryError> {
+    pub fn list(ctx: &ProjectContext, agent: Option<&str>) -> Result<MemoryResponse, MemoryError> {
         let memories = ctx
             .with_db(|conn| MemoryRepo::new(conn).list(agent))
             .map_err(MemoryError::Database)?;

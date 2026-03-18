@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Tenant;
 
@@ -43,9 +43,9 @@ impl<'a> TenantRepo<'a> {
     // ── Read queries ────────────────────────────────────────────
 
     pub fn get(&self, id: &str) -> Result<Option<Tenant>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, created_at FROM tenants WHERE id = ?1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, created_at FROM tenants WHERE id = ?1")?;
 
         let result = stmt.query_row(params![id], |row| {
             Ok(Tenant {
@@ -63,9 +63,9 @@ impl<'a> TenantRepo<'a> {
     }
 
     pub fn list(&self) -> Result<Vec<Tenant>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, created_at FROM tenants ORDER BY name",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, created_at FROM tenants ORDER BY name")?;
 
         let tenants = stmt
             .query_map([], |row| {

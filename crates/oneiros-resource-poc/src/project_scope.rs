@@ -2,9 +2,9 @@ use oneiros_db::{Database, Projection};
 use oneiros_model::*;
 use oneiros_resource::Fulfill;
 
-use crate::{Effects, PocEffects};
 use crate::resource_agent::Agent;
 use crate::resource_level::Level;
+use crate::{Effects, PocEffects};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProjectScopeError {

@@ -32,9 +32,7 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(ctx): State<SystemContext>,
-) -> Result<Json<ActorResponse>, ActorError> {
+async fn list(State(ctx): State<SystemContext>) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(ActorService::list(&ctx)?))
 }
 

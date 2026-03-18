@@ -24,7 +24,10 @@ async fn set(
     Json(mut sensation): Json<Sensation>,
 ) -> Result<(StatusCode, Json<SensationResponse>), SensationError> {
     sensation.name = name;
-    Ok((StatusCode::OK, Json(SensationService::set(&ctx, sensation)?)))
+    Ok((
+        StatusCode::OK,
+        Json(SensationService::set(&ctx, sensation)?),
+    ))
 }
 
 async fn list(

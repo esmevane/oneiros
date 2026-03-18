@@ -27,9 +27,7 @@ async fn set(
     Ok((StatusCode::OK, Json(NatureService::set(&ctx, nature)?)))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<NatureResponse>, NatureError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(NatureService::list(&ctx)?))
 }
 

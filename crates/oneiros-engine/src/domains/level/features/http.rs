@@ -27,9 +27,7 @@ async fn set(
     Ok((StatusCode::OK, Json(LevelService::set(&ctx, level)?)))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<LevelResponse>, LevelError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(LevelService::list(&ctx)?))
 }
 

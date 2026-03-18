@@ -27,9 +27,7 @@ async fn set(
     Ok((StatusCode::OK, Json(PersonaService::set(&ctx, persona)?)))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<PersonaResponse>, PersonaError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(PersonaService::list(&ctx)?))
 }
 

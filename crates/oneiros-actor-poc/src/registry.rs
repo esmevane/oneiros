@@ -35,9 +35,8 @@ impl Registry {
     pub fn build_with_source(db: Db, source: Source) -> Self {
         let (events_tx, _) = broadcast::channel::<Event>(256);
 
-        let agents = oneiros_actor::spawn(
-            AgentActor::with_bus(db.clone(), events_tx.clone(), source),
-        );
+        let agents =
+            oneiros_actor::spawn(AgentActor::with_bus(db.clone(), events_tx.clone(), source));
 
         Self {
             agents,

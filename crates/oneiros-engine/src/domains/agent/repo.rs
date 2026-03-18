@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Agent;
 
@@ -57,9 +57,9 @@ impl<'a> AgentRepo<'a> {
     // ── Read queries ────────────────────────────────────────────
 
     pub fn get(&self, name: &str) -> Result<Option<Agent>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, persona, description, prompt FROM agents WHERE name = ?1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, persona, description, prompt FROM agents WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
             Ok(Agent {
@@ -79,9 +79,9 @@ impl<'a> AgentRepo<'a> {
     }
 
     pub fn list(&self) -> Result<Vec<Agent>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, persona, description, prompt FROM agents ORDER BY name",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
 
         let agents = stmt
             .query_map([], |row| {
@@ -113,7 +113,13 @@ impl<'a> AgentRepo<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
              VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![agent.id, agent.name, agent.persona, agent.description, agent.prompt],
+            params![
+                agent.id,
+                agent.name,
+                agent.persona,
+                agent.description,
+                agent.prompt
+            ],
         )?;
         Ok(())
     }
@@ -122,7 +128,13 @@ impl<'a> AgentRepo<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
              VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![agent.id, agent.name, agent.persona, agent.description, agent.prompt],
+            params![
+                agent.id,
+                agent.name,
+                agent.persona,
+                agent.description,
+                agent.prompt
+            ],
         )?;
         Ok(())
     }

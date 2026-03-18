@@ -31,9 +31,7 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(ctx): State<SystemContext>,
-) -> Result<Json<TenantResponse>, TenantError> {
+async fn list(State(ctx): State<SystemContext>) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(TenantService::list(&ctx)?))
 }
 

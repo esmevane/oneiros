@@ -1,6 +1,6 @@
+use axum::Router;
 use axum::body::Body;
 use axum::http::Request;
-use axum::Router;
 use http_body_util::BodyExt;
 use oneiros_model::*;
 use oneiros_resource::{Fulfill, Resource};
@@ -51,7 +51,10 @@ impl HttpScope {
             .to_vec();
 
         if !status.is_success() {
-            return Err(HttpScopeError::Status(status.as_u16(), String::from_utf8_lossy(&bytes).into_owned()));
+            return Err(HttpScopeError::Status(
+                status.as_u16(),
+                String::from_utf8_lossy(&bytes).into_owned(),
+            ));
         }
 
         Ok(bytes)
@@ -93,7 +96,10 @@ impl HttpScope {
             .to_vec();
 
         if !status.is_success() {
-            return Err(HttpScopeError::Status(status.as_u16(), String::from_utf8_lossy(&bytes).into_owned()));
+            return Err(HttpScopeError::Status(
+                status.as_u16(),
+                String::from_utf8_lossy(&bytes).into_owned(),
+            ));
         }
 
         Ok(bytes)

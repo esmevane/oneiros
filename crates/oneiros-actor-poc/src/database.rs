@@ -79,7 +79,8 @@ impl Db {
     }
 
     pub async fn list_agents(&self) -> Vec<Agent> {
-        self.query(|db, _| db.list_agents().expect("db error")).await
+        self.query(|db, _| db.list_agents().expect("db error"))
+            .await
     }
 
     pub async fn agent_name_exists(&self, name: &AgentName) -> bool {
@@ -99,7 +100,12 @@ impl Db {
             .await
     }
 
-    pub async fn set_persona(&self, name: &PersonaName, description: &Description, prompt: &Prompt) {
+    pub async fn set_persona(
+        &self,
+        name: &PersonaName,
+        description: &Description,
+        prompt: &Prompt,
+    ) {
         let name = name.clone();
         let description = description.clone();
         let prompt = prompt.clone();

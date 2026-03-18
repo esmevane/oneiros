@@ -22,10 +22,7 @@ pub struct AppContext {
 }
 
 impl AppContext {
-    pub fn new(
-        db: Database,
-        projections: &'static [&'static [Projection]],
-    ) -> Self {
+    pub fn new(db: Database, projections: &'static [&'static [Projection]]) -> Self {
         let (events, _) = broadcast::channel(256);
         Self {
             db: std::sync::Arc::new(std::sync::Mutex::new(db)),
@@ -45,7 +42,8 @@ impl AppContext {
     pub fn emit(&self, event_data: Events) -> Event {
         let new_event = NewEvent::new(event_data, self.source);
         let persisted = self.with_db(|db| {
-            db.log_event(&new_event, self.projections).expect("log event")
+            db.log_event(&new_event, self.projections)
+                .expect("log event")
         });
         let _ = self.events.send(persisted.clone());
         persisted

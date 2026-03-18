@@ -29,5 +29,7 @@ pub fn dispatch_tool(
 
     // other domains would be checked here
 
-    Err(domains::agent::mcp::ToolError::UnknownTool(tool_name.to_string()))
+    Err(domains::agent::mcp::ToolError::UnknownTool(
+        tool_name.to_string(),
+    ))
 }

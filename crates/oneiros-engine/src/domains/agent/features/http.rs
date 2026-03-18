@@ -37,19 +37,12 @@ async fn create(
     State(ctx): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<AgentResponse>), AgentError> {
-    let response = AgentService::create(
-        &ctx,
-        body.name,
-        body.persona,
-        body.description,
-        body.prompt,
-    )?;
+    let response =
+        AgentService::create(&ctx, body.name, body.persona, body.description, body.prompt)?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(
-    State(ctx): State<ProjectContext>,
-) -> Result<Json<AgentResponse>, AgentError> {
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(AgentService::list(&ctx)?))
 }
 

@@ -1,6 +1,6 @@
+use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use axum::Router;
 use http_body_util::BodyExt;
 use oneiros_db::Database;
 use oneiros_model::*;
@@ -130,22 +130,33 @@ async fn list_agents_through_fulfill() {
     seed_persona(&db);
     let scope = project_scope(&db);
 
-    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("alice"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    })).await.unwrap();
+    fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("alice"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await
+    .unwrap();
 
-    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("bob"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    })).await.unwrap();
+    fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("bob"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await
+    .unwrap();
 
     let response = fulfill_agent(&scope, AgentRequests::ListAgents(ListAgentsRequest))
-        .await.expect("list agents");
+        .await
+        .expect("list agents");
 
     match response {
         AgentResponses::AgentsListed(agents) => {
@@ -165,16 +176,26 @@ async fn get_agent_through_fulfill() {
     seed_persona(&db);
     let scope = project_scope(&db);
 
-    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Gov"),
-        prompt: Prompt::default(),
-    })).await.unwrap();
+    fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Gov"),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await
+    .unwrap();
 
-    let response = fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
-        name: AgentName::new("governor"),
-    })).await.expect("get agent");
+    let response = fulfill_agent(
+        &scope,
+        AgentRequests::GetAgent(GetAgentRequest {
+            name: AgentName::new("governor"),
+        }),
+    )
+    .await
+    .expect("get agent");
 
     match response {
         AgentResponses::AgentFound(agent) => {
@@ -191,9 +212,13 @@ async fn get_agent_not_found() {
     let db = test_db(dir.path());
     let scope = project_scope(&db);
 
-    let result = fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
-        name: AgentName::new("nonexistent"),
-    })).await;
+    let result = fulfill_agent(
+        &scope,
+        AgentRequests::GetAgent(GetAgentRequest {
+            name: AgentName::new("nonexistent"),
+        }),
+    )
+    .await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -210,19 +235,29 @@ async fn update_agent_through_fulfill() {
     seed_persona(&db);
     let scope = project_scope(&db);
 
-    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Original"),
-        prompt: Prompt::default(),
-    })).await.unwrap();
+    fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Original"),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await
+    .unwrap();
 
-    let response = fulfill_agent(&scope, AgentRequests::UpdateAgent(UpdateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Updated"),
-        prompt: Prompt::new("New prompt"),
-    })).await.expect("update agent");
+    let response = fulfill_agent(
+        &scope,
+        AgentRequests::UpdateAgent(UpdateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Updated"),
+            prompt: Prompt::new("New prompt"),
+        }),
+    )
+    .await
+    .expect("update agent");
 
     match response {
         AgentResponses::AgentUpdated(agent) => {
@@ -240,23 +275,37 @@ async fn remove_agent_through_fulfill() {
     seed_persona(&db);
     let scope = project_scope(&db);
 
-    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    })).await.unwrap();
+    fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await
+    .unwrap();
 
-    let response = fulfill_agent(&scope, AgentRequests::RemoveAgent(RemoveAgentRequest {
-        name: AgentName::new("governor"),
-    })).await.expect("remove agent");
+    let response = fulfill_agent(
+        &scope,
+        AgentRequests::RemoveAgent(RemoveAgentRequest {
+            name: AgentName::new("governor"),
+        }),
+    )
+    .await
+    .expect("remove agent");
 
     assert!(matches!(response, AgentResponses::AgentRemoved));
 
     // Verify it's gone
-    let result = fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
-        name: AgentName::new("governor"),
-    })).await;
+    let result = fulfill_agent(
+        &scope,
+        AgentRequests::GetAgent(GetAgentRequest {
+            name: AgentName::new("governor"),
+        }),
+    )
+    .await;
 
     assert!(result.is_err());
 }
@@ -268,19 +317,28 @@ async fn create_agent_conflict() {
     seed_persona(&db);
     let scope = project_scope(&db);
 
-    fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    })).await.unwrap();
+    fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await
+    .unwrap();
 
-    let result = fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    })).await;
+    let result = fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -297,12 +355,16 @@ async fn create_agent_missing_persona() {
     // Deliberately NOT seeding persona
     let scope = project_scope(&db);
 
-    let result = fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("nonexistent-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    })).await;
+    let result = fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("nonexistent-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        }),
+    )
+    .await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -575,14 +637,22 @@ async fn list_levels_through_fulfill() {
 
     Fulfill::<LevelResource>::fulfill(
         &scope,
-        LevelRequests::SetLevel(oneiros_model::Level::init("working", "Active", "Short-term")),
+        LevelRequests::SetLevel(oneiros_model::Level::init(
+            "working",
+            "Active",
+            "Short-term",
+        )),
     )
     .await
     .unwrap();
 
     Fulfill::<LevelResource>::fulfill(
         &scope,
-        LevelRequests::SetLevel(oneiros_model::Level::init("archival", "Long-term", "Permanent")),
+        LevelRequests::SetLevel(oneiros_model::Level::init(
+            "archival",
+            "Long-term",
+            "Permanent",
+        )),
     )
     .await
     .unwrap();
@@ -859,12 +929,17 @@ async fn http_scope_create_and_get_agent() {
     seed_persona(&db);
     let scope = test_http_scope(test_service_state(db));
 
-    let response = http_fulfill_agent(&scope, AgentRequests::CreateAgent(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("The governor"),
-        prompt: Prompt::new("You govern."),
-    })).await.expect("create agent via http");
+    let response = http_fulfill_agent(
+        &scope,
+        AgentRequests::CreateAgent(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("The governor"),
+            prompt: Prompt::new("You govern."),
+        }),
+    )
+    .await
+    .expect("create agent via http");
 
     match response {
         AgentResponses::AgentCreated(agent) => {
@@ -874,9 +949,14 @@ async fn http_scope_create_and_get_agent() {
     }
 
     // Get through the same scope — proves round-trip
-    let response = http_fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
-        name: AgentName::new("governor"),
-    })).await.expect("get agent via http");
+    let response = http_fulfill_agent(
+        &scope,
+        AgentRequests::GetAgent(GetAgentRequest {
+            name: AgentName::new("governor"),
+        }),
+    )
+    .await
+    .expect("get agent via http");
 
     match response {
         AgentResponses::AgentFound(agent) => {
@@ -905,8 +985,10 @@ async fn http_scope_list_agents() {
 
     let scope = test_http_scope(state);
 
-    let response: AgentResponses = http_fulfill_agent(&scope, AgentRequests::ListAgents(ListAgentsRequest))
-        .await.expect("list agents via http");
+    let response: AgentResponses =
+        http_fulfill_agent(&scope, AgentRequests::ListAgents(ListAgentsRequest))
+            .await
+            .expect("list agents via http");
 
     match response {
         AgentResponses::AgentsListed(agents) => {
@@ -923,15 +1005,27 @@ async fn http_scope_set_and_get_level() {
     let db = test_db(dir.path());
     let scope = test_http_scope(test_service_state(db));
 
-    let response = http_fulfill_level(&scope, LevelRequests::SetLevel(
-        oneiros_model::Level::init("working", "Active work", "Short-term"),
-    )).await.expect("set level via http");
+    let response = http_fulfill_level(
+        &scope,
+        LevelRequests::SetLevel(oneiros_model::Level::init(
+            "working",
+            "Active work",
+            "Short-term",
+        )),
+    )
+    .await
+    .expect("set level via http");
 
     assert!(matches!(response, LevelResponses::LevelSet(_)));
 
-    let response = http_fulfill_level(&scope, LevelRequests::GetLevel(GetLevelRequest {
-        name: LevelName::new("working"),
-    })).await.expect("get level via http");
+    let response = http_fulfill_level(
+        &scope,
+        LevelRequests::GetLevel(GetLevelRequest {
+            name: LevelName::new("working"),
+        }),
+    )
+    .await
+    .expect("get level via http");
 
     match response {
         LevelResponses::LevelFound(level) => {
@@ -948,9 +1042,13 @@ async fn http_scope_error_propagation() {
     let db = test_db(dir.path());
     let scope = test_http_scope(test_service_state(db));
 
-    let result = http_fulfill_agent(&scope, AgentRequests::GetAgent(GetAgentRequest {
-        name: AgentName::new("nonexistent"),
-    })).await;
+    let result = http_fulfill_agent(
+        &scope,
+        AgentRequests::GetAgent(GetAgentRequest {
+            name: AgentName::new("nonexistent"),
+        }),
+    )
+    .await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -1055,13 +1153,9 @@ async fn cli_create_and_list_agents() {
     assert!(output.messages[0].contains("created"));
 
     // List via CLI dispatch — goes through HttpScope
-    let output = AgentResource::cli_run(
-        &scope,
-        "list",
-        AgentCliArgs::default(),
-    )
-    .await
-    .unwrap();
+    let output = AgentResource::cli_run(&scope, "list", AgentCliArgs::default())
+        .await
+        .unwrap();
 
     assert_eq!(output.messages.len(), 1);
     assert!(output.messages[0].contains("governor"));
@@ -1087,13 +1181,9 @@ async fn cli_set_and_list_levels() {
 
     assert!(output.messages[0].contains("working"));
 
-    let output = LevelResource::cli_run(
-        &scope,
-        "list",
-        LevelCliArgs::default(),
-    )
-    .await
-    .unwrap();
+    let output = LevelResource::cli_run(&scope, "list", LevelCliArgs::default())
+        .await
+        .unwrap();
 
     assert_eq!(output.messages.len(), 1);
     assert!(output.messages[0].contains("working"));

@@ -48,12 +48,15 @@ fn create_agent() {
     let ctx = test_ctx(test_db(dir.path()));
     seed_persona(&ctx);
 
-    let response = AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Gov"),
-        prompt: Prompt::new("You govern."),
-    })
+    let response = AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Gov"),
+            prompt: Prompt::new("You govern."),
+        },
+    )
     .unwrap();
 
     match response {
@@ -70,19 +73,27 @@ fn list_agents() {
     let ctx = test_ctx(test_db(dir.path()));
     seed_persona(&ctx);
 
-    AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("alice"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    }).unwrap();
+    AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("alice"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    )
+    .unwrap();
 
-    AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("bob"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    }).unwrap();
+    AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("bob"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    )
+    .unwrap();
 
     let response = AgentService::list(&ctx).unwrap();
     match response {
@@ -97,7 +108,10 @@ fn get_agent_not_found() {
     let ctx = test_ctx(test_db(dir.path()));
 
     let result = AgentService::get(&ctx, &AgentName::new("nonexistent"));
-    assert!(matches!(result.unwrap_err(), AgentError::NotFound(NotFound::Agent(_))));
+    assert!(matches!(
+        result.unwrap_err(),
+        AgentError::NotFound(NotFound::Agent(_))
+    ));
 }
 
 #[test]
@@ -105,14 +119,20 @@ fn create_agent_missing_persona() {
     let dir = tempfile::tempdir().unwrap();
     let ctx = test_ctx(test_db(dir.path()));
 
-    let result = AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("nonexistent"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    });
+    let result = AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("nonexistent"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    );
 
-    assert!(matches!(result.unwrap_err(), AgentError::NotFound(NotFound::Persona(_))));
+    assert!(matches!(
+        result.unwrap_err(),
+        AgentError::NotFound(NotFound::Persona(_))
+    ));
 }
 
 #[test]
@@ -121,19 +141,26 @@ fn create_agent_conflict() {
     let ctx = test_ctx(test_db(dir.path()));
     seed_persona(&ctx);
 
-    AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    }).unwrap();
+    AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    )
+    .unwrap();
 
-    let result = AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    });
+    let result = AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    );
 
     assert!(matches!(result.unwrap_err(), AgentError::Conflict(_)));
 }
@@ -144,19 +171,27 @@ fn update_agent() {
     let ctx = test_ctx(test_db(dir.path()));
     seed_persona(&ctx);
 
-    AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Original"),
-        prompt: Prompt::default(),
-    }).unwrap();
+    AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Original"),
+            prompt: Prompt::default(),
+        },
+    )
+    .unwrap();
 
-    let response = AgentService::update(&ctx, UpdateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Updated"),
-        prompt: Prompt::new("New prompt"),
-    }).unwrap();
+    let response = AgentService::update(
+        &ctx,
+        UpdateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Updated"),
+            prompt: Prompt::new("New prompt"),
+        },
+    )
+    .unwrap();
 
     match response {
         AgentResponses::AgentUpdated(a) => {
@@ -172,12 +207,16 @@ fn remove_agent() {
     let ctx = test_ctx(test_db(dir.path()));
     seed_persona(&ctx);
 
-    AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    }).unwrap();
+    AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    )
+    .unwrap();
 
     AgentService::remove(&ctx, AgentName::new("governor")).unwrap();
 
@@ -195,12 +234,16 @@ fn broadcast_receives_events() {
 
     let mut subscriber = ctx.subscribe();
 
-    AgentService::create(&ctx, CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::default(),
-        prompt: Prompt::default(),
-    }).unwrap();
+    AgentService::create(
+        &ctx,
+        CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::default(),
+            prompt: Prompt::default(),
+        },
+    )
+    .unwrap();
 
     let event = subscriber.try_recv().expect("receive broadcast");
     assert!(matches!(
@@ -224,12 +267,15 @@ async fn http_create_agent() {
                 .method("POST")
                 .uri("/agents")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&CreateAgentRequest {
-                    name: AgentName::new("governor"),
-                    persona: PersonaName::new("test-persona"),
-                    description: Description::new("Gov"),
-                    prompt: Prompt::default(),
-                }).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&CreateAgentRequest {
+                        name: AgentName::new("governor"),
+                        persona: PersonaName::new("test-persona"),
+                        description: Description::new("Gov"),
+                        prompt: Prompt::default(),
+                    })
+                    .unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -268,45 +314,62 @@ async fn http_full_crud_cycle() {
 
     // Create
     let req: Request<Body> = Request::builder()
-        .method("POST").uri("/agents")
+        .method("POST")
+        .uri("/agents")
         .header("content-type", "application/json")
-        .body(Body::from(serde_json::to_string(&CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::new("Original"),
-            prompt: Prompt::default(),
-        }).unwrap())).unwrap();
+        .body(Body::from(
+            serde_json::to_string(&CreateAgentRequest {
+                name: AgentName::new("governor"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Original"),
+                prompt: Prompt::default(),
+            })
+            .unwrap(),
+        ))
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
 
     // Read
     let req: Request<Body> = Request::builder()
-        .uri("/agents/governor").body(Body::empty()).unwrap();
+        .uri("/agents/governor")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
     // Update
     let req: Request<Body> = Request::builder()
-        .method("PUT").uri("/agents/governor")
+        .method("PUT")
+        .uri("/agents/governor")
         .header("content-type", "application/json")
-        .body(Body::from(serde_json::to_string(&UpdateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::new("Updated"),
-            prompt: Prompt::new("New"),
-        }).unwrap())).unwrap();
+        .body(Body::from(
+            serde_json::to_string(&UpdateAgentRequest {
+                name: AgentName::new("governor"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Updated"),
+                prompt: Prompt::new("New"),
+            })
+            .unwrap(),
+        ))
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
     // Delete
     let req: Request<Body> = Request::builder()
-        .method("DELETE").uri("/agents/governor").body(Body::empty()).unwrap();
+        .method("DELETE")
+        .uri("/agents/governor")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
     // Gone
     let req: Request<Body> = Request::builder()
-        .uri("/agents/governor").body(Body::empty()).unwrap();
+        .uri("/agents/governor")
+        .body(Body::empty())
+        .unwrap();
     let resp = app.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
@@ -324,7 +387,8 @@ fn mcp_create_and_list() {
         persona: PersonaName::new("test-persona"),
         description: Description::new("Gov"),
         prompt: Prompt::default(),
-    }).unwrap();
+    })
+    .unwrap();
 
     let result = crate::layers::dispatch_tool(&ctx, "create_agent", &params).unwrap();
     assert!(result.content.contains("governor"));
@@ -352,12 +416,15 @@ async fn cli_create_and_list() {
     let app = test_app(ctx);
     let remote = crate::domains::agent::cli::RemoteAgents::new(app);
 
-    let response = remote.create(CreateAgentRequest {
-        name: AgentName::new("governor"),
-        persona: PersonaName::new("test-persona"),
-        description: Description::new("Gov"),
-        prompt: Prompt::default(),
-    }).await.unwrap();
+    let response = remote
+        .create(CreateAgentRequest {
+            name: AgentName::new("governor"),
+            persona: PersonaName::new("test-persona"),
+            description: Description::new("Gov"),
+            prompt: Prompt::default(),
+        })
+        .await
+        .unwrap();
 
     assert!(matches!(response, AgentResponses::AgentCreated(_)));
 
@@ -378,7 +445,10 @@ async fn cli_get_not_found() {
     let remote = crate::domains::agent::cli::RemoteAgents::new(app);
 
     let result = remote.get(&AgentName::new("nonexistent")).await;
-    assert!(matches!(result.unwrap_err(), crate::domains::agent::cli::CliError::Status(404, _)));
+    assert!(matches!(
+        result.unwrap_err(),
+        crate::domains::agent::cli::CliError::Status(404, _)
+    ));
 }
 
 // ── Full integration ──────────────────────────────────────────────
@@ -393,14 +463,19 @@ async fn full_integration_all_surfaces() {
 
     // 1. Create via HTTP
     let req: Request<Body> = Request::builder()
-        .method("POST").uri("/agents")
+        .method("POST")
+        .uri("/agents")
         .header("content-type", "application/json")
-        .body(Body::from(serde_json::to_string(&CreateAgentRequest {
-            name: AgentName::new("governor"),
-            persona: PersonaName::new("test-persona"),
-            description: Description::new("Gov"),
-            prompt: Prompt::default(),
-        }).unwrap())).unwrap();
+        .body(Body::from(
+            serde_json::to_string(&CreateAgentRequest {
+                name: AgentName::new("governor"),
+                persona: PersonaName::new("test-persona"),
+                description: Description::new("Gov"),
+                prompt: Prompt::default(),
+            })
+            .unwrap(),
+        ))
+        .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
 

@@ -51,21 +51,19 @@ impl Agent {
                     description: args.description.clone().unwrap_or_default(),
                     prompt: args.prompt.clone().unwrap_or_default(),
                 });
-                let response =
-                    Fulfill::<Agent>::fulfill(scope, request).await?;
+                let response = Fulfill::<Agent>::fulfill(scope, request).await?;
                 match response {
-                    AgentResponses::AgentCreated(agent) => {
-                        Ok(CliOutput::message(format!("Agent '{}' created.", agent.name)))
-                    }
+                    AgentResponses::AgentCreated(agent) => Ok(CliOutput::message(format!(
+                        "Agent '{}' created.",
+                        agent.name
+                    ))),
                     other => Ok(CliOutput::message(format!("{other:?}"))),
                 }
             }
             "list" => {
-                let response = Fulfill::<Agent>::fulfill(
-                    scope,
-                    AgentRequests::ListAgents(ListAgentsRequest),
-                )
-                .await?;
+                let response =
+                    Fulfill::<Agent>::fulfill(scope, AgentRequests::ListAgents(ListAgentsRequest))
+                        .await?;
                 match response {
                     AgentResponses::AgentsListed(agents) => {
                         let msgs: Vec<String> = agents.iter().map(|a| a.name.to_string()).collect();
@@ -82,12 +80,10 @@ impl Agent {
                 )
                 .await?;
                 match response {
-                    AgentResponses::AgentFound(agent) => {
-                        Ok(CliOutput::message(format!(
-                            "{}: {}",
-                            agent.name, agent.description
-                        )))
-                    }
+                    AgentResponses::AgentFound(agent) => Ok(CliOutput::message(format!(
+                        "{}: {}",
+                        agent.name, agent.description
+                    ))),
                     other => Ok(CliOutput::message(format!("{other:?}"))),
                 }
             }
@@ -122,11 +118,8 @@ impl Level {
                     args.description.clone().unwrap_or_default(),
                     args.prompt.clone().unwrap_or_default(),
                 );
-                let response = Fulfill::<Level>::fulfill(
-                    scope,
-                    LevelRequests::SetLevel(level),
-                )
-                .await?;
+                let response =
+                    Fulfill::<Level>::fulfill(scope, LevelRequests::SetLevel(level)).await?;
                 match response {
                     LevelResponses::LevelSet(level) => {
                         Ok(CliOutput::message(format!("Level '{}' set.", level.name)))
@@ -135,15 +128,12 @@ impl Level {
                 }
             }
             "list" => {
-                let response = Fulfill::<Level>::fulfill(
-                    scope,
-                    LevelRequests::ListLevels(ListLevelsRequest),
-                )
-                .await?;
+                let response =
+                    Fulfill::<Level>::fulfill(scope, LevelRequests::ListLevels(ListLevelsRequest))
+                        .await?;
                 match response {
                     LevelResponses::LevelsListed(levels) => {
-                        let msgs: Vec<String> =
-                            levels.iter().map(|l| l.name.to_string()).collect();
+                        let msgs: Vec<String> = levels.iter().map(|l| l.name.to_string()).collect();
                         Ok(CliOutput { messages: msgs })
                     }
                     other => Ok(CliOutput::message(format!("{other:?}"))),

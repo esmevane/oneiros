@@ -88,7 +88,8 @@ impl Actor for AgentActor {
                 );
 
                 // Event emission — through the DB actor
-                self.emit(Events::Agent(AgentEvents::AgentCreated(agent.clone()))).await;
+                self.emit(Events::Agent(AgentEvents::AgentCreated(agent.clone())))
+                    .await;
 
                 Ok(AgentResponses::AgentCreated(agent))
             }
@@ -127,15 +128,17 @@ impl Actor for AgentActor {
                     request.persona,
                 );
 
-                self.emit(Events::Agent(AgentEvents::AgentUpdated(agent.clone()))).await;
+                self.emit(Events::Agent(AgentEvents::AgentUpdated(agent.clone())))
+                    .await;
 
                 Ok(AgentResponses::AgentUpdated(agent))
             }
 
             AgentRequests::RemoveAgent(request) => {
-                self.emit(Events::Agent(AgentEvents::AgentRemoved(SelectAgentByName {
-                    name: request.name,
-                }))).await;
+                self.emit(Events::Agent(AgentEvents::AgentRemoved(
+                    SelectAgentByName { name: request.name },
+                )))
+                .await;
 
                 Ok(AgentResponses::AgentRemoved)
             }

@@ -8,7 +8,10 @@ use super::responses::SensationResponse;
 pub struct SensationService;
 
 impl SensationService {
-    pub fn set(ctx: &ProjectContext, sensation: Sensation) -> Result<SensationResponse, SensationError> {
+    pub fn set(
+        ctx: &ProjectContext,
+        sensation: Sensation,
+    ) -> Result<SensationResponse, SensationError> {
         ctx.emit("sensation-set", &sensation);
         Ok(SensationResponse::Set(sensation))
     }

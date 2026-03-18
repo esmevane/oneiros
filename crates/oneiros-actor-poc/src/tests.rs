@@ -391,9 +391,7 @@ async fn broadcast_receives_multiple_events() {
 
 // ── HTTP tests ────────────────────────────────────────────────────
 
-async fn json_body<T: serde::de::DeserializeOwned>(
-    response: axum::http::Response<Body>,
-) -> T {
+async fn json_body<T: serde::de::DeserializeOwned>(response: axum::http::Response<Body>) -> T {
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     serde_json::from_slice(&bytes).unwrap()
 }

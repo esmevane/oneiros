@@ -18,7 +18,7 @@ pub fn initialize(conn: &Connection) -> Result<(), StoreError> {
 
         -- Domain read model tables are created by domain repos.
         -- This file only creates the universal event store table.
-        "
+        ",
     )?;
 
     Ok(())

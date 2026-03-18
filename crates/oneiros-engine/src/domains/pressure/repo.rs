@@ -4,10 +4,10 @@
 //! The projection gathers inputs and computes urgency. The repo handles
 //! both the pressure table and the cross-domain queries.
 
-use rusqlite::{Connection, params};
 use chrono::Utc;
+use rusqlite::{Connection, params};
 
-use crate::store::{StoredEvent, StoreError};
+use crate::store::{StoreError, StoredEvent};
 
 use super::model::Pressure;
 
@@ -28,12 +28,14 @@ impl<'a> PressureRepo<'a> {
     pub fn handle(&self, _event: &StoredEvent) -> Result<(), StoreError> {
         // Get all agents
         let mut stmt = self.conn.prepare("SELECT name FROM agents")?;
-        let agents: Vec<String> = stmt.query_map([], |row| row.get(0))?
+        let agents: Vec<String> = stmt
+            .query_map([], |row| row.get(0))?
             .collect::<Result<Vec<_>, _>>()?;
 
         // Get all urges
         let mut urge_stmt = self.conn.prepare("SELECT name FROM urges")?;
-        let urges: Vec<String> = urge_stmt.query_map([], |row| row.get(0))?
+        let urges: Vec<String> = urge_stmt
+            .query_map([], |row| row.get(0))?
             .collect::<Result<Vec<_>, _>>()?;
 
         let now = Utc::now().to_rfc3339();
@@ -41,11 +43,14 @@ impl<'a> PressureRepo<'a> {
         for agent in &agents {
             for urge in &urges {
                 // Simple heuristic: count cognitions as activity proxy
-                let cognition_count: i64 = self.conn.query_row(
-                    "SELECT COUNT(*) FROM cognitions WHERE agent_id = ?1",
-                    params![agent],
-                    |row| row.get(0),
-                ).unwrap_or(0);
+                let cognition_count: i64 = self
+                    .conn
+                    .query_row(
+                        "SELECT COUNT(*) FROM cognitions WHERE agent_id = ?1",
+                        params![agent],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or(0);
 
                 // More cognitions = lower pressure to introspect (already active)
                 // Fewer cognitions = higher pressure
@@ -74,25 +79,26 @@ impl<'a> PressureRepo<'a> {
                 percent INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL,
                 PRIMARY KEY (agent, urge)
-            )"
+            )",
         )?;
         Ok(())
     }
 
     pub fn get(&self, agent: &str) -> Result<Vec<Pressure>, StoreError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT agent, urge, percent, updated_at FROM pressures WHERE agent = ?1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT agent, urge, percent, updated_at FROM pressures WHERE agent = ?1")?;
 
-        let pressures = stmt.query_map(params![agent], |row| {
-            Ok(Pressure {
-                agent: row.get(0)?,
-                urge: row.get(1)?,
-                percent: row.get(2)?,
-                updated_at: row.get(3)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let pressures = stmt
+            .query_map(params![agent], |row| {
+                Ok(Pressure {
+                    agent: row.get(0)?,
+                    urge: row.get(1)?,
+                    percent: row.get(2)?,
+                    updated_at: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(pressures)
     }
@@ -102,15 +108,16 @@ impl<'a> PressureRepo<'a> {
             "SELECT agent, urge, percent, updated_at FROM pressures ORDER BY agent, urge",
         )?;
 
-        let pressures = stmt.query_map([], |row| {
-            Ok(Pressure {
-                agent: row.get(0)?,
-                urge: row.get(1)?,
-                percent: row.get(2)?,
-                updated_at: row.get(3)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let pressures = stmt
+            .query_map([], |row| {
+                Ok(Pressure {
+                    agent: row.get(0)?,
+                    urge: row.get(1)?,
+                    percent: row.get(2)?,
+                    updated_at: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(pressures)
     }

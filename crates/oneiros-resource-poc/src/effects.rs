@@ -32,11 +32,7 @@ pub struct PocEffects<'a> {
 }
 
 impl<'a> PocEffects<'a> {
-    pub fn new(
-        source: Source,
-        db: &'a Database,
-        projections: &'a [&'a [Projection]],
-    ) -> Self {
+    pub fn new(source: Source, db: &'a Database, projections: &'a [&'a [Projection]]) -> Self {
         Self {
             source,
             db,

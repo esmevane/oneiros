@@ -16,7 +16,13 @@ fn apply_agent_created(db: &Database, event: &KnownEvent) -> Result<(), Database
     let Events::Agent(AgentEvents::AgentCreated(agent)) = &event.data else {
         return Ok(());
     };
-    db.create_agent_record(&agent.id, &agent.name, &agent.persona, &agent.description, &agent.prompt)?;
+    db.create_agent_record(
+        &agent.id,
+        &agent.name,
+        &agent.persona,
+        &agent.description,
+        &agent.prompt,
+    )?;
     Ok(())
 }
 
@@ -30,7 +36,12 @@ fn apply_agent_updated(db: &Database, event: &KnownEvent) -> Result<(), Database
     let Events::Agent(AgentEvents::AgentUpdated(agent)) = &event.data else {
         return Ok(());
     };
-    db.update_agent(&agent.name, &agent.persona, &agent.description, &agent.prompt)?;
+    db.update_agent(
+        &agent.name,
+        &agent.persona,
+        &agent.description,
+        &agent.prompt,
+    )?;
     Ok(())
 }
 

@@ -31,17 +31,16 @@ impl ServiceState {
     }
 
     pub fn lock_db(&self) -> Result<MutexGuard<'_, Database>, ServiceStateError> {
-        self.db.lock().map_err(|_| ServiceStateError::DatabasePoisoned)
+        self.db
+            .lock()
+            .map_err(|_| ServiceStateError::DatabasePoisoned)
     }
 
     /// Create a ProjectScope from the current state.
     ///
     /// The scope borrows the MutexGuard, so the caller must hold
     /// the guard for the lifetime of the scope.
-    pub fn project_scope<'a>(
-        &self,
-        db: &'a Database,
-    ) -> ProjectScope<'a> {
+    pub fn project_scope<'a>(&self, db: &'a Database) -> ProjectScope<'a> {
         ProjectScope::new(db, self.source, self.projections)
     }
     /// Fulfill a resource request synchronously.
