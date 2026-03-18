@@ -50,10 +50,18 @@ pub async fn set_creates_a_new_entry<B: Backend>(domain: &VocabularyDomain) -> T
     let entry = show_outcomes
         .iter()
         .find(|o| o.get("type") == Some(&serde_json::json!(domain.details_type)))
-        .unwrap_or_else(|| panic!("expected {} outcome in {show_outcomes:?}", domain.details_type));
+        .unwrap_or_else(|| {
+            panic!(
+                "expected {} outcome in {show_outcomes:?}",
+                domain.details_type
+            )
+        });
 
     let data = entry.get("data").expect("expected data field");
-    assert_eq!(data.get("name").and_then(|n| n.as_str()), Some("test-entry"));
+    assert_eq!(
+        data.get("name").and_then(|n| n.as_str()),
+        Some("test-entry")
+    );
     assert_eq!(
         data.get("description").and_then(|d| d.as_str()),
         Some("A test entry")
@@ -176,7 +184,9 @@ pub async fn remove_makes_it_unlisted<B: Backend>(domain: &VocabularyDomain) -> 
 
     let remove_cmd = format!("{} remove temporary --output json", domain.command);
     let remove_result = backend.exec(&remove_cmd).await?;
-    let remove_outcomes = remove_result.as_array().expect("expected array of outcomes");
+    let remove_outcomes = remove_result
+        .as_array()
+        .expect("expected array of outcomes");
 
     assert!(
         remove_outcomes
