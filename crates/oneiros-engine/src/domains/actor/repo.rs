@@ -1,10 +1,6 @@
 use rusqlite::{Connection, params};
 
-use crate::events::Events;
-use crate::store::{StoreError, StoredEvent};
-
-use super::events::*;
-use super::model::Actor;
+use crate::*;
 
 /// Actor read model — queries, projection handling, and lifecycle.
 pub struct ActorRepo<'a> {
@@ -26,7 +22,7 @@ impl<'a> ActorRepo<'a> {
     }
 
     pub fn reset(&self) -> Result<(), StoreError> {
-        self.conn.execute("DELETE FROM actors", [])?;
+        self.conn.execute("delete from actors", [])?;
         Ok(())
     }
 
@@ -49,37 +45,48 @@ impl<'a> ActorRepo<'a> {
             .conn
             .prepare("SELECT id, tenant_id, name, created_at FROM actors WHERE id = ?1")?;
 
-        let result = stmt.query_row(params![id], |row| {
-            Ok(Actor {
-                id: row.get(0)?,
-                tenant_id: row.get(1)?,
-                name: row.get(2)?,
-                created_at: row.get(3)?,
-            })
+        let raw = stmt.query_row(params![id], |row| {
+            let id: String = row.get(0)?;
+            let tenant_id: String = row.get(1)?;
+            let name: String = row.get(2)?;
+            let created_at: String = row.get(3)?;
+
+            Ok((id, tenant_id, name, created_at))
         });
 
-        match result {
-            Ok(actor) => Ok(Some(actor)),
+        match raw {
+            Ok((id, tenant_id, name, created_at)) => Ok(Some(Actor {
+                id: id.parse()?,
+                tenant_id,
+                name: ActorName::new(name),
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
+            Err(error) => Err(error.into()),
         }
     }
 
     pub fn list(&self) -> Result<Vec<Actor>, StoreError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, tenant_id, name, created_at FROM actors ORDER BY name")?;
+            .prepare("select id, tenant_id, name, created_at from actors order by name")?;
 
-        let actors = stmt
+        let raw: Vec<(String, String, String, String)> = stmt
             .query_map([], |row| {
-                Ok(Actor {
-                    id: row.get(0)?,
-                    tenant_id: row.get(1)?,
-                    name: row.get(2)?,
-                    created_at: row.get(3)?,
-                })
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
             })?
             .collect::<Result<Vec<_>, _>>()?;
+
+        let mut actors = vec![];
+
+        for (id, tenant_id, name, created_at) in raw {
+            actors.push(Actor {
+                id: id.parse()?,
+                tenant_id,
+                name: ActorName::new(name),
+                created_at,
+            });
+        }
 
         Ok(actors)
     }
@@ -88,9 +95,14 @@ impl<'a> ActorRepo<'a> {
 
     fn create_record(&self, actor: &Actor) -> Result<(), StoreError> {
         self.conn.execute(
-            "INSERT OR REPLACE INTO actors (id, tenant_id, name, created_at)
-             VALUES (?1, ?2, ?3, ?4)",
-            params![actor.id, actor.tenant_id, actor.name, actor.created_at],
+            "insert or replace into actors (id, tenant_id, name, created_at)
+             values (?1, ?2, ?3, ?4)",
+            params![
+                actor.id.to_string(),
+                actor.tenant_id,
+                actor.name.to_string(),
+                actor.created_at
+            ],
         )?;
         Ok(())
     }

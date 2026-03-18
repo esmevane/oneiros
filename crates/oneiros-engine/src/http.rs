@@ -81,7 +81,7 @@ pub fn system_router(ctx: SystemContext) -> Router {
             tenant::features::http::PATH,
             tenant::features::http::routes(),
         )
-        .nest(actor::features::http::PATH, actor::features::http::routes())
+        .nest("/", ActorRouter.routes())
         .nest(
             ticket::features::http::PATH,
             ticket::features::http::routes(),

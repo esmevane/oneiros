@@ -50,18 +50,25 @@ impl<'a> TicketRepo<'a> {
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets WHERE id = ?1",
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
-            Ok(Ticket {
-                id: row.get(0)?,
-                actor_id: row.get(1)?,
-                brain_name: row.get(2)?,
-                token: row.get(3)?,
-                created_at: row.get(4)?,
-            })
-        });
+        let raw: Result<(String, String, String, String, String), _> =
+            stmt.query_row(params![id], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            });
 
-        match result {
-            Ok(ticket) => Ok(Some(ticket)),
+        match raw {
+            Ok((id, actor_id, brain_name, token, created_at)) => Ok(Some(Ticket {
+                id,
+                actor_id: actor_id.parse()?,
+                brain_name,
+                token,
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -72,17 +79,29 @@ impl<'a> TicketRepo<'a> {
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets ORDER BY created_at",
         )?;
 
-        let tickets = stmt
+        let raw: Vec<(String, String, String, String, String)> = stmt
             .query_map([], |row| {
-                Ok(Ticket {
-                    id: row.get(0)?,
-                    actor_id: row.get(1)?,
-                    brain_name: row.get(2)?,
-                    token: row.get(3)?,
-                    created_at: row.get(4)?,
-                })
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
+
+        let mut tickets = vec![];
+
+        for (id, actor_id, brain_name, token, created_at) in raw {
+            tickets.push(Ticket {
+                id,
+                actor_id: actor_id.parse()?,
+                brain_name,
+                token,
+                created_at,
+            });
+        }
 
         Ok(tickets)
     }
@@ -92,18 +111,25 @@ impl<'a> TicketRepo<'a> {
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets WHERE token = ?1",
         )?;
 
-        let result = stmt.query_row(params![token], |row| {
-            Ok(Ticket {
-                id: row.get(0)?,
-                actor_id: row.get(1)?,
-                brain_name: row.get(2)?,
-                token: row.get(3)?,
-                created_at: row.get(4)?,
-            })
-        });
+        let raw: Result<(String, String, String, String, String), _> =
+            stmt.query_row(params![token], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            });
 
-        match result {
-            Ok(ticket) => Ok(Some(ticket)),
+        match raw {
+            Ok((id, actor_id, brain_name, token, created_at)) => Ok(Some(Ticket {
+                id,
+                actor_id: actor_id.parse()?,
+                brain_name,
+                token,
+                created_at,
+            })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -113,11 +139,11 @@ impl<'a> TicketRepo<'a> {
 
     fn create_record(&self, ticket: &Ticket) -> Result<(), StoreError> {
         self.conn.execute(
-            "INSERT OR REPLACE INTO tickets (id, actor_id, brain_name, token, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "insert or replace into tickets (id, actor_id, brain_name, token, created_at)
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 ticket.id,
-                ticket.actor_id,
+                ticket.actor_id.to_string(),
                 ticket.brain_name,
                 ticket.token,
                 ticket.created_at

@@ -6,6 +6,8 @@ use axum::{
 };
 use serde::Deserialize;
 
+use crate::*;
+
 use crate::contexts::SystemContext;
 
 use super::super::errors::TicketError;
@@ -23,7 +25,7 @@ pub fn routes() -> Router<SystemContext> {
 
 #[derive(Debug, Deserialize)]
 struct CreateBody {
-    actor_id: String,
+    actor_id: ActorId,
     brain_name: String,
 }
 

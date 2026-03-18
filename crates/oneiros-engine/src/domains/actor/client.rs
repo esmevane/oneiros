@@ -1,8 +1,6 @@
 //! HTTP client for the actor domain.
 
-use crate::client::{Client, ClientError};
-
-use super::responses::ActorResponse;
+use crate::*;
 
 /// Client scoped to actor operations.
 pub struct ActorClient<'a> {

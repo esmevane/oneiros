@@ -3,6 +3,8 @@ use axum::http::{Request, StatusCode};
 use rusqlite::Connection;
 use tower::ServiceExt;
 
+use crate::*;
+
 use crate::contexts::{ProjectContext, SystemContext};
 use crate::domains;
 use crate::events::Events;
@@ -499,7 +501,7 @@ fn search_indexes_across_domains() {
 
 static SYSTEM_PROJECTIONS: &[&[store::Projection]] = &[
     domains::tenant::PROJECTIONS,
-    domains::actor::PROJECTIONS,
+    ActorProjections.all(),
     domains::brain::PROJECTIONS,
     domains::ticket::PROJECTIONS,
 ];
@@ -528,7 +530,6 @@ fn tenant_create_and_list() {
 
 #[test]
 fn actor_create_and_get() {
-    use domains::actor::{responses::ActorResponse, service::ActorService};
     use domains::tenant::{responses::TenantResponse, service::TenantService};
     let ctx = system_ctx();
 
@@ -540,7 +541,7 @@ fn actor_create_and_get() {
 
     match ActorService::create(&ctx, tenant_id.clone(), "alice".into()).unwrap() {
         ActorResponse::Created(a) => {
-            assert_eq!(a.name, "alice");
+            assert_eq!(a.name, ActorName::new("alice"));
             assert_eq!(a.tenant_id, tenant_id);
         }
         other => panic!("Expected Created, got {other:?}"),
@@ -576,7 +577,6 @@ fn brain_create_and_conflict() {
 
 #[test]
 fn ticket_issue_and_validate() {
-    use domains::actor::{responses::ActorResponse, service::ActorService};
     use domains::brain::{responses::BrainResponse, service::BrainService};
     use domains::tenant::{responses::TenantResponse, service::TenantService};
     use domains::ticket::{responses::TicketResponse, service::TicketService};

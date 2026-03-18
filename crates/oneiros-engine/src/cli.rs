@@ -5,6 +5,8 @@
 
 use clap::Subcommand;
 
+use crate::*;
+
 use crate::contexts::ProjectContext;
 use crate::contexts::SystemContext;
 
@@ -253,7 +255,7 @@ pub enum BrainCommands {
 pub enum TicketCommands {
     Issue {
         #[arg(long)]
-        actor_id: String,
+        actor_id: ActorId,
         #[arg(long)]
         brain_name: String,
     },
@@ -503,7 +505,6 @@ pub fn execute_system(
             Ok(result)
         }
         SystemCommands::Actor(cmd) => {
-            use crate::domains::actor::service::ActorService;
             let result = match cmd {
                 ActorCommands::Create { tenant_id, name } => {
                     serde_json::to_string_pretty(&ActorService::create(ctx, tenant_id, name)?)?

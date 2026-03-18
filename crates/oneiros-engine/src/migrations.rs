@@ -2,6 +2,8 @@
 
 use rusqlite::Connection;
 
+use crate::*;
+
 use crate::domains;
 use crate::store::{self, StoreError};
 
@@ -37,7 +39,7 @@ pub fn migrate_system(conn: &Connection) -> Result<(), StoreError> {
     store::initialize(conn)?;
 
     domains::tenant::repo::TenantRepo::new(conn).migrate()?;
-    domains::actor::repo::ActorRepo::new(conn).migrate()?;
+    ActorRepo::new(conn).migrate()?;
     domains::brain::repo::BrainRepo::new(conn).migrate()?;
     domains::ticket::repo::TicketRepo::new(conn).migrate()?;
 

@@ -6,18 +6,19 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::contexts::SystemContext;
+use crate::*;
 
-use super::super::errors::ActorError;
-use super::super::responses::ActorResponse;
-use super::super::service::ActorService;
+pub struct ActorRouter;
 
-pub const PATH: &str = "/actors";
-
-pub fn routes() -> Router<SystemContext> {
-    Router::new()
-        .route("/", routing::get(list).post(create))
-        .route("/{id}", routing::get(show))
+impl ActorRouter {
+    pub fn routes(&self) -> Router<SystemContext> {
+        Router::new().nest(
+            "/actors",
+            Router::new()
+                .route("/", routing::get(list).post(create))
+                .route("/{id}", routing::get(show)),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

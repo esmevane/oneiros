@@ -1,13 +1,6 @@
 use chrono::Utc;
-use uuid::Uuid;
 
-use crate::contexts::SystemContext;
-
-use super::errors::ActorError;
-use super::events::*;
-use super::model::Actor;
-use super::repo::ActorRepo;
-use super::responses::ActorResponse;
+use crate::*;
 
 pub struct ActorService;
 
@@ -18,9 +11,9 @@ impl ActorService {
         name: String,
     ) -> Result<ActorResponse, ActorError> {
         let actor = Actor {
-            id: Uuid::now_v7().to_string(),
+            id: ActorId::new(),
             tenant_id,
-            name,
+            name: ActorName::new(name),
             created_at: Utc::now().to_rfc3339(),
         };
 

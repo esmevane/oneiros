@@ -5,7 +5,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domains::actor::requests::ActorRequest;
+use crate::*;
+
 use crate::domains::agent::requests::AgentRequest;
 use crate::domains::brain::requests::BrainRequest;
 use crate::domains::cognition::requests::CognitionRequest;

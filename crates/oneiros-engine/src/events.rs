@@ -6,7 +6,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domains::actor::events::ActorEvents;
+use crate::*;
+
 use crate::domains::agent::events::AgentEvents;
 use crate::domains::brain::events::BrainEvents;
 use crate::domains::cognition::events::CognitionEvents;

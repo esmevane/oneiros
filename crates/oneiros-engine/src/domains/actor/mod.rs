@@ -1,11 +1,13 @@
-pub mod client;
-pub mod errors;
-pub mod events;
-pub mod features;
-pub mod model;
-pub mod repo;
-pub mod requests;
-pub mod responses;
-pub mod service;
+mod client;
+mod features;
+mod model;
+mod protocol;
+mod repo;
+mod service;
 
-pub use features::projections::PROJECTIONS;
+pub use client::ActorClient;
+pub use features::{ActorProjections, ActorRouter};
+pub use model::{Actor, ActorId, ActorName};
+pub use protocol::{ActorError, ActorEvents, ActorRequest, ActorResponse};
+pub use repo::ActorRepo;
+pub use service::ActorService;

@@ -1,6 +1,8 @@
 use chrono::Utc;
 use uuid::Uuid;
 
+use crate::*;
+
 use crate::contexts::SystemContext;
 
 use super::errors::TicketError;
@@ -14,7 +16,7 @@ pub struct TicketService;
 impl TicketService {
     pub fn create(
         ctx: &SystemContext,
-        actor_id: String,
+        actor_id: ActorId,
         brain_name: String,
     ) -> Result<TicketResponse, TicketError> {
         let ticket = Ticket {

@@ -5,7 +5,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domains::actor::responses::ActorResponse;
+use crate::*;
+
 use crate::domains::agent::responses::AgentResponse;
 use crate::domains::brain::responses::BrainResponse;
 use crate::domains::cognition::responses::CognitionResponse;

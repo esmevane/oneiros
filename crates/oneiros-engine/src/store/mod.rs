@@ -10,7 +10,10 @@ use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::events::{self, Events};
+use crate::{
+    IdParseError,
+    events::{self, Events},
+};
 
 pub use schema::initialize;
 
@@ -50,6 +53,9 @@ pub enum StoreError {
 
     #[error("Serialization error: {0}")]
     Serde(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    IdParse(#[from] IdParseError),
 }
 
 /// Append an event to the store and run projections.
