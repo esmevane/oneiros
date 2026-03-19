@@ -48,16 +48,21 @@ impl<'a> UrgeRepo<'a> {
             .prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
-            let name: String = row.get(0)?;
-            Ok(Urge {
-                name: UrgeName::new(name),
-                description: Description(row.get(1)?),
-                prompt: Prompt(row.get(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         });
 
         match result {
-            Ok(urge) => Ok(Some(urge)),
+            Ok((name, description, prompt)) => Ok(Some(
+                Urge::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -70,14 +75,22 @@ impl<'a> UrgeRepo<'a> {
 
         let urges = stmt
             .query_map([], |row| {
-                let name: String = row.get(0)?;
-                Ok(Urge {
-                    name: UrgeName::new(name),
-                    description: Description(row.get(1)?),
-                    prompt: Prompt(row.get(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             })?
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<(String, String, String)>, _>>()?
+            .into_iter()
+            .map(|(name, description, prompt)| {
+                Urge::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build()
+            })
+            .collect();
 
         Ok(urges)
     }

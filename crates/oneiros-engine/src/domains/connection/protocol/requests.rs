@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ConnectionRequest {
     Create {
-        from_entity: String,
-        to_entity: String,
+        from_ref: String,
+        to_ref: String,
         nature: String,
         description: String,
     },

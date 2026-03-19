@@ -61,13 +61,15 @@ impl<'a> CognitionRepo<'a> {
         });
 
         match result {
-            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(Cognition {
-                id: id.parse()?,
-                agent_id: AgentName::new(agent_id),
-                texture: TextureName::new(texture),
-                content: Content(content),
-                created_at: Timestamp::parse_str(&created_at)?,
-            })),
+            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(
+                Cognition::builder()
+                    .id(id.parse()?)
+                    .agent_id(agent_id.parse()?)
+                    .texture(texture)
+                    .content(content)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -127,13 +129,15 @@ impl<'a> CognitionRepo<'a> {
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
-            cognitions.push(Cognition {
-                id: id.parse()?,
-                agent_id: AgentName::new(agent_id),
-                texture: TextureName::new(texture),
-                content: Content(content),
-                created_at: Timestamp::parse_str(&created_at)?,
-            });
+            cognitions.push(
+                Cognition::builder()
+                    .id(id.parse()?)
+                    .agent_id(agent_id.parse()?)
+                    .texture(texture)
+                    .content(content)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            );
         }
 
         Ok(cognitions)

@@ -54,9 +54,9 @@ impl<'a> SearchRepo<'a> {
                 let results = stmt
                     .query_map(params![query, agent_filter], |row| {
                         Ok(SearchResult {
-                            kind: row.get(0)?,
+                            kind: Label::new(row.get::<_, String>(0)?),
                             id: row.get(1)?,
-                            content: row.get(2)?,
+                            content: Content(row.get(2)?),
                             rank: row.get(3)?,
                         })
                     })?
@@ -75,9 +75,9 @@ impl<'a> SearchRepo<'a> {
                 let results = stmt
                     .query_map(params![query], |row| {
                         Ok(SearchResult {
-                            kind: row.get(0)?,
+                            kind: Label::new(row.get::<_, String>(0)?),
                             id: row.get(1)?,
-                            content: row.get(2)?,
+                            content: Content(row.get(2)?),
                             rank: row.get(3)?,
                         })
                     })?

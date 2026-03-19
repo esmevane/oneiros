@@ -23,8 +23,8 @@ impl ConnectionRouter {
 
 #[derive(Debug, Deserialize)]
 struct CreateBody {
-    from_entity: String,
-    to_entity: String,
+    from_ref: String,
+    to_ref: String,
     nature: String,
     description: String,
 }
@@ -40,8 +40,8 @@ async fn create(
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
     let response = ConnectionService::create(
         &ctx,
-        body.from_entity,
-        body.to_entity,
+        body.from_ref,
+        body.to_ref,
         body.nature,
         body.description,
     )?;

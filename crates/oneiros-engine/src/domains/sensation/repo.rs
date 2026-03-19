@@ -48,16 +48,21 @@ impl<'a> SensationRepo<'a> {
             .prepare("SELECT name, description, prompt FROM sensations WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
-            let name: String = row.get(0)?;
-            Ok(Sensation {
-                name: SensationName::new(name),
-                description: Description(row.get(1)?),
-                prompt: Prompt(row.get(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         });
 
         match result {
-            Ok(sensation) => Ok(Some(sensation)),
+            Ok((name, description, prompt)) => Ok(Some(
+                Sensation::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -70,14 +75,22 @@ impl<'a> SensationRepo<'a> {
 
         let sensations = stmt
             .query_map([], |row| {
-                let name: String = row.get(0)?;
-                Ok(Sensation {
-                    name: SensationName::new(name),
-                    description: Description(row.get(1)?),
-                    prompt: Prompt(row.get(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             })?
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<(String, String, String)>, _>>()?
+            .into_iter()
+            .map(|(name, description, prompt)| {
+                Sensation::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build()
+            })
+            .collect();
 
         Ok(sensations)
     }

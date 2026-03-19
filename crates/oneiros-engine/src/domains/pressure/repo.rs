@@ -148,11 +148,11 @@ impl<'a> PressureRepo<'a> {
     fn resolve_agent_name(&self, event: &StoredEvent) -> Option<String> {
         match &event.data {
             Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
-                // Look up agent name by ID from the cognitions table
+                // Look up agent name by agent_id (UUID) from the agents table
                 self.conn
                     .query_row(
-                        "SELECT agent_id FROM cognitions WHERE id = ?1",
-                        params![c.id.to_string()],
+                        "SELECT name FROM agents WHERE id = ?1",
+                        params![c.agent_id.to_string()],
                         |row| row.get::<_, String>(0),
                     )
                     .ok()
@@ -160,8 +160,8 @@ impl<'a> PressureRepo<'a> {
             Events::Memory(MemoryEvents::MemoryAdded(m)) => self
                 .conn
                 .query_row(
-                    "SELECT agent_id FROM memories WHERE id = ?1",
-                    params![m.id.to_string()],
+                    "SELECT name FROM agents WHERE id = ?1",
+                    params![m.agent_id.to_string()],
                     |row| row.get::<_, String>(0),
                 )
                 .ok(),

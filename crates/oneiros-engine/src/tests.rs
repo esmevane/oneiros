@@ -173,7 +173,7 @@ fn cognition_add_and_list() {
 
     let resp = CognitionService::add(
         &ctx,
-        "gov".into(),
+        "gov.test-persona".into(),
         "observation".into(),
         "Something interesting".into(),
     )
@@ -183,7 +183,7 @@ fn cognition_add_and_list() {
         CognitionResponse::CognitionAdded(CognitionAddedResult { .. })
     ));
 
-    match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
+    match CognitionService::list(&ctx, Some("gov.test-persona"), None).unwrap() {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("Expected Cognitions, got {other:?}"),
     }
@@ -436,14 +436,14 @@ fn search_indexes_across_domains() {
     // Add cognitions
     CognitionService::add(
         &ctx,
-        "gov".into(),
+        "gov.test-persona".into(),
         "observation".into(),
         "The architecture is clean".into(),
     )
     .unwrap();
     CognitionService::add(
         &ctx,
-        "gov".into(),
+        "gov.test-persona".into(),
         "working".into(),
         "Working on typed events".into(),
     )
@@ -460,7 +460,7 @@ fn search_indexes_across_domains() {
     }
 
     // Search with agent filter
-    match SearchService::search(&ctx, "typed", Some("gov")).unwrap() {
+    match SearchService::search(&ctx, "typed", Some("gov.test-persona")).unwrap() {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 

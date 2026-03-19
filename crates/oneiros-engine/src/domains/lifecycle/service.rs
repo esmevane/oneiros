@@ -132,16 +132,18 @@ impl LifecycleService {
             .map_err(LifecycleError::Database)?
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
+        let agent_id_str = agent.id.to_string();
+
         let cognitions = ctx
-            .with_db(|conn| CognitionRepo::new(conn).list(Some(agent_name), None))
+            .with_db(|conn| CognitionRepo::new(conn).list(Some(&agent_id_str), None))
             .map_err(LifecycleError::Database)?;
 
         let memories = ctx
-            .with_db(|conn| MemoryRepo::new(conn).list(Some(agent_name)))
+            .with_db(|conn| MemoryRepo::new(conn).list(Some(&agent_id_str)))
             .map_err(LifecycleError::Database)?;
 
         let experiences = ctx
-            .with_db(|conn| ExperienceRepo::new(conn).list(Some(agent_name)))
+            .with_db(|conn| ExperienceRepo::new(conn).list(Some(&agent_id_str)))
             .map_err(LifecycleError::Database)?;
 
         Ok(CognitiveContext {

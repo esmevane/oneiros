@@ -20,6 +20,15 @@ impl core::fmt::Display for Content {
     }
 }
 
+impl<T> From<T> for Content
+where
+    T: AsRef<str>,
+{
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
 impl core::str::FromStr for Content {
     type Err = core::convert::Infallible;
 

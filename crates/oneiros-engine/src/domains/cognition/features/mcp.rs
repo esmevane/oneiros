@@ -2,19 +2,19 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct IdParam {
     id: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct AddCognitionParams {
     agent: String,
     texture: String,
     content: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct ListCognitionsParams {
     agent: Option<String>,
     texture: Option<String>,
@@ -25,14 +25,17 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "add_cognition",
             description: "Record a thought",
+            input_schema: schema_for::<AddCognitionParams>,
         },
         ToolDef {
             name: "get_cognition",
             description: "Revisit a specific thought",
+            input_schema: schema_for::<IdParam>,
         },
         ToolDef {
             name: "list_cognitions",
             description: "Review a stream of thoughts",
+            input_schema: schema_for::<ListCognitionsParams>,
         },
     ]
 }

@@ -61,5 +61,5 @@ pub use resource::Resource;
 pub use source::Source;
 // pub use storage_ref::{StorageRef, StorageRefError};
 pub use timestamp::{Timestamp, TimestampParseError};
-pub use tool_def::ToolDef;
+pub use tool_def::{ToolDef, schema_for};
 // pub use token::{Token, TokenError};

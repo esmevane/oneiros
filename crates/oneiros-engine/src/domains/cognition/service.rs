@@ -9,13 +9,16 @@ impl CognitionService {
         texture: String,
         content: String,
     ) -> Result<CognitionResponse, CognitionError> {
-        let cognition = Cognition {
-            id: CognitionId::new(),
-            agent_id: AgentName::new(agent),
-            texture: TextureName::new(texture),
-            content: Content(content),
-            created_at: Timestamp::now(),
-        };
+        let agent_record = ctx
+            .with_db(|conn| AgentRepo::new(conn).get(&agent))
+            .map_err(CognitionError::Database)?
+            .ok_or_else(|| CognitionError::NotFound(agent))?;
+
+        let cognition = Cognition::builder()
+            .agent_id(agent_record.id)
+            .texture(texture)
+            .content(content)
+            .build();
 
         let ref_token = RefToken::new(Ref::cognition(cognition.id));
         ctx.emit(CognitionEvents::CognitionAdded(cognition.clone()));
@@ -38,8 +41,17 @@ impl CognitionService {
         agent: Option<&str>,
         texture: Option<&str>,
     ) -> Result<CognitionResponse, CognitionError> {
+        let agent_id = agent
+            .map(|name| {
+                ctx.with_db(|conn| AgentRepo::new(conn).get(name))
+                    .map_err(CognitionError::Database)?
+                    .map(|a| a.id.to_string())
+                    .ok_or_else(|| CognitionError::NotFound(name.to_string()))
+            })
+            .transpose()?;
+
         let cognitions = ctx
-            .with_db(|conn| CognitionRepo::new(conn).list(agent, texture))
+            .with_db(|conn| CognitionRepo::new(conn).list(agent_id.as_deref(), texture))
             .map_err(CognitionError::Database)?;
         Ok(if cognitions.is_empty() {
             CognitionResponse::NoCognitions

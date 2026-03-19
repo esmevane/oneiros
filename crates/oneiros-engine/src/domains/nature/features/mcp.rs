@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct NameParam {
     name: String,
 }
@@ -12,18 +12,22 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "set_nature",
             description: "Define a kind of relationship between things",
+            input_schema: schema_for::<Nature>,
         },
         ToolDef {
             name: "get_nature",
             description: "Look up a relationship category",
+            input_schema: schema_for::<NameParam>,
         },
         ToolDef {
             name: "list_natures",
             description: "See all relationship categories",
+            input_schema: schema_for::<serde_json::Value>,
         },
         ToolDef {
             name: "remove_nature",
             description: "Remove a relationship category",
+            input_schema: schema_for::<NameParam>,
         },
     ]
 }

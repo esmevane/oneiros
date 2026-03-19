@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct NameParam {
     name: String,
 }
@@ -12,18 +12,22 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "set_urge",
             description: "Define a cognitive drive",
+            input_schema: schema_for::<Urge>,
         },
         ToolDef {
             name: "get_urge",
             description: "Look up a cognitive drive",
+            input_schema: schema_for::<NameParam>,
         },
         ToolDef {
             name: "list_urges",
             description: "See all cognitive drives",
+            input_schema: schema_for::<serde_json::Value>,
         },
         ToolDef {
             name: "remove_urge",
             description: "Remove a cognitive drive",
+            input_schema: schema_for::<NameParam>,
         },
     ]
 }

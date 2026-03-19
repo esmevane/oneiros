@@ -2,12 +2,12 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct NameParam {
     name: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct AgentParams {
     name: String,
     persona: String,
@@ -20,22 +20,27 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "create_agent",
             description: "Bring a new agent into the brain",
+            input_schema: schema_for::<AgentParams>,
         },
         ToolDef {
             name: "get_agent",
             description: "Learn about a specific agent",
+            input_schema: schema_for::<NameParam>,
         },
         ToolDef {
             name: "list_agents",
             description: "See who's here",
+            input_schema: schema_for::<serde_json::Value>,
         },
         ToolDef {
             name: "update_agent",
             description: "Reshape an agent's identity",
+            input_schema: schema_for::<AgentParams>,
         },
         ToolDef {
             name: "remove_agent",
             description: "Remove an agent from the brain",
+            input_schema: schema_for::<NameParam>,
         },
     ]
 }

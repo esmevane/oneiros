@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct SearchParams {
     query: String,
     agent: Option<String>,
@@ -12,6 +12,7 @@ pub fn tool_defs() -> &'static [ToolDef] {
     &[ToolDef {
         name: "search",
         description: "Search across everything in the brain",
+        input_schema: schema_for::<SearchParams>,
     }]
 }
 

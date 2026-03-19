@@ -2,19 +2,19 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct IdParam {
     id: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct AddMemoryParams {
     agent: String,
     level: String,
     content: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct ListMemoriesParams {
     agent: Option<String>,
 }
@@ -24,14 +24,17 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "add_memory",
             description: "Consolidate something you've learned",
+            input_schema: schema_for::<AddMemoryParams>,
         },
         ToolDef {
             name: "get_memory",
             description: "Revisit a specific memory",
+            input_schema: schema_for::<IdParam>,
         },
         ToolDef {
             name: "list_memories",
             description: "Review what you know",
+            input_schema: schema_for::<ListMemoriesParams>,
         },
     ]
 }

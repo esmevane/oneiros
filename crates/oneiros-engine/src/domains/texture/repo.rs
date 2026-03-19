@@ -48,16 +48,21 @@ impl<'a> TextureRepo<'a> {
             .prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
-            let name: String = row.get(0)?;
-            Ok(Texture {
-                name: TextureName::new(name),
-                description: Description(row.get(1)?),
-                prompt: Prompt(row.get(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         });
 
         match result {
-            Ok(texture) => Ok(Some(texture)),
+            Ok((name, description, prompt)) => Ok(Some(
+                Texture::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -70,14 +75,22 @@ impl<'a> TextureRepo<'a> {
 
         let textures = stmt
             .query_map([], |row| {
-                let name: String = row.get(0)?;
-                Ok(Texture {
-                    name: TextureName::new(name),
-                    description: Description(row.get(1)?),
-                    prompt: Prompt(row.get(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             })?
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<(String, String, String)>, _>>()?
+            .into_iter()
+            .map(|(name, description, prompt)| {
+                Texture::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build()
+            })
+            .collect();
 
         Ok(textures)
     }

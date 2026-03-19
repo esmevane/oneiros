@@ -2,20 +2,20 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct IdParam {
     id: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct CreateConnectionParams {
-    from_entity: String,
-    to_entity: String,
+    from_ref: String,
+    to_ref: String,
     nature: String,
     description: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct ListConnectionsParams {
     entity: Option<String>,
 }
@@ -25,18 +25,22 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "create_connection",
             description: "Draw a line between two related things",
+            input_schema: schema_for::<CreateConnectionParams>,
         },
         ToolDef {
             name: "get_connection",
             description: "Examine a specific connection",
+            input_schema: schema_for::<IdParam>,
         },
         ToolDef {
             name: "list_connections",
             description: "See how things connect",
+            input_schema: schema_for::<ListConnectionsParams>,
         },
         ToolDef {
             name: "remove_connection",
             description: "Remove a connection between two entities",
+            input_schema: schema_for::<IdParam>,
         },
     ]
 }
@@ -60,7 +64,7 @@ pub fn dispatch(
             let p: CreateConnectionParams =
                 serde_json::from_str(params).map_err(|e| ToolError::Parameter(e.to_string()))?;
             let response =
-                ConnectionService::create(ctx, p.from_entity, p.to_entity, p.nature, p.description)
+                ConnectionService::create(ctx, p.from_ref, p.to_ref, p.nature, p.description)
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
             serde_json::to_value(response)
         }

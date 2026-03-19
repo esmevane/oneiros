@@ -5,19 +5,26 @@ pub struct ConnectionService;
 impl ConnectionService {
     pub fn create(
         ctx: &ProjectContext,
-        from_entity: String,
-        to_entity: String,
+        from_ref: String,
+        to_ref: String,
         nature: String,
         description: String,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        let connection = Connection {
-            id: ConnectionId::new(),
-            from_entity,
-            to_entity,
-            nature: NatureName::new(nature),
-            description: Description(description),
-            created_at: Timestamp::now(),
-        };
+        let from: Ref = from_ref
+            .parse::<RefToken>()
+            .map_err(|e| ConnectionError::InvalidRef(e.to_string()))?
+            .into_inner();
+        let to: Ref = to_ref
+            .parse::<RefToken>()
+            .map_err(|e| ConnectionError::InvalidRef(e.to_string()))?
+            .into_inner();
+
+        let connection = Connection::builder()
+            .from_ref(from)
+            .to_ref(to)
+            .nature(nature)
+            .description(description)
+            .build();
 
         let ref_token = RefToken::new(Ref::connection(connection.id));
         ctx.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
@@ -39,10 +46,21 @@ impl ConnectionService {
 
     pub fn list(
         ctx: &ProjectContext,
-        entity: Option<&str>,
+        entity_ref: Option<&str>,
     ) -> Result<ConnectionResponse, ConnectionError> {
+        // If an entity ref is provided, parse it and JSON-encode for the DB query
+        let ref_json = entity_ref
+            .map(|s| {
+                let token: RefToken = s
+                    .parse()
+                    .map_err(|e: RefError| ConnectionError::InvalidRef(e.to_string()))?;
+                serde_json::to_string(&token.into_inner())
+                    .map_err(|e| ConnectionError::Database(e.into()))
+            })
+            .transpose()?;
+
         let connections = ctx
-            .with_db(|conn| ConnectionRepo::new(conn).list(entity))
+            .with_db(|conn| ConnectionRepo::new(conn).list(ref_json.as_deref()))
             .map_err(ConnectionError::Database)?;
         if connections.is_empty() {
             Ok(ConnectionResponse::NoConnections)

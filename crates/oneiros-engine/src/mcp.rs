@@ -4,11 +4,9 @@
 //! collects them into an rmcp ServerHandler, routing tool calls to the
 //! appropriate domain dispatcher.
 
+use crate::*;
 use rmcp::model::{CallToolResult, Content, Implementation, ServerCapabilities, ServerInfo, Tool};
 use rmcp::{ErrorData, ServerHandler};
-use serde_json::json;
-
-use crate::*;
 
 /// Errors that can occur during MCP tool dispatch.
 #[derive(Debug, thiserror::Error)]
@@ -114,11 +112,8 @@ impl ServerHandler for EngineToolBox {
                 let mut tool = Tool::default();
                 tool.name = t.name.into();
                 tool.description = Some(t.description.into());
-                tool.input_schema = serde_json::from_value(json!({
-                    "type": "object",
-                    "properties": {},
-                }))
-                .unwrap();
+                tool.input_schema = serde_json::from_value((t.input_schema)())
+                    .expect("schema should be a JSON object");
                 tool
             })
             .collect();

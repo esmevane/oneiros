@@ -66,13 +66,15 @@ impl<'a> ExperienceRepo<'a> {
         });
 
         match result {
-            Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(Experience {
-                id: id.parse()?,
-                agent_id: AgentName::new(agent_id),
-                sensation: SensationName::new(sensation),
-                description: Description(description),
-                created_at: Timestamp::parse_str(&created_at)?,
-            })),
+            Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(
+                Experience::builder()
+                    .id(id.parse()?)
+                    .agent_id(agent_id.parse()?)
+                    .sensation(sensation)
+                    .description(description)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -108,13 +110,15 @@ impl<'a> ExperienceRepo<'a> {
 
         let mut experiences = vec![];
         for (id, agent_id, sensation, description, created_at) in raw {
-            experiences.push(Experience {
-                id: id.parse()?,
-                agent_id: AgentName::new(agent_id),
-                sensation: SensationName::new(sensation),
-                description: Description(description),
-                created_at: Timestamp::parse_str(&created_at)?,
-            });
+            experiences.push(
+                Experience::builder()
+                    .id(id.parse()?)
+                    .agent_id(agent_id.parse()?)
+                    .sensation(sensation)
+                    .description(description)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            );
         }
 
         Ok(experiences)

@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct NameParam {
     name: String,
 }
@@ -12,18 +12,22 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "set_texture",
             description: "Define a quality of thought",
+            input_schema: schema_for::<Texture>,
         },
         ToolDef {
             name: "get_texture",
             description: "Look up a thought category",
+            input_schema: schema_for::<NameParam>,
         },
         ToolDef {
             name: "list_textures",
             description: "See all thought categories",
+            input_schema: schema_for::<serde_json::Value>,
         },
         ToolDef {
             name: "remove_texture",
             description: "Remove a thought category",
+            input_schema: schema_for::<NameParam>,
         },
     ]
 }

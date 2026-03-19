@@ -6,7 +6,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct IdParam {
     id: String,
 }
@@ -16,14 +16,17 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "list_storage",
             description: "Browse your archive",
+            input_schema: schema_for::<serde_json::Value>,
         },
         ToolDef {
             name: "get_storage",
             description: "Check on a stored artifact",
+            input_schema: schema_for::<IdParam>,
         },
         ToolDef {
             name: "remove_storage",
             description: "Remove a stored artifact",
+            input_schema: schema_for::<IdParam>,
         },
     ]
 }

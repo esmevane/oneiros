@@ -6,11 +6,15 @@ use crate::*;
 
 #[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Connection {
+    #[builder(default)]
     pub id: ConnectionId,
-    pub from_entity: String,
-    pub to_entity: String,
+    pub from_ref: Ref,
+    pub to_ref: Ref,
+    #[builder(into)]
     pub nature: NatureName,
+    #[builder(into)]
     pub description: Description,
+    #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
 }
 

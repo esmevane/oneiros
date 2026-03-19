@@ -48,16 +48,21 @@ impl<'a> NatureRepo<'a> {
             .prepare("SELECT name, description, prompt FROM natures WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name], |row| {
-            let name: String = row.get(0)?;
-            Ok(Nature {
-                name: NatureName::new(name),
-                description: Description(row.get(1)?),
-                prompt: Prompt(row.get(2)?),
-            })
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
         });
 
         match result {
-            Ok(nature) => Ok(Some(nature)),
+            Ok((name, description, prompt)) => Ok(Some(
+                Nature::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -70,14 +75,22 @@ impl<'a> NatureRepo<'a> {
 
         let natures = stmt
             .query_map([], |row| {
-                let name: String = row.get(0)?;
-                Ok(Nature {
-                    name: NatureName::new(name),
-                    description: Description(row.get(1)?),
-                    prompt: Prompt(row.get(2)?),
-                })
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
             })?
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<(String, String, String)>, _>>()?
+            .into_iter()
+            .map(|(name, description, prompt)| {
+                Nature::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build()
+            })
+            .collect();
 
         Ok(natures)
     }

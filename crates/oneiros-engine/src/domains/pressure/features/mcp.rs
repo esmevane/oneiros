@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct AgentParam {
     agent: String,
 }
@@ -12,10 +12,12 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "get_pressure",
             description: "Check pressure for an agent",
+            input_schema: schema_for::<AgentParam>,
         },
         ToolDef {
             name: "list_pressures",
             description: "See all pressure readings",
+            input_schema: schema_for::<serde_json::Value>,
         },
     ]
 }

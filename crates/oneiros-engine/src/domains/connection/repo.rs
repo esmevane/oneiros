@@ -35,8 +35,8 @@ impl<'a> ConnectionRepo<'a> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS connections (
                 id TEXT PRIMARY KEY,
-                from_entity TEXT NOT NULL,
-                to_entity TEXT NOT NULL,
+                from_ref TEXT NOT NULL,
+                to_ref TEXT NOT NULL,
                 nature TEXT NOT NULL DEFAULT '',
                 description TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT ''
@@ -49,14 +49,13 @@ impl<'a> ConnectionRepo<'a> {
 
     pub fn get(&self, id: &str) -> Result<Option<Connection>, EventError> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, from_entity, to_entity, nature, description, created_at
+            "SELECT id, from_ref, to_ref, nature, description, created_at
              FROM connections WHERE id = ?1",
         )?;
 
         let result = stmt.query_row(params![id], |row| {
-            let id: String = row.get(0)?;
             Ok((
-                id,
+                row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
                 row.get::<_, String>(3)?,
@@ -66,31 +65,31 @@ impl<'a> ConnectionRepo<'a> {
         });
 
         match result {
-            Ok((id, from_entity, to_entity, nature, description, created_at)) => {
-                Ok(Some(Connection {
-                    id: id.parse()?,
-                    from_entity,
-                    to_entity,
-                    nature: NatureName::new(nature),
-                    description: Description(description),
-                    created_at: Timestamp::parse_str(&created_at)?,
-                }))
-            }
+            Ok((id, from_ref, to_ref, nature, description, created_at)) => Ok(Some(
+                Connection::builder()
+                    .id(id.parse()?)
+                    .from_ref(serde_json::from_str(&from_ref)?)
+                    .to_ref(serde_json::from_str(&to_ref)?)
+                    .nature(nature)
+                    .description(description)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
 
-    pub fn list(&self, entity: Option<&str>) -> Result<Vec<Connection>, EventError> {
-        let mut stmt = match entity {
+    pub fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
+        let mut stmt = match entity_ref {
             Some(_) => self.conn.prepare(
-                "SELECT id, from_entity, to_entity, nature, description, created_at
+                "SELECT id, from_ref, to_ref, nature, description, created_at
                  FROM connections
-                 WHERE from_entity = ?1 OR to_entity = ?1
+                 WHERE from_ref = ?1 OR to_ref = ?1
                  ORDER BY created_at",
             )?,
             None => self.conn.prepare(
-                "SELECT id, from_entity, to_entity, nature, description, created_at
+                "SELECT id, from_ref, to_ref, nature, description, created_at
                  FROM connections ORDER BY created_at",
             )?,
         };
@@ -106,22 +105,24 @@ impl<'a> ConnectionRepo<'a> {
             ))
         };
 
-        let raw = match entity {
+        let raw = match entity_ref {
             Some(e) => stmt.query_map(params![e], map_row),
             None => stmt.query_map([], map_row),
         }?
         .collect::<Result<Vec<_>, _>>()?;
 
         let mut connections = vec![];
-        for (id, from_entity, to_entity, nature, description, created_at) in raw {
-            connections.push(Connection {
-                id: id.parse()?,
-                from_entity,
-                to_entity,
-                nature: NatureName::new(nature),
-                description: Description(description),
-                created_at: Timestamp::parse_str(&created_at)?,
-            });
+        for (id, from_ref, to_ref, nature, description, created_at) in raw {
+            connections.push(
+                Connection::builder()
+                    .id(id.parse()?)
+                    .from_ref(serde_json::from_str(&from_ref)?)
+                    .to_ref(serde_json::from_str(&to_ref)?)
+                    .nature(nature)
+                    .description(description)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            );
         }
 
         Ok(connections)
@@ -132,12 +133,12 @@ impl<'a> ConnectionRepo<'a> {
     fn insert(&self, connection: &Connection) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO connections
-             (id, from_entity, to_entity, nature, description, created_at)
+             (id, from_ref, to_ref, nature, description, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 connection.id.to_string(),
-                connection.from_entity,
-                connection.to_entity,
+                serde_json::to_string(&connection.from_ref)?,
+                serde_json::to_string(&connection.to_ref)?,
                 connection.nature.to_string(),
                 connection.description.to_string(),
                 connection.created_at.as_string(),

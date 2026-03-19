@@ -36,6 +36,7 @@ impl ConnectionCli {
                 from_ref,
                 to_ref,
             } => ConnectionService::create(ctx, from_ref, to_ref, nature, String::new())?.into(),
+
             ConnectionCommands::Show { id } => ConnectionService::get(ctx, &id)?.into(),
             ConnectionCommands::List { entity_ref, .. } => {
                 ConnectionService::list(ctx, entity_ref.as_deref())?.into()

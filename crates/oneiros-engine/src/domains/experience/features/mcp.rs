@@ -2,30 +2,30 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct IdParam {
     id: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct CreateExperienceParams {
     agent: String,
     sensation: String,
     description: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct ListExperiencesParams {
     agent: Option<String>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct UpdateDescriptionParams {
     id: String,
     description: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct UpdateSensationParams {
     id: String,
     sensation: String,
@@ -36,22 +36,27 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "create_experience",
             description: "Mark a meaningful moment",
+            input_schema: schema_for::<CreateExperienceParams>,
         },
         ToolDef {
             name: "get_experience",
             description: "Revisit a specific experience",
+            input_schema: schema_for::<IdParam>,
         },
         ToolDef {
             name: "list_experiences",
             description: "Survey threads of meaning",
+            input_schema: schema_for::<ListExperiencesParams>,
         },
         ToolDef {
             name: "update_experience_description",
             description: "Refine an experience's description",
+            input_schema: schema_for::<UpdateDescriptionParams>,
         },
         ToolDef {
             name: "update_experience_sensation",
             description: "Refine an experience's sensation",
+            input_schema: schema_for::<UpdateSensationParams>,
         },
     ]
 }

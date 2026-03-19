@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct NameParam {
     name: String,
 }
@@ -12,18 +12,22 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "set_level",
             description: "Define how long a kind of memory should be kept",
+            input_schema: schema_for::<Level>,
         },
         ToolDef {
             name: "get_level",
             description: "Look up a memory retention tier",
+            input_schema: schema_for::<NameParam>,
         },
         ToolDef {
             name: "list_levels",
             description: "See all memory retention tiers",
+            input_schema: schema_for::<serde_json::Value>,
         },
         ToolDef {
             name: "remove_level",
             description: "Remove a memory retention tier",
+            input_schema: schema_for::<NameParam>,
         },
     ]
 }

@@ -9,13 +9,16 @@ impl ExperienceService {
         sensation: String,
         description: String,
     ) -> Result<ExperienceResponse, ExperienceError> {
-        let experience = Experience {
-            id: ExperienceId::new(),
-            agent_id: AgentName::new(agent),
-            sensation: SensationName::new(sensation),
-            description: Description(description),
-            created_at: Timestamp::now(),
-        };
+        let agent_record = ctx
+            .with_db(|conn| AgentRepo::new(conn).get(&agent))
+            .map_err(ExperienceError::Database)?
+            .ok_or_else(|| ExperienceError::NotFound(agent))?;
+
+        let experience = Experience::builder()
+            .agent_id(agent_record.id)
+            .sensation(sensation)
+            .description(description)
+            .build();
 
         ctx.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
         Ok(ExperienceResponse::ExperienceCreated(experience))
@@ -33,8 +36,17 @@ impl ExperienceService {
         ctx: &ProjectContext,
         agent: Option<&str>,
     ) -> Result<ExperienceResponse, ExperienceError> {
+        let agent_id = agent
+            .map(|name| {
+                ctx.with_db(|conn| AgentRepo::new(conn).get(name))
+                    .map_err(ExperienceError::Database)?
+                    .map(|a| a.id.to_string())
+                    .ok_or_else(|| ExperienceError::NotFound(name.to_string()))
+            })
+            .transpose()?;
+
         let experiences = ctx
-            .with_db(|conn| ExperienceRepo::new(conn).list(agent))
+            .with_db(|conn| ExperienceRepo::new(conn).list(agent_id.as_deref()))
             .map_err(ExperienceError::Database)?;
         Ok(if experiences.is_empty() {
             ExperienceResponse::NoExperiences

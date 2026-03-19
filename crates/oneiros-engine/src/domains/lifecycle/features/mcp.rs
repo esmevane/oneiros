@@ -2,12 +2,12 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct AgentParam {
     agent: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, schemars::JsonSchema)]
 struct SenseParams {
     agent: String,
     content: String,
@@ -18,22 +18,27 @@ pub fn tool_defs() -> &'static [ToolDef] {
         ToolDef {
             name: "dream",
             description: "Restore an agent's full identity and cognitive context",
+            input_schema: schema_for::<AgentParam>,
         },
         ToolDef {
             name: "introspect",
             description: "Look inward — consolidate what matters",
+            input_schema: schema_for::<AgentParam>,
         },
         ToolDef {
             name: "reflect",
             description: "Pause on something significant",
+            input_schema: schema_for::<AgentParam>,
         },
         ToolDef {
             name: "sense",
             description: "Receive and interpret something from outside",
+            input_schema: schema_for::<SenseParams>,
         },
         ToolDef {
             name: "sleep",
             description: "End a session — capture continuity before resting",
+            input_schema: schema_for::<AgentParam>,
         },
     ]
 }

@@ -6,8 +6,11 @@ use crate::*;
 
 #[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Persona {
+    #[builder(into)]
     pub name: PersonaName,
+    #[builder(into)]
     pub description: Description,
+    #[builder(into)]
     pub prompt: Prompt,
 }
 
