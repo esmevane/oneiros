@@ -50,18 +50,14 @@ impl StorageCli {
             StorageCommands::Show { key } => {
                 serde_json::to_string_pretty(&StorageService::show(ctx, &key)?)?
             }
-            StorageCommands::List => {
-                serde_json::to_string_pretty(&StorageService::list(ctx)?)?
-            }
+            StorageCommands::List => serde_json::to_string_pretty(&StorageService::list(ctx)?)?,
             StorageCommands::Remove { key } => {
                 // Look up by name to get the ID, then remove by ID
                 let entry = ctx
                     .with_db(|conn| StorageRepo::new(conn).get_by_name(&key))
                     .map_err(|e| format!("database error: {e}"))?
                     .ok_or_else(|| format!("storage entry '{key}' not found"))?;
-                serde_json::to_string_pretty(
-                    &StorageService::remove(ctx, &entry.id.to_string())?,
-                )?
+                serde_json::to_string_pretty(&StorageService::remove(ctx, &entry.id.to_string())?)?
             }
         };
         Ok(result)

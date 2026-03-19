@@ -90,8 +90,7 @@ impl Backend for Engine {
         std::fs::create_dir_all(&data_dir)?;
 
         self.ctx.project = Some(
-            ProjectContext::new(conn, PROJECT_PROJECTIONS)
-                .with_config(Config::new(&data_dir)),
+            ProjectContext::new(conn, PROJECT_PROJECTIONS).with_config(Config::new(&data_dir)),
         );
 
         Ok(())
