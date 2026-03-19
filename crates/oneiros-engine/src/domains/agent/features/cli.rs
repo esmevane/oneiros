@@ -8,20 +8,18 @@ pub struct AgentCli;
 pub enum AgentCommands {
     Create {
         name: String,
-        #[arg(long)]
         persona: String,
         #[arg(long, default_value = "")]
         description: String,
         #[arg(long, default_value = "")]
         prompt: String,
     },
-    Get {
+    Show {
         name: String,
     },
     List,
     Update {
         name: String,
-        #[arg(long)]
         persona: String,
         #[arg(long, default_value = "")]
         description: String,
@@ -51,7 +49,7 @@ impl AgentCli {
                 description,
                 prompt,
             )?)?,
-            AgentCommands::Get { name } => {
+            AgentCommands::Show { name } => {
                 serde_json::to_string_pretty(&AgentService::get(ctx, &name)?)?
             }
             AgentCommands::List => serde_json::to_string_pretty(&AgentService::list(ctx)?)?,

@@ -117,14 +117,14 @@ fn agent_create_and_get() {
         "You govern.".into(),
     )
     .unwrap();
-    assert!(matches!(resp, AgentResponse::Created(_)));
+    assert!(matches!(resp, AgentResponse::AgentCreated(_)));
 
-    match AgentService::get(&ctx, "governor").unwrap() {
-        AgentResponse::Found(a) => {
-            assert_eq!(a.name, AgentName::new("governor"));
+    match AgentService::get(&ctx, "governor.test-persona").unwrap() {
+        AgentResponse::AgentDetails(a) => {
+            assert_eq!(a.name, AgentName::new("governor.test-persona"));
             assert_eq!(a.persona, "test-persona");
         }
-        other => panic!("Expected Found, got {other:?}"),
+        other => panic!("Expected AgentDetails, got {other:?}"),
     }
 }
 
@@ -256,7 +256,7 @@ fn replay_reconstructs_read_models() {
     seed_agent(&ctx);
     CognitionService::add(
         &ctx,
-        "gov".into(),
+        "gov.test-persona".into(),
         "observation".into(),
         "Test thought".into(),
     )
@@ -268,8 +268,8 @@ fn replay_reconstructs_read_models() {
         other => panic!("Expected Listed, got {other:?}"),
     }
     assert!(matches!(
-        AgentService::get(&ctx, "gov").unwrap(),
-        AgentResponse::Found(_)
+        AgentService::get(&ctx, "gov.test-persona").unwrap(),
+        AgentResponse::AgentDetails(_)
     ));
 
     // Replay — this resets all projections and re-applies all events
@@ -280,11 +280,11 @@ fn replay_reconstructs_read_models() {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
-    match AgentService::get(&ctx, "gov").unwrap() {
-        AgentResponse::Found(a) => assert_eq!(a.name, AgentName::new("gov")),
-        other => panic!("Expected Found after replay, got {other:?}"),
+    match AgentService::get(&ctx, "gov.test-persona").unwrap() {
+        AgentResponse::AgentDetails(a) => assert_eq!(a.name, AgentName::new("gov.test-persona")),
+        other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
-    match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
+    match CognitionService::list(&ctx, Some("gov.test-persona"), None).unwrap() {
         CognitionResponse::Listed(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }

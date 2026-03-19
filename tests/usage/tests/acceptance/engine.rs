@@ -191,6 +191,36 @@ async fn seed_core_creates_default_levels() -> TestResult {
     cases::seed::core_creates_default_levels::<Engine>().await
 }
 
+// Agent
+#[tokio::test]
+async fn agent_create_with_persona() -> TestResult {
+    cases::agent::create_with_persona::<Engine>().await
+}
+#[tokio::test]
+async fn agent_show_returns_details() -> TestResult {
+    cases::agent::show_returns_details::<Engine>().await
+}
+#[tokio::test]
+async fn agent_list_empty() -> TestResult {
+    cases::agent::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn agent_list_populated() -> TestResult {
+    cases::agent::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn agent_update_changes_fields() -> TestResult {
+    cases::agent::update_changes_fields::<Engine>().await
+}
+#[tokio::test]
+async fn agent_remove_makes_it_unlisted() -> TestResult {
+    cases::agent::remove_makes_it_unlisted::<Engine>().await
+}
+#[tokio::test]
+async fn agent_name_includes_persona_suffix() -> TestResult {
+    cases::agent::name_includes_persona_suffix::<Engine>().await
+}
+
 // Texture
 #[tokio::test]
 async fn texture_set_creates() -> TestResult {

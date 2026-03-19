@@ -19,25 +19,30 @@ impl AgentService {
             return Err(AgentError::PersonaNotFound(persona));
         }
 
+        // Normalize name: append .persona if not already present
+        let normalized_name = normalize_agent_name(&name, &persona);
+
         // Validate name uniqueness
         let already_exists = ctx
-            .with_db(|conn| AgentRepo::new(conn).name_exists(&name))
+            .with_db(|conn| AgentRepo::new(conn).name_exists(&normalized_name))
             .map_err(AgentError::Database)?;
 
         if already_exists {
-            return Err(AgentError::Conflict(name));
+            return Err(AgentError::Conflict(normalized_name));
         }
+
+        let agent_name = AgentName::new(&normalized_name);
 
         let agent = Agent {
             id: AgentId::new(),
-            name: AgentName::new(&name),
+            name: agent_name.clone(),
             persona,
             description,
             prompt,
         };
 
-        ctx.emit(AgentEvents::AgentCreated(agent.clone()));
-        Ok(AgentResponse::Created(agent))
+        ctx.emit(AgentEvents::AgentCreated(agent));
+        Ok(AgentResponse::AgentCreated(agent_name))
     }
 
     pub fn get(ctx: &ProjectContext, name: &str) -> Result<AgentResponse, AgentError> {
@@ -45,14 +50,18 @@ impl AgentService {
             .with_db(|conn| AgentRepo::new(conn).get(name))
             .map_err(AgentError::Database)?
             .ok_or_else(|| AgentError::NotFound(name.to_string()))?;
-        Ok(AgentResponse::Found(agent))
+        Ok(AgentResponse::AgentDetails(agent))
     }
 
     pub fn list(ctx: &ProjectContext) -> Result<AgentResponse, AgentError> {
         let agents = ctx
             .with_db(|conn| AgentRepo::new(conn).list())
             .map_err(AgentError::Database)?;
-        Ok(AgentResponse::Listed(agents))
+        if agents.is_empty() {
+            Ok(AgentResponse::NoAgents)
+        } else {
+            Ok(AgentResponse::Agents(agents))
+        }
     }
 
     pub fn update(
@@ -62,26 +71,26 @@ impl AgentService {
         description: String,
         prompt: String,
     ) -> Result<AgentResponse, AgentError> {
-        // Fetch the existing agent to carry forward its id.
         let existing = ctx
             .with_db(|conn| AgentRepo::new(conn).get(&name))
             .map_err(AgentError::Database)?
             .ok_or_else(|| AgentError::NotFound(name.clone()))?;
 
+        let agent_name = AgentName::new(&name);
+
         let agent = Agent {
             id: existing.id,
-            name: AgentName::new(&name),
+            name: agent_name.clone(),
             persona,
             description,
             prompt,
         };
 
-        ctx.emit(AgentEvents::AgentUpdated(agent.clone()));
-        Ok(AgentResponse::Updated(agent))
+        ctx.emit(AgentEvents::AgentUpdated(agent));
+        Ok(AgentResponse::AgentUpdated(agent_name))
     }
 
     pub fn remove(ctx: &ProjectContext, name: &str) -> Result<AgentResponse, AgentError> {
-        // Confirm existence before emitting removal.
         let exists = ctx
             .with_db(|conn| AgentRepo::new(conn).name_exists(name))
             .map_err(AgentError::Database)?;
@@ -90,9 +99,19 @@ impl AgentService {
             return Err(AgentError::NotFound(name.to_string()));
         }
 
+        let agent_name = AgentName::new(name);
         ctx.emit(AgentEvents::AgentRemoved(AgentRemoved {
-            name: AgentName::new(name),
+            name: agent_name.clone(),
         }));
-        Ok(AgentResponse::Removed)
+        Ok(AgentResponse::AgentRemoved(agent_name))
+    }
+}
+
+fn normalize_agent_name(name: &str, persona: &str) -> String {
+    let suffix = format!(".{persona}");
+    if name.ends_with(&suffix) {
+        name.to_string()
+    } else {
+        format!("{name}.{persona}")
     }
 }

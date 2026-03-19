@@ -1,3 +1,4 @@
+pub(crate) mod agent;
 pub(crate) mod level;
 pub(crate) mod nature;
 pub(crate) mod persona;

@@ -5,9 +5,10 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AgentResponse {
-    Created(Agent),
-    Found(Agent),
-    Listed(Vec<Agent>),
-    Updated(Agent),
-    Removed,
+    AgentCreated(AgentName),
+    AgentDetails(Agent),
+    Agents(Vec<Agent>),
+    NoAgents,
+    AgentUpdated(AgentName),
+    AgentRemoved(AgentName),
 }
