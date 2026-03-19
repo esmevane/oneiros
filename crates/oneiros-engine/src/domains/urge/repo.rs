@@ -87,7 +87,11 @@ impl<'a> UrgeRepo<'a> {
     fn set(&self, urge: &Urge) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO urges (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![urge.name.to_string(), urge.description.to_string(), urge.prompt.to_string()],
+            params![
+                urge.name.to_string(),
+                urge.description.to_string(),
+                urge.prompt.to_string()
+            ],
         )?;
         Ok(())
     }

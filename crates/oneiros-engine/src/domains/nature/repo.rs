@@ -87,7 +87,11 @@ impl<'a> NatureRepo<'a> {
     fn set(&self, nature: &Nature) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO natures (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![nature.name.to_string(), nature.description.to_string(), nature.prompt.to_string()],
+            params![
+                nature.name.to_string(),
+                nature.description.to_string(),
+                nature.prompt.to_string()
+            ],
         )?;
         Ok(())
     }

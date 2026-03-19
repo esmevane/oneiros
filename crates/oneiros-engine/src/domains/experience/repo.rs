@@ -18,9 +18,8 @@ impl<'a> ExperienceRepo<'a> {
         if let Events::Experience(experience_event) = &event.data {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
-                ExperienceEvents::ExperienceDescriptionUpdated(update) => {
-                    self.update_description(&update.id.to_string(), &update.description.to_string())?
-                }
+                ExperienceEvents::ExperienceDescriptionUpdated(update) => self
+                    .update_description(&update.id.to_string(), &update.description.to_string())?,
                 ExperienceEvents::ExperienceSensationUpdated(update) => {
                     self.update_sensation(&update.id.to_string(), &update.sensation.to_string())?
                 }

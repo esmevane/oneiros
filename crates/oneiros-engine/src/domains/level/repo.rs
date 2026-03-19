@@ -87,7 +87,11 @@ impl<'a> LevelRepo<'a> {
     fn set(&self, level: &Level) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO levels (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![level.name.to_string(), level.description.to_string(), level.prompt.to_string()],
+            params![
+                level.name.to_string(),
+                level.description.to_string(),
+                level.prompt.to_string()
+            ],
         )?;
         Ok(())
     }
