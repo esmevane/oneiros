@@ -30,7 +30,10 @@ async fn setup_with_connectable_entities<B: Backend>(
 
     let first_ref = first
         .as_array()
-        .and_then(|a| a.iter().find(|o| o.get("type") == Some(&serde_json::json!("cognition-added"))))
+        .and_then(|a| {
+            a.iter()
+                .find(|o| o.get("type") == Some(&serde_json::json!("cognition-added")))
+        })
         .and_then(|o| o.get("data"))
         .and_then(|d| d.get("ref_token"))
         .and_then(|r| r.as_str())
@@ -39,7 +42,10 @@ async fn setup_with_connectable_entities<B: Backend>(
 
     let second_ref = second
         .as_array()
-        .and_then(|a| a.iter().find(|o| o.get("type") == Some(&serde_json::json!("cognition-added"))))
+        .and_then(|a| {
+            a.iter()
+                .find(|o| o.get("type") == Some(&serde_json::json!("cognition-added")))
+        })
         .and_then(|o| o.get("data"))
         .and_then(|d| d.get("ref_token"))
         .and_then(|r| r.as_str())
@@ -119,7 +125,9 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     let create_cmd = format!("connection create caused {from_ref} {to_ref} --output json");
     let create_result = backend.exec(&create_cmd).await?;
 
-    let outcomes = create_result.as_array().expect("expected array of outcomes");
+    let outcomes = create_result
+        .as_array()
+        .expect("expected array of outcomes");
     let created = outcomes
         .iter()
         .find(|o| o.get("type") == Some(&serde_json::json!("connection-created")))
@@ -141,10 +149,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .expect("expected connection-details outcome");
 
     let data = details.get("data").expect("expected data field");
-    assert_eq!(
-        data.get("nature").and_then(|n| n.as_str()),
-        Some("caused")
-    );
+    assert_eq!(data.get("nature").and_then(|n| n.as_str()), Some("caused"));
 
     Ok(())
 }
@@ -156,7 +161,9 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
     let create_cmd = format!("connection create caused {from_ref} {to_ref} --output json");
     let create_result = backend.exec(&create_cmd).await?;
 
-    let outcomes = create_result.as_array().expect("expected array of outcomes");
+    let outcomes = create_result
+        .as_array()
+        .expect("expected array of outcomes");
     let created = outcomes
         .iter()
         .find(|o| o.get("type") == Some(&serde_json::json!("connection-created")))
@@ -170,7 +177,9 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
 
     let remove_cmd = format!("connection remove {id} --output json");
     let remove_result = backend.exec(&remove_cmd).await?;
-    let remove_outcomes = remove_result.as_array().expect("expected array of outcomes");
+    let remove_outcomes = remove_result
+        .as_array()
+        .expect("expected array of outcomes");
 
     assert!(
         remove_outcomes

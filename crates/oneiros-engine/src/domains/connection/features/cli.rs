@@ -45,9 +45,9 @@ impl ConnectionCli {
             ConnectionCommands::Show { id } => {
                 serde_json::to_string_pretty(&ConnectionService::get(ctx, &id)?)?
             }
-            ConnectionCommands::List { entity_ref, .. } => serde_json::to_string_pretty(
-                &ConnectionService::list(ctx, entity_ref.as_deref())?,
-            )?,
+            ConnectionCommands::List { entity_ref, .. } => {
+                serde_json::to_string_pretty(&ConnectionService::list(ctx, entity_ref.as_deref())?)?
+            }
             ConnectionCommands::Remove { id } => {
                 serde_json::to_string_pretty(&ConnectionService::remove(ctx, &id)?)?
             }
