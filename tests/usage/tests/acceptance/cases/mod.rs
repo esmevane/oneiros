@@ -1,6 +1,7 @@
 pub(crate) mod agent;
 pub(crate) mod cognition;
 pub(crate) mod connection;
+pub(crate) mod doctor;
 pub(crate) mod emerge;
 pub(crate) mod event;
 pub(crate) mod experience;

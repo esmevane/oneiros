@@ -95,6 +95,9 @@ pub enum Command {
         name: String,
     },
 
+    // Diagnostics
+    Doctor,
+
     // Event inspection
     #[command(subcommand)]
     Event(EventCommands),
@@ -153,6 +156,9 @@ pub fn execute(
         Command::Storage(cmd) => StorageCli::execute(ctx.project()?, cmd),
         Command::Search(cmd) => SearchCli::execute(ctx.project()?, cmd),
         Command::Pressure(cmd) => PressureCli::execute(ctx.project()?, cmd),
+
+        // Doctor — system diagnostics
+        Command::Doctor => DoctorCli::execute(&ctx.system),
 
         // Flat lifecycle shortcuts
         Command::Wake { name } => {

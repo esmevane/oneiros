@@ -77,7 +77,13 @@ impl Backend for Engine {
         let json_string = execute(&self.ctx, cli.command)?;
         let value: serde_json::Value = serde_json::from_str(&json_string)?;
 
-        Ok(serde_json::Value::Array(vec![value]))
+        // If the result is already an array, use it directly.
+        // Otherwise wrap in an array for consistency.
+        if value.is_array() {
+            Ok(value)
+        } else {
+            Ok(serde_json::Value::Array(vec![value]))
+        }
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
@@ -360,6 +366,16 @@ async fn status_returns_agent_status() -> TestResult {
 #[tokio::test]
 async fn event_list_shows_events() -> TestResult {
     cases::event::list_shows_events::<Engine>().await
+}
+
+// Doctor
+#[tokio::test]
+async fn doctor_reports_initialized() -> TestResult {
+    cases::doctor::reports_initialized_system::<Engine>().await
+}
+#[tokio::test]
+async fn doctor_reports_uninitialized() -> TestResult {
+    cases::doctor::reports_uninitialized_system::<Engine>().await
 }
 
 // Search

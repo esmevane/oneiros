@@ -373,6 +373,16 @@ async fn status_returns_agent_status() -> TestResult {
     cases::status::returns_agent_status::<Legacy>().await
 }
 
+// Doctor
+#[tokio::test]
+async fn doctor_reports_initialized() -> TestResult {
+    cases::doctor::reports_initialized_system::<Legacy>().await
+}
+#[tokio::test]
+async fn doctor_reports_uninitialized() -> TestResult {
+    cases::doctor::reports_uninitialized_system::<Legacy>().await
+}
+
 // Event
 #[tokio::test]
 async fn event_list_shows_events() -> TestResult {
