@@ -80,4 +80,9 @@ impl ProjectContext {
     pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
         self.events.subscribe()
     }
+
+    /// Replay all events through projections, rebuilding read models.
+    pub fn replay(&self) -> Result<usize, Box<dyn std::error::Error>> {
+        self.with_db(|conn| store::replay(conn, self.projections).map_err(|e| e.into()))
+    }
 }

@@ -137,7 +137,9 @@ pub fn execute(
     match command {
         // Workflow domains — each knows its context
         Command::System(cmd) => SystemCli::execute(&ctx.system, cmd),
-        Command::Project(cmd) => ProjectCli::execute(&ctx.system, &ctx.brain_name, cmd),
+        Command::Project(cmd) => {
+            ProjectCli::execute(&ctx.system, ctx.project.as_ref(), &ctx.brain_name, cmd)
+        }
         Command::Seed(cmd) => SeedCli::execute(ctx.project()?, cmd),
 
         // Project-scoped domains

@@ -541,3 +541,17 @@ async fn urge_list_populated() -> TestResult {
 async fn urge_remove() -> TestResult {
     cases::urge::remove::<Engine>().await
 }
+
+// Import / Export
+#[tokio::test]
+async fn export_produces_file() -> TestResult {
+    cases::import_export::export_produces_file::<Engine>().await
+}
+#[tokio::test]
+async fn import_restores_data() -> TestResult {
+    cases::import_export::import_restores_data::<Engine>().await
+}
+#[tokio::test]
+async fn replay_rebuilds_projections() -> TestResult {
+    cases::import_export::replay_rebuilds_projections::<Engine>().await
+}

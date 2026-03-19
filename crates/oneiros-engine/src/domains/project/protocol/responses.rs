@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::Serialize;
 
 use crate::*;
@@ -7,4 +9,18 @@ use crate::*;
 pub enum ProjectResponse {
     BrainCreated(BrainName),
     BrainAlreadyExists(BrainName),
+    WroteExport(PathBuf),
+    Imported(ImportResult),
+    Replayed(ReplayResult),
+}
+
+#[derive(Debug, Serialize)]
+pub struct ImportResult {
+    pub imported: usize,
+    pub replayed: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ReplayResult {
+    pub replayed: usize,
 }

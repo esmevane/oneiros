@@ -57,6 +57,9 @@ pub enum StoreError {
 
     #[error(transparent)]
     IdParse(#[from] IdParseError),
+
+    #[error("Import error: {0}")]
+    Import(String),
 }
 
 /// Append an event to the store and run projections.
@@ -132,8 +135,105 @@ pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, StoreError> {
     Ok(events)
 }
 
+/// An event in the portable export format.
+///
+/// Matches the legacy KnownEvent envelope shape so that JSONL files
+/// are compatible between legacy and engine systems.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportEvent {
+    pub id: String,
+    pub sequence: i64,
+    pub timestamp: String,
+    pub source: Source,
+    pub data: Events,
+}
+
+impl From<StoredEvent> for ExportEvent {
+    fn from(e: StoredEvent) -> Self {
+        Self {
+            id: e.id,
+            sequence: e.sequence,
+            timestamp: e.created_at.to_rfc3339(),
+            source: e.source,
+            data: e.data,
+        }
+    }
+}
+
+/// An event being imported — permissive, accepts any JSON data.
+///
+/// Matches the legacy ImportEvent shape. The `data` field is raw JSON
+/// so we can import events from newer or older versions without
+/// requiring compile-time type knowledge.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ImportEvent {
+    Sourced {
+        id: String,
+        source: Source,
+        timestamp: String,
+        data: serde_json::Value,
+    },
+    Unsourced {
+        id: String,
+        timestamp: String,
+        data: serde_json::Value,
+    },
+}
+
+impl ImportEvent {
+    pub fn with_source(self, source: Source) -> Self {
+        match self {
+            ImportEvent::Unsourced {
+                id,
+                timestamp,
+                data,
+            } => ImportEvent::Sourced {
+                id,
+                source,
+                timestamp,
+                data,
+            },
+            sourced @ ImportEvent::Sourced { .. } => sourced,
+        }
+    }
+}
+
+/// Import a single event into the store without running projections.
+///
+/// Assigns a fresh sequence number. Uses INSERT OR IGNORE so that
+/// re-importing the same event (by id) is idempotent.
+pub fn import_event(conn: &Connection, event: &ImportEvent) -> Result<(), StoreError> {
+    let (id, source, timestamp, data) = match event {
+        ImportEvent::Sourced {
+            id,
+            source,
+            timestamp,
+            data,
+        } => (id, serde_json::to_string(source)?, timestamp.clone(), data),
+        ImportEvent::Unsourced { .. } => {
+            return Err(StoreError::Import("event has no source".into()));
+        }
+    };
+
+    let event_type = data
+        .get("type")
+        .and_then(|t| t.as_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    conn.execute(
+        "INSERT OR IGNORE INTO events (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![id, event_type, data.to_string(), source, timestamp],
+    )?;
+
+    Ok(())
+}
+
 /// Replay all events through projections (rebuild read models).
-pub fn replay(conn: &Connection, projections: &[&[Projection]]) -> Result<(), StoreError> {
+///
+/// Returns the number of events replayed.
+pub fn replay(conn: &Connection, projections: &[&[Projection]]) -> Result<usize, StoreError> {
     // Reset all projections
     for group in projections {
         for projection in *group {
@@ -143,6 +243,7 @@ pub fn replay(conn: &Connection, projections: &[&[Projection]]) -> Result<(), St
 
     // Reload and replay
     let events = load_events(conn)?;
+    let count = events.len();
     for event in &events {
         for group in projections {
             for projection in *group {
@@ -151,5 +252,5 @@ pub fn replay(conn: &Connection, projections: &[&[Projection]]) -> Result<(), St
         }
     }
 
-    Ok(())
+    Ok(count)
 }
