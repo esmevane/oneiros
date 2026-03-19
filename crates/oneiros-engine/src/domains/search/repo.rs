@@ -24,7 +24,7 @@ impl<'a> SearchRepo<'a> {
     /// - `entity_id`: the entity's id
     /// - `content`: the searchable text
     /// - `agent`: the owning agent name (for filtering)
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE VIRTUAL TABLE IF NOT EXISTS search_index
              USING fts5(kind, entity_id, content, agent)",
@@ -40,7 +40,7 @@ impl<'a> SearchRepo<'a> {
         &self,
         query: &str,
         agent: Option<&str>,
-    ) -> Result<Vec<SearchResult>, StoreError> {
+    ) -> Result<Vec<SearchResult>, EventError> {
         match agent {
             Some(agent_filter) => {
                 let mut stmt = self.conn.prepare(

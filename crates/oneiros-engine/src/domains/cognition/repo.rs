@@ -14,7 +14,7 @@ impl<'a> CognitionRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Cognition(cognition_event) = &event.data {
             match cognition_event {
                 CognitionEvents::CognitionAdded(cognition) => self.insert(cognition)?,
@@ -23,12 +23,12 @@ impl<'a> CognitionRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM cognitions", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS cognitions (
                 id TEXT PRIMARY KEY,
@@ -43,7 +43,7 @@ impl<'a> CognitionRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Cognition>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Cognition>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions WHERE id = ?1",
@@ -77,7 +77,7 @@ impl<'a> CognitionRepo<'a> {
         &self,
         agent: Option<&str>,
         texture: Option<&str>,
-    ) -> Result<Vec<Cognition>, StoreError> {
+    ) -> Result<Vec<Cognition>, EventError> {
         // Build query dynamically based on filters present.
         let sql = match (agent, texture) {
             (Some(_), Some(_)) => {
@@ -141,7 +141,7 @@ impl<'a> CognitionRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn insert(&self, cognition: &Cognition) -> Result<(), StoreError> {
+    fn insert(&self, cognition: &Cognition) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO cognitions (id, agent_id, texture, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",

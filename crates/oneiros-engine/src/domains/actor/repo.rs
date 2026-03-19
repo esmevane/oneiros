@@ -14,19 +14,19 @@ impl<'a> ActorRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Actor(ActorEvents::ActorCreated(actor)) = &event.data {
             self.create_record(actor)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("delete from actors", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS actors (
                 id TEXT PRIMARY KEY,
@@ -40,7 +40,7 @@ impl<'a> ActorRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Actor>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Actor>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, tenant_id, name, created_at FROM actors WHERE id = ?1")?;
@@ -66,7 +66,7 @@ impl<'a> ActorRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Actor>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Actor>, EventError> {
         let mut stmt = self
             .conn
             .prepare("select id, tenant_id, name, created_at from actors order by name")?;
@@ -93,7 +93,7 @@ impl<'a> ActorRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn create_record(&self, actor: &Actor) -> Result<(), StoreError> {
+    fn create_record(&self, actor: &Actor) -> Result<(), EventError> {
         self.conn.execute(
             "insert or replace into actors (id, tenant_id, name, created_at)
              values (?1, ?2, ?3, ?4)",

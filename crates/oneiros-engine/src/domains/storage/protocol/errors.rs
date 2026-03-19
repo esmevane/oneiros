@@ -14,7 +14,7 @@ pub enum StorageError {
     IoError(String),
 
     #[error("Database error: {0}")]
-    Database(#[from] crate::store::StoreError),
+    Database(#[from] crate::EventError),
 }
 
 impl From<std::io::Error> for StorageError {

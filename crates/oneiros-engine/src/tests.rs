@@ -276,7 +276,7 @@ fn replay_reconstructs_read_models() {
     ));
 
     // Replay — this resets all projections and re-applies all events
-    ctx.with_db(|conn| store::replay(conn, PROJECTIONS).unwrap());
+    ctx.with_db(|conn| event::repo::replay(conn, PROJECTIONS).unwrap());
 
     // Read models should be identical after replay
     match LevelService::list(&ctx).unwrap() {
@@ -465,7 +465,7 @@ fn search_indexes_across_domains() {
     }
 
     // Replay should rebuild the search index correctly
-    ctx.with_db(|conn| store::replay(conn, PROJECTIONS).unwrap());
+    ctx.with_db(|conn| event::repo::replay(conn, PROJECTIONS).unwrap());
     match SearchService::search(&ctx, "architecture", None).unwrap() {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }

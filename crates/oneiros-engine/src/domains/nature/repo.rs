@@ -14,7 +14,7 @@ impl<'a> NatureRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Nature(nature_event) = &event.data {
             match nature_event {
                 NatureEvents::NatureSet(nature) => self.set(nature)?,
@@ -24,12 +24,12 @@ impl<'a> NatureRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM natures", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS natures (
                 name TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ impl<'a> NatureRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Nature>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Nature>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM natures WHERE name = ?1")?;
@@ -63,7 +63,7 @@ impl<'a> NatureRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Nature>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Nature>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM natures ORDER BY name")?;
@@ -84,7 +84,7 @@ impl<'a> NatureRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn set(&self, nature: &Nature) -> Result<(), StoreError> {
+    fn set(&self, nature: &Nature) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO natures (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![nature.name.to_string(), nature.description, nature.prompt],
@@ -92,7 +92,7 @@ impl<'a> NatureRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM natures WHERE name = ?1", params![name])?;
         Ok(())

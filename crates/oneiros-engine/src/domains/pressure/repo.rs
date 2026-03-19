@@ -23,7 +23,7 @@ impl<'a> PressureRepo<'a> {
     /// This is a simplified version — the real system has 4 heuristic
     /// gauges (introspect, catharsis, recollect, retrospect). For the
     /// engine POC, we compute a simple metric based on recent activity.
-    pub fn handle(&self, _event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, _event: &StoredEvent) -> Result<(), EventError> {
         // Get all agents
         let mut stmt = self.conn.prepare("SELECT name FROM agents")?;
         let agents: Vec<String> = stmt
@@ -64,12 +64,12 @@ impl<'a> PressureRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM pressures", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS pressures (
                 agent TEXT NOT NULL,
@@ -82,7 +82,7 @@ impl<'a> PressureRepo<'a> {
         Ok(())
     }
 
-    pub fn get(&self, agent: &str) -> Result<Vec<Pressure>, StoreError> {
+    pub fn get(&self, agent: &str) -> Result<Vec<Pressure>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT agent, urge, percent, updated_at FROM pressures WHERE agent = ?1")?;
@@ -101,7 +101,7 @@ impl<'a> PressureRepo<'a> {
         Ok(pressures)
     }
 
-    pub fn list(&self) -> Result<Vec<Pressure>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Pressure>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT agent, urge, percent, updated_at FROM pressures ORDER BY agent, urge",
         )?;

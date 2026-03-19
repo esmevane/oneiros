@@ -14,19 +14,19 @@ impl<'a> TenantRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = &event.data {
             self.create_record(tenant)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM tenants", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS tenants (
                 id TEXT PRIMARY KEY,
@@ -39,7 +39,7 @@ impl<'a> TenantRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Tenant>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Tenant>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, created_at FROM tenants WHERE id = ?1")?;
@@ -62,7 +62,7 @@ impl<'a> TenantRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Tenant>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Tenant>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, created_at FROM tenants ORDER BY name")?;
@@ -86,7 +86,7 @@ impl<'a> TenantRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn create_record(&self, tenant: &Tenant) -> Result<(), StoreError> {
+    fn create_record(&self, tenant: &Tenant) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO tenants (id, name, created_at) VALUES (?1, ?2, ?3)",
             params![

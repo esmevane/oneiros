@@ -14,7 +14,7 @@ impl<'a> PersonaRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Persona(persona_event) = &event.data {
             match persona_event {
                 PersonaEvents::PersonaSet(persona) => self.set(persona)?,
@@ -24,12 +24,12 @@ impl<'a> PersonaRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM personas", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS personas (
                 name TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ impl<'a> PersonaRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Persona>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Persona>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
@@ -63,7 +63,7 @@ impl<'a> PersonaRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Persona>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Persona>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM personas ORDER BY name")?;
@@ -84,7 +84,7 @@ impl<'a> PersonaRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn set(&self, persona: &Persona) -> Result<(), StoreError> {
+    fn set(&self, persona: &Persona) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO personas (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -96,7 +96,7 @@ impl<'a> PersonaRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM personas WHERE name = ?1", params![name])?;
         Ok(())

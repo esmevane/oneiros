@@ -14,19 +14,19 @@ impl<'a> TicketRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Ticket(TicketEvents::TicketIssued(ticket)) = &event.data {
             self.create_record(ticket)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM tickets", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS tickets (
                 id TEXT PRIMARY KEY,
@@ -41,7 +41,7 @@ impl<'a> TicketRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Ticket>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Ticket>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets WHERE id = ?1",
         )?;
@@ -70,7 +70,7 @@ impl<'a> TicketRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Ticket>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Ticket>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets ORDER BY created_at",
         )?;
@@ -102,7 +102,7 @@ impl<'a> TicketRepo<'a> {
         Ok(tickets)
     }
 
-    pub fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, StoreError> {
+    pub fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets WHERE token = ?1",
         )?;
@@ -133,7 +133,7 @@ impl<'a> TicketRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn create_record(&self, ticket: &Ticket) -> Result<(), StoreError> {
+    fn create_record(&self, ticket: &Ticket) -> Result<(), EventError> {
         self.conn.execute(
             "insert or replace into tickets (id, actor_id, brain_name, token, created_at)
              values (?1, ?2, ?3, ?4, ?5)",

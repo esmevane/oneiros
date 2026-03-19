@@ -226,7 +226,7 @@ pub fn execute(
         Command::Event(cmd) => match cmd {
             EventCommands::List => {
                 let project = ctx.project()?;
-                let events = project.with_db(load_events)?;
+                let events = project.with_db(event::repo::load_events)?;
                 Ok(serde_json::to_string_pretty(&events)?)
             }
         },

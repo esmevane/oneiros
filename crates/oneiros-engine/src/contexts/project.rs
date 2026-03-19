@@ -11,8 +11,9 @@ use tokio::sync::broadcast;
 
 use crate::Source;
 use crate::config::Config;
+use crate::event::repo;
 use crate::events::Events;
-use crate::store::{self, NewEvent, Projection, StoredEvent};
+use crate::{NewEvent, Projection, StoredEvent};
 
 /// The project-scoped application context.
 ///
@@ -69,7 +70,7 @@ impl ProjectContext {
         };
 
         let stored = self.with_db(|conn| {
-            store::log_event(conn, &new_event, self.projections).expect("log event")
+            repo::log_event(conn, &new_event, self.projections).expect("log event")
         });
 
         let _ = self.events.send(stored.clone());
@@ -83,6 +84,6 @@ impl ProjectContext {
 
     /// Replay all events through projections, rebuilding read models.
     pub fn replay(&self) -> Result<usize, Box<dyn std::error::Error>> {
-        self.with_db(|conn| store::replay(conn, self.projections).map_err(|e| e.into()))
+        self.with_db(|conn| repo::replay(conn, self.projections).map_err(|e| e.into()))
     }
 }

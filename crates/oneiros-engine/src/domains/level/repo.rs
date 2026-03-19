@@ -14,7 +14,7 @@ impl<'a> LevelRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Level(level_event) = &event.data {
             match level_event {
                 LevelEvents::LevelSet(level) => self.set(level)?,
@@ -24,12 +24,12 @@ impl<'a> LevelRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM levels", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS levels (
                 name TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ impl<'a> LevelRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Level>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Level>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM levels WHERE name = ?1")?;
@@ -63,7 +63,7 @@ impl<'a> LevelRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Level>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Level>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM levels ORDER BY name")?;
@@ -84,7 +84,7 @@ impl<'a> LevelRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn set(&self, level: &Level) -> Result<(), StoreError> {
+    fn set(&self, level: &Level) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO levels (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![level.name.to_string(), level.description, level.prompt],
@@ -92,7 +92,7 @@ impl<'a> LevelRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM levels WHERE name = ?1", params![name])?;
         Ok(())

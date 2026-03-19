@@ -8,8 +8,9 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
 use crate::Source;
+use crate::event::repo;
 use crate::events::Events;
-use crate::store::{self, NewEvent, Projection, StoredEvent};
+use crate::{NewEvent, Projection, StoredEvent};
 
 /// The system-scoped application context.
 #[derive(Clone)]
@@ -48,7 +49,7 @@ impl SystemContext {
         };
 
         let stored = self.with_db(|conn| {
-            store::log_event(conn, &new_event, self.projections).expect("log event")
+            repo::log_event(conn, &new_event, self.projections).expect("log event")
         });
 
         let _ = self.events.send(stored.clone());

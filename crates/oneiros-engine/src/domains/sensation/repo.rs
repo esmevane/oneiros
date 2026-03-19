@@ -14,7 +14,7 @@ impl<'a> SensationRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Sensation(sensation_event) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
@@ -24,12 +24,12 @@ impl<'a> SensationRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM sensations", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS sensations (
                 name TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ impl<'a> SensationRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Sensation>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Sensation>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM sensations WHERE name = ?1")?;
@@ -63,7 +63,7 @@ impl<'a> SensationRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Sensation>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Sensation>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM sensations ORDER BY name")?;
@@ -84,7 +84,7 @@ impl<'a> SensationRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn set(&self, sensation: &Sensation) -> Result<(), StoreError> {
+    fn set(&self, sensation: &Sensation) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO sensations (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -96,7 +96,7 @@ impl<'a> SensationRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM sensations WHERE name = ?1", params![name])?;
         Ok(())

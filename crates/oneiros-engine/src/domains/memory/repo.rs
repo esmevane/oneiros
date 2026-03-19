@@ -14,7 +14,7 @@ impl<'a> MemoryRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Memory(memory_event) = &event.data {
             match memory_event {
                 MemoryEvents::MemoryAdded(memory) => self.insert(memory)?,
@@ -23,12 +23,12 @@ impl<'a> MemoryRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM memories", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS memories (
                 id TEXT PRIMARY KEY,
@@ -43,7 +43,7 @@ impl<'a> MemoryRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Memory>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Memory>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, level, content, created_at
              FROM memories WHERE id = ?1",
@@ -73,7 +73,7 @@ impl<'a> MemoryRepo<'a> {
         }
     }
 
-    pub fn list(&self, agent: Option<&str>) -> Result<Vec<Memory>, StoreError> {
+    pub fn list(&self, agent: Option<&str>) -> Result<Vec<Memory>, EventError> {
         let mut stmt = match agent {
             Some(_) => self.conn.prepare(
                 "SELECT id, agent_id, level, content, created_at
@@ -117,7 +117,7 @@ impl<'a> MemoryRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn insert(&self, memory: &Memory) -> Result<(), StoreError> {
+    fn insert(&self, memory: &Memory) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO memories (id, agent_id, level, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",

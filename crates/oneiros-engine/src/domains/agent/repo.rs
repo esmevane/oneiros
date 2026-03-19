@@ -14,7 +14,7 @@ impl<'a> AgentRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Agent(agent_event) = &event.data {
             match agent_event {
                 AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
@@ -25,12 +25,12 @@ impl<'a> AgentRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM agents", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY,
@@ -45,7 +45,7 @@ impl<'a> AgentRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Agent>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Agent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, persona, description, prompt FROM agents WHERE name = ?1")?;
@@ -75,7 +75,7 @@ impl<'a> AgentRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Agent>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Agent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
@@ -107,7 +107,7 @@ impl<'a> AgentRepo<'a> {
         Ok(agents)
     }
 
-    pub fn name_exists(&self, name: &str) -> Result<bool, StoreError> {
+    pub fn name_exists(&self, name: &str) -> Result<bool, EventError> {
         let count: i64 = self.conn.query_row(
             "SELECT COUNT(*) FROM agents WHERE name = ?1",
             params![name],
@@ -118,7 +118,7 @@ impl<'a> AgentRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn create_record(&self, agent: &Agent) -> Result<(), StoreError> {
+    fn create_record(&self, agent: &Agent) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -133,7 +133,7 @@ impl<'a> AgentRepo<'a> {
         Ok(())
     }
 
-    fn update(&self, agent: &Agent) -> Result<(), StoreError> {
+    fn update(&self, agent: &Agent) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -148,7 +148,7 @@ impl<'a> AgentRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &AgentName) -> Result<(), StoreError> {
+    fn remove(&self, name: &AgentName) -> Result<(), EventError> {
         self.conn.execute(
             "DELETE FROM agents WHERE name = ?1",
             params![name.to_string()],

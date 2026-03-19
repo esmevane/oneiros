@@ -1,7 +1,7 @@
 use std::io::BufRead;
 use std::path::Path;
 
-use crate::store::{self, ExportEvent, ImportEvent};
+use crate::event::repo;
 use crate::*;
 
 pub struct ProjectService;
@@ -36,7 +36,7 @@ impl ProjectService {
         target_dir: &Path,
         project_name: &str,
     ) -> Result<ProjectResponse, Box<dyn std::error::Error>> {
-        let events = ctx.with_db(store::load_events)?;
+        let events = ctx.with_db(repo::load_events)?;
 
         let mut buffer = String::new();
         for event in &events {
@@ -74,7 +74,7 @@ impl ProjectService {
 
                 let event: ImportEvent = serde_json::from_str(&line)?;
                 let event = event.with_source(Source::default());
-                store::import_event(conn, &event)?;
+                repo::import_event(conn, &event)?;
                 imported += 1;
             }
             Ok(())

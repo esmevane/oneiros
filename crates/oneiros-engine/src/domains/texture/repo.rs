@@ -14,7 +14,7 @@ impl<'a> TextureRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Texture(texture_event) = &event.data {
             match texture_event {
                 TextureEvents::TextureSet(texture) => self.set(texture)?,
@@ -24,12 +24,12 @@ impl<'a> TextureRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM textures", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS textures (
                 name TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ impl<'a> TextureRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Texture>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Texture>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
@@ -63,7 +63,7 @@ impl<'a> TextureRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Texture>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Texture>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM textures ORDER BY name")?;
@@ -84,7 +84,7 @@ impl<'a> TextureRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn set(&self, texture: &Texture) -> Result<(), StoreError> {
+    fn set(&self, texture: &Texture) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO textures (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -96,7 +96,7 @@ impl<'a> TextureRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM textures WHERE name = ?1", params![name])?;
         Ok(())

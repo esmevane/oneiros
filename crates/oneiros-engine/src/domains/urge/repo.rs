@@ -14,7 +14,7 @@ impl<'a> UrgeRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Urge(urge_event) = &event.data {
             match urge_event {
                 UrgeEvents::UrgeSet(urge) => self.set(urge)?,
@@ -24,12 +24,12 @@ impl<'a> UrgeRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM urges", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS urges (
                 name TEXT PRIMARY KEY,
@@ -42,7 +42,7 @@ impl<'a> UrgeRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Urge>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Urge>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
@@ -63,7 +63,7 @@ impl<'a> UrgeRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Urge>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Urge>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM urges ORDER BY name")?;
@@ -84,7 +84,7 @@ impl<'a> UrgeRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn set(&self, urge: &Urge) -> Result<(), StoreError> {
+    fn set(&self, urge: &Urge) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO urges (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![urge.name.to_string(), urge.description, urge.prompt],
@@ -92,7 +92,7 @@ impl<'a> UrgeRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), StoreError> {
+    fn remove(&self, name: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM urges WHERE name = ?1", params![name])?;
         Ok(())

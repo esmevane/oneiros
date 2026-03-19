@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 #[derive(Debug, thiserror::Error)]
 pub enum PressureError {
     #[error("Database error: {0}")]
-    Database(#[from] crate::store::StoreError),
+    Database(#[from] crate::EventError),
 }
 
 impl IntoResponse for PressureError {

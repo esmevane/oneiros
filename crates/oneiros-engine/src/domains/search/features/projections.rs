@@ -16,7 +16,7 @@ pub const PROJECTIONS: &[Projection] = &[Projection {
     reset: |conn| reset(conn),
 }];
 
-fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), StoreError> {
+fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), EventError> {
     match &event.data {
         Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
             conn.execute(
@@ -47,7 +47,7 @@ fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn reset(conn: &Connection) -> Result<(), StoreError> {
+fn reset(conn: &Connection) -> Result<(), EventError> {
     conn.execute("DELETE FROM search_index", [])?;
     Ok(())
 }

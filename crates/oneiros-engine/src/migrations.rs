@@ -5,8 +5,8 @@ use rusqlite::Connection;
 use crate::*;
 
 /// Initialize the event store and run all project-scoped migrations.
-pub fn migrate_project(conn: &Connection) -> Result<(), StoreError> {
-    initialize(conn)?;
+pub fn migrate_project(conn: &Connection) -> Result<(), EventError> {
+    event::repo::migrate(conn)?;
 
     // Vocabulary domains
     LevelRepo::new(conn).migrate()?;
@@ -32,8 +32,8 @@ pub fn migrate_project(conn: &Connection) -> Result<(), StoreError> {
 }
 
 /// Initialize the event store and run all system-scoped migrations.
-pub fn migrate_system(conn: &Connection) -> Result<(), StoreError> {
-    initialize(conn)?;
+pub fn migrate_system(conn: &Connection) -> Result<(), EventError> {
+    event::repo::migrate(conn)?;
 
     TenantRepo::new(conn).migrate()?;
     ActorRepo::new(conn).migrate()?;

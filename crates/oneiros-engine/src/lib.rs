@@ -12,7 +12,6 @@ mod migrations;
 mod requests;
 mod response;
 mod responses;
-mod store;
 #[cfg(test)]
 mod tests;
 mod values;
@@ -30,7 +29,6 @@ pub use migrations::*;
 pub use requests::*;
 pub use response::*;
 pub use responses::*;
-pub use store::*;
 pub use values::*;
 
 use macros::*;

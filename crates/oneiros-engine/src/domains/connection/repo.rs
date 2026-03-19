@@ -14,7 +14,7 @@ impl<'a> ConnectionRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Connection(connection_event) = &event.data {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
@@ -26,12 +26,12 @@ impl<'a> ConnectionRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM connections", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS connections (
                 id TEXT PRIMARY KEY,
@@ -47,7 +47,7 @@ impl<'a> ConnectionRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Connection>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Connection>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, from_entity, to_entity, nature, description, created_at
              FROM connections WHERE id = ?1",
@@ -81,7 +81,7 @@ impl<'a> ConnectionRepo<'a> {
         }
     }
 
-    pub fn list(&self, entity: Option<&str>) -> Result<Vec<Connection>, StoreError> {
+    pub fn list(&self, entity: Option<&str>) -> Result<Vec<Connection>, EventError> {
         let mut stmt = match entity {
             Some(_) => self.conn.prepare(
                 "SELECT id, from_entity, to_entity, nature, description, created_at
@@ -129,7 +129,7 @@ impl<'a> ConnectionRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn insert(&self, connection: &Connection) -> Result<(), StoreError> {
+    fn insert(&self, connection: &Connection) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO connections
              (id, from_entity, to_entity, nature, description, created_at)
@@ -146,7 +146,7 @@ impl<'a> ConnectionRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, id: &str) -> Result<(), StoreError> {
+    fn remove(&self, id: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM connections WHERE id = ?1", params![id])?;
         Ok(())

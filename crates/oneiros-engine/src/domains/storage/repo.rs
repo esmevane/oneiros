@@ -16,7 +16,7 @@ impl<'a> StorageRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Storage(storage_event) = &event.data {
             match storage_event {
                 StorageEvents::BlobStored(entry) => self.create_record(entry)?,
@@ -26,12 +26,12 @@ impl<'a> StorageRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM storage_entries", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS storage_entries (
                 id TEXT PRIMARY KEY,
@@ -46,7 +46,7 @@ impl<'a> StorageRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<StorageEntry>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<StorageEntry>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE id = ?1",
         )?;
@@ -73,7 +73,7 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
-    pub fn get_by_name(&self, name: &str) -> Result<Option<StorageEntry>, StoreError> {
+    pub fn get_by_name(&self, name: &str) -> Result<Option<StorageEntry>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE name = ?1",
         )?;
@@ -100,7 +100,7 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<StorageEntry>, StoreError> {
+    pub fn list(&self) -> Result<Vec<StorageEntry>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, name, content_type, size, created_at FROM storage_entries ORDER BY name",
         )?;
@@ -134,7 +134,7 @@ impl<'a> StorageRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn create_record(&self, entry: &StorageEntry) -> Result<(), StoreError> {
+    fn create_record(&self, entry: &StorageEntry) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO storage_entries (id, name, content_type, size, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -149,7 +149,7 @@ impl<'a> StorageRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, id: &str) -> Result<(), StoreError> {
+    fn remove(&self, id: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM storage_entries WHERE id = ?1", params![id])?;
         Ok(())

@@ -14,19 +14,19 @@ impl<'a> BrainRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Brain(BrainEvents::BrainCreated(brain)) = &event.data {
             self.create_record(brain)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM brains", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS brains (
                 name TEXT PRIMARY KEY,
@@ -38,7 +38,7 @@ impl<'a> BrainRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Brain>, StoreError> {
+    pub fn get(&self, name: &str) -> Result<Option<Brain>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, created_at FROM brains WHERE name = ?1")?;
@@ -59,7 +59,7 @@ impl<'a> BrainRepo<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Brain>, StoreError> {
+    pub fn list(&self) -> Result<Vec<Brain>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, created_at FROM brains ORDER BY name")?;
@@ -80,7 +80,7 @@ impl<'a> BrainRepo<'a> {
         Ok(brains)
     }
 
-    pub fn name_exists(&self, name: &str) -> Result<bool, StoreError> {
+    pub fn name_exists(&self, name: &str) -> Result<bool, EventError> {
         let count: i64 = self.conn.query_row(
             "SELECT COUNT(*) FROM brains WHERE name = ?1",
             params![name],
@@ -91,7 +91,7 @@ impl<'a> BrainRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn create_record(&self, brain: &Brain) -> Result<(), StoreError> {
+    fn create_record(&self, brain: &Brain) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO brains (name, created_at) VALUES (?1, ?2)",
             params![brain.name.to_string(), brain.created_at],

@@ -1,65 +1,27 @@
-//! Event store — SQLite-backed event persistence and projection runner.
-//!
-//! This is the universal infrastructure. It knows nothing about domains.
-//! It stores events as JSON blobs and runs projections after each write.
-
-mod schema;
+//! Event repository — SQLite-backed event persistence and projection runner.
 
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, params};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    IdParseError, Source,
-    events::{self, Events},
-};
+use crate::events::{self, Events};
+use crate::{EventError, NewEvent, Projection, StoredEvent};
 
-pub use schema::initialize;
+/// Initialize the event store schema.
+pub fn migrate(conn: &Connection) -> Result<(), EventError> {
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS events (
+            id TEXT PRIMARY KEY,
+            event_type TEXT NOT NULL,
+            data TEXT NOT NULL,
+            source TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+        ",
+    )?;
 
-/// A projection — transforms events into read model state.
-///
-/// Each domain declares its projections. The event store runs them
-/// after persisting each event. The projection's apply function
-/// receives the database connection and the persisted event.
-pub struct Projection {
-    pub name: &'static str,
-    pub apply: fn(&Connection, &StoredEvent) -> Result<(), StoreError>,
-    pub reset: fn(&Connection) -> Result<(), StoreError>,
-}
-
-/// A new event to be persisted.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewEvent {
-    pub data: Events,
-    pub source: Source,
-}
-
-/// A persisted event with full envelope.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoredEvent {
-    pub id: String,
-    pub sequence: i64,
-    pub event_type: String,
-    pub data: Events,
-    pub source: Source,
-    pub created_at: DateTime<Utc>,
-}
-
-/// Event store errors.
-#[derive(Debug, thiserror::Error)]
-pub enum StoreError {
-    #[error(transparent)]
-    Sqlite(#[from] rusqlite::Error),
-
-    #[error("Serialization error: {0}")]
-    Serde(#[from] serde_json::Error),
-
-    #[error(transparent)]
-    IdParse(#[from] IdParseError),
-
-    #[error("Import error: {0}")]
-    Import(String),
+    Ok(())
 }
 
 /// Append an event to the store and run projections.
@@ -71,7 +33,7 @@ pub fn log_event(
     conn: &Connection,
     event: &NewEvent,
     projections: &[&[Projection]],
-) -> Result<StoredEvent, StoreError> {
+) -> Result<StoredEvent, EventError> {
     let id = Uuid::now_v7().to_string();
     let data_json = serde_json::to_string(&event.data)?;
     let source_json = serde_json::to_string(&event.source)?;
@@ -105,7 +67,7 @@ pub fn log_event(
 }
 
 /// Load all events from the store.
-pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, StoreError> {
+pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, EventError> {
     let mut stmt = conn.prepare(
         "SELECT id, rowid, event_type, data, source, created_at FROM events ORDER BY rowid",
     )?;
@@ -135,84 +97,20 @@ pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, StoreError> {
     Ok(events)
 }
 
-/// An event in the portable export format.
-///
-/// Matches the legacy KnownEvent envelope shape so that JSONL files
-/// are compatible between legacy and engine systems.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExportEvent {
-    pub id: String,
-    pub sequence: i64,
-    pub timestamp: String,
-    pub source: Source,
-    pub data: Events,
-}
-
-impl From<StoredEvent> for ExportEvent {
-    fn from(e: StoredEvent) -> Self {
-        Self {
-            id: e.id,
-            sequence: e.sequence,
-            timestamp: e.created_at.to_rfc3339(),
-            source: e.source,
-            data: e.data,
-        }
-    }
-}
-
-/// An event being imported — permissive, accepts any JSON data.
-///
-/// Matches the legacy ImportEvent shape. The `data` field is raw JSON
-/// so we can import events from newer or older versions without
-/// requiring compile-time type knowledge.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ImportEvent {
-    Sourced {
-        id: String,
-        source: Source,
-        timestamp: String,
-        data: serde_json::Value,
-    },
-    Unsourced {
-        id: String,
-        timestamp: String,
-        data: serde_json::Value,
-    },
-}
-
-impl ImportEvent {
-    pub fn with_source(self, source: Source) -> Self {
-        match self {
-            ImportEvent::Unsourced {
-                id,
-                timestamp,
-                data,
-            } => ImportEvent::Sourced {
-                id,
-                source,
-                timestamp,
-                data,
-            },
-            sourced @ ImportEvent::Sourced { .. } => sourced,
-        }
-    }
-}
-
 /// Import a single event into the store without running projections.
 ///
 /// Assigns a fresh sequence number. Uses INSERT OR IGNORE so that
 /// re-importing the same event (by id) is idempotent.
-pub fn import_event(conn: &Connection, event: &ImportEvent) -> Result<(), StoreError> {
+pub fn import_event(conn: &Connection, event: &crate::ImportEvent) -> Result<(), EventError> {
     let (id, source, timestamp, data) = match event {
-        ImportEvent::Sourced {
+        crate::ImportEvent::Sourced {
             id,
             source,
             timestamp,
             data,
         } => (id, serde_json::to_string(source)?, timestamp.clone(), data),
-        ImportEvent::Unsourced { .. } => {
-            return Err(StoreError::Import("event has no source".into()));
+        crate::ImportEvent::Unsourced { .. } => {
+            return Err(EventError::Import("event has no source".into()));
         }
     };
 
@@ -233,7 +131,7 @@ pub fn import_event(conn: &Connection, event: &ImportEvent) -> Result<(), StoreE
 /// Replay all events through projections (rebuild read models).
 ///
 /// Returns the number of events replayed.
-pub fn replay(conn: &Connection, projections: &[&[Projection]]) -> Result<usize, StoreError> {
+pub fn replay(conn: &Connection, projections: &[&[Projection]]) -> Result<usize, EventError> {
     // Reset all projections
     for group in projections {
         for projection in *group {

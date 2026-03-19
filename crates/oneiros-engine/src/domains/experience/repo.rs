@@ -14,7 +14,7 @@ impl<'a> ExperienceRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), StoreError> {
+    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Experience(experience_event) = &event.data {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
@@ -29,12 +29,12 @@ impl<'a> ExperienceRepo<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), StoreError> {
+    pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM experiences", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), StoreError> {
+    pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS experiences (
                 id TEXT PRIMARY KEY,
@@ -49,7 +49,7 @@ impl<'a> ExperienceRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Experience>, StoreError> {
+    pub fn get(&self, id: &str) -> Result<Option<Experience>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences WHERE id = ?1",
@@ -79,7 +79,7 @@ impl<'a> ExperienceRepo<'a> {
         }
     }
 
-    pub fn list(&self, agent: Option<&str>) -> Result<Vec<Experience>, StoreError> {
+    pub fn list(&self, agent: Option<&str>) -> Result<Vec<Experience>, EventError> {
         let mut stmt = match agent {
             Some(_) => self.conn.prepare(
                 "SELECT id, agent_id, sensation, description, created_at
@@ -123,7 +123,7 @@ impl<'a> ExperienceRepo<'a> {
 
     // ── Write operations (called by handle) ─────────────────────
 
-    fn insert(&self, experience: &Experience) -> Result<(), StoreError> {
+    fn insert(&self, experience: &Experience) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO experiences (id, agent_id, sensation, description, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -138,7 +138,7 @@ impl<'a> ExperienceRepo<'a> {
         Ok(())
     }
 
-    fn update_description(&self, id: &str, description: &str) -> Result<(), StoreError> {
+    fn update_description(&self, id: &str, description: &str) -> Result<(), EventError> {
         self.conn.execute(
             "UPDATE experiences SET description = ?1 WHERE id = ?2",
             params![description, id],
@@ -146,7 +146,7 @@ impl<'a> ExperienceRepo<'a> {
         Ok(())
     }
 
-    fn update_sensation(&self, id: &str, sensation: &str) -> Result<(), StoreError> {
+    fn update_sensation(&self, id: &str, sensation: &str) -> Result<(), EventError> {
         self.conn.execute(
             "UPDATE experiences SET sensation = ?1 WHERE id = ?2",
             params![sensation, id],

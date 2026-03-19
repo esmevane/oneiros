@@ -8,7 +8,7 @@ pub enum LevelError {
     NotFound(String),
 
     #[error("Database error: {0}")]
-    Database(#[from] crate::store::StoreError),
+    Database(#[from] crate::EventError),
 }
 
 impl IntoResponse for LevelError {
