@@ -11,6 +11,23 @@ struct IdParam {
     id: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "list_storage",
+            description: "Browse your archive",
+        },
+        ToolDef {
+            name: "get_storage",
+            description: "Check on a stored artifact",
+        },
+        ToolDef {
+            name: "remove_storage",
+            description: "Remove a stored artifact",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["list_storage", "get_storage", "remove_storage"]
 }

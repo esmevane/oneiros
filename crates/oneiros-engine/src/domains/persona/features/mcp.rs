@@ -7,6 +7,27 @@ struct NameParam {
     name: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "set_persona",
+            description: "Define a category of agent",
+        },
+        ToolDef {
+            name: "get_persona",
+            description: "Look up an agent category",
+        },
+        ToolDef {
+            name: "list_personas",
+            description: "See all agent categories",
+        },
+        ToolDef {
+            name: "remove_persona",
+            description: "Remove an agent category",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &[
         "set_persona",

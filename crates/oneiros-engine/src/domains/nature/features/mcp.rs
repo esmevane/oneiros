@@ -7,6 +7,27 @@ struct NameParam {
     name: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "set_nature",
+            description: "Define a kind of relationship between things",
+        },
+        ToolDef {
+            name: "get_nature",
+            description: "Look up a relationship category",
+        },
+        ToolDef {
+            name: "list_natures",
+            description: "See all relationship categories",
+        },
+        ToolDef {
+            name: "remove_nature",
+            description: "Remove a relationship category",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["set_nature", "get_nature", "list_natures", "remove_nature"]
 }

@@ -19,6 +19,23 @@ struct ListMemoriesParams {
     agent: Option<String>,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "add_memory",
+            description: "Consolidate something you've learned",
+        },
+        ToolDef {
+            name: "get_memory",
+            description: "Revisit a specific memory",
+        },
+        ToolDef {
+            name: "list_memories",
+            description: "Review what you know",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["add_memory", "get_memory", "list_memories"]
 }

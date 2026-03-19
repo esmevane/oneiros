@@ -8,6 +8,13 @@ struct SearchParams {
     agent: Option<String>,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[ToolDef {
+        name: "search",
+        description: "Search across everything in the brain",
+    }]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["search"]
 }

@@ -10,251 +10,42 @@ use serde_json::json;
 
 use crate::*;
 
-/// Tool description — name + human-readable description.
-struct ToolDef {
-    name: &'static str,
-    description: &'static str,
+/// Errors that can occur during MCP tool dispatch.
+#[derive(Debug, thiserror::Error)]
+pub enum ToolError {
+    /// The requested tool name is not handled by this domain.
+    #[error("Unknown tool: {0}")]
+    UnknownTool(String),
+
+    /// A parameter could not be deserialized or was otherwise invalid.
+    #[error("Parameter error: {0}")]
+    Parameter(String),
+
+    /// The underlying domain service returned an error.
+    #[error("Domain error: {0}")]
+    Domain(String),
 }
 
-/// All tool definitions across all domains.
-fn all_tools() -> Vec<ToolDef> {
-    vec![
-        // Level
-        ToolDef {
-            name: "set_level",
-            description: "Define how long a kind of memory should be kept",
-        },
-        ToolDef {
-            name: "get_level",
-            description: "Look up a memory retention tier",
-        },
-        ToolDef {
-            name: "list_levels",
-            description: "See all memory retention tiers",
-        },
-        ToolDef {
-            name: "remove_level",
-            description: "Remove a memory retention tier",
-        },
-        // Texture
-        ToolDef {
-            name: "set_texture",
-            description: "Define a quality of thought",
-        },
-        ToolDef {
-            name: "get_texture",
-            description: "Look up a thought category",
-        },
-        ToolDef {
-            name: "list_textures",
-            description: "See all thought categories",
-        },
-        ToolDef {
-            name: "remove_texture",
-            description: "Remove a thought category",
-        },
-        // Sensation
-        ToolDef {
-            name: "set_sensation",
-            description: "Define a quality of connection between thoughts",
-        },
-        ToolDef {
-            name: "get_sensation",
-            description: "Look up an experience category",
-        },
-        ToolDef {
-            name: "list_sensations",
-            description: "See all experience categories",
-        },
-        ToolDef {
-            name: "remove_sensation",
-            description: "Remove an experience category",
-        },
-        // Nature
-        ToolDef {
-            name: "set_nature",
-            description: "Define a kind of relationship between things",
-        },
-        ToolDef {
-            name: "get_nature",
-            description: "Look up a relationship category",
-        },
-        ToolDef {
-            name: "list_natures",
-            description: "See all relationship categories",
-        },
-        ToolDef {
-            name: "remove_nature",
-            description: "Remove a relationship category",
-        },
-        // Persona
-        ToolDef {
-            name: "set_persona",
-            description: "Define a category of agent",
-        },
-        ToolDef {
-            name: "get_persona",
-            description: "Look up an agent category",
-        },
-        ToolDef {
-            name: "list_personas",
-            description: "See all agent categories",
-        },
-        ToolDef {
-            name: "remove_persona",
-            description: "Remove an agent category",
-        },
-        // Urge
-        ToolDef {
-            name: "set_urge",
-            description: "Define a cognitive drive",
-        },
-        ToolDef {
-            name: "get_urge",
-            description: "Look up a cognitive drive",
-        },
-        ToolDef {
-            name: "list_urges",
-            description: "See all cognitive drives",
-        },
-        ToolDef {
-            name: "remove_urge",
-            description: "Remove a cognitive drive",
-        },
-        // Agent
-        ToolDef {
-            name: "create_agent",
-            description: "Bring a new agent into the brain",
-        },
-        ToolDef {
-            name: "get_agent",
-            description: "Learn about a specific agent",
-        },
-        ToolDef {
-            name: "list_agents",
-            description: "See who's here",
-        },
-        ToolDef {
-            name: "update_agent",
-            description: "Reshape an agent's identity",
-        },
-        ToolDef {
-            name: "remove_agent",
-            description: "Remove an agent from the brain",
-        },
-        // Cognition
-        ToolDef {
-            name: "add_cognition",
-            description: "Record a thought",
-        },
-        ToolDef {
-            name: "get_cognition",
-            description: "Revisit a specific thought",
-        },
-        ToolDef {
-            name: "list_cognitions",
-            description: "Review a stream of thoughts",
-        },
-        // Memory
-        ToolDef {
-            name: "add_memory",
-            description: "Consolidate something you've learned",
-        },
-        ToolDef {
-            name: "get_memory",
-            description: "Revisit a specific memory",
-        },
-        ToolDef {
-            name: "list_memories",
-            description: "Review what you know",
-        },
-        // Experience
-        ToolDef {
-            name: "create_experience",
-            description: "Mark a meaningful moment",
-        },
-        ToolDef {
-            name: "get_experience",
-            description: "Revisit a specific experience",
-        },
-        ToolDef {
-            name: "list_experiences",
-            description: "Survey threads of meaning",
-        },
-        ToolDef {
-            name: "update_experience_description",
-            description: "Refine an experience's description",
-        },
-        ToolDef {
-            name: "update_experience_sensation",
-            description: "Refine an experience's sensation",
-        },
-        // Connection
-        ToolDef {
-            name: "create_connection",
-            description: "Draw a line between two related things",
-        },
-        ToolDef {
-            name: "get_connection",
-            description: "Examine a specific connection",
-        },
-        ToolDef {
-            name: "list_connections",
-            description: "See how things connect",
-        },
-        ToolDef {
-            name: "remove_connection",
-            description: "Remove a connection between two entities",
-        },
-        // Lifecycle
-        ToolDef {
-            name: "dream",
-            description: "Restore an agent's full identity and cognitive context",
-        },
-        ToolDef {
-            name: "introspect",
-            description: "Look inward — consolidate what matters",
-        },
-        ToolDef {
-            name: "reflect",
-            description: "Pause on something significant",
-        },
-        ToolDef {
-            name: "sense",
-            description: "Receive and interpret something from outside",
-        },
-        ToolDef {
-            name: "sleep",
-            description: "End a session — capture continuity before resting",
-        },
-        // Search
-        ToolDef {
-            name: "search",
-            description: "Search across everything in the brain",
-        },
-        // Storage
-        ToolDef {
-            name: "list_storage",
-            description: "Browse your archive",
-        },
-        ToolDef {
-            name: "get_storage",
-            description: "Check on a stored artifact",
-        },
-        ToolDef {
-            name: "remove_storage",
-            description: "Remove a stored artifact",
-        },
-        // Pressure
-        ToolDef {
-            name: "get_pressure",
-            description: "Check pressure for an agent",
-        },
-        ToolDef {
-            name: "list_pressures",
-            description: "See all pressure readings",
-        },
-    ]
+/// Collect all tool definitions from every domain's catalog.
+fn all_tools() -> Vec<&'static ToolDef> {
+    let sources: &[&[ToolDef]] = &[
+        level_mcp::tool_defs(),
+        texture_mcp::tool_defs(),
+        sensation_mcp::tool_defs(),
+        nature_mcp::tool_defs(),
+        persona_mcp::tool_defs(),
+        urge_mcp::tool_defs(),
+        agent_mcp::tool_defs(),
+        cognition_mcp::tool_defs(),
+        memory_mcp::tool_defs(),
+        experience_mcp::tool_defs(),
+        connection_mcp::tool_defs(),
+        lifecycle_mcp::tool_defs(),
+        search_mcp::tool_defs(),
+        storage_mcp::tool_defs(),
+        pressure_mcp::tool_defs(),
+    ];
+    sources.iter().flat_map(|s| s.iter()).collect()
 }
 
 type Dispatcher = fn(&ProjectContext, &str, &str) -> Result<serde_json::Value, ToolError>;

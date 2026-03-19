@@ -7,6 +7,27 @@ struct NameParam {
     name: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "set_level",
+            description: "Define how long a kind of memory should be kept",
+        },
+        ToolDef {
+            name: "get_level",
+            description: "Look up a memory retention tier",
+        },
+        ToolDef {
+            name: "list_levels",
+            description: "See all memory retention tiers",
+        },
+        ToolDef {
+            name: "remove_level",
+            description: "Remove a memory retention tier",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["set_level", "get_level", "list_levels", "remove_level"]
 }

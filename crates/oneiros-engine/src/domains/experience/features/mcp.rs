@@ -31,6 +31,31 @@ struct UpdateSensationParams {
     sensation: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "create_experience",
+            description: "Mark a meaningful moment",
+        },
+        ToolDef {
+            name: "get_experience",
+            description: "Revisit a specific experience",
+        },
+        ToolDef {
+            name: "list_experiences",
+            description: "Survey threads of meaning",
+        },
+        ToolDef {
+            name: "update_experience_description",
+            description: "Refine an experience's description",
+        },
+        ToolDef {
+            name: "update_experience_sensation",
+            description: "Refine an experience's sensation",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &[
         "create_experience",

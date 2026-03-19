@@ -13,6 +13,31 @@ struct SenseParams {
     content: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "dream",
+            description: "Restore an agent's full identity and cognitive context",
+        },
+        ToolDef {
+            name: "introspect",
+            description: "Look inward — consolidate what matters",
+        },
+        ToolDef {
+            name: "reflect",
+            description: "Pause on something significant",
+        },
+        ToolDef {
+            name: "sense",
+            description: "Receive and interpret something from outside",
+        },
+        ToolDef {
+            name: "sleep",
+            description: "End a session — capture continuity before resting",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["dream", "introspect", "reflect", "sense", "sleep"]
 }

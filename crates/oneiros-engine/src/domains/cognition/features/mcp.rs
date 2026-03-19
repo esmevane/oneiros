@@ -20,6 +20,23 @@ struct ListCognitionsParams {
     texture: Option<String>,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "add_cognition",
+            description: "Record a thought",
+        },
+        ToolDef {
+            name: "get_cognition",
+            description: "Revisit a specific thought",
+        },
+        ToolDef {
+            name: "list_cognitions",
+            description: "Review a stream of thoughts",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["add_cognition", "get_cognition", "list_cognitions"]
 }

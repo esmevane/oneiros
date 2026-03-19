@@ -25,6 +25,7 @@ mod resource;
 mod source;
 // mod storage_ref;
 mod timestamp;
+mod tool_def;
 // mod token;
 // mod token_version;
 
@@ -60,4 +61,5 @@ pub use resource::Resource;
 pub use source::Source;
 // pub use storage_ref::{StorageRef, StorageRefError};
 pub use timestamp::{Timestamp, TimestampParseError};
+pub use tool_def::ToolDef;
 // pub use token::{Token, TokenError};

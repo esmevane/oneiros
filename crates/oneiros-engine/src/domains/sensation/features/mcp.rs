@@ -7,6 +7,27 @@ struct NameParam {
     name: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "set_sensation",
+            description: "Define a quality of connection between thoughts",
+        },
+        ToolDef {
+            name: "get_sensation",
+            description: "Look up an experience category",
+        },
+        ToolDef {
+            name: "list_sensations",
+            description: "See all experience categories",
+        },
+        ToolDef {
+            name: "remove_sensation",
+            description: "Remove an experience category",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &[
         "set_sensation",

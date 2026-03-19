@@ -7,6 +7,19 @@ struct AgentParam {
     agent: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "get_pressure",
+            description: "Check pressure for an agent",
+        },
+        ToolDef {
+            name: "list_pressures",
+            description: "See all pressure readings",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["get_pressure", "list_pressures"]
 }

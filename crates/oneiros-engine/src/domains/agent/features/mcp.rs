@@ -15,6 +15,31 @@ struct AgentParams {
     prompt: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "create_agent",
+            description: "Bring a new agent into the brain",
+        },
+        ToolDef {
+            name: "get_agent",
+            description: "Learn about a specific agent",
+        },
+        ToolDef {
+            name: "list_agents",
+            description: "See who's here",
+        },
+        ToolDef {
+            name: "update_agent",
+            description: "Reshape an agent's identity",
+        },
+        ToolDef {
+            name: "remove_agent",
+            description: "Remove an agent from the brain",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &[
         "create_agent",

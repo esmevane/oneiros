@@ -7,6 +7,27 @@ struct NameParam {
     name: String,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "set_urge",
+            description: "Define a cognitive drive",
+        },
+        ToolDef {
+            name: "get_urge",
+            description: "Look up a cognitive drive",
+        },
+        ToolDef {
+            name: "list_urges",
+            description: "See all cognitive drives",
+        },
+        ToolDef {
+            name: "remove_urge",
+            description: "Remove a cognitive drive",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &["set_urge", "get_urge", "list_urges", "remove_urge"]
 }

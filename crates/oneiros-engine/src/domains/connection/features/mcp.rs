@@ -20,6 +20,27 @@ struct ListConnectionsParams {
     entity: Option<String>,
 }
 
+pub fn tool_defs() -> &'static [ToolDef] {
+    &[
+        ToolDef {
+            name: "create_connection",
+            description: "Draw a line between two related things",
+        },
+        ToolDef {
+            name: "get_connection",
+            description: "Examine a specific connection",
+        },
+        ToolDef {
+            name: "list_connections",
+            description: "See how things connect",
+        },
+        ToolDef {
+            name: "remove_connection",
+            description: "Remove a connection between two entities",
+        },
+    ]
+}
+
 pub fn tool_names() -> &'static [&'static str] {
     &[
         "create_connection",
