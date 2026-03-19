@@ -314,6 +314,54 @@ async fn experience_update_description() -> TestResult {
     cases::experience::update_description::<Engine>().await
 }
 
+// Lifecycle
+#[tokio::test]
+async fn lifecycle_wake() -> TestResult {
+    cases::lifecycle::wake::<Engine>().await
+}
+#[tokio::test]
+async fn lifecycle_dream() -> TestResult {
+    cases::lifecycle::dream::<Engine>().await
+}
+#[tokio::test]
+async fn lifecycle_introspect() -> TestResult {
+    cases::lifecycle::introspect::<Engine>().await
+}
+#[tokio::test]
+async fn lifecycle_reflect() -> TestResult {
+    cases::lifecycle::reflect::<Engine>().await
+}
+#[tokio::test]
+async fn lifecycle_sleep() -> TestResult {
+    cases::lifecycle::sleep::<Engine>().await
+}
+#[tokio::test]
+async fn lifecycle_guidebook() -> TestResult {
+    cases::lifecycle::guidebook::<Engine>().await
+}
+
+// Emerge / Recede
+#[tokio::test]
+async fn emerge_creates_and_wakes_agent() -> TestResult {
+    cases::emerge::creates_and_wakes_agent::<Engine>().await
+}
+#[tokio::test]
+async fn recede_retires_agent() -> TestResult {
+    cases::emerge::recede_retires_agent::<Engine>().await
+}
+
+// Status
+#[tokio::test]
+async fn status_returns_agent_status() -> TestResult {
+    cases::status::returns_agent_status::<Engine>().await
+}
+
+// Event
+#[tokio::test]
+async fn event_list_shows_events() -> TestResult {
+    cases::event::list_shows_events::<Engine>().await
+}
+
 // Search
 #[tokio::test]
 async fn search_finds_cognition_content() -> TestResult {

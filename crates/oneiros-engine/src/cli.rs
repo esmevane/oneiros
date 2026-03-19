@@ -58,6 +58,53 @@ pub enum Command {
     // Flat arg commands — args appear directly under the command name
     Search(#[command(flatten)] SearchCommands),
     Pressure(#[command(flatten)] PressureCommands),
+
+    // Flat lifecycle commands — top-level shortcuts for the most common ops
+    Wake {
+        name: String,
+    },
+    Dream {
+        name: String,
+    },
+    Introspect {
+        name: String,
+    },
+    Reflect {
+        name: String,
+    },
+    Sleep {
+        name: String,
+    },
+    Guidebook {
+        name: String,
+    },
+
+    // Agent lifecycle — emerge creates then wakes; recede removes
+    Emerge {
+        name: String,
+        persona: String,
+        #[arg(long, default_value = "")]
+        description: String,
+    },
+    Recede {
+        name: String,
+    },
+
+    // Status — summary of an agent's current cognitive state
+    Status {
+        name: String,
+    },
+
+    // Event inspection
+    #[command(subcommand)]
+    Event(EventCommands),
+}
+
+/// Event inspection commands.
+#[derive(Debug, Subcommand)]
+pub enum EventCommands {
+    /// List all events in the project event log.
+    List,
 }
 
 /// The combined context for CLI execution.
@@ -106,5 +153,74 @@ pub fn execute(
         Command::Storage(cmd) => StorageCli::execute(ctx.project()?, cmd),
         Command::Search(cmd) => SearchCli::execute(ctx.project()?, cmd),
         Command::Pressure(cmd) => PressureCli::execute(ctx.project()?, cmd),
+
+        // Flat lifecycle shortcuts
+        Command::Wake { name } => {
+            let response = LifecycleService::wake(ctx.project()?, &name)?;
+            Ok(serde_json::to_string_pretty(&response)?)
+        }
+        Command::Dream { name } => {
+            let response = LifecycleService::dream(ctx.project()?, &name)?;
+            Ok(serde_json::to_string_pretty(&response)?)
+        }
+        Command::Introspect { name } => {
+            let response = LifecycleService::introspect(ctx.project()?, &name)?;
+            Ok(serde_json::to_string_pretty(&response)?)
+        }
+        Command::Reflect { name } => {
+            let response = LifecycleService::reflect(ctx.project()?, &name)?;
+            Ok(serde_json::to_string_pretty(&response)?)
+        }
+        Command::Sleep { name } => {
+            let response = LifecycleService::sleep(ctx.project()?, &name)?;
+            Ok(serde_json::to_string_pretty(&response)?)
+        }
+        Command::Guidebook { name } => {
+            let response = LifecycleService::guidebook(ctx.project()?, &name)?;
+            Ok(serde_json::to_string_pretty(&response)?)
+        }
+
+        // Emerge: create an agent then immediately wake it
+        Command::Emerge {
+            name,
+            persona,
+            description,
+        } => {
+            let project = ctx.project()?;
+            let created = AgentService::create(project, name, persona, description, String::new())?;
+            let agent_name = match &created {
+                AgentResponse::AgentCreated(n) => n.to_string(),
+                other => return Err(format!("unexpected agent response: {other:?}").into()),
+            };
+            LifecycleService::wake(project, &agent_name)?;
+            let payload = serde_json::json!({ "type": "emerged", "data": agent_name });
+            Ok(serde_json::to_string_pretty(&payload)?)
+        }
+
+        // Recede: retire an agent
+        Command::Recede { name } => {
+            let project = ctx.project()?;
+            AgentService::remove(project, &name)?;
+            let payload = serde_json::json!({ "type": "receded", "data": name });
+            Ok(serde_json::to_string_pretty(&payload)?)
+        }
+
+        // Status: gather an agent's cognitive context and return it
+        Command::Status { name } => {
+            let project = ctx.project()?;
+            let context = LifecycleService::gather_context(project, &name)
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+            let payload = serde_json::json!({ "type": "status", "data": context });
+            Ok(serde_json::to_string_pretty(&payload)?)
+        }
+
+        // Event inspection
+        Command::Event(cmd) => match cmd {
+            EventCommands::List => {
+                let project = ctx.project()?;
+                let events = project.with_db(load_events)?;
+                Ok(serde_json::to_string_pretty(&events)?)
+            }
+        },
     }
 }

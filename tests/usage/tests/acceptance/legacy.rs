@@ -331,6 +331,54 @@ async fn storage_remove() -> TestResult {
     cases::storage::remove::<Legacy>().await
 }
 
+// Lifecycle
+#[tokio::test]
+async fn lifecycle_wake() -> TestResult {
+    cases::lifecycle::wake::<Legacy>().await
+}
+#[tokio::test]
+async fn lifecycle_dream() -> TestResult {
+    cases::lifecycle::dream::<Legacy>().await
+}
+#[tokio::test]
+async fn lifecycle_introspect() -> TestResult {
+    cases::lifecycle::introspect::<Legacy>().await
+}
+#[tokio::test]
+async fn lifecycle_reflect() -> TestResult {
+    cases::lifecycle::reflect::<Legacy>().await
+}
+#[tokio::test]
+async fn lifecycle_sleep() -> TestResult {
+    cases::lifecycle::sleep::<Legacy>().await
+}
+#[tokio::test]
+async fn lifecycle_guidebook() -> TestResult {
+    cases::lifecycle::guidebook::<Legacy>().await
+}
+
+// Emerge / Recede
+#[tokio::test]
+async fn emerge_creates_and_wakes_agent() -> TestResult {
+    cases::emerge::creates_and_wakes_agent::<Legacy>().await
+}
+#[tokio::test]
+async fn recede_retires_agent() -> TestResult {
+    cases::emerge::recede_retires_agent::<Legacy>().await
+}
+
+// Status
+#[tokio::test]
+async fn status_returns_agent_status() -> TestResult {
+    cases::status::returns_agent_status::<Legacy>().await
+}
+
+// Event
+#[tokio::test]
+async fn event_list_shows_events() -> TestResult {
+    cases::event::list_shows_events::<Legacy>().await
+}
+
 // Texture
 #[tokio::test]
 async fn texture_set_creates() -> TestResult {

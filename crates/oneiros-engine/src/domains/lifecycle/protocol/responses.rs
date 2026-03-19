@@ -5,9 +5,10 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum LifecycleResponse {
-    Dreamed(CognitiveContext),
-    Introspected(CognitiveContext),
-    Reflected(CognitiveContext),
-    Sensed { agent: String },
-    Slept { agent: String },
+    Waking(CognitiveContext),
+    Dreaming(CognitiveContext),
+    Introspecting(CognitiveContext),
+    Reflecting(CognitiveContext),
+    Sleeping { agent: String },
+    Guidebook(CognitiveContext),
 }

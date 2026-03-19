@@ -10,6 +10,21 @@ use crate::*;
 pub struct LifecycleService;
 
 impl LifecycleService {
+    /// Wake — restore an agent's full cognitive context (initial session start).
+    pub fn wake(
+        ctx: &ProjectContext,
+        agent_name: &str,
+    ) -> Result<LifecycleResponse, LifecycleError> {
+        let context = Self::gather_context(ctx, agent_name)?;
+
+        ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
+            agent: agent_name.to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        }));
+
+        Ok(LifecycleResponse::Waking(context))
+    }
+
     /// Dream — restore an agent's full cognitive context.
     pub fn dream(
         ctx: &ProjectContext,
@@ -22,7 +37,7 @@ impl LifecycleService {
             created_at: Utc::now().to_rfc3339(),
         }));
 
-        Ok(LifecycleResponse::Dreamed(context))
+        Ok(LifecycleResponse::Dreaming(context))
     }
 
     /// Introspect — look inward, consolidate cognitive state.
@@ -37,7 +52,7 @@ impl LifecycleService {
             created_at: Utc::now().to_rfc3339(),
         }));
 
-        Ok(LifecycleResponse::Introspected(context))
+        Ok(LifecycleResponse::Introspecting(context))
     }
 
     /// Reflect — pause on something significant.
@@ -52,7 +67,7 @@ impl LifecycleService {
             created_at: Utc::now().to_rfc3339(),
         }));
 
-        Ok(LifecycleResponse::Reflected(context))
+        Ok(LifecycleResponse::Reflecting(context))
     }
 
     /// Sense — receive and interpret something from outside.
@@ -72,7 +87,7 @@ impl LifecycleService {
             created_at: Utc::now().to_rfc3339(),
         }));
 
-        Ok(LifecycleResponse::Sensed {
+        Ok(LifecycleResponse::Sleeping {
             agent: agent_name.to_string(),
         })
     }
@@ -92,13 +107,25 @@ impl LifecycleService {
             created_at: Utc::now().to_rfc3339(),
         }));
 
-        Ok(LifecycleResponse::Slept {
+        Ok(LifecycleResponse::Sleeping {
             agent: agent_name.to_string(),
         })
     }
 
+    /// Guidebook — gather cognitive context without emitting an event.
+    ///
+    /// Used to display the agent's full operational context (textures,
+    /// sensations, levels, urges) without marking a lifecycle transition.
+    pub fn guidebook(
+        ctx: &ProjectContext,
+        agent_name: &str,
+    ) -> Result<LifecycleResponse, LifecycleError> {
+        let context = Self::gather_context(ctx, agent_name)?;
+        Ok(LifecycleResponse::Guidebook(context))
+    }
+
     /// Gather the full cognitive context for an agent.
-    fn gather_context(
+    pub fn gather_context(
         ctx: &ProjectContext,
         agent_name: &str,
     ) -> Result<CognitiveContext, LifecycleError> {
