@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    IdParseError,
+    IdParseError, Source,
     events::{self, Events},
 };
 
@@ -32,16 +32,17 @@ pub struct Projection {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewEvent {
     pub data: Events,
-    pub source: String,
+    pub source: Source,
 }
 
-/// A persisted event with sequence number and timestamp.
+/// A persisted event with full envelope.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredEvent {
+    pub id: String,
     pub sequence: i64,
     pub event_type: String,
     pub data: Events,
-    pub source: String,
+    pub source: Source,
     pub created_at: DateTime<Utc>,
 }
 
@@ -68,29 +69,25 @@ pub fn log_event(
     event: &NewEvent,
     projections: &[&[Projection]],
 ) -> Result<StoredEvent, StoreError> {
-    let id = Uuid::now_v7();
+    let id = Uuid::now_v7().to_string();
     let data_json = serde_json::to_string(&event.data)?;
+    let source_json = serde_json::to_string(&event.source)?;
     let event_type = events::event_type(&event.data);
     let now = Utc::now();
 
     conn.execute(
         "INSERT INTO events (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![
-            id.to_string(),
-            event_type,
-            data_json,
-            event.source,
-            now.to_rfc3339()
-        ],
+        params![id, event_type, data_json, source_json, now.to_rfc3339()],
     )?;
 
     let sequence = conn.last_insert_rowid();
 
     let stored = StoredEvent {
+        id,
         sequence,
         event_type,
         data: event.data.clone(),
-        source: event.source.clone(),
+        source: event.source,
         created_at: now,
     };
 
@@ -106,21 +103,24 @@ pub fn log_event(
 
 /// Load all events from the store.
 pub fn load_events(conn: &Connection) -> Result<Vec<StoredEvent>, StoreError> {
-    let mut stmt = conn
-        .prepare("SELECT rowid, event_type, data, source, created_at FROM events ORDER BY rowid")?;
+    let mut stmt = conn.prepare(
+        "SELECT id, rowid, event_type, data, source, created_at FROM events ORDER BY rowid",
+    )?;
 
     let events = stmt
         .query_map([], |row| {
-            let data_str: String = row.get(2)?;
+            let data_str: String = row.get(3)?;
+            let source_str: String = row.get(4)?;
             Ok(StoredEvent {
-                sequence: row.get(0)?,
-                event_type: row.get(1)?,
+                id: row.get(0)?,
+                sequence: row.get(1)?,
+                event_type: row.get(2)?,
                 data: serde_json::from_str(&data_str).unwrap_or(Events::Unknown(
                     serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
                 )),
-                source: row.get(3)?,
+                source: serde_json::from_str(&source_str).unwrap_or_default(),
                 created_at: {
-                    let s: String = row.get(4)?;
+                    let s: String = row.get(5)?;
                     DateTime::parse_from_rfc3339(&s)
                         .map(|dt| dt.with_timezone(&Utc))
                         .unwrap_or_default()

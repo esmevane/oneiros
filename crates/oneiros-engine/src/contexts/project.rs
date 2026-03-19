@@ -9,6 +9,7 @@ use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
+use crate::Source;
 use crate::config::Config;
 use crate::events::Events;
 use crate::store::{self, NewEvent, Projection, StoredEvent};
@@ -24,7 +25,7 @@ pub struct ProjectContext {
     projections: &'static [&'static [Projection]],
     events: broadcast::Sender<StoredEvent>,
     config: Option<Arc<Config>>,
-    source: String,
+    source: Source,
 }
 
 impl ProjectContext {
@@ -35,12 +36,12 @@ impl ProjectContext {
             projections,
             events,
             config: None,
-            source: String::new(),
+            source: Source::default(),
         }
     }
 
-    pub fn with_source(mut self, source: impl Into<String>) -> Self {
-        self.source = source.into();
+    pub fn with_source(mut self, source: Source) -> Self {
+        self.source = source;
         self
     }
 
@@ -64,7 +65,7 @@ impl ProjectContext {
     pub fn emit(&self, event: impl Into<Events>) -> StoredEvent {
         let new_event = NewEvent {
             data: event.into(),
-            source: self.source.clone(),
+            source: self.source,
         };
 
         let stored = self.with_db(|conn| {
