@@ -11,7 +11,7 @@ pub enum CognitionCommands {
         texture: String,
         content: String,
     },
-    Get {
+    Show {
         id: String,
     },
     List {
@@ -35,7 +35,7 @@ impl CognitionCli {
             } => {
                 serde_json::to_string_pretty(&CognitionService::add(ctx, agent, texture, content)?)?
             }
-            CognitionCommands::Get { id } => {
+            CognitionCommands::Show { id } => {
                 serde_json::to_string_pretty(&CognitionService::get(ctx, &id)?)?
             }
             CognitionCommands::List { agent, texture } => serde_json::to_string_pretty(

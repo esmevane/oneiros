@@ -178,11 +178,11 @@ fn cognition_add_and_list() {
         "Something interesting".into(),
     )
     .unwrap();
-    assert!(matches!(resp, CognitionResponse::Added(_)));
+    assert!(matches!(resp, CognitionResponse::CognitionAdded(_)));
 
     match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
-        CognitionResponse::Listed(cogs) => assert_eq!(cogs.len(), 1),
-        other => panic!("Expected Listed, got {other:?}"),
+        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        other => panic!("Expected Cognitions, got {other:?}"),
     }
 }
 
@@ -285,8 +285,8 @@ fn replay_reconstructs_read_models() {
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
     match CognitionService::list(&ctx, Some("gov.test-persona"), None).unwrap() {
-        CognitionResponse::Listed(cogs) => assert_eq!(cogs.len(), 1),
-        other => panic!("Expected Listed after replay, got {other:?}"),
+        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        other => panic!("Expected Cognitions after replay, got {other:?}"),
     }
 }
 

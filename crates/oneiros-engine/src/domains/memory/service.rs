@@ -20,7 +20,7 @@ impl MemoryService {
         };
 
         ctx.emit(MemoryEvents::MemoryAdded(memory.clone()));
-        Ok(MemoryResponse::Added(memory))
+        Ok(MemoryResponse::MemoryAdded(memory))
     }
 
     pub fn get(ctx: &ProjectContext, id: &str) -> Result<MemoryResponse, MemoryError> {
@@ -28,13 +28,17 @@ impl MemoryService {
             .with_db(|conn| MemoryRepo::new(conn).get(id))
             .map_err(MemoryError::Database)?
             .ok_or_else(|| MemoryError::NotFound(id.to_string()))?;
-        Ok(MemoryResponse::Found(memory))
+        Ok(MemoryResponse::MemoryDetails(memory))
     }
 
     pub fn list(ctx: &ProjectContext, agent: Option<&str>) -> Result<MemoryResponse, MemoryError> {
         let memories = ctx
             .with_db(|conn| MemoryRepo::new(conn).list(agent))
             .map_err(MemoryError::Database)?;
-        Ok(MemoryResponse::Listed(memories))
+        Ok(if memories.is_empty() {
+            MemoryResponse::NoMemories
+        } else {
+            MemoryResponse::Memories(memories)
+        })
     }
 }

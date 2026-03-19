@@ -20,7 +20,7 @@ impl ExperienceService {
         };
 
         ctx.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
-        Ok(ExperienceResponse::Created(experience))
+        Ok(ExperienceResponse::ExperienceCreated(experience))
     }
 
     pub fn get(ctx: &ProjectContext, id: &str) -> Result<ExperienceResponse, ExperienceError> {
@@ -28,7 +28,7 @@ impl ExperienceService {
             .with_db(|conn| ExperienceRepo::new(conn).get(id))
             .map_err(ExperienceError::Database)?
             .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
-        Ok(ExperienceResponse::Found(experience))
+        Ok(ExperienceResponse::ExperienceDetails(experience))
     }
 
     pub fn list(
@@ -38,7 +38,11 @@ impl ExperienceService {
         let experiences = ctx
             .with_db(|conn| ExperienceRepo::new(conn).list(agent))
             .map_err(ExperienceError::Database)?;
-        Ok(ExperienceResponse::Listed(experiences))
+        Ok(if experiences.is_empty() {
+            ExperienceResponse::NoExperiences
+        } else {
+            ExperienceResponse::Experiences(experiences)
+        })
     }
 
     pub fn update_description(
@@ -62,7 +66,7 @@ impl ExperienceService {
                 description,
             },
         ));
-        Ok(ExperienceResponse::Updated(experience))
+        Ok(ExperienceResponse::ExperienceUpdated(experience))
     }
 
     pub fn update_sensation(
@@ -85,6 +89,6 @@ impl ExperienceService {
                 sensation,
             },
         ));
-        Ok(ExperienceResponse::Updated(experience))
+        Ok(ExperienceResponse::ExperienceUpdated(experience))
     }
 }

@@ -20,7 +20,7 @@ impl CognitionService {
         };
 
         ctx.emit(CognitionEvents::CognitionAdded(cognition.clone()));
-        Ok(CognitionResponse::Added(cognition))
+        Ok(CognitionResponse::CognitionAdded(cognition))
     }
 
     pub fn get(ctx: &ProjectContext, id: &str) -> Result<CognitionResponse, CognitionError> {
@@ -28,7 +28,7 @@ impl CognitionService {
             .with_db(|conn| CognitionRepo::new(conn).get(id))
             .map_err(CognitionError::Database)?
             .ok_or_else(|| CognitionError::NotFound(id.to_string()))?;
-        Ok(CognitionResponse::Found(cognition))
+        Ok(CognitionResponse::CognitionDetails(cognition))
     }
 
     pub fn list(
@@ -39,6 +39,10 @@ impl CognitionService {
         let cognitions = ctx
             .with_db(|conn| CognitionRepo::new(conn).list(agent, texture))
             .map_err(CognitionError::Database)?;
-        Ok(CognitionResponse::Listed(cognitions))
+        Ok(if cognitions.is_empty() {
+            CognitionResponse::NoCognitions
+        } else {
+            CognitionResponse::Cognitions(cognitions)
+        })
     }
 }

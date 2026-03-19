@@ -11,20 +11,19 @@ pub enum ExperienceCommands {
         sensation: String,
         description: String,
     },
-    Get {
+    Show {
         id: String,
     },
     List {
         #[arg(long)]
         agent: Option<String>,
     },
-    UpdateDescription {
+    Update {
         id: String,
-        description: String,
-    },
-    UpdateSensation {
-        id: String,
-        sensation: String,
+        #[arg(long)]
+        description: Option<String>,
+        #[arg(long)]
+        sensation: Option<String>,
     },
 }
 
@@ -44,22 +43,29 @@ impl ExperienceCli {
                 sensation,
                 description,
             )?)?,
-            ExperienceCommands::Get { id } => {
+            ExperienceCommands::Show { id } => {
                 serde_json::to_string_pretty(&ExperienceService::get(ctx, &id)?)?
             }
             ExperienceCommands::List { agent } => {
                 serde_json::to_string_pretty(&ExperienceService::list(ctx, agent.as_deref())?)?
             }
-            ExperienceCommands::UpdateDescription { id, description } => {
-                serde_json::to_string_pretty(&ExperienceService::update_description(
-                    ctx,
-                    &id,
-                    description,
-                )?)?
+            ExperienceCommands::Update {
+                id,
+                description,
+                sensation,
+            } => {
+                let mut result = None;
+                if let Some(desc) = description {
+                    result = Some(ExperienceService::update_description(ctx, &id, desc)?);
+                }
+                if let Some(sens) = sensation {
+                    result = Some(ExperienceService::update_sensation(ctx, &id, sens)?);
+                }
+                match result {
+                    Some(r) => serde_json::to_string_pretty(&r)?,
+                    None => return Err("update requires --description or --sensation".into()),
+                }
             }
-            ExperienceCommands::UpdateSensation { id, sensation } => serde_json::to_string_pretty(
-                &ExperienceService::update_sensation(ctx, &id, sensation)?,
-            )?,
         };
         Ok(result)
     }

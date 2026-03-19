@@ -221,6 +221,72 @@ async fn agent_name_includes_persona_suffix() -> TestResult {
     cases::agent::name_includes_persona_suffix::<Engine>().await
 }
 
+// Cognition
+#[tokio::test]
+async fn cognition_add() -> TestResult {
+    cases::cognition::add_creates_cognition::<Engine>().await
+}
+#[tokio::test]
+async fn cognition_list_empty() -> TestResult {
+    cases::cognition::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn cognition_list_populated() -> TestResult {
+    cases::cognition::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn cognition_list_filters_by_agent() -> TestResult {
+    cases::cognition::list_filters_by_agent::<Engine>().await
+}
+#[tokio::test]
+async fn cognition_show_by_id() -> TestResult {
+    cases::cognition::show_by_id::<Engine>().await
+}
+
+// Memory
+#[tokio::test]
+async fn memory_add() -> TestResult {
+    cases::memory::add_creates_memory::<Engine>().await
+}
+#[tokio::test]
+async fn memory_list_empty() -> TestResult {
+    cases::memory::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn memory_list_populated() -> TestResult {
+    cases::memory::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn memory_list_filters_by_agent() -> TestResult {
+    cases::memory::list_filters_by_agent::<Engine>().await
+}
+#[tokio::test]
+async fn memory_show_by_id() -> TestResult {
+    cases::memory::show_by_id::<Engine>().await
+}
+
+// Experience
+#[tokio::test]
+async fn experience_create() -> TestResult {
+    cases::experience::create::<Engine>().await
+}
+#[tokio::test]
+async fn experience_list_empty() -> TestResult {
+    cases::experience::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn experience_list_populated() -> TestResult {
+    cases::experience::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn experience_show_by_id() -> TestResult {
+    cases::experience::show_by_id::<Engine>().await
+}
+#[tokio::test]
+async fn experience_update_description() -> TestResult {
+    cases::experience::update_description::<Engine>().await
+}
+
 // Texture
 #[tokio::test]
 async fn texture_set_creates() -> TestResult {

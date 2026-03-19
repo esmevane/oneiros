@@ -11,7 +11,7 @@ pub enum MemoryCommands {
         level: String,
         content: String,
     },
-    Get {
+    Show {
         id: String,
     },
     List {
@@ -31,7 +31,7 @@ impl MemoryCli {
                 level,
                 content,
             } => serde_json::to_string_pretty(&MemoryService::add(ctx, agent, level, content)?)?,
-            MemoryCommands::Get { id } => {
+            MemoryCommands::Show { id } => {
                 serde_json::to_string_pretty(&MemoryService::get(ctx, &id)?)?
             }
             MemoryCommands::List { agent } => {
