@@ -23,16 +23,14 @@ impl TicketCli {
     pub fn execute(
         ctx: &SystemContext,
         cmd: TicketCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             TicketCommands::Issue {
                 actor_id,
                 brain_name,
-            } => serde_json::to_string_pretty(&TicketService::create(ctx, actor_id, brain_name)?)?,
-            TicketCommands::Validate { id } => {
-                serde_json::to_string_pretty(&TicketService::validate(ctx, &id)?)?
-            }
-            TicketCommands::List => serde_json::to_string_pretty(&TicketService::list(ctx)?)?,
+            } => TicketService::create(ctx, actor_id, brain_name)?.into(),
+            TicketCommands::Validate { id } => TicketService::validate(ctx, &id)?.into(),
+            TicketCommands::List => TicketService::list(ctx)?.into(),
         };
         Ok(result)
     }

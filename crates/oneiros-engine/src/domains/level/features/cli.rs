@@ -26,27 +26,24 @@ impl LevelCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: LevelCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             LevelCommands::Set {
                 name,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&LevelService::set(
+            } => LevelService::set(
                 ctx,
                 Level {
                     name: LevelName::new(name),
                     description,
                     prompt,
                 },
-            )?)?,
-            LevelCommands::Show { name } => {
-                serde_json::to_string_pretty(&LevelService::get(ctx, &name)?)?
-            }
-            LevelCommands::List => serde_json::to_string_pretty(&LevelService::list(ctx)?)?,
-            LevelCommands::Remove { name } => {
-                serde_json::to_string_pretty(&LevelService::remove(ctx, &name)?)?
-            }
+            )?
+            .into(),
+            LevelCommands::Show { name } => LevelService::get(ctx, &name)?.into(),
+            LevelCommands::List => LevelService::list(ctx)?.into(),
+            LevelCommands::Remove { name } => LevelService::remove(ctx, &name)?.into(),
         };
         Ok(result)
     }

@@ -26,27 +26,24 @@ impl TextureCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: TextureCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             TextureCommands::Set {
                 name,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&TextureService::set(
+            } => TextureService::set(
                 ctx,
                 Texture {
                     name: TextureName::new(name),
                     description,
                     prompt,
                 },
-            )?)?,
-            TextureCommands::Show { name } => {
-                serde_json::to_string_pretty(&TextureService::get(ctx, &name)?)?
-            }
-            TextureCommands::List => serde_json::to_string_pretty(&TextureService::list(ctx)?)?,
-            TextureCommands::Remove { name } => {
-                serde_json::to_string_pretty(&TextureService::remove(ctx, &name)?)?
-            }
+            )?
+            .into(),
+            TextureCommands::Show { name } => TextureService::get(ctx, &name)?.into(),
+            TextureCommands::List => TextureService::list(ctx)?.into(),
+            TextureCommands::Remove { name } => TextureService::remove(ctx, &name)?.into(),
         };
         Ok(result)
     }

@@ -29,28 +29,18 @@ impl ConnectionCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: ConnectionCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             ConnectionCommands::Create {
                 nature,
                 from_ref,
                 to_ref,
-            } => serde_json::to_string_pretty(&ConnectionService::create(
-                ctx,
-                from_ref,
-                to_ref,
-                nature,
-                String::new(),
-            )?)?,
-            ConnectionCommands::Show { id } => {
-                serde_json::to_string_pretty(&ConnectionService::get(ctx, &id)?)?
-            }
+            } => ConnectionService::create(ctx, from_ref, to_ref, nature, String::new())?.into(),
+            ConnectionCommands::Show { id } => ConnectionService::get(ctx, &id)?.into(),
             ConnectionCommands::List { entity_ref, .. } => {
-                serde_json::to_string_pretty(&ConnectionService::list(ctx, entity_ref.as_deref())?)?
+                ConnectionService::list(ctx, entity_ref.as_deref())?.into()
             }
-            ConnectionCommands::Remove { id } => {
-                serde_json::to_string_pretty(&ConnectionService::remove(ctx, &id)?)?
-            }
+            ConnectionCommands::Remove { id } => ConnectionService::remove(ctx, &id)?.into(),
         };
         Ok(result)
     }

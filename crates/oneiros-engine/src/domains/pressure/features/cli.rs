@@ -13,8 +13,8 @@ impl PressureCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: PressureCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        let result = serde_json::to_string_pretty(&PressureService::get(ctx, &cmd.name)?)?;
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
+        let result = PressureService::get(ctx, &cmd.name)?.into();
         Ok(result)
     }
 }

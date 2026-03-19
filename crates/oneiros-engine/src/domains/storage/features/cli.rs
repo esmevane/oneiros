@@ -27,7 +27,7 @@ impl StorageCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: StorageCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             StorageCommands::Set {
                 key,
@@ -40,24 +40,17 @@ impl StorageCli {
                 } else {
                     description
                 };
-                serde_json::to_string_pretty(&StorageService::upload(
-                    ctx,
-                    key,
-                    content_type,
-                    data,
-                )?)?
+                StorageService::upload(ctx, key, content_type, data)?.into()
             }
-            StorageCommands::Show { key } => {
-                serde_json::to_string_pretty(&StorageService::show(ctx, &key)?)?
-            }
-            StorageCommands::List => serde_json::to_string_pretty(&StorageService::list(ctx)?)?,
+            StorageCommands::Show { key } => StorageService::show(ctx, &key)?.into(),
+            StorageCommands::List => StorageService::list(ctx)?.into(),
             StorageCommands::Remove { key } => {
                 // Look up by name to get the ID, then remove by ID
                 let entry = ctx
                     .with_db(|conn| StorageRepo::new(conn).get_by_name(&key))
                     .map_err(|e| format!("database error: {e}"))?
                     .ok_or_else(|| format!("storage entry '{key}' not found"))?;
-                serde_json::to_string_pretty(&StorageService::remove(ctx, &entry.id.to_string())?)?
+                StorageService::remove(ctx, &entry.id.to_string())?.into()
             }
         };
         Ok(result)

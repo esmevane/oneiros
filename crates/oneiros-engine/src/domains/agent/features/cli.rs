@@ -35,39 +35,23 @@ impl AgentCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: AgentCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             AgentCommands::Create {
                 name,
                 persona,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&AgentService::create(
-                ctx,
-                name,
-                persona,
-                description,
-                prompt,
-            )?)?,
-            AgentCommands::Show { name } => {
-                serde_json::to_string_pretty(&AgentService::get(ctx, &name)?)?
-            }
-            AgentCommands::List => serde_json::to_string_pretty(&AgentService::list(ctx)?)?,
+            } => AgentService::create(ctx, name, persona, description, prompt)?.into(),
+            AgentCommands::Show { name } => AgentService::get(ctx, &name)?.into(),
+            AgentCommands::List => AgentService::list(ctx)?.into(),
             AgentCommands::Update {
                 name,
                 persona,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&AgentService::update(
-                ctx,
-                name,
-                persona,
-                description,
-                prompt,
-            )?)?,
-            AgentCommands::Remove { name } => {
-                serde_json::to_string_pretty(&AgentService::remove(ctx, &name)?)?
-            }
+            } => AgentService::update(ctx, name, persona, description, prompt)?.into(),
+            AgentCommands::Remove { name } => AgentService::remove(ctx, &name)?.into(),
         };
         Ok(result)
     }

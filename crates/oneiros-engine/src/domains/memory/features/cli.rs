@@ -24,19 +24,15 @@ impl MemoryCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: MemoryCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             MemoryCommands::Add {
                 agent,
                 level,
                 content,
-            } => serde_json::to_string_pretty(&MemoryService::add(ctx, agent, level, content)?)?,
-            MemoryCommands::Show { id } => {
-                serde_json::to_string_pretty(&MemoryService::get(ctx, &id)?)?
-            }
-            MemoryCommands::List { agent } => {
-                serde_json::to_string_pretty(&MemoryService::list(ctx, agent.as_deref())?)?
-            }
+            } => MemoryService::add(ctx, agent, level, content)?.into(),
+            MemoryCommands::Show { id } => MemoryService::get(ctx, &id)?.into(),
+            MemoryCommands::List { agent } => MemoryService::list(ctx, agent.as_deref())?.into(),
         };
         Ok(result)
     }

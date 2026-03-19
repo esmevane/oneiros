@@ -133,7 +133,7 @@ impl EngineContext {
 pub fn execute(
     ctx: &EngineContext,
     command: Command,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<Responses, Box<dyn std::error::Error>> {
     match command {
         // Workflow domains — each knows its context
         Command::System(cmd) => SystemCli::execute(&ctx.system, cmd),
@@ -163,29 +163,15 @@ pub fn execute(
         Command::Doctor => DoctorCli::execute(&ctx.system),
 
         // Flat lifecycle shortcuts
-        Command::Wake { name } => {
-            let response = LifecycleService::wake(ctx.project()?, &name)?;
-            Ok(serde_json::to_string_pretty(&response)?)
-        }
-        Command::Dream { name } => {
-            let response = LifecycleService::dream(ctx.project()?, &name)?;
-            Ok(serde_json::to_string_pretty(&response)?)
-        }
+        Command::Wake { name } => Ok(LifecycleService::wake(ctx.project()?, &name)?.into()),
+        Command::Dream { name } => Ok(LifecycleService::dream(ctx.project()?, &name)?.into()),
         Command::Introspect { name } => {
-            let response = LifecycleService::introspect(ctx.project()?, &name)?;
-            Ok(serde_json::to_string_pretty(&response)?)
+            Ok(LifecycleService::introspect(ctx.project()?, &name)?.into())
         }
-        Command::Reflect { name } => {
-            let response = LifecycleService::reflect(ctx.project()?, &name)?;
-            Ok(serde_json::to_string_pretty(&response)?)
-        }
-        Command::Sleep { name } => {
-            let response = LifecycleService::sleep(ctx.project()?, &name)?;
-            Ok(serde_json::to_string_pretty(&response)?)
-        }
+        Command::Reflect { name } => Ok(LifecycleService::reflect(ctx.project()?, &name)?.into()),
+        Command::Sleep { name } => Ok(LifecycleService::sleep(ctx.project()?, &name)?.into()),
         Command::Guidebook { name } => {
-            let response = LifecycleService::guidebook(ctx.project()?, &name)?;
-            Ok(serde_json::to_string_pretty(&response)?)
+            Ok(LifecycleService::guidebook(ctx.project()?, &name)?.into())
         }
 
         // Emerge: create an agent then immediately wake it
@@ -201,16 +187,14 @@ pub fn execute(
                 other => return Err(format!("unexpected agent response: {other:?}").into()),
             };
             LifecycleService::wake(project, &agent_name)?;
-            let payload = serde_json::json!({ "type": "emerged", "data": agent_name });
-            Ok(serde_json::to_string_pretty(&payload)?)
+            Ok(serde_json::json!({ "type": "emerged", "data": agent_name }).into())
         }
 
         // Recede: retire an agent
         Command::Recede { name } => {
             let project = ctx.project()?;
             AgentService::remove(project, &name)?;
-            let payload = serde_json::json!({ "type": "receded", "data": name });
-            Ok(serde_json::to_string_pretty(&payload)?)
+            Ok(serde_json::json!({ "type": "receded", "data": name }).into())
         }
 
         // Status: gather an agent's cognitive context and return it
@@ -218,8 +202,7 @@ pub fn execute(
             let project = ctx.project()?;
             let context = LifecycleService::gather_context(project, &name)
                 .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-            let payload = serde_json::json!({ "type": "status", "data": context });
-            Ok(serde_json::to_string_pretty(&payload)?)
+            Ok(serde_json::json!({ "type": "status", "data": context }).into())
         }
 
         // Event inspection
@@ -227,7 +210,7 @@ pub fn execute(
             EventCommands::List => {
                 let project = ctx.project()?;
                 let events = project.with_db(event::repo::load_events)?;
-                Ok(serde_json::to_string_pretty(&events)?)
+                Ok(serde_json::to_value(&events)?.into())
             }
         },
     }

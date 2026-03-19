@@ -16,15 +16,11 @@ impl TenantCli {
     pub fn execute(
         ctx: &SystemContext,
         cmd: TenantCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
-            TenantCommands::Create { name } => {
-                serde_json::to_string_pretty(&TenantService::create(ctx, name)?)?
-            }
-            TenantCommands::Get { id } => {
-                serde_json::to_string_pretty(&TenantService::get(ctx, &id)?)?
-            }
-            TenantCommands::List => serde_json::to_string_pretty(&TenantService::list(ctx)?)?,
+            TenantCommands::Create { name } => TenantService::create(ctx, name)?.into(),
+            TenantCommands::Get { id } => TenantService::get(ctx, &id)?.into(),
+            TenantCommands::List => TenantService::list(ctx)?.into(),
         };
         Ok(result)
     }

@@ -26,10 +26,16 @@ pub enum Responses {
     Lifecycle(LifecycleResponse),
     Pressure(PressureResponse),
     Search(SearchResponse),
+    Project(ProjectResponse),
+    Seed(SeedResponse),
+    Doctor(Vec<DoctorResponse>),
+    System(SystemResponse),
     Tenant(TenantResponse),
     Actor(ActorResponse),
     Brain(BrainResponse),
     Ticket(TicketResponse),
+    /// Escape hatch for composite operations that don't map to a single domain response.
+    Json(serde_json::Value),
 }
 
 // ── From impls ───────────────────────────────────────────────────
@@ -127,5 +133,30 @@ impl From<BrainResponse> for Responses {
 impl From<TicketResponse> for Responses {
     fn from(r: TicketResponse) -> Self {
         Responses::Ticket(r)
+    }
+}
+impl From<ProjectResponse> for Responses {
+    fn from(r: ProjectResponse) -> Self {
+        Responses::Project(r)
+    }
+}
+impl From<serde_json::Value> for Responses {
+    fn from(r: serde_json::Value) -> Self {
+        Responses::Json(r)
+    }
+}
+impl From<SeedResponse> for Responses {
+    fn from(r: SeedResponse) -> Self {
+        Responses::Seed(r)
+    }
+}
+impl From<Vec<DoctorResponse>> for Responses {
+    fn from(r: Vec<DoctorResponse>) -> Self {
+        Responses::Doctor(r)
+    }
+}
+impl From<SystemResponse> for Responses {
+    fn from(r: SystemResponse) -> Self {
+        Responses::System(r)
     }
 }

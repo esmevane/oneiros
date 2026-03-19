@@ -18,13 +18,13 @@ impl SystemCli {
     pub fn execute(
         ctx: &SystemContext,
         cmd: SystemCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        match cmd {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
+        let result = match cmd {
             SystemCommands::Init { name, .. } => {
                 let name = name.unwrap_or_else(|| "onerios user".to_string());
-                let result = SystemService::init(ctx, name)?;
-                Ok(serde_json::to_string_pretty(&result)?)
+                SystemService::init(ctx, name)?.into()
             }
-        }
+        };
+        Ok(result)
     }
 }

@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ProjectResponse {
     BrainCreated(BrainName),
@@ -14,13 +14,13 @@ pub enum ProjectResponse {
     Replayed(ReplayResult),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportResult {
     pub imported: usize,
     pub replayed: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReplayResult {
     pub replayed: usize,
 }

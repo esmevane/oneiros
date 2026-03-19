@@ -26,21 +26,17 @@ impl CognitionCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: CognitionCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             CognitionCommands::Add {
                 agent,
                 texture,
                 content,
-            } => {
-                serde_json::to_string_pretty(&CognitionService::add(ctx, agent, texture, content)?)?
+            } => CognitionService::add(ctx, agent, texture, content)?.into(),
+            CognitionCommands::Show { id } => CognitionService::get(ctx, &id)?.into(),
+            CognitionCommands::List { agent, texture } => {
+                CognitionService::list(ctx, agent.as_deref(), texture.as_deref())?.into()
             }
-            CognitionCommands::Show { id } => {
-                serde_json::to_string_pretty(&CognitionService::get(ctx, &id)?)?
-            }
-            CognitionCommands::List { agent, texture } => serde_json::to_string_pretty(
-                &CognitionService::list(ctx, agent.as_deref(), texture.as_deref())?,
-            )?,
         };
         Ok(result)
     }

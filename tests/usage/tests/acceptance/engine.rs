@@ -74,8 +74,8 @@ impl Backend for Engine {
         let full_args = strip_output_flag(full_args);
 
         let cli = Cli::try_parse_from(&full_args)?;
-        let json_string = execute(&self.ctx, cli.command)?;
-        let value: serde_json::Value = serde_json::from_str(&json_string)?;
+        let response = execute(&self.ctx, cli.command)?;
+        let value = serde_json::to_value(&response)?;
 
         // If the result is already an array, use it directly.
         // Otherwise wrap in an array for consistency.

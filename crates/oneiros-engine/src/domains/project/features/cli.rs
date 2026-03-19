@@ -28,30 +28,27 @@ impl ProjectCli {
         project: Option<&ProjectContext>,
         brain_name: &str,
         cmd: ProjectCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        match cmd {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
+        let result = match cmd {
             ProjectCommands::Init { .. } => {
-                let result = ProjectService::init(ctx, brain_name.to_string())?;
-                Ok(serde_json::to_string_pretty(&result)?)
+                ProjectService::init(ctx, brain_name.to_string())?.into()
             }
             ProjectCommands::Export { target } => {
                 let project =
                     project.ok_or("project context required — call start_service first")?;
-                let result = ProjectService::export(project, &target, brain_name)?;
-                Ok(serde_json::to_string_pretty(&result)?)
+                ProjectService::export(project, &target, brain_name)?.into()
             }
             ProjectCommands::Import { file } => {
                 let project =
                     project.ok_or("project context required — call start_service first")?;
-                let result = ProjectService::import(project, &file)?;
-                Ok(serde_json::to_string_pretty(&result)?)
+                ProjectService::import(project, &file)?.into()
             }
             ProjectCommands::Replay => {
                 let project =
                     project.ok_or("project context required — call start_service first")?;
-                let result = ProjectService::replay(project)?;
-                Ok(serde_json::to_string_pretty(&result)?)
+                ProjectService::replay(project)?.into()
             }
-        }
+        };
+        Ok(result)
     }
 }

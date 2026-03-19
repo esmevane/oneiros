@@ -13,12 +13,10 @@ impl SeedCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: SeedCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        match cmd {
-            SeedCommands::Core => {
-                let result = SeedService::core(ctx)?;
-                Ok(serde_json::to_string_pretty(&result)?)
-            }
-        }
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
+        let result = match cmd {
+            SeedCommands::Core => SeedService::core(ctx)?.into(),
+        };
+        Ok(result)
     }
 }

@@ -22,15 +22,13 @@ impl ActorCli {
     pub fn execute(
         ctx: &SystemContext,
         cmd: ActorCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             ActorCommands::Create { tenant_id, name } => {
-                serde_json::to_string_pretty(&ActorService::create(ctx, tenant_id, name)?)?
+                ActorService::create(ctx, tenant_id, name)?.into()
             }
-            ActorCommands::Get { id } => {
-                serde_json::to_string_pretty(&ActorService::get(ctx, &id)?)?
-            }
-            ActorCommands::List => serde_json::to_string_pretty(&ActorService::list(ctx)?)?,
+            ActorCommands::Get { id } => ActorService::get(ctx, &id)?.into(),
+            ActorCommands::List => ActorService::list(ctx)?.into(),
         };
         Ok(result)
     }

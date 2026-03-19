@@ -26,27 +26,24 @@ impl SensationCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: SensationCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             SensationCommands::Set {
                 name,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&SensationService::set(
+            } => SensationService::set(
                 ctx,
                 Sensation {
                     name: SensationName::new(name),
                     description,
                     prompt,
                 },
-            )?)?,
-            SensationCommands::Show { name } => {
-                serde_json::to_string_pretty(&SensationService::get(ctx, &name)?)?
-            }
-            SensationCommands::List => serde_json::to_string_pretty(&SensationService::list(ctx)?)?,
-            SensationCommands::Remove { name } => {
-                serde_json::to_string_pretty(&SensationService::remove(ctx, &name)?)?
-            }
+            )?
+            .into(),
+            SensationCommands::Show { name } => SensationService::get(ctx, &name)?.into(),
+            SensationCommands::List => SensationService::list(ctx)?.into(),
+            SensationCommands::Remove { name } => SensationService::remove(ctx, &name)?.into(),
         };
         Ok(result)
     }

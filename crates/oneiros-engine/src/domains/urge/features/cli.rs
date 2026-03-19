@@ -26,27 +26,24 @@ impl UrgeCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: UrgeCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             UrgeCommands::Set {
                 name,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&UrgeService::set(
+            } => UrgeService::set(
                 ctx,
                 Urge {
                     name: UrgeName::new(name),
                     description,
                     prompt,
                 },
-            )?)?,
-            UrgeCommands::Show { name } => {
-                serde_json::to_string_pretty(&UrgeService::get(ctx, &name)?)?
-            }
-            UrgeCommands::List => serde_json::to_string_pretty(&UrgeService::list(ctx)?)?,
-            UrgeCommands::Remove { name } => {
-                serde_json::to_string_pretty(&UrgeService::remove(ctx, &name)?)?
-            }
+            )?
+            .into(),
+            UrgeCommands::Show { name } => UrgeService::get(ctx, &name)?.into(),
+            UrgeCommands::List => UrgeService::list(ctx)?.into(),
+            UrgeCommands::Remove { name } => UrgeService::remove(ctx, &name)?.into(),
         };
         Ok(result)
     }

@@ -26,27 +26,24 @@ impl NatureCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: NatureCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             NatureCommands::Set {
                 name,
                 description,
                 prompt,
-            } => serde_json::to_string_pretty(&NatureService::set(
+            } => NatureService::set(
                 ctx,
                 Nature {
                     name: NatureName::new(name),
                     description,
                     prompt,
                 },
-            )?)?,
-            NatureCommands::Show { name } => {
-                serde_json::to_string_pretty(&NatureService::get(ctx, &name)?)?
-            }
-            NatureCommands::List => serde_json::to_string_pretty(&NatureService::list(ctx)?)?,
-            NatureCommands::Remove { name } => {
-                serde_json::to_string_pretty(&NatureService::remove(ctx, &name)?)?
-            }
+            )?
+            .into(),
+            NatureCommands::Show { name } => NatureService::get(ctx, &name)?.into(),
+            NatureCommands::List => NatureService::list(ctx)?.into(),
+            NatureCommands::Remove { name } => NatureService::remove(ctx, &name)?.into(),
         };
         Ok(result)
     }

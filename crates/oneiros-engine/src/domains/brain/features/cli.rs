@@ -16,15 +16,11 @@ impl BrainCli {
     pub fn execute(
         ctx: &SystemContext,
         cmd: BrainCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
-            BrainCommands::Create { name } => {
-                serde_json::to_string_pretty(&BrainService::create(ctx, name)?)?
-            }
-            BrainCommands::Get { name } => {
-                serde_json::to_string_pretty(&BrainService::get(ctx, &name)?)?
-            }
-            BrainCommands::List => serde_json::to_string_pretty(&BrainService::list(ctx)?)?,
+            BrainCommands::Create { name } => BrainService::create(ctx, name)?.into(),
+            BrainCommands::Get { name } => BrainService::get(ctx, &name)?.into(),
+            BrainCommands::List => BrainService::list(ctx)?.into(),
         };
         Ok(result)
     }

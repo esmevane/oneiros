@@ -19,28 +19,20 @@ impl LifecycleCli {
     pub fn execute(
         ctx: &ProjectContext,
         cmd: LifecycleCommands,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
-            LifecycleCommands::Wake { agent } => {
-                serde_json::to_string_pretty(&LifecycleService::wake(ctx, &agent)?)?
-            }
-            LifecycleCommands::Dream { agent } => {
-                serde_json::to_string_pretty(&LifecycleService::dream(ctx, &agent)?)?
-            }
+            LifecycleCommands::Wake { agent } => LifecycleService::wake(ctx, &agent)?.into(),
+            LifecycleCommands::Dream { agent } => LifecycleService::dream(ctx, &agent)?.into(),
             LifecycleCommands::Introspect { agent } => {
-                serde_json::to_string_pretty(&LifecycleService::introspect(ctx, &agent)?)?
+                LifecycleService::introspect(ctx, &agent)?.into()
             }
-            LifecycleCommands::Reflect { agent } => {
-                serde_json::to_string_pretty(&LifecycleService::reflect(ctx, &agent)?)?
-            }
+            LifecycleCommands::Reflect { agent } => LifecycleService::reflect(ctx, &agent)?.into(),
             LifecycleCommands::Sense { agent, content } => {
-                serde_json::to_string_pretty(&LifecycleService::sense(ctx, &agent, &content)?)?
+                LifecycleService::sense(ctx, &agent, &content)?.into()
             }
-            LifecycleCommands::Sleep { agent } => {
-                serde_json::to_string_pretty(&LifecycleService::sleep(ctx, &agent)?)?
-            }
+            LifecycleCommands::Sleep { agent } => LifecycleService::sleep(ctx, &agent)?.into(),
             LifecycleCommands::Guidebook { agent } => {
-                serde_json::to_string_pretty(&LifecycleService::guidebook(ctx, &agent)?)?
+                LifecycleService::guidebook(ctx, &agent)?.into()
             }
         };
         Ok(result)
