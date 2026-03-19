@@ -7,6 +7,7 @@ license.workspace = true
 
 [dependencies]
 axum.workspace = true
+bon.workspace = true
 chrono.workspace = true
 clap.workspace = true
 data-encoding.workspace = true

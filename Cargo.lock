@@ -1779,6 +1779,7 @@ name = "oneiros-engine"
 version = "0.0.8"
 dependencies = [
  "axum",
+ "bon",
  "chrono",
  "clap",
  "data-encoding",

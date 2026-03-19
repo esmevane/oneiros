@@ -13,6 +13,7 @@ pub struct Expression {
 }
 
 /// Envelope for search results, pairing the original query with matches.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct SearchResults {
     pub query: String,

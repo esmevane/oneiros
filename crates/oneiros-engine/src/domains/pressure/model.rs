@@ -10,7 +10,7 @@ pub struct Pressure {
     pub updated_at: String,
 }
 
-/// Summary for wire format.
+/// Compact pressure summary for response metadata.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PressureSummary {
     pub urge: String,
