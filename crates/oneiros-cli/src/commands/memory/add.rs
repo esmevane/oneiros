@@ -7,7 +7,6 @@ use crate::*;
 #[derive(Clone, serde::Serialize)]
 pub struct MemoryAddedResult {
     pub id: MemoryId,
-    #[serde(skip)]
     pub ref_token: RefToken,
     #[serde(skip)]
     pub gauge: String,

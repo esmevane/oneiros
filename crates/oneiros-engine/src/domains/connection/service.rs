@@ -21,8 +21,14 @@ impl ConnectionService {
             created_at: Utc::now().to_rfc3339(),
         };
 
+        let ref_token = RefToken::new(Ref::connection(connection.id));
         ctx.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
-        Ok(ConnectionResponse::Created(connection))
+        Ok(ConnectionResponse::ConnectionCreated(
+            ConnectionCreatedResult {
+                id: connection.id,
+                ref_token,
+            },
+        ))
     }
 
     pub fn get(ctx: &ProjectContext, id: &str) -> Result<ConnectionResponse, ConnectionError> {
@@ -30,7 +36,7 @@ impl ConnectionService {
             .with_db(|conn| ConnectionRepo::new(conn).get(id))
             .map_err(ConnectionError::Database)?
             .ok_or_else(|| ConnectionError::NotFound(id.to_string()))?;
-        Ok(ConnectionResponse::Found(connection))
+        Ok(ConnectionResponse::ConnectionDetails(connection))
     }
 
     pub fn list(
@@ -40,11 +46,14 @@ impl ConnectionService {
         let connections = ctx
             .with_db(|conn| ConnectionRepo::new(conn).list(entity))
             .map_err(ConnectionError::Database)?;
-        Ok(ConnectionResponse::Listed(connections))
+        if connections.is_empty() {
+            Ok(ConnectionResponse::NoConnections)
+        } else {
+            Ok(ConnectionResponse::Connections(connections))
+        }
     }
 
     pub fn remove(ctx: &ProjectContext, id: &str) -> Result<ConnectionResponse, ConnectionError> {
-        // Confirm existence before emitting removal.
         let exists = ctx
             .with_db(|conn| ConnectionRepo::new(conn).get(id))
             .map_err(ConnectionError::Database)?
@@ -54,13 +63,19 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(id.to_string()));
         }
 
-        let id_parsed = id
+        let id_parsed: ConnectionId = id
             .parse()
             .map_err(|e: IdParseError| ConnectionError::Database(e.into()))?;
 
+        let ref_token = RefToken::new(Ref::connection(id_parsed));
         ctx.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
             id: id_parsed,
         }));
-        Ok(ConnectionResponse::Removed)
+        Ok(ConnectionResponse::ConnectionRemoved(
+            ConnectionRemovedResult {
+                id: id_parsed,
+                ref_token,
+            },
+        ))
     }
 }

@@ -7,20 +7,18 @@ pub struct ConnectionCli;
 #[derive(Debug, Subcommand)]
 pub enum ConnectionCommands {
     Create {
-        #[arg(long)]
-        from: String,
-        #[arg(long)]
-        to: String,
-        #[arg(long)]
         nature: String,
-        description: String,
+        from_ref: String,
+        to_ref: String,
     },
-    Get {
+    Show {
         id: String,
     },
     List {
         #[arg(long)]
-        entity: Option<String>,
+        nature: Option<String>,
+        #[arg(long)]
+        entity_ref: Option<String>,
     },
     Remove {
         id: String,
@@ -34,23 +32,22 @@ impl ConnectionCli {
     ) -> Result<String, Box<dyn std::error::Error>> {
         let result = match cmd {
             ConnectionCommands::Create {
-                from,
-                to,
                 nature,
-                description,
+                from_ref,
+                to_ref,
             } => serde_json::to_string_pretty(&ConnectionService::create(
                 ctx,
-                from,
-                to,
+                from_ref,
+                to_ref,
                 nature,
-                description,
+                String::new(),
             )?)?,
-            ConnectionCommands::Get { id } => {
+            ConnectionCommands::Show { id } => {
                 serde_json::to_string_pretty(&ConnectionService::get(ctx, &id)?)?
             }
-            ConnectionCommands::List { entity } => {
-                serde_json::to_string_pretty(&ConnectionService::list(ctx, entity.as_deref())?)?
-            }
+            ConnectionCommands::List { entity_ref, .. } => serde_json::to_string_pretty(
+                &ConnectionService::list(ctx, entity_ref.as_deref())?,
+            )?,
             ConnectionCommands::Remove { id } => {
                 serde_json::to_string_pretty(&ConnectionService::remove(ctx, &id)?)?
             }

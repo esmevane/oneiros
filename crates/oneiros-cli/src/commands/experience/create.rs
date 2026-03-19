@@ -7,7 +7,6 @@ use crate::*;
 #[derive(Clone, serde::Serialize)]
 pub struct ExperienceCreatedResult {
     pub id: ExperienceId,
-    #[serde(skip)]
     pub ref_token: RefToken,
     #[serde(skip)]
     pub gauge: String,

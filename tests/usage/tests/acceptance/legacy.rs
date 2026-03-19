@@ -189,6 +189,28 @@ async fn agent_name_includes_persona_suffix() -> TestResult {
     cases::agent::name_includes_persona_suffix::<Legacy>().await
 }
 
+// Connection
+#[tokio::test]
+async fn connection_create() -> TestResult {
+    cases::connection::create::<Legacy>().await
+}
+#[tokio::test]
+async fn connection_list_empty() -> TestResult {
+    cases::connection::list_empty::<Legacy>().await
+}
+#[tokio::test]
+async fn connection_list_populated() -> TestResult {
+    cases::connection::list_populated::<Legacy>().await
+}
+#[tokio::test]
+async fn connection_show_by_id() -> TestResult {
+    cases::connection::show_by_id::<Legacy>().await
+}
+#[tokio::test]
+async fn connection_remove_by_id() -> TestResult {
+    cases::connection::remove_by_id::<Legacy>().await
+}
+
 // Experience
 #[tokio::test]
 async fn experience_create() -> TestResult {

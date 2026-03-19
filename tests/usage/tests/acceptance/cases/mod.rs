@@ -1,5 +1,6 @@
 pub(crate) mod agent;
 pub(crate) mod cognition;
+pub(crate) mod connection;
 pub(crate) mod experience;
 pub(crate) mod level;
 pub(crate) mod memory;

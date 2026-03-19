@@ -21,3 +21,4 @@ pub struct StorageContent {
 
 resource_id!(StorageId);
 resource_name!(StorageName);
+resource_name!(StorageKey);

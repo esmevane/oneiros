@@ -178,7 +178,10 @@ fn cognition_add_and_list() {
         "Something interesting".into(),
     )
     .unwrap();
-    assert!(matches!(resp, CognitionResponse::CognitionAdded(_)));
+    assert!(matches!(
+        resp,
+        CognitionResponse::CognitionAdded(CognitionAddedResult { .. })
+    ));
 
     match CognitionService::list(&ctx, Some("gov"), None).unwrap() {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),

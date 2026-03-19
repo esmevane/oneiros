@@ -19,8 +19,12 @@ impl CognitionService {
             created_at: Utc::now().to_rfc3339(),
         };
 
+        let ref_token = RefToken::new(Ref::cognition(cognition.id));
         ctx.emit(CognitionEvents::CognitionAdded(cognition.clone()));
-        Ok(CognitionResponse::CognitionAdded(cognition))
+        Ok(CognitionResponse::CognitionAdded(CognitionAddedResult {
+            id: cognition.id,
+            ref_token,
+        }))
     }
 
     pub fn get(ctx: &ProjectContext, id: &str) -> Result<CognitionResponse, CognitionError> {

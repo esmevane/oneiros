@@ -221,6 +221,28 @@ async fn agent_name_includes_persona_suffix() -> TestResult {
     cases::agent::name_includes_persona_suffix::<Engine>().await
 }
 
+// Connection
+#[tokio::test]
+async fn connection_create() -> TestResult {
+    cases::connection::create::<Engine>().await
+}
+#[tokio::test]
+async fn connection_list_empty() -> TestResult {
+    cases::connection::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn connection_list_populated() -> TestResult {
+    cases::connection::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn connection_show_by_id() -> TestResult {
+    cases::connection::show_by_id::<Engine>().await
+}
+#[tokio::test]
+async fn connection_remove_by_id() -> TestResult {
+    cases::connection::remove_by_id::<Engine>().await
+}
+
 // Cognition
 #[tokio::test]
 async fn cognition_add() -> TestResult {

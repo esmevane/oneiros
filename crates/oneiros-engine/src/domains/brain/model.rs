@@ -10,3 +10,4 @@ pub struct Brain {
 }
 
 resource_name!(BrainName);
+resource_id!(BrainId);

@@ -7,7 +7,6 @@ use crate::*;
 #[derive(Clone, serde::Serialize)]
 pub struct ConnectionCreatedResult {
     pub id: ConnectionId,
-    #[serde(skip)]
     pub ref_token: RefToken,
 }
 
