@@ -5,9 +5,10 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum StorageResponse {
-    Uploaded(StorageEntry),
-    Found(StorageEntry),
+    StorageSet(StorageName),
+    StorageDetails(StorageEntry),
     Content(StorageContent),
-    Listed(Vec<StorageEntry>),
-    Removed,
+    Entries(Vec<StorageEntry>),
+    NoEntries,
+    StorageRemoved(StorageName),
 }

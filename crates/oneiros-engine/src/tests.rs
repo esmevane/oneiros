@@ -451,23 +451,23 @@ fn search_indexes_across_domains() {
 
     // Search should find them
     match SearchService::search(&ctx, "architecture", None).unwrap() {
-        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 
     // Agent itself should be indexed too (from seed_agent)
     match SearchService::search(&ctx, "Governor", None).unwrap() {
-        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 
     // Search with agent filter
     match SearchService::search(&ctx, "typed", Some("gov")).unwrap() {
-        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 
     // Replay should rebuild the search index correctly
     ctx.with_db(|conn| store::replay(conn, PROJECTIONS).unwrap());
     match SearchService::search(&ctx, "architecture", None).unwrap() {
-        SearchResponse::Results(r) => assert_eq!(r.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 }
 
@@ -589,8 +589,8 @@ fn storage_upload_and_retrieve_content() {
 
     let content = b"Hello, oneiros!";
 
-    // Upload
-    let id = match StorageService::upload(
+    // Upload — returns the name, not the full entry; resolve ID via a subsequent get
+    let stored_name = match StorageService::upload(
         &ctx,
         "test.txt".into(),
         "text/plain".into(),
@@ -598,20 +598,31 @@ fn storage_upload_and_retrieve_content() {
     )
     .unwrap()
     {
-        StorageResponse::Uploaded(entry) => {
-            assert_eq!(entry.name, StorageName::new("test.txt"));
-            assert_eq!(entry.size, content.len() as u64);
-            entry.id
+        StorageResponse::StorageSet(name) => {
+            assert_eq!(name, StorageName::new("test.txt"));
+            name
         }
-        other => panic!("Expected Uploaded, got {other:?}"),
+        other => panic!("Expected StorageSet, got {other:?}"),
     };
 
-    let id_str = id.to_string();
+    // List to recover the entry and its ID
+    let id_str = match StorageService::list(&ctx).unwrap() {
+        StorageResponse::Entries(entries) => {
+            assert_eq!(entries.len(), 1);
+            let entry = &entries[0];
+            assert_eq!(entry.name, stored_name);
+            assert_eq!(entry.size, content.len() as u64);
+            entry.id.to_string()
+        }
+        other => panic!("Expected Entries, got {other:?}"),
+    };
 
     // Get metadata
     match StorageService::get(&ctx, &id_str).unwrap() {
-        StorageResponse::Found(entry) => assert_eq!(entry.name, StorageName::new("test.txt")),
-        other => panic!("Expected Found, got {other:?}"),
+        StorageResponse::StorageDetails(entry) => {
+            assert_eq!(entry.name, StorageName::new("test.txt"))
+        }
+        other => panic!("Expected StorageDetails, got {other:?}"),
     }
 
     // Get content
@@ -623,16 +634,10 @@ fn storage_upload_and_retrieve_content() {
         other => panic!("Expected Content, got {other:?}"),
     }
 
-    // List
-    match StorageService::list(&ctx).unwrap() {
-        StorageResponse::Listed(entries) => assert_eq!(entries.len(), 1),
-        other => panic!("Expected Listed, got {other:?}"),
-    }
-
     // Remove
     assert!(matches!(
         StorageService::remove(&ctx, &id_str).unwrap(),
-        StorageResponse::Removed
+        StorageResponse::StorageRemoved(_)
     ));
 
     // File should be gone

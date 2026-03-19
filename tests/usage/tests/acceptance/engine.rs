@@ -86,7 +86,13 @@ impl Backend for Engine {
         let conn = rusqlite::Connection::open(&brain_db_path)?;
         migrate_project(&conn)?;
 
-        self.ctx.project = Some(ProjectContext::new(conn, PROJECT_PROJECTIONS));
+        let data_dir = self._temp.path().join("data");
+        std::fs::create_dir_all(&data_dir)?;
+
+        self.ctx.project = Some(
+            ProjectContext::new(conn, PROJECT_PROJECTIONS)
+                .with_config(Config::new(&data_dir)),
+        );
 
         Ok(())
     }
@@ -307,6 +313,60 @@ async fn experience_show_by_id() -> TestResult {
 #[tokio::test]
 async fn experience_update_description() -> TestResult {
     cases::experience::update_description::<Engine>().await
+}
+
+// Search
+#[tokio::test]
+async fn search_finds_cognition_content() -> TestResult {
+    cases::search::finds_cognition_content::<Engine>().await
+}
+#[tokio::test]
+async fn search_finds_memory_content() -> TestResult {
+    cases::search::finds_memory_content::<Engine>().await
+}
+#[tokio::test]
+async fn search_finds_experience_description() -> TestResult {
+    cases::search::finds_experience_description::<Engine>().await
+}
+#[tokio::test]
+async fn search_finds_agent_description() -> TestResult {
+    cases::search::finds_agent_description::<Engine>().await
+}
+#[tokio::test]
+async fn search_finds_persona_description() -> TestResult {
+    cases::search::finds_persona_description::<Engine>().await
+}
+#[tokio::test]
+async fn search_returns_empty_for_no_match() -> TestResult {
+    cases::search::returns_empty_for_no_match::<Engine>().await
+}
+#[tokio::test]
+async fn search_filters_by_agent() -> TestResult {
+    cases::search::filters_by_agent::<Engine>().await
+}
+
+// Pressure
+#[tokio::test]
+async fn pressure_returns_readings() -> TestResult {
+    cases::pressure::returns_readings_for_agent::<Engine>().await
+}
+
+// Storage
+#[tokio::test]
+async fn storage_set_and_show() -> TestResult {
+    cases::storage::set_and_show::<Engine>().await
+}
+#[tokio::test]
+async fn storage_list_empty() -> TestResult {
+    cases::storage::list_empty::<Engine>().await
+}
+#[tokio::test]
+async fn storage_list_populated() -> TestResult {
+    cases::storage::list_populated::<Engine>().await
+}
+#[tokio::test]
+async fn storage_remove() -> TestResult {
+    cases::storage::remove::<Engine>().await
 }
 
 // Texture

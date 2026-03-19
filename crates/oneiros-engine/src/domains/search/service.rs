@@ -11,6 +11,9 @@ impl SearchService {
         let results = ctx
             .with_db(|conn| SearchRepo::new(conn).search(query, agent))
             .map_err(SearchError::Database)?;
-        Ok(SearchResponse::Results(results))
+        Ok(SearchResponse::Results(SearchResults {
+            query: query.to_string(),
+            results,
+        }))
     }
 }

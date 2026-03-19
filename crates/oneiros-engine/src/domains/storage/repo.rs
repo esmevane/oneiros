@@ -73,6 +73,33 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
+    pub fn get_by_name(&self, name: &str) -> Result<Option<StorageEntry>, StoreError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE name = ?1",
+        )?;
+
+        let raw = stmt.query_row(params![name], |row| {
+            let id: String = row.get(0)?;
+            let name: String = row.get(1)?;
+            let content_type: String = row.get(2)?;
+            let size: i64 = row.get(3)?;
+            let created_at: String = row.get(4)?;
+            Ok((id, name, content_type, size, created_at))
+        });
+
+        match raw {
+            Ok((id, name, content_type, size, created_at)) => Ok(Some(StorageEntry {
+                id: id.parse()?,
+                name: StorageName::new(name),
+                content_type,
+                size: size as u64,
+                created_at,
+            })),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
     pub fn list(&self) -> Result<Vec<StorageEntry>, StoreError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, name, content_type, size, created_at FROM storage_entries ORDER BY name",

@@ -277,6 +277,60 @@ async fn memory_show_by_id() -> TestResult {
     cases::memory::show_by_id::<Legacy>().await
 }
 
+// Search
+#[tokio::test]
+async fn search_finds_cognition_content() -> TestResult {
+    cases::search::finds_cognition_content::<Legacy>().await
+}
+#[tokio::test]
+async fn search_finds_memory_content() -> TestResult {
+    cases::search::finds_memory_content::<Legacy>().await
+}
+#[tokio::test]
+async fn search_finds_experience_description() -> TestResult {
+    cases::search::finds_experience_description::<Legacy>().await
+}
+#[tokio::test]
+async fn search_finds_agent_description() -> TestResult {
+    cases::search::finds_agent_description::<Legacy>().await
+}
+#[tokio::test]
+async fn search_finds_persona_description() -> TestResult {
+    cases::search::finds_persona_description::<Legacy>().await
+}
+#[tokio::test]
+async fn search_returns_empty_for_no_match() -> TestResult {
+    cases::search::returns_empty_for_no_match::<Legacy>().await
+}
+#[tokio::test]
+async fn search_filters_by_agent() -> TestResult {
+    cases::search::filters_by_agent::<Legacy>().await
+}
+
+// Pressure
+#[tokio::test]
+async fn pressure_returns_readings() -> TestResult {
+    cases::pressure::returns_readings_for_agent::<Legacy>().await
+}
+
+// Storage
+#[tokio::test]
+async fn storage_set_and_show() -> TestResult {
+    cases::storage::set_and_show::<Legacy>().await
+}
+#[tokio::test]
+async fn storage_list_empty() -> TestResult {
+    cases::storage::list_empty::<Legacy>().await
+}
+#[tokio::test]
+async fn storage_list_populated() -> TestResult {
+    cases::storage::list_populated::<Legacy>().await
+}
+#[tokio::test]
+async fn storage_remove() -> TestResult {
+    cases::storage::remove::<Legacy>().await
+}
+
 // Texture
 #[tokio::test]
 async fn texture_set_creates() -> TestResult {

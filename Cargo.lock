@@ -1785,6 +1785,7 @@ dependencies = [
  "flate2",
  "http-body-util",
  "postcard",
+ "pretty_assertions",
  "reqwest",
  "rmcp",
  "rusqlite",

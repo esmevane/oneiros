@@ -24,16 +24,25 @@ impl StorageService {
         let blob_path = blobs_dir.join(id.to_string());
         std::fs::write(&blob_path, &data)?;
 
+        let storage_name = StorageName::new(name.clone());
         let entry = StorageEntry {
             id,
-            name: StorageName::new(name),
+            name: storage_name.clone(),
             content_type,
             size: data.len() as u64,
             created_at: Utc::now().to_rfc3339(),
         };
 
         ctx.emit(StorageEvents::BlobStored(entry.clone()));
-        Ok(StorageResponse::Uploaded(entry))
+        Ok(StorageResponse::StorageSet(storage_name))
+    }
+
+    pub fn show(ctx: &ProjectContext, key: &str) -> Result<StorageResponse, StorageError> {
+        let entry = ctx
+            .with_db(|conn| StorageRepo::new(conn).get_by_name(key))
+            .map_err(StorageError::Database)?
+            .ok_or_else(|| StorageError::NotFound(key.to_string()))?;
+        Ok(StorageResponse::StorageDetails(entry))
     }
 
     pub fn get(ctx: &ProjectContext, id: &str) -> Result<StorageResponse, StorageError> {
@@ -41,7 +50,7 @@ impl StorageService {
             .with_db(|conn| StorageRepo::new(conn).get(id))
             .map_err(StorageError::Database)?
             .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
-        Ok(StorageResponse::Found(entry))
+        Ok(StorageResponse::StorageDetails(entry))
     }
 
     /// Retrieve the binary content of a stored blob.
@@ -63,7 +72,11 @@ impl StorageService {
         let entries = ctx
             .with_db(|conn| StorageRepo::new(conn).list())
             .map_err(StorageError::Database)?;
-        Ok(StorageResponse::Listed(entries))
+        if entries.is_empty() {
+            Ok(StorageResponse::NoEntries)
+        } else {
+            Ok(StorageResponse::Entries(entries))
+        }
     }
 
     /// Remove the metadata record and delete the blob file from the filesystem.
@@ -71,7 +84,7 @@ impl StorageService {
         let data_dir = ctx.data_dir().ok_or(StorageError::NoDataDir)?;
 
         // Confirm existence before emitting.
-        let _ = ctx
+        let entry = ctx
             .with_db(|conn| StorageRepo::new(conn).get(id))
             .map_err(StorageError::Database)?
             .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
@@ -85,6 +98,6 @@ impl StorageService {
         ctx.emit(StorageEvents::BlobRemoved(BlobRemoved {
             id: id.to_string(),
         }));
-        Ok(StorageResponse::Removed)
+        Ok(StorageResponse::StorageRemoved(entry.name))
     }
 }

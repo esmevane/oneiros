@@ -53,9 +53,11 @@ pub enum Command {
     #[command(subcommand)]
     Lifecycle(LifecycleCommands),
     #[command(subcommand)]
-    Search(SearchCommands),
-    #[command(subcommand)]
-    Pressure(PressureCommands),
+    Storage(StorageCommands),
+
+    // Flat arg commands — args appear directly under the command name
+    Search(#[command(flatten)] SearchCommands),
+    Pressure(#[command(flatten)] PressureCommands),
 }
 
 /// The combined context for CLI execution.
@@ -101,6 +103,7 @@ pub fn execute(
         Command::Experience(cmd) => ExperienceCli::execute(ctx.project()?, cmd),
         Command::Connection(cmd) => ConnectionCli::execute(ctx.project()?, cmd),
         Command::Lifecycle(cmd) => LifecycleCli::execute(ctx.project()?, cmd),
+        Command::Storage(cmd) => StorageCli::execute(ctx.project()?, cmd),
         Command::Search(cmd) => SearchCli::execute(ctx.project()?, cmd),
         Command::Pressure(cmd) => PressureCli::execute(ctx.project()?, cmd),
     }

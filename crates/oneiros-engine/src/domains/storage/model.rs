@@ -6,6 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct StorageEntry {
     pub id: StorageId,
+    #[serde(rename = "key")]
     pub name: StorageName,
     pub content_type: String,
     pub size: u64,
