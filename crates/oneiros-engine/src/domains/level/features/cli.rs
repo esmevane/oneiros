@@ -36,8 +36,8 @@ impl LevelCli {
                 ctx,
                 Level {
                     name: LevelName::new(name),
-                    description,
-                    prompt,
+                    description: Description(description),
+                    prompt: Prompt(prompt),
                 },
             )?
             .into(),

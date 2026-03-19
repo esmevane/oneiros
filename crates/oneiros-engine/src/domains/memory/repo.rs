@@ -63,10 +63,10 @@ impl<'a> MemoryRepo<'a> {
         match result {
             Ok((id, agent_id, level, content, created_at)) => Ok(Some(Memory {
                 id: id.parse()?,
-                agent_id,
-                level,
-                content,
-                created_at,
+                agent_id: AgentName::new(agent_id),
+                level: LevelName::new(level),
+                content: Content(content),
+                created_at: Timestamp::parse_str(&created_at)?,
             })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
@@ -105,10 +105,10 @@ impl<'a> MemoryRepo<'a> {
         for (id, agent_id, level, content, created_at) in raw {
             memories.push(Memory {
                 id: id.parse()?,
-                agent_id,
-                level,
-                content,
-                created_at,
+                agent_id: AgentName::new(agent_id),
+                level: LevelName::new(level),
+                content: Content(content),
+                created_at: Timestamp::parse_str(&created_at)?,
             });
         }
 
@@ -123,10 +123,10 @@ impl<'a> MemoryRepo<'a> {
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 memory.id.to_string(),
-                memory.agent_id,
-                memory.level,
-                memory.content,
-                memory.created_at,
+                memory.agent_id.to_string(),
+                memory.level.to_string(),
+                memory.content.to_string(),
+                memory.created_at.as_string(),
             ],
         )?;
         Ok(())

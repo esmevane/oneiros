@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::*;
 
 pub struct MemoryService;
@@ -13,10 +11,10 @@ impl MemoryService {
     ) -> Result<MemoryResponse, MemoryError> {
         let memory = Memory {
             id: MemoryId::new(),
-            agent_id: agent,
-            level,
-            content,
-            created_at: Utc::now().to_rfc3339(),
+            agent_id: AgentName::new(agent),
+            level: LevelName::new(level),
+            content: Content(content),
+            created_at: Timestamp::now(),
         };
 
         ctx.emit(MemoryEvents::MemoryAdded(memory.clone()));

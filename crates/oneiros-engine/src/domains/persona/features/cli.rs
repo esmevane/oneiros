@@ -36,8 +36,8 @@ impl PersonaCli {
                 ctx,
                 Persona {
                     name: PersonaName::new(name),
-                    description,
-                    prompt,
+                    description: Description(description),
+                    prompt: Prompt(prompt),
                 },
             )?
             .into(),

@@ -1,4 +1,4 @@
-use crate::IdParseError;
+use crate::{IdParseError, TimestampParseError};
 
 /// Event store errors.
 #[derive(Debug, thiserror::Error)]
@@ -11,6 +11,9 @@ pub enum EventError {
 
     #[error(transparent)]
     IdParse(#[from] IdParseError),
+
+    #[error(transparent)]
+    TimestampParse(#[from] TimestampParseError),
 
     #[error("Import error: {0}")]
     Import(String),

@@ -35,8 +35,8 @@ impl SeedService {
                 ctx,
                 Level {
                     name: LevelName::new(name),
-                    description: description.to_string(),
-                    prompt: prompt.to_string(),
+                    description: Description::from(description),
+                    prompt: Prompt::from(prompt),
                 },
             )?;
         }
@@ -72,8 +72,8 @@ impl SeedService {
                 ctx,
                 Texture {
                     name: TextureName::new(name),
-                    description: description.to_string(),
-                    prompt: String::new(),
+                    description: Description::from(description),
+                    prompt: Prompt::default(),
                 },
             )?;
         }
@@ -105,8 +105,8 @@ impl SeedService {
                 ctx,
                 Sensation {
                     name: SensationName::new(name),
-                    description: description.to_string(),
-                    prompt: String::new(),
+                    description: Description::from(description),
+                    prompt: Prompt::default(),
                 },
             )?;
         }
@@ -135,8 +135,8 @@ impl SeedService {
                 ctx,
                 Nature {
                     name: NatureName::new(name),
-                    description: description.to_string(),
-                    prompt: String::new(),
+                    description: Description::from(description),
+                    prompt: Prompt::default(),
                 },
             )?;
         }
@@ -156,8 +156,8 @@ impl SeedService {
                 ctx,
                 Persona {
                     name: PersonaName::new(name),
-                    description: description.to_string(),
-                    prompt: String::new(),
+                    description: Description::from(description),
+                    prompt: Prompt::default(),
                 },
             )?;
         }
@@ -188,8 +188,8 @@ impl SeedService {
                 ctx,
                 Urge {
                     name: UrgeName::new(name),
-                    description: description.to_string(),
-                    prompt: prompt.to_string(),
+                    description: Description::from(description),
+                    prompt: Prompt::from(prompt),
                 },
             )?;
         }

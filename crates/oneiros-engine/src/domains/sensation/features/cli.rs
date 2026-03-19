@@ -36,8 +36,8 @@ impl SensationCli {
                 ctx,
                 Sensation {
                     name: SensationName::new(name),
-                    description,
-                    prompt,
+                    description: Description(description),
+                    prompt: Prompt(prompt),
                 },
             )?
             .into(),

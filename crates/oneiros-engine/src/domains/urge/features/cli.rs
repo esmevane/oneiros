@@ -36,8 +36,8 @@ impl UrgeCli {
                 ctx,
                 Urge {
                     name: UrgeName::new(name),
-                    description,
-                    prompt,
+                    description: Description(description),
+                    prompt: Prompt(prompt),
                 },
             )?
             .into(),

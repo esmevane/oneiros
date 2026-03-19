@@ -36,8 +36,8 @@ impl TextureCli {
                 ctx,
                 Texture {
                     name: TextureName::new(name),
-                    description,
-                    prompt,
+                    description: Description(description),
+                    prompt: Prompt(prompt),
                 },
             )?
             .into(),

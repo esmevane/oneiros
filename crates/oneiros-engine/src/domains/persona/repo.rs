@@ -51,8 +51,8 @@ impl<'a> PersonaRepo<'a> {
             let name: String = row.get(0)?;
             Ok(Persona {
                 name: PersonaName::new(name),
-                description: row.get(1)?,
-                prompt: row.get(2)?,
+                description: Description(row.get(1)?),
+                prompt: Prompt(row.get(2)?),
             })
         });
 
@@ -73,8 +73,8 @@ impl<'a> PersonaRepo<'a> {
                 let name: String = row.get(0)?;
                 Ok(Persona {
                     name: PersonaName::new(name),
-                    description: row.get(1)?,
-                    prompt: row.get(2)?,
+                    description: Description(row.get(1)?),
+                    prompt: Prompt(row.get(2)?),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -89,8 +89,8 @@ impl<'a> PersonaRepo<'a> {
             "INSERT OR REPLACE INTO personas (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
                 persona.name.to_string(),
-                persona.description,
-                persona.prompt
+                persona.description.to_string(),
+                persona.prompt.to_string()
             ],
         )?;
         Ok(())

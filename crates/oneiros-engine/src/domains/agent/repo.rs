@@ -66,9 +66,9 @@ impl<'a> AgentRepo<'a> {
             Ok((id, name, persona, description, prompt)) => Ok(Some(Agent {
                 id: id.parse()?,
                 name: AgentName::new(name),
-                persona,
-                description,
-                prompt,
+                persona: PersonaName::new(persona),
+                description: Description(description),
+                prompt: Prompt(prompt),
             })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
@@ -98,9 +98,9 @@ impl<'a> AgentRepo<'a> {
             agents.push(Agent {
                 id: id.parse()?,
                 name: AgentName::new(name),
-                persona,
-                description,
-                prompt,
+                persona: PersonaName::new(persona),
+                description: Description(description),
+                prompt: Prompt(prompt),
             });
         }
 
@@ -125,9 +125,9 @@ impl<'a> AgentRepo<'a> {
             params![
                 agent.id.to_string(),
                 agent.name.to_string(),
-                agent.persona,
-                agent.description,
-                agent.prompt
+                agent.persona.to_string(),
+                agent.description.to_string(),
+                agent.prompt.to_string()
             ],
         )?;
         Ok(())
@@ -140,9 +140,9 @@ impl<'a> AgentRepo<'a> {
             params![
                 agent.id.to_string(),
                 agent.name.to_string(),
-                agent.persona,
-                agent.description,
-                agent.prompt
+                agent.persona.to_string(),
+                agent.description.to_string(),
+                agent.prompt.to_string()
             ],
         )?;
         Ok(())

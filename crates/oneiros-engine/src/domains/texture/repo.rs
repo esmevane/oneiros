@@ -51,8 +51,8 @@ impl<'a> TextureRepo<'a> {
             let name: String = row.get(0)?;
             Ok(Texture {
                 name: TextureName::new(name),
-                description: row.get(1)?,
-                prompt: row.get(2)?,
+                description: Description(row.get(1)?),
+                prompt: Prompt(row.get(2)?),
             })
         });
 
@@ -73,8 +73,8 @@ impl<'a> TextureRepo<'a> {
                 let name: String = row.get(0)?;
                 Ok(Texture {
                     name: TextureName::new(name),
-                    description: row.get(1)?,
-                    prompt: row.get(2)?,
+                    description: Description(row.get(1)?),
+                    prompt: Prompt(row.get(2)?),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -89,8 +89,8 @@ impl<'a> TextureRepo<'a> {
             "INSERT OR REPLACE INTO textures (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
                 texture.name.to_string(),
-                texture.description,
-                texture.prompt
+                texture.description.to_string(),
+                texture.prompt.to_string()
             ],
         )?;
         Ok(())

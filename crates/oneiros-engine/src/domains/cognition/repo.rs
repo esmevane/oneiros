@@ -63,10 +63,10 @@ impl<'a> CognitionRepo<'a> {
         match result {
             Ok((id, agent_id, texture, content, created_at)) => Ok(Some(Cognition {
                 id: id.parse()?,
-                agent_id,
-                texture,
-                content,
-                created_at,
+                agent_id: AgentName::new(agent_id),
+                texture: TextureName::new(texture),
+                content: Content(content),
+                created_at: Timestamp::parse_str(&created_at)?,
             })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
@@ -129,10 +129,10 @@ impl<'a> CognitionRepo<'a> {
         for (id, agent_id, texture, content, created_at) in raw {
             cognitions.push(Cognition {
                 id: id.parse()?,
-                agent_id,
-                texture,
-                content,
-                created_at,
+                agent_id: AgentName::new(agent_id),
+                texture: TextureName::new(texture),
+                content: Content(content),
+                created_at: Timestamp::parse_str(&created_at)?,
             });
         }
 
@@ -147,10 +147,10 @@ impl<'a> CognitionRepo<'a> {
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 cognition.id.to_string(),
-                cognition.agent_id,
-                cognition.texture,
-                cognition.content,
-                cognition.created_at,
+                cognition.agent_id.to_string(),
+                cognition.texture.to_string(),
+                cognition.content.to_string(),
+                cognition.created_at.as_string(),
             ],
         )?;
         Ok(())

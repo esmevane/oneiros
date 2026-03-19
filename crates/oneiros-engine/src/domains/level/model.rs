@@ -1,13 +1,14 @@
+use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Level {
     pub name: LevelName,
-    pub description: String,
-    pub prompt: String,
+    pub description: Description,
+    pub prompt: Prompt,
 }
 
 resource_name!(LevelName);

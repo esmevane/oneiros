@@ -36,8 +36,8 @@ impl NatureCli {
                 ctx,
                 Nature {
                     name: NatureName::new(name),
-                    description,
-                    prompt,
+                    description: Description(description),
+                    prompt: Prompt(prompt),
                 },
             )?
             .into(),

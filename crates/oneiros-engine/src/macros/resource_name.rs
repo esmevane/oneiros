@@ -35,23 +35,12 @@ macro_rules! resource_name {
             }
         }
 
-        impl AsRef<str> for $name {
-            fn as_ref(&self) -> &str {
-                self.as_str()
-            }
-        }
-
-        impl<'a> From<&'a str> for $name {
-            fn from(given_str: &'a str) -> Self {
-                Self::new(given_str)
-            }
-        }
-
-        impl core::str::FromStr for $name {
-            type Err = core::convert::Infallible;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                Ok(s.into())
+        impl<T> From<T> for $name
+        where
+            T: AsRef<str>,
+        {
+            fn from(given_str: T) -> Self {
+                Self::new(given_str.as_ref())
             }
         }
     };

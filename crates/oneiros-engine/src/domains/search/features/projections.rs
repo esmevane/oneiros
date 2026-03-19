@@ -21,13 +21,13 @@ fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), EventError> {
         Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["cognition", c.id.to_string(), c.content, c.agent_id],
+                params!["cognition", c.id.to_string(), c.content.to_string(), c.agent_id.to_string()],
             )?;
         }
         Events::Memory(MemoryEvents::MemoryAdded(m)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["memory", m.id.to_string(), m.content, m.agent_id],
+                params!["memory", m.id.to_string(), m.content.to_string(), m.agent_id.to_string()],
             )?;
         }
         Events::Agent(AgentEvents::AgentCreated(a)) => {
@@ -39,7 +39,7 @@ fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), EventError> {
         Events::Experience(ExperienceEvents::ExperienceCreated(e)) => {
             conn.execute(
                 "INSERT INTO search_index (kind, entity_id, content, agent) VALUES (?1, ?2, ?3, ?4)",
-                params!["experience", e.id.to_string(), e.description, e.agent_id],
+                params!["experience", e.id.to_string(), e.description.to_string(), e.agent_id.to_string()],
             )?;
         }
         _ => {}

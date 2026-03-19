@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::*;
 
 pub struct CognitionService;
@@ -13,10 +11,10 @@ impl CognitionService {
     ) -> Result<CognitionResponse, CognitionError> {
         let cognition = Cognition {
             id: CognitionId::new(),
-            agent_id: agent,
-            texture,
-            content,
-            created_at: Utc::now().to_rfc3339(),
+            agent_id: AgentName::new(agent),
+            texture: TextureName::new(texture),
+            content: Content(content),
+            created_at: Timestamp::now(),
         };
 
         let ref_token = RefToken::new(Ref::cognition(cognition.id));

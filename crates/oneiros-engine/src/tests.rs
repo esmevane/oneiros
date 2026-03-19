@@ -122,7 +122,7 @@ fn agent_create_and_get() {
     match AgentService::get(&ctx, "governor.test-persona").unwrap() {
         AgentResponse::AgentDetails(a) => {
             assert_eq!(a.name, AgentName::new("governor.test-persona"));
-            assert_eq!(a.persona, "test-persona");
+            assert_eq!(a.persona, PersonaName::new("test-persona"));
         }
         other => panic!("Expected AgentDetails, got {other:?}"),
     }
@@ -334,7 +334,7 @@ async fn http_serves_multiple_domains() {
     assert_eq!(resp.status(), StatusCode::OK);
 
     let req: Request<Body> = Request::builder()
-        .uri("/agents/gov")
+        .uri("/agents/gov.test-persona")
         .body(Body::empty())
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();
@@ -386,7 +386,7 @@ async fn full_integration() {
 
     // Read back via HTTP
     let req: Request<Body> = Request::builder()
-        .uri("/agents/gov")
+        .uri("/agents/gov.test-persona")
         .body(Body::empty())
         .unwrap();
     let resp = app.clone().oneshot(req).await.unwrap();

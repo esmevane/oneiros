@@ -165,9 +165,9 @@ impl<'a> PressureRepo<'a> {
                     |row| row.get::<_, String>(0),
                 )
                 .ok(),
-            Events::Lifecycle(LifecycleEvents::Introspected(a)) => Some(a.agent.clone()),
-            Events::Lifecycle(LifecycleEvents::Reflected(a)) => Some(a.agent.clone()),
-            Events::Lifecycle(LifecycleEvents::Dreamed(a)) => Some(a.agent.clone()),
+            Events::Lifecycle(LifecycleEvents::Introspected(a)) => Some(a.agent.to_string()),
+            Events::Lifecycle(LifecycleEvents::Reflected(a)) => Some(a.agent.to_string()),
+            Events::Lifecycle(LifecycleEvents::Dreamed(a)) => Some(a.agent.to_string()),
             _ => None,
         }
     }

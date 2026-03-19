@@ -19,10 +19,10 @@ impl<'a> ExperienceRepo<'a> {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
                 ExperienceEvents::ExperienceDescriptionUpdated(update) => {
-                    self.update_description(&update.id.to_string(), &update.description)?
+                    self.update_description(&update.id.to_string(), &update.description.to_string())?
                 }
                 ExperienceEvents::ExperienceSensationUpdated(update) => {
-                    self.update_sensation(&update.id.to_string(), &update.sensation)?
+                    self.update_sensation(&update.id.to_string(), &update.sensation.to_string())?
                 }
             }
         }
@@ -69,10 +69,10 @@ impl<'a> ExperienceRepo<'a> {
         match result {
             Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(Experience {
                 id: id.parse()?,
-                agent_id,
-                sensation,
-                description,
-                created_at,
+                agent_id: AgentName::new(agent_id),
+                sensation: SensationName::new(sensation),
+                description: Description(description),
+                created_at: Timestamp::parse_str(&created_at)?,
             })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
@@ -111,10 +111,10 @@ impl<'a> ExperienceRepo<'a> {
         for (id, agent_id, sensation, description, created_at) in raw {
             experiences.push(Experience {
                 id: id.parse()?,
-                agent_id,
-                sensation,
-                description,
-                created_at,
+                agent_id: AgentName::new(agent_id),
+                sensation: SensationName::new(sensation),
+                description: Description(description),
+                created_at: Timestamp::parse_str(&created_at)?,
             });
         }
 
@@ -129,10 +129,10 @@ impl<'a> ExperienceRepo<'a> {
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 experience.id.to_string(),
-                experience.agent_id,
-                experience.sensation,
-                experience.description,
-                experience.created_at,
+                experience.agent_id.to_string(),
+                experience.sensation.to_string(),
+                experience.description.to_string(),
+                experience.created_at.as_string(),
             ],
         )?;
         Ok(())

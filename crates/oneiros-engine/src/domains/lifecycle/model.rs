@@ -15,7 +15,7 @@ pub struct CognitiveContext {
 /// A lifecycle event marker — records that a lifecycle operation occurred.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct LifecycleMarker {
-    pub agent: String,
-    pub operation: String,
-    pub created_at: String,
+    pub agent: AgentName,
+    pub operation: Label,
+    pub created_at: Timestamp,
 }

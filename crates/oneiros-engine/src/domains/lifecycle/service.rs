@@ -3,8 +3,6 @@
 //! These operations don't have their own repos. They gather data from
 //! multiple domains, perform the operation, and emit lifecycle events.
 
-use chrono::Utc;
-
 use crate::*;
 
 pub struct LifecycleService;
@@ -18,8 +16,8 @@ impl LifecycleService {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
-            agent: agent_name.to_string(),
-            created_at: Utc::now().to_rfc3339(),
+            agent: AgentName::new(agent_name),
+            created_at: Timestamp::now(),
         }));
 
         Ok(LifecycleResponse::Waking(context))
@@ -33,8 +31,8 @@ impl LifecycleService {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
-            agent: agent_name.to_string(),
-            created_at: Utc::now().to_rfc3339(),
+            agent: AgentName::new(agent_name),
+            created_at: Timestamp::now(),
         }));
 
         Ok(LifecycleResponse::Dreaming(context))
@@ -48,8 +46,8 @@ impl LifecycleService {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Introspected(LifecycleEvent {
-            agent: agent_name.to_string(),
-            created_at: Utc::now().to_rfc3339(),
+            agent: AgentName::new(agent_name),
+            created_at: Timestamp::now(),
         }));
 
         Ok(LifecycleResponse::Introspecting(context))
@@ -63,8 +61,8 @@ impl LifecycleService {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Reflected(LifecycleEvent {
-            agent: agent_name.to_string(),
-            created_at: Utc::now().to_rfc3339(),
+            agent: AgentName::new(agent_name),
+            created_at: Timestamp::now(),
         }));
 
         Ok(LifecycleResponse::Reflecting(context))
@@ -82,9 +80,9 @@ impl LifecycleService {
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
         ctx.emit(LifecycleEvents::Sensed(SensedEvent {
-            agent: agent_name.to_string(),
-            content: content.to_string(),
-            created_at: Utc::now().to_rfc3339(),
+            agent: AgentName::new(agent_name),
+            content: Content(content.to_string()),
+            created_at: Timestamp::now(),
         }));
 
         Ok(LifecycleResponse::Sleeping {
@@ -103,8 +101,8 @@ impl LifecycleService {
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
         ctx.emit(LifecycleEvents::Slept(LifecycleEvent {
-            agent: agent_name.to_string(),
-            created_at: Utc::now().to_rfc3339(),
+            agent: AgentName::new(agent_name),
+            created_at: Timestamp::now(),
         }));
 
         Ok(LifecycleResponse::Sleeping {

@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::*;
 
 pub struct StorageService;
@@ -28,9 +26,9 @@ impl StorageService {
         let entry = StorageEntry {
             id,
             name: storage_name.clone(),
-            content_type,
+            content_type: Label::new(content_type),
             size: data.len() as u64,
-            created_at: Utc::now().to_rfc3339(),
+            created_at: Timestamp::now(),
         };
 
         ctx.emit(StorageEvents::BlobStored(entry.clone()));

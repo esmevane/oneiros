@@ -51,8 +51,8 @@ impl<'a> NatureRepo<'a> {
             let name: String = row.get(0)?;
             Ok(Nature {
                 name: NatureName::new(name),
-                description: row.get(1)?,
-                prompt: row.get(2)?,
+                description: Description(row.get(1)?),
+                prompt: Prompt(row.get(2)?),
             })
         });
 
@@ -73,8 +73,8 @@ impl<'a> NatureRepo<'a> {
                 let name: String = row.get(0)?;
                 Ok(Nature {
                     name: NatureName::new(name),
-                    description: row.get(1)?,
-                    prompt: row.get(2)?,
+                    description: Description(row.get(1)?),
+                    prompt: Prompt(row.get(2)?),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -87,7 +87,7 @@ impl<'a> NatureRepo<'a> {
     fn set(&self, nature: &Nature) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO natures (name, description, prompt) VALUES (?1, ?2, ?3)",
-            params![nature.name.to_string(), nature.description, nature.prompt],
+            params![nature.name.to_string(), nature.description.to_string(), nature.prompt.to_string()],
         )?;
         Ok(())
     }

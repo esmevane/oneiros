@@ -64,9 +64,9 @@ impl<'a> StorageRepo<'a> {
             Ok((id, name, content_type, size, created_at)) => Ok(Some(StorageEntry {
                 id: id.parse()?,
                 name: StorageName::new(name),
-                content_type,
+                content_type: Label::new(content_type),
                 size: size as u64,
-                created_at,
+                created_at: Timestamp::parse_str(&created_at)?,
             })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
@@ -91,9 +91,9 @@ impl<'a> StorageRepo<'a> {
             Ok((id, name, content_type, size, created_at)) => Ok(Some(StorageEntry {
                 id: id.parse()?,
                 name: StorageName::new(name),
-                content_type,
+                content_type: Label::new(content_type),
                 size: size as u64,
-                created_at,
+                created_at: Timestamp::parse_str(&created_at)?,
             })),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
@@ -123,9 +123,9 @@ impl<'a> StorageRepo<'a> {
             entries.push(StorageEntry {
                 id: id.parse()?,
                 name: StorageName::new(name),
-                content_type,
+                content_type: Label::new(content_type),
                 size: size as u64,
-                created_at,
+                created_at: Timestamp::parse_str(&created_at)?,
             });
         }
 
@@ -141,9 +141,9 @@ impl<'a> StorageRepo<'a> {
             params![
                 entry.id.to_string(),
                 entry.name.to_string(),
-                entry.content_type,
+                entry.content_type.to_string(),
                 entry.size as i64,
-                entry.created_at
+                entry.created_at.as_string()
             ],
         )?;
         Ok(())

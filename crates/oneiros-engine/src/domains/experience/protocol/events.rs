@@ -13,11 +13,11 @@ pub enum ExperienceEvents {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExperienceDescriptionUpdate {
     pub id: ExperienceId,
-    pub description: String,
+    pub description: Description,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExperienceSensationUpdate {
     pub id: ExperienceId,
-    pub sensation: String,
+    pub sensation: SensationName,
 }

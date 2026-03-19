@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::*;
 
 pub struct ConnectionService;
@@ -16,9 +14,9 @@ impl ConnectionService {
             id: ConnectionId::new(),
             from_entity,
             to_entity,
-            nature,
-            description,
-            created_at: Utc::now().to_rfc3339(),
+            nature: NatureName::new(nature),
+            description: Description(description),
+            created_at: Timestamp::now(),
         };
 
         let ref_token = RefToken::new(Ref::connection(connection.id));

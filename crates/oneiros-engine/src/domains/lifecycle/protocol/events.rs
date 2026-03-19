@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::*;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 pub enum LifecycleEvents {
@@ -12,13 +14,13 @@ pub enum LifecycleEvents {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LifecycleEvent {
-    pub agent: String,
-    pub created_at: String,
+    pub agent: AgentName,
+    pub created_at: Timestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SensedEvent {
-    pub agent: String,
-    pub content: String,
-    pub created_at: String,
+    pub agent: AgentName,
+    pub content: Content,
+    pub created_at: Timestamp,
 }

@@ -71,9 +71,9 @@ impl<'a> ConnectionRepo<'a> {
                     id: id.parse()?,
                     from_entity,
                     to_entity,
-                    nature,
-                    description,
-                    created_at,
+                    nature: NatureName::new(nature),
+                    description: Description(description),
+                    created_at: Timestamp::parse_str(&created_at)?,
                 }))
             }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -118,9 +118,9 @@ impl<'a> ConnectionRepo<'a> {
                 id: id.parse()?,
                 from_entity,
                 to_entity,
-                nature,
-                description,
-                created_at,
+                nature: NatureName::new(nature),
+                description: Description(description),
+                created_at: Timestamp::parse_str(&created_at)?,
             });
         }
 
@@ -138,9 +138,9 @@ impl<'a> ConnectionRepo<'a> {
                 connection.id.to_string(),
                 connection.from_entity,
                 connection.to_entity,
-                connection.nature,
-                connection.description,
-                connection.created_at,
+                connection.nature.to_string(),
+                connection.description.to_string(),
+                connection.created_at.as_string(),
             ],
         )?;
         Ok(())

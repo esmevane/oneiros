@@ -36,9 +36,9 @@ impl AgentService {
         let agent = Agent {
             id: AgentId::new(),
             name: agent_name.clone(),
-            persona,
-            description,
-            prompt,
+            persona: PersonaName::new(&persona),
+            description: Description(description),
+            prompt: Prompt(prompt),
         };
 
         ctx.emit(AgentEvents::AgentCreated(agent));
@@ -81,9 +81,9 @@ impl AgentService {
         let agent = Agent {
             id: existing.id,
             name: agent_name.clone(),
-            persona,
-            description,
-            prompt,
+            persona: PersonaName::new(&persona),
+            description: Description(description),
+            prompt: Prompt(prompt),
         };
 
         ctx.emit(AgentEvents::AgentUpdated(agent));

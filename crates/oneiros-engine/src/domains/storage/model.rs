@@ -8,9 +8,9 @@ pub struct StorageEntry {
     pub id: StorageId,
     #[serde(rename = "key")]
     pub name: StorageName,
-    pub content_type: String,
+    pub content_type: Label,
     pub size: u64,
-    pub created_at: String,
+    pub created_at: Timestamp,
 }
 
 /// Binary content retrieved from storage.

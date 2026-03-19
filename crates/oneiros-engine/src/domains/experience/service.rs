@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::*;
 
 pub struct ExperienceService;
@@ -13,10 +11,10 @@ impl ExperienceService {
     ) -> Result<ExperienceResponse, ExperienceError> {
         let experience = Experience {
             id: ExperienceId::new(),
-            agent_id: agent,
-            sensation,
-            description,
-            created_at: Utc::now().to_rfc3339(),
+            agent_id: AgentName::new(agent),
+            sensation: SensationName::new(sensation),
+            description: Description(description),
+            created_at: Timestamp::now(),
         };
 
         ctx.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
@@ -56,14 +54,14 @@ impl ExperienceService {
             .map_err(ExperienceError::Database)?
             .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
 
-        experience.description = description.clone();
+        experience.description = Description(description.clone());
 
         ctx.emit(ExperienceEvents::ExperienceDescriptionUpdated(
             ExperienceDescriptionUpdate {
                 id: id
                     .parse()
                     .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
-                description,
+                description: Description(description),
             },
         ));
         Ok(ExperienceResponse::ExperienceUpdated(experience))
@@ -79,14 +77,14 @@ impl ExperienceService {
             .map_err(ExperienceError::Database)?
             .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
 
-        experience.sensation = sensation.clone();
+        experience.sensation = SensationName::new(&sensation);
 
         ctx.emit(ExperienceEvents::ExperienceSensationUpdated(
             ExperienceSensationUpdate {
                 id: id
                     .parse()
                     .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
-                sensation,
+                sensation: SensationName::new(sensation),
             },
         ));
         Ok(ExperienceResponse::ExperienceUpdated(experience))
