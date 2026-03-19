@@ -413,6 +413,14 @@ async fn search_filters_by_agent() -> TestResult {
 async fn pressure_returns_readings() -> TestResult {
     cases::pressure::returns_readings_for_agent::<Engine>().await
 }
+#[tokio::test]
+async fn pressure_introspect_decreases_after_introspecting() -> TestResult {
+    cases::pressure::introspect_pressure_decreases_after_introspecting::<Engine>().await
+}
+#[tokio::test]
+async fn pressure_catharsis_decreases_after_reflecting() -> TestResult {
+    cases::pressure::catharsis_pressure_decreases_after_reflecting::<Engine>().await
+}
 
 // Storage
 #[tokio::test]

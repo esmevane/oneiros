@@ -7,13 +7,19 @@ impl PressureService {
         let pressures = ctx
             .with_db(|conn| PressureRepo::new(conn).get(agent))
             .map_err(PressureError::Database)?;
-        Ok(PressureResponse::Readings(pressures))
+        Ok(PressureResponse::Readings(PressureResult {
+            agent: AgentName::new(agent),
+            pressures,
+        }))
     }
 
     pub fn list(ctx: &ProjectContext) -> Result<PressureResponse, PressureError> {
         let pressures = ctx
             .with_db(|conn| PressureRepo::new(conn).list())
             .map_err(PressureError::Database)?;
-        Ok(PressureResponse::Readings(pressures))
+        Ok(PressureResponse::Readings(PressureResult {
+            agent: AgentName::new("all"),
+            pressures,
+        }))
     }
 }
