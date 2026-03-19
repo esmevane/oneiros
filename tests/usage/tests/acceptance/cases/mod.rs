@@ -5,6 +5,7 @@ pub(crate) mod doctor;
 pub(crate) mod emerge;
 pub(crate) mod event;
 pub(crate) mod experience;
+pub(crate) mod import_export;
 pub(crate) mod level;
 pub(crate) mod lifecycle;
 pub(crate) mod memory;

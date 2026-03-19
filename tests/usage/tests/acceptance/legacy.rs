@@ -383,6 +383,20 @@ async fn doctor_reports_uninitialized() -> TestResult {
     cases::doctor::reports_uninitialized_system::<Legacy>().await
 }
 
+// Import / Export
+#[tokio::test]
+async fn export_produces_file() -> TestResult {
+    cases::import_export::export_produces_file::<Legacy>().await
+}
+#[tokio::test]
+async fn import_restores_data() -> TestResult {
+    cases::import_export::import_restores_data::<Legacy>().await
+}
+#[tokio::test]
+async fn replay_rebuilds_projections() -> TestResult {
+    cases::import_export::replay_rebuilds_projections::<Legacy>().await
+}
+
 // Event
 #[tokio::test]
 async fn event_list_shows_events() -> TestResult {
