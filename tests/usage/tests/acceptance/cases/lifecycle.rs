@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 /// Helper: bootstrap with seeded vocabulary + an agent.
@@ -16,14 +17,14 @@ pub(crate) async fn wake<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;
 
-    let result = backend.exec("wake thinker.process --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("wake thinker.process").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("waking"))),
-        "expected waking outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Lifecycle(LifecycleResponse::Waking(_))
+        ),
+        "expected Waking, got {response:#?}"
     );
 
     Ok(())
@@ -33,14 +34,14 @@ pub(crate) async fn dream<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;
 
-    let result = backend.exec("dream thinker.process --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("dream thinker.process").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("dreaming"))),
-        "expected dreaming outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Lifecycle(LifecycleResponse::Dreaming(_))
+        ),
+        "expected Dreaming, got {response:#?}"
     );
 
     Ok(())
@@ -50,16 +51,14 @@ pub(crate) async fn introspect<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;
 
-    let result = backend
-        .exec("introspect thinker.process --output json")
-        .await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("introspect thinker.process").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("introspecting"))),
-        "expected introspecting outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Lifecycle(LifecycleResponse::Introspecting(_))
+        ),
+        "expected Introspecting, got {response:#?}"
     );
 
     Ok(())
@@ -69,16 +68,14 @@ pub(crate) async fn reflect<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;
 
-    let result = backend
-        .exec("reflect thinker.process --output json")
-        .await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("reflect thinker.process").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("reflecting"))),
-        "expected reflecting outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Lifecycle(LifecycleResponse::Reflecting(_))
+        ),
+        "expected Reflecting, got {response:#?}"
     );
 
     Ok(())
@@ -88,14 +85,14 @@ pub(crate) async fn sleep<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;
 
-    let result = backend.exec("sleep thinker.process --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("sleep thinker.process").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("sleeping"))),
-        "expected sleeping outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Lifecycle(LifecycleResponse::Sleeping { .. })
+        ),
+        "expected Sleeping, got {response:#?}"
     );
 
     Ok(())
@@ -105,16 +102,14 @@ pub(crate) async fn guidebook<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;
 
-    let result = backend
-        .exec("guidebook thinker.process --output json")
-        .await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("guidebook thinker.process").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("guidebook"))),
-        "expected guidebook outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Lifecycle(LifecycleResponse::Guidebook(_))
+        ),
+        "expected Guidebook, got {response:#?}"
     );
 
     Ok(())

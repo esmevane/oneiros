@@ -1,23 +1,32 @@
 //! Shared test cases for vocabulary domains (level, texture, sensation, nature, persona, urge).
 //!
 //! All vocabulary domains share the same CRUD shape: set, show, list, remove.
-//! These helpers parameterize by domain name and the expected JSON type prefixes.
+//! These helpers parameterize by domain command and typed response matchers.
 
+use oneiros_engine::*;
 use oneiros_usage::*;
 
+/// Typed response matchers for a vocabulary domain.
+///
+/// Each field is a plain function pointer so `VocabularyDomain` can be declared
+/// as a `const` in the per-domain test modules that call these helpers.
 pub struct VocabularyDomain {
     /// The CLI subcommand name (e.g. "level", "texture").
     pub command: &'static str,
-    /// The JSON type prefix for set outcomes (e.g. "level-set", "texture-set").
-    pub set_type: &'static str,
-    /// The JSON type for show outcomes (e.g. "level-details", "texture-details").
-    pub details_type: &'static str,
-    /// The JSON type for list outcomes (e.g. "levels", "textures").
-    pub list_type: &'static str,
-    /// The JSON type for empty list outcomes (e.g. "no-levels", "no-textures").
-    pub empty_type: &'static str,
-    /// The JSON type for remove outcomes (e.g. "level-removed", "texture-removed").
-    pub removed_type: &'static str,
+    /// Returns `true` when the response is the Set variant for this domain.
+    pub is_set: fn(&Responses) -> bool,
+    /// Returns `true` when the response is the Details variant for this domain.
+    pub is_details: fn(&Responses) -> bool,
+    /// Extracts `(name, description, prompt)` from the Details variant, or `None`.
+    pub extract_details: fn(&Responses) -> Option<(String, String, String)>,
+    /// Returns `true` when the response is the non-empty List variant for this domain.
+    pub is_list: fn(&Responses) -> bool,
+    /// Extracts the entry count from the List variant, or `None`.
+    pub extract_list_count: fn(&Responses) -> Option<usize>,
+    /// Returns `true` when the response is the Empty variant for this domain.
+    pub is_empty: fn(&Responses) -> bool,
+    /// Returns `true` when the response is the Removed variant for this domain.
+    pub is_removed: fn(&Responses) -> bool,
 }
 
 pub async fn set_creates_a_new_entry<B: Backend>(domain: &VocabularyDomain) -> TestResult {
@@ -28,44 +37,31 @@ pub async fn set_creates_a_new_entry<B: Backend>(domain: &VocabularyDomain) -> T
     backend.exec("project init --yes").await?;
 
     let cmd = format!(
-        "{} set test-entry --description 'A test entry' --prompt 'Test prompt.' --output json",
+        "{} set test-entry --description 'A test entry' --prompt 'Test prompt.'",
         domain.command
     );
-    let result = backend.exec(&cmd).await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let set_response = backend.exec(&cmd).await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!(domain.set_type))),
-        "expected {} outcome in {outcomes:?}",
-        domain.set_type
+        (domain.is_set)(&set_response.data),
+        "expected Set response for {}, got {set_response:?}",
+        domain.command
     );
 
     // Verify via show
-    let show_cmd = format!("{} show test-entry --output json", domain.command);
-    let show_result = backend.exec(&show_cmd).await?;
-    let show_outcomes = show_result.as_array().expect("expected array of outcomes");
+    let show_cmd = format!("{} show test-entry", domain.command);
+    let show_response = backend.exec(&show_cmd).await?;
 
-    let entry = show_outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!(domain.details_type)))
+    let (name, description, _prompt) = (domain.extract_details)(&show_response.data)
         .unwrap_or_else(|| {
             panic!(
-                "expected {} outcome in {show_outcomes:?}",
-                domain.details_type
+                "expected Details response for {}, got {show_response:?}",
+                domain.command
             )
         });
 
-    let data = entry.get("data").expect("expected data field");
-    assert_eq!(
-        data.get("name").and_then(|n| n.as_str()),
-        Some("test-entry")
-    );
-    assert_eq!(
-        data.get("description").and_then(|d| d.as_str()),
-        Some("A test entry")
-    );
+    assert_eq!(name, "test-entry");
+    assert_eq!(description, "A test entry");
 
     Ok(())
 }
@@ -89,20 +85,18 @@ pub async fn set_updates_existing_entry<B: Backend>(domain: &VocabularyDomain) -
     );
     backend.exec(&cmd).await?;
 
-    let show_cmd = format!("{} show updatable --output json", domain.command);
-    let show_result = backend.exec(&show_cmd).await?;
-    let show_outcomes = show_result.as_array().expect("expected array of outcomes");
+    let show_cmd = format!("{} show updatable", domain.command);
+    let show_response = backend.exec(&show_cmd).await?;
 
-    let entry = show_outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!(domain.details_type)))
-        .unwrap_or_else(|| panic!("expected {} outcome", domain.details_type));
+    let (_name, description, _prompt) = (domain.extract_details)(&show_response.data)
+        .unwrap_or_else(|| {
+            panic!(
+                "expected Details response for {}, got {show_response:?}",
+                domain.command
+            )
+        });
 
-    let data = entry.get("data").expect("expected data field");
-    assert_eq!(
-        data.get("description").and_then(|d| d.as_str()),
-        Some("Updated")
-    );
+    assert_eq!(description, "Updated");
 
     Ok(())
 }
@@ -116,16 +110,13 @@ pub async fn list_returns_empty_when_none_exist<B: Backend>(
     backend.start_service().await?;
     backend.exec("project init --yes").await?;
 
-    let cmd = format!("{} list --output json", domain.command);
-    let result = backend.exec(&cmd).await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let cmd = format!("{} list", domain.command);
+    let response = backend.exec(&cmd).await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!(domain.empty_type))),
-        "expected {} outcome in {outcomes:?}",
-        domain.empty_type
+        (domain.is_empty)(&response.data),
+        "expected Empty response for {}, got {response:#?}",
+        domain.command
     );
 
     Ok(())
@@ -150,21 +141,17 @@ pub async fn list_returns_created_entries<B: Backend>(domain: &VocabularyDomain)
     );
     backend.exec(&cmd2).await?;
 
-    let list_cmd = format!("{} list --output json", domain.command);
-    let result = backend.exec(&list_cmd).await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let list_cmd = format!("{} list", domain.command);
+    let response = backend.exec(&list_cmd).await?;
 
-    let list_outcome = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!(domain.list_type)))
-        .unwrap_or_else(|| panic!("expected {} outcome in {outcomes:?}", domain.list_type));
+    let count = (domain.extract_list_count)(&response.data).unwrap_or_else(|| {
+        panic!(
+            "expected List response for {}, got {response:#?}",
+            domain.command
+        )
+    });
 
-    let entries = list_outcome
-        .get("data")
-        .and_then(|d| d.as_array())
-        .expect("expected data array");
-
-    assert_eq!(entries.len(), 2);
+    assert_eq!(count, 2);
 
     Ok(())
 }
@@ -182,30 +169,22 @@ pub async fn remove_makes_it_unlisted<B: Backend>(domain: &VocabularyDomain) -> 
     );
     backend.exec(&set_cmd).await?;
 
-    let remove_cmd = format!("{} remove temporary --output json", domain.command);
-    let remove_result = backend.exec(&remove_cmd).await?;
-    let remove_outcomes = remove_result
-        .as_array()
-        .expect("expected array of outcomes");
+    let remove_cmd = format!("{} remove temporary", domain.command);
+    let remove_response = backend.exec(&remove_cmd).await?;
 
     assert!(
-        remove_outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!(domain.removed_type))),
-        "expected {} outcome in {remove_outcomes:?}",
-        domain.removed_type
+        (domain.is_removed)(&remove_response.data),
+        "expected Removed response for {}, got {remove_response:?}",
+        domain.command
     );
 
-    let list_cmd = format!("{} list --output json", domain.command);
-    let list_result = backend.exec(&list_cmd).await?;
-    let list_outcomes = list_result.as_array().expect("expected array of outcomes");
+    let list_cmd = format!("{} list", domain.command);
+    let list_response = backend.exec(&list_cmd).await?;
 
     assert!(
-        list_outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!(domain.empty_type))),
-        "expected {} after removal in {list_outcomes:?}",
-        domain.empty_type
+        (domain.is_empty)(&list_response.data),
+        "expected Empty response after removal for {}, got {list_response:?}",
+        domain.command
     );
 
     Ok(())

@@ -32,6 +32,18 @@ impl AsRef<str> for Label {
     }
 }
 
+impl From<String> for Label {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<&str> for Label {
+    fn from(value: &str) -> Self {
+        Self::new(value)
+    }
+}
+
 impl schemars::JsonSchema for Label {
     fn schema_name() -> std::borrow::Cow<'static, str> {
         std::borrow::Cow::Borrowed("Label")

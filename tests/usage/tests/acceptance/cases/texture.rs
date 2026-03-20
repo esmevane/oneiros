@@ -1,14 +1,27 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 use super::vocabulary::{self, VocabularyDomain};
 
 const DOMAIN: VocabularyDomain = VocabularyDomain {
     command: "texture",
-    set_type: "texture-set",
-    details_type: "texture-details",
-    list_type: "textures",
-    empty_type: "no-textures",
-    removed_type: "texture-removed",
+    is_set: |r| matches!(r, Responses::Texture(TextureResponse::TextureSet(_))),
+    is_details: |r| matches!(r, Responses::Texture(TextureResponse::TextureDetails(_))),
+    extract_details: |r| match r {
+        Responses::Texture(TextureResponse::TextureDetails(t)) => Some((
+            t.name.as_str().to_owned(),
+            t.description.as_str().to_owned(),
+            t.prompt.as_str().to_owned(),
+        )),
+        _ => None,
+    },
+    is_list: |r| matches!(r, Responses::Texture(TextureResponse::Textures(_))),
+    extract_list_count: |r| match r {
+        Responses::Texture(TextureResponse::Textures(list)) => Some(list.len()),
+        _ => None,
+    },
+    is_empty: |r| matches!(r, Responses::Texture(TextureResponse::NoTextures)),
+    is_removed: |r| matches!(r, Responses::Texture(TextureResponse::TextureRemoved(_))),
 };
 
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {

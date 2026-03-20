@@ -12,8 +12,6 @@ pub struct Connection {
     pub to_ref: Ref,
     #[builder(into)]
     pub nature: NatureName,
-    #[builder(into)]
-    pub description: Description,
     #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
 }

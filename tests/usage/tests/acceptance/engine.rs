@@ -19,8 +19,8 @@ struct Cli {
 }
 
 impl Cli {
-    fn execute(&self, context: &EngineContext) -> Result<Responses, Box<dyn core::error::Error>> {
-        Ok(self.command.execute(context)?)
+    fn execute(&self, context: &EngineContext) -> Result<Responses, Error> {
+        self.command.execute(context)
     }
 }
 
@@ -72,23 +72,18 @@ impl Backend for Engine {
         })
     }
 
-    async fn exec(&self, command: &str) -> Result<serde_json::Value, Box<dyn core::error::Error>> {
+    async fn exec(&self, command: &str) -> Result<Response<Responses>, Error> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
         let full_args = strip_output_flag(full_args);
 
-        let response = Cli::try_parse_from(&full_args)?.execute(&self.ctx)?;
-        let value = serde_json::to_value(&response)?;
+        let responses = Cli::try_parse_from(&full_args)
+            .map_err(|e| Error::Context(e.to_string()))?
+            .execute(&self.ctx)?;
 
-        // If the result is already an array, use it directly.
-        // Otherwise wrap in an array for consistency.
-        if value.is_array() {
-            Ok(value)
-        } else {
-            Ok(serde_json::Value::Array(vec![value]))
-        }
+        Ok(Response::new(responses))
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
@@ -365,12 +360,6 @@ async fn recede_retires_agent() -> TestResult {
 #[tokio::test]
 async fn status_returns_agent_status() -> TestResult {
     cases::status::returns_agent_status::<Engine>().await
-}
-
-// Event
-#[tokio::test]
-async fn event_list_shows_events() -> TestResult {
-    cases::event::list_shows_events::<Engine>().await
 }
 
 // Doctor

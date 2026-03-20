@@ -26,7 +26,6 @@ struct CreateBody {
     from_ref: String,
     to_ref: String,
     nature: String,
-    description: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -43,7 +42,6 @@ async fn create(
         body.from_ref,
         body.to_ref,
         body.nature,
-        body.description,
     )?;
     Ok((StatusCode::CREATED, Json(response)))
 }

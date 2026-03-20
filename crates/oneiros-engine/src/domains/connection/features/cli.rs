@@ -38,7 +38,6 @@ impl ConnectionCommands {
                 from_ref.clone(),
                 to_ref.clone(),
                 nature.clone(),
-                String::new(),
             )?
             .into(),
 

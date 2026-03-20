@@ -13,7 +13,6 @@ pub mod connection_mcp {
         from_ref: String,
         to_ref: String,
         nature: String,
-        description: String,
     }
 
     #[derive(serde::Deserialize, schemars::JsonSchema)]
@@ -69,7 +68,6 @@ pub mod connection_mcp {
                     p.from_ref,
                     p.to_ref,
                     p.nature,
-                    p.description,
                 )
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)

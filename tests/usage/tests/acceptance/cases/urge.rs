@@ -1,14 +1,27 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 use super::vocabulary::{self, VocabularyDomain};
 
 const DOMAIN: VocabularyDomain = VocabularyDomain {
     command: "urge",
-    set_type: "urge-set",
-    details_type: "urge-details",
-    list_type: "urges",
-    empty_type: "no-urges",
-    removed_type: "urge-removed",
+    is_set: |r| matches!(r, Responses::Urge(UrgeResponse::UrgeSet(_))),
+    is_details: |r| matches!(r, Responses::Urge(UrgeResponse::UrgeDetails(_))),
+    extract_details: |r| match r {
+        Responses::Urge(UrgeResponse::UrgeDetails(u)) => Some((
+            u.name.as_str().to_owned(),
+            u.description.as_str().to_owned(),
+            u.prompt.as_str().to_owned(),
+        )),
+        _ => None,
+    },
+    is_list: |r| matches!(r, Responses::Urge(UrgeResponse::Urges(_))),
+    extract_list_count: |r| match r {
+        Responses::Urge(UrgeResponse::Urges(list)) => Some(list.len()),
+        _ => None,
+    },
+    is_empty: |r| matches!(r, Responses::Urge(UrgeResponse::NoUrges)),
+    is_removed: |r| matches!(r, Responses::Urge(UrgeResponse::UrgeRemoved(_))),
 };
 
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {

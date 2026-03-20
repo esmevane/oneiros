@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
@@ -18,28 +19,19 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
     let export_dir = tempfile::TempDir::new()?;
 
     let cmd = format!(
-        "project export --target {} --output json",
+        "project export --target {}",
         export_dir.path().display()
     );
-    let result = backend.exec(&cmd).await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec(&cmd).await?;
 
-    // Extract the file path from the wrote-export outcome
-    let wrote = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("wrote-export")))
-        .expect("expected wrote-export outcome");
-
-    let export_path_str = wrote
-        .get("data")
-        .and_then(|d| d.as_str())
-        .expect("expected file path in wrote-export data");
-
-    let export_path = std::path::Path::new(export_path_str);
+    let export_path = match response.data {
+        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        other => panic!("expected WroteExport, got {other:#?}"),
+    };
 
     // Verify file was created and is not empty
     assert!(export_path.exists(), "export file should exist");
-    let content = std::fs::read_to_string(export_path)?;
+    let content = std::fs::read_to_string(&export_path)?;
     assert!(!content.is_empty(), "export file should not be empty");
 
     // Count lines — should have at least a few events
@@ -74,50 +66,33 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     // Export to a temp directory
     let export_dir = tempfile::TempDir::new()?;
     let export_cmd = format!(
-        "project export --target {} --output json",
+        "project export --target {}",
         export_dir.path().display()
     );
-    let export_result = backend.exec(&export_cmd).await?;
+    let export_response = backend.exec(&export_cmd).await?;
 
-    // Get the actual export file path
-    let export_path = export_result
-        .as_array()
-        .and_then(|a| {
-            a.iter()
-                .find(|o| o.get("type") == Some(&serde_json::json!("wrote-export")))
-        })
-        .and_then(|o| o.get("data"))
-        .and_then(|d| d.as_str())
-        .expect("expected export file path");
+    let export_path = match export_response.data {
+        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        other => panic!("expected WroteExport, got {other:#?}"),
+    };
 
     // Import the exported file (idempotent — re-importing to same brain)
-    let import_cmd = format!("project import {} --output json", export_path);
-    let result = backend.exec(&import_cmd).await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
-
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("imported"))),
-        "expected imported outcome in {outcomes:?}"
-    );
+    backend
+        .exec(&format!("project import {}", export_path.display()))
+        .await?;
 
     // Verify data survived — the cognition should still be searchable
-    let search_result = backend.exec("search Remember --output json").await?;
-    let search_outcomes = search_result.as_array().expect("expected array");
+    let search_response = backend.exec("search Remember").await?;
 
-    let results = search_outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("results")))
-        .and_then(|o| o.get("data"))
-        .and_then(|d| d.get("results"))
-        .and_then(|r| r.as_array())
-        .expect("expected search results");
-
-    assert!(
-        results.len() >= 1,
-        "expected to find the cognition after import"
-    );
+    match search_response.data {
+        Responses::Search(SearchResponse::Results(results)) => {
+            assert!(
+                !results.results.is_empty(),
+                "expected to find the cognition after import"
+            );
+        }
+        other => panic!("expected Search(Results), got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -138,27 +113,14 @@ pub(crate) async fn replay_rebuilds_projections<B: Backend>() -> TestResult {
         .exec("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let result = backend.exec("project replay --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
-
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("replayed"))),
-        "expected replayed outcome in {outcomes:?}"
-    );
+    backend.exec("project replay").await?;
 
     // After replay, agent should still exist
-    let show_result = backend
-        .exec("agent show thinker.process --output json")
-        .await?;
-    let show_outcomes = show_result.as_array().expect("expected array");
+    let show_response = backend.exec("agent show thinker.process").await?;
 
     assert!(
-        show_outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("agent-details"))),
-        "expected agent to survive replay"
+        matches!(show_response.data, Responses::Agent(AgentResponse::AgentDetails(_))),
+        "expected agent to survive replay, got {show_response:?}"
     );
 
     Ok(())

@@ -97,10 +97,6 @@ pub enum Command {
 
     // Diagnostics
     Doctor,
-
-    // Event inspection
-    #[command(subcommand)]
-    Event(EventCommands),
 }
 
 impl Command {
@@ -197,16 +193,6 @@ impl Command {
                 serde_json::json!({ "type": "status", "data": context }).into()
             }
 
-            // Event inspection
-            Command::Event(cmd) => match cmd {
-                EventCommands::List => {
-                    let project = context.project()?;
-                    let events = project.with_db(event::repo::load_events)?;
-                    serde_json::to_value(&events)
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into()
-                }
-            },
         })
     }
 }

@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
@@ -7,32 +8,25 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
     backend.start_service().await?;
     backend.exec("project init --yes").await?;
 
-    let result = backend.exec("doctor --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("doctor").await?;
 
-    // Should report system as initialized
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("initialized"))),
-        "expected initialized outcome in {outcomes:?}"
-    );
-
-    // Should find the database
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("database-ok"))),
-        "expected database-ok outcome in {outcomes:?}"
-    );
-
-    // Should have events in the log
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("event-log-ready"))),
-        "expected event-log-ready outcome in {outcomes:?}"
-    );
+    match response.data {
+        Responses::Doctor(reports) => {
+            assert!(
+                reports.iter().any(|r| matches!(r, DoctorResponse::Initialized)),
+                "expected Initialized report in {reports:?}"
+            );
+            assert!(
+                reports.iter().any(|r| matches!(r, DoctorResponse::DatabaseOk(_))),
+                "expected DatabaseOk report in {reports:?}"
+            );
+            assert!(
+                reports.iter().any(|r| matches!(r, DoctorResponse::EventLogReady(_))),
+                "expected EventLogReady report in {reports:?}"
+            );
+        }
+        other => panic!("expected Doctor(Vec<DoctorResponse>), got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -40,16 +34,17 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
 pub(crate) async fn reports_uninitialized_system<B: Backend>() -> TestResult {
     let backend = B::start().await?;
 
-    let result = backend.exec("doctor --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("doctor").await?;
 
-    // Should report system as not initialized
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("not-initialized"))),
-        "expected not-initialized outcome in {outcomes:?}"
-    );
+    match response.data {
+        Responses::Doctor(reports) => {
+            assert!(
+                reports.iter().any(|r| matches!(r, DoctorResponse::NotInitialized)),
+                "expected NotInitialized report in {reports:?}"
+            );
+        }
+        other => panic!("expected Doctor(Vec<DoctorResponse>), got {other:#?}"),
+    }
 
     Ok(())
 }

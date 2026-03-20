@@ -1,19 +1,5 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
-
-/// Helper to extract the results array from a search response.
-fn extract_results(value: &serde_json::Value) -> Vec<&serde_json::Value> {
-    let outcomes = value.as_array().expect("expected array of outcomes");
-    let search_result = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("results")))
-        .expect("expected results outcome");
-    let data = search_result.get("data").expect("expected data field");
-    data.get("results")
-        .and_then(|r| r.as_array())
-        .expect("expected results array")
-        .iter()
-        .collect()
-}
 
 /// Helper: bootstrap with agent and vocabulary for search tests.
 async fn setup_searchable<B: Backend>(backend: &mut B) -> TestResult {
@@ -38,6 +24,14 @@ async fn setup_searchable<B: Backend>(backend: &mut B) -> TestResult {
     Ok(())
 }
 
+/// Helper: extract the results vec from a search response.
+fn extract_results(response: Response<Responses>) -> Vec<SearchResult> {
+    match response.data {
+        Responses::Search(SearchResponse::Results(search_results)) => search_results.results,
+        other => panic!("expected Search(Results), got {other:#?}"),
+    }
+}
+
 pub(crate) async fn finds_cognition_content<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_searchable(&mut backend).await?;
@@ -46,8 +40,8 @@ pub(crate) async fn finds_cognition_content<B: Backend>() -> TestResult {
         .exec("cognition add thinker.process observation 'The architecture is event-sourced'")
         .await?;
 
-    let result = backend.exec("search architecture --output json").await?;
-    let results = extract_results(&result);
+    let response = backend.exec("search architecture").await?;
+    let results = extract_results(response);
 
     assert_eq!(results.len(), 1, "expected 1 result for cognition content");
 
@@ -62,8 +56,8 @@ pub(crate) async fn finds_memory_content<B: Backend>() -> TestResult {
         .exec("memory add thinker.process session 'Projections rebuild from events'")
         .await?;
 
-    let result = backend.exec("search projections --output json").await?;
-    let results = extract_results(&result);
+    let response = backend.exec("search projections").await?;
+    let results = extract_results(response);
 
     assert_eq!(results.len(), 1, "expected 1 result for memory content");
 
@@ -78,8 +72,8 @@ pub(crate) async fn finds_experience_description<B: Backend>() -> TestResult {
         .exec("experience create thinker.process caused 'Discovered the replay invariant'")
         .await?;
 
-    let result = backend.exec("search replay --output json").await?;
-    let results = extract_results(&result);
+    let response = backend.exec("search replay").await?;
+    let results = extract_results(response);
 
     assert_eq!(
         results.len(),
@@ -95,8 +89,8 @@ pub(crate) async fn finds_agent_description<B: Backend>() -> TestResult {
     setup_searchable(&mut backend).await?;
 
     // The agent "thinker.process" has description "A thinking agent"
-    let result = backend.exec("search thinking --output json").await?;
-    let results = extract_results(&result);
+    let response = backend.exec("search thinking").await?;
+    let results = extract_results(response);
 
     assert!(
         results.len() >= 1,
@@ -111,8 +105,8 @@ pub(crate) async fn finds_persona_description<B: Backend>() -> TestResult {
     setup_searchable(&mut backend).await?;
 
     // The persona "process" has description "Process agents"
-    let result = backend.exec("search Process --output json").await?;
-    let results = extract_results(&result);
+    let response = backend.exec("search Process").await?;
+    let results = extract_results(response);
 
     assert!(
         results.len() >= 1,
@@ -130,8 +124,8 @@ pub(crate) async fn returns_empty_for_no_match<B: Backend>() -> TestResult {
         .exec("cognition add thinker.process observation 'Nothing relevant here'")
         .await?;
 
-    let result = backend.exec("search xylophone --output json").await?;
-    let results = extract_results(&result);
+    let response = backend.exec("search xylophone").await?;
+    let results = extract_results(response);
 
     assert!(results.is_empty(), "expected 0 results");
 
@@ -153,10 +147,10 @@ pub(crate) async fn filters_by_agent<B: Backend>() -> TestResult {
         .exec("cognition add other.process observation 'Also searchable content'")
         .await?;
 
-    let result = backend
-        .exec("search searchable --agent thinker.process --output json")
+    let response = backend
+        .exec("search searchable --agent thinker.process")
         .await?;
-    let results = extract_results(&result);
+    let results = extract_results(response);
 
     assert_eq!(results.len(), 1, "expected 1 result filtered by agent");
 

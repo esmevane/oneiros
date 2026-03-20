@@ -2,7 +2,6 @@ use rusqlite::{Connection as DbConn, params};
 
 use crate::*;
 
-/// Connection read model — queries, projection handling, and lifecycle.
 pub struct ConnectionRepo<'a> {
     conn: &'a DbConn,
 }
@@ -11,8 +10,6 @@ impl<'a> ConnectionRepo<'a> {
     pub fn new(conn: &'a DbConn) -> Self {
         Self { conn }
     }
-
-    // ── Projection handling ─────────────────────────────────────
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Connection(connection_event) = &event.data {
@@ -36,18 +33,15 @@ impl<'a> ConnectionRepo<'a> {
                 from_ref TEXT NOT NULL,
                 to_ref TEXT NOT NULL,
                 nature TEXT NOT NULL DEFAULT '',
-                description TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT ''
             )",
         )?;
         Ok(())
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, from_ref, to_ref, nature, description, created_at
+            "SELECT id, from_ref, to_ref, nature, created_at
              FROM connections WHERE id = ?1",
         )?;
 
@@ -58,18 +52,16 @@ impl<'a> ConnectionRepo<'a> {
                 row.get::<_, String>(2)?,
                 row.get::<_, String>(3)?,
                 row.get::<_, String>(4)?,
-                row.get::<_, String>(5)?,
             ))
         });
 
         match result {
-            Ok((id, from_ref, to_ref, nature, description, created_at)) => Ok(Some(
+            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(
                 Connection::builder()
                     .id(id.parse()?)
                     .from_ref(serde_json::from_str(&from_ref)?)
                     .to_ref(serde_json::from_str(&to_ref)?)
                     .nature(nature)
-                    .description(description)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
             )),
@@ -81,13 +73,13 @@ impl<'a> ConnectionRepo<'a> {
     pub fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
         let mut stmt = match entity_ref {
             Some(_) => self.conn.prepare(
-                "SELECT id, from_ref, to_ref, nature, description, created_at
+                "SELECT id, from_ref, to_ref, nature, created_at
                  FROM connections
                  WHERE from_ref = ?1 OR to_ref = ?1
                  ORDER BY created_at",
             )?,
             None => self.conn.prepare(
-                "SELECT id, from_ref, to_ref, nature, description, created_at
+                "SELECT id, from_ref, to_ref, nature, created_at
                  FROM connections ORDER BY created_at",
             )?,
         };
@@ -99,7 +91,6 @@ impl<'a> ConnectionRepo<'a> {
                 row.get::<_, String>(2)?,
                 row.get::<_, String>(3)?,
                 row.get::<_, String>(4)?,
-                row.get::<_, String>(5)?,
             ))
         };
 
@@ -110,14 +101,13 @@ impl<'a> ConnectionRepo<'a> {
         .collect::<Result<Vec<_>, _>>()?;
 
         let mut connections = vec![];
-        for (id, from_ref, to_ref, nature, description, created_at) in raw {
+        for (id, from_ref, to_ref, nature, created_at) in raw {
             connections.push(
                 Connection::builder()
                     .id(id.parse()?)
                     .from_ref(serde_json::from_str(&from_ref)?)
                     .to_ref(serde_json::from_str(&to_ref)?)
                     .nature(nature)
-                    .description(description)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
             );
@@ -126,19 +116,16 @@ impl<'a> ConnectionRepo<'a> {
         Ok(connections)
     }
 
-    // ── Write operations (called by handle) ─────────────────────
-
     fn insert(&self, connection: &Connection) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO connections
-             (id, from_ref, to_ref, nature, description, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+             (id, from_ref, to_ref, nature, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 connection.id.to_string(),
                 serde_json::to_string(&connection.from_ref)?,
                 serde_json::to_string(&connection.to_ref)?,
                 connection.nature.to_string(),
-                connection.description.to_string(),
                 connection.created_at.as_string(),
             ],
         )?;

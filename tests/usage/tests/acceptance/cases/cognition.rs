@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 /// Helper: bootstrap with persona + agent so cognitions have an agent to reference.
@@ -21,17 +22,16 @@ pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent(&mut backend).await?;
 
-    let result = backend
-        .exec("cognition add thinker.process observation 'A test thought' --output json")
+    let response = backend
+        .exec("cognition add thinker.process observation 'A test thought'")
         .await?;
 
-    let outcomes = result.as_array().expect("expected array of outcomes");
-
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("cognition-added"))),
-        "expected cognition-added outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Cognition(CognitionResponse::CognitionAdded(_))
+        ),
+        "expected CognitionAdded, got {response:#?}"
     );
 
     Ok(())
@@ -41,14 +41,14 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent(&mut backend).await?;
 
-    let result = backend.exec("cognition list --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("cognition list").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("no-cognitions"))),
-        "expected no-cognitions outcome in {outcomes:?}"
+        matches!(
+            response.data,
+            Responses::Cognition(CognitionResponse::NoCognitions)
+        ),
+        "expected NoCognitions, got {response:#?}"
     );
 
     Ok(())
@@ -65,20 +65,14 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
         .exec("cognition add thinker.process observation 'Second thought'")
         .await?;
 
-    let result = backend.exec("cognition list --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("cognition list").await?;
 
-    let cognitions = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("cognitions")))
-        .expect("expected cognitions outcome");
-
-    let data = cognitions
-        .get("data")
-        .and_then(|d| d.as_array())
-        .expect("expected data array");
-
-    assert_eq!(data.len(), 2);
+    match response.data {
+        Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
+            assert_eq!(cognitions.len(), 2);
+        }
+        other => panic!("expected Cognitions, got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -98,22 +92,16 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .exec("cognition add other.process observation 'Other thought'")
         .await?;
 
-    let result = backend
-        .exec("cognition list --agent thinker.process --output json")
+    let response = backend
+        .exec("cognition list --agent thinker.process")
         .await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
 
-    let cognitions = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("cognitions")))
-        .expect("expected cognitions outcome");
-
-    let data = cognitions
-        .get("data")
-        .and_then(|d| d.as_array())
-        .expect("expected data array");
-
-    assert_eq!(data.len(), 1);
+    match response.data {
+        Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
+            assert_eq!(cognitions.len(), 1);
+        }
+        other => panic!("expected Cognitions, got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -122,37 +110,24 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent(&mut backend).await?;
 
-    let add_result = backend
-        .exec("cognition add thinker.process observation 'Show me this' --output json")
+    let add_response = backend
+        .exec("cognition add thinker.process observation 'Show me this'")
         .await?;
 
-    let outcomes = add_result.as_array().expect("expected array of outcomes");
-    let added = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("cognition-added")))
-        .expect("expected cognition-added outcome");
+    let id = match add_response.data {
+        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.id,
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
 
-    // Extract the ID from the added cognition
-    let id = added
-        .get("data")
-        .and_then(|d| d.get("id"))
-        .and_then(|id| id.as_str())
-        .expect("expected id in cognition-added data");
+    let show_cmd = format!("cognition show {id}");
+    let show_response = backend.exec(&show_cmd).await?;
 
-    let show_cmd = format!("cognition show {id} --output json");
-    let show_result = backend.exec(&show_cmd).await?;
-    let show_outcomes = show_result.as_array().expect("expected array of outcomes");
-
-    let details = show_outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("cognition-details")))
-        .expect("expected cognition-details outcome");
-
-    let data = details.get("data").expect("expected data field");
-    assert_eq!(
-        data.get("content").and_then(|c| c.as_str()),
-        Some("Show me this")
-    );
+    match show_response.data {
+        Responses::Cognition(CognitionResponse::CognitionDetails(cognition)) => {
+            assert_eq!(cognition.content.as_str(), "Show me this");
+        }
+        other => panic!("expected CognitionDetails, got {other:#?}"),
+    }
 
     Ok(())
 }

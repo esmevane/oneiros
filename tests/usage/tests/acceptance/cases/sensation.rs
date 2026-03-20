@@ -1,14 +1,27 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 use super::vocabulary::{self, VocabularyDomain};
 
 const DOMAIN: VocabularyDomain = VocabularyDomain {
     command: "sensation",
-    set_type: "sensation-set",
-    details_type: "sensation-details",
-    list_type: "sensations",
-    empty_type: "no-sensations",
-    removed_type: "sensation-removed",
+    is_set: |r| matches!(r, Responses::Sensation(SensationResponse::SensationSet(_))),
+    is_details: |r| matches!(r, Responses::Sensation(SensationResponse::SensationDetails(_))),
+    extract_details: |r| match r {
+        Responses::Sensation(SensationResponse::SensationDetails(s)) => Some((
+            s.name.as_str().to_owned(),
+            s.description.as_str().to_owned(),
+            s.prompt.as_str().to_owned(),
+        )),
+        _ => None,
+    },
+    is_list: |r| matches!(r, Responses::Sensation(SensationResponse::Sensations(_))),
+    extract_list_count: |r| match r {
+        Responses::Sensation(SensationResponse::Sensations(list)) => Some(list.len()),
+        _ => None,
+    },
+    is_empty: |r| matches!(r, Responses::Sensation(SensationResponse::NoSensations)),
+    is_removed: |r| matches!(r, Responses::Sensation(SensationResponse::SensationRemoved(_))),
 };
 
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {

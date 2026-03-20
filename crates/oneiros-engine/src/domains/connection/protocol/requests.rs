@@ -7,7 +7,6 @@ pub enum ConnectionRequest {
         from_ref: String,
         to_ref: String,
         nature: String,
-        description: String,
     },
     Get {
         id: String,

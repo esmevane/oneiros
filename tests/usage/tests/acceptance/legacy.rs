@@ -34,21 +34,36 @@ impl Backend for Legacy {
         })
     }
 
-    async fn exec(&self, command: &str) -> Result<serde_json::Value, Box<dyn core::error::Error>> {
+    async fn exec(
+        &self,
+        command: &str,
+    ) -> Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros"];
         full_args.extend(args.iter().map(String::as_str));
 
-        let cli = oneiros_cli::Cli::try_parse_from(full_args)?;
-        let result = cli.run_with(&self.context).await?;
+        let cli = oneiros_cli::Cli::try_parse_from(full_args)
+            .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
+        let result = cli
+            .run_with(&self.context)
+            .await
+            .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
 
-        let values: Vec<serde_json::Value> = result
+        // Serialize the last legacy outcome to JSON, then deserialize as engine Response envelope.
+        // The last outcome is the terminal result; intermediate outcomes are status updates.
+        let outcome = result
             .outcomes
             .into_iter()
-            .filter_map(|outcome| serde_json::to_value(outcome).ok())
-            .collect();
+            .last()
+            .ok_or_else(|| oneiros_engine::Error::Context("no outcomes".to_string()))?;
 
-        Ok(serde_json::Value::Array(values))
+        let json = serde_json::to_value(outcome)
+            .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
+
+        let data: oneiros_engine::Responses = serde_json::from_value(json)
+            .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
+
+        Ok(oneiros_engine::Response::new(data))
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
@@ -403,12 +418,6 @@ async fn import_restores_data() -> TestResult {
 #[tokio::test]
 async fn replay_rebuilds_projections() -> TestResult {
     cases::import_export::replay_rebuilds_projections::<Legacy>().await
-}
-
-// Event
-#[tokio::test]
-async fn event_list_shows_events() -> TestResult {
-    cases::event::list_shows_events::<Legacy>().await
 }
 
 // Texture

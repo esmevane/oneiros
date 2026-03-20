@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
@@ -13,30 +14,25 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     std::fs::write(&file_path, "Hello, storage!")?;
 
     let set_cmd = format!(
-        "storage set test-doc {} --description 'A test document' --output json",
+        "storage set test-doc {} --description 'A test document'",
         file_path.display()
     );
-    let result = backend.exec(&set_cmd).await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let set_response = backend.exec(&set_cmd).await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("storage-set"))),
-        "expected storage-set outcome in {outcomes:?}"
+        matches!(set_response.data, Responses::Storage(StorageResponse::StorageSet(_))),
+        "expected StorageSet, got {set_response:?}"
     );
 
     // Verify via show
-    let show_result = backend.exec("storage show test-doc --output json").await?;
-    let show_outcomes = show_result.as_array().expect("expected array of outcomes");
+    let show_response = backend.exec("storage show test-doc").await?;
 
-    let details = show_outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("storage-details")))
-        .expect("expected storage-details outcome");
-
-    let data = details.get("data").expect("expected data field");
-    assert_eq!(data.get("key").and_then(|k| k.as_str()), Some("test-doc"));
+    match show_response.data {
+        Responses::Storage(StorageResponse::StorageDetails(entry)) => {
+            assert_eq!(entry.name.as_str(), "test-doc");
+        }
+        other => panic!("expected StorageDetails, got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -48,14 +44,11 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     backend.start_service().await?;
     backend.exec("project init --yes").await?;
 
-    let result = backend.exec("storage list --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("storage list").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("no-entries"))),
-        "expected no-entries outcome in {outcomes:?}"
+        matches!(response.data, Responses::Storage(StorageResponse::NoEntries)),
+        "expected NoEntries, got {response:#?}"
     );
 
     Ok(())
@@ -75,20 +68,14 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let cmd = format!("storage set my-doc {}", file_path.display());
     backend.exec(&cmd).await?;
 
-    let result = backend.exec("storage list --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("storage list").await?;
 
-    let entries = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("entries")))
-        .expect("expected entries outcome");
-
-    let data = entries
-        .get("data")
-        .and_then(|d| d.as_array())
-        .expect("expected data array");
-
-    assert_eq!(data.len(), 1);
+    match response.data {
+        Responses::Storage(StorageResponse::Entries(entries)) => {
+            assert_eq!(entries.len(), 1);
+        }
+        other => panic!("expected Entries, got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -107,27 +94,19 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
     let cmd = format!("storage set removable {}", file_path.display());
     backend.exec(&cmd).await?;
 
-    let result = backend
-        .exec("storage remove removable --output json")
-        .await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let remove_response = backend.exec("storage remove removable").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("storage-removed"))),
-        "expected storage-removed outcome in {outcomes:?}"
+        matches!(remove_response.data, Responses::Storage(StorageResponse::StorageRemoved(_))),
+        "expected StorageRemoved, got {remove_response:?}"
     );
 
     // Verify gone
-    let list_result = backend.exec("storage list --output json").await?;
-    let list_outcomes = list_result.as_array().expect("expected array of outcomes");
+    let list_response = backend.exec("storage list").await?;
 
     assert!(
-        list_outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("no-entries"))),
-        "expected no-entries after removal"
+        matches!(list_response.data, Responses::Storage(StorageResponse::NoEntries)),
+        "expected NoEntries after removal, got {list_response:?}"
     );
 
     Ok(())

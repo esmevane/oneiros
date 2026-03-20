@@ -8,7 +8,6 @@ impl ConnectionService {
         from_ref: String,
         to_ref: String,
         nature: String,
-        description: String,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let from: Ref = from_ref
             .parse::<RefToken>()
@@ -23,7 +22,6 @@ impl ConnectionService {
             .from_ref(from)
             .to_ref(to)
             .nature(nature)
-            .description(description)
             .build();
 
         let ref_token = RefToken::new(Ref::connection(connection.id));

@@ -1,14 +1,27 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 use super::vocabulary::{self, VocabularyDomain};
 
 const DOMAIN: VocabularyDomain = VocabularyDomain {
     command: "persona",
-    set_type: "persona-set",
-    details_type: "persona-details",
-    list_type: "personas",
-    empty_type: "no-personas",
-    removed_type: "persona-removed",
+    is_set: |r| matches!(r, Responses::Persona(PersonaResponse::PersonaSet(_))),
+    is_details: |r| matches!(r, Responses::Persona(PersonaResponse::PersonaDetails(_))),
+    extract_details: |r| match r {
+        Responses::Persona(PersonaResponse::PersonaDetails(p)) => Some((
+            p.name.as_str().to_owned(),
+            p.description.as_str().to_owned(),
+            p.prompt.as_str().to_owned(),
+        )),
+        _ => None,
+    },
+    is_list: |r| matches!(r, Responses::Persona(PersonaResponse::Personas(_))),
+    extract_list_count: |r| match r {
+        Responses::Persona(PersonaResponse::Personas(list)) => Some(list.len()),
+        _ => None,
+    },
+    is_empty: |r| matches!(r, Responses::Persona(PersonaResponse::NoPersonas)),
+    is_removed: |r| matches!(r, Responses::Persona(PersonaResponse::PersonaRemoved(_))),
 };
 
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {

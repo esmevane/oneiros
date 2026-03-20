@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn returns_agent_status<B: Backend>() -> TestResult {
@@ -11,15 +12,18 @@ pub(crate) async fn returns_agent_status<B: Backend>() -> TestResult {
         .exec("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let result = backend.exec("status thinker.process --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("status thinker.process").await?;
 
-    assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("status"))),
-        "expected status outcome in {outcomes:?}"
-    );
+    match &response.data {
+        Responses::Json(v) => {
+            assert_eq!(
+                v.get("type").and_then(|t| t.as_str()),
+                Some("status"),
+                "expected type=status, got {v:?}"
+            );
+        }
+        other => panic!("expected Json(status), got {other:#?}"),
+    }
 
     Ok(())
 }

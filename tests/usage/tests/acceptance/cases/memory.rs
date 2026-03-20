@@ -1,3 +1,4 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 /// Helper: bootstrap with persona + agent + level so memories have references.
@@ -21,17 +22,13 @@ pub(crate) async fn add_creates_memory<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent_and_level(&mut backend).await?;
 
-    let result = backend
-        .exec("memory add learner.process session 'A test memory' --output json")
+    let response = backend
+        .exec("memory add learner.process session 'A test memory'")
         .await?;
 
-    let outcomes = result.as_array().expect("expected array of outcomes");
-
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("memory-added"))),
-        "expected memory-added outcome in {outcomes:?}"
+        matches!(response.data, Responses::Memory(MemoryResponse::MemoryAdded(_))),
+        "expected MemoryAdded, got {response:#?}"
     );
 
     Ok(())
@@ -41,14 +38,11 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent_and_level(&mut backend).await?;
 
-    let result = backend.exec("memory list --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("memory list").await?;
 
     assert!(
-        outcomes
-            .iter()
-            .any(|o| o.get("type") == Some(&serde_json::json!("no-memories"))),
-        "expected no-memories outcome in {outcomes:?}"
+        matches!(response.data, Responses::Memory(MemoryResponse::NoMemories)),
+        "expected NoMemories, got {response:#?}"
     );
 
     Ok(())
@@ -65,20 +59,14 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
         .exec("memory add learner.process session 'Second memory'")
         .await?;
 
-    let result = backend.exec("memory list --output json").await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
+    let response = backend.exec("memory list").await?;
 
-    let memories = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("memories")))
-        .expect("expected memories outcome");
-
-    let data = memories
-        .get("data")
-        .and_then(|d| d.as_array())
-        .expect("expected data array");
-
-    assert_eq!(data.len(), 2);
+    match response.data {
+        Responses::Memory(MemoryResponse::Memories(memories)) => {
+            assert_eq!(memories.len(), 2);
+        }
+        other => panic!("expected Memories, got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -98,22 +86,16 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .exec("memory add other.process session 'Other memory'")
         .await?;
 
-    let result = backend
-        .exec("memory list --agent learner.process --output json")
+    let response = backend
+        .exec("memory list --agent learner.process")
         .await?;
-    let outcomes = result.as_array().expect("expected array of outcomes");
 
-    let memories = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("memories")))
-        .expect("expected memories outcome");
-
-    let data = memories
-        .get("data")
-        .and_then(|d| d.as_array())
-        .expect("expected data array");
-
-    assert_eq!(data.len(), 1);
+    match response.data {
+        Responses::Memory(MemoryResponse::Memories(memories)) => {
+            assert_eq!(memories.len(), 1);
+        }
+        other => panic!("expected Memories, got {other:#?}"),
+    }
 
     Ok(())
 }
@@ -122,36 +104,24 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent_and_level(&mut backend).await?;
 
-    let add_result = backend
-        .exec("memory add learner.process session 'Show me this' --output json")
+    let add_response = backend
+        .exec("memory add learner.process session 'Show me this'")
         .await?;
 
-    let outcomes = add_result.as_array().expect("expected array of outcomes");
-    let added = outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("memory-added")))
-        .expect("expected memory-added outcome");
+    let id = match add_response.data {
+        Responses::Memory(MemoryResponse::MemoryAdded(memory)) => memory.id,
+        other => panic!("expected MemoryAdded, got {other:#?}"),
+    };
 
-    let id = added
-        .get("data")
-        .and_then(|d| d.get("id"))
-        .and_then(|id| id.as_str())
-        .expect("expected id in memory-added data");
+    let show_cmd = format!("memory show {id}");
+    let show_response = backend.exec(&show_cmd).await?;
 
-    let show_cmd = format!("memory show {id} --output json");
-    let show_result = backend.exec(&show_cmd).await?;
-    let show_outcomes = show_result.as_array().expect("expected array of outcomes");
-
-    let details = show_outcomes
-        .iter()
-        .find(|o| o.get("type") == Some(&serde_json::json!("memory-details")))
-        .expect("expected memory-details outcome");
-
-    let data = details.get("data").expect("expected data field");
-    assert_eq!(
-        data.get("content").and_then(|c| c.as_str()),
-        Some("Show me this")
-    );
+    match show_response.data {
+        Responses::Memory(MemoryResponse::MemoryDetails(memory)) => {
+            assert_eq!(memory.content.as_str(), "Show me this");
+        }
+        other => panic!("expected MemoryDetails, got {other:#?}"),
+    }
 
     Ok(())
 }

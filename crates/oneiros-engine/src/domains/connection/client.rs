@@ -14,14 +14,12 @@ impl<'a> ConnectionClient<'a> {
         from_ref: Ref,
         to_ref: Ref,
         nature: NatureName,
-        description: Description,
     ) -> Result<ConnectionResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
             from_ref: Ref,
             to_ref: Ref,
             nature: NatureName,
-            description: Description,
         }
 
         self.client
@@ -31,7 +29,6 @@ impl<'a> ConnectionClient<'a> {
                     from_ref,
                     to_ref,
                     nature,
-                    description,
                 },
             )
             .await

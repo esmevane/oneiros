@@ -1,14 +1,27 @@
+use oneiros_engine::*;
 use oneiros_usage::*;
 
 use super::vocabulary::{self, VocabularyDomain};
 
 const DOMAIN: VocabularyDomain = VocabularyDomain {
     command: "nature",
-    set_type: "nature-set",
-    details_type: "nature-details",
-    list_type: "natures",
-    empty_type: "no-natures",
-    removed_type: "nature-removed",
+    is_set: |r| matches!(r, Responses::Nature(NatureResponse::NatureSet(_))),
+    is_details: |r| matches!(r, Responses::Nature(NatureResponse::NatureDetails(_))),
+    extract_details: |r| match r {
+        Responses::Nature(NatureResponse::NatureDetails(n)) => Some((
+            n.name.as_str().to_owned(),
+            n.description.as_str().to_owned(),
+            n.prompt.as_str().to_owned(),
+        )),
+        _ => None,
+    },
+    is_list: |r| matches!(r, Responses::Nature(NatureResponse::Natures(_))),
+    extract_list_count: |r| match r {
+        Responses::Nature(NatureResponse::Natures(list)) => Some(list.len()),
+        _ => None,
+    },
+    is_empty: |r| matches!(r, Responses::Nature(NatureResponse::NoNatures)),
+    is_removed: |r| matches!(r, Responses::Nature(NatureResponse::NatureRemoved(_))),
 };
 
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {

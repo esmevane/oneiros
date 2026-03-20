@@ -1,12 +1,14 @@
+use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct SearchResult {
+    pub resource_ref: Ref,
+    #[builder(into)]
     pub kind: Label,
-    pub id: String,
+    #[builder(into)]
     pub content: Content,
-    pub rank: f64,
 }
