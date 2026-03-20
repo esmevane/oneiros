@@ -11,33 +11,33 @@ impl<'a> ConnectionClient<'a> {
 
     pub async fn create(
         &self,
-        from_entity: impl Into<String>,
-        to_entity: impl Into<String>,
-        nature: impl Into<String>,
-        description: impl Into<String>,
+        from_ref: Ref,
+        to_ref: Ref,
+        nature: NatureName,
+        description: Description,
     ) -> Result<ConnectionResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            from_entity: String,
-            to_entity: String,
-            nature: String,
-            description: String,
+            from_ref: Ref,
+            to_ref: Ref,
+            nature: NatureName,
+            description: Description,
         }
 
         self.client
             .post(
                 "/connections",
                 &Body {
-                    from_entity: from_entity.into(),
-                    to_entity: to_entity.into(),
-                    nature: nature.into(),
-                    description: description.into(),
+                    from_ref,
+                    to_ref,
+                    nature,
+                    description,
                 },
             )
             .await
     }
 
-    pub async fn list(&self, entity: Option<&str>) -> Result<ConnectionResponse, ClientError> {
+    pub async fn list(&self, entity: Option<&Ref>) -> Result<ConnectionResponse, ClientError> {
         let path = match entity {
             Some(e) => format!("/connections?entity={e}"),
             None => "/connections".to_string(),
@@ -46,11 +46,11 @@ impl<'a> ConnectionClient<'a> {
         self.client.get(&path).await
     }
 
-    pub async fn get(&self, id: &str) -> Result<ConnectionResponse, ClientError> {
+    pub async fn get(&self, id: &ConnectionId) -> Result<ConnectionResponse, ClientError> {
         self.client.get(&format!("/connections/{id}")).await
     }
 
-    pub async fn remove(&self, id: &str) -> Result<ConnectionResponse, ClientError> {
+    pub async fn remove(&self, id: &ConnectionId) -> Result<ConnectionResponse, ClientError> {
         self.client.delete(&format!("/connections/{id}")).await
     }
 }

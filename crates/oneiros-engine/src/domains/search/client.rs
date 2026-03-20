@@ -12,7 +12,7 @@ impl<'a> SearchClient<'a> {
     pub async fn search(
         &self,
         query: &str,
-        agent: Option<&str>,
+        agent: Option<&AgentName>,
     ) -> Result<SearchResponse, ClientError> {
         let path = match agent {
             Some(a) => format!("/search?q={query}&agent={a}"),

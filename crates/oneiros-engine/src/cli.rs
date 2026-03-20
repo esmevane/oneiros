@@ -105,56 +105,55 @@ pub enum Command {
 
 impl Command {
     /// Execute a CLI command against the engine context.
-    pub fn execute(
-        &self,
-        context: &EngineContext,
-    ) -> Result<Responses, Box<dyn core::error::Error>> {
-        match self {
+    pub fn execute(&self, context: &EngineContext) -> Result<Responses, Error> {
+        Ok(match self {
             // Workflow domains — each knows its context
-            Command::System(system) => system.execute(&context.system),
-            Command::Project(project) => project.execute(
-                &context.system,
-                context.project.as_ref(),
-                &context.brain_name,
-            ),
-            Command::Seed(seed) => seed.execute(context.project()?),
+            Command::System(system) => system.execute(&context.system)?,
+            Command::Project(project) => project
+                .execute(
+                    &context.system,
+                    context.project.as_ref(),
+                    &context.brain_name,
+                )
+                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::Seed(seed) => seed
+                .execute(context.project()?)
+                .map_err(|e| Error::Context(e.to_string()))?,
 
             // Project-scoped domains
-            Command::Level(level) => level.execute(context.project()?),
-            Command::Texture(texture) => texture.execute(context.project()?),
-            Command::Sensation(sensation) => sensation.execute(context.project()?),
-            Command::Nature(nature) => nature.execute(context.project()?),
-            Command::Persona(persona) => persona.execute(context.project()?),
-            Command::Urge(urge) => urge.execute(context.project()?),
-            Command::Agent(agent) => agent.execute(context.project()?),
-            Command::Cognition(cognition) => cognition.execute(context.project()?),
-            Command::Memory(memory) => memory.execute(context.project()?),
-            Command::Experience(experience) => experience.execute(context.project()?),
-            Command::Connection(connection) => connection.execute(context.project()?),
-            Command::Storage(storage) => storage.execute(context.project()?),
-            Command::Search(search) => search.execute(context.project()?),
-            Command::Pressure(pressure) => pressure.execute(context.project()?),
+            Command::Level(level) => level.execute(context.project()?)?,
+            Command::Texture(texture) => texture.execute(context.project()?)?,
+            Command::Sensation(sensation) => sensation.execute(context.project()?)?,
+            Command::Nature(nature) => nature.execute(context.project()?)?,
+            Command::Persona(persona) => persona.execute(context.project()?)?,
+            Command::Urge(urge) => urge.execute(context.project()?)?,
+            Command::Agent(agent) => agent.execute(context.project()?)?,
+            Command::Cognition(cognition) => cognition.execute(context.project()?)?,
+            Command::Memory(memory) => memory.execute(context.project()?)?,
+            Command::Experience(experience) => experience.execute(context.project()?)?,
+            Command::Connection(connection) => connection.execute(context.project()?)?,
+            Command::Storage(storage) => storage.execute(context.project()?)?,
+            Command::Search(search) => search.execute(context.project()?)?,
+            Command::Pressure(pressure) => pressure.execute(context.project()?)?,
 
             // Doctor — system diagnostics
-            Command::Doctor => DoctorCli::execute(&context.system),
+            Command::Doctor => {
+                DoctorCli::execute(&context.system).map_err(|e| Error::Context(e.to_string()))?
+            }
 
             // Lifecycle - available in flat mode as well.
-            Command::Lifecycle(lifecycle) => lifecycle.execute(context.project()?),
-            Command::Wake { name } => Ok(LifecycleService::wake(context.project()?, &name)?.into()),
-            Command::Dream { name } => {
-                Ok(LifecycleService::dream(context.project()?, &name)?.into())
-            }
+            Command::Lifecycle(lifecycle) => lifecycle.execute(context.project()?)?,
+            Command::Wake { name } => LifecycleService::wake(context.project()?, &name)?.into(),
+            Command::Dream { name } => LifecycleService::dream(context.project()?, &name)?.into(),
             Command::Introspect { name } => {
-                Ok(LifecycleService::introspect(context.project()?, &name)?.into())
+                LifecycleService::introspect(context.project()?, &name)?.into()
             }
             Command::Reflect { name } => {
-                Ok(LifecycleService::reflect(context.project()?, &name)?.into())
+                LifecycleService::reflect(context.project()?, &name)?.into()
             }
-            Command::Sleep { name } => {
-                Ok(LifecycleService::sleep(context.project()?, &name)?.into())
-            }
+            Command::Sleep { name } => LifecycleService::sleep(context.project()?, &name)?.into(),
             Command::Guidebook { name } => {
-                Ok(LifecycleService::guidebook(context.project()?, &name)?.into())
+                LifecycleService::guidebook(context.project()?, &name)?.into()
             }
 
             // Emerge: create an agent then immediately wake it
@@ -173,10 +172,14 @@ impl Command {
                 )?;
                 let agent_name = match &created {
                     AgentResponse::AgentCreated(n) => n.clone(),
-                    other => return Err(format!("unexpected agent response: {other:?}").into()),
+                    other => {
+                        return Err(Error::Context(format!(
+                            "unexpected agent response: {other:?}"
+                        )));
+                    }
                 };
                 LifecycleService::wake(project, &agent_name)?;
-                Ok(serde_json::json!({ "type": "emerged", "data": agent_name.to_string() }).into())
+                serde_json::json!({ "type": "emerged", "data": agent_name.to_string() }).into()
             }
 
             // Recede: retire an agent
@@ -184,15 +187,14 @@ impl Command {
                 let project = context.project()?;
                 let name_str = name.to_string();
                 AgentService::remove(project, &name)?;
-                Ok(serde_json::json!({ "type": "receded", "data": name_str }).into())
+                serde_json::json!({ "type": "receded", "data": name_str }).into()
             }
 
             // Status: gather an agent's cognitive context and return it
             Command::Status { name } => {
                 let project = context.project()?;
-                let context = LifecycleService::gather_context(project, &name)
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                Ok(serde_json::json!({ "type": "status", "data": context }).into())
+                let context = LifecycleService::gather_context(project, &name)?;
+                serde_json::json!({ "type": "status", "data": context }).into()
             }
 
             // Event inspection
@@ -200,9 +202,11 @@ impl Command {
                 EventCommands::List => {
                     let project = context.project()?;
                     let events = project.with_db(event::repo::load_events)?;
-                    Ok(serde_json::to_value(&events)?.into())
+                    serde_json::to_value(&events)
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into()
                 }
             },
-        }
+        })
     }
 }

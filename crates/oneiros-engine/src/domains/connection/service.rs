@@ -41,9 +41,8 @@ impl ConnectionService {
         id: &ConnectionId,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let connection = context
-            .with_db(|conn| ConnectionRepo::new(conn).get(id))
-            .map_err(ConnectionError::Database)?
-            .ok_or_else(|| ConnectionError::NotFound(id.to_string()))?;
+            .with_db(|conn| ConnectionRepo::new(conn).get(id))?
+            .ok_or_else(|| ConnectionError::NotFound(*id))?;
         Ok(ConnectionResponse::ConnectionDetails(connection))
     }
 
@@ -82,7 +81,7 @@ impl ConnectionService {
             .is_some();
 
         if !exists {
-            return Err(ConnectionError::NotFound(id.to_string()));
+            return Err(ConnectionError::NotFound(*id));
         }
 
         let ref_token = RefToken::new(Ref::connection(*id));

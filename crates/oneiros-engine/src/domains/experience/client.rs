@@ -11,30 +11,30 @@ impl<'a> ExperienceClient<'a> {
 
     pub async fn create(
         &self,
-        agent: impl Into<String>,
-        sensation: impl Into<String>,
-        description: impl Into<String>,
+        agent: AgentName,
+        sensation: SensationName,
+        description: Description,
     ) -> Result<ExperienceResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            agent: String,
-            sensation: String,
-            description: String,
+            agent: AgentName,
+            sensation: SensationName,
+            description: Description,
         }
 
         self.client
             .post(
                 "/experiences",
                 &Body {
-                    agent: agent.into(),
-                    sensation: sensation.into(),
-                    description: description.into(),
+                    agent,
+                    sensation,
+                    description,
                 },
             )
             .await
     }
 
-    pub async fn list(&self, agent: Option<&str>) -> Result<ExperienceResponse, ClientError> {
+    pub async fn list(&self, agent: Option<&AgentName>) -> Result<ExperienceResponse, ClientError> {
         let path = match agent {
             Some(a) => format!("/experiences?agent={a}"),
             None => "/experiences".to_string(),
@@ -43,46 +43,42 @@ impl<'a> ExperienceClient<'a> {
         self.client.get(&path).await
     }
 
-    pub async fn get(&self, id: &str) -> Result<ExperienceResponse, ClientError> {
+    pub async fn get(&self, id: &ExperienceId) -> Result<ExperienceResponse, ClientError> {
         self.client.get(&format!("/experiences/{id}")).await
     }
 
     pub async fn update_description(
         &self,
-        id: &str,
-        description: impl Into<String>,
+        id: &ExperienceId,
+        description: Description,
     ) -> Result<ExperienceResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            description: String,
+            description: Description,
         }
 
         self.client
             .put(
                 &format!("/experiences/{id}/description"),
-                &Body {
-                    description: description.into(),
-                },
+                &Body { description },
             )
             .await
     }
 
     pub async fn update_sensation(
         &self,
-        id: &str,
-        sensation: impl Into<String>,
+        id: &ExperienceId,
+        sensation: SensationName,
     ) -> Result<ExperienceResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            sensation: String,
+            sensation: SensationName,
         }
 
         self.client
             .put(
                 &format!("/experiences/{id}/sensation"),
-                &Body {
-                    sensation: sensation.into(),
-                },
+                &Body { sensation },
             )
             .await
     }

@@ -1,4 +1,3 @@
-use crate::client::{Client, ClientError};
 use crate::*;
 
 pub struct LevelClient<'a> {
@@ -16,15 +15,15 @@ impl<'a> LevelClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &str) -> Result<LevelResponse, ClientError> {
-        self.client.get(&format!("/levels/{}", name)).await
+    pub async fn get(&self, name: &LevelName) -> Result<LevelResponse, ClientError> {
+        self.client.get(&format!("/levels/{name}")).await
     }
 
     pub async fn list(&self) -> Result<LevelResponse, ClientError> {
         self.client.get("/levels").await
     }
 
-    pub async fn remove(&self, name: &str) -> Result<LevelResponse, ClientError> {
-        self.client.delete(&format!("/levels/{}", name)).await
+    pub async fn remove(&self, name: &LevelName) -> Result<LevelResponse, ClientError> {
+        self.client.delete(&format!("/levels/{name}")).await
     }
 }

@@ -29,7 +29,7 @@ impl ExperienceCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, ExperienceError> {
         let result = match self {
             ExperienceCommands::Create {
                 agent,
@@ -73,7 +73,11 @@ impl ExperienceCommands {
                 }
                 match result {
                     Some(r) => r.into(),
-                    None => return Err("update requires --description or --sensation".into()),
+                    None => {
+                        return Err(ExperienceError::InvalidRequest(
+                            "update requires --description or --sensation".into(),
+                        ))
+                    }
                 }
             }
         };

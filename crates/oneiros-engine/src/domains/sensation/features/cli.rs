@@ -24,7 +24,7 @@ impl SensationCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, SensationError> {
         let result = match self {
             SensationCommands::Set {
                 name,

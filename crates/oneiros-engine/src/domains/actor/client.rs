@@ -15,20 +15,20 @@ impl<'a> ActorClient<'a> {
     /// Create a new actor belonging to the given tenant.
     pub async fn create(
         &self,
-        tenant_id: impl Into<String>,
-        name: impl Into<String>,
+        tenant_id: &TenantId,
+        name: &ActorName,
     ) -> Result<ActorResponse, ClientError> {
         self.client
             .post(
                 "/actors/",
-                &serde_json::json!({ "tenant_id": tenant_id.into(), "name": name.into() }),
+                &serde_json::json!({ "tenant_id": tenant_id, "name": name }),
             )
             .await
     }
 
     /// Retrieve a single actor by ID.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<ActorResponse, ClientError> {
-        self.client.get(&format!("/actors/{}", id.as_ref())).await
+    pub async fn get(&self, id: &ActorId) -> Result<ActorResponse, ClientError> {
+        self.client.get(&format!("/actors/{}", id)).await
     }
 
     /// List all actors.

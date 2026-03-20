@@ -10,9 +10,8 @@ impl ExperienceService {
         description: Description,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let agent_record = context
-            .with_db(|conn| AgentRepo::new(conn).get(agent))
-            .map_err(ExperienceError::Database)?
-            .ok_or_else(|| ExperienceError::NotFound(agent.to_string()))?;
+            .with_db(|conn| AgentRepo::new(conn).get(agent))?
+            .ok_or_else(|| ExperienceError::AgentNotFound(agent.clone()))?;
 
         let experience = Experience::builder()
             .agent_id(agent_record.id)
@@ -29,9 +28,8 @@ impl ExperienceService {
         id: &ExperienceId,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let experience = context
-            .with_db(|conn| ExperienceRepo::new(conn).get(id))
-            .map_err(ExperienceError::Database)?
-            .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
+            .with_db(|conn| ExperienceRepo::new(conn).get(id))?
+            .ok_or_else(|| ExperienceError::NotFound(*id))?;
         Ok(ExperienceResponse::ExperienceDetails(experience))
     }
 
@@ -42,10 +40,9 @@ impl ExperienceService {
         let agent_id = agent
             .map(|name| {
                 context
-                    .with_db(|conn| AgentRepo::new(conn).get(name))
-                    .map_err(ExperienceError::Database)?
+                    .with_db(|conn| AgentRepo::new(conn).get(name))?
                     .map(|a| a.id.to_string())
-                    .ok_or_else(|| ExperienceError::NotFound(name.to_string()))
+                    .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))
             })
             .transpose()?;
 
@@ -65,9 +62,8 @@ impl ExperienceService {
         description: Description,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let mut experience = context
-            .with_db(|conn| ExperienceRepo::new(conn).get(id))
-            .map_err(ExperienceError::Database)?
-            .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
+            .with_db(|conn| ExperienceRepo::new(conn).get(id))?
+            .ok_or_else(|| ExperienceError::NotFound(*id))?;
 
         experience.description = description.clone();
 
@@ -86,9 +82,8 @@ impl ExperienceService {
         sensation: SensationName,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let mut experience = context
-            .with_db(|conn| ExperienceRepo::new(conn).get(id))
-            .map_err(ExperienceError::Database)?
-            .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
+            .with_db(|conn| ExperienceRepo::new(conn).get(id))?
+            .ok_or_else(|| ExperienceError::NotFound(*id))?;
 
         experience.sensation = sensation.clone();
 

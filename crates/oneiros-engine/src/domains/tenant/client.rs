@@ -13,15 +13,15 @@ impl<'a> TenantClient<'a> {
     }
 
     /// Create a new tenant with the given name.
-    pub async fn create(&self, name: impl Into<String>) -> Result<TenantResponse, ClientError> {
+    pub async fn create(&self, name: &TenantName) -> Result<TenantResponse, ClientError> {
         self.client
-            .post("/tenants/", &serde_json::json!({ "name": name.into() }))
+            .post("/tenants/", &serde_json::json!({ "name": name }))
             .await
     }
 
     /// Retrieve a single tenant by ID.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<TenantResponse, ClientError> {
-        self.client.get(&format!("/tenants/{}", id.as_ref())).await
+    pub async fn get(&self, id: &TenantId) -> Result<TenantResponse, ClientError> {
+        self.client.get(&format!("/tenants/{}", id)).await
     }
 
     /// List all tenants.

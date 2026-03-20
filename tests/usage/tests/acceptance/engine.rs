@@ -20,7 +20,7 @@ struct Cli {
 
 impl Cli {
     fn execute(&self, context: &EngineContext) -> Result<Responses, Box<dyn core::error::Error>> {
-        self.command.execute(context)
+        Ok(self.command.execute(context)?)
     }
 }
 

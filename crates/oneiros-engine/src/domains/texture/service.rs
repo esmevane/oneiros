@@ -17,8 +17,7 @@ impl TextureService {
         name: &TextureName,
     ) -> Result<TextureResponse, TextureError> {
         let texture = context
-            .with_db(|conn| TextureRepo::new(conn).get(name))
-            .map_err(TextureError::Database)?
+            .with_db(|conn| TextureRepo::new(conn).get(name))?
             .ok_or_else(|| TextureError::NotFound(name.clone()))?;
         Ok(TextureResponse::TextureDetails(texture))
     }

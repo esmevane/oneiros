@@ -1,4 +1,3 @@
-use crate::client::{Client, ClientError};
 use crate::*;
 
 pub struct UrgeClient<'a> {
@@ -16,15 +15,15 @@ impl<'a> UrgeClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &str) -> Result<UrgeResponse, ClientError> {
-        self.client.get(&format!("/urges/{}", name)).await
+    pub async fn get(&self, name: &UrgeName) -> Result<UrgeResponse, ClientError> {
+        self.client.get(&format!("/urges/{name}")).await
     }
 
     pub async fn list(&self) -> Result<UrgeResponse, ClientError> {
         self.client.get("/urges").await
     }
 
-    pub async fn remove(&self, name: &str) -> Result<UrgeResponse, ClientError> {
-        self.client.delete(&format!("/urges/{}", name)).await
+    pub async fn remove(&self, name: &UrgeName) -> Result<UrgeResponse, ClientError> {
+        self.client.delete(&format!("/urges/{name}")).await
     }
 }

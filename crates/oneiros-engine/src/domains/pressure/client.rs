@@ -13,9 +13,9 @@ impl<'a> PressureClient<'a> {
     }
 
     /// Retrieve pressure readings for a specific agent.
-    pub async fn get(&self, agent: impl AsRef<str>) -> Result<PressureResponse, ClientError> {
+    pub async fn get(&self, agent: &AgentName) -> Result<PressureResponse, ClientError> {
         self.client
-            .get(&format!("/pressures/{}", agent.as_ref()))
+            .get(&format!("/pressures/{agent}"))
             .await
     }
 

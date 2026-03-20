@@ -2,13 +2,18 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::*;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectionError {
     #[error("Connection not found: {0}")]
-    NotFound(String),
+    NotFound(ConnectionId),
 
     #[error("Invalid entity reference: {0}")]
     InvalidRef(String),
+
+    #[error("Invalid ID: {0}")]
+    InvalidId(#[from] crate::IdParseError),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),
@@ -19,6 +24,7 @@ impl IntoResponse for ConnectionError {
         let (status, message) = match &self {
             ConnectionError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ConnectionError::InvalidRef(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            ConnectionError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ConnectionError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()

@@ -24,7 +24,7 @@ impl UrgeCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, UrgeError> {
         let result = match self {
             UrgeCommands::Set {
                 name,

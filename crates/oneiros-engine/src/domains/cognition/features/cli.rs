@@ -24,7 +24,7 @@ impl CognitionCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, CognitionError> {
         let result = match self {
             CognitionCommands::Add {
                 agent,

@@ -24,7 +24,7 @@ impl PersonaCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, PersonaError> {
         let result = match self {
             PersonaCommands::Set {
                 name,

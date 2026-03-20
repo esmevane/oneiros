@@ -39,7 +39,7 @@ impl<'a> SearchRepo<'a> {
     pub fn search(
         &self,
         query: &str,
-        agent: Option<&str>,
+        agent: Option<&AgentId>,
     ) -> Result<Vec<SearchResult>, EventError> {
         match agent {
             Some(agent_filter) => {
@@ -52,7 +52,7 @@ impl<'a> SearchRepo<'a> {
                 )?;
 
                 let results = stmt
-                    .query_map(params![query, agent_filter], |row| {
+                    .query_map(params![query, agent_filter.to_string()], |row| {
                         Ok(SearchResult {
                             kind: Label::new(row.get::<_, String>(0)?),
                             id: row.get(1)?,

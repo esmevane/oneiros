@@ -16,7 +16,7 @@ impl BrainCli {
     pub fn execute(
         context: &SystemContext,
         cmd: BrainCommands,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, BrainError> {
         let result = match cmd {
             BrainCommands::Create { name } => {
                 BrainService::create(context, BrainName::new(name))?.into()

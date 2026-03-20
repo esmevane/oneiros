@@ -22,7 +22,7 @@ impl ActorCli {
     pub fn execute(
         context: &SystemContext,
         cmd: ActorCommands,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, ActorError> {
         let result = match cmd {
             ActorCommands::Create { tenant_id, name } => ActorService::create(
                 context,

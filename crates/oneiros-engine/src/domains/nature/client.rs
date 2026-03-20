@@ -1,4 +1,3 @@
-use crate::client::{Client, ClientError};
 use crate::*;
 
 pub struct NatureClient<'a> {
@@ -16,15 +15,15 @@ impl<'a> NatureClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &str) -> Result<NatureResponse, ClientError> {
-        self.client.get(&format!("/natures/{}", name)).await
+    pub async fn get(&self, name: &NatureName) -> Result<NatureResponse, ClientError> {
+        self.client.get(&format!("/natures/{name}")).await
     }
 
     pub async fn list(&self) -> Result<NatureResponse, ClientError> {
         self.client.get("/natures").await
     }
 
-    pub async fn remove(&self, name: &str) -> Result<NatureResponse, ClientError> {
-        self.client.delete(&format!("/natures/{}", name)).await
+    pub async fn remove(&self, name: &NatureName) -> Result<NatureResponse, ClientError> {
+        self.client.delete(&format!("/natures/{name}")).await
     }
 }

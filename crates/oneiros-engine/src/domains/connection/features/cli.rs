@@ -27,7 +27,7 @@ impl ConnectionCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, ConnectionError> {
         let result = match self {
             ConnectionCommands::Create {
                 nature,

@@ -11,8 +11,7 @@ impl UrgeService {
 
     pub fn get(context: &ProjectContext, name: &UrgeName) -> Result<UrgeResponse, UrgeError> {
         let urge = context
-            .with_db(|conn| UrgeRepo::new(conn).get(name))
-            .map_err(UrgeError::Database)?
+            .with_db(|conn| UrgeRepo::new(conn).get(name))?
             .ok_or_else(|| UrgeError::NotFound(name.clone()))?;
         Ok(UrgeResponse::UrgeDetails(urge))
     }

@@ -24,7 +24,7 @@ impl LevelCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, LevelError> {
         let result = match self {
             LevelCommands::Set {
                 name,

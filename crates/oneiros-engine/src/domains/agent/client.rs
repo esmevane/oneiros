@@ -11,27 +11,27 @@ impl<'a> AgentClient<'a> {
 
     pub async fn create(
         &self,
-        name: impl Into<String>,
-        persona: impl Into<String>,
-        description: impl Into<String>,
-        prompt: impl Into<String>,
+        name: AgentName,
+        persona: PersonaName,
+        description: Description,
+        prompt: Prompt,
     ) -> Result<AgentResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            name: String,
-            persona: String,
-            description: String,
-            prompt: String,
+            name: AgentName,
+            persona: PersonaName,
+            description: Description,
+            prompt: Prompt,
         }
 
         self.client
             .post(
                 "/agents",
                 &Body {
-                    name: name.into(),
-                    persona: persona.into(),
-                    description: description.into(),
-                    prompt: prompt.into(),
+                    name,
+                    persona,
+                    description,
+                    prompt,
                 },
             )
             .await
@@ -41,37 +41,37 @@ impl<'a> AgentClient<'a> {
         self.client.get("/agents").await
     }
 
-    pub async fn get(&self, name: &str) -> Result<AgentResponse, ClientError> {
+    pub async fn get(&self, name: &AgentName) -> Result<AgentResponse, ClientError> {
         self.client.get(&format!("/agents/{name}")).await
     }
 
     pub async fn update(
         &self,
-        name: &str,
-        persona: impl Into<String>,
-        description: impl Into<String>,
-        prompt: impl Into<String>,
+        name: &AgentName,
+        persona: PersonaName,
+        description: Description,
+        prompt: Prompt,
     ) -> Result<AgentResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            persona: String,
-            description: String,
-            prompt: String,
+            persona: PersonaName,
+            description: Description,
+            prompt: Prompt,
         }
 
         self.client
             .put(
                 &format!("/agents/{name}"),
                 &Body {
-                    persona: persona.into(),
-                    description: description.into(),
-                    prompt: prompt.into(),
+                    persona,
+                    description,
+                    prompt,
                 },
             )
             .await
     }
 
-    pub async fn remove(&self, name: &str) -> Result<AgentResponse, ClientError> {
+    pub async fn remove(&self, name: &AgentName) -> Result<AgentResponse, ClientError> {
         self.client.delete(&format!("/agents/{name}")).await
     }
 }

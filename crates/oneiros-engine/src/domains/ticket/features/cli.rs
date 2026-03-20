@@ -23,7 +23,7 @@ impl TicketCli {
     pub fn execute(
         context: &SystemContext,
         cmd: TicketCommands,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, TicketError> {
         let result = match cmd {
             TicketCommands::Issue {
                 actor_id,

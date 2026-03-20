@@ -15,12 +15,12 @@ impl SearchService {
                     .map_err(SearchError::Database)
                     .ok()
                     .flatten()
-                    .map(|a| a.id.to_string())
+                    .map(|a| a.id)
             })
             .flatten();
 
         let results = context
-            .with_db(|conn| SearchRepo::new(conn).search(query, agent_id.as_deref()))
+            .with_db(|conn| SearchRepo::new(conn).search(query, agent_id.as_ref()))
             .map_err(SearchError::Database)?;
         Ok(SearchResponse::Results(SearchResults {
             query: query.to_string(),

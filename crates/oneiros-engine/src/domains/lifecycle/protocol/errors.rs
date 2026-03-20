@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::*;
+
 #[derive(Debug, thiserror::Error)]
 pub enum LifecycleError {
     #[error("Agent not found: {0}")]
-    AgentNotFound(String),
+    AgentNotFound(AgentName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

@@ -17,8 +17,7 @@ impl SensationService {
         name: &SensationName,
     ) -> Result<SensationResponse, SensationError> {
         let sensation = context
-            .with_db(|conn| SensationRepo::new(conn).get(name))
-            .map_err(SensationError::Database)?
+            .with_db(|conn| SensationRepo::new(conn).get(name))?
             .ok_or_else(|| SensationError::NotFound(name.clone()))?;
         Ok(SensationResponse::SensationDetails(sensation))
     }

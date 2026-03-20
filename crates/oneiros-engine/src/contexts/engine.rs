@@ -12,9 +12,11 @@ pub struct EngineContext {
 }
 
 impl EngineContext {
-    pub fn project(&self) -> Result<&ProjectContext, Box<dyn std::error::Error>> {
-        self.project
-            .as_ref()
-            .ok_or_else(|| "project context required — call start_service first".into())
+    pub fn project(&self) -> Result<&ProjectContext, Error> {
+        self.project.as_ref().ok_or_else(|| {
+            Error::Context(
+                "project context required — call start_service first".to_string(),
+            )
+        })
     }
 }

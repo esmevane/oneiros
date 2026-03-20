@@ -13,15 +13,15 @@ impl<'a> BrainClient<'a> {
     }
 
     /// Create a new brain with the given name.
-    pub async fn create(&self, name: impl Into<String>) -> Result<BrainResponse, ClientError> {
+    pub async fn create(&self, name: &BrainName) -> Result<BrainResponse, ClientError> {
         self.client
-            .post("/brains/", &serde_json::json!({ "name": name.into() }))
+            .post("/brains/", &serde_json::json!({ "name": name }))
             .await
     }
 
     /// Retrieve a single brain by name.
-    pub async fn get(&self, name: impl AsRef<str>) -> Result<BrainResponse, ClientError> {
-        self.client.get(&format!("/brains/{}", name.as_ref())).await
+    pub async fn get(&self, name: &BrainName) -> Result<BrainResponse, ClientError> {
+        self.client.get(&format!("/brains/{}", name)).await
     }
 
     /// List all brains.

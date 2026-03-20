@@ -13,10 +13,10 @@ impl<'a> LifecycleClient<'a> {
     }
 
     /// Run the dream lifecycle operation for the given agent.
-    pub async fn dream(&self, agent: impl AsRef<str>) -> Result<LifecycleResponse, ClientError> {
+    pub async fn dream(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
             .post(
-                &format!("/dream/{}", agent.as_ref()),
+                &format!("/dream/{agent}"),
                 &serde_json::Value::Null,
             )
             .await
@@ -25,21 +25,21 @@ impl<'a> LifecycleClient<'a> {
     /// Run the introspect lifecycle operation for the given agent.
     pub async fn introspect(
         &self,
-        agent: impl AsRef<str>,
+        agent: &AgentName,
     ) -> Result<LifecycleResponse, ClientError> {
         self.client
             .post(
-                &format!("/introspect/{}", agent.as_ref()),
+                &format!("/introspect/{agent}"),
                 &serde_json::Value::Null,
             )
             .await
     }
 
     /// Run the reflect lifecycle operation for the given agent.
-    pub async fn reflect(&self, agent: impl AsRef<str>) -> Result<LifecycleResponse, ClientError> {
+    pub async fn reflect(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
             .post(
-                &format!("/reflect/{}", agent.as_ref()),
+                &format!("/reflect/{agent}"),
                 &serde_json::Value::Null,
             )
             .await
@@ -48,22 +48,27 @@ impl<'a> LifecycleClient<'a> {
     /// Run the sense lifecycle operation for the given agent with the provided content.
     pub async fn sense(
         &self,
-        agent: impl AsRef<str>,
-        content: impl Into<String>,
+        agent: &AgentName,
+        content: Content,
     ) -> Result<LifecycleResponse, ClientError> {
+        #[derive(serde::Serialize)]
+        struct Body {
+            content: Content,
+        }
+
         self.client
             .post(
-                &format!("/sense/{}", agent.as_ref()),
-                &serde_json::json!({ "content": content.into() }),
+                &format!("/sense/{agent}"),
+                &Body { content },
             )
             .await
     }
 
     /// Run the sleep lifecycle operation for the given agent.
-    pub async fn sleep(&self, agent: impl AsRef<str>) -> Result<LifecycleResponse, ClientError> {
+    pub async fn sleep(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
             .post(
-                &format!("/sleep/{}", agent.as_ref()),
+                &format!("/sleep/{agent}"),
                 &serde_json::Value::Null,
             )
             .await

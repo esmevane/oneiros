@@ -11,8 +11,7 @@ impl NatureService {
 
     pub fn get(context: &ProjectContext, name: &NatureName) -> Result<NatureResponse, NatureError> {
         let nature = context
-            .with_db(|conn| NatureRepo::new(conn).get(name))
-            .map_err(NatureError::Database)?
+            .with_db(|conn| NatureRepo::new(conn).get(name))?
             .ok_or_else(|| NatureError::NotFound(name.clone()))?;
         Ok(NatureResponse::NatureDetails(nature))
     }

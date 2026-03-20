@@ -39,17 +39,15 @@ impl StorageService {
         key: &StorageName,
     ) -> Result<StorageResponse, StorageError> {
         let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get_by_name(key))
-            .map_err(StorageError::Database)?
-            .ok_or_else(|| StorageError::NotFound(key.to_string()))?;
+            .with_db(|conn| StorageRepo::new(conn).get_by_name(key))?
+            .ok_or_else(|| StorageError::NameNotFound(key.clone()))?;
         Ok(StorageResponse::StorageDetails(entry))
     }
 
     pub fn get(context: &ProjectContext, id: &StorageId) -> Result<StorageResponse, StorageError> {
         let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get(id))
-            .map_err(StorageError::Database)?
-            .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
+            .with_db(|conn| StorageRepo::new(conn).get(id))?
+            .ok_or_else(|| StorageError::NotFound(id.clone()))?;
         Ok(StorageResponse::StorageDetails(entry))
     }
 
@@ -61,9 +59,8 @@ impl StorageService {
         let data_dir = context.data_dir().ok_or(StorageError::NoDataDir)?;
 
         let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get(id))
-            .map_err(StorageError::Database)?
-            .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
+            .with_db(|conn| StorageRepo::new(conn).get(id))?
+            .ok_or_else(|| StorageError::NotFound(id.clone()))?;
 
         let blob_path = data_dir.join("blobs").join(id.to_string());
         let data = std::fs::read(&blob_path)?;
@@ -91,9 +88,8 @@ impl StorageService {
 
         // Confirm existence before emitting.
         let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get(id))
-            .map_err(StorageError::Database)?
-            .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
+            .with_db(|conn| StorageRepo::new(conn).get(id))?
+            .ok_or_else(|| StorageError::NotFound(id.clone()))?;
 
         // Remove the file — best effort; log the event even if the file is missing.
         let blob_path = data_dir.join("blobs").join(id.to_string());
@@ -101,9 +97,7 @@ impl StorageService {
             std::fs::remove_file(&blob_path)?;
         }
 
-        context.emit(StorageEvents::BlobRemoved(BlobRemoved {
-            id: id.to_string(),
-        }));
+        context.emit(StorageEvents::BlobRemoved(BlobRemoved { id: id.clone() }));
         Ok(StorageResponse::StorageRemoved(entry.name))
     }
 }

@@ -24,7 +24,7 @@ impl TextureCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, TextureError> {
         let result = match self {
             TextureCommands::Set {
                 name,

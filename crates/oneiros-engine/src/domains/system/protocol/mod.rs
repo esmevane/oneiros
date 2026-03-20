@@ -1,3 +1,5 @@
+mod error;
 mod responses;
 
-pub use responses::SystemResponse;
+pub use error::*;
+pub use responses::*;

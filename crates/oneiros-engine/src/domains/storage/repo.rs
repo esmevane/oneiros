@@ -20,7 +20,7 @@ impl<'a> StorageRepo<'a> {
         if let Events::Storage(storage_event) = &event.data {
             match storage_event {
                 StorageEvents::BlobStored(entry) => self.create_record(entry)?,
-                StorageEvents::BlobRemoved(removed) => self.remove(&removed.id)?,
+                StorageEvents::BlobRemoved(removed) => self.remove_record(&removed.id)?,
             }
         }
         Ok(())
@@ -149,9 +149,11 @@ impl<'a> StorageRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, id: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM storage_entries WHERE id = ?1", params![id])?;
+    fn remove_record(&self, id: &StorageId) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM storage_entries WHERE id = ?1",
+            params![id.to_string()],
+        )?;
         Ok(())
     }
 }

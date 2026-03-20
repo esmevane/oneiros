@@ -24,7 +24,7 @@ impl NatureCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, NatureError> {
         let result = match self {
             NatureCommands::Set {
                 name,

@@ -17,7 +17,7 @@ impl LifecycleCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, LifecycleError> {
         let result = match self {
             LifecycleCommands::Wake { agent } => {
                 LifecycleService::wake(context, &AgentName::new(&agent))?.into()

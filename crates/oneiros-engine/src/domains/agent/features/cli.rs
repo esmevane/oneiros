@@ -33,7 +33,7 @@ impl AgentCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, AgentError> {
         let result = match self {
             Self::Create {
                 name,

@@ -11,5 +11,5 @@ pub enum StorageEvents {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobRemoved {
-    pub id: String,
+    pub id: StorageId,
 }

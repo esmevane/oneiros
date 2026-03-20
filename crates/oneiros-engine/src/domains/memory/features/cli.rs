@@ -22,7 +22,7 @@ impl MemoryCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, MemoryError> {
         let result = match self {
             MemoryCommands::Add {
                 agent,

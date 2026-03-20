@@ -15,20 +15,20 @@ impl<'a> TicketClient<'a> {
     /// Issue a new ticket for the given actor and brain.
     pub async fn issue(
         &self,
-        actor_id: impl Into<String>,
-        brain_name: impl Into<String>,
+        actor_id: &ActorId,
+        brain_name: &BrainName,
     ) -> Result<TicketResponse, ClientError> {
         self.client
             .post(
                 "/tickets/",
-                &serde_json::json!({ "actor_id": actor_id.into(), "brain_name": brain_name.into() }),
+                &serde_json::json!({ "actor_id": actor_id, "brain_name": brain_name }),
             )
             .await
     }
 
     /// Retrieve a single ticket by ID.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<TicketResponse, ClientError> {
-        self.client.get(&format!("/tickets/{}", id.as_ref())).await
+    pub async fn get(&self, id: &TicketId) -> Result<TicketResponse, ClientError> {
+        self.client.get(&format!("/tickets/{}", id)).await
     }
 
     /// List all tickets.
@@ -37,11 +37,11 @@ impl<'a> TicketClient<'a> {
     }
 
     /// Validate a ticket token.
-    pub async fn validate(&self, token: impl Into<String>) -> Result<TicketResponse, ClientError> {
+    pub async fn validate(&self, token: &str) -> Result<TicketResponse, ClientError> {
         self.client
             .post(
                 "/tickets/validate",
-                &serde_json::json!({ "token": token.into() }),
+                &serde_json::json!({ "token": token }),
             )
             .await
     }

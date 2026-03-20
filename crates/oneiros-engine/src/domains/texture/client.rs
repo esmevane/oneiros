@@ -1,4 +1,3 @@
-use crate::client::{Client, ClientError};
 use crate::*;
 
 pub struct TextureClient<'a> {
@@ -16,15 +15,15 @@ impl<'a> TextureClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &str) -> Result<TextureResponse, ClientError> {
-        self.client.get(&format!("/textures/{}", name)).await
+    pub async fn get(&self, name: &TextureName) -> Result<TextureResponse, ClientError> {
+        self.client.get(&format!("/textures/{name}")).await
     }
 
     pub async fn list(&self) -> Result<TextureResponse, ClientError> {
         self.client.get("/textures").await
     }
 
-    pub async fn remove(&self, name: &str) -> Result<TextureResponse, ClientError> {
-        self.client.delete(&format!("/textures/{}", name)).await
+    pub async fn remove(&self, name: &TextureName) -> Result<TextureResponse, ClientError> {
+        self.client.delete(&format!("/textures/{name}")).await
     }
 }

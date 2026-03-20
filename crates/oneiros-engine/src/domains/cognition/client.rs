@@ -11,24 +11,24 @@ impl<'a> CognitionClient<'a> {
 
     pub async fn add(
         &self,
-        agent: impl Into<String>,
-        texture: impl Into<String>,
-        content: impl Into<String>,
+        agent: AgentName,
+        texture: TextureName,
+        content: Content,
     ) -> Result<CognitionResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            agent: String,
-            texture: String,
-            content: String,
+            agent: AgentName,
+            texture: TextureName,
+            content: Content,
         }
 
         self.client
             .post(
                 "/cognitions",
                 &Body {
-                    agent: agent.into(),
-                    texture: texture.into(),
-                    content: content.into(),
+                    agent,
+                    texture,
+                    content,
                 },
             )
             .await
@@ -36,15 +36,15 @@ impl<'a> CognitionClient<'a> {
 
     pub async fn list(
         &self,
-        agent: Option<&str>,
-        texture: Option<&str>,
+        agent: Option<&AgentName>,
+        texture: Option<&TextureName>,
     ) -> Result<CognitionResponse, ClientError> {
         let mut params: Vec<(&str, &str)> = Vec::new();
         if let Some(a) = agent {
-            params.push(("agent", a));
+            params.push(("agent", a.as_str()));
         }
         if let Some(t) = texture {
-            params.push(("texture", t));
+            params.push(("texture", t.as_str()));
         }
 
         let path = if params.is_empty() {
@@ -61,7 +61,7 @@ impl<'a> CognitionClient<'a> {
         self.client.get(&path).await
     }
 
-    pub async fn get(&self, id: &str) -> Result<CognitionResponse, ClientError> {
+    pub async fn get(&self, id: &CognitionId) -> Result<CognitionResponse, ClientError> {
         self.client.get(&format!("/cognitions/{id}")).await
     }
 }

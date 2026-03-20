@@ -16,7 +16,7 @@ impl TenantCli {
     pub fn execute(
         context: &SystemContext,
         cmd: TenantCommands,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, TenantError> {
         let result = match cmd {
             TenantCommands::Create { name } => {
                 TenantService::create(context, TenantName::new(name))?.into()

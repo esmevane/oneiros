@@ -11,8 +11,7 @@ impl LevelService {
 
     pub fn get(context: &ProjectContext, name: &LevelName) -> Result<LevelResponse, LevelError> {
         let level = context
-            .with_db(|conn| LevelRepo::new(conn).get(name))
-            .map_err(LevelError::Database)?
+            .with_db(|conn| LevelRepo::new(conn).get(name))?
             .ok_or_else(|| LevelError::NotFound(name.clone()))?;
         Ok(LevelResponse::LevelDetails(level))
     }

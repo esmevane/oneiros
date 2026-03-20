@@ -24,7 +24,7 @@ impl StorageCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
+    ) -> Result<Responses, StorageError> {
         let result = match self {
             StorageCommands::Set {
                 key,
@@ -46,9 +46,8 @@ impl StorageCommands {
             StorageCommands::Remove { key } => {
                 // Look up by name to get the ID, then remove by ID
                 let entry = context
-                    .with_db(|conn| StorageRepo::new(conn).get_by_name(&StorageName::new(&key)))
-                    .map_err(|e| format!("database error: {e}"))?
-                    .ok_or_else(|| format!("storage entry '{key}' not found"))?;
+                    .with_db(|conn| StorageRepo::new(conn).get_by_name(&StorageName::new(&key)))?
+                    .ok_or_else(|| StorageError::NameNotFound(StorageName::new(&key)))?;
                 StorageService::remove(context, &entry.id)?.into()
             }
         };

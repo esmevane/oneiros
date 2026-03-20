@@ -75,9 +75,8 @@ impl LifecycleService {
         content: &Content,
     ) -> Result<LifecycleResponse, LifecycleError> {
         // Verify agent exists
-        ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))
-            .map_err(LifecycleError::Database)?
-            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
+        ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))?
+            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
 
         ctx.emit(LifecycleEvents::Sensed(SensedEvent {
             agent: agent_name.clone(),
@@ -96,9 +95,8 @@ impl LifecycleService {
         agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         // Verify agent exists
-        ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))
-            .map_err(LifecycleError::Database)?
-            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
+        ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))?
+            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
 
         ctx.emit(LifecycleEvents::Slept(LifecycleEvent {
             agent: agent_name.clone(),
@@ -128,9 +126,8 @@ impl LifecycleService {
         agent_name: &AgentName,
     ) -> Result<CognitiveContext, LifecycleError> {
         let agent = ctx
-            .with_db(|conn| AgentRepo::new(conn).get(agent_name))
-            .map_err(LifecycleError::Database)?
-            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
+            .with_db(|conn| AgentRepo::new(conn).get(agent_name))?
+            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
 
         let agent_id_str = agent.id.to_string();
 

@@ -10,9 +10,8 @@ impl CognitionService {
         content: Content,
     ) -> Result<CognitionResponse, CognitionError> {
         let agent_record = context
-            .with_db(|conn| AgentRepo::new(conn).get(agent))
-            .map_err(CognitionError::Database)?
-            .ok_or_else(|| CognitionError::NotFound(agent.to_string()))?;
+            .with_db(|conn| AgentRepo::new(conn).get(agent))?
+            .ok_or_else(|| CognitionError::AgentNotFound(agent.clone()))?;
 
         let cognition = Cognition::builder()
             .agent_id(agent_record.id)
@@ -33,9 +32,8 @@ impl CognitionService {
         id: &CognitionId,
     ) -> Result<CognitionResponse, CognitionError> {
         let cognition = context
-            .with_db(|conn| CognitionRepo::new(conn).get(id))
-            .map_err(CognitionError::Database)?
-            .ok_or_else(|| CognitionError::NotFound(id.to_string()))?;
+            .with_db(|conn| CognitionRepo::new(conn).get(id))?
+            .ok_or_else(|| CognitionError::NotFound(*id))?;
         Ok(CognitionResponse::CognitionDetails(cognition))
     }
 
@@ -47,10 +45,9 @@ impl CognitionService {
         let agent_id = agent
             .map(|name| {
                 context
-                    .with_db(|conn| AgentRepo::new(conn).get(name))
-                    .map_err(CognitionError::Database)?
+                    .with_db(|conn| AgentRepo::new(conn).get(name))?
                     .map(|a| a.id.to_string())
-                    .ok_or_else(|| CognitionError::NotFound(name.to_string()))
+                    .ok_or_else(|| CognitionError::AgentNotFound(name.clone()))
             })
             .transpose()?;
 

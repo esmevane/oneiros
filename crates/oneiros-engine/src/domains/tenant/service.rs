@@ -21,8 +21,7 @@ impl TenantService {
 
     pub fn get(context: &SystemContext, id: &TenantId) -> Result<TenantResponse, TenantError> {
         let tenant = context
-            .with_db(|conn| TenantRepo::new(conn).get(id))
-            .map_err(TenantError::Database)?
+            .with_db(|conn| TenantRepo::new(conn).get(id))?
             .ok_or_else(|| TenantError::NotFound(id.clone()))?;
         Ok(TenantResponse::Found(tenant))
     }

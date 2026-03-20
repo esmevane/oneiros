@@ -13,7 +13,7 @@ pub enum SystemCommands {
 }
 
 impl SystemCommands {
-    pub fn execute(&self, ctx: &SystemContext) -> Result<Responses, Box<dyn std::error::Error>> {
+    pub fn execute(&self, ctx: &SystemContext) -> Result<Responses, SystemError> {
         let result = match self {
             SystemCommands::Init { name, .. } => {
                 let name = name.clone().unwrap_or_else(|| "onerios user".to_string());

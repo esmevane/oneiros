@@ -25,8 +25,7 @@ impl BrainService {
 
     pub fn get(context: &SystemContext, name: &BrainName) -> Result<BrainResponse, BrainError> {
         let brain = context
-            .with_db(|conn| BrainRepo::new(conn).get(name))
-            .map_err(BrainError::Database)?
+            .with_db(|conn| BrainRepo::new(conn).get(name))?
             .ok_or_else(|| BrainError::NotFound(name.clone()))?;
         Ok(BrainResponse::Found(brain))
     }
