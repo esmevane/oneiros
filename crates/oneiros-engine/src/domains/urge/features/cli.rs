@@ -21,10 +21,7 @@ pub enum UrgeCommands {
 }
 
 impl UrgeCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, UrgeError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, UrgeError> {
         let result = match self {
             UrgeCommands::Set {
                 name,

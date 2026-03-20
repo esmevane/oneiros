@@ -27,7 +27,14 @@ impl AddMemory {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<AddMemoryOutcomes>, Vec<PressureSummary>), MemoryCommandError> {
+    ) -> Result<
+        (
+            Outcomes<AddMemoryOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        MemoryCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -44,10 +51,11 @@ impl AddMemory {
             )
             .await?;
         let summaries = add_response.pressure_summaries();
+        let ref_token = add_response.ref_token();
         let memory: Memory = add_response.data()?;
 
         outcomes.emit(AddMemoryOutcomes::MemoryAdded(memory));
 
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }

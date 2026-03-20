@@ -39,10 +39,7 @@ impl<'a> TicketClient<'a> {
     /// Validate a ticket token.
     pub async fn validate(&self, token: &str) -> Result<TicketResponse, ClientError> {
         self.client
-            .post(
-                "/tickets/validate",
-                &serde_json::json!({ "token": token }),
-            )
+            .post("/tickets/validate", &serde_json::json!({ "token": token }))
             .await
     }
 }

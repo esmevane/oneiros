@@ -13,10 +13,7 @@ pub enum TenantCommands {
 }
 
 impl TenantCli {
-    pub fn execute(
-        context: &SystemContext,
-        cmd: TenantCommands,
-    ) -> Result<Responses, TenantError> {
+    pub fn execute(context: &SystemContext, cmd: TenantCommands) -> Result<Responses, TenantError> {
         let result = match cmd {
             TenantCommands::Create { name } => {
                 TenantService::create(context, TenantName::new(name))?.into()

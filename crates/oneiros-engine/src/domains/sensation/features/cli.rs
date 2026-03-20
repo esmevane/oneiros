@@ -21,10 +21,7 @@ pub enum SensationCommands {
 }
 
 impl SensationCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, SensationError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, SensationError> {
         let result = match self {
             SensationCommands::Set {
                 name,

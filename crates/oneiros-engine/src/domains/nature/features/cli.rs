@@ -21,10 +21,7 @@ pub enum NatureCommands {
 }
 
 impl NatureCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, NatureError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, NatureError> {
         let result = match self {
             NatureCommands::Set {
                 name,

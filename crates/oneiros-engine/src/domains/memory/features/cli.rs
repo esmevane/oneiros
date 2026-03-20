@@ -19,10 +19,7 @@ pub enum MemoryCommands {
 }
 
 impl MemoryCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Response<Responses>, MemoryError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Response<Responses>, MemoryError> {
         match self {
             MemoryCommands::Add {
                 agent,

@@ -30,8 +30,12 @@ async fn setup_with_connectable_entities<B: Backend>(
         .await?;
 
     assert!(
-        matches!(first_response.data, Responses::Cognition(CognitionResponse::CognitionAdded(_))),
-        "expected CognitionAdded for first cognition, got {:#?}", first_response.data
+        matches!(
+            first_response.data,
+            Responses::Cognition(CognitionResponse::CognitionAdded(_))
+        ),
+        "expected CognitionAdded for first cognition, got {:#?}",
+        first_response.data
     );
     let first_ref = first_response
         .meta
@@ -40,8 +44,12 @@ async fn setup_with_connectable_entities<B: Backend>(
         .to_string();
 
     assert!(
-        matches!(second_response.data, Responses::Cognition(CognitionResponse::CognitionAdded(_))),
-        "expected CognitionAdded for second cognition, got {:#?}", second_response.data
+        matches!(
+            second_response.data,
+            Responses::Cognition(CognitionResponse::CognitionAdded(_))
+        ),
+        "expected CognitionAdded for second cognition, got {:#?}",
+        second_response.data
     );
     let second_ref = second_response
         .meta

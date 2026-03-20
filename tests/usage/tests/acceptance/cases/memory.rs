@@ -27,7 +27,10 @@ pub(crate) async fn add_creates_memory<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(response.data, Responses::Memory(MemoryResponse::MemoryAdded(_))),
+        matches!(
+            response.data,
+            Responses::Memory(MemoryResponse::MemoryAdded(_))
+        ),
         "expected MemoryAdded, got {response:#?}"
     );
 
@@ -86,9 +89,7 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .exec("memory add other.process session 'Other memory'")
         .await?;
 
-    let response = backend
-        .exec("memory list --agent learner.process")
-        .await?;
+    let response = backend.exec("memory list --agent learner.process").await?;
 
     match response.data {
         Responses::Memory(MemoryResponse::Memories(memories)) => {

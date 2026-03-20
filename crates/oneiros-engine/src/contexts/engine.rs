@@ -14,9 +14,7 @@ pub struct EngineContext {
 impl EngineContext {
     pub fn project(&self) -> Result<&ProjectContext, Error> {
         self.project.as_ref().ok_or_else(|| {
-            Error::Context(
-                "project context required — call start_service first".to_string(),
-            )
+            Error::Context("project context required — call start_service first".to_string())
         })
     }
 }

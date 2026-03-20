@@ -6,7 +6,12 @@ use super::vocabulary::{self, VocabularyDomain};
 const DOMAIN: VocabularyDomain = VocabularyDomain {
     command: "sensation",
     is_set: |r| matches!(r, Responses::Sensation(SensationResponse::SensationSet(_))),
-    is_details: |r| matches!(r, Responses::Sensation(SensationResponse::SensationDetails(_))),
+    is_details: |r| {
+        matches!(
+            r,
+            Responses::Sensation(SensationResponse::SensationDetails(_))
+        )
+    },
     extract_details: |r| match r {
         Responses::Sensation(SensationResponse::SensationDetails(s)) => Some((
             s.name.as_str().to_owned(),
@@ -21,7 +26,12 @@ const DOMAIN: VocabularyDomain = VocabularyDomain {
         _ => None,
     },
     is_empty: |r| matches!(r, Responses::Sensation(SensationResponse::NoSensations)),
-    is_removed: |r| matches!(r, Responses::Sensation(SensationResponse::SensationRemoved(_))),
+    is_removed: |r| {
+        matches!(
+            r,
+            Responses::Sensation(SensationResponse::SensationRemoved(_))
+        )
+    },
 };
 
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {

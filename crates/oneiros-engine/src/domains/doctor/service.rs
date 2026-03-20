@@ -3,20 +3,20 @@ use crate::*;
 pub struct DoctorService;
 
 impl DoctorService {
-    pub fn check(ctx: &SystemContext) -> Vec<DoctorResponse> {
-        let mut results = Vec::new();
+    pub fn check(ctx: &SystemContext) -> DoctorResponse {
+        let mut checks = Vec::new();
 
         let tenants = ctx
             .with_db(|conn| TenantRepo::new(conn).list())
             .unwrap_or_default();
 
         if tenants.is_empty() {
-            results.push(DoctorResponse::NotInitialized);
-            return results;
+            checks.push(DoctorCheck::NotInitialized);
+            return DoctorResponse::CheckupStatus(checks);
         }
 
-        results.push(DoctorResponse::Initialized);
-        results.push(DoctorResponse::DatabaseOk("system.db".to_string()));
+        checks.push(DoctorCheck::Initialized);
+        checks.push(DoctorCheck::DatabaseOk("system.db".to_string()));
 
         let event_count = ctx
             .with_db(|conn| {
@@ -26,8 +26,8 @@ impl DoctorService {
             })
             .unwrap_or(0);
 
-        results.push(DoctorResponse::EventLogReady(event_count));
+        checks.push(DoctorCheck::EventLogReady(event_count));
 
-        results
+        DoctorResponse::CheckupStatus(checks)
     }
 }

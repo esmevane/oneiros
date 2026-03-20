@@ -28,7 +28,7 @@ pub enum Responses {
     Search(SearchResponse),
     Project(ProjectResponse),
     Seed(SeedResponse),
-    Doctor(Vec<DoctorResponse>),
+    Doctor(DoctorResponse),
     System(SystemResponse),
     Tenant(TenantResponse),
     Actor(ActorResponse),
@@ -150,8 +150,8 @@ impl From<SeedResponse> for Responses {
         Responses::Seed(r)
     }
 }
-impl From<Vec<DoctorResponse>> for Responses {
-    fn from(r: Vec<DoctorResponse>) -> Self {
+impl From<DoctorResponse> for Responses {
+    fn from(r: DoctorResponse) -> Self {
         Responses::Doctor(r)
     }
 }

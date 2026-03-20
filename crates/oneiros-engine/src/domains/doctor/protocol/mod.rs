@@ -1,3 +1,3 @@
 mod responses;
 
-pub use responses::DoctorResponse;
+pub use responses::{DoctorCheck, DoctorResponse};

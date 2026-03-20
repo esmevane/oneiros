@@ -21,10 +21,7 @@ pub enum PersonaCommands {
 }
 
 impl PersonaCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, PersonaError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, PersonaError> {
         let result = match self {
             PersonaCommands::Set {
                 name,

@@ -128,7 +128,10 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     let list_response = backend.exec("level list").await?;
 
     assert!(
-        matches!(list_response.data, Responses::Level(LevelResponse::NoLevels)),
+        matches!(
+            list_response.data,
+            Responses::Level(LevelResponse::NoLevels)
+        ),
         "expected NoLevels after removal, got {list_response:?}"
     );
 

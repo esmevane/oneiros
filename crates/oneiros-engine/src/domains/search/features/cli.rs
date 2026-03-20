@@ -10,10 +10,7 @@ pub struct SearchCommands {
 }
 
 impl SearchCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, SearchError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, SearchError> {
         let agent_name = self.agent.as_deref().map(AgentName::new);
         let result = SearchService::search(context, &self.query, agent_name.as_ref())?.into();
         Ok(result)

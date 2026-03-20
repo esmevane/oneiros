@@ -27,8 +27,14 @@ impl CreateConnection {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<CreateConnectionOutcomes>, Vec<PressureSummary>), ConnectionCommandError>
-    {
+    ) -> Result<
+        (
+            Outcomes<CreateConnectionOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        ConnectionCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -44,10 +50,11 @@ impl CreateConnection {
             )
             .await?;
         let summaries = response.pressure_summaries();
+        let ref_token = response.ref_token();
         let connection: Connection = response.data()?;
 
         outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(connection));
 
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }

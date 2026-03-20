@@ -8,10 +8,7 @@ pub struct PressureCommands {
 }
 
 impl PressureCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, PressureError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, PressureError> {
         let result = PressureService::get(context, &AgentName::new(&self.name))?.into();
         Ok(result)
     }

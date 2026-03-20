@@ -122,9 +122,7 @@ impl Command {
             // Project-scoped domains — vocabulary (no ref_token)
             Command::Level(level) => Response::new(level.execute(context.project()?)?),
             Command::Texture(texture) => Response::new(texture.execute(context.project()?)?),
-            Command::Sensation(sensation) => {
-                Response::new(sensation.execute(context.project()?)?)
-            }
+            Command::Sensation(sensation) => Response::new(sensation.execute(context.project()?)?),
             Command::Nature(nature) => Response::new(nature.execute(context.project()?)?),
             Command::Persona(persona) => Response::new(persona.execute(context.project()?)?),
             Command::Urge(urge) => Response::new(urge.execute(context.project()?)?),
@@ -146,9 +144,7 @@ impl Command {
             ),
 
             // Lifecycle
-            Command::Lifecycle(lifecycle) => {
-                Response::new(lifecycle.execute(context.project()?)?)
-            }
+            Command::Lifecycle(lifecycle) => Response::new(lifecycle.execute(context.project()?)?),
             Command::Wake { name } => {
                 Response::new(LifecycleService::wake(context.project()?, &name)?.into())
             }
@@ -201,18 +197,14 @@ impl Command {
                 let project = context.project()?;
                 let name_str = name.to_string();
                 AgentService::remove(project, &name)?;
-                Response::new(
-                    serde_json::json!({ "type": "receded", "data": name_str }).into(),
-                )
+                Response::new(serde_json::json!({ "type": "receded", "data": name_str }).into())
             }
 
             // Status: gather an agent's cognitive context and return it
             Command::Status { name } => {
                 let project = context.project()?;
                 let ctx = LifecycleService::gather_context(project, &name)?;
-                Response::new(
-                    serde_json::json!({ "type": "status", "data": ctx }).into(),
-                )
+                Response::new(serde_json::json!({ "type": "status", "data": ctx }).into())
             }
         })
     }

@@ -21,7 +21,10 @@ pub(crate) async fn create_with_persona<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(response.data, Responses::Agent(AgentResponse::AgentCreated(_))),
+        matches!(
+            response.data,
+            Responses::Agent(AgentResponse::AgentCreated(_))
+        ),
         "expected AgentCreated, got {response:#?}"
     );
 
@@ -102,7 +105,10 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(response.data, Responses::Agent(AgentResponse::AgentUpdated(_))),
+        matches!(
+            response.data,
+            Responses::Agent(AgentResponse::AgentUpdated(_))
+        ),
         "expected AgentUpdated, got {response:#?}"
     );
 
@@ -130,7 +136,10 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     let response = backend.exec("agent remove temporary.process").await?;
 
     assert!(
-        matches!(response.data, Responses::Agent(AgentResponse::AgentRemoved(_))),
+        matches!(
+            response.data,
+            Responses::Agent(AgentResponse::AgentRemoved(_))
+        ),
         "expected AgentRemoved, got {response:#?}"
     );
 

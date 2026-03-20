@@ -21,10 +21,7 @@ pub enum CognitionCommands {
 }
 
 impl CognitionCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Response<Responses>, CognitionError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Response<Responses>, CognitionError> {
         match self {
             CognitionCommands::Add {
                 agent,

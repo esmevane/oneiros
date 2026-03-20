@@ -37,12 +37,7 @@ async fn create(
     State(context): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
-    let response = ConnectionService::create(
-        &context,
-        body.from_ref,
-        body.to_ref,
-        body.nature,
-    )?;
+    let response = ConnectionService::create(&context, body.from_ref, body.to_ref, body.nature)?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

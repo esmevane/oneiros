@@ -27,7 +27,14 @@ impl AddCognition {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<AddCognitionOutcomes>, Vec<PressureSummary>), CognitionCommandError> {
+    ) -> Result<
+        (
+            Outcomes<AddCognitionOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        CognitionCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -44,10 +51,11 @@ impl AddCognition {
             )
             .await?;
         let summaries = add_response.pressure_summaries();
+        let ref_token = add_response.ref_token();
         let cognition: Cognition = add_response.data()?;
 
         outcomes.emit(AddCognitionOutcomes::CognitionAdded(cognition));
 
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }

@@ -19,17 +19,41 @@ const PROJECTIONS: &[Projection] = &[Projection {
 fn apply(conn: &Connection, event: &StoredEvent) -> Result<(), EventError> {
     match &event.data {
         Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
-            index(conn, Ref::cognition(c.id), "cognition-content", &c.content, &c.agent_id)?;
+            index(
+                conn,
+                Ref::cognition(c.id),
+                "cognition-content",
+                &c.content,
+                &c.agent_id,
+            )?;
         }
         Events::Memory(MemoryEvents::MemoryAdded(m)) => {
-            index(conn, Ref::memory(m.id), "memory-content", &m.content, &m.agent_id)?;
+            index(
+                conn,
+                Ref::memory(m.id),
+                "memory-content",
+                &m.content,
+                &m.agent_id,
+            )?;
         }
         Events::Agent(AgentEvents::AgentCreated(a)) => {
             let content = format!("{} {}", a.name, a.description);
-            index(conn, Ref::agent(a.id), "agent-description", &content, &a.name)?;
+            index(
+                conn,
+                Ref::agent(a.id),
+                "agent-description",
+                &content,
+                &a.name,
+            )?;
         }
         Events::Experience(ExperienceEvents::ExperienceCreated(e)) => {
-            index(conn, Ref::experience(e.id), "experience-description", &e.description, &e.agent_id)?;
+            index(
+                conn,
+                Ref::experience(e.id),
+                "experience-description",
+                &e.description,
+                &e.agent_id,
+            )?;
         }
         _ => {}
     }

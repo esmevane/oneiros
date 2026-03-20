@@ -11,21 +11,25 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
     let response = backend.exec("doctor").await?;
 
     match response.data {
-        Responses::Doctor(reports) => {
+        Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {
             assert!(
-                reports.iter().any(|r| matches!(r, DoctorResponse::Initialized)),
-                "expected Initialized report in {reports:?}"
+                checks.iter().any(|r| matches!(r, DoctorCheck::Initialized)),
+                "expected Initialized check in {checks:?}"
             );
             assert!(
-                reports.iter().any(|r| matches!(r, DoctorResponse::DatabaseOk(_))),
-                "expected DatabaseOk report in {reports:?}"
+                checks
+                    .iter()
+                    .any(|r| matches!(r, DoctorCheck::DatabaseOk(_))),
+                "expected DatabaseOk check in {checks:?}"
             );
             assert!(
-                reports.iter().any(|r| matches!(r, DoctorResponse::EventLogReady(_))),
-                "expected EventLogReady report in {reports:?}"
+                checks
+                    .iter()
+                    .any(|r| matches!(r, DoctorCheck::EventLogReady(_))),
+                "expected EventLogReady check in {checks:?}"
             );
         }
-        other => panic!("expected Doctor(Vec<DoctorResponse>), got {other:#?}"),
+        other => panic!("expected Doctor(CheckupStatus(..)), got {other:#?}"),
     }
 
     Ok(())
@@ -37,13 +41,15 @@ pub(crate) async fn reports_uninitialized_system<B: Backend>() -> TestResult {
     let response = backend.exec("doctor").await?;
 
     match response.data {
-        Responses::Doctor(reports) => {
+        Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {
             assert!(
-                reports.iter().any(|r| matches!(r, DoctorResponse::NotInitialized)),
-                "expected NotInitialized report in {reports:?}"
+                checks
+                    .iter()
+                    .any(|r| matches!(r, DoctorCheck::NotInitialized)),
+                "expected NotInitialized check in {checks:?}"
             );
         }
-        other => panic!("expected Doctor(Vec<DoctorResponse>), got {other:#?}"),
+        other => panic!("expected Doctor(CheckupStatus(..)), got {other:#?}"),
     }
 
     Ok(())

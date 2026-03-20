@@ -21,10 +21,7 @@ pub enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, StorageError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, StorageError> {
         let result = match self {
             StorageCommands::Set {
                 key,

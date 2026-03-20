@@ -21,10 +21,7 @@ pub enum TextureCommands {
 }
 
 impl TextureCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, TextureError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, TextureError> {
         let result = match self {
             TextureCommands::Set {
                 name,

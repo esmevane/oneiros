@@ -18,10 +18,7 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
     // --target is a directory; the command constructs the filename
     let export_dir = tempfile::TempDir::new()?;
 
-    let cmd = format!(
-        "project export --target {}",
-        export_dir.path().display()
-    );
+    let cmd = format!("project export --target {}", export_dir.path().display());
     let response = backend.exec(&cmd).await?;
 
     let export_path = match response.data {
@@ -65,10 +62,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
 
     // Export to a temp directory
     let export_dir = tempfile::TempDir::new()?;
-    let export_cmd = format!(
-        "project export --target {}",
-        export_dir.path().display()
-    );
+    let export_cmd = format!("project export --target {}", export_dir.path().display());
     let export_response = backend.exec(&export_cmd).await?;
 
     let export_path = match export_response.data {
@@ -119,7 +113,10 @@ pub(crate) async fn replay_rebuilds_projections<B: Backend>() -> TestResult {
     let show_response = backend.exec("agent show thinker.process").await?;
 
     assert!(
-        matches!(show_response.data, Responses::Agent(AgentResponse::AgentDetails(_))),
+        matches!(
+            show_response.data,
+            Responses::Agent(AgentResponse::AgentDetails(_))
+        ),
         "expected agent to survive replay, got {show_response:?}"
     );
 

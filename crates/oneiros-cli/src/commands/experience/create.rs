@@ -27,8 +27,14 @@ impl CreateExperience {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<CreateExperienceOutcomes>, Vec<PressureSummary>), ExperienceCommandError>
-    {
+    ) -> Result<
+        (
+            Outcomes<CreateExperienceOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        ExperienceCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -45,10 +51,11 @@ impl CreateExperience {
             )
             .await?;
         let summaries = create_response.pressure_summaries();
+        let ref_token = create_response.ref_token();
         let experience: Experience = create_response.data()?;
 
         outcomes.emit(CreateExperienceOutcomes::ExperienceCreated(experience));
 
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }

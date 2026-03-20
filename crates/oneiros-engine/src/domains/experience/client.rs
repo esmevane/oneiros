@@ -76,10 +76,7 @@ impl<'a> ExperienceClient<'a> {
         }
 
         self.client
-            .put(
-                &format!("/experiences/{id}/sensation"),
-                &Body { sensation },
-            )
+            .put(&format!("/experiences/{id}/sensation"), &Body { sensation })
             .await
     }
 }

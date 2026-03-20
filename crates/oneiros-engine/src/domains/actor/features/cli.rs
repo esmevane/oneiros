@@ -19,10 +19,7 @@ pub enum ActorCommands {
 }
 
 impl ActorCli {
-    pub fn execute(
-        context: &SystemContext,
-        cmd: ActorCommands,
-    ) -> Result<Responses, ActorError> {
+    pub fn execute(context: &SystemContext, cmd: ActorCommands) -> Result<Responses, ActorError> {
         let result = match cmd {
             ActorCommands::Create { tenant_id, name } => ActorService::create(
                 context,

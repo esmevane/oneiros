@@ -178,10 +178,7 @@ fn cognition_add_and_list() {
         Content::new("Something interesting"),
     )
     .unwrap();
-    assert!(matches!(
-        resp,
-        CognitionResponse::CognitionAdded(_)
-    ));
+    assert!(matches!(resp, CognitionResponse::CognitionAdded(_)));
 
     match CognitionService::list(&ctx, Some(&AgentName::new("gov.test-persona")), None).unwrap() {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),

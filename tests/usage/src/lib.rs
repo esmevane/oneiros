@@ -15,7 +15,9 @@ pub trait Backend: Sized {
     fn exec(
         &self,
         command: &str,
-    ) -> impl Future<Output = Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error>>;
+    ) -> impl Future<
+        Output = Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error>,
+    >;
 
     /// Start the service. Required before executing brain-scoped commands.
     fn start_service(&mut self) -> impl Future<Output = Result<(), Box<dyn core::error::Error>>>;

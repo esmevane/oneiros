@@ -14,10 +14,7 @@ pub enum LifecycleCommands {
 }
 
 impl LifecycleCommands {
-    pub fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Responses, LifecycleError> {
+    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, LifecycleError> {
         let result = match self {
             LifecycleCommands::Wake { agent } => {
                 LifecycleService::wake(context, &AgentName::new(&agent))?.into()

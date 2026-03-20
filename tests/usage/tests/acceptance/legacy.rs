@@ -2,6 +2,7 @@ use clap::Parser;
 use oneiros_cli::Context;
 use oneiros_config::{Config, ServiceConfig};
 use oneiros_detect_project_name::ProjectRoot;
+use oneiros_engine::{DoctorCheck, DoctorResponse};
 use oneiros_http::HttpService;
 use oneiros_usage::*;
 
@@ -49,8 +50,28 @@ impl Backend for Legacy {
             .await
             .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
 
-        // Serialize the last legacy outcome to JSON, then deserialize as engine Response envelope.
-        // The last outcome is the terminal result; intermediate outcomes are status updates.
+        // Doctor emits multiple individual outcomes that don't map one-to-one to the
+        // engine's Responses enum. Collect all, filter/map to DoctorCheck, and wrap.
+        let is_doctor = args.first().map(|s| s == "doctor").unwrap_or(false);
+
+        if is_doctor {
+            let checks: Vec<DoctorCheck> = result
+                .outcomes
+                .into_iter()
+                .filter_map(|outcome| {
+                    let json = serde_json::to_value(outcome).ok()?;
+                    serde_json::from_value(json).ok()
+                })
+                .collect();
+
+            let data = oneiros_engine::Responses::Doctor(DoctorResponse::CheckupStatus(checks));
+            return Ok(oneiros_engine::Response::new(data));
+        }
+
+        // Extract ref_token before consuming outcomes.
+        let ref_token = result.ref_token;
+
+        // For all other commands, the last outcome is the terminal result.
         let outcome = result
             .outcomes
             .into_iter()
@@ -63,7 +84,19 @@ impl Backend for Legacy {
         let data: oneiros_engine::Responses = serde_json::from_value(json)
             .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
 
-        Ok(oneiros_engine::Response::new(data))
+        let mut response = oneiros_engine::Response::new(data);
+        if let Some(rt) = ref_token {
+            // Convert from oneiros_model::RefToken to oneiros_engine::RefToken via
+            // their shared string encoding (ref:<base64url>).
+            let engine_rt: oneiros_engine::RefToken =
+                rt.to_string()
+                    .parse()
+                    .map_err(|e: oneiros_engine::RefError| {
+                        oneiros_engine::Error::Context(e.to_string())
+                    })?;
+            response = response.with_ref_token(engine_rt);
+        }
+        Ok(response)
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {

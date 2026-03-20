@@ -15,33 +15,21 @@ impl<'a> LifecycleClient<'a> {
     /// Run the dream lifecycle operation for the given agent.
     pub async fn dream(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
-            .post(
-                &format!("/dream/{agent}"),
-                &serde_json::Value::Null,
-            )
+            .post(&format!("/dream/{agent}"), &serde_json::Value::Null)
             .await
     }
 
     /// Run the introspect lifecycle operation for the given agent.
-    pub async fn introspect(
-        &self,
-        agent: &AgentName,
-    ) -> Result<LifecycleResponse, ClientError> {
+    pub async fn introspect(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
-            .post(
-                &format!("/introspect/{agent}"),
-                &serde_json::Value::Null,
-            )
+            .post(&format!("/introspect/{agent}"), &serde_json::Value::Null)
             .await
     }
 
     /// Run the reflect lifecycle operation for the given agent.
     pub async fn reflect(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
-            .post(
-                &format!("/reflect/{agent}"),
-                &serde_json::Value::Null,
-            )
+            .post(&format!("/reflect/{agent}"), &serde_json::Value::Null)
             .await
     }
 
@@ -57,20 +45,14 @@ impl<'a> LifecycleClient<'a> {
         }
 
         self.client
-            .post(
-                &format!("/sense/{agent}"),
-                &Body { content },
-            )
+            .post(&format!("/sense/{agent}"), &Body { content })
             .await
     }
 
     /// Run the sleep lifecycle operation for the given agent.
     pub async fn sleep(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client
-            .post(
-                &format!("/sleep/{agent}"),
-                &serde_json::Value::Null,
-            )
+            .post(&format!("/sleep/{agent}"), &serde_json::Value::Null)
             .await
     }
 }

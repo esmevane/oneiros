@@ -20,10 +20,7 @@ pub enum TicketCommands {
 }
 
 impl TicketCli {
-    pub fn execute(
-        context: &SystemContext,
-        cmd: TicketCommands,
-    ) -> Result<Responses, TicketError> {
+    pub fn execute(context: &SystemContext, cmd: TicketCommands) -> Result<Responses, TicketError> {
         let result = match cmd {
             TicketCommands::Issue {
                 actor_id,

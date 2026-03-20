@@ -7,7 +7,10 @@ pub(crate) async fn init_creates_tenant_and_actor<B: Backend>() -> TestResult {
     let response = backend.exec("system init --name test --yes").await?;
 
     assert!(
-        matches!(response.data, Responses::System(SystemResponse::SystemInitialized(_))),
+        matches!(
+            response.data,
+            Responses::System(SystemResponse::SystemInitialized(_))
+        ),
         "expected SystemInitialized, got {response:#?}"
     );
 
@@ -22,7 +25,10 @@ pub(crate) async fn init_is_idempotent<B: Backend>() -> TestResult {
     let response = backend.exec("system init --name test --yes").await?;
 
     assert!(
-        matches!(response.data, Responses::System(SystemResponse::HostAlreadyInitialized)),
+        matches!(
+            response.data,
+            Responses::System(SystemResponse::HostAlreadyInitialized)
+        ),
         "expected HostAlreadyInitialized, got {response:#?}"
     );
 

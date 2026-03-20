@@ -63,13 +63,8 @@ pub mod connection_mcp {
             "create_connection" => {
                 let p: CreateConnectionParams = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ConnectionService::create(
-                    context,
-                    p.from_ref,
-                    p.to_ref,
-                    p.nature,
-                )
-                .map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response = ConnectionService::create(context, p.from_ref, p.to_ref, p.nature)
+                    .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "get_connection" => {
