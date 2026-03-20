@@ -5,10 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::NatureClient;
-pub use features::mcp as nature_mcp;
-pub use features::{NatureCli, NatureCommands, NatureProjections, NatureRouter};
-pub use model::{Nature, NatureName};
-pub use protocol::{NatureError, NatureEvents, NatureRemoved, NatureRequest, NatureResponse};
-pub use repo::NatureRepo;
-pub use service::NatureService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

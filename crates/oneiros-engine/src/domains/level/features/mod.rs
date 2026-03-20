@@ -1,8 +1,9 @@
 mod cli;
 mod http;
-pub mod mcp;
+mod mcp;
 mod projections;
 
-pub use cli::{LevelCli, LevelCommands};
-pub use http::LevelRouter;
-pub use projections::LevelProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

@@ -18,7 +18,7 @@ impl<'a> LevelRepo<'a> {
         if let Events::Level(level_event) = &event.data {
             match level_event {
                 LevelEvents::LevelSet(level) => self.set(level)?,
-                LevelEvents::LevelRemoved(removed) => self.remove(removed.name.as_str())?,
+                LevelEvents::LevelRemoved(removed) => self.remove(&removed.name)?,
             }
         }
         Ok(())
@@ -42,12 +42,12 @@ impl<'a> LevelRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Level>, EventError> {
+    pub fn get(&self, name: &LevelName) -> Result<Option<Level>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM levels WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -109,9 +109,11 @@ impl<'a> LevelRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM levels WHERE name = ?1", params![name])?;
+    fn remove(&self, name: &LevelName) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM levels WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

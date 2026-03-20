@@ -18,6 +18,12 @@ struct Cli {
     command: Command,
 }
 
+impl Cli {
+    fn execute(&self, context: &EngineContext) -> Result<Responses, Box<dyn core::error::Error>> {
+        self.command.execute(context)
+    }
+}
+
 /// Project-level projections for the engine.
 static PROJECT_PROJECTIONS: &[&[Projection]] = &[
     LevelProjections.all(),
@@ -73,8 +79,7 @@ impl Backend for Engine {
 
         let full_args = strip_output_flag(full_args);
 
-        let cli = Cli::try_parse_from(&full_args)?;
-        let response = execute(&self.ctx, cli.command)?;
+        let response = Cli::try_parse_from(&full_args)?.execute(&self.ctx)?;
         let value = serde_json::to_value(&response)?;
 
         // If the result is already an array, use it directly.

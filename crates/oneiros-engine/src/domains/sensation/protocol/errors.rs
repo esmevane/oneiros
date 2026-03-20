@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::SensationName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum SensationError {
     #[error("Sensation not found: {0}")]
-    NotFound(String),
+    NotFound(SensationName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

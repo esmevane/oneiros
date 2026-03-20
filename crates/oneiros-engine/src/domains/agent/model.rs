@@ -20,3 +20,14 @@ pub struct Agent {
 
 resource_id!(AgentId);
 resource_name!(AgentName);
+
+impl AgentName {
+    pub fn normalize_with(&self, persona_name: &PersonaName) -> Self {
+        let suffix = format!(".{persona_name}");
+        if self.to_string().ends_with(&suffix) {
+            self.clone()
+        } else {
+            Self::new(format!("{self}.{persona_name}"))
+        }
+    }
+}

@@ -8,7 +8,7 @@ impl TicketProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "ticket",
     apply: |conn, event| TicketRepo::new(conn).handle(event),
     reset: |conn| TicketRepo::new(conn).reset(),

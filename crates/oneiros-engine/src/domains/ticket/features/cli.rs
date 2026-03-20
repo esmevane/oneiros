@@ -21,16 +21,16 @@ pub enum TicketCommands {
 
 impl TicketCli {
     pub fn execute(
-        ctx: &SystemContext,
+        context: &SystemContext,
         cmd: TicketCommands,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
             TicketCommands::Issue {
                 actor_id,
                 brain_name,
-            } => TicketService::create(ctx, actor_id, brain_name)?.into(),
-            TicketCommands::Validate { id } => TicketService::validate(ctx, &id)?.into(),
-            TicketCommands::List => TicketService::list(ctx)?.into(),
+            } => TicketService::create(context, actor_id, BrainName::new(brain_name))?.into(),
+            TicketCommands::Validate { id } => TicketService::validate(context, &id)?.into(),
+            TicketCommands::List => TicketService::list(context)?.into(),
         };
         Ok(result)
     }

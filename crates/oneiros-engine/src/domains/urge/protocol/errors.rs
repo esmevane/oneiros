@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::UrgeName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum UrgeError {
     #[error("Urge not found: {0}")]
-    NotFound(String),
+    NotFound(UrgeName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

@@ -43,13 +43,13 @@ impl<'a> CognitionRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Cognition>, EventError> {
+    pub fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions WHERE id = ?1",
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
+        let result = stmt.query_row(params![id.to_string()], |row| {
             let id: String = row.get(0)?;
             Ok((
                 id,

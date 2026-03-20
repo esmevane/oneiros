@@ -37,7 +37,7 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<TicketResponse>), TicketError> {
-    let response = TicketService::create(&ctx, body.actor_id, body.brain_name)?;
+    let response = TicketService::create(&ctx, body.actor_id, BrainName::new(body.brain_name))?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -47,7 +47,7 @@ async fn list(State(ctx): State<SystemContext>) -> Result<Json<TicketResponse>, 
 
 async fn show(
     State(ctx): State<SystemContext>,
-    Path(id): Path<String>,
+    Path(id): Path<TicketId>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(TicketService::get(&ctx, &id)?))
 }

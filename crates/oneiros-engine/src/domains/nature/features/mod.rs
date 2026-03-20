@@ -1,8 +1,9 @@
 mod cli;
 mod http;
-pub mod mcp;
+mod mcp;
 mod projections;
 
-pub use cli::{NatureCli, NatureCommands};
-pub use http::NatureRouter;
-pub use projections::NatureProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

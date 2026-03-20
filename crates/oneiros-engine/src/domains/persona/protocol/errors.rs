@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::PersonaName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum PersonaError {
     #[error("Persona not found: {0}")]
-    NotFound(String),
+    NotFound(PersonaName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

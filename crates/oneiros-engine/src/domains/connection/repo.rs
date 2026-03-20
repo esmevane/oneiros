@@ -18,9 +18,7 @@ impl<'a> ConnectionRepo<'a> {
         if let Events::Connection(connection_event) = &event.data {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
-                ConnectionEvents::ConnectionRemoved(removed) => {
-                    self.remove(&removed.id.to_string())?
-                }
+                ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id)?,
             }
         }
         Ok(())
@@ -47,13 +45,13 @@ impl<'a> ConnectionRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Connection>, EventError> {
+    pub fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, from_ref, to_ref, nature, description, created_at
              FROM connections WHERE id = ?1",
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
+        let result = stmt.query_row(params![id.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -147,9 +145,11 @@ impl<'a> ConnectionRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, id: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM connections WHERE id = ?1", params![id])?;
+    fn remove(&self, id: &ConnectionId) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM connections WHERE id = ?1",
+            params![id.to_string()],
+        )?;
         Ok(())
     }
 }

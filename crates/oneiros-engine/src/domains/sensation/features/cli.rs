@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct SensationCli;
-
 #[derive(Debug, Subcommand)]
 pub enum SensationCommands {
     Set {
@@ -22,28 +20,32 @@ pub enum SensationCommands {
     },
 }
 
-impl SensationCli {
+impl SensationCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: SensationCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             SensationCommands::Set {
                 name,
                 description,
                 prompt,
             } => SensationService::set(
-                ctx,
-                Sensation {
-                    name: SensationName::new(name),
-                    description: Description(description),
-                    prompt: Prompt(prompt),
-                },
+                context,
+                Sensation::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
             )?
             .into(),
-            SensationCommands::Show { name } => SensationService::get(ctx, &name)?.into(),
-            SensationCommands::List => SensationService::list(ctx)?.into(),
-            SensationCommands::Remove { name } => SensationService::remove(ctx, &name)?.into(),
+            SensationCommands::Show { name } => {
+                SensationService::get(context, &SensationName::new(name))?.into()
+            }
+            SensationCommands::List => SensationService::list(context)?.into(),
+            SensationCommands::Remove { name } => {
+                SensationService::remove(context, &SensationName::new(name))?.into()
+            }
         };
         Ok(result)
     }

@@ -20,38 +20,55 @@ impl LifecycleRouter {
 }
 
 async fn dream(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(agent): Path<String>,
 ) -> Result<Json<LifecycleResponse>, LifecycleError> {
-    Ok(Json(LifecycleService::dream(&ctx, &agent)?))
+    Ok(Json(LifecycleService::dream(
+        &context,
+        &AgentName::new(&agent),
+    )?))
 }
 
 async fn introspect(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(agent): Path<String>,
 ) -> Result<Json<LifecycleResponse>, LifecycleError> {
-    Ok(Json(LifecycleService::introspect(&ctx, &agent)?))
+    Ok(Json(LifecycleService::introspect(
+        &context,
+        &AgentName::new(&agent),
+    )?))
 }
 
 async fn reflect(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(agent): Path<String>,
 ) -> Result<Json<LifecycleResponse>, LifecycleError> {
-    Ok(Json(LifecycleService::reflect(&ctx, &agent)?))
+    Ok(Json(LifecycleService::reflect(
+        &context,
+        &AgentName::new(&agent),
+    )?))
 }
 
 async fn sense(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(agent): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<Json<LifecycleResponse>, LifecycleError> {
-    let content = body.get("content").and_then(|v| v.as_str()).unwrap_or("");
-    Ok(Json(LifecycleService::sense(&ctx, &agent, content)?))
+    let content_str = body.get("content").and_then(|v| v.as_str()).unwrap_or("");
+    let content = Content::new(content_str);
+    Ok(Json(LifecycleService::sense(
+        &context,
+        &AgentName::new(&agent),
+        &content,
+    )?))
 }
 
 async fn sleep(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(agent): Path<String>,
 ) -> Result<Json<LifecycleResponse>, LifecycleError> {
-    Ok(Json(LifecycleService::sleep(&ctx, &agent)?))
+    Ok(Json(LifecycleService::sleep(
+        &context,
+        &AgentName::new(&agent),
+    )?))
 }

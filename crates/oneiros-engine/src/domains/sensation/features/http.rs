@@ -42,12 +42,18 @@ async fn show(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::get(&ctx, &name)?))
+    Ok(Json(SensationService::get(
+        &ctx,
+        &SensationName::new(name),
+    )?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::remove(&ctx, &name)?))
+    Ok(Json(SensationService::remove(
+        &ctx,
+        &SensationName::new(name),
+    )?))
 }

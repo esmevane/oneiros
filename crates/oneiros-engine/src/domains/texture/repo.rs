@@ -18,7 +18,7 @@ impl<'a> TextureRepo<'a> {
         if let Events::Texture(texture_event) = &event.data {
             match texture_event {
                 TextureEvents::TextureSet(texture) => self.set(texture)?,
-                TextureEvents::TextureRemoved(removed) => self.remove(removed.name.as_str())?,
+                TextureEvents::TextureRemoved(removed) => self.remove(&removed.name)?,
             }
         }
         Ok(())
@@ -42,12 +42,12 @@ impl<'a> TextureRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Texture>, EventError> {
+    pub fn get(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -109,9 +109,11 @@ impl<'a> TextureRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM textures WHERE name = ?1", params![name])?;
+    fn remove(&self, name: &TextureName) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM textures WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

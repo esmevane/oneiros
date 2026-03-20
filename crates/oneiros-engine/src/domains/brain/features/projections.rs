@@ -8,7 +8,7 @@ impl BrainProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "brain",
     apply: |conn, event| BrainRepo::new(conn).handle(event),
     reset: |conn| BrainRepo::new(conn).reset(),

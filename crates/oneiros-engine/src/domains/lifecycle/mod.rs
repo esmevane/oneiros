@@ -10,12 +10,8 @@ mod model;
 mod protocol;
 mod service;
 
-pub use client::LifecycleClient;
-pub use features::mcp as lifecycle_mcp;
-pub use features::{LifecycleCli, LifecycleCommands, LifecycleRouter};
-pub use model::{CognitiveContext, LifecycleMarker};
-pub use protocol::{
-    LifecycleError, LifecycleEvent, LifecycleEvents, LifecycleRequest, LifecycleResponse,
-    SensedEvent,
-};
-pub use service::LifecycleService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use service::*;

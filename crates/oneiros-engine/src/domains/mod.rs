@@ -4,7 +4,6 @@ mod brain;
 mod cognition;
 mod connection;
 mod doctor;
-pub mod event;
 mod experience;
 mod level;
 mod lifecycle;
@@ -22,6 +21,8 @@ mod tenant;
 mod texture;
 mod ticket;
 mod urge;
+
+pub mod event;
 
 pub use actor::*;
 pub use agent::*;

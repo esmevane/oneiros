@@ -18,7 +18,7 @@ impl<'a> NatureRepo<'a> {
         if let Events::Nature(nature_event) = &event.data {
             match nature_event {
                 NatureEvents::NatureSet(nature) => self.set(nature)?,
-                NatureEvents::NatureRemoved(removed) => self.remove(removed.name.as_str())?,
+                NatureEvents::NatureRemoved(removed) => self.remove(&removed.name)?,
             }
         }
         Ok(())
@@ -42,12 +42,12 @@ impl<'a> NatureRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Nature>, EventError> {
+    pub fn get(&self, name: &NatureName) -> Result<Option<Nature>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM natures WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -109,9 +109,11 @@ impl<'a> NatureRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM natures WHERE name = ?1", params![name])?;
+    fn remove(&self, name: &NatureName) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM natures WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

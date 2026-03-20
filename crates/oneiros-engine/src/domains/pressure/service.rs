@@ -3,18 +3,21 @@ use crate::*;
 pub struct PressureService;
 
 impl PressureService {
-    pub fn get(ctx: &ProjectContext, agent: &str) -> Result<PressureResponse, PressureError> {
-        let pressures = ctx
+    pub fn get(
+        context: &ProjectContext,
+        agent: &AgentName,
+    ) -> Result<PressureResponse, PressureError> {
+        let pressures = context
             .with_db(|conn| PressureRepo::new(conn).get(agent))
             .map_err(PressureError::Database)?;
         Ok(PressureResponse::Readings(PressureResult {
-            agent: AgentName::new(agent),
+            agent: agent.clone(),
             pressures,
         }))
     }
 
-    pub fn list(ctx: &ProjectContext) -> Result<PressureResponse, PressureError> {
-        let pressures = ctx
+    pub fn list(context: &ProjectContext) -> Result<PressureResponse, PressureError> {
+        let pressures = context
             .with_db(|conn| PressureRepo::new(conn).list())
             .map_err(PressureError::Database)?;
         Ok(PressureResponse::Readings(PressureResult {

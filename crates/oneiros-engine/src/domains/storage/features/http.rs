@@ -33,7 +33,12 @@ async fn upload(
     State(ctx): State<ProjectContext>,
     Json(body): Json<UploadBody>,
 ) -> Result<(StatusCode, Json<StorageResponse>), StorageError> {
-    let response = StorageService::upload(&ctx, body.name, body.content_type, body.data)?;
+    let response = StorageService::upload(
+        &ctx,
+        StorageName::new(body.name),
+        Label::new(body.content_type),
+        body.data,
+    )?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -43,14 +48,14 @@ async fn list(State(ctx): State<ProjectContext>) -> Result<Json<StorageResponse>
 
 async fn show(
     State(ctx): State<ProjectContext>,
-    Path(id): Path<String>,
+    Path(id): Path<StorageId>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     Ok(Json(StorageService::get(&ctx, &id)?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
-    Path(id): Path<String>,
+    Path(id): Path<StorageId>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     Ok(Json(StorageService::remove(&ctx, &id)?))
 }

@@ -30,7 +30,7 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<BrainResponse>), BrainError> {
-    let response = BrainService::create(&ctx, body.name)?;
+    let response = BrainService::create(&ctx, BrainName::new(body.name))?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -42,5 +42,5 @@ async fn show(
     State(ctx): State<SystemContext>,
     Path(name): Path<String>,
 ) -> Result<Json<BrainResponse>, BrainError> {
-    Ok(Json(BrainService::get(&ctx, &name)?))
+    Ok(Json(BrainService::get(&ctx, &BrainName::new(name))?))
 }

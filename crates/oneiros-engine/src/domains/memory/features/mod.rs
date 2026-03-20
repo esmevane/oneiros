@@ -1,8 +1,9 @@
 mod cli;
-pub mod http;
-pub mod mcp;
+mod http;
+mod mcp;
 mod projections;
 
-pub use cli::{MemoryCli, MemoryCommands};
-pub use http::MemoryRouter;
-pub use projections::MemoryProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

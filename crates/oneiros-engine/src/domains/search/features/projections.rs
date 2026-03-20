@@ -10,7 +10,7 @@ impl SearchProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "search",
     apply: |conn, event| apply(conn, event),
     reset: |conn| reset(conn),

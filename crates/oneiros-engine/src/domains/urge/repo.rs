@@ -18,7 +18,7 @@ impl<'a> UrgeRepo<'a> {
         if let Events::Urge(urge_event) = &event.data {
             match urge_event {
                 UrgeEvents::UrgeSet(urge) => self.set(urge)?,
-                UrgeEvents::UrgeRemoved(removed) => self.remove(removed.name.as_str())?,
+                UrgeEvents::UrgeRemoved(removed) => self.remove(&removed.name)?,
             }
         }
         Ok(())
@@ -42,12 +42,12 @@ impl<'a> UrgeRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Urge>, EventError> {
+    pub fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -109,9 +109,11 @@ impl<'a> UrgeRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM urges WHERE name = ?1", params![name])?;
+    fn remove(&self, name: &UrgeName) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM urges WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

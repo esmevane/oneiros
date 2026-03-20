@@ -5,12 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::SensationClient;
-pub use features::mcp as sensation_mcp;
-pub use features::{SensationCli, SensationCommands, SensationProjections, SensationRouter};
-pub use model::{Sensation, SensationName};
-pub use protocol::{
-    SensationError, SensationEvents, SensationRemoved, SensationRequest, SensationResponse,
-};
-pub use repo::SensationRepo;
-pub use service::SensationService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

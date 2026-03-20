@@ -5,10 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::PressureClient;
-pub use features::mcp as pressure_mcp;
-pub use features::{PressureCli, PressureCommands, PressureProjections, PressureRouter};
-pub use model::{Pressure, PressureId, PressureSummary};
-pub use protocol::{PressureError, PressureRequest, PressureResponse, PressureResult};
-pub use repo::PressureRepo;
-pub use service::PressureService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

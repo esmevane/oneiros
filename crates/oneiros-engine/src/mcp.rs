@@ -4,9 +4,10 @@
 //! collects them into an rmcp ServerHandler, routing tool calls to the
 //! appropriate domain dispatcher.
 
-use crate::*;
 use rmcp::model::{CallToolResult, Content, Implementation, ServerCapabilities, ServerInfo, Tool};
 use rmcp::{ErrorData, ServerHandler};
+
+use crate::*;
 
 /// Errors that can occur during MCP tool dispatch.
 #[derive(Debug, thiserror::Error)]

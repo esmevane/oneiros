@@ -1,7 +1,9 @@
+mod features;
 mod model;
 mod protocol;
 pub mod repo;
 
-pub use model::{ExportEvent, ImportEvent, NewEvent, StoredEvent};
-pub use protocol::EventError;
-pub use repo::migrate;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::{self as event_repo, migrate};

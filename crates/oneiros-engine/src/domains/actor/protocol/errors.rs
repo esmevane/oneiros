@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::ActorId;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ActorError {
     #[error("Actor not found: {0}")]
-    NotFound(String),
+    NotFound(ActorId),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

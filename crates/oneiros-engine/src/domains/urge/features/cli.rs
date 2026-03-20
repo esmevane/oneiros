@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct UrgeCli;
-
 #[derive(Debug, Subcommand)]
 pub enum UrgeCommands {
     Set {
@@ -22,28 +20,30 @@ pub enum UrgeCommands {
     },
 }
 
-impl UrgeCli {
+impl UrgeCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: UrgeCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             UrgeCommands::Set {
                 name,
                 description,
                 prompt,
             } => UrgeService::set(
-                ctx,
-                Urge {
-                    name: UrgeName::new(name),
-                    description: Description(description),
-                    prompt: Prompt(prompt),
-                },
+                context,
+                Urge::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
             )?
             .into(),
-            UrgeCommands::Show { name } => UrgeService::get(ctx, &name)?.into(),
-            UrgeCommands::List => UrgeService::list(ctx)?.into(),
-            UrgeCommands::Remove { name } => UrgeService::remove(ctx, &name)?.into(),
+            UrgeCommands::Show { name } => UrgeService::get(context, &UrgeName::new(name))?.into(),
+            UrgeCommands::List => UrgeService::list(context)?.into(),
+            UrgeCommands::Remove { name } => {
+                UrgeService::remove(context, &UrgeName::new(name))?.into()
+            }
         };
         Ok(result)
     }

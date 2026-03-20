@@ -4,59 +4,53 @@ pub struct AgentService;
 
 impl AgentService {
     pub fn create(
-        ctx: &ProjectContext,
-        name: String,
-        persona: String,
-        description: String,
-        prompt: String,
+        context: &ProjectContext,
+        agent_name: AgentName,
+        persona: PersonaName,
+        description: Description,
+        prompt: Prompt,
     ) -> Result<AgentResponse, AgentError> {
         // Cross-resource validation: persona must exist
-        let persona_exists = ctx
-            .with_db(|conn| PersonaRepo::new(conn).get(&persona))
-            .map_err(AgentError::Database)?;
+        let persona_exists = context.with_db(|conn| PersonaRepo::new(conn).get(&persona))?;
 
         if persona_exists.is_none() {
             return Err(AgentError::PersonaNotFound(persona));
         }
 
         // Normalize name: append .persona if not already present
-        let normalized_name = normalize_agent_name(&name, &persona);
+        let normalized_name = agent_name.normalize_with(&persona);
 
         // Validate name uniqueness
-        let already_exists = ctx
-            .with_db(|conn| AgentRepo::new(conn).name_exists(&normalized_name))
-            .map_err(AgentError::Database)?;
+        let already_exists =
+            context.with_db(|conn| AgentRepo::new(conn).name_exists(&normalized_name))?;
 
         if already_exists {
             return Err(AgentError::Conflict(normalized_name));
         }
 
-        let agent_name = AgentName::new(&normalized_name);
+        let agent = Agent::builder()
+            .name(normalized_name.clone())
+            .persona(persona)
+            .description(description)
+            .prompt(prompt)
+            .build();
 
-        let agent = Agent {
-            id: AgentId::new(),
-            name: agent_name.clone(),
-            persona: PersonaName::new(&persona),
-            description: Description(description),
-            prompt: Prompt(prompt),
-        };
+        context.emit(AgentEvents::AgentCreated(agent));
 
-        ctx.emit(AgentEvents::AgentCreated(agent));
-        Ok(AgentResponse::AgentCreated(agent_name))
+        Ok(AgentResponse::AgentCreated(normalized_name))
     }
 
-    pub fn get(ctx: &ProjectContext, name: &str) -> Result<AgentResponse, AgentError> {
-        let agent = ctx
-            .with_db(|conn| AgentRepo::new(conn).get(name))
-            .map_err(AgentError::Database)?
-            .ok_or_else(|| AgentError::NotFound(name.to_string()))?;
+    pub fn get(context: &ProjectContext, name: &AgentName) -> Result<AgentResponse, AgentError> {
+        let agent = context
+            .with_db(|conn| AgentRepo::new(conn).get(name))?
+            .ok_or_else(|| AgentError::NotFound(name.clone()))?;
+
         Ok(AgentResponse::AgentDetails(agent))
     }
 
-    pub fn list(ctx: &ProjectContext) -> Result<AgentResponse, AgentError> {
-        let agents = ctx
-            .with_db(|conn| AgentRepo::new(conn).list())
-            .map_err(AgentError::Database)?;
+    pub fn list(context: &ProjectContext) -> Result<AgentResponse, AgentError> {
+        let agents = context.with_db(|conn| AgentRepo::new(conn).list())?;
+
         if agents.is_empty() {
             Ok(AgentResponse::NoAgents)
         } else {
@@ -66,52 +60,41 @@ impl AgentService {
 
     pub fn update(
         ctx: &ProjectContext,
-        name: String,
-        persona: String,
-        description: String,
-        prompt: String,
+        agent_name: AgentName,
+        persona: PersonaName,
+        description: Description,
+        prompt: Prompt,
     ) -> Result<AgentResponse, AgentError> {
         let existing = ctx
-            .with_db(|conn| AgentRepo::new(conn).get(&name))
-            .map_err(AgentError::Database)?
-            .ok_or_else(|| AgentError::NotFound(name.clone()))?;
+            .with_db(|conn| AgentRepo::new(conn).get(&agent_name))?
+            .ok_or_else(|| AgentError::NotFound(agent_name.clone()))?;
 
-        let agent_name = AgentName::new(&name);
-
-        let agent = Agent {
-            id: existing.id,
-            name: agent_name.clone(),
-            persona: PersonaName::new(&persona),
-            description: Description(description),
-            prompt: Prompt(prompt),
-        };
+        let agent = Agent::builder()
+            .id(existing.id)
+            .name(agent_name.clone())
+            .persona(persona)
+            .description(description)
+            .prompt(prompt)
+            .build();
 
         ctx.emit(AgentEvents::AgentUpdated(agent));
         Ok(AgentResponse::AgentUpdated(agent_name))
     }
 
-    pub fn remove(ctx: &ProjectContext, name: &str) -> Result<AgentResponse, AgentError> {
-        let exists = ctx
-            .with_db(|conn| AgentRepo::new(conn).name_exists(name))
-            .map_err(AgentError::Database)?;
+    pub fn remove(
+        context: &ProjectContext,
+        agent_name: &AgentName,
+    ) -> Result<AgentResponse, AgentError> {
+        let exists = context.with_db(|conn| AgentRepo::new(conn).name_exists(agent_name))?;
 
         if !exists {
-            return Err(AgentError::NotFound(name.to_string()));
+            return Err(AgentError::NotFound(agent_name.clone()));
         }
 
-        let agent_name = AgentName::new(name);
-        ctx.emit(AgentEvents::AgentRemoved(AgentRemoved {
+        context.emit(AgentEvents::AgentRemoved(AgentRemoved {
             name: agent_name.clone(),
         }));
-        Ok(AgentResponse::AgentRemoved(agent_name))
-    }
-}
 
-fn normalize_agent_name(name: &str, persona: &str) -> String {
-    let suffix = format!(".{persona}");
-    if name.ends_with(&suffix) {
-        name.to_string()
-    } else {
-        format!("{name}.{persona}")
+        Ok(AgentResponse::AgentRemoved(agent_name.clone()))
     }
 }

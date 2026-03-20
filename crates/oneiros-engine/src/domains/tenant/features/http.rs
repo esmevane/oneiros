@@ -30,7 +30,7 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<TenantResponse>), TenantError> {
-    let response = TenantService::create(&ctx, body.name)?;
+    let response = TenantService::create(&ctx, TenantName::new(body.name))?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -40,7 +40,7 @@ async fn list(State(ctx): State<SystemContext>) -> Result<Json<TenantResponse>, 
 
 async fn show(
     State(ctx): State<SystemContext>,
-    Path(id): Path<String>,
+    Path(id): Path<TenantId>,
 ) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(TenantService::get(&ctx, &id)?))
 }

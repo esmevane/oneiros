@@ -2,19 +2,17 @@ use clap::Args;
 
 use crate::*;
 
-pub struct PressureCli;
-
 #[derive(Debug, Args)]
 pub struct PressureCommands {
     pub name: String,
 }
 
-impl PressureCli {
+impl PressureCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: PressureCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = PressureService::get(ctx, &cmd.name)?.into();
+        let result = PressureService::get(context, &AgentName::new(&self.name))?.into();
         Ok(result)
     }
 }

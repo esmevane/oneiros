@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct TextureCli;
-
 #[derive(Debug, Subcommand)]
 pub enum TextureCommands {
     Set {
@@ -22,28 +20,32 @@ pub enum TextureCommands {
     },
 }
 
-impl TextureCli {
+impl TextureCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: TextureCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             TextureCommands::Set {
                 name,
                 description,
                 prompt,
             } => TextureService::set(
-                ctx,
-                Texture {
-                    name: TextureName::new(name),
-                    description: Description(description),
-                    prompt: Prompt(prompt),
-                },
+                context,
+                Texture::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
             )?
             .into(),
-            TextureCommands::Show { name } => TextureService::get(ctx, &name)?.into(),
-            TextureCommands::List => TextureService::list(ctx)?.into(),
-            TextureCommands::Remove { name } => TextureService::remove(ctx, &name)?.into(),
+            TextureCommands::Show { name } => {
+                TextureService::get(context, &TextureName::new(name))?.into()
+            }
+            TextureCommands::List => TextureService::list(context)?.into(),
+            TextureCommands::Remove { name } => {
+                TextureService::remove(context, &TextureName::new(name))?.into()
+            }
         };
         Ok(result)
     }

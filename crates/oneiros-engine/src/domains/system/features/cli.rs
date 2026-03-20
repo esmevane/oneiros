@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct SystemCli;
-
 #[derive(Debug, Subcommand)]
 pub enum SystemCommands {
     Init {
@@ -14,14 +12,11 @@ pub enum SystemCommands {
     },
 }
 
-impl SystemCli {
-    pub fn execute(
-        ctx: &SystemContext,
-        cmd: SystemCommands,
-    ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+impl SystemCommands {
+    pub fn execute(&self, ctx: &SystemContext) -> Result<Responses, Box<dyn std::error::Error>> {
+        let result = match self {
             SystemCommands::Init { name, .. } => {
-                let name = name.unwrap_or_else(|| "onerios user".to_string());
+                let name = name.clone().unwrap_or_else(|| "onerios user".to_string());
                 SystemService::init(ctx, name)?.into()
             }
         };

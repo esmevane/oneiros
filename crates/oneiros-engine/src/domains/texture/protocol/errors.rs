@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::TextureName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum TextureError {
     #[error("Texture not found: {0}")]
-    NotFound(String),
+    NotFound(TextureName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

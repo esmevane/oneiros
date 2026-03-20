@@ -18,10 +18,11 @@ impl<'a> ExperienceRepo<'a> {
         if let Events::Experience(experience_event) = &event.data {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
-                ExperienceEvents::ExperienceDescriptionUpdated(update) => self
-                    .update_description(&update.id.to_string(), &update.description.to_string())?,
+                ExperienceEvents::ExperienceDescriptionUpdated(update) => {
+                    self.update_description(&update.id, &update.description)?
+                }
                 ExperienceEvents::ExperienceSensationUpdated(update) => {
-                    self.update_sensation(&update.id.to_string(), &update.sensation.to_string())?
+                    self.update_sensation(&update.id, &update.sensation)?
                 }
             }
         }
@@ -48,13 +49,13 @@ impl<'a> ExperienceRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Experience>, EventError> {
+    pub fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences WHERE id = ?1",
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
+        let result = stmt.query_row(params![id.to_string()], |row| {
             let id: String = row.get(0)?;
             Ok((
                 id,
@@ -141,18 +142,26 @@ impl<'a> ExperienceRepo<'a> {
         Ok(())
     }
 
-    fn update_description(&self, id: &str, description: &str) -> Result<(), EventError> {
+    fn update_description(
+        &self,
+        id: &ExperienceId,
+        description: &Description,
+    ) -> Result<(), EventError> {
         self.conn.execute(
             "UPDATE experiences SET description = ?1 WHERE id = ?2",
-            params![description, id],
+            params![description.to_string(), id.to_string()],
         )?;
         Ok(())
     }
 
-    fn update_sensation(&self, id: &str, sensation: &str) -> Result<(), EventError> {
+    fn update_sensation(
+        &self,
+        id: &ExperienceId,
+        sensation: &SensationName,
+    ) -> Result<(), EventError> {
         self.conn.execute(
             "UPDATE experiences SET sensation = ?1 WHERE id = ?2",
-            params![sensation, id],
+            params![sensation.to_string(), id.to_string()],
         )?;
         Ok(())
     }

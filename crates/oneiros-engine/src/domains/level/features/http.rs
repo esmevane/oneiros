@@ -37,12 +37,12 @@ async fn show(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<LevelResponse>, LevelError> {
-    Ok(Json(LevelService::get(&ctx, &name)?))
+    Ok(Json(LevelService::get(&ctx, &LevelName::new(name))?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<LevelResponse>, LevelError> {
-    Ok(Json(LevelService::remove(&ctx, &name)?))
+    Ok(Json(LevelService::remove(&ctx, &LevelName::new(name))?))
 }

@@ -39,12 +39,12 @@ impl<'a> TenantRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Tenant>, EventError> {
+    pub fn get(&self, id: &TenantId) -> Result<Option<Tenant>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, created_at FROM tenants WHERE id = ?1")?;
 
-        let raw = stmt.query_row(params![id], |row| {
+        let raw = stmt.query_row(params![id.to_string()], |row| {
             let id: String = row.get(0)?;
             let name: String = row.get(1)?;
             let created_at: String = row.get(2)?;

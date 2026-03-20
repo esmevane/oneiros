@@ -35,11 +35,11 @@ struct ListQuery {
 }
 
 async fn create(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
     let response = ConnectionService::create(
-        &ctx,
+        &context,
         body.from_ref,
         body.to_ref,
         body.nature,
@@ -49,25 +49,31 @@ async fn create(
 }
 
 async fn list(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Query(params): Query<ListQuery>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(ConnectionService::list(
-        &ctx,
+        &context,
         params.entity.as_deref(),
     )?))
 }
 
 async fn show(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
-    Ok(Json(ConnectionService::get(&ctx, &id)?))
+    let id: ConnectionId = id
+        .parse()
+        .map_err(|e: IdParseError| ConnectionError::Database(e.into()))?;
+    Ok(Json(ConnectionService::get(&context, &id)?))
 }
 
 async fn remove(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
-    Ok(Json(ConnectionService::remove(&ctx, &id)?))
+    let id: ConnectionId = id
+        .parse()
+        .map_err(|e: IdParseError| ConnectionError::Database(e.into()))?;
+    Ok(Json(ConnectionService::remove(&context, &id)?))
 }

@@ -2,13 +2,15 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::BrainName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum BrainError {
     #[error("Brain not found: {0}")]
-    NotFound(String),
+    NotFound(BrainName),
 
     #[error("Brain already exists: {0}")]
-    Conflict(String),
+    Conflict(BrainName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

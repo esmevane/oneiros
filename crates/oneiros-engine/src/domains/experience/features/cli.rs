@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct ExperienceCli;
-
 #[derive(Debug, Subcommand)]
 pub enum ExperienceCommands {
     Create {
@@ -27,32 +25,51 @@ pub enum ExperienceCommands {
     },
 }
 
-impl ExperienceCli {
+impl ExperienceCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: ExperienceCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             ExperienceCommands::Create {
                 agent,
                 sensation,
                 description,
-            } => ExperienceService::create(ctx, agent, sensation, description)?.into(),
-            ExperienceCommands::Show { id } => ExperienceService::get(ctx, &id)?.into(),
+            } => ExperienceService::create(
+                context,
+                &AgentName::new(&agent),
+                SensationName::new(&sensation),
+                Description::new(&description),
+            )?
+            .into(),
+            ExperienceCommands::Show { id } => {
+                let id: ExperienceId = id.parse()?;
+                ExperienceService::get(context, &id)?.into()
+            }
             ExperienceCommands::List { agent } => {
-                ExperienceService::list(ctx, agent.as_deref())?.into()
+                ExperienceService::list(context, agent.as_deref().map(AgentName::new).as_ref())?
+                    .into()
             }
             ExperienceCommands::Update {
                 id,
                 description,
                 sensation,
             } => {
+                let id: ExperienceId = id.parse()?;
                 let mut result: Option<ExperienceResponse> = None;
                 if let Some(desc) = description {
-                    result = Some(ExperienceService::update_description(ctx, &id, desc)?);
+                    result = Some(ExperienceService::update_description(
+                        context,
+                        &id,
+                        Description::new(&desc),
+                    )?);
                 }
                 if let Some(sens) = sensation {
-                    result = Some(ExperienceService::update_sensation(ctx, &id, sens)?);
+                    result = Some(ExperienceService::update_sensation(
+                        context,
+                        &id,
+                        SensationName::new(&sens),
+                    )?);
                 }
                 match result {
                     Some(r) => r.into(),

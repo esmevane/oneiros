@@ -40,12 +40,12 @@ impl<'a> ActorRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Actor>, EventError> {
+    pub fn get(&self, id: &ActorId) -> Result<Option<Actor>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, tenant_id, name, created_at FROM actors WHERE id = ?1")?;
 
-        let raw = stmt.query_row(params![id], |row| {
+        let raw = stmt.query_row(params![id.to_string()], |row| {
             let id: String = row.get(0)?;
             let tenant_id: String = row.get(1)?;
             let name: String = row.get(2)?;

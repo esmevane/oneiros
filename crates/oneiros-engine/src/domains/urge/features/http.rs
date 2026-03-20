@@ -37,12 +37,12 @@ async fn show(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
-    Ok(Json(UrgeService::get(&ctx, &name)?))
+    Ok(Json(UrgeService::get(&ctx, &UrgeName::new(name))?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
-    Ok(Json(UrgeService::remove(&ctx, &name)?))
+    Ok(Json(UrgeService::remove(&ctx, &UrgeName::new(name))?))
 }

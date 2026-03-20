@@ -1,3 +1,3 @@
 mod cli;
 
-pub use cli::{SystemCli, SystemCommands};
+pub use cli::*;

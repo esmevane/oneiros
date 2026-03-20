@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct ConnectionCli;
-
 #[derive(Debug, Subcommand)]
 pub enum ConnectionCommands {
     Create {
@@ -25,23 +23,36 @@ pub enum ConnectionCommands {
     },
 }
 
-impl ConnectionCli {
+impl ConnectionCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: ConnectionCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             ConnectionCommands::Create {
                 nature,
                 from_ref,
                 to_ref,
-            } => ConnectionService::create(ctx, from_ref, to_ref, nature, String::new())?.into(),
+            } => ConnectionService::create(
+                context,
+                from_ref.clone(),
+                to_ref.clone(),
+                nature.clone(),
+                String::new(),
+            )?
+            .into(),
 
-            ConnectionCommands::Show { id } => ConnectionService::get(ctx, &id)?.into(),
-            ConnectionCommands::List { entity_ref, .. } => {
-                ConnectionService::list(ctx, entity_ref.as_deref())?.into()
+            ConnectionCommands::Show { id } => {
+                let id: ConnectionId = id.parse()?;
+                ConnectionService::get(context, &id)?.into()
             }
-            ConnectionCommands::Remove { id } => ConnectionService::remove(ctx, &id)?.into(),
+            ConnectionCommands::List { entity_ref, .. } => {
+                ConnectionService::list(context, entity_ref.as_deref())?.into()
+            }
+            ConnectionCommands::Remove { id } => {
+                let id: ConnectionId = id.parse()?;
+                ConnectionService::remove(context, &id)?.into()
+            }
         };
         Ok(result)
     }

@@ -19,10 +19,12 @@ impl<'a> PressureRepo<'a> {
 
     /// Recompute pressure for the agent associated with this event.
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        let agent_name = match self.resolve_agent_name(event) {
+        let agent_name_str = match self.resolve_agent_name(event) {
             Some(name) => name,
             None => return Ok(()),
         };
+
+        let agent_name = AgentName::new(&agent_name_str);
 
         // Look up the agent by name
         let agent = match AgentRepo::new(self.conn).get(&agent_name)? {
@@ -61,7 +63,7 @@ impl<'a> PressureRepo<'a> {
         Ok(())
     }
 
-    pub fn get(&self, agent_name: &str) -> Result<Vec<Pressure>, EventError> {
+    pub fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
         // Look up agent by name to get the ID
         let agent = match AgentRepo::new(self.conn).get(agent_name)? {
             Some(a) => a,

@@ -8,7 +8,7 @@ impl StorageProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "storage",
     apply: |conn, event| StorageRepo::new(conn).handle(event),
     reset: |conn| StorageRepo::new(conn).reset(),

@@ -45,12 +45,12 @@ impl<'a> AgentRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Agent>, EventError> {
+    pub fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, persona, description, prompt FROM agents WHERE name = ?1")?;
+            .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             let id: String = row.get(0)?;
             let name: String = row.get(1)?;
             Ok((
@@ -111,10 +111,10 @@ impl<'a> AgentRepo<'a> {
         Ok(agents)
     }
 
-    pub fn name_exists(&self, name: &str) -> Result<bool, EventError> {
+    pub fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
         let count: i64 = self.conn.query_row(
-            "SELECT COUNT(*) FROM agents WHERE name = ?1",
-            params![name],
+            "select count(*) from agents where name = ?1",
+            params![name.to_string()],
             |row| row.get(0),
         )?;
         Ok(count > 0)
@@ -124,8 +124,8 @@ impl<'a> AgentRepo<'a> {
 
     fn create_record(&self, agent: &Agent) -> Result<(), EventError> {
         self.conn.execute(
-            "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "insert or replace into agents (id, name, persona, description, prompt)
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 agent.id.to_string(),
                 agent.name.to_string(),
@@ -139,8 +139,8 @@ impl<'a> AgentRepo<'a> {
 
     fn update(&self, agent: &Agent) -> Result<(), EventError> {
         self.conn.execute(
-            "INSERT OR REPLACE INTO agents (id, name, persona, description, prompt)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "insert or replace into agents (id, name, persona, description, prompt)
+             values (?1, ?2, ?3, ?4, ?5)",
             params![
                 agent.id.to_string(),
                 agent.name.to_string(),
@@ -154,7 +154,7 @@ impl<'a> AgentRepo<'a> {
 
     fn remove(&self, name: &AgentName) -> Result<(), EventError> {
         self.conn.execute(
-            "DELETE FROM agents WHERE name = ?1",
+            "delete from agents where name = ?1",
             params![name.to_string()],
         )?;
         Ok(())

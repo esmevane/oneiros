@@ -1,10 +1,7 @@
+use clap::Subcommand;
 use std::path::PathBuf;
 
-use clap::Subcommand;
-
 use crate::*;
-
-pub struct StorageCli;
 
 #[derive(Debug, Subcommand)]
 pub enum StorageCommands {
@@ -23,12 +20,12 @@ pub enum StorageCommands {
     },
 }
 
-impl StorageCli {
+impl StorageCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: StorageCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             StorageCommands::Set {
                 key,
                 file,
@@ -36,21 +33,23 @@ impl StorageCli {
             } => {
                 let data = std::fs::read(&file)?;
                 let content_type = if description.is_empty() {
-                    "application/octet-stream".to_string()
+                    Label::new("application/octet-stream")
                 } else {
-                    description
+                    Label::new(description)
                 };
-                StorageService::upload(ctx, key, content_type, data)?.into()
+                StorageService::upload(context, StorageName::new(key), content_type, data)?.into()
             }
-            StorageCommands::Show { key } => StorageService::show(ctx, &key)?.into(),
-            StorageCommands::List => StorageService::list(ctx)?.into(),
+            StorageCommands::Show { key } => {
+                StorageService::show(context, &StorageName::new(key))?.into()
+            }
+            StorageCommands::List => StorageService::list(context)?.into(),
             StorageCommands::Remove { key } => {
                 // Look up by name to get the ID, then remove by ID
-                let entry = ctx
-                    .with_db(|conn| StorageRepo::new(conn).get_by_name(&key))
+                let entry = context
+                    .with_db(|conn| StorageRepo::new(conn).get_by_name(&StorageName::new(&key)))
                     .map_err(|e| format!("database error: {e}"))?
                     .ok_or_else(|| format!("storage entry '{key}' not found"))?;
-                StorageService::remove(ctx, &entry.id.to_string())?.into()
+                StorageService::remove(context, &entry.id)?.into()
             }
         };
         Ok(result)

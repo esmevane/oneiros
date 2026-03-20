@@ -25,9 +25,10 @@ async fn search(
     State(ctx): State<ProjectContext>,
     Query(params): Query<SearchQuery>,
 ) -> Result<Json<SearchResponse>, SearchError> {
+    let agent_name = params.agent.as_deref().map(AgentName::new);
     Ok(Json(SearchService::search(
         &ctx,
         &params.q,
-        params.agent.as_deref(),
+        agent_name.as_ref(),
     )?))
 }

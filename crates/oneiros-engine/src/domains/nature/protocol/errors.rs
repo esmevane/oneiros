@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::NatureName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum NatureError {
     #[error("Nature not found: {0}")]
-    NotFound(String),
+    NotFound(NatureName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

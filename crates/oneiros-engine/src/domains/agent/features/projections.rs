@@ -8,7 +8,7 @@ impl AgentProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "agent",
     apply: |conn, event| AgentRepo::new(conn).handle(event),
     reset: |conn| AgentRepo::new(conn).reset(),

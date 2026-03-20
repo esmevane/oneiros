@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::TicketId;
+
 #[derive(Debug, thiserror::Error)]
 pub enum TicketError {
     #[error("Ticket not found: {0}")]
-    NotFound(String),
+    NotFound(TicketId),
 
     #[error("Invalid token")]
     InvalidToken,

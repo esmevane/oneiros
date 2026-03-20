@@ -35,27 +35,35 @@ struct ListQuery {
 }
 
 async fn add(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Json(body): Json<AddBody>,
 ) -> Result<(StatusCode, Json<CognitionResponse>), CognitionError> {
-    let response = CognitionService::add(&ctx, body.agent, body.texture, body.content)?;
+    let response = CognitionService::add(
+        &context,
+        &AgentName::new(&body.agent),
+        TextureName::new(&body.texture),
+        Content::new(body.content),
+    )?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Query(params): Query<ListQuery>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
     Ok(Json(CognitionService::list(
-        &ctx,
-        params.agent.as_deref(),
-        params.texture.as_deref(),
+        &context,
+        params.agent.as_deref().map(AgentName::new).as_ref(),
+        params.texture.as_deref().map(TextureName::new).as_ref(),
     )?))
 }
 
 async fn show(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
-    Ok(Json(CognitionService::get(&ctx, &id)?))
+    let id: CognitionId = id
+        .parse()
+        .map_err(|e: IdParseError| CognitionError::Database(e.into()))?;
+    Ok(Json(CognitionService::get(&context, &id)?))
 }

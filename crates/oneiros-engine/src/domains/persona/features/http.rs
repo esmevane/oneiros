@@ -37,12 +37,12 @@ async fn show(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::get(&ctx, &name)?))
+    Ok(Json(PersonaService::get(&ctx, &PersonaName::new(name))?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::remove(&ctx, &name)?))
+    Ok(Json(PersonaService::remove(&ctx, &PersonaName::new(name))?))
 }

@@ -5,13 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::ConnectionClient;
-pub use features::mcp as connection_mcp;
-pub use features::{ConnectionCli, ConnectionCommands, ConnectionProjections, ConnectionRouter};
-pub use model::{Connection, ConnectionId};
-pub use protocol::{
-    ConnectionCreatedResult, ConnectionError, ConnectionEvents, ConnectionRemoved,
-    ConnectionRemovedResult, ConnectionRequest, ConnectionResponse,
-};
-pub use repo::ConnectionRepo;
-pub use service::ConnectionService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

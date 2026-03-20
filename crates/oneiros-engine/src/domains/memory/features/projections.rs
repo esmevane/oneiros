@@ -8,7 +8,7 @@ impl MemoryProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "memory",
     apply: |conn, event| MemoryRepo::new(conn).handle(event),
     reset: |conn| MemoryRepo::new(conn).reset(),

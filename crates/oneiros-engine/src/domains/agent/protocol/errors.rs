@@ -1,17 +1,21 @@
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AgentError {
     #[error("Agent not found: {0}")]
-    NotFound(String),
+    NotFound(AgentName),
 
     #[error("Persona not found: {0}")]
-    PersonaNotFound(String),
+    PersonaNotFound(PersonaName),
 
     #[error("Agent already exists: {0}")]
-    Conflict(String),
+    Conflict(AgentName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

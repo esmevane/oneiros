@@ -2,56 +2,68 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct AgentCli;
-
 #[derive(Debug, Subcommand)]
 pub enum AgentCommands {
     Create {
-        name: String,
-        persona: String,
+        name: AgentName,
+        persona: PersonaName,
         #[arg(long, default_value = "")]
-        description: String,
+        description: Description,
         #[arg(long, default_value = "")]
-        prompt: String,
+        prompt: Prompt,
     },
     Show {
-        name: String,
+        name: AgentName,
     },
     List,
     Update {
-        name: String,
-        persona: String,
+        name: AgentName,
+        persona: PersonaName,
         #[arg(long, default_value = "")]
-        description: String,
+        description: Description,
         #[arg(long, default_value = "")]
-        prompt: String,
+        prompt: Prompt,
     },
     Remove {
-        name: String,
+        name: AgentName,
     },
 }
 
-impl AgentCli {
+impl AgentCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: AgentCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
-            AgentCommands::Create {
+        let result = match self {
+            Self::Create {
                 name,
                 persona,
                 description,
                 prompt,
-            } => AgentService::create(ctx, name, persona, description, prompt)?.into(),
-            AgentCommands::Show { name } => AgentService::get(ctx, &name)?.into(),
-            AgentCommands::List => AgentService::list(ctx)?.into(),
-            AgentCommands::Update {
+            } => AgentService::create(
+                context,
+                name.clone(),
+                persona.clone(),
+                description.clone(),
+                prompt.clone(),
+            )?
+            .into(),
+            Self::Show { name } => AgentService::get(context, &name)?.into(),
+            Self::List => AgentService::list(context)?.into(),
+            Self::Update {
                 name,
                 persona,
                 description,
                 prompt,
-            } => AgentService::update(ctx, name, persona, description, prompt)?.into(),
-            AgentCommands::Remove { name } => AgentService::remove(ctx, &name)?.into(),
+            } => AgentService::update(
+                context,
+                name.clone(),
+                persona.clone(),
+                description.clone(),
+                prompt.clone(),
+            )?
+            .into(),
+            Self::Remove { name } => AgentService::remove(context, &name)?.into(),
         };
         Ok(result)
     }

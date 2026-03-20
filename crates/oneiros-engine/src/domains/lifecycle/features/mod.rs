@@ -1,6 +1,7 @@
 mod cli;
 mod http;
-pub mod mcp;
+mod mcp;
 
-pub use cli::{LifecycleCli, LifecycleCommands};
-pub use http::LifecycleRouter;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;

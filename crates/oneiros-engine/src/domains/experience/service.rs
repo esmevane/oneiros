@@ -4,15 +4,15 @@ pub struct ExperienceService;
 
 impl ExperienceService {
     pub fn create(
-        ctx: &ProjectContext,
-        agent: String,
-        sensation: String,
-        description: String,
+        context: &ProjectContext,
+        agent: &AgentName,
+        sensation: SensationName,
+        description: Description,
     ) -> Result<ExperienceResponse, ExperienceError> {
-        let agent_record = ctx
-            .with_db(|conn| AgentRepo::new(conn).get(&agent))
+        let agent_record = context
+            .with_db(|conn| AgentRepo::new(conn).get(agent))
             .map_err(ExperienceError::Database)?
-            .ok_or_else(|| ExperienceError::NotFound(agent))?;
+            .ok_or_else(|| ExperienceError::NotFound(agent.to_string()))?;
 
         let experience = Experience::builder()
             .agent_id(agent_record.id)
@@ -20,12 +20,15 @@ impl ExperienceService {
             .description(description)
             .build();
 
-        ctx.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
+        context.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
         Ok(ExperienceResponse::ExperienceCreated(experience))
     }
 
-    pub fn get(ctx: &ProjectContext, id: &str) -> Result<ExperienceResponse, ExperienceError> {
-        let experience = ctx
+    pub fn get(
+        context: &ProjectContext,
+        id: &ExperienceId,
+    ) -> Result<ExperienceResponse, ExperienceError> {
+        let experience = context
             .with_db(|conn| ExperienceRepo::new(conn).get(id))
             .map_err(ExperienceError::Database)?
             .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
@@ -33,19 +36,20 @@ impl ExperienceService {
     }
 
     pub fn list(
-        ctx: &ProjectContext,
-        agent: Option<&str>,
+        context: &ProjectContext,
+        agent: Option<&AgentName>,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let agent_id = agent
             .map(|name| {
-                ctx.with_db(|conn| AgentRepo::new(conn).get(name))
+                context
+                    .with_db(|conn| AgentRepo::new(conn).get(name))
                     .map_err(ExperienceError::Database)?
                     .map(|a| a.id.to_string())
                     .ok_or_else(|| ExperienceError::NotFound(name.to_string()))
             })
             .transpose()?;
 
-        let experiences = ctx
+        let experiences = context
             .with_db(|conn| ExperienceRepo::new(conn).list(agent_id.as_deref()))
             .map_err(ExperienceError::Database)?;
         Ok(if experiences.is_empty() {
@@ -56,48 +60,40 @@ impl ExperienceService {
     }
 
     pub fn update_description(
-        ctx: &ProjectContext,
-        id: &str,
-        description: String,
+        context: &ProjectContext,
+        id: &ExperienceId,
+        description: Description,
     ) -> Result<ExperienceResponse, ExperienceError> {
-        // Confirm existence and return the updated record.
-        let mut experience = ctx
+        let mut experience = context
             .with_db(|conn| ExperienceRepo::new(conn).get(id))
             .map_err(ExperienceError::Database)?
             .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
 
-        experience.description = Description(description.clone());
+        experience.description = description.clone();
 
-        ctx.emit(ExperienceEvents::ExperienceDescriptionUpdated(
+        context.emit(ExperienceEvents::ExperienceDescriptionUpdated(
             ExperienceDescriptionUpdate {
-                id: id
-                    .parse()
-                    .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
-                description: Description(description),
+                id: *id,
+                description,
             },
         ));
         Ok(ExperienceResponse::ExperienceUpdated(experience))
     }
 
     pub fn update_sensation(
-        ctx: &ProjectContext,
-        id: &str,
-        sensation: String,
+        context: &ProjectContext,
+        id: &ExperienceId,
+        sensation: SensationName,
     ) -> Result<ExperienceResponse, ExperienceError> {
-        let mut experience = ctx
+        let mut experience = context
             .with_db(|conn| ExperienceRepo::new(conn).get(id))
             .map_err(ExperienceError::Database)?
             .ok_or_else(|| ExperienceError::NotFound(id.to_string()))?;
 
-        experience.sensation = SensationName::new(&sensation);
+        experience.sensation = sensation.clone();
 
-        ctx.emit(ExperienceEvents::ExperienceSensationUpdated(
-            ExperienceSensationUpdate {
-                id: id
-                    .parse()
-                    .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?,
-                sensation: SensationName::new(sensation),
-            },
+        context.emit(ExperienceEvents::ExperienceSensationUpdated(
+            ExperienceSensationUpdate { id: *id, sensation },
         ));
         Ok(ExperienceResponse::ExperienceUpdated(experience))
     }

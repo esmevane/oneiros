@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::TenantId;
+
 #[derive(Debug, thiserror::Error)]
 pub enum TenantError {
     #[error("Tenant not found: {0}")]
-    NotFound(String),
+    NotFound(TenantId),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

@@ -43,13 +43,13 @@ impl<'a> MemoryRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Memory>, EventError> {
+    pub fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, level, content, created_at
              FROM memories WHERE id = ?1",
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
+        let result = stmt.query_row(params![id.to_string()], |row| {
             let id: String = row.get(0)?;
             Ok((
                 id,

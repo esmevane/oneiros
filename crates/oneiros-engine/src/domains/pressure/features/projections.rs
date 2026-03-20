@@ -12,7 +12,7 @@ impl PressureProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "pressure",
     apply: |conn, event| PressureRepo::new(conn).handle(event),
     reset: |conn| PressureRepo::new(conn).reset(),

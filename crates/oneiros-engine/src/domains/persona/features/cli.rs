@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct PersonaCli;
-
 #[derive(Debug, Subcommand)]
 pub enum PersonaCommands {
     Set {
@@ -22,28 +20,32 @@ pub enum PersonaCommands {
     },
 }
 
-impl PersonaCli {
+impl PersonaCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: PersonaCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             PersonaCommands::Set {
                 name,
                 description,
                 prompt,
             } => PersonaService::set(
-                ctx,
-                Persona {
-                    name: PersonaName::new(name),
-                    description: Description(description),
-                    prompt: Prompt(prompt),
-                },
+                context,
+                Persona::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
             )?
             .into(),
-            PersonaCommands::Show { name } => PersonaService::get(ctx, &name)?.into(),
-            PersonaCommands::List => PersonaService::list(ctx)?.into(),
-            PersonaCommands::Remove { name } => PersonaService::remove(ctx, &name)?.into(),
+            PersonaCommands::Show { name } => {
+                PersonaService::get(context, &PersonaName::new(name))?.into()
+            }
+            PersonaCommands::List => PersonaService::list(context)?.into(),
+            PersonaCommands::Remove { name } => {
+                PersonaService::remove(context, &PersonaName::new(name))?.into()
+            }
         };
         Ok(result)
     }

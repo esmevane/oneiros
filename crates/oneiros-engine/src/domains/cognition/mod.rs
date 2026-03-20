@@ -5,12 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::CognitionClient;
-pub use features::mcp as cognition_mcp;
-pub use features::{CognitionCli, CognitionCommands, CognitionProjections, CognitionRouter};
-pub use model::{Cognition, CognitionId};
-pub use protocol::{
-    CognitionAddedResult, CognitionError, CognitionEvents, CognitionRequest, CognitionResponse,
-};
-pub use repo::CognitionRepo;
-pub use service::CognitionService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

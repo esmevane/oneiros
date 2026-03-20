@@ -37,42 +37,50 @@ struct UpdateBody {
 }
 
 async fn create(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<AgentResponse>), AgentError> {
-    let response =
-        AgentService::create(&ctx, body.name, body.persona, body.description, body.prompt)?;
+    let response = AgentService::create(
+        &context,
+        AgentName::new(&body.name),
+        PersonaName::new(&body.persona),
+        Description::new(&body.description),
+        Prompt::new(&body.prompt),
+    )?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(State(ctx): State<ProjectContext>) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::list(&ctx)?))
+async fn list(State(context): State<ProjectContext>) -> Result<Json<AgentResponse>, AgentError> {
+    Ok(Json(AgentService::list(&context)?))
 }
 
 async fn show(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::get(&ctx, &name)?))
+    Ok(Json(AgentService::get(&context, &AgentName::new(&name))?))
 }
 
 async fn update(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(name): Path<String>,
     Json(body): Json<UpdateBody>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(AgentService::update(
-        &ctx,
-        name,
-        body.persona,
-        body.description,
-        body.prompt,
+        &context,
+        AgentName::new(&name),
+        PersonaName::new(&body.persona),
+        Description::new(&body.description),
+        Prompt::new(&body.prompt),
     )?))
 }
 
 async fn remove(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::remove(&ctx, &name)?))
+    Ok(Json(AgentService::remove(
+        &context,
+        &AgentName::new(&name),
+    )?))
 }

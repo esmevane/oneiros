@@ -38,12 +38,12 @@ impl<'a> BrainRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Brain>, EventError> {
+    pub fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, created_at FROM brains WHERE name = ?1")?;
 
-        let raw = stmt.query_row(params![name], |row| {
+        let raw = stmt.query_row(params![name.to_string()], |row| {
             let name: String = row.get(0)?;
             let created_at: String = row.get(1)?;
             Ok((name, created_at))
@@ -80,10 +80,10 @@ impl<'a> BrainRepo<'a> {
         Ok(brains)
     }
 
-    pub fn name_exists(&self, name: &str) -> Result<bool, EventError> {
+    pub fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
         let count: i64 = self.conn.query_row(
             "SELECT COUNT(*) FROM brains WHERE name = ?1",
-            params![name],
+            params![name.to_string()],
             |row| row.get(0),
         )?;
         Ok(count > 0)

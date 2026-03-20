@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct NatureCli;
-
 #[derive(Debug, Subcommand)]
 pub enum NatureCommands {
     Set {
@@ -22,28 +20,32 @@ pub enum NatureCommands {
     },
 }
 
-impl NatureCli {
+impl NatureCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: NatureCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             NatureCommands::Set {
                 name,
                 description,
                 prompt,
             } => NatureService::set(
-                ctx,
-                Nature {
-                    name: NatureName::new(name),
-                    description: Description(description),
-                    prompt: Prompt(prompt),
-                },
+                context,
+                Nature::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
+                    .build(),
             )?
             .into(),
-            NatureCommands::Show { name } => NatureService::get(ctx, &name)?.into(),
-            NatureCommands::List => NatureService::list(ctx)?.into(),
-            NatureCommands::Remove { name } => NatureService::remove(ctx, &name)?.into(),
+            NatureCommands::Show { name } => {
+                NatureService::get(context, &NatureName::new(name))?.into()
+            }
+            NatureCommands::List => NatureService::list(context)?.into(),
+            NatureCommands::Remove { name } => {
+                NatureService::remove(context, &NatureName::new(name))?.into()
+            }
         };
         Ok(result)
     }

@@ -5,10 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::StorageClient;
-pub use features::mcp as storage_mcp;
-pub use features::{StorageCli, StorageCommands, StorageProjections, StorageRouter};
-pub use model::{StorageContent, StorageEntry, StorageId, StorageKey, StorageName};
-pub use protocol::{BlobRemoved, StorageError, StorageEvents, StorageRequest, StorageResponse};
-pub use repo::StorageRepo;
-pub use service::StorageService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

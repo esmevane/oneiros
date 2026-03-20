@@ -1,8 +1,9 @@
 mod cli;
 mod http;
-pub mod mcp;
+mod mcp;
 mod projections;
 
-pub use cli::{UrgeCli, UrgeCommands};
-pub use http::UrgeRouter;
-pub use projections::UrgeProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

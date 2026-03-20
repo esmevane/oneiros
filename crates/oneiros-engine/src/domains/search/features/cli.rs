@@ -2,8 +2,6 @@ use clap::Args;
 
 use crate::*;
 
-pub struct SearchCli;
-
 #[derive(Debug, Args)]
 pub struct SearchCommands {
     pub query: String,
@@ -11,12 +9,13 @@ pub struct SearchCommands {
     pub agent: Option<String>,
 }
 
-impl SearchCli {
+impl SearchCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: SearchCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = SearchService::search(ctx, &cmd.query, cmd.agent.as_deref())?.into();
+        let agent_name = self.agent.as_deref().map(AgentName::new);
+        let result = SearchService::search(context, &self.query, agent_name.as_ref())?.into();
         Ok(result)
     }
 }

@@ -23,7 +23,7 @@ async fn get(
     State(ctx): State<ProjectContext>,
     Path(agent): Path<String>,
 ) -> Result<Json<PressureResponse>, PressureError> {
-    Ok(Json(PressureService::get(&ctx, &agent)?))
+    Ok(Json(PressureService::get(&ctx, &AgentName::new(agent))?))
 }
 
 async fn list(State(ctx): State<ProjectContext>) -> Result<Json<PressureResponse>, PressureError> {

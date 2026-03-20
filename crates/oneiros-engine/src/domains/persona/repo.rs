@@ -18,7 +18,7 @@ impl<'a> PersonaRepo<'a> {
         if let Events::Persona(persona_event) = &event.data {
             match persona_event {
                 PersonaEvents::PersonaSet(persona) => self.set(persona)?,
-                PersonaEvents::PersonaRemoved(removed) => self.remove(removed.name.as_str())?,
+                PersonaEvents::PersonaRemoved(removed) => self.remove(&removed.name)?,
             }
         }
         Ok(())
@@ -42,12 +42,12 @@ impl<'a> PersonaRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Persona>, EventError> {
+    pub fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -109,9 +109,11 @@ impl<'a> PersonaRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM personas WHERE name = ?1", params![name])?;
+    fn remove(&self, name: &PersonaName) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM personas WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

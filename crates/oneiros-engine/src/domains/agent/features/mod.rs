@@ -1,8 +1,9 @@
 mod cli;
-pub mod http;
-pub mod mcp;
+mod http;
+mod mcp;
 mod projections;
 
-pub use cli::{AgentCli, AgentCommands};
-pub use http::AgentRouter;
-pub use projections::AgentProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

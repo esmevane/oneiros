@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct LifecycleCli;
-
 #[derive(Debug, Subcommand)]
 pub enum LifecycleCommands {
     Wake { agent: String },
@@ -15,24 +13,33 @@ pub enum LifecycleCommands {
     Guidebook { agent: String },
 }
 
-impl LifecycleCli {
+impl LifecycleCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: LifecycleCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
-            LifecycleCommands::Wake { agent } => LifecycleService::wake(ctx, &agent)?.into(),
-            LifecycleCommands::Dream { agent } => LifecycleService::dream(ctx, &agent)?.into(),
+        let result = match self {
+            LifecycleCommands::Wake { agent } => {
+                LifecycleService::wake(context, &AgentName::new(&agent))?.into()
+            }
+            LifecycleCommands::Dream { agent } => {
+                LifecycleService::dream(context, &AgentName::new(&agent))?.into()
+            }
             LifecycleCommands::Introspect { agent } => {
-                LifecycleService::introspect(ctx, &agent)?.into()
+                LifecycleService::introspect(context, &AgentName::new(&agent))?.into()
             }
-            LifecycleCommands::Reflect { agent } => LifecycleService::reflect(ctx, &agent)?.into(),
+            LifecycleCommands::Reflect { agent } => {
+                LifecycleService::reflect(context, &AgentName::new(&agent))?.into()
+            }
             LifecycleCommands::Sense { agent, content } => {
-                LifecycleService::sense(ctx, &agent, &content)?.into()
+                LifecycleService::sense(context, &AgentName::new(&agent), &Content::new(&content))?
+                    .into()
             }
-            LifecycleCommands::Sleep { agent } => LifecycleService::sleep(ctx, &agent)?.into(),
+            LifecycleCommands::Sleep { agent } => {
+                LifecycleService::sleep(context, &AgentName::new(&agent))?.into()
+            }
             LifecycleCommands::Guidebook { agent } => {
-                LifecycleService::guidebook(ctx, &agent)?.into()
+                LifecycleService::guidebook(context, &AgentName::new(&agent))?.into()
             }
         };
         Ok(result)

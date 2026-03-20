@@ -46,50 +46,64 @@ struct UpdateSensationBody {
 }
 
 async fn create(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ExperienceResponse>), ExperienceError> {
-    let response = ExperienceService::create(&ctx, body.agent, body.sensation, body.description)?;
+    let response = ExperienceService::create(
+        &context,
+        &AgentName::new(&body.agent),
+        SensationName::new(&body.sensation),
+        Description::new(&body.description),
+    )?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Query(params): Query<ListQuery>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(ExperienceService::list(
-        &ctx,
-        params.agent.as_deref(),
+        &context,
+        params.agent.as_deref().map(AgentName::new).as_ref(),
     )?))
 }
 
 async fn show(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
-    Ok(Json(ExperienceService::get(&ctx, &id)?))
+    let id: ExperienceId = id
+        .parse()
+        .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?;
+    Ok(Json(ExperienceService::get(&context, &id)?))
 }
 
 async fn update_description(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
     Json(body): Json<UpdateDescriptionBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+    let id: ExperienceId = id
+        .parse()
+        .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?;
     Ok(Json(ExperienceService::update_description(
-        &ctx,
+        &context,
         &id,
-        body.description,
+        Description::new(&body.description),
     )?))
 }
 
 async fn update_sensation(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
     Json(body): Json<UpdateSensationBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+    let id: ExperienceId = id
+        .parse()
+        .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?;
     Ok(Json(ExperienceService::update_sensation(
-        &ctx,
+        &context,
         &id,
-        body.sensation,
+        SensationName::new(&body.sensation),
     )?))
 }

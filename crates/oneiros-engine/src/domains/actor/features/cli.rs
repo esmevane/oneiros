@@ -20,15 +20,20 @@ pub enum ActorCommands {
 
 impl ActorCli {
     pub fn execute(
-        ctx: &SystemContext,
+        context: &SystemContext,
         cmd: ActorCommands,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
-            ActorCommands::Create { tenant_id, name } => {
-                ActorService::create(ctx, tenant_id, name)?.into()
+            ActorCommands::Create { tenant_id, name } => ActorService::create(
+                context,
+                tenant_id.parse::<TenantId>()?,
+                ActorName::new(name),
+            )?
+            .into(),
+            ActorCommands::Get { id } => {
+                ActorService::get(context, &id.parse::<ActorId>()?)?.into()
             }
-            ActorCommands::Get { id } => ActorService::get(ctx, &id)?.into(),
-            ActorCommands::List => ActorService::list(ctx)?.into(),
+            ActorCommands::List => ActorService::list(context)?.into(),
         };
         Ok(result)
     }

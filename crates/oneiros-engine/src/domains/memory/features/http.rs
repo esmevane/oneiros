@@ -34,23 +34,34 @@ struct ListQuery {
 }
 
 async fn add(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Json(body): Json<AddBody>,
 ) -> Result<(StatusCode, Json<MemoryResponse>), MemoryError> {
-    let response = MemoryService::add(&ctx, body.agent, body.level, body.content)?;
+    let response = MemoryService::add(
+        &context,
+        &AgentName::new(&body.agent),
+        LevelName::new(&body.level),
+        Content::new(body.content),
+    )?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Query(params): Query<ListQuery>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
-    Ok(Json(MemoryService::list(&ctx, params.agent.as_deref())?))
+    Ok(Json(MemoryService::list(
+        &context,
+        params.agent.as_deref().map(AgentName::new).as_ref(),
+    )?))
 }
 
 async fn show(
-    State(ctx): State<ProjectContext>,
+    State(context): State<ProjectContext>,
     Path(id): Path<String>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
-    Ok(Json(MemoryService::get(&ctx, &id)?))
+    let id: MemoryId = id
+        .parse()
+        .map_err(|e: IdParseError| MemoryError::Database(e.into()))?;
+    Ok(Json(MemoryService::get(&context, &id)?))
 }

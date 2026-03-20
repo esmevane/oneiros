@@ -11,12 +11,12 @@ use crate::{EventError, NewEvent, Projection, StoredEvent};
 pub fn migrate(conn: &Connection) -> Result<(), EventError> {
     conn.execute_batch(
         "
-        CREATE TABLE IF NOT EXISTS events (
-            id TEXT PRIMARY KEY,
-            event_type TEXT NOT NULL,
-            data TEXT NOT NULL,
-            source TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL
+        create table if not exists events (
+            id text primary key,
+            event_type text not null,
+            data text not null,
+            source text not null default '',
+            created_at text not null
         );
         ",
     )?;

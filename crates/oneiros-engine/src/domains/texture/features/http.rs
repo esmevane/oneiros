@@ -37,12 +37,12 @@ async fn show(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<TextureResponse>, TextureError> {
-    Ok(Json(TextureService::get(&ctx, &name)?))
+    Ok(Json(TextureService::get(&ctx, &TextureName::new(name))?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<TextureResponse>, TextureError> {
-    Ok(Json(TextureService::remove(&ctx, &name)?))
+    Ok(Json(TextureService::remove(&ctx, &TextureName::new(name))?))
 }

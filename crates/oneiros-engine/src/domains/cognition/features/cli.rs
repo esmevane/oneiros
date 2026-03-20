@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct CognitionCli;
-
 #[derive(Debug, Subcommand)]
 pub enum CognitionCommands {
     Add {
@@ -22,21 +20,33 @@ pub enum CognitionCommands {
     },
 }
 
-impl CognitionCli {
+impl CognitionCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: CognitionCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             CognitionCommands::Add {
                 agent,
                 texture,
                 content,
-            } => CognitionService::add(ctx, agent, texture, content)?.into(),
-            CognitionCommands::Show { id } => CognitionService::get(ctx, &id)?.into(),
-            CognitionCommands::List { agent, texture } => {
-                CognitionService::list(ctx, agent.as_deref(), texture.as_deref())?.into()
+            } => CognitionService::add(
+                context,
+                &AgentName::new(&agent),
+                TextureName::new(&texture),
+                Content::new(content),
+            )?
+            .into(),
+            CognitionCommands::Show { id } => {
+                let id: CognitionId = id.parse()?;
+                CognitionService::get(context, &id)?.into()
             }
+            CognitionCommands::List { agent, texture } => CognitionService::list(
+                context,
+                agent.as_deref().map(AgentName::new).as_ref(),
+                texture.as_deref().map(TextureName::new).as_ref(),
+            )?
+            .into(),
         };
         Ok(result)
     }

@@ -2,10 +2,12 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::LevelName;
+
 #[derive(Debug, thiserror::Error)]
 pub enum LevelError {
     #[error("Level not found: {0}")]
-    NotFound(String),
+    NotFound(LevelName),
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),

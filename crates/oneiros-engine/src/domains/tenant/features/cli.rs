@@ -14,13 +14,17 @@ pub enum TenantCommands {
 
 impl TenantCli {
     pub fn execute(
-        ctx: &SystemContext,
+        context: &SystemContext,
         cmd: TenantCommands,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
         let result = match cmd {
-            TenantCommands::Create { name } => TenantService::create(ctx, name)?.into(),
-            TenantCommands::Get { id } => TenantService::get(ctx, &id)?.into(),
-            TenantCommands::List => TenantService::list(ctx)?.into(),
+            TenantCommands::Create { name } => {
+                TenantService::create(context, TenantName::new(name))?.into()
+            }
+            TenantCommands::Get { id } => {
+                TenantService::get(context, &id.parse::<TenantId>()?)?.into()
+            }
+            TenantCommands::List => TenantService::list(context)?.into(),
         };
         Ok(result)
     }

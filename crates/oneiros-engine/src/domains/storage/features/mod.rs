@@ -1,8 +1,9 @@
 mod cli;
 mod http;
-pub mod mcp;
+mod mcp;
 mod projections;
 
-pub use cli::{StorageCli, StorageCommands};
-pub use http::StorageRouter;
-pub use projections::StorageProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

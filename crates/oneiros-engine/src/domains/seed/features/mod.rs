@@ -1,3 +1,3 @@
 mod cli;
 
-pub use cli::{SeedCli, SeedCommands};
+pub use cli::*;

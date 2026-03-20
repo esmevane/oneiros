@@ -18,7 +18,7 @@ impl<'a> SensationRepo<'a> {
         if let Events::Sensation(sensation_event) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
-                SensationEvents::SensationRemoved(removed) => self.remove(removed.name.as_str())?,
+                SensationEvents::SensationRemoved(removed) => self.remove(&removed.name)?,
             }
         }
         Ok(())
@@ -42,12 +42,12 @@ impl<'a> SensationRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, name: &str) -> Result<Option<Sensation>, EventError> {
+    pub fn get(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM sensations WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name], |row| {
+        let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -109,9 +109,11 @@ impl<'a> SensationRepo<'a> {
         Ok(())
     }
 
-    fn remove(&self, name: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM sensations WHERE name = ?1", params![name])?;
+    fn remove(&self, name: &SensationName) -> Result<(), EventError> {
+        self.conn.execute(
+            "DELETE FROM sensations WHERE name = ?1",
+            params![name.to_string()],
+        )?;
         Ok(())
     }
 }

@@ -3,22 +3,22 @@ use crate::*;
 pub struct NatureService;
 
 impl NatureService {
-    pub fn set(ctx: &ProjectContext, nature: Nature) -> Result<NatureResponse, NatureError> {
+    pub fn set(context: &ProjectContext, nature: Nature) -> Result<NatureResponse, NatureError> {
         let name = nature.name.clone();
-        ctx.emit(NatureEvents::NatureSet(nature));
+        context.emit(NatureEvents::NatureSet(nature));
         Ok(NatureResponse::NatureSet(name))
     }
 
-    pub fn get(ctx: &ProjectContext, name: &str) -> Result<NatureResponse, NatureError> {
-        let nature = ctx
+    pub fn get(context: &ProjectContext, name: &NatureName) -> Result<NatureResponse, NatureError> {
+        let nature = context
             .with_db(|conn| NatureRepo::new(conn).get(name))
             .map_err(NatureError::Database)?
-            .ok_or_else(|| NatureError::NotFound(name.to_string()))?;
+            .ok_or_else(|| NatureError::NotFound(name.clone()))?;
         Ok(NatureResponse::NatureDetails(nature))
     }
 
-    pub fn list(ctx: &ProjectContext) -> Result<NatureResponse, NatureError> {
-        let natures = ctx
+    pub fn list(context: &ProjectContext) -> Result<NatureResponse, NatureError> {
+        let natures = context
             .with_db(|conn| NatureRepo::new(conn).list())
             .map_err(NatureError::Database)?;
         if natures.is_empty() {
@@ -28,11 +28,13 @@ impl NatureService {
         }
     }
 
-    pub fn remove(ctx: &ProjectContext, name: &str) -> Result<NatureResponse, NatureError> {
-        let nature_name = NatureName::new(name);
-        ctx.emit(NatureEvents::NatureRemoved(NatureRemoved {
-            name: nature_name.clone(),
+    pub fn remove(
+        context: &ProjectContext,
+        name: &NatureName,
+    ) -> Result<NatureResponse, NatureError> {
+        context.emit(NatureEvents::NatureRemoved(NatureRemoved {
+            name: name.clone(),
         }));
-        Ok(NatureResponse::NatureRemoved(nature_name))
+        Ok(NatureResponse::NatureRemoved(name.clone()))
     }
 }

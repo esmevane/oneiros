@@ -8,7 +8,7 @@ impl CognitionProjections {
     }
 }
 
-pub const PROJECTIONS: &[Projection] = &[Projection {
+const PROJECTIONS: &[Projection] = &[Projection {
     name: "cognition",
     apply: |conn, event| CognitionRepo::new(conn).handle(event),
     reset: |conn| CognitionRepo::new(conn).reset(),

@@ -11,12 +11,12 @@ impl LifecycleService {
     /// Wake — restore an agent's full cognitive context (initial session start).
     pub fn wake(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
-            agent: AgentName::new(agent_name),
+            agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
@@ -26,12 +26,12 @@ impl LifecycleService {
     /// Dream — restore an agent's full cognitive context.
     pub fn dream(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
-            agent: AgentName::new(agent_name),
+            agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
@@ -41,12 +41,12 @@ impl LifecycleService {
     /// Introspect — look inward, consolidate cognitive state.
     pub fn introspect(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Introspected(LifecycleEvent {
-            agent: AgentName::new(agent_name),
+            agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
@@ -56,12 +56,12 @@ impl LifecycleService {
     /// Reflect — pause on something significant.
     pub fn reflect(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Reflected(LifecycleEvent {
-            agent: AgentName::new(agent_name),
+            agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
@@ -71,8 +71,8 @@ impl LifecycleService {
     /// Sense — receive and interpret something from outside.
     pub fn sense(
         ctx: &ProjectContext,
-        agent_name: &str,
-        content: &str,
+        agent_name: &AgentName,
+        content: &Content,
     ) -> Result<LifecycleResponse, LifecycleError> {
         // Verify agent exists
         ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))
@@ -80,8 +80,8 @@ impl LifecycleService {
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
         ctx.emit(LifecycleEvents::Sensed(SensedEvent {
-            agent: AgentName::new(agent_name),
-            content: Content(content.to_string()),
+            agent: agent_name.clone(),
+            content: Content::new(content.as_str()),
             created_at: Timestamp::now(),
         }));
 
@@ -93,7 +93,7 @@ impl LifecycleService {
     /// Sleep — end a session, capture continuity.
     pub fn sleep(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         // Verify agent exists
         ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))
@@ -101,7 +101,7 @@ impl LifecycleService {
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.to_string()))?;
 
         ctx.emit(LifecycleEvents::Slept(LifecycleEvent {
-            agent: AgentName::new(agent_name),
+            agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
@@ -116,7 +116,7 @@ impl LifecycleService {
     /// sensations, levels, urges) without marking a lifecycle transition.
     pub fn guidebook(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
         let context = Self::gather_context(ctx, agent_name)?;
         Ok(LifecycleResponse::Guidebook(context))
@@ -125,7 +125,7 @@ impl LifecycleService {
     /// Gather the full cognitive context for an agent.
     pub fn gather_context(
         ctx: &ProjectContext,
-        agent_name: &str,
+        agent_name: &AgentName,
     ) -> Result<CognitiveContext, LifecycleError> {
         let agent = ctx
             .with_db(|conn| AgentRepo::new(conn).get(agent_name))

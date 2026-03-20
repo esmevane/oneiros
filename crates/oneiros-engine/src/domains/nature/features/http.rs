@@ -37,12 +37,12 @@ async fn show(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<NatureResponse>, NatureError> {
-    Ok(Json(NatureService::get(&ctx, &name)?))
+    Ok(Json(NatureService::get(&ctx, &NatureName::new(name))?))
 }
 
 async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<NatureResponse>, NatureError> {
-    Ok(Json(NatureService::remove(&ctx, &name)?))
+    Ok(Json(NatureService::remove(&ctx, &NatureName::new(name))?))
 }

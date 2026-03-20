@@ -5,8 +5,8 @@ use crate::*;
 pub struct BrainService;
 
 impl BrainService {
-    pub fn create(ctx: &SystemContext, name: String) -> Result<BrainResponse, BrainError> {
-        let already_exists = ctx
+    pub fn create(context: &SystemContext, name: BrainName) -> Result<BrainResponse, BrainError> {
+        let already_exists = context
             .with_db(|conn| BrainRepo::new(conn).name_exists(&name))
             .map_err(BrainError::Database)?;
 
@@ -15,24 +15,24 @@ impl BrainService {
         }
 
         let brain = Brain {
-            name: BrainName::new(name),
+            name,
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit(BrainEvents::BrainCreated(brain.clone()));
+        context.emit(BrainEvents::BrainCreated(brain.clone()));
         Ok(BrainResponse::Created(brain))
     }
 
-    pub fn get(ctx: &SystemContext, name: &str) -> Result<BrainResponse, BrainError> {
-        let brain = ctx
+    pub fn get(context: &SystemContext, name: &BrainName) -> Result<BrainResponse, BrainError> {
+        let brain = context
             .with_db(|conn| BrainRepo::new(conn).get(name))
             .map_err(BrainError::Database)?
-            .ok_or_else(|| BrainError::NotFound(name.to_string()))?;
+            .ok_or_else(|| BrainError::NotFound(name.clone()))?;
         Ok(BrainResponse::Found(brain))
     }
 
-    pub fn list(ctx: &SystemContext) -> Result<BrainResponse, BrainError> {
-        let brains = ctx
+    pub fn list(context: &SystemContext) -> Result<BrainResponse, BrainError> {
+        let brains = context
             .with_db(|conn| BrainRepo::new(conn).list())
             .map_err(BrainError::Database)?;
         Ok(BrainResponse::Listed(brains))

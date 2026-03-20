@@ -3,22 +3,22 @@ use crate::*;
 pub struct LevelService;
 
 impl LevelService {
-    pub fn set(ctx: &ProjectContext, level: Level) -> Result<LevelResponse, LevelError> {
+    pub fn set(context: &ProjectContext, level: Level) -> Result<LevelResponse, LevelError> {
         let name = level.name.clone();
-        ctx.emit(LevelEvents::LevelSet(level));
+        context.emit(LevelEvents::LevelSet(level));
         Ok(LevelResponse::LevelSet(name))
     }
 
-    pub fn get(ctx: &ProjectContext, name: &str) -> Result<LevelResponse, LevelError> {
-        let level = ctx
+    pub fn get(context: &ProjectContext, name: &LevelName) -> Result<LevelResponse, LevelError> {
+        let level = context
             .with_db(|conn| LevelRepo::new(conn).get(name))
             .map_err(LevelError::Database)?
-            .ok_or_else(|| LevelError::NotFound(name.to_string()))?;
+            .ok_or_else(|| LevelError::NotFound(name.clone()))?;
         Ok(LevelResponse::LevelDetails(level))
     }
 
-    pub fn list(ctx: &ProjectContext) -> Result<LevelResponse, LevelError> {
-        let levels = ctx
+    pub fn list(context: &ProjectContext) -> Result<LevelResponse, LevelError> {
+        let levels = context
             .with_db(|conn| LevelRepo::new(conn).list())
             .map_err(LevelError::Database)?;
         if levels.is_empty() {
@@ -28,11 +28,10 @@ impl LevelService {
         }
     }
 
-    pub fn remove(ctx: &ProjectContext, name: &str) -> Result<LevelResponse, LevelError> {
-        let level_name = LevelName::new(name);
-        ctx.emit(LevelEvents::LevelRemoved(LevelRemoved {
-            name: level_name.clone(),
+    pub fn remove(context: &ProjectContext, name: &LevelName) -> Result<LevelResponse, LevelError> {
+        context.emit(LevelEvents::LevelRemoved(LevelRemoved {
+            name: name.clone(),
         }));
-        Ok(LevelResponse::LevelRemoved(level_name))
+        Ok(LevelResponse::LevelRemoved(name.clone()))
     }
 }

@@ -23,7 +23,7 @@ impl ActorRouter {
 
 #[derive(Debug, Deserialize)]
 struct CreateBody {
-    tenant_id: String,
+    tenant_id: TenantId,
     name: String,
 }
 
@@ -31,7 +31,7 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ActorResponse>), ActorError> {
-    let response = ActorService::create(&ctx, body.tenant_id, body.name)?;
+    let response = ActorService::create(&ctx, body.tenant_id, ActorName::new(body.name))?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -41,7 +41,7 @@ async fn list(State(ctx): State<SystemContext>) -> Result<Json<ActorResponse>, A
 
 async fn show(
     State(ctx): State<SystemContext>,
-    Path(id): Path<String>,
+    Path(id): Path<ActorId>,
 ) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(ActorService::get(&ctx, &id)?))
 }

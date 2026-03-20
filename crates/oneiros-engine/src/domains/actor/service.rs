@@ -6,31 +6,31 @@ pub struct ActorService;
 
 impl ActorService {
     pub fn create(
-        ctx: &SystemContext,
-        tenant_id: String,
-        name: String,
+        context: &SystemContext,
+        tenant_id: TenantId,
+        name: ActorName,
     ) -> Result<ActorResponse, ActorError> {
         let actor = Actor {
             id: ActorId::new(),
-            tenant_id,
-            name: ActorName::new(name),
+            tenant_id: tenant_id.to_string(),
+            name,
             created_at: Utc::now().to_rfc3339(),
         };
 
-        ctx.emit(ActorEvents::ActorCreated(actor.clone()));
+        context.emit(ActorEvents::ActorCreated(actor.clone()));
         Ok(ActorResponse::Created(actor))
     }
 
-    pub fn get(ctx: &SystemContext, id: &str) -> Result<ActorResponse, ActorError> {
-        let actor = ctx
+    pub fn get(context: &SystemContext, id: &ActorId) -> Result<ActorResponse, ActorError> {
+        let actor = context
             .with_db(|conn| ActorRepo::new(conn).get(id))
             .map_err(ActorError::Database)?
-            .ok_or_else(|| ActorError::NotFound(id.to_string()))?;
+            .ok_or_else(|| ActorError::NotFound(id.clone()))?;
         Ok(ActorResponse::Found(actor))
     }
 
-    pub fn list(ctx: &SystemContext) -> Result<ActorResponse, ActorError> {
-        let actors = ctx
+    pub fn list(context: &SystemContext) -> Result<ActorResponse, ActorError> {
+        let actors = context
             .with_db(|conn| ActorRepo::new(conn).list())
             .map_err(ActorError::Database)?;
         Ok(ActorResponse::Listed(actors))

@@ -41,13 +41,13 @@ impl<'a> TicketRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<Ticket>, EventError> {
+    pub fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, actor_id, brain_name, token, created_at FROM tickets WHERE id = ?1",
         )?;
 
         let raw: Result<(String, String, String, String, String), _> =
-            stmt.query_row(params![id], |row| {
+            stmt.query_row(params![id.to_string()], |row| {
                 Ok((
                     row.get(0)?,
                     row.get(1)?,

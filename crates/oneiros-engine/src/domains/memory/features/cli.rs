@@ -2,8 +2,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct MemoryCli;
-
 #[derive(Debug, Subcommand)]
 pub enum MemoryCommands {
     Add {
@@ -20,19 +18,30 @@ pub enum MemoryCommands {
     },
 }
 
-impl MemoryCli {
+impl MemoryCommands {
     pub fn execute(
-        ctx: &ProjectContext,
-        cmd: MemoryCommands,
+        &self,
+        context: &ProjectContext,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             MemoryCommands::Add {
                 agent,
                 level,
                 content,
-            } => MemoryService::add(ctx, agent, level, content)?.into(),
-            MemoryCommands::Show { id } => MemoryService::get(ctx, &id)?.into(),
-            MemoryCommands::List { agent } => MemoryService::list(ctx, agent.as_deref())?.into(),
+            } => MemoryService::add(
+                context,
+                &AgentName::new(&agent),
+                LevelName::new(&level),
+                Content::new(content),
+            )?
+            .into(),
+            MemoryCommands::Show { id } => {
+                let id: MemoryId = id.parse()?;
+                MemoryService::get(context, &id)?.into()
+            }
+            MemoryCommands::List { agent } => {
+                MemoryService::list(context, agent.as_deref().map(AgentName::new).as_ref())?.into()
+            }
         };
         Ok(result)
     }

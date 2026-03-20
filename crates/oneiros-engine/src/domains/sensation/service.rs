@@ -4,24 +4,27 @@ pub struct SensationService;
 
 impl SensationService {
     pub fn set(
-        ctx: &ProjectContext,
+        context: &ProjectContext,
         sensation: Sensation,
     ) -> Result<SensationResponse, SensationError> {
         let name = sensation.name.clone();
-        ctx.emit(SensationEvents::SensationSet(sensation));
+        context.emit(SensationEvents::SensationSet(sensation));
         Ok(SensationResponse::SensationSet(name))
     }
 
-    pub fn get(ctx: &ProjectContext, name: &str) -> Result<SensationResponse, SensationError> {
-        let sensation = ctx
+    pub fn get(
+        context: &ProjectContext,
+        name: &SensationName,
+    ) -> Result<SensationResponse, SensationError> {
+        let sensation = context
             .with_db(|conn| SensationRepo::new(conn).get(name))
             .map_err(SensationError::Database)?
-            .ok_or_else(|| SensationError::NotFound(name.to_string()))?;
+            .ok_or_else(|| SensationError::NotFound(name.clone()))?;
         Ok(SensationResponse::SensationDetails(sensation))
     }
 
-    pub fn list(ctx: &ProjectContext) -> Result<SensationResponse, SensationError> {
-        let sensations = ctx
+    pub fn list(context: &ProjectContext) -> Result<SensationResponse, SensationError> {
+        let sensations = context
             .with_db(|conn| SensationRepo::new(conn).list())
             .map_err(SensationError::Database)?;
         if sensations.is_empty() {
@@ -31,11 +34,13 @@ impl SensationService {
         }
     }
 
-    pub fn remove(ctx: &ProjectContext, name: &str) -> Result<SensationResponse, SensationError> {
-        let sensation_name = SensationName::new(name);
-        ctx.emit(SensationEvents::SensationRemoved(SensationRemoved {
-            name: sensation_name.clone(),
+    pub fn remove(
+        context: &ProjectContext,
+        name: &SensationName,
+    ) -> Result<SensationResponse, SensationError> {
+        context.emit(SensationEvents::SensationRemoved(SensationRemoved {
+            name: name.clone(),
         }));
-        Ok(SensationResponse::SensationRemoved(sensation_name))
+        Ok(SensationResponse::SensationRemoved(name.clone()))
     }
 }

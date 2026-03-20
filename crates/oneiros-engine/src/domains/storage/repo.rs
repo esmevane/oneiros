@@ -46,12 +46,12 @@ impl<'a> StorageRepo<'a> {
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub fn get(&self, id: &str) -> Result<Option<StorageEntry>, EventError> {
+    pub fn get(&self, id: &StorageId) -> Result<Option<StorageEntry>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE id = ?1",
         )?;
 
-        let raw = stmt.query_row(params![id], |row| {
+        let raw = stmt.query_row(params![id.to_string()], |row| {
             let id: String = row.get(0)?;
             let name: String = row.get(1)?;
             let content_type: String = row.get(2)?;
@@ -73,12 +73,12 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
-    pub fn get_by_name(&self, name: &str) -> Result<Option<StorageEntry>, EventError> {
+    pub fn get_by_name(&self, name: &StorageName) -> Result<Option<StorageEntry>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE name = ?1",
         )?;
 
-        let raw = stmt.query_row(params![name], |row| {
+        let raw = stmt.query_row(params![name.to_string()], |row| {
             let id: String = row.get(0)?;
             let name: String = row.get(1)?;
             let content_type: String = row.get(2)?;

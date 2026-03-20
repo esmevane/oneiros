@@ -1,8 +1,9 @@
 mod cli;
 mod http;
-pub mod mcp;
+mod mcp;
 mod projections;
 
-pub use cli::{SearchCli, SearchCommands};
-pub use http::SearchRouter;
-pub use projections::SearchProjections;
+pub use cli::*;
+pub use http::*;
+pub use mcp::*;
+pub use projections::*;

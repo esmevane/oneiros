@@ -61,38 +61,38 @@ pub enum Command {
 
     // Flat lifecycle commands — top-level shortcuts for the most common ops
     Wake {
-        name: String,
+        name: AgentName,
     },
     Dream {
-        name: String,
+        name: AgentName,
     },
     Introspect {
-        name: String,
+        name: AgentName,
     },
     Reflect {
-        name: String,
+        name: AgentName,
     },
     Sleep {
-        name: String,
+        name: AgentName,
     },
     Guidebook {
-        name: String,
+        name: AgentName,
     },
 
     // Agent lifecycle — emerge creates then wakes; recede removes
     Emerge {
-        name: String,
-        persona: String,
+        name: AgentName,
+        persona: PersonaName,
         #[arg(long, default_value = "")]
-        description: String,
+        description: Description,
     },
     Recede {
-        name: String,
+        name: AgentName,
     },
 
     // Status — summary of an agent's current cognitive state
     Status {
-        name: String,
+        name: AgentName,
     },
 
     // Diagnostics
@@ -103,115 +103,106 @@ pub enum Command {
     Event(EventCommands),
 }
 
-/// Event inspection commands.
-#[derive(Debug, Subcommand)]
-pub enum EventCommands {
-    /// List all events in the project event log.
-    List,
-}
+impl Command {
+    /// Execute a CLI command against the engine context.
+    pub fn execute(
+        &self,
+        context: &EngineContext,
+    ) -> Result<Responses, Box<dyn core::error::Error>> {
+        match self {
+            // Workflow domains — each knows its context
+            Command::System(system) => system.execute(&context.system),
+            Command::Project(project) => project.execute(
+                &context.system,
+                context.project.as_ref(),
+                &context.brain_name,
+            ),
+            Command::Seed(seed) => seed.execute(context.project()?),
 
-/// The combined context for CLI execution.
-///
-/// Holds both system and project contexts. System context is always
-/// available. Project context is available after `project init` and
-/// `start_service`.
-pub struct EngineContext {
-    pub system: SystemContext,
-    pub project: Option<ProjectContext>,
-    pub brain_name: String,
-}
+            // Project-scoped domains
+            Command::Level(level) => level.execute(context.project()?),
+            Command::Texture(texture) => texture.execute(context.project()?),
+            Command::Sensation(sensation) => sensation.execute(context.project()?),
+            Command::Nature(nature) => nature.execute(context.project()?),
+            Command::Persona(persona) => persona.execute(context.project()?),
+            Command::Urge(urge) => urge.execute(context.project()?),
+            Command::Agent(agent) => agent.execute(context.project()?),
+            Command::Cognition(cognition) => cognition.execute(context.project()?),
+            Command::Memory(memory) => memory.execute(context.project()?),
+            Command::Experience(experience) => experience.execute(context.project()?),
+            Command::Connection(connection) => connection.execute(context.project()?),
+            Command::Storage(storage) => storage.execute(context.project()?),
+            Command::Search(search) => search.execute(context.project()?),
+            Command::Pressure(pressure) => pressure.execute(context.project()?),
 
-impl EngineContext {
-    pub fn project(&self) -> Result<&ProjectContext, Box<dyn std::error::Error>> {
-        self.project
-            .as_ref()
-            .ok_or_else(|| "project context required — call start_service first".into())
-    }
-}
+            // Doctor — system diagnostics
+            Command::Doctor => DoctorCli::execute(&context.system),
 
-/// Execute a CLI command against the engine context.
-pub fn execute(
-    ctx: &EngineContext,
-    command: Command,
-) -> Result<Responses, Box<dyn std::error::Error>> {
-    match command {
-        // Workflow domains — each knows its context
-        Command::System(cmd) => SystemCli::execute(&ctx.system, cmd),
-        Command::Project(cmd) => {
-            ProjectCli::execute(&ctx.system, ctx.project.as_ref(), &ctx.brain_name, cmd)
-        }
-        Command::Seed(cmd) => SeedCli::execute(ctx.project()?, cmd),
-
-        // Project-scoped domains
-        Command::Level(cmd) => LevelCli::execute(ctx.project()?, cmd),
-        Command::Texture(cmd) => TextureCli::execute(ctx.project()?, cmd),
-        Command::Sensation(cmd) => SensationCli::execute(ctx.project()?, cmd),
-        Command::Nature(cmd) => NatureCli::execute(ctx.project()?, cmd),
-        Command::Persona(cmd) => PersonaCli::execute(ctx.project()?, cmd),
-        Command::Urge(cmd) => UrgeCli::execute(ctx.project()?, cmd),
-        Command::Agent(cmd) => AgentCli::execute(ctx.project()?, cmd),
-        Command::Cognition(cmd) => CognitionCli::execute(ctx.project()?, cmd),
-        Command::Memory(cmd) => MemoryCli::execute(ctx.project()?, cmd),
-        Command::Experience(cmd) => ExperienceCli::execute(ctx.project()?, cmd),
-        Command::Connection(cmd) => ConnectionCli::execute(ctx.project()?, cmd),
-        Command::Lifecycle(cmd) => LifecycleCli::execute(ctx.project()?, cmd),
-        Command::Storage(cmd) => StorageCli::execute(ctx.project()?, cmd),
-        Command::Search(cmd) => SearchCli::execute(ctx.project()?, cmd),
-        Command::Pressure(cmd) => PressureCli::execute(ctx.project()?, cmd),
-
-        // Doctor — system diagnostics
-        Command::Doctor => DoctorCli::execute(&ctx.system),
-
-        // Flat lifecycle shortcuts
-        Command::Wake { name } => Ok(LifecycleService::wake(ctx.project()?, &name)?.into()),
-        Command::Dream { name } => Ok(LifecycleService::dream(ctx.project()?, &name)?.into()),
-        Command::Introspect { name } => {
-            Ok(LifecycleService::introspect(ctx.project()?, &name)?.into())
-        }
-        Command::Reflect { name } => Ok(LifecycleService::reflect(ctx.project()?, &name)?.into()),
-        Command::Sleep { name } => Ok(LifecycleService::sleep(ctx.project()?, &name)?.into()),
-        Command::Guidebook { name } => {
-            Ok(LifecycleService::guidebook(ctx.project()?, &name)?.into())
-        }
-
-        // Emerge: create an agent then immediately wake it
-        Command::Emerge {
-            name,
-            persona,
-            description,
-        } => {
-            let project = ctx.project()?;
-            let created = AgentService::create(project, name, persona, description, String::new())?;
-            let agent_name = match &created {
-                AgentResponse::AgentCreated(n) => n.to_string(),
-                other => return Err(format!("unexpected agent response: {other:?}").into()),
-            };
-            LifecycleService::wake(project, &agent_name)?;
-            Ok(serde_json::json!({ "type": "emerged", "data": agent_name }).into())
-        }
-
-        // Recede: retire an agent
-        Command::Recede { name } => {
-            let project = ctx.project()?;
-            AgentService::remove(project, &name)?;
-            Ok(serde_json::json!({ "type": "receded", "data": name }).into())
-        }
-
-        // Status: gather an agent's cognitive context and return it
-        Command::Status { name } => {
-            let project = ctx.project()?;
-            let context = LifecycleService::gather_context(project, &name)
-                .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-            Ok(serde_json::json!({ "type": "status", "data": context }).into())
-        }
-
-        // Event inspection
-        Command::Event(cmd) => match cmd {
-            EventCommands::List => {
-                let project = ctx.project()?;
-                let events = project.with_db(event::repo::load_events)?;
-                Ok(serde_json::to_value(&events)?.into())
+            // Lifecycle - available in flat mode as well.
+            Command::Lifecycle(lifecycle) => lifecycle.execute(context.project()?),
+            Command::Wake { name } => Ok(LifecycleService::wake(context.project()?, &name)?.into()),
+            Command::Dream { name } => {
+                Ok(LifecycleService::dream(context.project()?, &name)?.into())
             }
-        },
+            Command::Introspect { name } => {
+                Ok(LifecycleService::introspect(context.project()?, &name)?.into())
+            }
+            Command::Reflect { name } => {
+                Ok(LifecycleService::reflect(context.project()?, &name)?.into())
+            }
+            Command::Sleep { name } => {
+                Ok(LifecycleService::sleep(context.project()?, &name)?.into())
+            }
+            Command::Guidebook { name } => {
+                Ok(LifecycleService::guidebook(context.project()?, &name)?.into())
+            }
+
+            // Emerge: create an agent then immediately wake it
+            Command::Emerge {
+                name,
+                persona,
+                description,
+            } => {
+                let project = context.project()?;
+                let created = AgentService::create(
+                    project,
+                    name.clone(),
+                    persona.clone(),
+                    description.clone(),
+                    Prompt::new(""),
+                )?;
+                let agent_name = match &created {
+                    AgentResponse::AgentCreated(n) => n.clone(),
+                    other => return Err(format!("unexpected agent response: {other:?}").into()),
+                };
+                LifecycleService::wake(project, &agent_name)?;
+                Ok(serde_json::json!({ "type": "emerged", "data": agent_name.to_string() }).into())
+            }
+
+            // Recede: retire an agent
+            Command::Recede { name } => {
+                let project = context.project()?;
+                let name_str = name.to_string();
+                AgentService::remove(project, &name)?;
+                Ok(serde_json::json!({ "type": "receded", "data": name_str }).into())
+            }
+
+            // Status: gather an agent's cognitive context and return it
+            Command::Status { name } => {
+                let project = context.project()?;
+                let context = LifecycleService::gather_context(project, &name)
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                Ok(serde_json::json!({ "type": "status", "data": context }).into())
+            }
+
+            // Event inspection
+            Command::Event(cmd) => match cmd {
+                EventCommands::List => {
+                    let project = context.project()?;
+                    let events = project.with_db(event::repo::load_events)?;
+                    Ok(serde_json::to_value(&events)?.into())
+                }
+            },
+        }
     }
 }

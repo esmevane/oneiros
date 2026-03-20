@@ -70,7 +70,7 @@ fn level_crud() {
     )
     .unwrap();
     assert!(matches!(
-        LevelService::get(&ctx, "working").unwrap(),
+        LevelService::get(&ctx, &LevelName::new("working")).unwrap(),
         LevelResponse::LevelDetails(_)
     ));
 
@@ -79,8 +79,8 @@ fn level_crud() {
         other => panic!("Expected Listed, got {other:?}"),
     }
 
-    LevelService::remove(&ctx, "working").unwrap();
-    assert!(LevelService::get(&ctx, "working").is_err());
+    LevelService::remove(&ctx, &LevelName::new("working")).unwrap();
+    assert!(LevelService::get(&ctx, &LevelName::new("working")).is_err());
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn persona_crud() {
     )
     .unwrap();
     assert!(matches!(
-        PersonaService::get(&ctx, "process").unwrap(),
+        PersonaService::get(&ctx, &PersonaName::new("process")).unwrap(),
         PersonaResponse::PersonaDetails(_)
     ));
 }
@@ -111,15 +111,15 @@ fn agent_create_and_get() {
 
     let resp = AgentService::create(
         &ctx,
-        "governor".into(),
-        "test-persona".into(),
-        "The governor".into(),
-        "You govern.".into(),
+        AgentName::new("governor"),
+        PersonaName::new("test-persona"),
+        Description::new("The governor"),
+        Prompt::new("You govern."),
     )
     .unwrap();
     assert!(matches!(resp, AgentResponse::AgentCreated(_)));
 
-    match AgentService::get(&ctx, "governor.test-persona").unwrap() {
+    match AgentService::get(&ctx, &AgentName::new("governor.test-persona")).unwrap() {
         AgentResponse::AgentDetails(a) => {
             assert_eq!(a.name, AgentName::new("governor.test-persona"));
             assert_eq!(a.persona, PersonaName::new("test-persona"));
@@ -134,10 +134,10 @@ fn agent_persona_validation() {
 
     let result = AgentService::create(
         &ctx,
-        "gov".into(),
-        "nonexistent".into(),
-        "".into(),
-        "".into(),
+        AgentName::new("gov"),
+        PersonaName::new("nonexistent"),
+        Description::new(""),
+        Prompt::new(""),
     );
     assert!(matches!(result, Err(AgentError::PersonaNotFound(_))));
 }
@@ -149,18 +149,18 @@ fn agent_name_conflict() {
 
     AgentService::create(
         &ctx,
-        "gov".into(),
-        "test-persona".into(),
-        "".into(),
-        "".into(),
+        AgentName::new("gov"),
+        PersonaName::new("test-persona"),
+        Description::new(""),
+        Prompt::new(""),
     )
     .unwrap();
     let result = AgentService::create(
         &ctx,
-        "gov".into(),
-        "test-persona".into(),
-        "".into(),
-        "".into(),
+        AgentName::new("gov"),
+        PersonaName::new("test-persona"),
+        Description::new(""),
+        Prompt::new(""),
     );
     assert!(matches!(result, Err(AgentError::Conflict(_))));
 }
@@ -173,9 +173,9 @@ fn cognition_add_and_list() {
 
     let resp = CognitionService::add(
         &ctx,
-        "gov.test-persona".into(),
-        "observation".into(),
-        "Something interesting".into(),
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("observation"),
+        Content::new("Something interesting"),
     )
     .unwrap();
     assert!(matches!(
@@ -183,7 +183,7 @@ fn cognition_add_and_list() {
         CognitionResponse::CognitionAdded(CognitionAddedResult { .. })
     ));
 
-    match CognitionService::list(&ctx, Some("gov.test-persona"), None).unwrap() {
+    match CognitionService::list(&ctx, Some(&AgentName::new("gov.test-persona")), None).unwrap() {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("Expected Cognitions, got {other:?}"),
     }
@@ -216,10 +216,10 @@ fn broadcast_events_are_typed() {
 
     AgentService::create(
         &ctx,
-        "gov".into(),
-        "test-persona".into(),
-        "".into(),
-        "".into(),
+        AgentName::new("gov"),
+        PersonaName::new("test-persona"),
+        Description::new(""),
+        Prompt::new(""),
     )
     .unwrap();
     let event = sub.try_recv().unwrap();
@@ -259,9 +259,9 @@ fn replay_reconstructs_read_models() {
     seed_agent(&ctx);
     CognitionService::add(
         &ctx,
-        "gov.test-persona".into(),
-        "observation".into(),
-        "Test thought".into(),
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("observation"),
+        Content::new("Test thought"),
     )
     .unwrap();
 
@@ -271,7 +271,7 @@ fn replay_reconstructs_read_models() {
         other => panic!("Expected Listed, got {other:?}"),
     }
     assert!(matches!(
-        AgentService::get(&ctx, "gov.test-persona").unwrap(),
+        AgentService::get(&ctx, &AgentName::new("gov.test-persona")).unwrap(),
         AgentResponse::AgentDetails(_)
     ));
 
@@ -283,11 +283,11 @@ fn replay_reconstructs_read_models() {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
-    match AgentService::get(&ctx, "gov.test-persona").unwrap() {
+    match AgentService::get(&ctx, &AgentName::new("gov.test-persona")).unwrap() {
         AgentResponse::AgentDetails(a) => assert_eq!(a.name, AgentName::new("gov.test-persona")),
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
-    match CognitionService::list(&ctx, Some("gov.test-persona"), None).unwrap() {
+    match CognitionService::list(&ctx, Some(&AgentName::new("gov.test-persona")), None).unwrap() {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("Expected Cognitions after replay, got {other:?}"),
     }
@@ -436,16 +436,16 @@ fn search_indexes_across_domains() {
     // Add cognitions
     CognitionService::add(
         &ctx,
-        "gov.test-persona".into(),
-        "observation".into(),
-        "The architecture is clean".into(),
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("observation"),
+        Content::new("The architecture is clean"),
     )
     .unwrap();
     CognitionService::add(
         &ctx,
-        "gov.test-persona".into(),
-        "working".into(),
-        "Working on typed events".into(),
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("working"),
+        Content::new("Working on typed events"),
     )
     .unwrap();
 
@@ -460,7 +460,7 @@ fn search_indexes_across_domains() {
     }
 
     // Search with agent filter
-    match SearchService::search(&ctx, "typed", Some("gov.test-persona")).unwrap() {
+    match SearchService::search(&ctx, "typed", Some(&AgentName::new("gov.test-persona"))).unwrap() {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 
@@ -506,15 +506,16 @@ fn actor_create_and_get() {
     let ctx = system_ctx();
 
     // Create a tenant first
-    let tenant_id = match TenantService::create(&ctx, "acme".into()).unwrap() {
-        TenantResponse::Created(t) => t.id.to_string(),
+    let tenant = match TenantService::create(&ctx, "acme".into()).unwrap() {
+        TenantResponse::Created(t) => t,
         other => panic!("Expected Created, got {other:?}"),
     };
+    let tenant_id_str = tenant.id.to_string();
 
-    match ActorService::create(&ctx, tenant_id.clone(), "alice".into()).unwrap() {
+    match ActorService::create(&ctx, tenant.id, ActorName::new("alice")).unwrap() {
         ActorResponse::Created(a) => {
             assert_eq!(a.name, ActorName::new("alice"));
-            assert_eq!(a.tenant_id, tenant_id);
+            assert_eq!(a.tenant_id, tenant_id_str);
         }
         other => panic!("Expected Created, got {other:?}"),
     }
@@ -540,7 +541,7 @@ fn brain_create_and_conflict() {
         Err(BrainError::Conflict(_))
     ));
 
-    match BrainService::get(&ctx, "test-brain").unwrap() {
+    match BrainService::get(&ctx, &BrainName::new("test-brain")).unwrap() {
         BrainResponse::Found(b) => assert_eq!(b.name, BrainName::new("test-brain")),
         other => panic!("Expected Found, got {other:?}"),
     }
@@ -552,10 +553,10 @@ fn ticket_issue_and_validate() {
 
     // Set up tenant + actor + brain
     let tenant_id = match TenantService::create(&ctx, "acme".into()).unwrap() {
-        TenantResponse::Created(t) => t.id.to_string(),
+        TenantResponse::Created(t) => t.id,
         other => panic!("Expected Created, got {other:?}"),
     };
-    let actor_id = match ActorService::create(&ctx, tenant_id, "alice".into()).unwrap() {
+    let actor_id = match ActorService::create(&ctx, tenant_id, ActorName::new("alice")).unwrap() {
         ActorResponse::Created(a) => a.id,
         other => panic!("Expected Created, got {other:?}"),
     };
@@ -592,8 +593,8 @@ fn storage_upload_and_retrieve_content() {
     // Upload — returns the name, not the full entry; resolve ID via a subsequent get
     let stored_name = match StorageService::upload(
         &ctx,
-        "test.txt".into(),
-        "text/plain".into(),
+        StorageName::new("test.txt"),
+        Label::new("text/plain"),
         content.to_vec(),
     )
     .unwrap()
@@ -606,19 +607,20 @@ fn storage_upload_and_retrieve_content() {
     };
 
     // List to recover the entry and its ID
-    let id_str = match StorageService::list(&ctx).unwrap() {
+    let entry_id = match StorageService::list(&ctx).unwrap() {
         StorageResponse::Entries(entries) => {
             assert_eq!(entries.len(), 1);
             let entry = &entries[0];
             assert_eq!(entry.name, stored_name);
             assert_eq!(entry.size, content.len() as u64);
-            entry.id.to_string()
+            entry.id
         }
         other => panic!("Expected Entries, got {other:?}"),
     };
+    let id_str = entry_id.to_string();
 
     // Get metadata
-    match StorageService::get(&ctx, &id_str).unwrap() {
+    match StorageService::get(&ctx, &entry_id).unwrap() {
         StorageResponse::StorageDetails(entry) => {
             assert_eq!(entry.name, StorageName::new("test.txt"))
         }
@@ -626,7 +628,7 @@ fn storage_upload_and_retrieve_content() {
     }
 
     // Get content
-    match StorageService::get_content(&ctx, &id_str).unwrap() {
+    match StorageService::get_content(&ctx, &entry_id).unwrap() {
         StorageResponse::Content(StorageContent { entry, data }) => {
             assert_eq!(entry.name, StorageName::new("test.txt"));
             assert_eq!(data, content);
@@ -636,7 +638,7 @@ fn storage_upload_and_retrieve_content() {
 
     // Remove
     assert!(matches!(
-        StorageService::remove(&ctx, &id_str).unwrap(),
+        StorageService::remove(&ctx, &entry_id).unwrap(),
         StorageResponse::StorageRemoved(_)
     ));
 
@@ -644,5 +646,5 @@ fn storage_upload_and_retrieve_content() {
     assert!(!dir.path().join("blobs").join(&id_str).exists());
 
     // Metadata should be gone
-    assert!(StorageService::get(&ctx, &id_str).is_err());
+    assert!(StorageService::get(&ctx, &entry_id).is_err());
 }

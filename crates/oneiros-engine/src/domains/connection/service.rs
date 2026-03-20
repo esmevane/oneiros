@@ -4,7 +4,7 @@ pub struct ConnectionService;
 
 impl ConnectionService {
     pub fn create(
-        ctx: &ProjectContext,
+        context: &ProjectContext,
         from_ref: String,
         to_ref: String,
         nature: String,
@@ -27,7 +27,7 @@ impl ConnectionService {
             .build();
 
         let ref_token = RefToken::new(Ref::connection(connection.id));
-        ctx.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
+        context.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
         Ok(ConnectionResponse::ConnectionCreated(
             ConnectionCreatedResult {
                 id: connection.id,
@@ -36,8 +36,11 @@ impl ConnectionService {
         ))
     }
 
-    pub fn get(ctx: &ProjectContext, id: &str) -> Result<ConnectionResponse, ConnectionError> {
-        let connection = ctx
+    pub fn get(
+        context: &ProjectContext,
+        id: &ConnectionId,
+    ) -> Result<ConnectionResponse, ConnectionError> {
+        let connection = context
             .with_db(|conn| ConnectionRepo::new(conn).get(id))
             .map_err(ConnectionError::Database)?
             .ok_or_else(|| ConnectionError::NotFound(id.to_string()))?;
@@ -45,7 +48,7 @@ impl ConnectionService {
     }
 
     pub fn list(
-        ctx: &ProjectContext,
+        context: &ProjectContext,
         entity_ref: Option<&str>,
     ) -> Result<ConnectionResponse, ConnectionError> {
         // If an entity ref is provided, parse it and JSON-encode for the DB query
@@ -59,7 +62,7 @@ impl ConnectionService {
             })
             .transpose()?;
 
-        let connections = ctx
+        let connections = context
             .with_db(|conn| ConnectionRepo::new(conn).list(ref_json.as_deref()))
             .map_err(ConnectionError::Database)?;
         if connections.is_empty() {
@@ -69,8 +72,11 @@ impl ConnectionService {
         }
     }
 
-    pub fn remove(ctx: &ProjectContext, id: &str) -> Result<ConnectionResponse, ConnectionError> {
-        let exists = ctx
+    pub fn remove(
+        context: &ProjectContext,
+        id: &ConnectionId,
+    ) -> Result<ConnectionResponse, ConnectionError> {
+        let exists = context
             .with_db(|conn| ConnectionRepo::new(conn).get(id))
             .map_err(ConnectionError::Database)?
             .is_some();
@@ -79,19 +85,12 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(id.to_string()));
         }
 
-        let id_parsed: ConnectionId = id
-            .parse()
-            .map_err(|e: IdParseError| ConnectionError::Database(e.into()))?;
-
-        let ref_token = RefToken::new(Ref::connection(id_parsed));
-        ctx.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
-            id: id_parsed,
+        let ref_token = RefToken::new(Ref::connection(*id));
+        context.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
+            id: *id,
         }));
         Ok(ConnectionResponse::ConnectionRemoved(
-            ConnectionRemovedResult {
-                id: id_parsed,
-                ref_token,
-            },
+            ConnectionRemovedResult { id: *id, ref_token },
         ))
     }
 }

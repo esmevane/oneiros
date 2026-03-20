@@ -4,8 +4,6 @@ use clap::Subcommand;
 
 use crate::*;
 
-pub struct ProjectCli;
-
 #[derive(Debug, Subcommand)]
 pub enum ProjectCommands {
     Init {
@@ -22,14 +20,14 @@ pub enum ProjectCommands {
     Replay,
 }
 
-impl ProjectCli {
+impl ProjectCommands {
     pub fn execute(
+        &self,
         ctx: &SystemContext,
         project: Option<&ProjectContext>,
         brain_name: &str,
-        cmd: ProjectCommands,
     ) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match cmd {
+        let result = match self {
             ProjectCommands::Init { .. } => {
                 ProjectService::init(ctx, brain_name.to_string())?.into()
             }
