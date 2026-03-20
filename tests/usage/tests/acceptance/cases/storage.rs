@@ -32,7 +32,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
 
     match show_response.data {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
-            assert_eq!(entry.name.as_str(), "test-doc");
+            assert_eq!(entry.key.as_str(), "test-doc");
         }
         other => panic!("expected StorageDetails, got {other:#?}"),
     }

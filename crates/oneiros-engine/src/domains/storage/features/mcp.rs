@@ -8,8 +8,8 @@ pub mod storage_mcp {
     use crate::*;
 
     #[derive(serde::Deserialize, schemars::JsonSchema)]
-    struct IdParam {
-        id: String,
+    struct KeyParam {
+        key: String,
     }
 
     pub fn tool_defs() -> &'static [ToolDef] {
@@ -22,12 +22,12 @@ pub mod storage_mcp {
             ToolDef {
                 name: "get_storage",
                 description: "Check on a stored artifact",
-                input_schema: schema_for::<IdParam>,
+                input_schema: schema_for::<KeyParam>,
             },
             ToolDef {
                 name: "remove_storage",
                 description: "Remove a stored artifact",
-                input_schema: schema_for::<IdParam>,
+                input_schema: schema_for::<KeyParam>,
             },
         ]
     }
@@ -48,22 +48,16 @@ pub mod storage_mcp {
                 serde_json::to_value(response)
             }
             "get_storage" => {
-                let p: IdParam = serde_json::from_str(params)
+                let p: KeyParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let id =
-                    p.id.parse::<StorageId>()
-                        .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response =
-                    StorageService::get(ctx, &id).map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response = StorageService::show(ctx, &StorageKey::new(p.key))
+                    .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "remove_storage" => {
-                let p: IdParam = serde_json::from_str(params)
+                let p: KeyParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let id =
-                    p.id.parse::<StorageId>()
-                        .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = StorageService::remove(ctx, &id)
+                let response = StorageService::remove(ctx, &StorageKey::new(p.key))
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

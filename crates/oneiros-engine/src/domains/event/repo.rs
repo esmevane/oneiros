@@ -128,6 +128,14 @@ pub fn import_event(conn: &Connection, event: &crate::ImportEvent) -> Result<(),
     Ok(())
 }
 
+/// Delete a single event by ID — used for transient events like BlobStored
+/// that serve their purpose (carrying binary for export/import) and should
+/// be cleaned up after the projection materializes the content.
+pub fn delete_event(conn: &Connection, event_id: &str) -> Result<(), EventError> {
+    conn.execute("DELETE FROM events WHERE id = ?1", params![event_id])?;
+    Ok(())
+}
+
 /// Replay all events through projections (rebuild read models).
 ///
 /// Returns the number of events replayed.

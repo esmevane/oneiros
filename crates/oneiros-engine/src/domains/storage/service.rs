@@ -3,75 +3,48 @@ use crate::*;
 pub struct StorageService;
 
 impl StorageService {
-    /// Upload bytes to the filesystem and record metadata in the event log.
-    ///
-    /// Binary data is written to `data_dir/blobs/{id}`. Metadata is recorded
-    /// via a `blob-stored` event which runs through projections.
+    /// Upload content — hash it, store the blob, record the metadata.
     pub fn upload(
         context: &ProjectContext,
-        name: StorageName,
-        content_type: Label,
+        key: StorageKey,
+        description: Description,
         data: Vec<u8>,
     ) -> Result<StorageResponse, StorageError> {
-        let data_dir = context.data_dir().ok_or(StorageError::NoDataDir)?;
+        let blob = BlobContent::create(&data)?;
 
-        let id = StorageId::new();
-        let blobs_dir = data_dir.join("blobs");
-        std::fs::create_dir_all(&blobs_dir)?;
-
-        let blob_path = blobs_dir.join(id.to_string());
-        std::fs::write(&blob_path, &data)?;
+        // Put the blob directly (not via event — the blob table is the durable store).
+        context.with_db(|conn| StorageRepo::new(conn).put_blob(&blob))?;
 
         let entry = StorageEntry {
-            id,
-            name: name.clone(),
-            content_type,
-            size: data.len() as u64,
-            created_at: Timestamp::now(),
+            key,
+            description,
+            hash: blob.hash,
         };
 
-        context.emit(StorageEvents::BlobStored(entry.clone()));
-        Ok(StorageResponse::StorageSet(name))
+        // Emit StorageSet — this drives the storage metadata projection.
+        context.emit(StorageEvents::StorageSet(entry.clone()));
+
+        Ok(StorageResponse::StorageSet(entry))
     }
 
+    /// Show storage metadata by key.
     pub fn show(
         context: &ProjectContext,
-        key: &StorageName,
+        key: &StorageKey,
     ) -> Result<StorageResponse, StorageError> {
         let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get_by_name(key))?
-            .ok_or_else(|| StorageError::NameNotFound(key.clone()))?;
+            .with_db(|conn| StorageRepo::new(conn).get_storage(key))?
+            .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
+
         Ok(StorageResponse::StorageDetails(entry))
     }
 
-    pub fn get(context: &ProjectContext, id: &StorageId) -> Result<StorageResponse, StorageError> {
-        let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get(id))?
-            .ok_or_else(|| StorageError::NotFound(id.clone()))?;
-        Ok(StorageResponse::StorageDetails(entry))
-    }
-
-    /// Retrieve the binary content of a stored blob.
-    pub fn get_content(
-        context: &ProjectContext,
-        id: &StorageId,
-    ) -> Result<StorageResponse, StorageError> {
-        let data_dir = context.data_dir().ok_or(StorageError::NoDataDir)?;
-
-        let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get(id))?
-            .ok_or_else(|| StorageError::NotFound(id.clone()))?;
-
-        let blob_path = data_dir.join("blobs").join(id.to_string());
-        let data = std::fs::read(&blob_path)?;
-
-        Ok(StorageResponse::Content(StorageContent { entry, data }))
-    }
-
+    /// List all storage entries.
     pub fn list(context: &ProjectContext) -> Result<StorageResponse, StorageError> {
         let entries = context
-            .with_db(|conn| StorageRepo::new(conn).list())
+            .with_db(|conn| StorageRepo::new(conn).list_storage())
             .map_err(StorageError::Database)?;
+
         if entries.is_empty() {
             Ok(StorageResponse::NoEntries)
         } else {
@@ -79,25 +52,36 @@ impl StorageService {
         }
     }
 
-    /// Remove the metadata record and delete the blob file from the filesystem.
+    /// Remove storage metadata by key. The blob is NOT deleted (dedup preservation).
     pub fn remove(
         context: &ProjectContext,
-        id: &StorageId,
+        key: &StorageKey,
     ) -> Result<StorageResponse, StorageError> {
-        let data_dir = context.data_dir().ok_or(StorageError::NoDataDir)?;
+        // Confirm the key exists before emitting.
+        context
+            .with_db(|conn| StorageRepo::new(conn).get_storage(key))?
+            .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
 
-        // Confirm existence before emitting.
+        context.emit(StorageEvents::StorageRemoved(SelectStorageByKey {
+            key: key.clone(),
+        }));
+
+        Ok(StorageResponse::StorageRemoved(key.clone()))
+    }
+
+    /// Retrieve the raw binary content for a storage key.
+    pub fn get_content(
+        context: &ProjectContext,
+        key: &StorageKey,
+    ) -> Result<Vec<u8>, StorageError> {
         let entry = context
-            .with_db(|conn| StorageRepo::new(conn).get(id))?
-            .ok_or_else(|| StorageError::NotFound(id.clone()))?;
+            .with_db(|conn| StorageRepo::new(conn).get_storage(key))?
+            .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
 
-        // Remove the file — best effort; log the event even if the file is missing.
-        let blob_path = data_dir.join("blobs").join(id.to_string());
-        if blob_path.exists() {
-            std::fs::remove_file(&blob_path)?;
-        }
+        let blob = context
+            .with_db(|conn| StorageRepo::new(conn).get_blob(&entry.hash))?
+            .ok_or_else(|| StorageError::BlobMissing(entry.hash.clone()))?;
 
-        context.emit(StorageEvents::BlobRemoved(BlobRemoved { id: id.clone() }));
-        Ok(StorageResponse::StorageRemoved(entry.name))
+        Ok(blob.data.decompressed()?)
     }
 }

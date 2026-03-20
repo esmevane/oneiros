@@ -7,8 +7,8 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SetStorageOutcomes {
-    #[outcome(message("Stored '{0}'."))]
-    StorageSet(StorageKey),
+    #[outcome(message("Stored '{}'.", .0.key))]
+    StorageSet(StorageEntry),
 }
 
 #[derive(Clone, Args)]
@@ -40,7 +40,7 @@ impl SetStorage {
         let summaries = response.pressure_summaries();
         let entry: StorageEntry = response.data()?;
 
-        outcomes.emit(SetStorageOutcomes::StorageSet(entry.key.clone()));
+        outcomes.emit(SetStorageOutcomes::StorageSet(entry));
 
         Ok((outcomes, summaries))
     }

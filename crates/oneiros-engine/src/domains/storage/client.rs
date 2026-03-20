@@ -11,14 +11,14 @@ impl<'a> StorageClient<'a> {
 
     pub async fn upload(
         &self,
-        name: &StorageName,
-        content_type: &Label,
+        key: &StorageKey,
+        description: &Description,
         data: Vec<u8>,
     ) -> Result<StorageResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body<'b> {
-            name: &'b StorageName,
-            content_type: &'b Label,
+            key: &'b StorageKey,
+            description: &'b Description,
             data: Vec<u8>,
         }
 
@@ -26,8 +26,8 @@ impl<'a> StorageClient<'a> {
             .post(
                 "/storage",
                 &Body {
-                    name,
-                    content_type,
+                    key,
+                    description,
                     data,
                 },
             )
@@ -38,11 +38,11 @@ impl<'a> StorageClient<'a> {
         self.client.get("/storage").await
     }
 
-    pub async fn get(&self, id: &StorageId) -> Result<StorageResponse, ClientError> {
-        self.client.get(&format!("/storage/{id}")).await
+    pub async fn show(&self, key: &StorageKey) -> Result<StorageResponse, ClientError> {
+        self.client.get(&format!("/storage/{key}")).await
     }
 
-    pub async fn remove(&self, id: &StorageId) -> Result<StorageResponse, ClientError> {
-        self.client.delete(&format!("/storage/{id}")).await
+    pub async fn remove(&self, key: &StorageKey) -> Result<StorageResponse, ClientError> {
+        self.client.delete(&format!("/storage/{key}")).await
     }
 }

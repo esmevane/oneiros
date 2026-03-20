@@ -2,9 +2,11 @@ use rusqlite::{Connection, params};
 
 use crate::*;
 
-/// Storage read model — queries, projection handling, and lifecycle.
+/// Storage read model — content-addressed blob storage with human-readable key mapping.
 ///
-/// Only metadata lives in the database. Binary data lives on the filesystem.
+/// Two-tier design (inspired by Fossil):
+/// - `blob` table: content-addressed by SHA256 hash, stores compressed binary
+/// - `storage` table: maps human-readable keys to blob hashes
 pub struct StorageRepo<'a> {
     conn: &'a Connection,
 }
@@ -16,144 +18,155 @@ impl<'a> StorageRepo<'a> {
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Storage(storage_event) = &event.data {
-            match storage_event {
-                StorageEvents::BlobStored(entry) => self.create_record(entry)?,
-                StorageEvents::BlobRemoved(removed) => self.remove_record(&removed.id)?,
-            }
+    pub fn handle_blob_stored(&self, event: &StoredEvent) -> Result<(), EventError> {
+        if let Events::Storage(StorageEvents::BlobStored(content)) = &event.data {
+            self.put_blob(content)?;
+            // Delete the transient event — the blob is materialized, the event
+            // served its purpose (carrying binary for export/import portability).
+            event::repo::delete_event(self.conn, &event.id)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
-        self.conn.execute("DELETE FROM storage_entries", [])?;
+    pub fn handle_storage_set(&self, event: &StoredEvent) -> Result<(), EventError> {
+        if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data {
+            self.set_storage(entry)?;
+        }
+        Ok(())
+    }
+
+    pub fn handle_storage_removed(&self, event: &StoredEvent) -> Result<(), EventError> {
+        if let Events::Storage(StorageEvents::StorageRemoved(removed)) = &event.data {
+            self.remove_storage(&removed.key)?;
+        }
+        Ok(())
+    }
+
+    pub fn reset_blobs(&self) -> Result<(), EventError> {
+        self.conn.execute_batch("DELETE FROM blob")?;
+        Ok(())
+    }
+
+    pub fn reset_storage(&self) -> Result<(), EventError> {
+        self.conn.execute_batch("DELETE FROM storage")?;
         Ok(())
     }
 
     pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS storage_entries (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                content_type TEXT NOT NULL DEFAULT '',
-                size INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL DEFAULT ''
+            "CREATE TABLE IF NOT EXISTS blob (
+                hash TEXT PRIMARY KEY NOT NULL,
+                data BLOB NOT NULL,
+                size INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS storage (
+                key TEXT PRIMARY KEY NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                hash TEXT NOT NULL REFERENCES blob(hash)
             )",
         )?;
         Ok(())
     }
 
-    // ── Read queries ────────────────────────────────────────────
+    // ── Blob operations (content-addressed) ─────────────────────
 
-    pub fn get(&self, id: &StorageId) -> Result<Option<StorageEntry>, EventError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE id = ?1",
-        )?;
-
-        let raw = stmt.query_row(params![id.to_string()], |row| {
-            let id: String = row.get(0)?;
-            let name: String = row.get(1)?;
-            let content_type: String = row.get(2)?;
-            let size: i64 = row.get(3)?;
-            let created_at: String = row.get(4)?;
-            Ok((id, name, content_type, size, created_at))
-        });
-
-        match raw {
-            Ok((id, name, content_type, size, created_at)) => Ok(Some(StorageEntry {
-                id: id.parse()?,
-                name: StorageName::new(name),
-                content_type: Label::new(content_type),
-                size: size as u64,
-                created_at: Timestamp::parse_str(&created_at)?,
-            })),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
-    pub fn get_by_name(&self, name: &StorageName) -> Result<Option<StorageEntry>, EventError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, content_type, size, created_at FROM storage_entries WHERE name = ?1",
-        )?;
-
-        let raw = stmt.query_row(params![name.to_string()], |row| {
-            let id: String = row.get(0)?;
-            let name: String = row.get(1)?;
-            let content_type: String = row.get(2)?;
-            let size: i64 = row.get(3)?;
-            let created_at: String = row.get(4)?;
-            Ok((id, name, content_type, size, created_at))
-        });
-
-        match raw {
-            Ok((id, name, content_type, size, created_at)) => Ok(Some(StorageEntry {
-                id: id.parse()?,
-                name: StorageName::new(name),
-                content_type: Label::new(content_type),
-                size: size as u64,
-                created_at: Timestamp::parse_str(&created_at)?,
-            })),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
-    pub fn list(&self) -> Result<Vec<StorageEntry>, EventError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, content_type, size, created_at FROM storage_entries ORDER BY name",
-        )?;
-
-        let raw: Vec<(String, String, String, i64, String)> = stmt
-            .query_map([], |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                ))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut entries = vec![];
-
-        for (id, name, content_type, size, created_at) in raw {
-            entries.push(StorageEntry {
-                id: id.parse()?,
-                name: StorageName::new(name),
-                content_type: Label::new(content_type),
-                size: size as u64,
-                created_at: Timestamp::parse_str(&created_at)?,
-            });
-        }
-
-        Ok(entries)
-    }
-
-    // ── Write operations (called by handle) ─────────────────────
-
-    fn create_record(&self, entry: &StorageEntry) -> Result<(), EventError> {
+    pub fn put_blob(&self, content: &BlobContent) -> Result<(), EventError> {
+        let bytes = content.data.decode()?;
         self.conn.execute(
-            "INSERT OR REPLACE INTO storage_entries (id, name, content_type, size, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT OR IGNORE INTO blob (hash, data, size) VALUES (?1, ?2, ?3)",
+            params![content.hash.as_str(), &bytes, content.size.as_i64()],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
+
+        let result = stmt.query_row(params![hash.as_str()], |row| {
+            let hash: String = row.get(0)?;
+            let data: Vec<u8> = row.get(1)?;
+            let size: i64 = row.get(2)?;
+            Ok((hash, data, size))
+        });
+
+        match result {
+            Ok((hash, data, size)) => Ok(Some(BlobContent {
+                hash: ContentHash::new(hash),
+                size: Size::new(size as usize),
+                data: Blob::encode(&data),
+            })),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    // ── Storage metadata operations ─────────────────────────────
+
+    pub fn set_storage(&self, entry: &StorageEntry) -> Result<(), EventError> {
+        self.conn.execute(
+            "INSERT INTO storage (key, description, hash) VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO UPDATE SET description = excluded.description, hash = excluded.hash",
             params![
-                entry.id.to_string(),
-                entry.name.to_string(),
-                entry.content_type.to_string(),
-                entry.size as i64,
-                entry.created_at.as_string()
+                entry.key.as_str(),
+                entry.description.as_str(),
+                entry.hash.as_str(),
             ],
         )?;
         Ok(())
     }
 
-    fn remove_record(&self, id: &StorageId) -> Result<(), EventError> {
-        self.conn.execute(
-            "DELETE FROM storage_entries WHERE id = ?1",
-            params![id.to_string()],
-        )?;
+    pub fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
+
+        let result = stmt.query_row(params![key.as_str()], |row| {
+            let key: String = row.get(0)?;
+            let description: String = row.get(1)?;
+            let hash: String = row.get(2)?;
+            Ok((key, description, hash))
+        });
+
+        match result {
+            Ok((key, description, hash)) => Ok(Some(StorageEntry {
+                key: StorageKey::new(key),
+                description: Description::new(description),
+                hash: ContentHash::new(hash),
+            })),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn list_storage(&self) -> Result<Vec<StorageEntry>, EventError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT key, description, hash FROM storage ORDER BY key")?;
+
+        let entries = stmt
+            .query_map([], |row| {
+                let key: String = row.get(0)?;
+                let description: String = row.get(1)?;
+                let hash: String = row.get(2)?;
+                Ok((key, description, hash))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(entries
+            .into_iter()
+            .map(|(key, description, hash)| StorageEntry {
+                key: StorageKey::new(key),
+                description: Description::new(description),
+                hash: ContentHash::new(hash),
+            })
+            .collect())
+    }
+
+    pub fn remove_storage(&self, key: &StorageKey) -> Result<(), EventError> {
+        self.conn
+            .execute("DELETE FROM storage WHERE key = ?1", params![key.as_str()])?;
         Ok(())
     }
 }

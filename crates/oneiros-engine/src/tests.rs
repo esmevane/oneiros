@@ -578,70 +578,64 @@ fn ticket_issue_and_validate() {
     }
 }
 
-// ── Storage IO test ──────────────────────────────────────────────
+// ── Storage tests (content-addressed model) ─────────────────────
 
 #[test]
 fn storage_upload_and_retrieve_content() {
-    let dir = tempfile::tempdir().unwrap();
-    let ctx = project_ctx().with_config(crate::config::Config::new(dir.path()));
-
+    let ctx = project_ctx();
     let content = b"Hello, oneiros!";
 
-    // Upload — returns the name, not the full entry; resolve ID via a subsequent get
-    let stored_name = match StorageService::upload(
+    // Upload — returns the entry with key, description, hash
+    let entry = match StorageService::upload(
         &ctx,
-        StorageName::new("test.txt"),
-        Label::new("text/plain"),
+        StorageKey::new("test.txt"),
+        Description::new("A test file"),
         content.to_vec(),
     )
     .unwrap()
     {
-        StorageResponse::StorageSet(name) => {
-            assert_eq!(name, StorageName::new("test.txt"));
-            name
+        StorageResponse::StorageSet(entry) => {
+            assert_eq!(entry.key.as_str(), "test.txt");
+            assert_eq!(entry.description.as_str(), "A test file");
+            entry
         }
         other => panic!("Expected StorageSet, got {other:?}"),
     };
 
-    // List to recover the entry and its ID
-    let entry_id = match StorageService::list(&ctx).unwrap() {
-        StorageResponse::Entries(entries) => {
-            assert_eq!(entries.len(), 1);
-            let entry = &entries[0];
-            assert_eq!(entry.name, stored_name);
-            assert_eq!(entry.size, content.len() as u64);
-            entry.id
-        }
-        other => panic!("Expected Entries, got {other:?}"),
-    };
-    let id_str = entry_id.to_string();
-
-    // Get metadata
-    match StorageService::get(&ctx, &entry_id).unwrap() {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.name, StorageName::new("test.txt"))
+    // Show by key
+    match StorageService::show(&ctx, &StorageKey::new("test.txt")).unwrap() {
+        StorageResponse::StorageDetails(shown) => {
+            assert_eq!(shown.key.as_str(), "test.txt");
+            assert_eq!(shown.hash, entry.hash);
         }
         other => panic!("Expected StorageDetails, got {other:?}"),
     }
 
-    // Get content
-    match StorageService::get_content(&ctx, &entry_id).unwrap() {
-        StorageResponse::Content(StorageContent { entry, data }) => {
-            assert_eq!(entry.name, StorageName::new("test.txt"));
-            assert_eq!(data, content);
+    // List
+    match StorageService::list(&ctx).unwrap() {
+        StorageResponse::Entries(entries) => {
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].key.as_str(), "test.txt");
         }
-        other => panic!("Expected Content, got {other:?}"),
+        other => panic!("Expected Entries, got {other:?}"),
     }
 
-    // Remove
+    // Get content — round-trips through compress/decompress
+    let retrieved = StorageService::get_content(&ctx, &StorageKey::new("test.txt")).unwrap();
+    assert_eq!(retrieved, content);
+
+    // Remove — only removes metadata, blob stays (dedup)
     assert!(matches!(
-        StorageService::remove(&ctx, &entry_id).unwrap(),
+        StorageService::remove(&ctx, &StorageKey::new("test.txt")).unwrap(),
         StorageResponse::StorageRemoved(_)
     ));
 
-    // File should be gone
-    assert!(!dir.path().join("blobs").join(&id_str).exists());
-
     // Metadata should be gone
-    assert!(StorageService::get(&ctx, &entry_id).is_err());
+    assert!(StorageService::show(&ctx, &StorageKey::new("test.txt")).is_err());
+
+    // List should be empty
+    assert!(matches!(
+        StorageService::list(&ctx).unwrap(),
+        StorageResponse::NoEntries
+    ));
 }
