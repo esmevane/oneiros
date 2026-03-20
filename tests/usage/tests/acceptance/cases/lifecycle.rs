@@ -98,6 +98,54 @@ pub(crate) async fn sleep<B: Backend>() -> TestResult {
     Ok(())
 }
 
+/// Dream context should include vocabulary (textures, levels, sensations, natures, urges),
+/// connections, and pressure readings — not just agent + cognitions + memories + experiences.
+pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_seeded_agent(&mut backend).await?;
+
+    // Add a cognition so we have something to connect
+    backend
+        .exec("cognition add thinker.process observation 'First thought'")
+        .await?;
+
+    let response = backend.exec("dream thinker.process").await?;
+
+    match response.data {
+        Responses::Lifecycle(LifecycleResponse::Dreaming(ctx)) => {
+            // The dream context should have the seeded vocabulary
+            let json = serde_json::to_value(&ctx).unwrap();
+            let obj = json.as_object().unwrap();
+
+            // These fields should exist and be non-empty (seed core creates them)
+            assert!(
+                obj.contains_key("textures"),
+                "dream context should include textures, got keys: {:?}",
+                obj.keys().collect::<Vec<_>>()
+            );
+            assert!(
+                obj.contains_key("levels"),
+                "dream context should include levels"
+            );
+            assert!(
+                obj.contains_key("sensations"),
+                "dream context should include sensations"
+            );
+            assert!(
+                obj.contains_key("natures"),
+                "dream context should include natures"
+            );
+            assert!(
+                obj.contains_key("urges"),
+                "dream context should include urges"
+            );
+        }
+        other => panic!("expected Dreaming, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn guidebook<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;

@@ -344,6 +344,12 @@ async fn lifecycle_guidebook() -> TestResult {
     cases::lifecycle::guidebook::<Engine>().await
 }
 
+// Lifecycle depth
+#[tokio::test]
+async fn dream_includes_vocabulary_and_connections() -> TestResult {
+    cases::lifecycle::dream_includes_vocabulary_and_connections::<Engine>().await
+}
+
 // Emerge / Recede
 #[tokio::test]
 async fn emerge_creates_and_wakes_agent() -> TestResult {
@@ -398,6 +404,22 @@ async fn search_returns_empty_for_no_match() -> TestResult {
 #[tokio::test]
 async fn search_filters_by_agent() -> TestResult {
     cases::search::filters_by_agent::<Engine>().await
+}
+
+// Search depth
+#[tokio::test]
+async fn search_finds_updated_agent_description() -> TestResult {
+    cases::search::finds_updated_agent_description::<Engine>().await
+}
+#[tokio::test]
+async fn search_finds_updated_experience_description() -> TestResult {
+    cases::search::finds_updated_experience_description::<Engine>().await
+}
+
+// Import/Export depth
+#[tokio::test]
+async fn export_import_preserves_storage() -> TestResult {
+    cases::import_export::export_import_preserves_storage::<Engine>().await
 }
 
 // Pressure

@@ -355,6 +355,22 @@ async fn search_filters_by_agent() -> TestResult {
     cases::search::filters_by_agent::<Legacy>().await
 }
 
+// Search depth
+#[tokio::test]
+async fn search_finds_updated_agent_description() -> TestResult {
+    cases::search::finds_updated_agent_description::<Legacy>().await
+}
+#[tokio::test]
+async fn search_finds_updated_experience_description() -> TestResult {
+    cases::search::finds_updated_experience_description::<Legacy>().await
+}
+
+// Import/Export depth
+#[tokio::test]
+async fn export_import_preserves_storage() -> TestResult {
+    cases::import_export::export_import_preserves_storage::<Legacy>().await
+}
+
 // Pressure
 #[tokio::test]
 async fn pressure_returns_readings() -> TestResult {
@@ -385,6 +401,12 @@ async fn storage_list_populated() -> TestResult {
 #[tokio::test]
 async fn storage_remove() -> TestResult {
     cases::storage::remove::<Legacy>().await
+}
+
+// Lifecycle depth
+#[tokio::test]
+async fn dream_includes_vocabulary_and_connections() -> TestResult {
+    cases::lifecycle::dream_includes_vocabulary_and_connections::<Legacy>().await
 }
 
 // Lifecycle

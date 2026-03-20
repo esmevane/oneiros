@@ -156,3 +156,62 @@ pub(crate) async fn filters_by_agent<B: Backend>() -> TestResult {
 
     Ok(())
 }
+
+/// Search should find updated agent descriptions (engine doesn't index AgentUpdated).
+pub(crate) async fn finds_updated_agent_description<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_searchable(&mut backend).await?;
+
+    // Update the agent's description to something unique and searchable
+    backend
+        .exec("agent update thinker.process process --description 'A uniquely refactored orchestrator'")
+        .await?;
+
+    let response = backend.exec("search orchestrator").await?;
+    let results = extract_results(response);
+
+    assert_eq!(
+        results.len(),
+        1,
+        "expected 1 result for updated agent description"
+    );
+
+    Ok(())
+}
+
+/// Search should find experience description updates (engine doesn't index ExperienceDescriptionUpdated).
+pub(crate) async fn finds_updated_experience_description<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_searchable(&mut backend).await?;
+
+    // Create an experience, then update its description
+    backend
+        .exec("cognition add thinker.process observation 'A thought'")
+        .await?;
+
+    let response = backend
+        .exec("experience create thinker.process caused 'Initial description'")
+        .await?;
+
+    let exp_id = match response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(exp)) => exp.id.to_string(),
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    backend
+        .exec(&format!(
+            "experience update {exp_id} --description 'A completely revised categorization'"
+        ))
+        .await?;
+
+    let response = backend.exec("search categorization").await?;
+    let results = extract_results(response);
+
+    assert_eq!(
+        results.len(),
+        1,
+        "expected 1 result for updated experience description"
+    );
+
+    Ok(())
+}
