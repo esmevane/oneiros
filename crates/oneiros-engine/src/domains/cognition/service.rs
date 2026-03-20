@@ -19,12 +19,8 @@ impl CognitionService {
             .content(content)
             .build();
 
-        let ref_token = RefToken::new(Ref::cognition(cognition.id));
         context.emit(CognitionEvents::CognitionAdded(cognition.clone()));
-        Ok(CognitionResponse::CognitionAdded(CognitionAddedResult {
-            id: cognition.id,
-            ref_token,
-        }))
+        Ok(CognitionResponse::CognitionAdded(cognition))
     }
 
     pub fn get(

@@ -29,27 +29,39 @@ impl ExperienceCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, ExperienceError> {
-        let result = match self {
+    ) -> Result<Response<Responses>, ExperienceError> {
+        match self {
             ExperienceCommands::Create {
                 agent,
                 sensation,
                 description,
-            } => ExperienceService::create(
-                context,
-                &AgentName::new(&agent),
-                SensationName::new(&sensation),
-                Description::new(&description),
-            )?
-            .into(),
+            } => {
+                let response = ExperienceService::create(
+                    context,
+                    &AgentName::new(&agent),
+                    SensationName::new(&sensation),
+                    Description::new(&description),
+                )?;
+                let ref_token = match &response {
+                    ExperienceResponse::ExperienceCreated(e) => {
+                        Some(RefToken::new(Ref::experience(e.id)))
+                    }
+                    _ => None,
+                };
+                let mut envelope = Response::new(response.into());
+                if let Some(rt) = ref_token {
+                    envelope = envelope.with_ref_token(rt);
+                }
+                Ok(envelope)
+            }
             ExperienceCommands::Show { id } => {
                 let id: ExperienceId = id.parse()?;
-                ExperienceService::get(context, &id)?.into()
+                Ok(Response::new(ExperienceService::get(context, &id)?.into()))
             }
-            ExperienceCommands::List { agent } => {
+            ExperienceCommands::List { agent } => Ok(Response::new(
                 ExperienceService::list(context, agent.as_deref().map(AgentName::new).as_ref())?
-                    .into()
-            }
+                    .into(),
+            )),
             ExperienceCommands::Update {
                 id,
                 description,
@@ -72,15 +84,12 @@ impl ExperienceCommands {
                     )?);
                 }
                 match result {
-                    Some(r) => r.into(),
-                    None => {
-                        return Err(ExperienceError::InvalidRequest(
-                            "update requires --description or --sensation".into(),
-                        ))
-                    }
+                    Some(r) => Ok(Response::new(r.into())),
+                    None => Err(ExperienceError::InvalidRequest(
+                        "update requires --description or --sensation".into(),
+                    )),
                 }
             }
-        };
-        Ok(result)
+        }
     }
 }

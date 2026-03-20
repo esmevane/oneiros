@@ -9,6 +9,6 @@ pub enum LifecycleResponse {
     Dreaming(CognitiveContext),
     Introspecting(CognitiveContext),
     Reflecting(CognitiveContext),
-    Sleeping { agent: String },
+    Sleeping(CognitiveContext),
     Guidebook(CognitiveContext),
 }

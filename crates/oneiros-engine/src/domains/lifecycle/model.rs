@@ -7,8 +7,11 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CognitiveContext {
     pub agent: Agent,
+    #[serde(default)]
     pub cognitions: Vec<Cognition>,
+    #[serde(default)]
     pub memories: Vec<Memory>,
+    #[serde(default)]
     pub experiences: Vec<Experience>,
 }
 

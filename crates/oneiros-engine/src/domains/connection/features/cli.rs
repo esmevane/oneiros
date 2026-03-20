@@ -27,32 +27,44 @@ impl ConnectionCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, ConnectionError> {
-        let result = match self {
+    ) -> Result<Response<Responses>, ConnectionError> {
+        match self {
             ConnectionCommands::Create {
                 nature,
                 from_ref,
                 to_ref,
-            } => ConnectionService::create(
-                context,
-                from_ref.clone(),
-                to_ref.clone(),
-                nature.clone(),
-            )?
-            .into(),
-
+            } => {
+                let response = ConnectionService::create(
+                    context,
+                    from_ref.clone(),
+                    to_ref.clone(),
+                    nature.clone(),
+                )?;
+                let ref_token = match &response {
+                    ConnectionResponse::ConnectionCreated(c) => {
+                        Some(RefToken::new(Ref::connection(c.id)))
+                    }
+                    _ => None,
+                };
+                let mut envelope = Response::new(response.into());
+                if let Some(rt) = ref_token {
+                    envelope = envelope.with_ref_token(rt);
+                }
+                Ok(envelope)
+            }
             ConnectionCommands::Show { id } => {
                 let id: ConnectionId = id.parse()?;
-                ConnectionService::get(context, &id)?.into()
+                Ok(Response::new(ConnectionService::get(context, &id)?.into()))
             }
-            ConnectionCommands::List { entity_ref, .. } => {
-                ConnectionService::list(context, entity_ref.as_deref())?.into()
-            }
+            ConnectionCommands::List { entity_ref, .. } => Ok(Response::new(
+                ConnectionService::list(context, entity_ref.as_deref())?.into(),
+            )),
             ConnectionCommands::Remove { id } => {
                 let id: ConnectionId = id.parse()?;
-                ConnectionService::remove(context, &id)?.into()
+                Ok(Response::new(
+                    ConnectionService::remove(context, &id)?.into(),
+                ))
             }
-        };
-        Ok(result)
+        }
     }
 }

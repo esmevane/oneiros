@@ -4,17 +4,11 @@ use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct ConnectionCreatedResult {
-    pub id: ConnectionId,
-    pub ref_token: RefToken,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CreateConnectionOutcomes {
-    #[outcome(message("Connection created: {}", .0.ref_token))]
-    ConnectionCreated(ConnectionCreatedResult),
+    #[outcome(message("Connection created: {}", .0.ref_token()))]
+    ConnectionCreated(Connection),
 }
 
 #[derive(Clone, Args)]
@@ -52,14 +46,7 @@ impl CreateConnection {
         let summaries = response.pressure_summaries();
         let connection: Connection = response.data()?;
 
-        let ref_token = connection.ref_token();
-
-        outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(
-            ConnectionCreatedResult {
-                id: connection.id,
-                ref_token,
-            },
-        ));
+        outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(connection));
 
         Ok((outcomes, summaries))
     }

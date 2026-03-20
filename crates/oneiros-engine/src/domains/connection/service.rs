@@ -24,14 +24,8 @@ impl ConnectionService {
             .nature(nature)
             .build();
 
-        let ref_token = RefToken::new(Ref::connection(connection.id));
         context.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
-        Ok(ConnectionResponse::ConnectionCreated(
-            ConnectionCreatedResult {
-                id: connection.id,
-                ref_token,
-            },
-        ))
+        Ok(ConnectionResponse::ConnectionCreated(connection))
     }
 
     pub fn get(
@@ -82,12 +76,9 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(*id));
         }
 
-        let ref_token = RefToken::new(Ref::connection(*id));
         context.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
             id: *id,
         }));
-        Ok(ConnectionResponse::ConnectionRemoved(
-            ConnectionRemovedResult { id: *id, ref_token },
-        ))
+        Ok(ConnectionResponse::ConnectionRemoved(*id))
     }
 }

@@ -180,7 +180,7 @@ fn cognition_add_and_list() {
     .unwrap();
     assert!(matches!(
         resp,
-        CognitionResponse::CognitionAdded(CognitionAddedResult { .. })
+        CognitionResponse::CognitionAdded(_)
     ));
 
     match CognitionService::list(&ctx, Some(&AgentName::new("gov.test-persona")), None).unwrap() {

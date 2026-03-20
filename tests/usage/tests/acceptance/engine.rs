@@ -19,7 +19,7 @@ struct Cli {
 }
 
 impl Cli {
-    fn execute(&self, context: &EngineContext) -> Result<Responses, Error> {
+    fn execute(&self, context: &EngineContext) -> Result<Response<Responses>, Error> {
         self.command.execute(context)
     }
 }
@@ -79,11 +79,9 @@ impl Backend for Engine {
 
         let full_args = strip_output_flag(full_args);
 
-        let responses = Cli::try_parse_from(&full_args)
+        Cli::try_parse_from(&full_args)
             .map_err(|e| Error::Context(e.to_string()))?
-            .execute(&self.ctx)?;
-
-        Ok(Response::new(responses))
+            .execute(&self.ctx)
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {

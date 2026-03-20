@@ -16,11 +16,16 @@ pub enum SleepError {
     Parse(#[from] serde_json::Error),
 }
 
+#[derive(Clone, serde::Serialize)]
+struct SleepContext {
+    agent: Agent,
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SleepOutcomes {
-    #[outcome(message("'{}' is sleeping.", .0.name))]
-    Sleeping(Agent),
+    #[outcome(message("'{}' is sleeping.", .0.agent.name))]
+    Sleeping(SleepContext),
 }
 
 /// Put an agent to sleep — record the lifecycle event and introspect.
@@ -42,7 +47,7 @@ impl SleepOp {
         let summaries = response.pressure_summaries();
         let result: Agent = response.data()?;
 
-        outcomes.emit(SleepOutcomes::Sleeping(result));
+        outcomes.emit(SleepOutcomes::Sleeping(SleepContext { agent: result }));
 
         Ok((outcomes, summaries))
     }

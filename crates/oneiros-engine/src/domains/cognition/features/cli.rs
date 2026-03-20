@@ -24,30 +24,43 @@ impl CognitionCommands {
     pub fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Responses, CognitionError> {
-        let result = match self {
+    ) -> Result<Response<Responses>, CognitionError> {
+        match self {
             CognitionCommands::Add {
                 agent,
                 texture,
                 content,
-            } => CognitionService::add(
-                context,
-                &AgentName::new(&agent),
-                TextureName::new(&texture),
-                Content::new(content),
-            )?
-            .into(),
+            } => {
+                let response = CognitionService::add(
+                    context,
+                    &AgentName::new(&agent),
+                    TextureName::new(&texture),
+                    Content::new(content),
+                )?;
+                let ref_token = match &response {
+                    CognitionResponse::CognitionAdded(c) => {
+                        Some(RefToken::new(Ref::cognition(c.id)))
+                    }
+                    _ => None,
+                };
+                let mut envelope = Response::new(response.into());
+                if let Some(rt) = ref_token {
+                    envelope = envelope.with_ref_token(rt);
+                }
+                Ok(envelope)
+            }
             CognitionCommands::Show { id } => {
                 let id: CognitionId = id.parse()?;
-                CognitionService::get(context, &id)?.into()
+                Ok(Response::new(CognitionService::get(context, &id)?.into()))
             }
-            CognitionCommands::List { agent, texture } => CognitionService::list(
-                context,
-                agent.as_deref().map(AgentName::new).as_ref(),
-                texture.as_deref().map(TextureName::new).as_ref(),
-            )?
-            .into(),
-        };
-        Ok(result)
+            CognitionCommands::List { agent, texture } => Ok(Response::new(
+                CognitionService::list(
+                    context,
+                    agent.as_deref().map(AgentName::new).as_ref(),
+                    texture.as_deref().map(TextureName::new).as_ref(),
+                )?
+                .into(),
+            )),
+        }
     }
 }

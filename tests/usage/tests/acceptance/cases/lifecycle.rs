@@ -90,7 +90,7 @@ pub(crate) async fn sleep<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Sleeping { .. })
+            Responses::Lifecycle(LifecycleResponse::Sleeping(_))
         ),
         "expected Sleeping, got {response:#?}"
     );

@@ -29,19 +29,25 @@ async fn setup_with_connectable_entities<B: Backend>(
         .exec("cognition add thinker.process observation 'Second thought'")
         .await?;
 
-    let first_ref = match first_response.data {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => {
-            result.ref_token.to_string()
-        }
-        other => panic!("expected CognitionAdded for first cognition, got {other:#?}"),
-    };
+    assert!(
+        matches!(first_response.data, Responses::Cognition(CognitionResponse::CognitionAdded(_))),
+        "expected CognitionAdded for first cognition, got {:#?}", first_response.data
+    );
+    let first_ref = first_response
+        .meta
+        .and_then(|m| m.ref_token)
+        .expect("expected ref_token in meta for first cognition")
+        .to_string();
 
-    let second_ref = match second_response.data {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => {
-            result.ref_token.to_string()
-        }
-        other => panic!("expected CognitionAdded for second cognition, got {other:#?}"),
-    };
+    assert!(
+        matches!(second_response.data, Responses::Cognition(CognitionResponse::CognitionAdded(_))),
+        "expected CognitionAdded for second cognition, got {:#?}", second_response.data
+    );
+    let second_ref = second_response
+        .meta
+        .and_then(|m| m.ref_token)
+        .expect("expected ref_token in meta for second cognition")
+        .to_string();
 
     Ok((first_ref, second_ref))
 }

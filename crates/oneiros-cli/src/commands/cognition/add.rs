@@ -4,19 +4,11 @@ use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct CognitionAddedResult {
-    pub id: CognitionId,
-    pub ref_token: RefToken,
-    #[serde(skip)]
-    pub gauge: String,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AddCognitionOutcomes {
-    #[outcome(message("Cognition added: {}", .0.ref_token), prompt("{}", .0.gauge))]
-    CognitionAdded(CognitionAddedResult),
+    #[outcome(message("Cognition added: {}", .0.ref_token()))]
+    CognitionAdded(Cognition),
 }
 
 #[derive(Clone, Args)]
@@ -54,19 +46,7 @@ impl AddCognition {
         let summaries = add_response.pressure_summaries();
         let cognition: Cognition = add_response.data()?;
 
-        let all: Vec<Cognition> = client
-            .list_cognitions(&token, Some(&self.agent), None)
-            .await?
-            .data()?;
-        let gauge = crate::gauge::cognition_gauge(&self.agent, &all);
-
-        let ref_token = cognition.ref_token();
-
-        outcomes.emit(AddCognitionOutcomes::CognitionAdded(CognitionAddedResult {
-            id: cognition.id,
-            ref_token,
-            gauge,
-        }));
+        outcomes.emit(AddCognitionOutcomes::CognitionAdded(cognition));
 
         Ok((outcomes, summaries))
     }

@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::PressureSummary;
+use crate::{PressureSummary, RefToken};
 
 /// A response envelope that wraps domain data with optional metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +26,13 @@ impl<T> Response<T> {
         self.meta = Some(meta);
         self
     }
+
+    pub fn with_ref_token(mut self, ref_token: RefToken) -> Self {
+        self.meta
+            .get_or_insert_with(ResponseMeta::default)
+            .ref_token = Some(ref_token);
+        self
+    }
 }
 
 impl<T> From<T> for Response<T> {
@@ -35,8 +42,11 @@ impl<T> From<T> for Response<T> {
 }
 
 /// Metadata attached to responses — pressure summaries, timing, etc.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ResponseMeta {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub pressures: Vec<PressureSummary>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub ref_token: Option<RefToken>,
 }

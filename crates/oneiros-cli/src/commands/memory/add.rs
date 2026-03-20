@@ -4,19 +4,11 @@ use oneiros_outcomes::*;
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct MemoryAddedResult {
-    pub id: MemoryId,
-    pub ref_token: RefToken,
-    #[serde(skip)]
-    pub gauge: String,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AddMemoryOutcomes {
-    #[outcome(message("Memory added: {}", .0.ref_token), prompt("{}", .0.gauge))]
-    MemoryAdded(MemoryAddedResult),
+    #[outcome(message("Memory added: {}", .0.ref_token()))]
+    MemoryAdded(Memory),
 }
 
 #[derive(Clone, Args)]
@@ -54,19 +46,7 @@ impl AddMemory {
         let summaries = add_response.pressure_summaries();
         let memory: Memory = add_response.data()?;
 
-        let all: Vec<Memory> = client
-            .list_memories(&token, Some(&self.agent), None)
-            .await?
-            .data()?;
-        let gauge = crate::gauge::memory_gauge(&self.agent, &all);
-
-        let ref_token = memory.ref_token();
-
-        outcomes.emit(AddMemoryOutcomes::MemoryAdded(MemoryAddedResult {
-            id: memory.id,
-            ref_token,
-            gauge,
-        }));
+        outcomes.emit(AddMemoryOutcomes::MemoryAdded(memory));
 
         Ok((outcomes, summaries))
     }

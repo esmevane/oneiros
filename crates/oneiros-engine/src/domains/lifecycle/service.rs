@@ -74,9 +74,7 @@ impl LifecycleService {
         agent_name: &AgentName,
         content: &Content,
     ) -> Result<LifecycleResponse, LifecycleError> {
-        // Verify agent exists
-        ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))?
-            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
+        let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Sensed(SensedEvent {
             agent: agent_name.clone(),
@@ -84,9 +82,7 @@ impl LifecycleService {
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Sleeping {
-            agent: agent_name.to_string(),
-        })
+        Ok(LifecycleResponse::Sleeping(context))
     }
 
     /// Sleep — end a session, capture continuity.
@@ -94,18 +90,14 @@ impl LifecycleService {
         ctx: &ProjectContext,
         agent_name: &AgentName,
     ) -> Result<LifecycleResponse, LifecycleError> {
-        // Verify agent exists
-        ctx.with_db(|conn| AgentRepo::new(conn).get(agent_name))?
-            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
+        let context = Self::gather_context(ctx, agent_name)?;
 
         ctx.emit(LifecycleEvents::Slept(LifecycleEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Sleeping {
-            agent: agent_name.to_string(),
-        })
+        Ok(LifecycleResponse::Sleeping(context))
     }
 
     /// Guidebook — gather cognitive context without emitting an event.
