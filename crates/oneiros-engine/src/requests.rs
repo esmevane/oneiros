@@ -23,7 +23,7 @@ pub enum Requests {
     Experience(ExperienceRequest),
     Connection(ConnectionRequest),
     Storage(StorageRequest),
-    Lifecycle(LifecycleRequest),
+    Continuity(ContinuityRequest),
     Pressure(PressureRequest),
     Search(SearchRequest),
     Tenant(TenantRequest),
@@ -94,9 +94,9 @@ impl From<StorageRequest> for Requests {
         Requests::Storage(r)
     }
 }
-impl From<LifecycleRequest> for Requests {
-    fn from(r: LifecycleRequest) -> Self {
-        Requests::Lifecycle(r)
+impl From<ContinuityRequest> for Requests {
+    fn from(r: ContinuityRequest) -> Self {
+        Requests::Continuity(r)
     }
 }
 impl From<PressureRequest> for Requests {

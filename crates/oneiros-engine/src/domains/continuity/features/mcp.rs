@@ -1,5 +1,5 @@
-//! Lifecycle MCP driving adapter — translates tool calls into domain service calls.
-pub mod lifecycle_mcp {
+//! Continuity MCP driving adapter — translates tool calls into domain service calls.
+pub mod continuity_mcp {
 
     use crate::*;
 
@@ -57,21 +57,21 @@ pub mod lifecycle_mcp {
             "dream" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LifecycleService::dream(context, &AgentName::new(&p.agent))
+                let response = ContinuityService::dream(context, &AgentName::new(&p.agent))
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "introspect" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LifecycleService::introspect(context, &AgentName::new(&p.agent))
+                let response = ContinuityService::introspect(context, &AgentName::new(&p.agent))
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "reflect" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LifecycleService::reflect(context, &AgentName::new(&p.agent))
+                let response = ContinuityService::reflect(context, &AgentName::new(&p.agent))
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -80,14 +80,14 @@ pub mod lifecycle_mcp {
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let content = Content::new(&p.content);
                 let response =
-                    LifecycleService::sense(context, &AgentName::new(&p.agent), &content)
+                    ContinuityService::sense(context, &AgentName::new(&p.agent), &content)
                         .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "sleep" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LifecycleService::sleep(context, &AgentName::new(&p.agent))
+                let response = ContinuityService::sleep(context, &AgentName::new(&p.agent))
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

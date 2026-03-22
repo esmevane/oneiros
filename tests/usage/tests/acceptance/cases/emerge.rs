@@ -14,14 +14,15 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
         .await?;
 
     match &response.data {
-        Responses::Json(v) => {
-            assert_eq!(
-                v.get("type").and_then(|t| t.as_str()),
-                Some("emerged"),
-                "expected type=emerged, got {v:?}"
-            );
+        // Engine: typed continuity response
+        Responses::Continuity(ContinuityResponse::Emerged(ctx)) => {
+            assert_eq!(ctx.agent.name, AgentName::new("newborn.process"));
         }
-        other => panic!("expected Json(emerged), got {other:#?}"),
+        // Legacy: inline JSON (will be removed when legacy is retired)
+        Responses::Json(v) => {
+            assert_eq!(v.get("type").and_then(|t| t.as_str()), Some("emerged"));
+        }
+        other => panic!("expected Continuity(Emerged) or Json(emerged), got {other:#?}"),
     }
 
     // Verify the agent exists via typed response
@@ -50,14 +51,15 @@ pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
     let response = backend.exec("recede retiring.process").await?;
 
     match &response.data {
-        Responses::Json(v) => {
-            assert_eq!(
-                v.get("type").and_then(|t| t.as_str()),
-                Some("receded"),
-                "expected type=receded, got {v:?}"
-            );
+        // Engine: typed continuity response
+        Responses::Continuity(ContinuityResponse::Receded(name)) => {
+            assert_eq!(*name, AgentName::new("retiring.process"));
         }
-        other => panic!("expected Json(receded), got {other:#?}"),
+        // Legacy: inline JSON (will be removed when legacy is retired)
+        Responses::Json(v) => {
+            assert_eq!(v.get("type").and_then(|t| t.as_str()), Some("receded"));
+        }
+        other => panic!("expected Continuity(Receded) or Json(receded), got {other:#?}"),
     }
 
     Ok(())

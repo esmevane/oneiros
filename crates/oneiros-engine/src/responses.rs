@@ -23,7 +23,7 @@ pub enum Responses {
     Experience(ExperienceResponse),
     Connection(ConnectionResponse),
     Storage(StorageResponse),
-    Lifecycle(LifecycleResponse),
+    Continuity(ContinuityResponse),
     Pressure(PressureResponse),
     Search(SearchResponse),
     Project(ProjectResponse),
@@ -100,9 +100,9 @@ impl From<StorageResponse> for Responses {
         Responses::Storage(r)
     }
 }
-impl From<LifecycleResponse> for Responses {
-    fn from(r: LifecycleResponse) -> Self {
-        Responses::Lifecycle(r)
+impl From<ContinuityResponse> for Responses {
+    fn from(r: ContinuityResponse) -> Self {
+        Responses::Continuity(r)
     }
 }
 impl From<PressureResponse> for Responses {

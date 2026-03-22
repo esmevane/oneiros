@@ -29,7 +29,7 @@ pub enum Events {
     Experience(ExperienceEvents),
     Connection(ConnectionEvents),
     Storage(StorageEvents),
-    Lifecycle(LifecycleEvents),
+    Continuity(ContinuityEvents),
     Tenant(TenantEvents),
     Actor(ActorEvents),
     Brain(BrainEvents),
@@ -126,9 +126,9 @@ impl From<StorageEvents> for Events {
     }
 }
 
-impl From<LifecycleEvents> for Events {
-    fn from(e: LifecycleEvents) -> Self {
-        Events::Lifecycle(e)
+impl From<ContinuityEvents> for Events {
+    fn from(e: ContinuityEvents) -> Self {
+        Events::Continuity(e)
     }
 }
 

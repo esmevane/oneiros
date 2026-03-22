@@ -22,7 +22,7 @@ pub(crate) async fn wake<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Waking(_))
+            Responses::Continuity(ContinuityResponse::Waking(_))
         ),
         "expected Waking, got {response:#?}"
     );
@@ -39,7 +39,7 @@ pub(crate) async fn dream<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Dreaming(_))
+            Responses::Continuity(ContinuityResponse::Dreaming(_))
         ),
         "expected Dreaming, got {response:#?}"
     );
@@ -56,7 +56,7 @@ pub(crate) async fn introspect<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Introspecting(_))
+            Responses::Continuity(ContinuityResponse::Introspecting(_))
         ),
         "expected Introspecting, got {response:#?}"
     );
@@ -73,7 +73,7 @@ pub(crate) async fn reflect<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Reflecting(_))
+            Responses::Continuity(ContinuityResponse::Reflecting(_))
         ),
         "expected Reflecting, got {response:#?}"
     );
@@ -90,7 +90,7 @@ pub(crate) async fn sleep<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Sleeping(_))
+            Responses::Continuity(ContinuityResponse::Sleeping(_))
         ),
         "expected Sleeping, got {response:#?}"
     );
@@ -112,7 +112,7 @@ pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> T
     let response = backend.exec("dream thinker.process").await?;
 
     match response.data {
-        Responses::Lifecycle(LifecycleResponse::Dreaming(ctx)) => {
+        Responses::Continuity(ContinuityResponse::Dreaming(ctx)) => {
             // The dream context should have the seeded vocabulary
             let json = serde_json::to_value(&ctx).unwrap();
             let obj = json.as_object().unwrap();
@@ -155,7 +155,7 @@ pub(crate) async fn guidebook<B: Backend>() -> TestResult {
     assert!(
         matches!(
             response.data,
-            Responses::Lifecycle(LifecycleResponse::Guidebook(_))
+            Responses::Continuity(ContinuityResponse::Guidebook(_))
         ),
         "expected Guidebook, got {response:#?}"
     );

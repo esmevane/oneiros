@@ -49,9 +49,9 @@ pub enum Command {
     #[command(subcommand)]
     Connection(ConnectionCommands),
 
-    // Lifecycle / derived (project-scoped)
+    // Continuity / derived (project-scoped)
     #[command(subcommand)]
-    Lifecycle(LifecycleCommands),
+    Continuity(ContinuityCommands),
     #[command(subcommand)]
     Storage(StorageCommands),
 
@@ -147,18 +147,18 @@ impl Command {
                 DoctorCli::execute(engine.system()).map_err(|e| Error::Context(e.to_string()))?,
             ),
 
-            // Lifecycle — domain subcommands go through the client
-            Command::Lifecycle(lifecycle) => {
-                Response::new(lifecycle.execute(engine.project()?).await?)
+            // Continuity — domain subcommands go through the client
+            Command::Continuity(continuity) => {
+                Response::new(continuity.execute(engine.project()?).await?)
             }
 
             // Flat lifecycle shortcuts — go through the lifecycle client
             Command::Wake { name } => {
                 let project = engine.project()?;
                 let client = project.client();
-                let lifecycle_client = LifecycleClient::new(&client);
+                let continuity_client = ContinuityClient::new(&client);
                 Response::new(
-                    lifecycle_client
+                    continuity_client
                         .wake(name)
                         .await
                         .map_err(|e| Error::Context(e.to_string()))?
@@ -168,9 +168,9 @@ impl Command {
             Command::Dream { name } => {
                 let project = engine.project()?;
                 let client = project.client();
-                let lifecycle_client = LifecycleClient::new(&client);
+                let continuity_client = ContinuityClient::new(&client);
                 Response::new(
-                    lifecycle_client
+                    continuity_client
                         .dream(name)
                         .await
                         .map_err(|e| Error::Context(e.to_string()))?
@@ -180,9 +180,9 @@ impl Command {
             Command::Introspect { name } => {
                 let project = engine.project()?;
                 let client = project.client();
-                let lifecycle_client = LifecycleClient::new(&client);
+                let continuity_client = ContinuityClient::new(&client);
                 Response::new(
-                    lifecycle_client
+                    continuity_client
                         .introspect(name)
                         .await
                         .map_err(|e| Error::Context(e.to_string()))?
@@ -192,9 +192,9 @@ impl Command {
             Command::Reflect { name } => {
                 let project = engine.project()?;
                 let client = project.client();
-                let lifecycle_client = LifecycleClient::new(&client);
+                let continuity_client = ContinuityClient::new(&client);
                 Response::new(
-                    lifecycle_client
+                    continuity_client
                         .reflect(name)
                         .await
                         .map_err(|e| Error::Context(e.to_string()))?
@@ -204,9 +204,9 @@ impl Command {
             Command::Sleep { name } => {
                 let project = engine.project()?;
                 let client = project.client();
-                let lifecycle_client = LifecycleClient::new(&client);
+                let continuity_client = ContinuityClient::new(&client);
                 Response::new(
-                    lifecycle_client
+                    continuity_client
                         .sleep(name)
                         .await
                         .map_err(|e| Error::Context(e.to_string()))?
@@ -216,9 +216,9 @@ impl Command {
             Command::Guidebook { name } => {
                 let project = engine.project()?;
                 let client = project.client();
-                let lifecycle_client = LifecycleClient::new(&client);
+                let continuity_client = ContinuityClient::new(&client);
                 Response::new(
-                    lifecycle_client
+                    continuity_client
                         .guidebook(name)
                         .await
                         .map_err(|e| Error::Context(e.to_string()))?
@@ -226,70 +226,45 @@ impl Command {
                 )
             }
 
-            // Emerge: create an agent then immediately wake it.
+            // Continuity lifecycle — emerge, recede, status
             Command::Emerge {
                 name,
                 persona,
                 description,
             } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let agent_client = AgentClient::new(&client);
-                let lifecycle_client = LifecycleClient::new(&client);
-
-                let created = agent_client
-                    .create(
-                        name.clone(),
-                        persona.clone(),
-                        description.clone(),
-                        Prompt::new(""),
-                    )
-                    .await
-                    .map_err(|e| Error::Context(e.to_string()))?;
-
-                let agent_name = match &created {
-                    AgentResponse::AgentCreated(n) => n.clone(),
-                    other => {
-                        return Err(Error::Context(format!(
-                            "unexpected agent response: {other:?}"
-                        )));
-                    }
-                };
-
-                lifecycle_client
-                    .wake(&agent_name)
-                    .await
-                    .map_err(|e| Error::Context(e.to_string()))?;
-
+                let client = engine.project()?.client();
+                let continuity = ContinuityClient::new(&client);
                 Response::new(
-                    serde_json::json!({ "type": "emerged", "data": agent_name.to_string() }).into(),
+                    continuity
+                        .emerge(name.clone(), persona.clone(), description.clone())
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
                 )
             }
 
-            // Recede: retire an agent via the client.
             Command::Recede { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let agent_client = AgentClient::new(&client);
-                let name_str = name.to_string();
-                agent_client
-                    .remove(name)
-                    .await
-                    .map_err(|e| Error::Context(e.to_string()))?;
-                Response::new(serde_json::json!({ "type": "receded", "data": name_str }).into())
+                let client = engine.project()?.client();
+                let continuity = ContinuityClient::new(&client);
+                Response::new(
+                    continuity
+                        .recede(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
             }
 
-            // Status: gather an agent's cognitive context locally.
-            //
-            // NOTE: gather_context has no HTTP route — this is a read-only
-            // composition of multiple domain reads and is fulfilled directly
-            // from the local database. If a /status/{agent} or
-            // /context/{agent} route is added, this should move to the client.
             Command::Status { name } => {
-                let project = engine.project()?;
-                let context = LifecycleService::gather_context(project, name)
-                    .map_err(|e| Error::Context(e.to_string()))?;
-                Response::new(serde_json::json!({ "type": "status", "data": context }).into())
+                let client = engine.project()?.client();
+                let continuity = ContinuityClient::new(&client);
+                Response::new(
+                    continuity
+                        .status(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
             }
         })
     }

@@ -4,16 +4,16 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum LifecycleEvents {
-    Dreamed(LifecycleEvent),
-    Introspected(LifecycleEvent),
-    Reflected(LifecycleEvent),
+pub enum ContinuityEvents {
+    Dreamed(ContinuityEvent),
+    Introspected(ContinuityEvent),
+    Reflected(ContinuityEvent),
     Sensed(SensedEvent),
-    Slept(LifecycleEvent),
+    Slept(ContinuityEvent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LifecycleEvent {
+pub struct ContinuityEvent {
     pub agent: AgentName,
     pub created_at: Timestamp,
 }

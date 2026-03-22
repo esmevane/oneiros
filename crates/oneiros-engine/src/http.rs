@@ -22,7 +22,7 @@ pub fn project_router(ctx: ProjectContext) -> Router {
         .merge(ConnectionRouter.routes())
         .merge(StorageRouter.routes())
         .merge(PressureRouter.routes())
-        .merge(LifecycleRouter.routes())
+        .merge(ContinuityRouter.routes())
         .merge(SearchRouter.routes())
         .with_state(ctx)
 }

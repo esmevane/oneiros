@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum LifecycleRequest {
+pub enum ContinuityRequest {
     Dream { agent: String },
     Introspect { agent: String },
     Reflect { agent: String },

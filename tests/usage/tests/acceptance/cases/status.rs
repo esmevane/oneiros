@@ -15,14 +15,15 @@ pub(crate) async fn returns_agent_status<B: Backend>() -> TestResult {
     let response = backend.exec("status thinker.process").await?;
 
     match &response.data {
-        Responses::Json(v) => {
-            assert_eq!(
-                v.get("type").and_then(|t| t.as_str()),
-                Some("status"),
-                "expected type=status, got {v:?}"
-            );
+        // Engine: typed continuity response
+        Responses::Continuity(ContinuityResponse::Status(ctx)) => {
+            assert_eq!(ctx.agent.name, AgentName::new("thinker.process"));
         }
-        other => panic!("expected Json(status), got {other:#?}"),
+        // Legacy: inline JSON (will be removed when legacy is retired)
+        Responses::Json(v) => {
+            assert_eq!(v.get("type").and_then(|t| t.as_str()), Some("status"));
+        }
+        other => panic!("expected Continuity(Status) or Json(status), got {other:#?}"),
     }
 
     Ok(())

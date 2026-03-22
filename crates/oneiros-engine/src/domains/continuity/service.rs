@@ -1,71 +1,113 @@
-//! Lifecycle service — composes other domain services into workflows.
+//! Continuity service — composes other domain services into workflows.
 //!
 //! These operations don't have their own repos. They gather data from
-//! multiple domains, perform the operation, and emit lifecycle events.
+//! multiple domains, perform the operation, and emit continuity events.
 
 use crate::*;
 
-pub struct LifecycleService;
+pub struct ContinuityService;
 
-impl LifecycleService {
+impl ContinuityService {
+    /// Emerge — create an agent and immediately activate its continuity.
+    pub fn emerge(
+        ctx: &ProjectContext,
+        name: AgentName,
+        persona: PersonaName,
+        description: Description,
+    ) -> Result<ContinuityResponse, ContinuityError> {
+        let created = AgentService::create(ctx, name, persona, description, Prompt::new(""))?;
+
+        let agent_name = match created {
+            AgentResponse::AgentCreated(n) => n,
+            other => {
+                return Err(ContinuityError::AgentNotFound(AgentName::new(format!(
+                    "unexpected: {other:?}"
+                ))));
+            }
+        };
+
+        // Wake activates continuity; then gather the full context for the response.
+        Self::wake(ctx, &agent_name)?;
+        let context = Self::gather_context(ctx, &agent_name)?;
+        Ok(ContinuityResponse::Emerged(context))
+    }
+
+    /// Recede — retire an agent, ending its continuity.
+    pub fn recede(
+        ctx: &ProjectContext,
+        name: &AgentName,
+    ) -> Result<ContinuityResponse, ContinuityError> {
+        AgentService::remove(ctx, name)?;
+        Ok(ContinuityResponse::Receded(name.clone()))
+    }
+
+    /// Status — read the current state of an agent's continuity.
+    pub fn status(
+        ctx: &ProjectContext,
+        agent_name: &AgentName,
+    ) -> Result<ContinuityResponse, ContinuityError> {
+        let context = Self::gather_context(ctx, agent_name)?;
+        Ok(ContinuityResponse::Status(context))
+    }
+
     /// Wake — restore an agent's full cognitive context (initial session start).
     pub fn wake(
         ctx: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
+        ctx.emit(ContinuityEvents::Dreamed(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Waking(context))
+        Ok(ContinuityResponse::Waking(context))
     }
 
     /// Dream — restore an agent's full cognitive context.
     pub fn dream(
         ctx: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(LifecycleEvents::Dreamed(LifecycleEvent {
+        ctx.emit(ContinuityEvents::Dreamed(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Dreaming(context))
+        Ok(ContinuityResponse::Dreaming(context))
     }
 
     /// Introspect — look inward, consolidate cognitive state.
     pub fn introspect(
         ctx: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(LifecycleEvents::Introspected(LifecycleEvent {
+        ctx.emit(ContinuityEvents::Introspected(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Introspecting(context))
+        Ok(ContinuityResponse::Introspecting(context))
     }
 
     /// Reflect — pause on something significant.
     pub fn reflect(
         ctx: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(LifecycleEvents::Reflected(LifecycleEvent {
+        ctx.emit(ContinuityEvents::Reflected(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Reflecting(context))
+        Ok(ContinuityResponse::Reflecting(context))
     }
 
     /// Sense — receive and interpret something from outside.
@@ -73,43 +115,43 @@ impl LifecycleService {
         ctx: &ProjectContext,
         agent_name: &AgentName,
         content: &Content,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(LifecycleEvents::Sensed(SensedEvent {
+        ctx.emit(ContinuityEvents::Sensed(SensedEvent {
             agent: agent_name.clone(),
             content: Content::new(content.as_str()),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Sleeping(context))
+        Ok(ContinuityResponse::Sleeping(context))
     }
 
     /// Sleep — end a session, capture continuity.
     pub fn sleep(
         ctx: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
 
-        ctx.emit(LifecycleEvents::Slept(LifecycleEvent {
+        ctx.emit(ContinuityEvents::Slept(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
         }));
 
-        Ok(LifecycleResponse::Sleeping(context))
+        Ok(ContinuityResponse::Sleeping(context))
     }
 
     /// Guidebook — gather cognitive context without emitting an event.
     ///
     /// Used to display the agent's full operational context (textures,
-    /// sensations, levels, urges) without marking a lifecycle transition.
+    /// sensations, levels, urges) without marking a continuity transition.
     pub fn guidebook(
         ctx: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<LifecycleResponse, LifecycleError> {
+    ) -> Result<ContinuityResponse, ContinuityError> {
         let context = Self::gather_context(ctx, agent_name)?;
-        Ok(LifecycleResponse::Guidebook(context))
+        Ok(ContinuityResponse::Guidebook(context))
     }
 
     /// Gather the full cognitive context for an agent.
@@ -120,10 +162,10 @@ impl LifecycleService {
     pub fn gather_context(
         context: &ProjectContext,
         agent_name: &AgentName,
-    ) -> Result<CognitiveContext, LifecycleError> {
+    ) -> Result<CognitiveContext, ContinuityError> {
         let agent = context
             .with_db(|conn| AgentRepo::new(conn).get(agent_name))?
-            .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
+            .ok_or_else(|| ContinuityError::AgentNotFound(agent_name.clone()))?;
 
         let agent_id_str = agent.id.to_string();
         let persona_name = agent.persona.clone();

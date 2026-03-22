@@ -24,7 +24,7 @@ pub enum Error {
     #[error(transparent)]
     Level(#[from] LevelError),
     #[error(transparent)]
-    Lifecycle(#[from] LifecycleError),
+    Continuity(#[from] ContinuityError),
     #[error(transparent)]
     Memory(#[from] MemoryError),
     #[error(transparent)]

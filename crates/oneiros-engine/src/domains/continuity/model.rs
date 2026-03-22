@@ -43,9 +43,9 @@ where
     Ok(serde_json::from_value(value).unwrap_or_default())
 }
 
-/// A lifecycle event marker — records that a lifecycle operation occurred.
+/// A continuity event marker — records that a continuity operation occurred.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct LifecycleMarker {
+pub struct ContinuityMarker {
     pub agent: AgentName,
     pub operation: Label,
     pub created_at: Timestamp,
