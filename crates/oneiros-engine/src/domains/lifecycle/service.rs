@@ -126,10 +126,11 @@ impl LifecycleService {
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
 
         let agent_id_str = agent.id.to_string();
+        let persona_name = agent.persona.clone();
 
         Ok(CognitiveContext {
             agent,
-            persona: context.with_db(|conn| PersonaRepo::new(conn).get(&agent.persona))?,
+            persona: context.with_db(|conn| PersonaRepo::new(conn).get(&persona_name))?,
             cognitions: context
                 .with_db(|conn| CognitionRepo::new(conn).list(Some(&agent_id_str), None))?,
             memories: context.with_db(|conn| MemoryRepo::new(conn).list(Some(&agent_id_str)))?,
