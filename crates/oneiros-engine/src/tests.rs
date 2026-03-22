@@ -1,34 +1,19 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use rusqlite::Connection;
 use tower::ServiceExt;
 
 use crate::*;
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-/// All project-scoped projections in registration order.
-static PROJECTIONS: &[&[Projection]] = &[
-    LevelProjections.all(),
-    TextureProjections.all(),
-    SensationProjections.all(),
-    NatureProjections.all(),
-    PersonaProjections.all(),
-    UrgeProjections.all(),
-    AgentProjections.all(),
-    CognitionProjections.all(),
-    MemoryProjections.all(),
-    ExperienceProjections.all(),
-    ConnectionProjections.all(),
-    PressureProjections.all(),
-    StorageProjections.all(),
-    SearchProjections.all(),
-];
+fn test_engine() -> Engine {
+    let mut engine = Engine::in_memory().expect("init engine");
+    engine.init_project("test").expect("init project");
+    engine
+}
 
 fn project_ctx() -> ProjectContext {
-    let conn = Connection::open_in_memory().expect("open db");
-    migrations::migrate_project(&conn).expect("migrate");
-    ProjectContext::new(conn, PROJECTIONS)
+    test_engine().project().unwrap().clone()
 }
 
 fn seed_persona(ctx: &ProjectContext) {
@@ -273,7 +258,7 @@ fn replay_reconstructs_read_models() {
     ));
 
     // Replay — this resets all projections and re-applies all events
-    ctx.with_db(|conn| event::repo::replay(conn, PROJECTIONS).unwrap());
+    ctx.replay().unwrap();
 
     // Read models should be identical after replay
     match LevelService::list(&ctx).unwrap() {
@@ -462,7 +447,7 @@ fn search_indexes_across_domains() {
     }
 
     // Replay should rebuild the search index correctly
-    ctx.with_db(|conn| event::repo::replay(conn, PROJECTIONS).unwrap());
+    ctx.replay().unwrap();
     match SearchService::search(&ctx, "architecture", None).unwrap() {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
@@ -470,17 +455,8 @@ fn search_indexes_across_domains() {
 
 // ── System context tests ─────────────────────────────────────────
 
-static SYSTEM_PROJECTIONS: &[&[Projection]] = &[
-    TenantProjections.all(),
-    ActorProjections.all(),
-    BrainProjections.all(),
-    TicketProjections.all(),
-];
-
 fn system_ctx() -> SystemContext {
-    let conn = Connection::open_in_memory().expect("open db");
-    migrations::migrate_system(&conn).expect("migrate");
-    SystemContext::new(conn, SYSTEM_PROJECTIONS)
+    Engine::in_memory().expect("init engine").system().clone()
 }
 
 #[test]
