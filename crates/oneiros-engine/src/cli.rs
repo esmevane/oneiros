@@ -101,7 +101,7 @@ pub enum Command {
 
 impl Command {
     /// Execute a CLI command against the engine.
-    pub fn execute(&self, engine: &Engine) -> Result<Response<Responses>, Error> {
+    pub async fn execute(&self, engine: &Engine) -> Result<Response<Responses>, Error> {
         Ok(match self {
             // Workflow domains — each knows its context
             Command::System(system) => Response::new(system.execute(engine.system())?),
@@ -120,64 +120,133 @@ impl Command {
             ),
 
             // Project-scoped domains — vocabulary (no ref_token)
-            Command::Level(level) => Response::new(level.execute(engine.project()?)?),
-            Command::Texture(texture) => Response::new(texture.execute(engine.project()?)?),
-            Command::Sensation(sensation) => Response::new(sensation.execute(engine.project()?)?),
-            Command::Nature(nature) => Response::new(nature.execute(engine.project()?)?),
-            Command::Persona(persona) => Response::new(persona.execute(engine.project()?)?),
-            Command::Urge(urge) => Response::new(urge.execute(engine.project()?)?),
-            Command::Agent(agent) => Response::new(agent.execute(engine.project()?)?),
+            Command::Level(level) => Response::new(level.execute(engine.project()?).await?),
+            Command::Texture(texture) => Response::new(texture.execute(engine.project()?).await?),
+            Command::Sensation(sensation) => {
+                Response::new(sensation.execute(engine.project()?).await?)
+            }
+            Command::Nature(nature) => Response::new(nature.execute(engine.project()?).await?),
+            Command::Persona(persona) => Response::new(persona.execute(engine.project()?).await?),
+            Command::Urge(urge) => Response::new(urge.execute(engine.project()?).await?),
+            Command::Agent(agent) => Response::new(agent.execute(engine.project()?).await?),
 
             // Entity domains — return Response<Responses> with ref_token in meta
-            Command::Cognition(cognition) => cognition.execute(engine.project()?)?,
-            Command::Memory(memory) => memory.execute(engine.project()?)?,
-            Command::Experience(experience) => experience.execute(engine.project()?)?,
-            Command::Connection(connection) => connection.execute(engine.project()?)?,
+            Command::Cognition(cognition) => cognition.execute(engine.project()?).await?,
+            Command::Memory(memory) => memory.execute(engine.project()?).await?,
+            Command::Experience(experience) => experience.execute(engine.project()?).await?,
+            Command::Connection(connection) => connection.execute(engine.project()?).await?,
 
-            Command::Storage(storage) => Response::new(storage.execute(engine.project()?)?),
-            Command::Search(search) => Response::new(search.execute(engine.project()?)?),
-            Command::Pressure(pressure) => Response::new(pressure.execute(engine.project()?)?),
+            Command::Storage(storage) => Response::new(storage.execute(engine.project()?).await?),
+            Command::Search(search) => Response::new(search.execute(engine.project()?).await?),
+            Command::Pressure(pressure) => {
+                Response::new(pressure.execute(engine.project()?).await?)
+            }
 
             // Doctor — system diagnostics
             Command::Doctor => Response::new(
                 DoctorCli::execute(engine.system()).map_err(|e| Error::Context(e.to_string()))?,
             ),
 
-            // Lifecycle
-            Command::Lifecycle(lifecycle) => Response::new(lifecycle.execute(engine.project()?)?),
-            Command::Wake { name } => {
-                Response::new(LifecycleService::wake(engine.project()?, &name)?.into())
-            }
-            Command::Dream { name } => {
-                Response::new(LifecycleService::dream(engine.project()?, &name)?.into())
-            }
-            Command::Introspect { name } => {
-                Response::new(LifecycleService::introspect(engine.project()?, &name)?.into())
-            }
-            Command::Reflect { name } => {
-                Response::new(LifecycleService::reflect(engine.project()?, &name)?.into())
-            }
-            Command::Sleep { name } => {
-                Response::new(LifecycleService::sleep(engine.project()?, &name)?.into())
-            }
-            Command::Guidebook { name } => {
-                Response::new(LifecycleService::guidebook(engine.project()?, &name)?.into())
+            // Lifecycle — domain subcommands go through the client
+            Command::Lifecycle(lifecycle) => {
+                Response::new(lifecycle.execute(engine.project()?).await?)
             }
 
-            // Emerge: create an agent then immediately wake it
+            // Flat lifecycle shortcuts — go through the lifecycle client
+            Command::Wake { name } => {
+                let project = engine.project()?;
+                let client = project.client();
+                let lifecycle_client = LifecycleClient::new(&client);
+                Response::new(
+                    lifecycle_client
+                        .wake(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
+            }
+            Command::Dream { name } => {
+                let project = engine.project()?;
+                let client = project.client();
+                let lifecycle_client = LifecycleClient::new(&client);
+                Response::new(
+                    lifecycle_client
+                        .dream(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
+            }
+            Command::Introspect { name } => {
+                let project = engine.project()?;
+                let client = project.client();
+                let lifecycle_client = LifecycleClient::new(&client);
+                Response::new(
+                    lifecycle_client
+                        .introspect(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
+            }
+            Command::Reflect { name } => {
+                let project = engine.project()?;
+                let client = project.client();
+                let lifecycle_client = LifecycleClient::new(&client);
+                Response::new(
+                    lifecycle_client
+                        .reflect(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
+            }
+            Command::Sleep { name } => {
+                let project = engine.project()?;
+                let client = project.client();
+                let lifecycle_client = LifecycleClient::new(&client);
+                Response::new(
+                    lifecycle_client
+                        .sleep(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
+            }
+            Command::Guidebook { name } => {
+                let project = engine.project()?;
+                let client = project.client();
+                let lifecycle_client = LifecycleClient::new(&client);
+                Response::new(
+                    lifecycle_client
+                        .guidebook(name)
+                        .await
+                        .map_err(|e| Error::Context(e.to_string()))?
+                        .into(),
+                )
+            }
+
+            // Emerge: create an agent then immediately wake it.
             Command::Emerge {
                 name,
                 persona,
                 description,
             } => {
                 let project = engine.project()?;
-                let created = AgentService::create(
-                    project,
-                    name.clone(),
-                    persona.clone(),
-                    description.clone(),
-                    Prompt::new(""),
-                )?;
+                let client = project.client();
+                let agent_client = AgentClient::new(&client);
+                let lifecycle_client = LifecycleClient::new(&client);
+
+                let created = agent_client
+                    .create(
+                        name.clone(),
+                        persona.clone(),
+                        description.clone(),
+                        Prompt::new(""),
+                    )
+                    .await
+                    .map_err(|e| Error::Context(e.to_string()))?;
+
                 let agent_name = match &created {
                     AgentResponse::AgentCreated(n) => n.clone(),
                     other => {
@@ -186,24 +255,40 @@ impl Command {
                         )));
                     }
                 };
-                LifecycleService::wake(project, &agent_name)?;
+
+                lifecycle_client
+                    .wake(&agent_name)
+                    .await
+                    .map_err(|e| Error::Context(e.to_string()))?;
+
                 Response::new(
                     serde_json::json!({ "type": "emerged", "data": agent_name.to_string() }).into(),
                 )
             }
 
-            // Recede: retire an agent
+            // Recede: retire an agent via the client.
             Command::Recede { name } => {
                 let project = engine.project()?;
+                let client = project.client();
+                let agent_client = AgentClient::new(&client);
                 let name_str = name.to_string();
-                AgentService::remove(project, &name)?;
+                agent_client
+                    .remove(name)
+                    .await
+                    .map_err(|e| Error::Context(e.to_string()))?;
                 Response::new(serde_json::json!({ "type": "receded", "data": name_str }).into())
             }
 
-            // Status: gather an agent's cognitive context and return it
+            // Status: gather an agent's cognitive context locally.
+            //
+            // NOTE: gather_context has no HTTP route — this is a read-only
+            // composition of multiple domain reads and is fulfilled directly
+            // from the local database. If a /status/{agent} or
+            // /context/{agent} route is added, this should move to the client.
             Command::Status { name } => {
                 let project = engine.project()?;
-                let context = LifecycleService::gather_context(project, &name)?;
+                let context = LifecycleService::gather_context(project, name)
+                    .map_err(|e| Error::Context(e.to_string()))?;
                 Response::new(serde_json::json!({ "type": "status", "data": context }).into())
             }
         })

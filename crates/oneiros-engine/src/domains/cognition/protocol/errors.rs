@@ -15,6 +15,9 @@ pub enum CognitionError {
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for CognitionError {
@@ -24,6 +27,7 @@ impl IntoResponse for CognitionError {
             CognitionError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             CognitionError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             CognitionError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            CognitionError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }

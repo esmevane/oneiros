@@ -11,12 +11,24 @@ pub struct LifecycleRouter;
 impl LifecycleRouter {
     pub fn routes(&self) -> Router<ProjectContext> {
         Router::new()
+            .route("/wake/{agent}", routing::post(wake))
             .route("/dream/{agent}", routing::post(dream))
             .route("/introspect/{agent}", routing::post(introspect))
             .route("/reflect/{agent}", routing::post(reflect))
             .route("/sense/{agent}", routing::post(sense))
             .route("/sleep/{agent}", routing::post(sleep))
+            .route("/guidebook/{agent}", routing::get(guidebook))
     }
+}
+
+async fn wake(
+    State(context): State<ProjectContext>,
+    Path(agent): Path<String>,
+) -> Result<Json<LifecycleResponse>, LifecycleError> {
+    Ok(Json(LifecycleService::wake(
+        &context,
+        &AgentName::new(&agent),
+    )?))
 }
 
 async fn dream(
@@ -68,6 +80,16 @@ async fn sleep(
     Path(agent): Path<String>,
 ) -> Result<Json<LifecycleResponse>, LifecycleError> {
     Ok(Json(LifecycleService::sleep(
+        &context,
+        &AgentName::new(&agent),
+    )?))
+}
+
+async fn guidebook(
+    State(context): State<ProjectContext>,
+    Path(agent): Path<String>,
+) -> Result<Json<LifecycleResponse>, LifecycleError> {
+    Ok(Json(LifecycleService::guidebook(
         &context,
         &AgentName::new(&agent),
     )?))

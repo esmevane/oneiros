@@ -4,46 +4,24 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum NatureCommands {
-    Set {
-        name: String,
-        #[arg(long, default_value = "")]
-        description: String,
-        #[arg(long, default_value = "")]
-        prompt: String,
-    },
-    Show {
-        name: String,
-    },
+    Set(Nature),
+    Show { name: NatureName },
     List,
-    Remove {
-        name: String,
-    },
+    Remove { name: NatureName },
 }
 
 impl NatureCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, NatureError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, NatureError> {
+        let client = context.client();
+        let nature_client = NatureClient::new(&client);
+
         let result = match self {
-            NatureCommands::Set {
-                name,
-                description,
-                prompt,
-            } => NatureService::set(
-                context,
-                Nature::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build(),
-            )?
-            .into(),
-            NatureCommands::Show { name } => {
-                NatureService::get(context, &NatureName::new(name))?.into()
-            }
-            NatureCommands::List => NatureService::list(context)?.into(),
-            NatureCommands::Remove { name } => {
-                NatureService::remove(context, &NatureName::new(name))?.into()
-            }
+            NatureCommands::Set(nature) => nature_client.set(nature).await?.into(),
+            NatureCommands::Show { name } => nature_client.get(name).await?.into(),
+            NatureCommands::List => nature_client.list().await?.into(),
+            NatureCommands::Remove { name } => nature_client.remove(name).await?.into(),
         };
+
         Ok(result)
     }
 }

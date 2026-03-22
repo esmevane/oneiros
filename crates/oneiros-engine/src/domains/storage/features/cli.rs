@@ -21,7 +21,10 @@ pub enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, StorageError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, StorageError> {
+        let client = context.client();
+        let storage_client = StorageClient::new(&client);
+
         let result = match self {
             StorageCommands::Set {
                 key,
@@ -29,20 +32,17 @@ impl StorageCommands {
                 description,
             } => {
                 let data = std::fs::read(file)?;
-                StorageService::upload(
-                    context,
-                    StorageKey::new(key),
-                    Description::new(description),
-                    data,
-                )?
-                .into()
+                storage_client
+                    .upload(&StorageKey::new(key), &Description::new(description), data)
+                    .await?
+                    .into()
             }
             StorageCommands::Show { key } => {
-                StorageService::show(context, &StorageKey::new(key))?.into()
+                storage_client.show(&StorageKey::new(key)).await?.into()
             }
-            StorageCommands::List => StorageService::list(context)?.into(),
+            StorageCommands::List => storage_client.list().await?.into(),
             StorageCommands::Remove { key } => {
-                StorageService::remove(context, &StorageKey::new(key))?.into()
+                storage_client.remove(&StorageKey::new(key)).await?.into()
             }
         };
         Ok(result)

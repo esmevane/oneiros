@@ -18,6 +18,9 @@ pub enum ExperienceError {
 
     #[error("{0}")]
     InvalidRequest(String),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for ExperienceError {
@@ -28,6 +31,7 @@ impl IntoResponse for ExperienceError {
             ExperienceError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ExperienceError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ExperienceError::InvalidRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ExperienceError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }

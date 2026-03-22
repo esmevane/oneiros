@@ -21,19 +21,26 @@ pub enum CognitionCommands {
 }
 
 impl CognitionCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Response<Responses>, CognitionError> {
+    pub async fn execute(
+        &self,
+        context: &ProjectContext,
+    ) -> Result<Response<Responses>, CognitionError> {
+        let client = context.client();
+        let cognition_client = CognitionClient::new(&client);
+
         match self {
             CognitionCommands::Add {
                 agent,
                 texture,
                 content,
             } => {
-                let response = CognitionService::add(
-                    context,
-                    &AgentName::new(&agent),
-                    TextureName::new(&texture),
-                    Content::new(content),
-                )?;
+                let response = cognition_client
+                    .add(
+                        AgentName::new(agent),
+                        TextureName::new(texture),
+                        Content::new(content),
+                    )
+                    .await?;
                 let ref_token = match &response {
                     CognitionResponse::CognitionAdded(c) => {
                         Some(RefToken::new(Ref::cognition(c.id)))
@@ -48,16 +55,18 @@ impl CognitionCommands {
             }
             CognitionCommands::Show { id } => {
                 let id: CognitionId = id.parse()?;
-                Ok(Response::new(CognitionService::get(context, &id)?.into()))
+                Ok(Response::new(cognition_client.get(&id).await?.into()))
             }
-            CognitionCommands::List { agent, texture } => Ok(Response::new(
-                CognitionService::list(
-                    context,
-                    agent.as_deref().map(AgentName::new).as_ref(),
-                    texture.as_deref().map(TextureName::new).as_ref(),
-                )?
-                .into(),
-            )),
+            CognitionCommands::List { agent, texture } => {
+                let agent = agent.as_deref().map(AgentName::new);
+                let texture = texture.as_deref().map(TextureName::new);
+                Ok(Response::new(
+                    cognition_client
+                        .list(agent.as_ref(), texture.as_ref())
+                        .await?
+                        .into(),
+                ))
+            }
         }
     }
 }

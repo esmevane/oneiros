@@ -19,6 +19,9 @@ pub enum AgentError {
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for AgentError {
@@ -28,6 +31,7 @@ impl IntoResponse for AgentError {
             AgentError::PersonaNotFound(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             AgentError::Conflict(_) => (StatusCode::CONFLICT, self.to_string()),
             AgentError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            AgentError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }

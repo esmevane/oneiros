@@ -18,6 +18,9 @@ pub enum StorageError {
 
     #[error("Database error: {0}")]
     Database(#[from] crate::EventError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for StorageError {
@@ -28,6 +31,7 @@ impl IntoResponse for StorageError {
             StorageError::BlobError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            StorageError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }

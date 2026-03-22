@@ -4,46 +4,24 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum SensationCommands {
-    Set {
-        name: String,
-        #[arg(long, default_value = "")]
-        description: String,
-        #[arg(long, default_value = "")]
-        prompt: String,
-    },
-    Show {
-        name: String,
-    },
+    Set(Sensation),
+    Show { name: SensationName },
     List,
-    Remove {
-        name: String,
-    },
+    Remove { name: SensationName },
 }
 
 impl SensationCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, SensationError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, SensationError> {
+        let client = context.client();
+        let sensation_client = SensationClient::new(&client);
+
         let result = match self {
-            SensationCommands::Set {
-                name,
-                description,
-                prompt,
-            } => SensationService::set(
-                context,
-                Sensation::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build(),
-            )?
-            .into(),
-            SensationCommands::Show { name } => {
-                SensationService::get(context, &SensationName::new(name))?.into()
-            }
-            SensationCommands::List => SensationService::list(context)?.into(),
-            SensationCommands::Remove { name } => {
-                SensationService::remove(context, &SensationName::new(name))?.into()
-            }
+            SensationCommands::Set(sensation) => sensation_client.set(sensation).await?.into(),
+            SensationCommands::Show { name } => sensation_client.get(name).await?.into(),
+            SensationCommands::List => sensation_client.list().await?.into(),
+            SensationCommands::Remove { name } => sensation_client.remove(name).await?.into(),
         };
+
         Ok(result)
     }
 }

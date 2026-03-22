@@ -7,6 +7,7 @@ use crate::cases;
 pub struct EngineBackend {
     _temp: tempfile::TempDir,
     engine: oneiros_engine::Engine,
+    server: Option<tokio::task::JoinHandle<()>>,
 }
 
 /// Wrapper to parse command strings into the engine's `Command` enum.
@@ -25,6 +26,7 @@ impl Backend for EngineBackend {
         Ok(Self {
             _temp: temp,
             engine,
+            server: None,
         })
     }
 
@@ -39,10 +41,27 @@ impl Backend for EngineBackend {
             .map_err(|e| Error::Context(e.to_string()))?
             .command
             .execute(&self.engine)
+            .await
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
-        self.engine.init_project("test-project")?;
+        // Bind to port 0 so the OS assigns an available port.
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+
+        // Init project with config that carries the discovered address.
+        self.engine.init_project_with_addr("test-project", addr)?;
+
+        // Build the router from the engine (clones Arc-wrapped contexts).
+        let router = self.engine.project_router()?;
+
+        // Spawn the server in the background.
+        self.server = Some(tokio::spawn(async move {
+            axum::serve(listener, router.into_make_service())
+                .await
+                .unwrap();
+        }));
+
         Ok(())
     }
 }
@@ -91,6 +110,14 @@ fn shell_words(input: &str) -> Vec<String> {
     }
 
     words
+}
+
+impl Drop for EngineBackend {
+    fn drop(&mut self) {
+        if let Some(handle) = self.server.take() {
+            handle.abort();
+        }
+    }
 }
 
 #[tokio::test]

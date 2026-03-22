@@ -4,44 +4,24 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum UrgeCommands {
-    Set {
-        name: String,
-        #[arg(long, default_value = "")]
-        description: String,
-        #[arg(long, default_value = "")]
-        prompt: String,
-    },
-    Show {
-        name: String,
-    },
+    Set(Urge),
+    Show { name: UrgeName },
     List,
-    Remove {
-        name: String,
-    },
+    Remove { name: UrgeName },
 }
 
 impl UrgeCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, UrgeError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, UrgeError> {
+        let client = context.client();
+        let urge_client = UrgeClient::new(&client);
+
         let result = match self {
-            UrgeCommands::Set {
-                name,
-                description,
-                prompt,
-            } => UrgeService::set(
-                context,
-                Urge::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build(),
-            )?
-            .into(),
-            UrgeCommands::Show { name } => UrgeService::get(context, &UrgeName::new(name))?.into(),
-            UrgeCommands::List => UrgeService::list(context)?.into(),
-            UrgeCommands::Remove { name } => {
-                UrgeService::remove(context, &UrgeName::new(name))?.into()
-            }
+            UrgeCommands::Set(urge) => urge_client.set(urge).await?.into(),
+            UrgeCommands::Show { name } => urge_client.get(name).await?.into(),
+            UrgeCommands::List => urge_client.list().await?.into(),
+            UrgeCommands::Remove { name } => urge_client.remove(name).await?.into(),
         };
+
         Ok(result)
     }
 }

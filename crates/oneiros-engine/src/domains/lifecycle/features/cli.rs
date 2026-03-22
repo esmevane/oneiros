@@ -14,30 +14,36 @@ pub enum LifecycleCommands {
 }
 
 impl LifecycleCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, LifecycleError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, LifecycleError> {
+        let client = context.client();
+        let lifecycle_client = LifecycleClient::new(&client);
+
         let result = match self {
             LifecycleCommands::Wake { agent } => {
-                LifecycleService::wake(context, &AgentName::new(&agent))?.into()
+                lifecycle_client.wake(&AgentName::new(agent)).await?.into()
             }
             LifecycleCommands::Dream { agent } => {
-                LifecycleService::dream(context, &AgentName::new(&agent))?.into()
+                lifecycle_client.dream(&AgentName::new(agent)).await?.into()
             }
-            LifecycleCommands::Introspect { agent } => {
-                LifecycleService::introspect(context, &AgentName::new(&agent))?.into()
-            }
-            LifecycleCommands::Reflect { agent } => {
-                LifecycleService::reflect(context, &AgentName::new(&agent))?.into()
-            }
-            LifecycleCommands::Sense { agent, content } => {
-                LifecycleService::sense(context, &AgentName::new(&agent), &Content::new(&content))?
-                    .into()
-            }
+            LifecycleCommands::Introspect { agent } => lifecycle_client
+                .introspect(&AgentName::new(agent))
+                .await?
+                .into(),
+            LifecycleCommands::Reflect { agent } => lifecycle_client
+                .reflect(&AgentName::new(agent))
+                .await?
+                .into(),
+            LifecycleCommands::Sense { agent, content } => lifecycle_client
+                .sense(&AgentName::new(agent), Content::new(content))
+                .await?
+                .into(),
             LifecycleCommands::Sleep { agent } => {
-                LifecycleService::sleep(context, &AgentName::new(&agent))?.into()
+                lifecycle_client.sleep(&AgentName::new(agent)).await?.into()
             }
-            LifecycleCommands::Guidebook { agent } => {
-                LifecycleService::guidebook(context, &AgentName::new(&agent))?.into()
-            }
+            LifecycleCommands::Guidebook { agent } => lifecycle_client
+                .guidebook(&AgentName::new(agent))
+                .await?
+                .into(),
         };
         Ok(result)
     }

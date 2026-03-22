@@ -8,8 +8,14 @@ pub struct PressureCommands {
 }
 
 impl PressureCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, PressureError> {
-        let result = PressureService::get(context, &AgentName::new(&self.name))?.into();
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, PressureError> {
+        let client = context.client();
+        let pressure_client = PressureClient::new(&client);
+
+        let result = pressure_client
+            .get(&AgentName::new(&self.name))
+            .await?
+            .into();
         Ok(result)
     }
 }

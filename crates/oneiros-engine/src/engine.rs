@@ -102,8 +102,28 @@ impl Engine {
     /// Activate the project (brain) context.
     ///
     /// Opens (or creates) the brain database, runs migrations, and makes
-    /// project-scoped commands available.
+    /// project-scoped commands available. Uses the default service address.
     pub fn init_project(&mut self, name: impl Into<String>) -> Result<(), Error> {
+        self.init_project_with_config(name, None)
+    }
+
+    /// Activate the project with a specific service address.
+    ///
+    /// Use this when the server binds to a dynamic port (e.g. port 0 in tests)
+    /// and the client needs to know where to connect.
+    pub fn init_project_with_addr(
+        &mut self,
+        name: impl Into<String>,
+        addr: std::net::SocketAddr,
+    ) -> Result<(), Error> {
+        self.init_project_with_config(name, Some(addr))
+    }
+
+    fn init_project_with_config(
+        &mut self,
+        name: impl Into<String>,
+        addr: Option<std::net::SocketAddr>,
+    ) -> Result<(), Error> {
         self.brain_name = name.into();
 
         let conn = if self.data_dir.as_os_str().is_empty() {
@@ -128,7 +148,11 @@ impl Engine {
         let mut project = ProjectContext::new(conn, PROJECT_PROJECTIONS);
 
         if let Some(dir) = data_dir {
-            project = project.with_config(Config::new(dir));
+            let mut config = Config::new(dir);
+            if let Some(addr) = addr {
+                config = config.with_service_addr(addr);
+            }
+            project = project.with_config(config);
         }
 
         self.project = Some(project);
@@ -136,8 +160,8 @@ impl Engine {
     }
 
     /// Execute a CLI command against this engine.
-    pub fn execute(&self, command: &Command) -> Result<Response<Responses>, Error> {
-        command.execute(self)
+    pub async fn execute(&self, command: &Command) -> Result<Response<Responses>, Error> {
+        command.execute(self).await
     }
 
     /// Access the system context.

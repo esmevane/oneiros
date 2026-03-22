@@ -4,46 +4,24 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum PersonaCommands {
-    Set {
-        name: String,
-        #[arg(long, default_value = "")]
-        description: String,
-        #[arg(long, default_value = "")]
-        prompt: String,
-    },
-    Show {
-        name: String,
-    },
+    Set(Persona),
+    Show { name: PersonaName },
     List,
-    Remove {
-        name: String,
-    },
+    Remove { name: PersonaName },
 }
 
 impl PersonaCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, PersonaError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, PersonaError> {
+        let client = context.client();
+        let persona_client = PersonaClient::new(&client);
+
         let result = match self {
-            PersonaCommands::Set {
-                name,
-                description,
-                prompt,
-            } => PersonaService::set(
-                context,
-                Persona::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build(),
-            )?
-            .into(),
-            PersonaCommands::Show { name } => {
-                PersonaService::get(context, &PersonaName::new(name))?.into()
-            }
-            PersonaCommands::List => PersonaService::list(context)?.into(),
-            PersonaCommands::Remove { name } => {
-                PersonaService::remove(context, &PersonaName::new(name))?.into()
-            }
+            PersonaCommands::Set(persona) => persona_client.set(persona).await?.into(),
+            PersonaCommands::Show { name } => persona_client.get(name).await?.into(),
+            PersonaCommands::List => persona_client.list().await?.into(),
+            PersonaCommands::Remove { name } => persona_client.remove(name).await?.into(),
         };
+
         Ok(result)
     }
 }

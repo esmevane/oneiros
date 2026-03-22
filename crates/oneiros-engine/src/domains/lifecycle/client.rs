@@ -12,6 +12,18 @@ impl<'a> LifecycleClient<'a> {
         Self { client }
     }
 
+    /// Wake an agent.
+    pub async fn wake(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
+        self.client
+            .post(&format!("/wake/{agent}"), &serde_json::Value::Null)
+            .await
+    }
+
+    /// Retrieve the guidebook for an agent.
+    pub async fn guidebook(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
+        self.client.get(&format!("/guidebook/{agent}")).await
+    }
+
     /// Run the dream lifecycle operation for the given agent.
     pub async fn dream(&self, agent: &AgentName) -> Result<LifecycleResponse, ClientError> {
         self.client

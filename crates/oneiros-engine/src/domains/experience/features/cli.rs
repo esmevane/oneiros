@@ -26,22 +26,26 @@ pub enum ExperienceCommands {
 }
 
 impl ExperienceCommands {
-    pub fn execute(
+    pub async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Response<Responses>, ExperienceError> {
+        let client = context.client();
+        let experience_client = ExperienceClient::new(&client);
+
         match self {
             ExperienceCommands::Create {
                 agent,
                 sensation,
                 description,
             } => {
-                let response = ExperienceService::create(
-                    context,
-                    &AgentName::new(&agent),
-                    SensationName::new(&sensation),
-                    Description::new(&description),
-                )?;
+                let response = experience_client
+                    .create(
+                        AgentName::new(agent),
+                        SensationName::new(sensation),
+                        Description::new(description),
+                    )
+                    .await?;
                 let ref_token = match &response {
                     ExperienceResponse::ExperienceCreated(e) => {
                         Some(RefToken::new(Ref::experience(e.id)))
@@ -56,12 +60,14 @@ impl ExperienceCommands {
             }
             ExperienceCommands::Show { id } => {
                 let id: ExperienceId = id.parse()?;
-                Ok(Response::new(ExperienceService::get(context, &id)?.into()))
+                Ok(Response::new(experience_client.get(&id).await?.into()))
             }
-            ExperienceCommands::List { agent } => Ok(Response::new(
-                ExperienceService::list(context, agent.as_deref().map(AgentName::new).as_ref())?
-                    .into(),
-            )),
+            ExperienceCommands::List { agent } => {
+                let agent = agent.as_deref().map(AgentName::new);
+                Ok(Response::new(
+                    experience_client.list(agent.as_ref()).await?.into(),
+                ))
+            }
             ExperienceCommands::Update {
                 id,
                 description,
@@ -70,18 +76,18 @@ impl ExperienceCommands {
                 let id: ExperienceId = id.parse()?;
                 let mut result: Option<ExperienceResponse> = None;
                 if let Some(desc) = description {
-                    result = Some(ExperienceService::update_description(
-                        context,
-                        &id,
-                        Description::new(&desc),
-                    )?);
+                    result = Some(
+                        experience_client
+                            .update_description(&id, Description::new(desc))
+                            .await?,
+                    );
                 }
                 if let Some(sens) = sensation {
-                    result = Some(ExperienceService::update_sensation(
-                        context,
-                        &id,
-                        SensationName::new(&sens),
-                    )?);
+                    result = Some(
+                        experience_client
+                            .update_sensation(&id, SensationName::new(sens))
+                            .await?,
+                    );
                 }
                 match result {
                     Some(r) => Ok(Response::new(r.into())),

@@ -3,17 +3,14 @@
 //! Carries the brain database, projections, event broadcast, config, and source.
 //! All project-scoped domain services receive this as their first argument.
 
-use std::path::Path;
-
 use rusqlite::Connection;
-use std::sync::{Arc, Mutex};
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 use tokio::sync::broadcast;
 
-use crate::Source;
-use crate::config::Config;
-use crate::event::repo;
-use crate::events::Events;
-use crate::{NewEvent, Projection, StoredEvent};
+use crate::*;
 
 /// The project-scoped application context.
 ///
@@ -39,6 +36,17 @@ impl ProjectContext {
             config: None,
             source: Source::default(),
         }
+    }
+
+    /// Construct an HTTP client from the config's service address.
+    pub fn client(&self) -> Client {
+        let base_url = self
+            .config
+            .as_ref()
+            .map(|c| c.base_url())
+            .unwrap_or_else(|| "http://127.0.0.1:2100".to_string());
+
+        Client::new(base_url)
     }
 
     pub fn with_source(mut self, source: Source) -> Self {

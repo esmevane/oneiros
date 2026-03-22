@@ -17,8 +17,8 @@ impl<'a> ConnectionClient<'a> {
     ) -> Result<ConnectionResponse, ClientError> {
         #[derive(serde::Serialize)]
         struct Body {
-            from_ref: Ref,
-            to_ref: Ref,
+            from_ref: String,
+            to_ref: String,
             nature: NatureName,
         }
 
@@ -26,8 +26,8 @@ impl<'a> ConnectionClient<'a> {
             .post(
                 "/connections",
                 &Body {
-                    from_ref,
-                    to_ref,
+                    from_ref: RefToken::new(from_ref).to_string(),
+                    to_ref: RefToken::new(to_ref).to_string(),
                     nature,
                 },
             )

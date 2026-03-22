@@ -1,5 +1,6 @@
 //! HTTP client infrastructure — shared base for per-domain clients.
 
+use axum::response::IntoResponse;
 use reqwest::StatusCode;
 
 /// A configured HTTP client for communicating with the engine service.
@@ -26,6 +27,15 @@ pub enum ClientError {
 
     #[error("Server error: {status} — {body}")]
     Server { status: u16, body: String },
+
+    #[error("Invalid request: {0}")]
+    InvalidRequest(String),
+}
+
+impl IntoResponse for ClientError {
+    fn into_response(self) -> axum::response::Response {
+        todo!()
+    }
 }
 
 impl Client {

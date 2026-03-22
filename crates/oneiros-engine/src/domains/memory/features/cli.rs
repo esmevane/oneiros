@@ -19,19 +19,26 @@ pub enum MemoryCommands {
 }
 
 impl MemoryCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Response<Responses>, MemoryError> {
+    pub async fn execute(
+        &self,
+        context: &ProjectContext,
+    ) -> Result<Response<Responses>, MemoryError> {
+        let client = context.client();
+        let memory_client = MemoryClient::new(&client);
+
         match self {
             MemoryCommands::Add {
                 agent,
                 level,
                 content,
             } => {
-                let response = MemoryService::add(
-                    context,
-                    &AgentName::new(&agent),
-                    LevelName::new(&level),
-                    Content::new(content),
-                )?;
+                let response = memory_client
+                    .add(
+                        AgentName::new(agent),
+                        LevelName::new(level),
+                        Content::new(content),
+                    )
+                    .await?;
                 let ref_token = match &response {
                     MemoryResponse::MemoryAdded(m) => Some(RefToken::new(Ref::memory(m.id))),
                     _ => None,
@@ -44,11 +51,14 @@ impl MemoryCommands {
             }
             MemoryCommands::Show { id } => {
                 let id: MemoryId = id.parse()?;
-                Ok(Response::new(MemoryService::get(context, &id)?.into()))
+                Ok(Response::new(memory_client.get(&id).await?.into()))
             }
-            MemoryCommands::List { agent } => Ok(Response::new(
-                MemoryService::list(context, agent.as_deref().map(AgentName::new).as_ref())?.into(),
-            )),
+            MemoryCommands::List { agent } => {
+                let agent = agent.as_deref().map(AgentName::new);
+                Ok(Response::new(
+                    memory_client.list(agent.as_ref()).await?.into(),
+                ))
+            }
         }
     }
 }

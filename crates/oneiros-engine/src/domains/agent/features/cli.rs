@@ -30,38 +30,39 @@ pub enum AgentCommands {
 }
 
 impl AgentCommands {
-    pub fn execute(&self, context: &ProjectContext) -> Result<Responses, AgentError> {
+    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, AgentError> {
+        let client = context.client();
+        let agent_client = AgentClient::new(&client);
+
         let result = match self {
             Self::Create {
                 name,
                 persona,
                 description,
                 prompt,
-            } => AgentService::create(
-                context,
-                name.clone(),
-                persona.clone(),
-                description.clone(),
-                prompt.clone(),
-            )?
-            .into(),
-            Self::Show { name } => AgentService::get(context, &name)?.into(),
-            Self::List => AgentService::list(context)?.into(),
+            } => agent_client
+                .create(
+                    name.clone(),
+                    persona.clone(),
+                    description.clone(),
+                    prompt.clone(),
+                )
+                .await?
+                .into(),
+            Self::Show { name } => agent_client.get(name).await?.into(),
+            Self::List => agent_client.list().await?.into(),
             Self::Update {
                 name,
                 persona,
                 description,
                 prompt,
-            } => AgentService::update(
-                context,
-                name.clone(),
-                persona.clone(),
-                description.clone(),
-                prompt.clone(),
-            )?
-            .into(),
-            Self::Remove { name } => AgentService::remove(context, &name)?.into(),
+            } => agent_client
+                .update(name, persona.clone(), description.clone(), prompt.clone())
+                .await?
+                .into(),
+            Self::Remove { name } => agent_client.remove(name).await?.into(),
         };
+
         Ok(result)
     }
 }

@@ -24,22 +24,30 @@ pub enum ConnectionCommands {
 }
 
 impl ConnectionCommands {
-    pub fn execute(
+    pub async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Response<Responses>, ConnectionError> {
+        let client = context.client();
+        let connection_client = ConnectionClient::new(&client);
+
         match self {
             ConnectionCommands::Create {
                 nature,
                 from_ref,
                 to_ref,
             } => {
-                let response = ConnectionService::create(
-                    context,
-                    from_ref.clone(),
-                    to_ref.clone(),
-                    nature.clone(),
-                )?;
+                let from: Ref = from_ref
+                    .parse::<RefToken>()
+                    .map_err(|e| ConnectionError::InvalidRef(e.to_string()))?
+                    .into_inner();
+                let to: Ref = to_ref
+                    .parse::<RefToken>()
+                    .map_err(|e| ConnectionError::InvalidRef(e.to_string()))?
+                    .into_inner();
+                let response = connection_client
+                    .create(from, to, NatureName::new(nature))
+                    .await?;
                 let ref_token = match &response {
                     ConnectionResponse::ConnectionCreated(c) => {
                         Some(RefToken::new(Ref::connection(c.id)))
@@ -54,16 +62,24 @@ impl ConnectionCommands {
             }
             ConnectionCommands::Show { id } => {
                 let id: ConnectionId = id.parse()?;
-                Ok(Response::new(ConnectionService::get(context, &id)?.into()))
+                Ok(Response::new(connection_client.get(&id).await?.into()))
             }
-            ConnectionCommands::List { entity_ref, .. } => Ok(Response::new(
-                ConnectionService::list(context, entity_ref.as_deref())?.into(),
-            )),
+            ConnectionCommands::List { entity_ref, .. } => {
+                let entity = entity_ref
+                    .as_deref()
+                    .map(|s| {
+                        s.parse::<RefToken>()
+                            .map_err(|e| ConnectionError::InvalidRef(e.to_string()))
+                            .map(RefToken::into_inner)
+                    })
+                    .transpose()?;
+                Ok(Response::new(
+                    connection_client.list(entity.as_ref()).await?.into(),
+                ))
+            }
             ConnectionCommands::Remove { id } => {
                 let id: ConnectionId = id.parse()?;
-                Ok(Response::new(
-                    ConnectionService::remove(context, &id)?.into(),
-                ))
+                Ok(Response::new(connection_client.remove(&id).await?.into()))
             }
         }
     }

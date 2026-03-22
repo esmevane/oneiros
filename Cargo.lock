@@ -1955,6 +1955,7 @@ dependencies = [
 name = "oneiros-usage"
 version = "0.0.8"
 dependencies = [
+ "axum",
  "clap",
  "oneiros-cli",
  "oneiros-config",
