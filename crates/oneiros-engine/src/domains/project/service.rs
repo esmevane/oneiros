@@ -31,6 +31,12 @@ impl ProjectService {
     }
 
     /// Export all events to a JSONL file in the target directory.
+    ///
+    /// When a `StorageSet` event is encountered, a synthetic `BlobStored` event
+    /// is prepended carrying the binary content. This makes the export portable —
+    /// the receiving brain can materialize the blob from the event stream.
+    /// The `BlobStored` event is transient: the import projection materializes
+    /// the blob into the `blob` table, then deletes the event.
     pub fn export(
         ctx: &ProjectContext,
         target_dir: &Path,
@@ -40,6 +46,23 @@ impl ProjectService {
 
         let mut buffer = String::new();
         for event in &events {
+            // Synthesize BlobStored events for storage portability.
+            if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data {
+                if let Ok(Some(blob)) =
+                    ctx.with_db(|conn| StorageRepo::new(conn).get_blob(&entry.hash))
+                {
+                    let synthetic = ExportEvent {
+                        id: Id::new().to_string(),
+                        sequence: 0,
+                        timestamp: event.created_at.to_rfc3339(),
+                        source: event.source,
+                        data: Events::Storage(StorageEvents::BlobStored(blob)),
+                    };
+                    buffer.push_str(&serde_json::to_string(&synthetic)?);
+                    buffer.push('\n');
+                }
+            }
+
             let export: ExportEvent = event.clone().into();
             buffer.push_str(&serde_json::to_string(&export)?);
             buffer.push('\n');

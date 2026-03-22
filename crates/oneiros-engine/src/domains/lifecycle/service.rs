@@ -113,33 +113,35 @@ impl LifecycleService {
     }
 
     /// Gather the full cognitive context for an agent.
+    ///
+    /// Assembles everything needed for identity reconstruction: the agent itself,
+    /// its persona, all cognitive records, the full vocabulary, graph connections,
+    /// and pressure readings.
     pub fn gather_context(
-        ctx: &ProjectContext,
+        context: &ProjectContext,
         agent_name: &AgentName,
     ) -> Result<CognitiveContext, LifecycleError> {
-        let agent = ctx
+        let agent = context
             .with_db(|conn| AgentRepo::new(conn).get(agent_name))?
             .ok_or_else(|| LifecycleError::AgentNotFound(agent_name.clone()))?;
 
         let agent_id_str = agent.id.to_string();
 
-        let cognitions = ctx
-            .with_db(|conn| CognitionRepo::new(conn).list(Some(&agent_id_str), None))
-            .map_err(LifecycleError::Database)?;
-
-        let memories = ctx
-            .with_db(|conn| MemoryRepo::new(conn).list(Some(&agent_id_str)))
-            .map_err(LifecycleError::Database)?;
-
-        let experiences = ctx
-            .with_db(|conn| ExperienceRepo::new(conn).list(Some(&agent_id_str)))
-            .map_err(LifecycleError::Database)?;
-
         Ok(CognitiveContext {
             agent,
-            cognitions,
-            memories,
-            experiences,
+            persona: context.with_db(|conn| PersonaRepo::new(conn).get(&agent.persona))?,
+            cognitions: context
+                .with_db(|conn| CognitionRepo::new(conn).list(Some(&agent_id_str), None))?,
+            memories: context.with_db(|conn| MemoryRepo::new(conn).list(Some(&agent_id_str)))?,
+            experiences: context
+                .with_db(|conn| ExperienceRepo::new(conn).list(Some(&agent_id_str)))?,
+            connections: context.with_db(|conn| ConnectionRepo::new(conn).list(None))?,
+            textures: context.with_db(|conn| TextureRepo::new(conn).list())?,
+            levels: context.with_db(|conn| LevelRepo::new(conn).list())?,
+            sensations: context.with_db(|conn| SensationRepo::new(conn).list())?,
+            natures: context.with_db(|conn| NatureRepo::new(conn).list())?,
+            urges: context.with_db(|conn| UrgeRepo::new(conn).list())?,
+            pressures: context.with_db(|conn| PressureRepo::new(conn).get(agent_name))?,
         })
     }
 }
