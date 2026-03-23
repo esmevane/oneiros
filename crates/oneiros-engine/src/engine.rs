@@ -160,7 +160,7 @@ impl Engine {
     }
 
     /// Execute a CLI command against this engine.
-    pub async fn execute(&self, command: &Command) -> Result<Response<Responses>, Error> {
+    pub async fn execute(&self, command: &Command) -> Result<Rendered<Responses>, Error> {
         command.execute(self).await
     }
 

@@ -29,6 +29,8 @@ mod timestamp;
 mod tool_def;
 // mod token;
 // mod token_version;
+mod output_mode;
+mod rendered;
 
 pub use blob::{Blob, BlobError};
 // pub use claim::TokenClaims;
@@ -51,7 +53,9 @@ pub use id::{Id, IdParseError};
 pub use introspection::Introspection;
 pub use label::Label;
 pub use observation::Observation;
+pub use output_mode::OutputMode;
 pub use pressure_reading::PressureReading;
+pub use rendered::Rendered;
 // PressureSummary re-exported from domains::pressure
 pub use projection::Projection;
 pub use prompt::Prompt;

@@ -101,10 +101,15 @@ pub enum Command {
 
 impl Command {
     /// Execute a CLI command against the engine.
-    pub async fn execute(&self, engine: &Engine) -> Result<Response<Responses>, Error> {
+    ///
+    /// Returns `Rendered` — the caller decides how to consume it:
+    /// - `.response()` for typed data access (tests, programmatic use)
+    /// - Match on variant for presentation (Prompt content, Text summary)
+    /// - `Rendered::Data` is the default for domains without a presenter
+    pub async fn execute(&self, engine: &Engine) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
             // Workflow domains — each knows its context
-            Command::System(system) => Response::new(system.execute(engine.system())?),
+            Command::System(system) => Response::new(system.execute(engine.system())?).into(),
             Command::Project(project) => Response::new(
                 project
                     .execute(
@@ -113,117 +118,98 @@ impl Command {
                         engine.brain_name(),
                     )
                     .map_err(|e| Error::Context(e.to_string()))?,
-            ),
+            )
+            .into(),
             Command::Seed(seed) => Response::new(
                 seed.execute(engine.project()?)
                     .map_err(|e| Error::Context(e.to_string()))?,
-            ),
+            )
+            .into(),
 
             // Project-scoped domains — vocabulary (no ref_token)
-            Command::Level(level) => Response::new(level.execute(engine.project()?).await?),
-            Command::Texture(texture) => Response::new(texture.execute(engine.project()?).await?),
-            Command::Sensation(sensation) => {
-                Response::new(sensation.execute(engine.project()?).await?)
+            Command::Level(level) => Response::new(level.execute(engine.project()?).await?).into(),
+            Command::Texture(texture) => {
+                Response::new(texture.execute(engine.project()?).await?).into()
             }
-            Command::Nature(nature) => Response::new(nature.execute(engine.project()?).await?),
-            Command::Persona(persona) => Response::new(persona.execute(engine.project()?).await?),
-            Command::Urge(urge) => Response::new(urge.execute(engine.project()?).await?),
-            Command::Agent(agent) => Response::new(agent.execute(engine.project()?).await?),
+            Command::Sensation(sensation) => {
+                Response::new(sensation.execute(engine.project()?).await?).into()
+            }
+            Command::Nature(nature) => {
+                Response::new(nature.execute(engine.project()?).await?).into()
+            }
+            Command::Persona(persona) => {
+                Response::new(persona.execute(engine.project()?).await?).into()
+            }
+            Command::Urge(urge) => Response::new(urge.execute(engine.project()?).await?).into(),
+            Command::Agent(agent) => Response::new(agent.execute(engine.project()?).await?).into(),
 
             // Entity domains — return Response<Responses> with ref_token in meta
-            Command::Cognition(cognition) => cognition.execute(engine.project()?).await?,
-            Command::Memory(memory) => memory.execute(engine.project()?).await?,
-            Command::Experience(experience) => experience.execute(engine.project()?).await?,
-            Command::Connection(connection) => connection.execute(engine.project()?).await?,
+            Command::Cognition(cognition) => cognition.execute(engine.project()?).await?.into(),
+            Command::Memory(memory) => memory.execute(engine.project()?).await?.into(),
+            Command::Experience(experience) => experience.execute(engine.project()?).await?.into(),
+            Command::Connection(connection) => connection.execute(engine.project()?).await?.into(),
 
-            Command::Storage(storage) => Response::new(storage.execute(engine.project()?).await?),
-            Command::Search(search) => Response::new(search.execute(engine.project()?).await?),
+            Command::Storage(storage) => {
+                Response::new(storage.execute(engine.project()?).await?).into()
+            }
+            Command::Search(search) => {
+                Response::new(search.execute(engine.project()?).await?).into()
+            }
             Command::Pressure(pressure) => {
-                Response::new(pressure.execute(engine.project()?).await?)
+                Response::new(pressure.execute(engine.project()?).await?).into()
             }
 
             // Doctor — system diagnostics
             Command::Doctor => Response::new(
                 DoctorCli::execute(engine.system()).map_err(|e| Error::Context(e.to_string()))?,
-            ),
+            )
+            .into(),
 
-            // Continuity — domain subcommands go through the client
-            Command::Continuity(continuity) => {
-                Response::new(continuity.execute(engine.project()?).await?)
-            }
+            // Continuity — domain subcommands go through the presenter
+            Command::Continuity(continuity) => continuity.execute(engine.project()?).await?,
 
-            // Flat lifecycle shortcuts — go through the lifecycle client
+            // Flat lifecycle shortcuts — delegate to ContinuityCommands
             Command::Wake { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let continuity_client = ContinuityClient::new(&client);
-                Response::new(
-                    continuity_client
-                        .wake(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Wake {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
             Command::Dream { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let continuity_client = ContinuityClient::new(&client);
-                Response::new(
-                    continuity_client
-                        .dream(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Dream {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
             Command::Introspect { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let continuity_client = ContinuityClient::new(&client);
-                Response::new(
-                    continuity_client
-                        .introspect(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Introspect {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
             Command::Reflect { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let continuity_client = ContinuityClient::new(&client);
-                Response::new(
-                    continuity_client
-                        .reflect(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Reflect {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
             Command::Sleep { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let continuity_client = ContinuityClient::new(&client);
-                Response::new(
-                    continuity_client
-                        .sleep(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Sleep {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
             Command::Guidebook { name } => {
-                let project = engine.project()?;
-                let client = project.client();
-                let continuity_client = ContinuityClient::new(&client);
-                Response::new(
-                    continuity_client
-                        .guidebook(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Guidebook {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
 
             // Continuity lifecycle — emerge, recede, status
@@ -232,39 +218,27 @@ impl Command {
                 persona,
                 description,
             } => {
-                let client = engine.project()?.client();
-                let continuity = ContinuityClient::new(&client);
-                Response::new(
-                    continuity
-                        .emerge(name.clone(), persona.clone(), description.clone())
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Emerge {
+                    name: name.clone(),
+                    persona: persona.clone(),
+                    description: description.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
-
             Command::Recede { name } => {
-                let client = engine.project()?.client();
-                let continuity = ContinuityClient::new(&client);
-                Response::new(
-                    continuity
-                        .recede(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Recede {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
-
             Command::Status { name } => {
-                let client = engine.project()?.client();
-                let continuity = ContinuityClient::new(&client);
-                Response::new(
-                    continuity
-                        .status(name)
-                        .await
-                        .map_err(|e| Error::Context(e.to_string()))?
-                        .into(),
-                )
+                ContinuityCommands::Status {
+                    agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
             }
         })
     }

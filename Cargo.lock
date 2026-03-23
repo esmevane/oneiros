@@ -1778,6 +1778,7 @@ dependencies = [
 name = "oneiros-engine"
 version = "0.0.8"
 dependencies = [
+ "askama",
  "axum",
  "bon",
  "chrono",

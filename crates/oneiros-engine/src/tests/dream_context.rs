@@ -514,3 +514,99 @@ fn cognitions_sorted_by_created_at() {
         );
     }
 }
+
+// ── Template rendering ───────────────────────────────────────────
+
+#[test]
+fn dream_template_renders_agent_identity() {
+    let ctx = seeded_ctx();
+    let agent = seed_agent(&ctx);
+
+    add_memory(&ctx, &agent, "core", "I am a thinker");
+    add_cognition(&ctx, &agent, "something interesting");
+
+    let context = dream(&ctx, &agent);
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    assert!(
+        rendered.contains("thinker.process"),
+        "dream should contain agent name"
+    );
+    assert!(
+        rendered.contains("I am a thinker"),
+        "dream should contain core memory"
+    );
+    assert!(
+        rendered.contains("something interesting"),
+        "dream should contain cognition"
+    );
+    assert!(
+        rendered.contains("## Your Identity"),
+        "dream should have identity section"
+    );
+    assert!(
+        rendered.contains("## Instructions"),
+        "dream should have instructions section"
+    );
+}
+
+#[test]
+fn dream_template_omits_empty_sections() {
+    let ctx = seeded_ctx();
+    let agent = seed_agent(&ctx);
+
+    // Dream with no cognitions, memories, experiences, or connections
+    let context = dream(&ctx, &agent);
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    // Identity and vocabulary should still be present
+    assert!(rendered.contains("thinker.process"));
+    assert!(rendered.contains("## Cognitive Textures"));
+
+    // Empty sections should be omitted
+    assert!(
+        !rendered.contains("## Your Memories"),
+        "empty memories section should be omitted"
+    );
+    assert!(
+        !rendered.contains("## Your Cognitions"),
+        "empty cognitions section should be omitted"
+    );
+    assert!(
+        !rendered.contains("## Your Connections"),
+        "empty connections section should be omitted"
+    );
+}
+
+#[test]
+fn introspect_template_renders() {
+    let ctx = seeded_ctx();
+    let agent = seed_agent(&ctx);
+    let context = dream(&ctx, &agent);
+
+    let pressures = RelevantPressures::from_pressures(
+        context
+            .pressures
+            .iter()
+            .map(|r| r.pressure.clone())
+            .collect(),
+    );
+    let rendered = IntrospectTemplate::new(&context.agent, pressures).to_string();
+
+    assert!(rendered.contains("thinker.process"));
+    assert!(rendered.contains("Before your context compacts"));
+}
+
+#[test]
+fn guidebook_template_renders_vocabulary() {
+    let ctx = seeded_ctx();
+    let agent = seed_agent(&ctx);
+    let context = dream(&ctx, &agent);
+
+    let rendered = GuidebookTemplate::new(&context).to_string();
+
+    assert!(rendered.contains("Cognitive Guidebook"));
+    assert!(rendered.contains("thinker.process"));
+    assert!(rendered.contains("observation")); // seeded texture
+    assert!(rendered.contains("Your Lifecycle"));
+}

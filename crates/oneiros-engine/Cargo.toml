@@ -6,6 +6,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+askama.workspace = true
 axum.workspace = true
 bon.workspace = true
 chrono.workspace = true

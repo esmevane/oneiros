@@ -37,11 +37,13 @@ impl Backend for EngineBackend {
 
         let full_args = strip_output_flag(full_args);
 
-        Cli::try_parse_from(&full_args)
+        let rendered = Cli::try_parse_from(&full_args)
             .map_err(|e| Error::Context(e.to_string()))?
             .command
             .execute(&self.engine)
-            .await
+            .await?;
+
+        Ok(rendered.into_response())
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
