@@ -3,17 +3,17 @@ use oneiros_usage::*;
 
 /// Helper: bootstrap with persona + agent so cognitions have an agent to reference.
 async fn setup_with_agent<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
     backend
-        .exec("persona set process --description 'Process agents'")
+        .exec_json("persona set process --description 'Process agents'")
         .await?;
     backend
-        .exec("texture set observation --description 'Observations'")
+        .exec_json("texture set observation --description 'Observations'")
         .await?;
     backend
-        .exec("agent create thinker process --description 'A thinking agent'")
+        .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
     Ok(())
 }
@@ -23,7 +23,7 @@ pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
     setup_with_agent(&mut backend).await?;
 
     let response = backend
-        .exec("cognition add thinker.process observation 'A test thought'")
+        .exec_json("cognition add thinker.process observation 'A test thought'")
         .await?;
 
     assert!(
@@ -41,7 +41,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent(&mut backend).await?;
 
-    let response = backend.exec("cognition list").await?;
+    let response = backend.exec_json("cognition list").await?;
 
     assert!(
         matches!(
@@ -59,13 +59,13 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     setup_with_agent(&mut backend).await?;
 
     backend
-        .exec("cognition add thinker.process observation 'First thought'")
+        .exec_json("cognition add thinker.process observation 'First thought'")
         .await?;
     backend
-        .exec("cognition add thinker.process observation 'Second thought'")
+        .exec_json("cognition add thinker.process observation 'Second thought'")
         .await?;
 
-    let response = backend.exec("cognition list").await?;
+    let response = backend.exec_json("cognition list").await?;
 
     match response.data {
         Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
@@ -82,18 +82,18 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
     setup_with_agent(&mut backend).await?;
 
     backend
-        .exec("agent create other process --description 'Other agent'")
+        .exec_json("agent create other process --description 'Other agent'")
         .await?;
 
     backend
-        .exec("cognition add thinker.process observation 'Thinker thought'")
+        .exec_json("cognition add thinker.process observation 'Thinker thought'")
         .await?;
     backend
-        .exec("cognition add other.process observation 'Other thought'")
+        .exec_json("cognition add other.process observation 'Other thought'")
         .await?;
 
     let response = backend
-        .exec("cognition list --agent thinker.process")
+        .exec_json("cognition list --agent thinker.process")
         .await?;
 
     match response.data {
@@ -111,7 +111,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     setup_with_agent(&mut backend).await?;
 
     let add_response = backend
-        .exec("cognition add thinker.process observation 'Show me this'")
+        .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
 
     let id = match add_response.data {
@@ -120,7 +120,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     };
 
     let show_cmd = format!("cognition show {id}");
-    let show_response = backend.exec(&show_cmd).await?;
+    let show_response = backend.exec_json(&show_cmd).await?;
 
     match show_response.data {
         Responses::Cognition(CognitionResponse::CognitionDetails(cognition)) => {

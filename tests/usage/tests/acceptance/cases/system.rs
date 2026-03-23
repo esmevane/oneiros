@@ -4,7 +4,7 @@ use oneiros_usage::*;
 pub(crate) async fn init_creates_tenant_and_actor<B: Backend>() -> TestResult {
     let backend = B::start().await?;
 
-    let response = backend.exec("system init --name test --yes").await?;
+    let response = backend.exec_json("system init --name test --yes").await?;
 
     assert!(
         matches!(
@@ -20,9 +20,9 @@ pub(crate) async fn init_creates_tenant_and_actor<B: Backend>() -> TestResult {
 pub(crate) async fn init_is_idempotent<B: Backend>() -> TestResult {
     let backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
 
-    let response = backend.exec("system init --name test --yes").await?;
+    let response = backend.exec_json("system init --name test --yes").await?;
 
     assert!(
         matches!(

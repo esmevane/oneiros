@@ -4,12 +4,12 @@ use oneiros_usage::*;
 pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let response = backend
-        .exec("level set ephemeral --description 'Short-lived context' --prompt 'Use for thoughts that will not outlast the session.'")
+        .exec_json("level set ephemeral --description 'Short-lived context' --prompt 'Use for thoughts that will not outlast the session.'")
         .await?;
 
     assert!(
@@ -18,7 +18,7 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
     );
 
     // Verify the level exists via show command
-    let show_response = backend.exec("level show ephemeral").await?;
+    let show_response = backend.exec_json("level show ephemeral").await?;
 
     match show_response.data {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
@@ -34,19 +34,23 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
 pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     backend
-        .exec("level set working --description 'Original description' --prompt 'Original prompt.'")
+        .exec_json(
+            "level set working --description 'Original description' --prompt 'Original prompt.'",
+        )
         .await?;
 
     backend
-        .exec("level set working --description 'Updated description' --prompt 'Updated prompt.'")
+        .exec_json(
+            "level set working --description 'Updated description' --prompt 'Updated prompt.'",
+        )
         .await?;
 
-    let show_response = backend.exec("level show working").await?;
+    let show_response = backend.exec_json("level show working").await?;
 
     match show_response.data {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
@@ -62,11 +66,11 @@ pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
 pub(crate) async fn list_returns_empty_when_none_exist<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
-    let response = backend.exec("level list").await?;
+    let response = backend.exec_json("level list").await?;
 
     assert!(
         matches!(response.data, Responses::Level(LevelResponse::NoLevels)),
@@ -79,19 +83,21 @@ pub(crate) async fn list_returns_empty_when_none_exist<B: Backend>() -> TestResu
 pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     backend
-        .exec("level set session --description 'Session context' --prompt 'For the session.'")
+        .exec_json("level set session --description 'Session context' --prompt 'For the session.'")
         .await?;
 
     backend
-        .exec("level set project --description 'Project knowledge' --prompt 'For the project.'")
+        .exec_json(
+            "level set project --description 'Project knowledge' --prompt 'For the project.'",
+        )
         .await?;
 
-    let response = backend.exec("level list").await?;
+    let response = backend.exec_json("level list").await?;
 
     match response.data {
         Responses::Level(LevelResponse::Levels(levels)) => {
@@ -106,15 +112,15 @@ pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
 pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     backend
-        .exec("level set temporary --description 'Will be removed' --prompt 'Temporary.'")
+        .exec_json("level set temporary --description 'Will be removed' --prompt 'Temporary.'")
         .await?;
 
-    let remove_response = backend.exec("level remove temporary").await?;
+    let remove_response = backend.exec_json("level remove temporary").await?;
 
     assert!(
         matches!(
@@ -125,7 +131,7 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     );
 
     // Verify it's gone
-    let list_response = backend.exec("level list").await?;
+    let list_response = backend.exec_json("level list").await?;
 
     assert!(
         matches!(

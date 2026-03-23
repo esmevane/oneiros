@@ -4,9 +4,9 @@ use oneiros_usage::*;
 pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     // Create a temp file to upload
     let temp_dir = tempfile::TempDir::new()?;
@@ -17,7 +17,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
         "storage set test-doc {} --description 'A test document'",
         file_path.display()
     );
-    let set_response = backend.exec(&set_cmd).await?;
+    let set_response = backend.exec_json(&set_cmd).await?;
 
     assert!(
         matches!(
@@ -28,7 +28,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     );
 
     // Verify via show
-    let show_response = backend.exec("storage show test-doc").await?;
+    let show_response = backend.exec_json("storage show test-doc").await?;
 
     match show_response.data {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
@@ -43,11 +43,11 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
-    let response = backend.exec("storage list").await?;
+    let response = backend.exec_json("storage list").await?;
 
     assert!(
         matches!(
@@ -63,18 +63,18 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
     std::fs::write(&file_path, "content")?;
 
     let cmd = format!("storage set my-doc {}", file_path.display());
-    backend.exec(&cmd).await?;
+    backend.exec_json(&cmd).await?;
 
-    let response = backend.exec("storage list").await?;
+    let response = backend.exec_json("storage list").await?;
 
     match response.data {
         Responses::Storage(StorageResponse::Entries(entries)) => {
@@ -89,18 +89,18 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 pub(crate) async fn remove<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("removable.txt");
     std::fs::write(&file_path, "temporary")?;
 
     let cmd = format!("storage set removable {}", file_path.display());
-    backend.exec(&cmd).await?;
+    backend.exec_json(&cmd).await?;
 
-    let remove_response = backend.exec("storage remove removable").await?;
+    let remove_response = backend.exec_json("storage remove removable").await?;
 
     assert!(
         matches!(
@@ -111,7 +111,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
     );
 
     // Verify gone
-    let list_response = backend.exec("storage list").await?;
+    let list_response = backend.exec_json("storage list").await?;
 
     assert!(
         matches!(

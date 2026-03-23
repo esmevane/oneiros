@@ -30,7 +30,7 @@ impl Backend for EngineBackend {
         })
     }
 
-    async fn exec(&self, command: &str) -> Result<Response<Responses>, Error> {
+    async fn exec_json(&self, command: &str) -> Result<Response<Responses>, Error> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);

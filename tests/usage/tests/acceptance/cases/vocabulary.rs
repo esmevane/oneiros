@@ -32,15 +32,15 @@ pub struct VocabularyDomain {
 pub async fn set_creates_a_new_entry<B: Backend>(domain: &VocabularyDomain) -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let cmd = format!(
         "{} set test-entry --description 'A test entry' --prompt 'Test prompt.'",
         domain.command
     );
-    let set_response = backend.exec(&cmd).await?;
+    let set_response = backend.exec_json(&cmd).await?;
 
     assert!(
         (domain.is_set)(&set_response.data),
@@ -50,7 +50,7 @@ pub async fn set_creates_a_new_entry<B: Backend>(domain: &VocabularyDomain) -> T
 
     // Verify via show
     let show_cmd = format!("{} show test-entry", domain.command);
-    let show_response = backend.exec(&show_cmd).await?;
+    let show_response = backend.exec_json(&show_cmd).await?;
 
     let (name, description, _prompt) = (domain.extract_details)(&show_response.data)
         .unwrap_or_else(|| {
@@ -69,24 +69,24 @@ pub async fn set_creates_a_new_entry<B: Backend>(domain: &VocabularyDomain) -> T
 pub async fn set_updates_existing_entry<B: Backend>(domain: &VocabularyDomain) -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let cmd = format!(
         "{} set updatable --description 'Original' --prompt 'Original.'",
         domain.command
     );
-    backend.exec(&cmd).await?;
+    backend.exec_json(&cmd).await?;
 
     let cmd = format!(
         "{} set updatable --description 'Updated' --prompt 'Updated.'",
         domain.command
     );
-    backend.exec(&cmd).await?;
+    backend.exec_json(&cmd).await?;
 
     let show_cmd = format!("{} show updatable", domain.command);
-    let show_response = backend.exec(&show_cmd).await?;
+    let show_response = backend.exec_json(&show_cmd).await?;
 
     let (_name, description, _prompt) = (domain.extract_details)(&show_response.data)
         .unwrap_or_else(|| {
@@ -106,12 +106,12 @@ pub async fn list_returns_empty_when_none_exist<B: Backend>(
 ) -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let cmd = format!("{} list", domain.command);
-    let response = backend.exec(&cmd).await?;
+    let response = backend.exec_json(&cmd).await?;
 
     assert!(
         (domain.is_empty)(&response.data),
@@ -125,24 +125,24 @@ pub async fn list_returns_empty_when_none_exist<B: Backend>(
 pub async fn list_returns_created_entries<B: Backend>(domain: &VocabularyDomain) -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let cmd1 = format!(
         "{} set first --description 'First entry' --prompt 'First.'",
         domain.command
     );
-    backend.exec(&cmd1).await?;
+    backend.exec_json(&cmd1).await?;
 
     let cmd2 = format!(
         "{} set second --description 'Second entry' --prompt 'Second.'",
         domain.command
     );
-    backend.exec(&cmd2).await?;
+    backend.exec_json(&cmd2).await?;
 
     let list_cmd = format!("{} list", domain.command);
-    let response = backend.exec(&list_cmd).await?;
+    let response = backend.exec_json(&list_cmd).await?;
 
     let count = (domain.extract_list_count)(&response.data).unwrap_or_else(|| {
         panic!(
@@ -159,18 +159,18 @@ pub async fn list_returns_created_entries<B: Backend>(domain: &VocabularyDomain)
 pub async fn remove_makes_it_unlisted<B: Backend>(domain: &VocabularyDomain) -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
     let set_cmd = format!(
         "{} set temporary --description 'Will be removed' --prompt 'Temporary.'",
         domain.command
     );
-    backend.exec(&set_cmd).await?;
+    backend.exec_json(&set_cmd).await?;
 
     let remove_cmd = format!("{} remove temporary", domain.command);
-    let remove_response = backend.exec(&remove_cmd).await?;
+    let remove_response = backend.exec_json(&remove_cmd).await?;
 
     assert!(
         (domain.is_removed)(&remove_response.data),
@@ -179,7 +179,7 @@ pub async fn remove_makes_it_unlisted<B: Backend>(domain: &VocabularyDomain) -> 
     );
 
     let list_cmd = format!("{} list", domain.command);
-    let list_response = backend.exec(&list_cmd).await?;
+    let list_response = backend.exec_json(&list_cmd).await?;
 
     assert!(
         (domain.is_empty)(&list_response.data),

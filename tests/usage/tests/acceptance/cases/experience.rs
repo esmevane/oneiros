@@ -3,17 +3,17 @@ use oneiros_usage::*;
 
 /// Helper: bootstrap with persona + agent + sensation for experiences.
 async fn setup_with_agent_and_sensation<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
     backend
-        .exec("persona set process --description 'Process agents'")
+        .exec_json("persona set process --description 'Process agents'")
         .await?;
     backend
-        .exec("sensation set caused --description 'One thought produced another'")
+        .exec_json("sensation set caused --description 'One thought produced another'")
         .await?;
     backend
-        .exec("agent create observer process --description 'An observing agent'")
+        .exec_json("agent create observer process --description 'An observing agent'")
         .await?;
     Ok(())
 }
@@ -23,7 +23,7 @@ pub(crate) async fn create<B: Backend>() -> TestResult {
     setup_with_agent_and_sensation(&mut backend).await?;
 
     let response = backend
-        .exec("experience create observer.process caused 'A caused B'")
+        .exec_json("experience create observer.process caused 'A caused B'")
         .await?;
 
     assert!(
@@ -41,7 +41,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent_and_sensation(&mut backend).await?;
 
-    let response = backend.exec("experience list").await?;
+    let response = backend.exec_json("experience list").await?;
 
     assert!(
         matches!(
@@ -59,13 +59,13 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     setup_with_agent_and_sensation(&mut backend).await?;
 
     backend
-        .exec("experience create observer.process caused 'First experience'")
+        .exec_json("experience create observer.process caused 'First experience'")
         .await?;
     backend
-        .exec("experience create observer.process caused 'Second experience'")
+        .exec_json("experience create observer.process caused 'Second experience'")
         .await?;
 
-    let response = backend.exec("experience list").await?;
+    let response = backend.exec_json("experience list").await?;
 
     match response.data {
         Responses::Experience(ExperienceResponse::Experiences(experiences)) => {
@@ -82,7 +82,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     setup_with_agent_and_sensation(&mut backend).await?;
 
     let create_response = backend
-        .exec("experience create observer.process caused 'Show me this'")
+        .exec_json("experience create observer.process caused 'Show me this'")
         .await?;
 
     let id = match create_response.data {
@@ -91,7 +91,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     };
 
     let show_cmd = format!("experience show {id}");
-    let show_response = backend.exec(&show_cmd).await?;
+    let show_response = backend.exec_json(&show_cmd).await?;
 
     match show_response.data {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
@@ -108,7 +108,7 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
     setup_with_agent_and_sensation(&mut backend).await?;
 
     let create_response = backend
-        .exec("experience create observer.process caused 'Original'")
+        .exec_json("experience create observer.process caused 'Original'")
         .await?;
 
     let id = match create_response.data {
@@ -117,7 +117,7 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
     };
 
     let update_cmd = format!("experience update {id} --description 'Updated description'");
-    let update_response = backend.exec(&update_cmd).await?;
+    let update_response = backend.exec_json(&update_cmd).await?;
 
     assert!(
         matches!(
@@ -129,7 +129,7 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 
     // Verify via show
     let show_cmd = format!("experience show {id}");
-    let show_response = backend.exec(&show_cmd).await?;
+    let show_response = backend.exec_json(&show_cmd).await?;
 
     match show_response.data {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {

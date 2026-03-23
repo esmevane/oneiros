@@ -4,11 +4,11 @@ use oneiros_usage::*;
 pub(crate) async fn core_creates_default_levels<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
-    let response = backend.exec("seed core").await?;
+    let response = backend.exec_json("seed core").await?;
 
     assert!(
         matches!(response.data, Responses::Seed(SeedResponse::SeedComplete)),
@@ -16,7 +16,7 @@ pub(crate) async fn core_creates_default_levels<B: Backend>() -> TestResult {
     );
 
     // Verify levels were created
-    let list_response = backend.exec("level list").await?;
+    let list_response = backend.exec_json("level list").await?;
 
     match list_response.data {
         Responses::Level(LevelResponse::Levels(levels)) => {

@@ -35,7 +35,7 @@ impl Backend for Legacy {
         })
     }
 
-    async fn exec(
+    async fn exec_json(
         &self,
         command: &str,
     ) -> Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error> {
@@ -86,8 +86,6 @@ impl Backend for Legacy {
 
         let mut response = oneiros_engine::Response::new(data);
         if let Some(rt) = ref_token {
-            // Convert from oneiros_model::RefToken to oneiros_engine::RefToken via
-            // their shared string encoding (ref:<base64url>).
             let engine_rt: oneiros_engine::RefToken =
                 rt.to_string()
                     .parse()

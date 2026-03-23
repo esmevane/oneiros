@@ -4,11 +4,11 @@ use oneiros_usage::*;
 pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
-    let response = backend.exec("doctor").await?;
+    let response = backend.exec_json("doctor").await?;
 
     match response.data {
         Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {
@@ -38,7 +38,7 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
 pub(crate) async fn reports_uninitialized_system<B: Backend>() -> TestResult {
     let backend = B::start().await?;
 
-    let response = backend.exec("doctor").await?;
+    let response = backend.exec_json("doctor").await?;
 
     match response.data {
         Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {

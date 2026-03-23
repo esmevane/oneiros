@@ -4,22 +4,22 @@ use oneiros_usage::*;
 pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
-    backend.exec("seed core").await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
     backend
-        .exec("agent create thinker process --description 'A thinking agent'")
+        .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
     backend
-        .exec("cognition add thinker.process observation 'An important thought'")
+        .exec_json("cognition add thinker.process observation 'An important thought'")
         .await?;
 
     // --target is a directory; the command constructs the filename
     let export_dir = tempfile::TempDir::new()?;
 
     let cmd = format!("project export --target {}", export_dir.path().display());
-    let response = backend.exec(&cmd).await?;
+    let response = backend.exec_json(&cmd).await?;
 
     let export_path = match response.data {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
@@ -44,26 +44,26 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
 pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
     backend
-        .exec("persona set process --description 'Process agents'")
+        .exec_json("persona set process --description 'Process agents'")
         .await?;
     backend
-        .exec("texture set observation --description 'Observations'")
+        .exec_json("texture set observation --description 'Observations'")
         .await?;
     backend
-        .exec("agent create thinker process --description 'A thinking agent'")
+        .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
     backend
-        .exec("cognition add thinker.process observation 'Remember this thought'")
+        .exec_json("cognition add thinker.process observation 'Remember this thought'")
         .await?;
 
     // Export to a temp directory
     let export_dir = tempfile::TempDir::new()?;
     let export_cmd = format!("project export --target {}", export_dir.path().display());
-    let export_response = backend.exec(&export_cmd).await?;
+    let export_response = backend.exec_json(&export_cmd).await?;
 
     let export_path = match export_response.data {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
@@ -72,11 +72,11 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
 
     // Import the exported file (idempotent — re-importing to same brain)
     backend
-        .exec(&format!("project import {}", export_path.display()))
+        .exec_json(&format!("project import {}", export_path.display()))
         .await?;
 
     // Verify data survived — the cognition should still be searchable
-    let search_response = backend.exec("search Remember").await?;
+    let search_response = backend.exec_json("search Remember").await?;
 
     match search_response.data {
         Responses::Search(SearchResponse::Results(results)) => {
@@ -99,9 +99,9 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
 pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult {
     // Brain A — the source
     let mut brain_a = B::start().await?;
-    brain_a.exec("system init --name test --yes").await?;
+    brain_a.exec_json("system init --name test --yes").await?;
     brain_a.start_service().await?;
-    brain_a.exec("project init --yes").await?;
+    brain_a.exec_json("project init --yes").await?;
 
     // Create a temp file and store it on brain A
     let temp_dir = tempfile::TempDir::new()?;
@@ -112,12 +112,12 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
         "storage set portable-doc {} --description 'A portable document'",
         file_path.display()
     );
-    brain_a.exec(&cmd).await?;
+    brain_a.exec_json(&cmd).await?;
 
     // Export from brain A
     let export_dir = tempfile::TempDir::new()?;
     let export_cmd = format!("project export --target {}", export_dir.path().display());
-    let export_response = brain_a.exec(&export_cmd).await?;
+    let export_response = brain_a.exec_json(&export_cmd).await?;
 
     let export_path = match export_response.data {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
@@ -126,16 +126,16 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
 
     // Brain B — fresh, empty
     let mut brain_b = B::start().await?;
-    brain_b.exec("system init --name test --yes").await?;
+    brain_b.exec_json("system init --name test --yes").await?;
     brain_b.start_service().await?;
-    brain_b.exec("project init --yes").await?;
+    brain_b.exec_json("project init --yes").await?;
 
     // Import brain A's export into brain B
     let import_cmd = format!("project import {}", export_path.display());
-    brain_b.exec(&import_cmd).await?;
+    brain_b.exec_json(&import_cmd).await?;
 
     // Brain B should now have the storage entry
-    let show_response = brain_b.exec("storage show portable-doc").await?;
+    let show_response = brain_b.exec_json("storage show portable-doc").await?;
 
     match show_response.data {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
@@ -150,23 +150,23 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
 pub(crate) async fn replay_rebuilds_projections<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
     backend
-        .exec("persona set process --description 'Process agents'")
+        .exec_json("persona set process --description 'Process agents'")
         .await?;
     backend
-        .exec("texture set observation --description 'Observations'")
+        .exec_json("texture set observation --description 'Observations'")
         .await?;
     backend
-        .exec("agent create thinker process --description 'A thinking agent'")
+        .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    backend.exec("project replay").await?;
+    backend.exec_json("project replay").await?;
 
     // After replay, agent should still exist
-    let show_response = backend.exec("agent show thinker.process").await?;
+    let show_response = backend.exec_json("agent show thinker.process").await?;
 
     assert!(
         matches!(

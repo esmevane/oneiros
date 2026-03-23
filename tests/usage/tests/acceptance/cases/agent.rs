@@ -3,11 +3,11 @@ use oneiros_usage::*;
 
 /// Helper: bootstrap + seed a persona so agents can reference it.
 async fn setup_with_persona<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
     backend
-        .exec("persona set process --description 'Process agents'")
+        .exec_json("persona set process --description 'Process agents'")
         .await?;
     Ok(())
 }
@@ -17,7 +17,7 @@ pub(crate) async fn create_with_persona<B: Backend>() -> TestResult {
     setup_with_persona(&mut backend).await?;
 
     let response = backend
-        .exec("agent create test process --description 'A test agent'")
+        .exec_json("agent create test process --description 'A test agent'")
         .await?;
 
     assert!(
@@ -36,10 +36,10 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
     setup_with_persona(&mut backend).await?;
 
     backend
-        .exec("agent create viewer process --description 'Views things'")
+        .exec_json("agent create viewer process --description 'Views things'")
         .await?;
 
-    let response = backend.exec("agent show viewer.process").await?;
+    let response = backend.exec_json("agent show viewer.process").await?;
 
     match response.data {
         Responses::Agent(AgentResponse::AgentDetails(agent)) => {
@@ -55,11 +55,11 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
 
-    let response = backend.exec("agent list").await?;
+    let response = backend.exec_json("agent list").await?;
 
     assert!(
         matches!(response.data, Responses::Agent(AgentResponse::NoAgents)),
@@ -74,13 +74,13 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     setup_with_persona(&mut backend).await?;
 
     backend
-        .exec("agent create first process --description 'First'")
+        .exec_json("agent create first process --description 'First'")
         .await?;
     backend
-        .exec("agent create second process --description 'Second'")
+        .exec_json("agent create second process --description 'Second'")
         .await?;
 
-    let response = backend.exec("agent list").await?;
+    let response = backend.exec_json("agent list").await?;
 
     match response.data {
         Responses::Agent(AgentResponse::Agents(agents)) => {
@@ -97,11 +97,13 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
     setup_with_persona(&mut backend).await?;
 
     backend
-        .exec("agent create mutable process --description 'Original' --prompt 'Original.'")
+        .exec_json("agent create mutable process --description 'Original' --prompt 'Original.'")
         .await?;
 
     let response = backend
-        .exec("agent update mutable.process process --description 'Updated' --prompt 'Updated.'")
+        .exec_json(
+            "agent update mutable.process process --description 'Updated' --prompt 'Updated.'",
+        )
         .await?;
 
     assert!(
@@ -113,7 +115,7 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
     );
 
     // Verify via show
-    let show = backend.exec("agent show mutable.process").await?;
+    let show = backend.exec_json("agent show mutable.process").await?;
 
     match show.data {
         Responses::Agent(AgentResponse::AgentDetails(agent)) => {
@@ -130,10 +132,10 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     setup_with_persona(&mut backend).await?;
 
     backend
-        .exec("agent create temporary process --description 'Will be removed'")
+        .exec_json("agent create temporary process --description 'Will be removed'")
         .await?;
 
-    let response = backend.exec("agent remove temporary.process").await?;
+    let response = backend.exec_json("agent remove temporary.process").await?;
 
     assert!(
         matches!(
@@ -143,7 +145,7 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
         "expected AgentRemoved, got {response:#?}"
     );
 
-    let list = backend.exec("agent list").await?;
+    let list = backend.exec_json("agent list").await?;
 
     assert!(
         matches!(list.data, Responses::Agent(AgentResponse::NoAgents)),
@@ -158,10 +160,10 @@ pub(crate) async fn name_includes_persona_suffix<B: Backend>() -> TestResult {
     setup_with_persona(&mut backend).await?;
 
     backend
-        .exec("agent create governor process --description 'Governor'")
+        .exec_json("agent create governor process --description 'Governor'")
         .await?;
 
-    let response = backend.exec("agent show governor.process").await?;
+    let response = backend.exec_json("agent show governor.process").await?;
 
     match response.data {
         Responses::Agent(AgentResponse::AgentDetails(agent)) => {

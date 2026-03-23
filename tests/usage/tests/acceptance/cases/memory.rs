@@ -3,17 +3,17 @@ use oneiros_usage::*;
 
 /// Helper: bootstrap with persona + agent + level so memories have references.
 async fn setup_with_agent_and_level<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
+    backend.exec_json("project init --yes").await?;
     backend
-        .exec("persona set process --description 'Process agents'")
+        .exec_json("persona set process --description 'Process agents'")
         .await?;
     backend
-        .exec("level set session --description 'Session context' --prompt 'For the session.'")
+        .exec_json("level set session --description 'Session context' --prompt 'For the session.'")
         .await?;
     backend
-        .exec("agent create learner process --description 'A learning agent'")
+        .exec_json("agent create learner process --description 'A learning agent'")
         .await?;
     Ok(())
 }
@@ -23,7 +23,7 @@ pub(crate) async fn add_creates_memory<B: Backend>() -> TestResult {
     setup_with_agent_and_level(&mut backend).await?;
 
     let response = backend
-        .exec("memory add learner.process session 'A test memory'")
+        .exec_json("memory add learner.process session 'A test memory'")
         .await?;
 
     assert!(
@@ -41,7 +41,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_agent_and_level(&mut backend).await?;
 
-    let response = backend.exec("memory list").await?;
+    let response = backend.exec_json("memory list").await?;
 
     assert!(
         matches!(response.data, Responses::Memory(MemoryResponse::NoMemories)),
@@ -56,13 +56,13 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     setup_with_agent_and_level(&mut backend).await?;
 
     backend
-        .exec("memory add learner.process session 'First memory'")
+        .exec_json("memory add learner.process session 'First memory'")
         .await?;
     backend
-        .exec("memory add learner.process session 'Second memory'")
+        .exec_json("memory add learner.process session 'Second memory'")
         .await?;
 
-    let response = backend.exec("memory list").await?;
+    let response = backend.exec_json("memory list").await?;
 
     match response.data {
         Responses::Memory(MemoryResponse::Memories(memories)) => {
@@ -79,17 +79,19 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
     setup_with_agent_and_level(&mut backend).await?;
 
     backend
-        .exec("agent create other process --description 'Other agent'")
+        .exec_json("agent create other process --description 'Other agent'")
         .await?;
 
     backend
-        .exec("memory add learner.process session 'Learner memory'")
+        .exec_json("memory add learner.process session 'Learner memory'")
         .await?;
     backend
-        .exec("memory add other.process session 'Other memory'")
+        .exec_json("memory add other.process session 'Other memory'")
         .await?;
 
-    let response = backend.exec("memory list --agent learner.process").await?;
+    let response = backend
+        .exec_json("memory list --agent learner.process")
+        .await?;
 
     match response.data {
         Responses::Memory(MemoryResponse::Memories(memories)) => {
@@ -106,7 +108,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     setup_with_agent_and_level(&mut backend).await?;
 
     let add_response = backend
-        .exec("memory add learner.process session 'Show me this'")
+        .exec_json("memory add learner.process session 'Show me this'")
         .await?;
 
     let id = match add_response.data {
@@ -115,7 +117,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     };
 
     let show_cmd = format!("memory show {id}");
-    let show_response = backend.exec(&show_cmd).await?;
+    let show_response = backend.exec_json(&show_cmd).await?;
 
     match show_response.data {
         Responses::Memory(MemoryResponse::MemoryDetails(memory)) => {

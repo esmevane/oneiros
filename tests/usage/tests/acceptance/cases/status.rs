@@ -4,15 +4,15 @@ use oneiros_usage::*;
 pub(crate) async fn returns_agent_status<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
-    backend.exec("seed core").await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
     backend
-        .exec("agent create thinker process --description 'A thinking agent'")
+        .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let response = backend.exec("status thinker.process").await?;
+    let response = backend.exec_json("status thinker.process").await?;
 
     match &response.data {
         // Engine: typed continuity response

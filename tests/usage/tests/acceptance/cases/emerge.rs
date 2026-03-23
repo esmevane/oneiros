@@ -4,13 +4,13 @@ use oneiros_usage::*;
 pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
-    backend.exec("seed core").await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
 
     let response = backend
-        .exec("emerge newborn process --description 'A new agent'")
+        .exec_json("emerge newborn process --description 'A new agent'")
         .await?;
 
     match &response.data {
@@ -26,7 +26,7 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     }
 
     // Verify the agent exists via typed response
-    let show = backend.exec("agent show newborn.process").await?;
+    let show = backend.exec_json("agent show newborn.process").await?;
 
     assert!(
         matches!(show.data, Responses::Agent(AgentResponse::AgentDetails(_))),
@@ -39,16 +39,16 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
 pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 
-    backend.exec("system init --name test --yes").await?;
+    backend.exec_json("system init --name test --yes").await?;
     backend.start_service().await?;
-    backend.exec("project init --yes").await?;
-    backend.exec("seed core").await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
 
     backend
-        .exec("agent create retiring process --description 'Will retire'")
+        .exec_json("agent create retiring process --description 'Will retire'")
         .await?;
 
-    let response = backend.exec("recede retiring.process").await?;
+    let response = backend.exec_json("recede retiring.process").await?;
 
     match &response.data {
         // Engine: typed continuity response
