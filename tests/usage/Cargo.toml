@@ -14,6 +14,7 @@ oneiros-config = { workspace = true }
 oneiros-context = { workspace = true }
 oneiros-detect-project-name = { workspace = true }
 oneiros-http = { workspace = true }
+oneiros-outcomes = { workspace = true }
 rusqlite = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }

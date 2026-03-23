@@ -2,11 +2,14 @@ use std::future::Future;
 
 pub type TestResult = Result<(), Box<dyn core::error::Error>>;
 
-/// A test backend that can execute CLI commands and return typed responses.
+/// A test backend that can execute CLI commands and return responses.
 ///
-/// The engine's `Response<Responses>` envelope is the specification.
-/// Both backends must produce it — the engine directly, the legacy
-/// by deserializing HTTP responses into the same types.
+/// Two execution modes mirror the CLI's output modes:
+/// - `exec_json` returns typed data for structural assertions
+/// - `exec_prompt` returns rendered prompt text for content assertions
+///
+/// Both backends must produce equivalent results — the engine directly,
+/// the legacy by deserializing HTTP responses into the same types.
 pub trait Backend: Sized {
     /// Create a new backend instance ready to execute commands.
     fn start() -> impl Future<Output = Result<Self, Box<dyn core::error::Error>>>;
@@ -21,4 +24,10 @@ pub trait Backend: Sized {
     ) -> impl Future<
         Output = Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error>,
     >;
+
+    /// Execute in prompt mode — returns rendered text for content assertions.
+    fn exec_prompt(
+        &self,
+        command: &str,
+    ) -> impl Future<Output = Result<String, oneiros_engine::Error>>;
 }

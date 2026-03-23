@@ -13,6 +13,7 @@ pub(crate) mod nature;
 pub(crate) mod persona;
 pub(crate) mod pressure;
 pub(crate) mod project;
+pub(crate) mod prompt;
 pub(crate) mod search;
 pub(crate) mod seed;
 pub(crate) mod sensation;

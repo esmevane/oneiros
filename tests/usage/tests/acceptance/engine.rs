@@ -46,6 +46,22 @@ impl Backend for EngineBackend {
         Ok(rendered.into_response())
     }
 
+    async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
+        let args = shell_words(command);
+        let mut full_args = vec!["oneiros".to_string()];
+        full_args.extend(args);
+
+        let full_args = strip_output_flag(full_args);
+
+        let rendered = Cli::try_parse_from(&full_args)
+            .map_err(|e| Error::Context(e.to_string()))?
+            .command
+            .execute(&self.engine)
+            .await?;
+
+        Ok(rendered.prompt().to_string())
+    }
+
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
         // Bind to port 0 so the OS assigns an available port.
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
@@ -543,4 +559,38 @@ async fn import_restores_data() -> TestResult {
 #[tokio::test]
 async fn replay_rebuilds_projections() -> TestResult {
     cases::import_export::replay_rebuilds_projections::<EngineBackend>().await
+}
+
+// Prompt output
+#[tokio::test]
+async fn prompt_dream_contains_identity() -> TestResult {
+    cases::prompt::dream_prompt_contains_identity::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_dream_contains_vocabulary() -> TestResult {
+    cases::prompt::dream_prompt_contains_vocabulary::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_dream_contains_memories() -> TestResult {
+    cases::prompt::dream_prompt_contains_memories::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_dream_contains_cognitions() -> TestResult {
+    cases::prompt::dream_prompt_contains_cognitions::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_introspect_contains_agent() -> TestResult {
+    cases::prompt::introspect_prompt_contains_agent::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_reflect_contains_agent() -> TestResult {
+    cases::prompt::reflect_prompt_contains_agent::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_guidebook_contains_capabilities() -> TestResult {
+    cases::prompt::guidebook_prompt_contains_capabilities::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_wake_contains_identity() -> TestResult {
+    cases::prompt::wake_prompt_contains_identity::<EngineBackend>().await
 }

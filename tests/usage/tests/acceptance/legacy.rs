@@ -97,6 +97,29 @@ impl Backend for Legacy {
         Ok(response)
     }
 
+    async fn exec_prompt(&self, command: &str) -> Result<String, oneiros_engine::Error> {
+        use oneiros_outcomes::Reportable;
+
+        let args = shell_words(command);
+        let mut full_args = vec!["oneiros"];
+        full_args.extend(args.iter().map(String::as_str));
+
+        let cli = oneiros_cli::Cli::try_parse_from(full_args)
+            .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
+        let result = cli
+            .run_with(&self.context)
+            .await
+            .map_err(|e| oneiros_engine::Error::Context(e.to_string()))?;
+
+        let outcome = result
+            .outcomes
+            .into_iter()
+            .last()
+            .ok_or_else(|| oneiros_engine::Error::Context("no outcomes".to_string()))?;
+
+        Ok(outcome.prompt().unwrap_or_default())
+    }
+
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
         let project_root = self._temp.path().join("project");
         std::fs::create_dir_all(&project_root)?;
@@ -581,4 +604,38 @@ async fn urge_list_populated() -> TestResult {
 #[tokio::test]
 async fn urge_remove() -> TestResult {
     cases::urge::remove::<Legacy>().await
+}
+
+// Prompt output
+#[tokio::test]
+async fn prompt_dream_contains_identity() -> TestResult {
+    cases::prompt::dream_prompt_contains_identity::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_dream_contains_vocabulary() -> TestResult {
+    cases::prompt::dream_prompt_contains_vocabulary::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_dream_contains_memories() -> TestResult {
+    cases::prompt::dream_prompt_contains_memories::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_dream_contains_cognitions() -> TestResult {
+    cases::prompt::dream_prompt_contains_cognitions::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_introspect_contains_agent() -> TestResult {
+    cases::prompt::introspect_prompt_contains_agent::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_reflect_contains_agent() -> TestResult {
+    cases::prompt::reflect_prompt_contains_agent::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_guidebook_contains_capabilities() -> TestResult {
+    cases::prompt::guidebook_prompt_contains_capabilities::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_wake_contains_identity() -> TestResult {
+    cases::prompt::wake_prompt_contains_identity::<Legacy>().await
 }

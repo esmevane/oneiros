@@ -1964,6 +1964,7 @@ dependencies = [
  "oneiros-detect-project-name",
  "oneiros-engine",
  "oneiros-http",
+ "oneiros-outcomes",
  "rusqlite",
  "serde_json",
  "tempfile",
