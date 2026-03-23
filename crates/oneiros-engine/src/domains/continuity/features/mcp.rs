@@ -53,42 +53,55 @@ pub mod continuity_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
+        let no_overrides = DreamOverrides::default();
+
         let value = match tool_name {
             "dream" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::dream(context, &AgentName::new(&p.agent))
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response =
+                    ContinuityService::dream(context, &AgentName::new(&p.agent), &no_overrides)
+                        .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "introspect" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::introspect(context, &AgentName::new(&p.agent))
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response = ContinuityService::introspect(
+                    context,
+                    &AgentName::new(&p.agent),
+                    &no_overrides,
+                )
+                .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "reflect" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::reflect(context, &AgentName::new(&p.agent))
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response =
+                    ContinuityService::reflect(context, &AgentName::new(&p.agent), &no_overrides)
+                        .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "sense" => {
                 let p: SenseParams = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let content = Content::new(&p.content);
-                let response =
-                    ContinuityService::sense(context, &AgentName::new(&p.agent), &content)
-                        .map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response = ContinuityService::sense(
+                    context,
+                    &AgentName::new(&p.agent),
+                    &content,
+                    &no_overrides,
+                )
+                .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "sleep" => {
                 let p: AgentParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::sleep(context, &AgentName::new(&p.agent))
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response =
+                    ContinuityService::sleep(context, &AgentName::new(&p.agent), &no_overrides)
+                        .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),

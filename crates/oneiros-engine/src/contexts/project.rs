@@ -64,6 +64,14 @@ impl ProjectContext {
         self.config.as_ref().map(|c| c.data_dir.as_path())
     }
 
+    /// The server-level dream assembly configuration.
+    pub fn dream_config(&self) -> DreamConfig {
+        self.config
+            .as_ref()
+            .map(|c| c.dream.clone())
+            .unwrap_or_default()
+    }
+
     /// Execute a read operation against the database.
     pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
         let conn = self.db.lock().expect("db lock");

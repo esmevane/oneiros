@@ -3,6 +3,8 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
+use crate::DreamConfig;
+
 /// Configuration for the engine.
 ///
 /// Carries paths, service address, and tuning knobs. Shared between
@@ -13,6 +15,8 @@ pub struct Config {
     pub data_dir: PathBuf,
     /// Address the service listens on / clients connect to.
     pub service_addr: SocketAddr,
+    /// Default dream assembly configuration.
+    pub dream: DreamConfig,
 }
 
 impl Config {
@@ -20,6 +24,7 @@ impl Config {
         Self {
             data_dir: data_dir.into(),
             service_addr: default_addr(),
+            dream: DreamConfig::default(),
         }
     }
 

@@ -5,13 +5,13 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ContinuityResponse {
-    Emerged(CognitiveContext),
-    Waking(CognitiveContext),
-    Dreaming(CognitiveContext),
-    Introspecting(CognitiveContext),
-    Reflecting(CognitiveContext),
-    Sleeping(CognitiveContext),
+    Emerged(DreamContext),
+    Waking(DreamContext),
+    Dreaming(DreamContext),
+    Introspecting(DreamContext),
+    Reflecting(DreamContext),
+    Sleeping(DreamContext),
     Receded(AgentName),
-    Status(CognitiveContext),
-    Guidebook(CognitiveContext),
+    Status(DreamContext),
+    Guidebook(DreamContext),
 }

@@ -125,6 +125,46 @@ impl<'a> ExperienceRepo<'a> {
         Ok(experiences)
     }
 
+    /// Most recent experiences for an agent, ordered newest-first.
+    pub fn list_recent(&self, agent_id: &str, limit: usize) -> Result<Vec<Experience>, EventError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, agent_id, sensation, description, created_at
+             FROM experiences
+             WHERE agent_id = ?1
+             ORDER BY created_at DESC
+             LIMIT ?2",
+        )?;
+
+        let map_row = |row: &rusqlite::Row<'_>| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        };
+
+        let raw = stmt
+            .query_map(params![agent_id, limit], map_row)?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut experiences = vec![];
+        for (id, agent_id, sensation, description, created_at) in raw {
+            experiences.push(
+                Experience::builder()
+                    .id(id.parse()?)
+                    .agent_id(agent_id.parse()?)
+                    .sensation(sensation)
+                    .description(description)
+                    .created_at(Timestamp::parse_str(&created_at)?)
+                    .build(),
+            );
+        }
+
+        Ok(experiences)
+    }
+
     // ── Write operations (called by handle) ─────────────────────
 
     fn insert(&self, experience: &Experience) -> Result<(), EventError> {
