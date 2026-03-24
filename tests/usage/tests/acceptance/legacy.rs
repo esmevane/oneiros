@@ -606,37 +606,73 @@ async fn urge_remove() -> TestResult {
     cases::urge::remove::<Legacy>().await
 }
 
-// Prompt output
+// Prompt output — lifecycle
 #[tokio::test]
 async fn prompt_dream_contains_identity() -> TestResult {
-    cases::prompt::dream_prompt_contains_identity::<Legacy>().await
+    cases::lifecycle::dream_prompt_contains_identity::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_vocabulary() -> TestResult {
-    cases::prompt::dream_prompt_contains_vocabulary::<Legacy>().await
+    cases::lifecycle::dream_prompt_contains_vocabulary::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_memories() -> TestResult {
-    cases::prompt::dream_prompt_contains_memories::<Legacy>().await
+    cases::lifecycle::dream_prompt_contains_memories::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_cognitions() -> TestResult {
-    cases::prompt::dream_prompt_contains_cognitions::<Legacy>().await
+    cases::lifecycle::dream_prompt_contains_cognitions::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_introspect_contains_agent() -> TestResult {
-    cases::prompt::introspect_prompt_contains_agent::<Legacy>().await
+    cases::lifecycle::introspect_prompt_contains_agent::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_reflect_contains_agent() -> TestResult {
-    cases::prompt::reflect_prompt_contains_agent::<Legacy>().await
+    cases::lifecycle::reflect_prompt_contains_agent::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_guidebook_contains_capabilities() -> TestResult {
-    cases::prompt::guidebook_prompt_contains_capabilities::<Legacy>().await
+    cases::lifecycle::guidebook_prompt_contains_capabilities::<Legacy>().await
 }
 #[tokio::test]
 async fn prompt_wake_contains_identity() -> TestResult {
-    cases::prompt::wake_prompt_contains_identity::<Legacy>().await
+    cases::lifecycle::wake_prompt_contains_identity::<Legacy>().await
 }
+#[tokio::test]
+async fn prompt_sleep_contains_agent() -> TestResult {
+    cases::lifecycle::sleep_prompt_contains_agent::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_sense_contains_agent() -> TestResult {
+    cases::lifecycle::sense_prompt_contains_agent::<Legacy>().await
+}
+
+// Prompt output — emerge/recede
 // NOTE: emerge prompt test is engine-only — the legacy emerge doesn't render a template.
+#[tokio::test]
+async fn prompt_recede_contains_agent() -> TestResult {
+    cases::emerge::recede_prompt_contains_agent::<Legacy>().await
+}
+
+// Prompt output — status
+#[tokio::test]
+async fn prompt_status_contains_agent() -> TestResult {
+    cases::status::status_prompt_contains_agent::<Legacy>().await
+}
+
+// Prompt output — pressure
+#[tokio::test]
+async fn prompt_pressure_contains_readings() -> TestResult {
+    cases::pressure::pressure_prompt_contains_readings::<Legacy>().await
+}
+
+// Prompt output — search
+#[tokio::test]
+async fn prompt_search_contains_results() -> TestResult {
+    cases::search::search_prompt_contains_results::<Legacy>().await
+}
+#[tokio::test]
+async fn prompt_search_empty_results() -> TestResult {
+    cases::search::search_prompt_empty_results::<Legacy>().await
+}

@@ -4,9 +4,35 @@
 //! This module collects them into a single top-level enum and routes each
 //! command to the context it needs.
 
-use clap::Subcommand;
+use clap::{Parser, Subcommand};
 
 use crate::*;
+
+/// Top-level CLI entry point for the engine.
+///
+/// Carries the global `--output` flag and delegates to `Command` for dispatch.
+/// No binary entrypoint required — tests and future binaries construct this directly.
+#[derive(Debug, Parser)]
+#[command(name = "oneiros", version)]
+pub struct Cli {
+    /// Output format: json (default), text, or prompt.
+    #[arg(long, short, default_value = "json", global = true)]
+    pub output: OutputMode,
+    #[command(subcommand)]
+    pub command: Command,
+}
+
+impl Cli {
+    /// Execute the command and return the rendered result.
+    pub async fn execute(&self, engine: &Engine) -> Result<Rendered<Responses>, Error> {
+        self.command.execute(engine).await
+    }
+
+    /// The selected output mode.
+    pub fn output_mode(&self) -> &OutputMode {
+        &self.output
+    }
+}
 
 /// All CLI commands, unified under one tree.
 ///
@@ -152,12 +178,8 @@ impl Command {
             Command::Storage(storage) => {
                 Response::new(storage.execute(engine.project()?).await?).into()
             }
-            Command::Search(search) => {
-                Response::new(search.execute(engine.project()?).await?).into()
-            }
-            Command::Pressure(pressure) => {
-                Response::new(pressure.execute(engine.project()?).await?).into()
-            }
+            Command::Search(search) => search.execute(engine.project()?).await?,
+            Command::Pressure(pressure) => pressure.execute(engine.project()?).await?,
 
             // Doctor — system diagnostics
             Command::Doctor => Response::new(

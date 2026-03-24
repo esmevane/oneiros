@@ -1,6 +1,28 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
+pub(crate) async fn pressure_prompt_contains_readings<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
+    backend
+        .exec_json("agent create thinker process --description 'A thinking agent'")
+        .await?;
+
+    let prompt = backend.exec_prompt("pressure thinker.process").await?;
+
+    assert!(!prompt.is_empty(), "pressure prompt should not be empty");
+    assert!(
+        prompt.contains("pressure") || prompt.contains('%'),
+        "pressure prompt should describe pressure state, got: {prompt}"
+    );
+
+    Ok(())
+}
+
 /// Helper: extract pressure readings from a `Response<Responses>` value.
 fn extract_pressures(response: Response<Responses>) -> Vec<Pressure> {
     match response.data {

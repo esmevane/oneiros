@@ -1,5 +1,5 @@
 /// How the caller wants output formatted.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, clap::ValueEnum)]
 pub enum OutputMode {
     /// Structured data — machines, acceptance tests, --output json.
     #[default]

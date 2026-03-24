@@ -10,15 +10,17 @@ pub struct SearchCommands {
 }
 
 impl SearchCommands {
-    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, SearchError> {
+    pub async fn execute(
+        &self,
+        context: &ProjectContext,
+    ) -> Result<Rendered<Responses>, SearchError> {
         let client = context.client();
         let search_client = SearchClient::new(&client);
 
         let agent_name = self.agent.as_deref().map(AgentName::new);
-        let result = search_client
+        let response = search_client
             .search(&self.query, agent_name.as_ref())
-            .await?
-            .into();
-        Ok(result)
+            .await?;
+        Ok(SearchPresenter::new(response).render())
     }
 }

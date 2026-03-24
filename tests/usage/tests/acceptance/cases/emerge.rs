@@ -36,6 +36,55 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn emerge_prompt_contains_identity<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
+
+    let prompt = backend
+        .exec_prompt("emerge thinker process --description 'A thinking agent'")
+        .await?;
+
+    assert!(
+        prompt.contains("thinker.process"),
+        "emerge prompt should contain the created agent's full name"
+    );
+    assert!(
+        prompt.contains("## Your Identity"),
+        "emerge prompt should render the dream template for the new agent"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn recede_prompt_contains_agent<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
+    backend
+        .exec_json("agent create thinker process --description 'A thinking agent'")
+        .await?;
+
+    let prompt = backend.exec_prompt("recede thinker.process").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "recede prompt should not be empty — the agent needs a farewell"
+    );
+    assert!(
+        prompt.contains("thinker.process"),
+        "recede prompt should contain the agent name"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 

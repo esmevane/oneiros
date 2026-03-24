@@ -13,11 +13,18 @@ pub enum RecedeError {
     Context(#[from] ContextError),
 }
 
+#[derive(Clone, serde::Serialize)]
+struct RecedeContext {
+    name: AgentName,
+    #[serde(skip)]
+    prompt: String,
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RecedeOutcomes {
-    #[outcome(message("'{}' has receded.", .0))]
-    Receded(AgentName),
+    #[outcome(message("'{}' has receded.", .0.name), prompt("{}", .0.prompt))]
+    Receded(RecedeContext),
 }
 
 /// Retire an agent — record the lifecycle event and remove.
@@ -37,7 +44,15 @@ impl RecedeOp {
         let client = context.client();
         client.recede(&context.ticket_token()?, &self.name).await?;
 
-        outcomes.emit(RecedeOutcomes::Receded(self.name.clone()));
+        let prompt = format!(
+            "Agent '{}' has receded. Their cognitions, memories, and experiences remain in the record, but they will no longer participate in active sessions.",
+            self.name
+        );
+
+        outcomes.emit(RecedeOutcomes::Receded(RecedeContext {
+            name: self.name.clone(),
+            prompt,
+        }));
 
         Ok((outcomes, vec![]))
     }

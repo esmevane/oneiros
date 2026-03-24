@@ -43,7 +43,10 @@ impl ContinuityPresenter {
                 IntrospectTemplate::new(&ctx.agent, pressures).to_string()
             }
             ContinuityResponse::Guidebook(ctx) => GuidebookTemplate::new(ctx).to_string(),
-            ContinuityResponse::Receded(_) => String::new(),
+            ContinuityResponse::Receded(name) => format!(
+                "Agent '{}' has receded. Their cognitions, memories, and experiences remain in the record, but they will no longer participate in active sessions.",
+                name
+            ),
         }
     }
 

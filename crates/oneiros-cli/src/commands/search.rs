@@ -19,7 +19,7 @@ pub enum SearchError {
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SearchOutcomes {
-    #[outcome(message("{}", .0))]
+    #[outcome(message("{}", .0), prompt("{}", .0))]
     Results(SearchResultsDisplay),
 }
 

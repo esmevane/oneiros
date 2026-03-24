@@ -10,14 +10,6 @@ pub struct EngineBackend {
     server: Option<tokio::task::JoinHandle<()>>,
 }
 
-/// Wrapper to parse command strings into the engine's `Command` enum.
-#[derive(Debug, Parser)]
-#[command(name = "oneiros")]
-struct Cli {
-    #[command(subcommand)]
-    command: Command,
-}
-
 impl Backend for EngineBackend {
     async fn start() -> Result<Self, Box<dyn core::error::Error>> {
         let temp = tempfile::TempDir::new()?;
@@ -35,13 +27,9 @@ impl Backend for EngineBackend {
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        let full_args = strip_output_flag(full_args);
+        let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
 
-        let rendered = Cli::try_parse_from(&full_args)
-            .map_err(|e| Error::Context(e.to_string()))?
-            .command
-            .execute(&self.engine)
-            .await?;
+        let rendered = cli.execute(&self.engine).await?;
 
         Ok(rendered.into_response())
     }
@@ -51,13 +39,9 @@ impl Backend for EngineBackend {
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        let full_args = strip_output_flag(full_args);
+        let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
 
-        let rendered = Cli::try_parse_from(&full_args)
-            .map_err(|e| Error::Context(e.to_string()))?
-            .command
-            .execute(&self.engine)
-            .await?;
+        let rendered = cli.execute(&self.engine).await?;
 
         Ok(rendered.prompt().to_string())
     }
@@ -82,26 +66,6 @@ impl Backend for EngineBackend {
 
         Ok(())
     }
-}
-
-/// Strip `--output json` or `-o json` flag pairs from args.
-fn strip_output_flag(args: Vec<String>) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut skip_next = false;
-
-    for arg in args {
-        if skip_next {
-            skip_next = false;
-            continue;
-        }
-        if arg == "--output" || arg == "-o" {
-            skip_next = true;
-            continue;
-        }
-        result.push(arg);
-    }
-
-    result
 }
 
 /// Split a command string into words, respecting single and double quotes.
@@ -561,40 +525,77 @@ async fn replay_rebuilds_projections() -> TestResult {
     cases::import_export::replay_rebuilds_projections::<EngineBackend>().await
 }
 
-// Prompt output
+// Prompt output — lifecycle
 #[tokio::test]
 async fn prompt_dream_contains_identity() -> TestResult {
-    cases::prompt::dream_prompt_contains_identity::<EngineBackend>().await
+    cases::lifecycle::dream_prompt_contains_identity::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_vocabulary() -> TestResult {
-    cases::prompt::dream_prompt_contains_vocabulary::<EngineBackend>().await
+    cases::lifecycle::dream_prompt_contains_vocabulary::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_memories() -> TestResult {
-    cases::prompt::dream_prompt_contains_memories::<EngineBackend>().await
+    cases::lifecycle::dream_prompt_contains_memories::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_cognitions() -> TestResult {
-    cases::prompt::dream_prompt_contains_cognitions::<EngineBackend>().await
+    cases::lifecycle::dream_prompt_contains_cognitions::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_introspect_contains_agent() -> TestResult {
-    cases::prompt::introspect_prompt_contains_agent::<EngineBackend>().await
+    cases::lifecycle::introspect_prompt_contains_agent::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_reflect_contains_agent() -> TestResult {
-    cases::prompt::reflect_prompt_contains_agent::<EngineBackend>().await
+    cases::lifecycle::reflect_prompt_contains_agent::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_guidebook_contains_capabilities() -> TestResult {
-    cases::prompt::guidebook_prompt_contains_capabilities::<EngineBackend>().await
+    cases::lifecycle::guidebook_prompt_contains_capabilities::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_wake_contains_identity() -> TestResult {
-    cases::prompt::wake_prompt_contains_identity::<EngineBackend>().await
+    cases::lifecycle::wake_prompt_contains_identity::<EngineBackend>().await
 }
 #[tokio::test]
+async fn prompt_sleep_contains_agent() -> TestResult {
+    cases::lifecycle::sleep_prompt_contains_agent::<EngineBackend>().await
+}
+#[tokio::test]
+#[ignore = "engine does not have a sense command yet"]
+async fn prompt_sense_contains_agent() -> TestResult {
+    cases::lifecycle::sense_prompt_contains_agent::<EngineBackend>().await
+}
+
+// Prompt output — emerge/recede
+#[tokio::test]
 async fn prompt_emerge_contains_identity() -> TestResult {
-    cases::prompt::emerge_prompt_contains_identity::<EngineBackend>().await
+    cases::emerge::emerge_prompt_contains_identity::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_recede_contains_agent() -> TestResult {
+    cases::emerge::recede_prompt_contains_agent::<EngineBackend>().await
+}
+
+// Prompt output — status
+#[tokio::test]
+async fn prompt_status_contains_agent() -> TestResult {
+    cases::status::status_prompt_contains_agent::<EngineBackend>().await
+}
+
+// Prompt output — pressure
+#[tokio::test]
+async fn prompt_pressure_contains_readings() -> TestResult {
+    cases::pressure::pressure_prompt_contains_readings::<EngineBackend>().await
+}
+
+// Prompt output — search
+#[tokio::test]
+async fn prompt_search_contains_results() -> TestResult {
+    cases::search::search_prompt_contains_results::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_search_empty_results() -> TestResult {
+    cases::search::search_prompt_empty_results::<EngineBackend>().await
 }

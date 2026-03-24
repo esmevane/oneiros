@@ -1,6 +1,42 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
+pub(crate) async fn search_prompt_contains_results<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_searchable(&mut backend).await?;
+
+    backend
+        .exec_json("cognition add thinker.process observation 'The garden is growing well today'")
+        .await?;
+
+    let prompt = backend.exec_prompt("search garden").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "search prompt should not be empty when results exist"
+    );
+    assert!(
+        prompt.contains("garden"),
+        "search prompt should contain the query or matching content"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn search_prompt_empty_results<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_searchable(&mut backend).await?;
+
+    let prompt = backend.exec_prompt("search xyznonexistent").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "search prompt should not be empty even with no results — tell the agent what happened"
+    );
+
+    Ok(())
+}
+
 /// Helper: bootstrap with agent and vocabulary for search tests.
 async fn setup_searchable<B: Backend>(backend: &mut B) -> TestResult {
     backend.exec_json("system init --name test --yes").await?;
