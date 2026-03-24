@@ -163,6 +163,29 @@ pub(crate) async fn guidebook_prompt_contains_capabilities<B: Backend>() -> Test
     Ok(())
 }
 
+pub(crate) async fn emerge_prompt_contains_identity<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend.exec_json("seed core").await?;
+
+    let prompt = backend
+        .exec_prompt("emerge thinker process --description 'A thinking agent'")
+        .await?;
+
+    assert!(
+        prompt.contains("thinker.process"),
+        "emerge prompt should contain the created agent's full name"
+    );
+    assert!(
+        prompt.contains("## Your Identity"),
+        "emerge prompt should render the dream template for the new agent"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn wake_prompt_contains_identity<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_seeded_agent(&mut backend).await?;

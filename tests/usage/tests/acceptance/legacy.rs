@@ -639,3 +639,4 @@ async fn prompt_guidebook_contains_capabilities() -> TestResult {
 async fn prompt_wake_contains_identity() -> TestResult {
     cases::prompt::wake_prompt_contains_identity::<Legacy>().await
 }
+// NOTE: emerge prompt test is engine-only — the legacy emerge doesn't render a template.

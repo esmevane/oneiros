@@ -594,3 +594,7 @@ async fn prompt_guidebook_contains_capabilities() -> TestResult {
 async fn prompt_wake_contains_identity() -> TestResult {
     cases::prompt::wake_prompt_contains_identity::<EngineBackend>().await
 }
+#[tokio::test]
+async fn prompt_emerge_contains_identity() -> TestResult {
+    cases::prompt::emerge_prompt_contains_identity::<EngineBackend>().await
+}
