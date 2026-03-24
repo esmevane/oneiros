@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AddCognitionOutcomes {
-    #[outcome(message("Cognition added: {}", .0.ref_token()))]
+    #[outcome(message("Cognition added: {}", .0.ref_token()), prompt("Cognition recorded: {}", .0.ref_token()))]
     CognitionAdded(Cognition),
 }
 

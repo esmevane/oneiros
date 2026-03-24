@@ -24,10 +24,10 @@ impl core::fmt::Display for ConnectionList {
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListConnectionsOutcomes {
-    #[outcome(message("No connections found."))]
+    #[outcome(message("No connections found."), prompt("No connections found."))]
     NoConnections,
 
-    #[outcome(message("{0}"))]
+    #[outcome(message("{0}"), prompt("{0}"))]
     Connections(ConnectionList),
 }
 

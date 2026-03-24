@@ -12,10 +12,11 @@ pub enum CheckupError {}
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorOutcomes {
     // --- System checks ---
-    #[outcome(message("System is initialized."))]
+    #[outcome(message("System is initialized."), prompt("System is initialized."))]
     Initialized,
     #[outcome(
         message("System is not initialized. Run `oneiros system init`."),
+        prompt("System is not initialized. Run `oneiros system init`."),
         level = "error"
     )]
     NotInitialized,
@@ -61,14 +62,17 @@ pub enum DoctorOutcomes {
     TokenInvalid(String, String),
 
     // --- MCP checks ---
-    #[outcome(message("MCP config found at '{}'.", .0.display()))]
+    #[outcome(message("MCP config found at '{}'.", .0.display()), prompt("MCP config found at '{}'.", .0.display()))]
     McpConfigOk(PathBuf),
     #[outcome(
         message("No .mcp.json found. Run `oneiros project init` to generate one."),
         level = "warn"
     )]
     NoMcpConfig,
-    #[outcome(message("MCP config has matching auth token."))]
+    #[outcome(
+        message("MCP config has matching auth token."),
+        prompt("MCP config has matching auth token.")
+    )]
     McpTokenMatches,
     #[outcome(
         message(

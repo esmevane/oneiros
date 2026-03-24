@@ -140,3 +140,90 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 
     Ok(())
 }
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_sensation(&mut backend).await?;
+
+    let response = backend
+        .exec_json("experience create observer.process caused 'Show this'")
+        .await?;
+    let id = match response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.id.to_string(),
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let prompt = backend
+        .exec_prompt(&format!("experience show {id}"))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience show prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_sensation(&mut backend).await?;
+    backend
+        .exec_json("experience create observer.process caused 'An experience'")
+        .await?;
+
+    let prompt = backend
+        .exec_prompt("experience list --agent observer.process")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience list prompt should not be empty when experiences exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_sensation(&mut backend).await?;
+
+    let response = backend
+        .exec_json("experience create observer.process caused 'Original'")
+        .await?;
+    let id = match response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.id.to_string(),
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let prompt = backend
+        .exec_prompt(&format!("experience update {id} --description 'Updated'"))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience update prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn create_prompt_confirms_creation<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_sensation(&mut backend).await?;
+
+    let prompt = backend
+        .exec_prompt("experience create observer.process caused 'A prompted experience'")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience create prompt should not be empty — confirm what was recorded"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "experience create prompt should contain a ref token for the created experience"
+    );
+
+    Ok(())
+}

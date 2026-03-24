@@ -109,6 +109,83 @@ pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let prompt = backend
+        .exec_prompt("level set test-level --description 'A test level' --prompt 'Test prompt.'")
+        .await?;
+
+    assert!(!prompt.is_empty(), "level set prompt should not be empty");
+
+    Ok(())
+}
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend
+        .exec_json("level set test-level --description 'A test level' --prompt 'Test prompt.'")
+        .await?;
+
+    let prompt = backend.exec_prompt("level show test-level").await?;
+
+    assert!(!prompt.is_empty(), "level show prompt should not be empty");
+    assert!(
+        prompt.contains("test-level"),
+        "level show prompt should contain the entry name"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend
+        .exec_json("level set test-level --description 'A test level' --prompt 'Test prompt.'")
+        .await?;
+
+    let prompt = backend.exec_prompt("level list").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "level list prompt should not be empty when entries exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+    backend
+        .exec_json("level set temporary --description 'Will be removed' --prompt 'Temporary.'")
+        .await?;
+
+    let prompt = backend.exec_prompt("level remove temporary").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "level remove prompt should not be empty"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 

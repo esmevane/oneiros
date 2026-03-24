@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveConnectionOutcomes {
-    #[outcome(message("Connection {0} removed."))]
+    #[outcome(message("Connection {0} removed."), prompt("Connection {0} removed."))]
     ConnectionRemoved(ConnectionId),
 }
 

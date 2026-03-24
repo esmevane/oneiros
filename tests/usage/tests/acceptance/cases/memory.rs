@@ -128,3 +128,61 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     Ok(())
 }
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_level(&mut backend).await?;
+
+    let response = backend
+        .exec_json("memory add learner.process session 'Show me this'")
+        .await?;
+    let id = match response.data {
+        Responses::Memory(MemoryResponse::MemoryAdded(m)) => m.id.to_string(),
+        other => panic!("expected MemoryAdded, got {other:#?}"),
+    };
+
+    let prompt = backend.exec_prompt(&format!("memory show {id}")).await?;
+
+    assert!(!prompt.is_empty(), "memory show prompt should not be empty");
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_level(&mut backend).await?;
+    backend
+        .exec_json("memory add learner.process session 'A memory'")
+        .await?;
+
+    let prompt = backend
+        .exec_prompt("memory list --agent learner.process")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "memory list prompt should not be empty when memories exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn add_prompt_confirms_creation<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent_and_level(&mut backend).await?;
+
+    let prompt = backend
+        .exec_prompt("memory add learner.process session 'A prompted memory'")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "memory add prompt should not be empty — confirm what was recorded"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "memory add prompt should contain a ref token for the created memory"
+    );
+
+    Ok(())
+}

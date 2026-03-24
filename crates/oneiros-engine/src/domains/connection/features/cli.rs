@@ -27,7 +27,7 @@ impl ConnectionCommands {
     pub async fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Response<Responses>, ConnectionError> {
+    ) -> Result<Rendered<Responses>, ConnectionError> {
         let client = context.client();
         let connection_client = ConnectionClient::new(&client);
 
@@ -54,15 +54,31 @@ impl ConnectionCommands {
                     }
                     _ => None,
                 };
+                let prompt = ref_token
+                    .as_ref()
+                    .map(|rt| format!("Connection recorded: {rt}"))
+                    .unwrap_or_default();
                 let mut envelope = Response::new(response.into());
                 if let Some(rt) = ref_token {
                     envelope = envelope.with_ref_token(rt);
                 }
-                Ok(envelope)
+                Ok(Rendered::new(envelope, prompt, String::new()))
             }
             ConnectionCommands::Show { id } => {
                 let id: ConnectionId = id.parse()?;
-                Ok(Response::new(connection_client.get(&id).await?.into()))
+                let response = connection_client.get(&id).await?;
+                let prompt = match &response {
+                    ConnectionResponse::ConnectionCreated(c)
+                    | ConnectionResponse::ConnectionDetails(c) => {
+                        format!("{c:?}")
+                    }
+                    other => format!("{other:?}"),
+                };
+                Ok(Rendered::new(
+                    Response::new(response.into()),
+                    prompt,
+                    String::new(),
+                ))
             }
             ConnectionCommands::List { entity_ref, .. } => {
                 let entity = entity_ref
@@ -73,13 +89,32 @@ impl ConnectionCommands {
                             .map(RefToken::into_inner)
                     })
                     .transpose()?;
-                Ok(Response::new(
-                    connection_client.list(entity.as_ref()).await?.into(),
+                let response = connection_client.list(entity.as_ref()).await?;
+                let prompt = match &response {
+                    ConnectionResponse::Connections(list) => format!("{} connections.", list.len()),
+                    ConnectionResponse::NoConnections => "No connections.".to_string(),
+                    other => format!("{other:?}"),
+                };
+                Ok(Rendered::new(
+                    Response::new(response.into()),
+                    prompt,
+                    String::new(),
                 ))
             }
             ConnectionCommands::Remove { id } => {
                 let id: ConnectionId = id.parse()?;
-                Ok(Response::new(connection_client.remove(&id).await?.into()))
+                let response = connection_client.remove(&id).await?;
+                let prompt = match &response {
+                    ConnectionResponse::ConnectionRemoved(id) => {
+                        format!("Connection {id} removed.")
+                    }
+                    other => format!("{other:?}"),
+                };
+                Ok(Rendered::new(
+                    Response::new(response.into()),
+                    prompt,
+                    String::new(),
+                ))
             }
         }
     }

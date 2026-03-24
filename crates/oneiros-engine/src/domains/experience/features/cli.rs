@@ -29,7 +29,7 @@ impl ExperienceCommands {
     pub async fn execute(
         &self,
         context: &ProjectContext,
-    ) -> Result<Response<Responses>, ExperienceError> {
+    ) -> Result<Rendered<Responses>, ExperienceError> {
         let client = context.client();
         let experience_client = ExperienceClient::new(&client);
 
@@ -52,20 +52,43 @@ impl ExperienceCommands {
                     }
                     _ => None,
                 };
+                let prompt = ref_token
+                    .as_ref()
+                    .map(|rt| format!("Experience recorded: {rt}"))
+                    .unwrap_or_default();
                 let mut envelope = Response::new(response.into());
                 if let Some(rt) = ref_token {
                     envelope = envelope.with_ref_token(rt);
                 }
-                Ok(envelope)
+                Ok(Rendered::new(envelope, prompt, String::new()))
             }
             ExperienceCommands::Show { id } => {
                 let id: ExperienceId = id.parse()?;
-                Ok(Response::new(experience_client.get(&id).await?.into()))
+                let response = experience_client.get(&id).await?;
+                let prompt = match &response {
+                    ExperienceResponse::ExperienceDetails(e) => {
+                        format!("[{}] {}", e.sensation, e.description)
+                    }
+                    other => format!("{other:?}"),
+                };
+                Ok(Rendered::new(
+                    Response::new(response.into()),
+                    prompt,
+                    String::new(),
+                ))
             }
             ExperienceCommands::List { agent } => {
                 let agent = agent.as_deref().map(AgentName::new);
-                Ok(Response::new(
-                    experience_client.list(agent.as_ref()).await?.into(),
+                let response = experience_client.list(agent.as_ref()).await?;
+                let prompt = match &response {
+                    ExperienceResponse::Experiences(list) => format!("{} experiences.", list.len()),
+                    ExperienceResponse::NoExperiences => "No experiences.".to_string(),
+                    other => format!("{other:?}"),
+                };
+                Ok(Rendered::new(
+                    Response::new(response.into()),
+                    prompt,
+                    String::new(),
                 ))
             }
             ExperienceCommands::Update {
@@ -90,7 +113,22 @@ impl ExperienceCommands {
                     );
                 }
                 match result {
-                    Some(r) => Ok(Response::new(r.into())),
+                    Some(r) => {
+                        let prompt = match &r {
+                            ExperienceResponse::ExperienceUpdated(e) => {
+                                format!(
+                                    "Experience updated: {}",
+                                    RefToken::new(Ref::experience(e.id))
+                                )
+                            }
+                            other => format!("{other:?}"),
+                        };
+                        Ok(Rendered::new(
+                            Response::new(r.into()),
+                            prompt,
+                            String::new(),
+                        ))
+                    }
                     None => Err(ExperienceError::InvalidRequest(
                         "update requires --description or --sensation".into(),
                     )),

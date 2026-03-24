@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SetStorageOutcomes {
-    #[outcome(message("Stored '{}'.", .0.key))]
+    #[outcome(message("Stored '{}'.", .0.key), prompt("Stored '{}'.", .0.key))]
     StorageSet(StorageEntry),
 }
 

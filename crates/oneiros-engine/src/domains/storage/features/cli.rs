@@ -21,11 +21,14 @@ pub enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, StorageError> {
+    pub async fn execute(
+        &self,
+        context: &ProjectContext,
+    ) -> Result<Rendered<Responses>, StorageError> {
         let client = context.client();
         let storage_client = StorageClient::new(&client);
 
-        let result = match self {
+        let response = match self {
             StorageCommands::Set {
                 key,
                 file,
@@ -35,16 +38,29 @@ impl StorageCommands {
                 storage_client
                     .upload(&StorageKey::new(key), &Description::new(description), data)
                     .await?
-                    .into()
             }
-            StorageCommands::Show { key } => {
-                storage_client.show(&StorageKey::new(key)).await?.into()
-            }
-            StorageCommands::List => storage_client.list().await?.into(),
-            StorageCommands::Remove { key } => {
-                storage_client.remove(&StorageKey::new(key)).await?.into()
-            }
+            StorageCommands::Show { key } => storage_client.show(&StorageKey::new(key)).await?,
+            StorageCommands::List => storage_client.list().await?,
+            StorageCommands::Remove { key } => storage_client.remove(&StorageKey::new(key)).await?,
         };
-        Ok(result)
+
+        let prompt = match &response {
+            StorageResponse::StorageSet(e) => format!("Stored '{}'.", e.key),
+            StorageResponse::StorageDetails(e) => {
+                format!(
+                    "Key: {}\n  Description: {}\n  Hash: {}",
+                    e.key, e.description, e.hash
+                )
+            }
+            StorageResponse::Entries(entries) => format!("Storage entries: {entries:?}"),
+            StorageResponse::NoEntries => "No storage entries.".to_string(),
+            StorageResponse::StorageRemoved(key) => format!("Storage entry '{key}' removed."),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

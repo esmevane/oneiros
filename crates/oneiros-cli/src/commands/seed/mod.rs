@@ -40,7 +40,7 @@ pub enum SeedOutcomes {
 pub enum CoreSeedOutcomes {
     #[outcome(message("Seed failed for {0} '{1}': {2}"), level = "warn")]
     SeedFailed(String, String, String),
-    #[outcome(message("Core seed complete."))]
+    #[outcome(message("Core seed complete."), prompt("Core seed complete."))]
     SeedComplete,
 }
 

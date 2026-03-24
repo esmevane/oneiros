@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CreateExperienceOutcomes {
-    #[outcome(message("Experience created: {}", .0.ref_token()))]
+    #[outcome(message("Experience created: {}", .0.ref_token()), prompt("Experience recorded: {}", .0.ref_token()))]
     ExperienceCreated(Experience),
 }
 

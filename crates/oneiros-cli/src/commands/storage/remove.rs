@@ -6,7 +6,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveStorageOutcomes {
-    #[outcome(message("Storage entry '{0}' removed."))]
+    #[outcome(
+        message("Storage entry '{0}' removed."),
+        prompt("Storage entry '{0}' removed.")
+    )]
     StorageRemoved(StorageKey),
 }
 

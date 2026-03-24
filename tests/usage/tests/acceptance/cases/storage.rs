@@ -86,6 +86,105 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let temp_dir = tempfile::TempDir::new()?;
+    let file_path = temp_dir.path().join("doc.txt");
+    std::fs::write(&file_path, "content")?;
+
+    let prompt = backend
+        .exec_prompt(&format!("storage set my-doc {}", file_path.display()))
+        .await?;
+
+    assert!(!prompt.is_empty(), "storage set prompt should not be empty");
+
+    Ok(())
+}
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let temp_dir = tempfile::TempDir::new()?;
+    let file_path = temp_dir.path().join("doc.txt");
+    std::fs::write(&file_path, "content")?;
+
+    backend
+        .exec_json(&format!("storage set my-doc {}", file_path.display()))
+        .await?;
+
+    let prompt = backend.exec_prompt("storage show my-doc").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "storage show prompt should not be empty"
+    );
+    assert!(
+        prompt.contains("my-doc"),
+        "storage show prompt should contain the key"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let temp_dir = tempfile::TempDir::new()?;
+    let file_path = temp_dir.path().join("doc.txt");
+    std::fs::write(&file_path, "content")?;
+
+    backend
+        .exec_json(&format!("storage set my-doc {}", file_path.display()))
+        .await?;
+
+    let prompt = backend.exec_prompt("storage list").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "storage list prompt should not be empty when entries exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let temp_dir = tempfile::TempDir::new()?;
+    let file_path = temp_dir.path().join("doc.txt");
+    std::fs::write(&file_path, "content")?;
+
+    backend
+        .exec_json(&format!("storage set removable {}", file_path.display()))
+        .await?;
+
+    let prompt = backend.exec_prompt("storage remove removable").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "storage remove prompt should not be empty"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn remove<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 

@@ -13,13 +13,25 @@ pub enum SystemCommands {
 }
 
 impl SystemCommands {
-    pub fn execute(&self, ctx: &SystemContext) -> Result<Responses, SystemError> {
-        let result = match self {
+    pub fn execute(&self, ctx: &SystemContext) -> Result<Rendered<Responses>, SystemError> {
+        let response = match self {
             SystemCommands::Init { name, .. } => {
                 let name = name.clone().unwrap_or_else(|| "onerios user".to_string());
-                SystemService::init(ctx, name)?.into()
+                SystemService::init(ctx, name)?
             }
         };
-        Ok(result)
+
+        let prompt = match &response {
+            SystemResponse::SystemInitialized(name) => {
+                format!("System initialized for '{name}'.")
+            }
+            SystemResponse::HostAlreadyInitialized => "System already initialized.".to_string(),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

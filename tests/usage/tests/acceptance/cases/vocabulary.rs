@@ -156,6 +156,108 @@ pub async fn list_returns_created_entries<B: Backend>(domain: &VocabularyDomain)
     Ok(())
 }
 
+pub async fn set_prompt_confirms_creation<B: Backend>(domain: &VocabularyDomain) -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let cmd = format!(
+        "{} set test-entry --description 'A test entry' --prompt 'Test prompt.'",
+        domain.command
+    );
+    let prompt = backend.exec_prompt(&cmd).await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "{} set prompt should not be empty",
+        domain.command
+    );
+
+    Ok(())
+}
+
+pub async fn show_prompt_contains_entry<B: Backend>(domain: &VocabularyDomain) -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let set_cmd = format!(
+        "{} set test-entry --description 'A test entry' --prompt 'Test prompt.'",
+        domain.command
+    );
+    backend.exec_json(&set_cmd).await?;
+
+    let show_cmd = format!("{} show test-entry", domain.command);
+    let prompt = backend.exec_prompt(&show_cmd).await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "{} show prompt should not be empty",
+        domain.command
+    );
+    assert!(
+        prompt.contains("test-entry"),
+        "{} show prompt should contain the entry name",
+        domain.command
+    );
+
+    Ok(())
+}
+
+pub async fn list_prompt_contains_entries<B: Backend>(domain: &VocabularyDomain) -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let cmd = format!(
+        "{} set test-entry --description 'A test entry' --prompt 'Test prompt.'",
+        domain.command
+    );
+    backend.exec_json(&cmd).await?;
+
+    let list_cmd = format!("{} list", domain.command);
+    let prompt = backend.exec_prompt(&list_cmd).await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "{} list prompt should not be empty when entries exist",
+        domain.command
+    );
+
+    Ok(())
+}
+
+pub async fn remove_prompt_confirms_removal<B: Backend>(domain: &VocabularyDomain) -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let set_cmd = format!(
+        "{} set temporary --description 'Will be removed' --prompt 'Temporary.'",
+        domain.command
+    );
+    backend.exec_json(&set_cmd).await?;
+
+    let remove_cmd = format!("{} remove temporary", domain.command);
+    let prompt = backend.exec_prompt(&remove_cmd).await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "{} remove prompt should not be empty",
+        domain.command
+    );
+
+    Ok(())
+}
+
 pub async fn remove_makes_it_unlisted<B: Backend>(domain: &VocabularyDomain) -> TestResult {
     let mut backend = B::start().await?;
 

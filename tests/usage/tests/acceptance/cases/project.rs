@@ -1,6 +1,22 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
+pub(crate) async fn init_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+
+    let prompt = backend.exec_prompt("project init --yes").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "project init prompt should not be empty"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn init_creates_brain<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 

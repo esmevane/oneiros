@@ -53,3 +53,19 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 pub(crate) async fn remove<B: Backend>() -> TestResult {
     vocabulary::remove_makes_it_unlisted::<B>(&DOMAIN).await
 }
+
+pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
+    vocabulary::set_prompt_confirms_creation::<B>(&DOMAIN).await
+}
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    vocabulary::show_prompt_contains_entry::<B>(&DOMAIN).await
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    vocabulary::list_prompt_contains_entries::<B>(&DOMAIN).await
+}
+
+pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
+    vocabulary::remove_prompt_confirms_removal::<B>(&DOMAIN).await
+}

@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CreateConnectionOutcomes {
-    #[outcome(message("Connection created: {}", .0.ref_token()))]
+    #[outcome(message("Connection created: {}", .0.ref_token()), prompt("Connection recorded: {}", .0.ref_token()))]
     ConnectionCreated(Connection),
 }
 

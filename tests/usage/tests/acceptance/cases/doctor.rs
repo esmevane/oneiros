@@ -1,6 +1,20 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
+pub(crate) async fn doctor_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+
+    backend.exec_json("system init --name test --yes").await?;
+    backend.start_service().await?;
+    backend.exec_json("project init --yes").await?;
+
+    let prompt = backend.exec_prompt("doctor").await?;
+
+    assert!(!prompt.is_empty(), "doctor prompt should not be empty");
+
+    Ok(())
+}
+
 pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
 

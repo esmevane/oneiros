@@ -131,3 +131,64 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     Ok(())
 }
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent(&mut backend).await?;
+
+    let response = backend
+        .exec_json("cognition add thinker.process observation 'Show me this'")
+        .await?;
+    let id = match response.data {
+        Responses::Cognition(CognitionResponse::CognitionAdded(c)) => c.id.to_string(),
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
+
+    let prompt = backend.exec_prompt(&format!("cognition show {id}")).await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "cognition show prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent(&mut backend).await?;
+    backend
+        .exec_json("cognition add thinker.process observation 'A thought'")
+        .await?;
+
+    let prompt = backend
+        .exec_prompt("cognition list --agent thinker.process")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "cognition list prompt should not be empty when cognitions exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn add_prompt_confirms_creation<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_agent(&mut backend).await?;
+
+    let prompt = backend
+        .exec_prompt("cognition add thinker.process observation 'A prompted thought'")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "cognition add prompt should not be empty — confirm what was recorded"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "cognition add prompt should contain a ref token for the created cognition"
+    );
+
+    Ok(())
+}

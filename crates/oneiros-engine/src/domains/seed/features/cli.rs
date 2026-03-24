@@ -8,10 +8,22 @@ pub enum SeedCommands {
 }
 
 impl SeedCommands {
-    pub fn execute(&self, ctx: &ProjectContext) -> Result<Responses, Box<dyn std::error::Error>> {
-        let result = match self {
-            SeedCommands::Core => SeedService::core(ctx)?.into(),
+    pub fn execute(
+        &self,
+        ctx: &ProjectContext,
+    ) -> Result<Rendered<Responses>, Box<dyn std::error::Error>> {
+        let response = match self {
+            SeedCommands::Core => SeedService::core(ctx)?,
         };
-        Ok(result)
+
+        let prompt = match &response {
+            SeedResponse::SeedComplete => "Core seed complete.".to_string(),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

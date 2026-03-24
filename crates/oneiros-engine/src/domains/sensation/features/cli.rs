@@ -11,17 +11,32 @@ pub enum SensationCommands {
 }
 
 impl SensationCommands {
-    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, SensationError> {
+    pub async fn execute(
+        &self,
+        context: &ProjectContext,
+    ) -> Result<Rendered<Responses>, SensationError> {
         let client = context.client();
         let sensation_client = SensationClient::new(&client);
 
-        let result = match self {
-            SensationCommands::Set(sensation) => sensation_client.set(sensation).await?.into(),
-            SensationCommands::Show { name } => sensation_client.get(name).await?.into(),
-            SensationCommands::List => sensation_client.list().await?.into(),
-            SensationCommands::Remove { name } => sensation_client.remove(name).await?.into(),
+        let response = match self {
+            SensationCommands::Set(sensation) => sensation_client.set(sensation).await?,
+            SensationCommands::Show { name } => sensation_client.get(name).await?,
+            SensationCommands::List => sensation_client.list().await?,
+            SensationCommands::Remove { name } => sensation_client.remove(name).await?,
         };
 
-        Ok(result)
+        let prompt = match &response {
+            SensationResponse::SensationSet(name) => format!("Sensation '{name}' set."),
+            SensationResponse::SensationDetails(s) => format!("Sensation details: {s:?}"),
+            SensationResponse::Sensations(sensations) => format!("Sensations: {sensations:?}"),
+            SensationResponse::NoSensations => "No sensations configured.".to_string(),
+            SensationResponse::SensationRemoved(name) => format!("Sensation '{name}' removed."),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

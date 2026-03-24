@@ -135,57 +135,41 @@ impl Command {
     pub async fn execute(&self, engine: &Engine) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
             // Workflow domains — each knows its context
-            Command::System(system) => Response::new(system.execute(engine.system())?).into(),
-            Command::Project(project) => Response::new(
-                project
-                    .execute(
-                        engine.system(),
-                        engine.project.as_ref(),
-                        engine.brain_name(),
-                    )
-                    .map_err(|e| Error::Context(e.to_string()))?,
-            )
-            .into(),
-            Command::Seed(seed) => Response::new(
-                seed.execute(engine.project()?)
-                    .map_err(|e| Error::Context(e.to_string()))?,
-            )
-            .into(),
+            Command::System(system) => system.execute(engine.system())?,
+            Command::Project(project) => project
+                .execute(
+                    engine.system(),
+                    engine.project.as_ref(),
+                    engine.brain_name(),
+                )
+                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::Seed(seed) => seed
+                .execute(engine.project()?)
+                .map_err(|e| Error::Context(e.to_string()))?,
 
-            // Project-scoped domains — vocabulary (no ref_token)
-            Command::Level(level) => Response::new(level.execute(engine.project()?).await?).into(),
-            Command::Texture(texture) => {
-                Response::new(texture.execute(engine.project()?).await?).into()
-            }
-            Command::Sensation(sensation) => {
-                Response::new(sensation.execute(engine.project()?).await?).into()
-            }
-            Command::Nature(nature) => {
-                Response::new(nature.execute(engine.project()?).await?).into()
-            }
-            Command::Persona(persona) => {
-                Response::new(persona.execute(engine.project()?).await?).into()
-            }
-            Command::Urge(urge) => Response::new(urge.execute(engine.project()?).await?).into(),
-            Command::Agent(agent) => Response::new(agent.execute(engine.project()?).await?).into(),
+            // Project-scoped domains — vocabulary
+            Command::Level(level) => level.execute(engine.project()?).await?,
+            Command::Texture(texture) => texture.execute(engine.project()?).await?,
+            Command::Sensation(sensation) => sensation.execute(engine.project()?).await?,
+            Command::Nature(nature) => nature.execute(engine.project()?).await?,
+            Command::Persona(persona) => persona.execute(engine.project()?).await?,
+            Command::Urge(urge) => urge.execute(engine.project()?).await?,
+            Command::Agent(agent) => agent.execute(engine.project()?).await?,
 
-            // Entity domains — return Response<Responses> with ref_token in meta
-            Command::Cognition(cognition) => cognition.execute(engine.project()?).await?.into(),
-            Command::Memory(memory) => memory.execute(engine.project()?).await?.into(),
-            Command::Experience(experience) => experience.execute(engine.project()?).await?.into(),
-            Command::Connection(connection) => connection.execute(engine.project()?).await?.into(),
+            // Entity domains — return Rendered with ref_token prompts on create
+            Command::Cognition(cognition) => cognition.execute(engine.project()?).await?,
+            Command::Memory(memory) => memory.execute(engine.project()?).await?,
+            Command::Experience(experience) => experience.execute(engine.project()?).await?,
+            Command::Connection(connection) => connection.execute(engine.project()?).await?,
 
-            Command::Storage(storage) => {
-                Response::new(storage.execute(engine.project()?).await?).into()
-            }
+            Command::Storage(storage) => storage.execute(engine.project()?).await?,
             Command::Search(search) => search.execute(engine.project()?).await?,
             Command::Pressure(pressure) => pressure.execute(engine.project()?).await?,
 
             // Doctor — system diagnostics
-            Command::Doctor => Response::new(
-                DoctorCli::execute(engine.system()).map_err(|e| Error::Context(e.to_string()))?,
-            )
-            .into(),
+            Command::Doctor => {
+                DoctorCli::execute(engine.system()).map_err(|e| Error::Context(e.to_string()))?
+            }
 
             // Continuity — domain subcommands go through the presenter
             Command::Continuity(continuity) => continuity.execute(engine.project()?).await?,

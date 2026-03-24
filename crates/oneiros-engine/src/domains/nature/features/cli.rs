@@ -11,17 +11,32 @@ pub enum NatureCommands {
 }
 
 impl NatureCommands {
-    pub async fn execute(&self, context: &ProjectContext) -> Result<Responses, NatureError> {
+    pub async fn execute(
+        &self,
+        context: &ProjectContext,
+    ) -> Result<Rendered<Responses>, NatureError> {
         let client = context.client();
         let nature_client = NatureClient::new(&client);
 
-        let result = match self {
-            NatureCommands::Set(nature) => nature_client.set(nature).await?.into(),
-            NatureCommands::Show { name } => nature_client.get(name).await?.into(),
-            NatureCommands::List => nature_client.list().await?.into(),
-            NatureCommands::Remove { name } => nature_client.remove(name).await?.into(),
+        let response = match self {
+            NatureCommands::Set(nature) => nature_client.set(nature).await?,
+            NatureCommands::Show { name } => nature_client.get(name).await?,
+            NatureCommands::List => nature_client.list().await?,
+            NatureCommands::Remove { name } => nature_client.remove(name).await?,
         };
 
-        Ok(result)
+        let prompt = match &response {
+            NatureResponse::NatureSet(name) => format!("Nature '{name}' set."),
+            NatureResponse::NatureDetails(n) => format!("Nature details: {n:?}"),
+            NatureResponse::Natures(natures) => format!("Natures: {natures:?}"),
+            NatureResponse::NoNatures => "No natures configured.".to_string(),
+            NatureResponse::NatureRemoved(name) => format!("Nature '{name}' removed."),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

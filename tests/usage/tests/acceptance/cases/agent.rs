@@ -155,6 +155,93 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn create_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_persona(&mut backend).await?;
+
+    let prompt = backend
+        .exec_prompt("agent create thinker process --description 'A thinking agent'")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "agent create prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_persona(&mut backend).await?;
+    backend
+        .exec_json("agent create thinker process --description 'A thinking agent'")
+        .await?;
+
+    let prompt = backend.exec_prompt("agent show thinker.process").await?;
+
+    assert!(!prompt.is_empty(), "agent show prompt should not be empty");
+    assert!(
+        prompt.contains("thinker.process"),
+        "agent show prompt should contain the agent name"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_persona(&mut backend).await?;
+    backend
+        .exec_json("agent create thinker process --description 'A thinking agent'")
+        .await?;
+
+    let prompt = backend.exec_prompt("agent list").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "agent list prompt should not be empty when agents exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_persona(&mut backend).await?;
+    backend
+        .exec_json("agent create thinker process --description 'Original'")
+        .await?;
+
+    let prompt = backend
+        .exec_prompt("agent update thinker.process process --description 'Updated'")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "agent update prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    setup_with_persona(&mut backend).await?;
+    backend
+        .exec_json("agent create thinker process --description 'Temporary'")
+        .await?;
+
+    let prompt = backend.exec_prompt("agent remove thinker.process").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "agent remove prompt should not be empty"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn name_includes_persona_suffix<B: Backend>() -> TestResult {
     let mut backend = B::start().await?;
     setup_with_persona(&mut backend).await?;

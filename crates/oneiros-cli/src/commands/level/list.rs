@@ -7,10 +7,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListLevelsOutcomes {
-    #[outcome(message("No levels configured."))]
+    #[outcome(message("No levels configured."), prompt("No levels configured."))]
     NoLevels,
 
-    #[outcome(message("Levels: {0:?}"))]
+    #[outcome(message("Levels: {0:?}"), prompt("Levels: {0:?}"))]
     Levels(Vec<Level>),
 }
 

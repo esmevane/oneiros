@@ -111,7 +111,15 @@ async fn system_init_creates_tenant_and_actor() -> TestResult {
 async fn system_init_is_idempotent() -> TestResult {
     cases::system::init_is_idempotent::<EngineBackend>().await
 }
+#[tokio::test]
+async fn system_init_prompt() -> TestResult {
+    cases::system::init_prompt::<EngineBackend>().await
+}
 
+#[tokio::test]
+async fn project_init_prompt() -> TestResult {
+    cases::project::init_prompt::<EngineBackend>().await
+}
 #[tokio::test]
 async fn project_init_creates_brain() -> TestResult {
     cases::project::init_creates_brain::<EngineBackend>().await
@@ -141,10 +149,30 @@ async fn level_list_returns_created_levels() -> TestResult {
 async fn level_remove_makes_it_unlisted() -> TestResult {
     cases::level::remove_makes_it_unlisted::<EngineBackend>().await
 }
+#[tokio::test]
+async fn level_set_prompt() -> TestResult {
+    cases::level::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn level_show_prompt() -> TestResult {
+    cases::level::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn level_list_prompt() -> TestResult {
+    cases::level::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn level_remove_prompt() -> TestResult {
+    cases::level::remove_prompt::<EngineBackend>().await
+}
 
 #[tokio::test]
 async fn seed_core_creates_default_levels() -> TestResult {
     cases::seed::core_creates_default_levels::<EngineBackend>().await
+}
+#[tokio::test]
+async fn seed_core_prompt() -> TestResult {
+    cases::seed::core_prompt::<EngineBackend>().await
 }
 
 // Agent
@@ -176,6 +204,26 @@ async fn agent_remove_makes_it_unlisted() -> TestResult {
 async fn agent_name_includes_persona_suffix() -> TestResult {
     cases::agent::name_includes_persona_suffix::<EngineBackend>().await
 }
+#[tokio::test]
+async fn agent_create_prompt() -> TestResult {
+    cases::agent::create_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn agent_show_prompt() -> TestResult {
+    cases::agent::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn agent_list_prompt() -> TestResult {
+    cases::agent::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn agent_update_prompt() -> TestResult {
+    cases::agent::update_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn agent_remove_prompt() -> TestResult {
+    cases::agent::remove_prompt::<EngineBackend>().await
+}
 
 // Connection
 #[tokio::test]
@@ -197,6 +245,22 @@ async fn connection_show_by_id() -> TestResult {
 #[tokio::test]
 async fn connection_remove_by_id() -> TestResult {
     cases::connection::remove_by_id::<EngineBackend>().await
+}
+#[tokio::test]
+async fn connection_create_prompt_confirms_creation() -> TestResult {
+    cases::connection::create_prompt_confirms_creation::<EngineBackend>().await
+}
+#[tokio::test]
+async fn connection_show_prompt() -> TestResult {
+    cases::connection::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn connection_list_prompt() -> TestResult {
+    cases::connection::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn connection_remove_prompt() -> TestResult {
+    cases::connection::remove_prompt::<EngineBackend>().await
 }
 
 // Cognition
@@ -220,6 +284,18 @@ async fn cognition_list_filters_by_agent() -> TestResult {
 async fn cognition_show_by_id() -> TestResult {
     cases::cognition::show_by_id::<EngineBackend>().await
 }
+#[tokio::test]
+async fn cognition_add_prompt_confirms_creation() -> TestResult {
+    cases::cognition::add_prompt_confirms_creation::<EngineBackend>().await
+}
+#[tokio::test]
+async fn cognition_show_prompt() -> TestResult {
+    cases::cognition::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn cognition_list_prompt() -> TestResult {
+    cases::cognition::list_prompt::<EngineBackend>().await
+}
 
 // Memory
 #[tokio::test]
@@ -242,6 +318,18 @@ async fn memory_list_filters_by_agent() -> TestResult {
 async fn memory_show_by_id() -> TestResult {
     cases::memory::show_by_id::<EngineBackend>().await
 }
+#[tokio::test]
+async fn memory_add_prompt_confirms_creation() -> TestResult {
+    cases::memory::add_prompt_confirms_creation::<EngineBackend>().await
+}
+#[tokio::test]
+async fn memory_show_prompt() -> TestResult {
+    cases::memory::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn memory_list_prompt() -> TestResult {
+    cases::memory::list_prompt::<EngineBackend>().await
+}
 
 // Experience
 #[tokio::test]
@@ -263,6 +351,22 @@ async fn experience_show_by_id() -> TestResult {
 #[tokio::test]
 async fn experience_update_description() -> TestResult {
     cases::experience::update_description::<EngineBackend>().await
+}
+#[tokio::test]
+async fn experience_create_prompt_confirms_creation() -> TestResult {
+    cases::experience::create_prompt_confirms_creation::<EngineBackend>().await
+}
+#[tokio::test]
+async fn experience_show_prompt() -> TestResult {
+    cases::experience::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn experience_list_prompt() -> TestResult {
+    cases::experience::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn experience_update_prompt() -> TestResult {
+    cases::experience::update_prompt::<EngineBackend>().await
 }
 
 // Lifecycle
@@ -321,6 +425,10 @@ async fn doctor_reports_initialized() -> TestResult {
 #[tokio::test]
 async fn doctor_reports_uninitialized() -> TestResult {
     cases::doctor::reports_uninitialized_system::<EngineBackend>().await
+}
+#[tokio::test]
+async fn doctor_prompt() -> TestResult {
+    cases::doctor::doctor_prompt::<EngineBackend>().await
 }
 
 // Search
@@ -400,6 +508,22 @@ async fn storage_list_populated() -> TestResult {
 async fn storage_remove() -> TestResult {
     cases::storage::remove::<EngineBackend>().await
 }
+#[tokio::test]
+async fn storage_set_prompt() -> TestResult {
+    cases::storage::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn storage_show_prompt() -> TestResult {
+    cases::storage::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn storage_list_prompt() -> TestResult {
+    cases::storage::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn storage_remove_prompt() -> TestResult {
+    cases::storage::remove_prompt::<EngineBackend>().await
+}
 
 // Texture
 #[tokio::test]
@@ -421,6 +545,22 @@ async fn texture_list_populated() -> TestResult {
 #[tokio::test]
 async fn texture_remove() -> TestResult {
     cases::texture::remove::<EngineBackend>().await
+}
+#[tokio::test]
+async fn texture_set_prompt() -> TestResult {
+    cases::texture::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn texture_show_prompt() -> TestResult {
+    cases::texture::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn texture_list_prompt() -> TestResult {
+    cases::texture::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn texture_remove_prompt() -> TestResult {
+    cases::texture::remove_prompt::<EngineBackend>().await
 }
 
 // Sensation
@@ -444,6 +584,22 @@ async fn sensation_list_populated() -> TestResult {
 async fn sensation_remove() -> TestResult {
     cases::sensation::remove::<EngineBackend>().await
 }
+#[tokio::test]
+async fn sensation_set_prompt() -> TestResult {
+    cases::sensation::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn sensation_show_prompt() -> TestResult {
+    cases::sensation::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn sensation_list_prompt() -> TestResult {
+    cases::sensation::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn sensation_remove_prompt() -> TestResult {
+    cases::sensation::remove_prompt::<EngineBackend>().await
+}
 
 // Nature
 #[tokio::test]
@@ -465,6 +621,22 @@ async fn nature_list_populated() -> TestResult {
 #[tokio::test]
 async fn nature_remove() -> TestResult {
     cases::nature::remove::<EngineBackend>().await
+}
+#[tokio::test]
+async fn nature_set_prompt() -> TestResult {
+    cases::nature::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn nature_show_prompt() -> TestResult {
+    cases::nature::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn nature_list_prompt() -> TestResult {
+    cases::nature::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn nature_remove_prompt() -> TestResult {
+    cases::nature::remove_prompt::<EngineBackend>().await
 }
 
 // Persona
@@ -488,6 +660,22 @@ async fn persona_list_populated() -> TestResult {
 async fn persona_remove() -> TestResult {
     cases::persona::remove::<EngineBackend>().await
 }
+#[tokio::test]
+async fn persona_set_prompt() -> TestResult {
+    cases::persona::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn persona_show_prompt() -> TestResult {
+    cases::persona::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn persona_list_prompt() -> TestResult {
+    cases::persona::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn persona_remove_prompt() -> TestResult {
+    cases::persona::remove_prompt::<EngineBackend>().await
+}
 
 // Urge
 #[tokio::test]
@@ -509,6 +697,22 @@ async fn urge_list_populated() -> TestResult {
 #[tokio::test]
 async fn urge_remove() -> TestResult {
     cases::urge::remove::<EngineBackend>().await
+}
+#[tokio::test]
+async fn urge_set_prompt() -> TestResult {
+    cases::urge::set_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn urge_show_prompt() -> TestResult {
+    cases::urge::show_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn urge_list_prompt() -> TestResult {
+    cases::urge::list_prompt::<EngineBackend>().await
+}
+#[tokio::test]
+async fn urge_remove_prompt() -> TestResult {
+    cases::urge::remove_prompt::<EngineBackend>().await
 }
 
 // Import / Export

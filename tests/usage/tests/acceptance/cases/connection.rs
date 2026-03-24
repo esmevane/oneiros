@@ -178,3 +178,96 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
 
     Ok(())
 }
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+
+    let response = backend
+        .exec_json(&format!(
+            "connection create caused {first_ref} {second_ref}"
+        ))
+        .await?;
+    let id = match response.data {
+        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.id.to_string(),
+        other => panic!("expected ConnectionCreated, got {other:#?}"),
+    };
+
+    let prompt = backend
+        .exec_prompt(&format!("connection show {id}"))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "connection show prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+    backend
+        .exec_json(&format!(
+            "connection create caused {first_ref} {second_ref}"
+        ))
+        .await?;
+
+    let prompt = backend.exec_prompt("connection list").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "connection list prompt should not be empty when connections exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+
+    let response = backend
+        .exec_json(&format!(
+            "connection create caused {first_ref} {second_ref}"
+        ))
+        .await?;
+    let id = match response.data {
+        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.id.to_string(),
+        other => panic!("expected ConnectionCreated, got {other:#?}"),
+    };
+
+    let prompt = backend
+        .exec_prompt(&format!("connection remove {id}"))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "connection remove prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn create_prompt_confirms_creation<B: Backend>() -> TestResult {
+    let mut backend = B::start().await?;
+    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+
+    let prompt = backend
+        .exec_prompt(&format!(
+            "connection create caused {first_ref} {second_ref}"
+        ))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "connection create prompt should not be empty — confirm what was recorded"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "connection create prompt should contain a ref token for the created connection"
+    );
+
+    Ok(())
+}
