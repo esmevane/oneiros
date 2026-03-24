@@ -1,6 +1,7 @@
 mod cli;
 mod http;
 mod mcp;
+pub mod skills;
 mod template;
 
 pub use cli::*;

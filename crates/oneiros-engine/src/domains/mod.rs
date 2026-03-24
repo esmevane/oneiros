@@ -23,6 +23,7 @@ mod ticket;
 mod urge;
 
 pub mod event;
+pub mod skills;
 
 pub use actor::*;
 pub use agent::*;

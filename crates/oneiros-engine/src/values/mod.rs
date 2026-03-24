@@ -31,6 +31,7 @@ mod tool_def;
 // mod token_version;
 mod output_mode;
 mod rendered;
+mod skill;
 
 pub use blob::{Blob, BlobError};
 // pub use claim::TokenClaims;
@@ -56,6 +57,7 @@ pub use observation::Observation;
 pub use output_mode::OutputMode;
 pub use pressure_reading::PressureReading;
 pub use rendered::Rendered;
+pub use skill::Skill;
 // PressureSummary re-exported from domains::pressure
 pub use projection::Projection;
 pub use prompt::Prompt;

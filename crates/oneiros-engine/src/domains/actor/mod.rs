@@ -6,7 +6,7 @@ mod repo;
 mod service;
 
 pub use client::ActorClient;
-pub use features::{ActorCommands, ActorProjections, ActorRouter};
+pub use features::{ActorCommands, ActorProjections, ActorRouter, skills};
 pub use model::{Actor, ActorId, ActorName};
 pub use protocol::{ActorError, ActorEvents, ActorRequest, ActorResponse};
 pub use repo::ActorRepo;
