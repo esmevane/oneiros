@@ -2,11 +2,7 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     // Create a temp file to upload
     let temp_dir = tempfile::TempDir::new()?;
@@ -17,7 +13,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
         "storage set test-doc {} --description 'A test document'",
         file_path.display()
     );
-    let set_response = backend.exec_json(&set_cmd).await?;
+    let set_response = harness.exec_json(&set_cmd).await?;
 
     assert!(
         matches!(
@@ -28,7 +24,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     );
 
     // Verify via show
-    let show_response = backend.exec_json("storage show test-doc").await?;
+    let show_response = harness.exec_json("storage show test-doc").await?;
 
     match show_response.data {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
@@ -41,13 +37,9 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let response = backend.exec_json("storage list").await?;
+    let response = harness.exec_json("storage list").await?;
 
     assert!(
         matches!(
@@ -61,20 +53,16 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
     std::fs::write(&file_path, "content")?;
 
     let cmd = format!("storage set my-doc {}", file_path.display());
-    backend.exec_json(&cmd).await?;
+    harness.exec_json(&cmd).await?;
 
-    let response = backend.exec_json("storage list").await?;
+    let response = harness.exec_json("storage list").await?;
 
     match response.data {
         Responses::Storage(StorageResponse::Entries(entries)) => {
@@ -87,17 +75,13 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
     std::fs::write(&file_path, "content")?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt(&format!("storage set my-doc {}", file_path.display()))
         .await?;
 
@@ -107,21 +91,17 @@ pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
     std::fs::write(&file_path, "content")?;
 
-    backend
+    harness
         .exec_json(&format!("storage set my-doc {}", file_path.display()))
         .await?;
 
-    let prompt = backend.exec_prompt("storage show my-doc").await?;
+    let prompt = harness.exec_prompt("storage show my-doc").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -136,21 +116,17 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
     std::fs::write(&file_path, "content")?;
 
-    backend
+    harness
         .exec_json(&format!("storage set my-doc {}", file_path.display()))
         .await?;
 
-    let prompt = backend.exec_prompt("storage list").await?;
+    let prompt = harness.exec_prompt("storage list").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -161,21 +137,17 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
     std::fs::write(&file_path, "content")?;
 
-    backend
+    harness
         .exec_json(&format!("storage set removable {}", file_path.display()))
         .await?;
 
-    let prompt = backend.exec_prompt("storage remove removable").await?;
+    let prompt = harness.exec_prompt("storage remove removable").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -186,20 +158,16 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn remove<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("removable.txt");
     std::fs::write(&file_path, "temporary")?;
 
     let cmd = format!("storage set removable {}", file_path.display());
-    backend.exec_json(&cmd).await?;
+    harness.exec_json(&cmd).await?;
 
-    let remove_response = backend.exec_json("storage remove removable").await?;
+    let remove_response = harness.exec_json("storage remove removable").await?;
 
     assert!(
         matches!(
@@ -210,7 +178,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
     );
 
     // Verify gone
-    let list_response = backend.exec_json("storage list").await?;
+    let list_response = harness.exec_json("storage list").await?;
 
     assert!(
         matches!(

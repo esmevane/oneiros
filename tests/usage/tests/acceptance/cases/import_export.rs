@@ -2,16 +2,11 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-    backend
+    let harness = Harness::<B>::seed_project().await?;
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'An important thought'")
         .await?;
 
@@ -19,7 +14,7 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
     let export_dir = tempfile::TempDir::new()?;
 
     let cmd = format!("project export --target {}", export_dir.path().display());
-    let response = backend.exec_json(&cmd).await?;
+    let response = harness.exec_json(&cmd).await?;
 
     let export_path = match response.data {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
@@ -42,28 +37,24 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+    let harness = Harness::<B>::init_project().await?;
+    harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    backend
+    harness
         .exec_json("texture set observation --description 'Observations'")
         .await?;
-    backend
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'Remember this thought'")
         .await?;
 
     // Export to a temp directory
     let export_dir = tempfile::TempDir::new()?;
     let export_cmd = format!("project export --target {}", export_dir.path().display());
-    let export_response = backend.exec_json(&export_cmd).await?;
+    let export_response = harness.exec_json(&export_cmd).await?;
 
     let export_path = match export_response.data {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
@@ -71,12 +62,12 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     };
 
     // Import the exported file (idempotent — re-importing to same brain)
-    backend
+    harness
         .exec_json(&format!("project import {}", export_path.display()))
         .await?;
 
     // Verify data survived — the cognition should still be searchable
-    let search_response = backend.exec_json("search Remember").await?;
+    let search_response = harness.exec_json("search Remember").await?;
 
     match search_response.data {
         Responses::Search(SearchResponse::Results(results)) => {
@@ -98,10 +89,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
 /// Brain B imports the JSONL and should have the same storage entries.
 pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult {
     // Brain A — the source
-    let mut brain_a = B::start().await?;
-    brain_a.exec_json("system init --name test --yes").await?;
-    brain_a.start_service().await?;
-    brain_a.exec_json("project init --yes").await?;
+    let brain_a = Harness::<B>::init_project().await?;
 
     // Create a temp file and store it on brain A
     let temp_dir = tempfile::TempDir::new()?;
@@ -125,10 +113,7 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     };
 
     // Brain B — fresh, empty
-    let mut brain_b = B::start().await?;
-    brain_b.exec_json("system init --name test --yes").await?;
-    brain_b.start_service().await?;
-    brain_b.exec_json("project init --yes").await?;
+    let brain_b = Harness::<B>::init_project().await?;
 
     // Import brain A's export into brain B
     let import_cmd = format!("project import {}", export_path.display());
@@ -148,25 +133,21 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
 }
 
 pub(crate) async fn replay_rebuilds_projections<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+    let harness = Harness::<B>::init_project().await?;
+    harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    backend
+    harness
         .exec_json("texture set observation --description 'Observations'")
         .await?;
-    backend
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    backend.exec_json("project replay").await?;
+    harness.exec_json("project replay").await?;
 
     // After replay, agent should still exist
-    let show_response = backend.exec_json("agent show thinker.process").await?;
+    let show_response = harness.exec_json("agent show thinker.process").await?;
 
     assert!(
         matches!(

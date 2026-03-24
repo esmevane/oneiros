@@ -1,28 +1,25 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-/// Helper: bootstrap with persona + agent so cognitions have an agent to reference.
-async fn setup_with_agent<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+/// Helper: init project + persona + texture + agent for cognition tests.
+async fn with_agent<B: Backend>() -> Result<Harness<B>, Box<dyn core::error::Error>> {
+    let harness = Harness::<B>::init_project().await?;
+    harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    backend
+    harness
         .exec_json("texture set observation --description 'Observations'")
         .await?;
-    backend
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
-    Ok(())
+    Ok(harness)
 }
 
 pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("cognition add thinker.process observation 'A test thought'")
         .await?;
 
@@ -38,10 +35,9 @@ pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    let response = backend.exec_json("cognition list").await?;
+    let response = harness.exec_json("cognition list").await?;
 
     assert!(
         matches!(
@@ -55,17 +51,16 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'First thought'")
         .await?;
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'Second thought'")
         .await?;
 
-    let response = backend.exec_json("cognition list").await?;
+    let response = harness.exec_json("cognition list").await?;
 
     match response.data {
         Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
@@ -78,21 +73,20 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    backend
+    harness
         .exec_json("agent create other process --description 'Other agent'")
         .await?;
 
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'Thinker thought'")
         .await?;
-    backend
+    harness
         .exec_json("cognition add other.process observation 'Other thought'")
         .await?;
 
-    let response = backend
+    let response = harness
         .exec_json("cognition list --agent thinker.process")
         .await?;
 
@@ -107,10 +101,9 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    let add_response = backend
+    let add_response = harness
         .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
 
@@ -119,8 +112,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
-    let show_cmd = format!("cognition show {id}");
-    let show_response = backend.exec_json(&show_cmd).await?;
+    let show_response = harness.exec_json(&format!("cognition show {id}")).await?;
 
     match show_response.data {
         Responses::Cognition(CognitionResponse::CognitionDetails(cognition)) => {
@@ -133,10 +125,9 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
     let id = match response.data {
@@ -144,7 +135,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
-    let prompt = backend.exec_prompt(&format!("cognition show {id}")).await?;
+    let prompt = harness.exec_prompt(&format!("cognition show {id}")).await?;
 
     assert!(
         !prompt.is_empty(),
@@ -155,13 +146,12 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
-    backend
+    let harness = with_agent::<B>().await?;
+    harness
         .exec_json("cognition add thinker.process observation 'A thought'")
         .await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("cognition list --agent thinker.process")
         .await?;
 
@@ -174,10 +164,9 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn add_prompt_confirms_creation<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent(&mut backend).await?;
+    let harness = with_agent::<B>().await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("cognition add thinker.process observation 'A prompted thought'")
         .await?;
 

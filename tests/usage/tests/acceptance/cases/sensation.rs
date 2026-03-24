@@ -1,71 +1,198 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-use super::vocabulary::{self, VocabularyDomain};
-
-const DOMAIN: VocabularyDomain = VocabularyDomain {
-    command: "sensation",
-    is_set: |r| matches!(r, Responses::Sensation(SensationResponse::SensationSet(_))),
-    is_details: |r| {
-        matches!(
-            r,
-            Responses::Sensation(SensationResponse::SensationDetails(_))
-        )
-    },
-    extract_details: |r| match r {
-        Responses::Sensation(SensationResponse::SensationDetails(s)) => Some((
-            s.name.as_str().to_owned(),
-            s.description.as_str().to_owned(),
-            s.prompt.as_str().to_owned(),
-        )),
-        _ => None,
-    },
-    is_list: |r| matches!(r, Responses::Sensation(SensationResponse::Sensations(_))),
-    extract_list_count: |r| match r {
-        Responses::Sensation(SensationResponse::Sensations(list)) => Some(list.len()),
-        _ => None,
-    },
-    is_empty: |r| matches!(r, Responses::Sensation(SensationResponse::NoSensations)),
-    is_removed: |r| {
-        matches!(
-            r,
-            Responses::Sensation(SensationResponse::SensationRemoved(_))
-        )
-    },
-};
-
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {
-    vocabulary::set_creates_a_new_entry::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    let response = harness
+        .exec_json("sensation set echoes --description 'Resonance between thoughts' --prompt 'Use when things rhyme.'")
+        .await?;
+
+    assert!(
+        matches!(
+            response.data,
+            Responses::Sensation(SensationResponse::SensationSet(_))
+        ),
+        "expected SensationSet, got {response:#?}"
+    );
+
+    let show_response = harness.exec_json("sensation show echoes").await?;
+
+    match show_response.data {
+        Responses::Sensation(SensationResponse::SensationDetails(s)) => {
+            assert_eq!(s.name.as_str(), "echoes");
+            assert_eq!(s.description.as_str(), "Resonance between thoughts");
+        }
+        other => panic!("expected SensationDetails, got {other:#?}"),
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn set_updates<B: Backend>() -> TestResult {
-    vocabulary::set_updates_existing_entry::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("sensation set draft --description 'Original' --prompt 'Original.'")
+        .await?;
+
+    harness
+        .exec_json("sensation set draft --description 'Updated' --prompt 'Updated.'")
+        .await?;
+
+    let show_response = harness.exec_json("sensation show draft").await?;
+
+    match show_response.data {
+        Responses::Sensation(SensationResponse::SensationDetails(s)) => {
+            assert_eq!(s.description.as_str(), "Updated");
+        }
+        other => panic!("expected SensationDetails, got {other:#?}"),
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    vocabulary::list_returns_empty_when_none_exist::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    let response = harness.exec_json("sensation list").await?;
+
+    assert!(
+        matches!(
+            response.data,
+            Responses::Sensation(SensationResponse::NoSensations)
+        ),
+        "expected NoSensations, got {response:#?}"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    vocabulary::list_returns_created_entries::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("sensation set first --description 'First' --prompt 'First.'")
+        .await?;
+
+    harness
+        .exec_json("sensation set second --description 'Second' --prompt 'Second.'")
+        .await?;
+
+    let response = harness.exec_json("sensation list").await?;
+
+    match response.data {
+        Responses::Sensation(SensationResponse::Sensations(list)) => {
+            assert_eq!(list.len(), 2);
+        }
+        other => panic!("expected Sensations, got {other:#?}"),
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn remove<B: Backend>() -> TestResult {
-    vocabulary::remove_makes_it_unlisted::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("sensation set temporary --description 'Will be removed' --prompt 'Temporary.'")
+        .await?;
+
+    let remove_response = harness.exec_json("sensation remove temporary").await?;
+
+    assert!(
+        matches!(
+            remove_response.data,
+            Responses::Sensation(SensationResponse::SensationRemoved(_))
+        ),
+        "expected SensationRemoved, got {remove_response:?}"
+    );
+
+    let list_response = harness.exec_json("sensation list").await?;
+
+    assert!(
+        matches!(
+            list_response.data,
+            Responses::Sensation(SensationResponse::NoSensations)
+        ),
+        "expected NoSensations after removal, got {list_response:?}"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
-    vocabulary::set_prompt_confirms_creation::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    let prompt = harness
+        .exec_prompt(
+            "sensation set test-sensation --description 'A test sensation' --prompt 'Test prompt.'",
+        )
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "sensation set prompt should not be empty"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    vocabulary::show_prompt_contains_entry::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json(
+            "sensation set test-sensation --description 'A test sensation' --prompt 'Test prompt.'",
+        )
+        .await?;
+
+    let prompt = harness.exec_prompt("sensation show test-sensation").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "sensation show prompt should not be empty"
+    );
+    assert!(
+        prompt.contains("test-sensation"),
+        "sensation show prompt should contain the entry name"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    vocabulary::list_prompt_contains_entries::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json(
+            "sensation set test-sensation --description 'A test sensation' --prompt 'Test prompt.'",
+        )
+        .await?;
+
+    let prompt = harness.exec_prompt("sensation list").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "sensation list prompt should not be empty when entries exist"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
-    vocabulary::remove_prompt_confirms_removal::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("sensation set temporary --description 'Will be removed' --prompt 'Temporary.'")
+        .await?;
+
+    let prompt = harness.exec_prompt("sensation remove temporary").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "sensation remove prompt should not be empty"
+    );
+
+    Ok(())
 }

@@ -1,28 +1,25 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-/// Helper: bootstrap with persona + agent + sensation for experiences.
-async fn setup_with_agent_and_sensation<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+/// Helper: init project + persona + sensation + agent for experience tests.
+async fn with_agent_and_sensation<B: Backend>() -> Result<Harness<B>, Box<dyn core::error::Error>> {
+    let harness = Harness::<B>::init_project().await?;
+    harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    backend
+    harness
         .exec_json("sensation set caused --description 'One thought produced another'")
         .await?;
-    backend
+    harness
         .exec_json("agent create observer process --description 'An observing agent'")
         .await?;
-    Ok(())
+    Ok(harness)
 }
 
 pub(crate) async fn create<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("experience create observer.process caused 'A caused B'")
         .await?;
 
@@ -38,10 +35,9 @@ pub(crate) async fn create<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let response = backend.exec_json("experience list").await?;
+    let response = harness.exec_json("experience list").await?;
 
     assert!(
         matches!(
@@ -55,17 +51,16 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    backend
+    harness
         .exec_json("experience create observer.process caused 'First experience'")
         .await?;
-    backend
+    harness
         .exec_json("experience create observer.process caused 'Second experience'")
         .await?;
 
-    let response = backend.exec_json("experience list").await?;
+    let response = harness.exec_json("experience list").await?;
 
     match response.data {
         Responses::Experience(ExperienceResponse::Experiences(experiences)) => {
@@ -78,10 +73,9 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let create_response = backend
+    let create_response = harness
         .exec_json("experience create observer.process caused 'Show me this'")
         .await?;
 
@@ -90,8 +84,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
-    let show_cmd = format!("experience show {id}");
-    let show_response = backend.exec_json(&show_cmd).await?;
+    let show_response = harness.exec_json(&format!("experience show {id}")).await?;
 
     match show_response.data {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
@@ -104,10 +97,9 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn update_description<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let create_response = backend
+    let create_response = harness
         .exec_json("experience create observer.process caused 'Original'")
         .await?;
 
@@ -116,8 +108,11 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
-    let update_cmd = format!("experience update {id} --description 'Updated description'");
-    let update_response = backend.exec_json(&update_cmd).await?;
+    let update_response = harness
+        .exec_json(&format!(
+            "experience update {id} --description 'Updated description'"
+        ))
+        .await?;
 
     assert!(
         matches!(
@@ -127,9 +122,7 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
         "expected ExperienceUpdated, got {update_response:?}"
     );
 
-    // Verify via show
-    let show_cmd = format!("experience show {id}");
-    let show_response = backend.exec_json(&show_cmd).await?;
+    let show_response = harness.exec_json(&format!("experience show {id}")).await?;
 
     match show_response.data {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
@@ -142,10 +135,9 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("experience create observer.process caused 'Show this'")
         .await?;
     let id = match response.data {
@@ -153,7 +145,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt(&format!("experience show {id}"))
         .await?;
 
@@ -166,13 +158,12 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
-    backend
+    let harness = with_agent_and_sensation::<B>().await?;
+    harness
         .exec_json("experience create observer.process caused 'An experience'")
         .await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("experience list --agent observer.process")
         .await?;
 
@@ -185,10 +176,9 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("experience create observer.process caused 'Original'")
         .await?;
     let id = match response.data {
@@ -196,7 +186,7 @@ pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt(&format!("experience update {id} --description 'Updated'"))
         .await?;
 
@@ -209,10 +199,9 @@ pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn create_prompt_confirms_creation<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_sensation(&mut backend).await?;
+    let harness = with_agent_and_sensation::<B>().await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("experience create observer.process caused 'A prompted experience'")
         .await?;
 

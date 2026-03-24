@@ -2,13 +2,9 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let response = backend
+    let response = harness
         .exec_json("level set ephemeral --description 'Short-lived context' --prompt 'Use for thoughts that will not outlast the session.'")
         .await?;
 
@@ -18,7 +14,7 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
     );
 
     // Verify the level exists via show command
-    let show_response = backend.exec_json("level show ephemeral").await?;
+    let show_response = harness.exec_json("level show ephemeral").await?;
 
     match show_response.data {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
@@ -32,25 +28,21 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    backend
+    harness
         .exec_json(
             "level set working --description 'Original description' --prompt 'Original prompt.'",
         )
         .await?;
 
-    backend
+    harness
         .exec_json(
             "level set working --description 'Updated description' --prompt 'Updated prompt.'",
         )
         .await?;
 
-    let show_response = backend.exec_json("level show working").await?;
+    let show_response = harness.exec_json("level show working").await?;
 
     match show_response.data {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
@@ -64,13 +56,9 @@ pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_returns_empty_when_none_exist<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let response = backend.exec_json("level list").await?;
+    let response = harness.exec_json("level list").await?;
 
     assert!(
         matches!(response.data, Responses::Level(LevelResponse::NoLevels)),
@@ -81,23 +69,19 @@ pub(crate) async fn list_returns_empty_when_none_exist<B: Backend>() -> TestResu
 }
 
 pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    backend
+    harness
         .exec_json("level set session --description 'Session context' --prompt 'For the session.'")
         .await?;
 
-    backend
+    harness
         .exec_json(
             "level set project --description 'Project knowledge' --prompt 'For the project.'",
         )
         .await?;
 
-    let response = backend.exec_json("level list").await?;
+    let response = harness.exec_json("level list").await?;
 
     match response.data {
         Responses::Level(LevelResponse::Levels(levels)) => {
@@ -110,13 +94,9 @@ pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("level set test-level --description 'A test level' --prompt 'Test prompt.'")
         .await?;
 
@@ -126,16 +106,13 @@ pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+    harness
         .exec_json("level set test-level --description 'A test level' --prompt 'Test prompt.'")
         .await?;
 
-    let prompt = backend.exec_prompt("level show test-level").await?;
+    let prompt = harness.exec_prompt("level show test-level").await?;
 
     assert!(!prompt.is_empty(), "level show prompt should not be empty");
     assert!(
@@ -147,16 +124,13 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+    harness
         .exec_json("level set test-level --description 'A test level' --prompt 'Test prompt.'")
         .await?;
 
-    let prompt = backend.exec_prompt("level list").await?;
+    let prompt = harness.exec_prompt("level list").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -167,16 +141,13 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+    harness
         .exec_json("level set temporary --description 'Will be removed' --prompt 'Temporary.'")
         .await?;
 
-    let prompt = backend.exec_prompt("level remove temporary").await?;
+    let prompt = harness.exec_prompt("level remove temporary").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -187,17 +158,13 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    backend
+    harness
         .exec_json("level set temporary --description 'Will be removed' --prompt 'Temporary.'")
         .await?;
 
-    let remove_response = backend.exec_json("level remove temporary").await?;
+    let remove_response = harness.exec_json("level remove temporary").await?;
 
     assert!(
         matches!(
@@ -208,7 +175,7 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     );
 
     // Verify it's gone
-    let list_response = backend.exec_json("level list").await?;
+    let list_response = harness.exec_json("level list").await?;
 
     assert!(
         matches!(

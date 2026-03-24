@@ -2,17 +2,12 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn status_prompt_contains_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-    backend
+    let harness = Harness::<B>::seed_project().await?;
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let prompt = backend.exec_prompt("status thinker.process").await?;
+    let prompt = harness.exec_prompt("status thinker.process").await?;
 
     assert!(!prompt.is_empty(), "status prompt should not be empty");
     assert!(
@@ -24,17 +19,12 @@ pub(crate) async fn status_prompt_contains_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn returns_agent_status<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-    backend
+    let harness = Harness::<B>::seed_project().await?;
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let response = backend.exec_json("status thinker.process").await?;
+    let response = harness.exec_json("status thinker.process").await?;
 
     match &response.data {
         // Engine: typed continuity response

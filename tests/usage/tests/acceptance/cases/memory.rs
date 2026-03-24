@@ -1,28 +1,25 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-/// Helper: bootstrap with persona + agent + level so memories have references.
-async fn setup_with_agent_and_level<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+/// Helper: init project + persona + level + agent for memory tests.
+async fn with_agent_and_level<B: Backend>() -> Result<Harness<B>, Box<dyn core::error::Error>> {
+    let harness = Harness::<B>::init_project().await?;
+    harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    backend
+    harness
         .exec_json("level set session --description 'Session context' --prompt 'For the session.'")
         .await?;
-    backend
+    harness
         .exec_json("agent create learner process --description 'A learning agent'")
         .await?;
-    Ok(())
+    Ok(harness)
 }
 
 pub(crate) async fn add_creates_memory<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("memory add learner.process session 'A test memory'")
         .await?;
 
@@ -38,10 +35,9 @@ pub(crate) async fn add_creates_memory<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    let response = backend.exec_json("memory list").await?;
+    let response = harness.exec_json("memory list").await?;
 
     assert!(
         matches!(response.data, Responses::Memory(MemoryResponse::NoMemories)),
@@ -52,17 +48,16 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    backend
+    harness
         .exec_json("memory add learner.process session 'First memory'")
         .await?;
-    backend
+    harness
         .exec_json("memory add learner.process session 'Second memory'")
         .await?;
 
-    let response = backend.exec_json("memory list").await?;
+    let response = harness.exec_json("memory list").await?;
 
     match response.data {
         Responses::Memory(MemoryResponse::Memories(memories)) => {
@@ -75,21 +70,20 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    backend
+    harness
         .exec_json("agent create other process --description 'Other agent'")
         .await?;
 
-    backend
+    harness
         .exec_json("memory add learner.process session 'Learner memory'")
         .await?;
-    backend
+    harness
         .exec_json("memory add other.process session 'Other memory'")
         .await?;
 
-    let response = backend
+    let response = harness
         .exec_json("memory list --agent learner.process")
         .await?;
 
@@ -104,10 +98,9 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    let add_response = backend
+    let add_response = harness
         .exec_json("memory add learner.process session 'Show me this'")
         .await?;
 
@@ -116,8 +109,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 
-    let show_cmd = format!("memory show {id}");
-    let show_response = backend.exec_json(&show_cmd).await?;
+    let show_response = harness.exec_json(&format!("memory show {id}")).await?;
 
     match show_response.data {
         Responses::Memory(MemoryResponse::MemoryDetails(memory)) => {
@@ -130,10 +122,9 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json("memory add learner.process session 'Show me this'")
         .await?;
     let id = match response.data {
@@ -141,7 +132,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 
-    let prompt = backend.exec_prompt(&format!("memory show {id}")).await?;
+    let prompt = harness.exec_prompt(&format!("memory show {id}")).await?;
 
     assert!(!prompt.is_empty(), "memory show prompt should not be empty");
 
@@ -149,13 +140,12 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
-    backend
+    let harness = with_agent_and_level::<B>().await?;
+    harness
         .exec_json("memory add learner.process session 'A memory'")
         .await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("memory list --agent learner.process")
         .await?;
 
@@ -168,10 +158,9 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn add_prompt_confirms_creation<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_agent_and_level(&mut backend).await?;
+    let harness = with_agent_and_level::<B>().await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("memory add learner.process session 'A prompted memory'")
         .await?;
 

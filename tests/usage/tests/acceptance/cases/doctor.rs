@@ -2,13 +2,9 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn doctor_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let prompt = backend.exec_prompt("doctor").await?;
+    let prompt = harness.exec_prompt("doctor").await?;
 
     assert!(!prompt.is_empty(), "doctor prompt should not be empty");
 
@@ -16,13 +12,9 @@ pub(crate) async fn doctor_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let response = backend.exec_json("doctor").await?;
+    let response = harness.exec_json("doctor").await?;
 
     match response.data {
         Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {
@@ -50,9 +42,9 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn reports_uninitialized_system<B: Backend>() -> TestResult {
-    let backend = B::start().await?;
+    let harness = Harness::<B>::started().await?;
 
-    let response = backend.exec_json("doctor").await?;
+    let response = harness.exec_json("doctor").await?;
 
     match response.data {
         Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {

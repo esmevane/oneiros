@@ -2,12 +2,9 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn init_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::setup_system().await?.start_service().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-
-    let prompt = backend.exec_prompt("project init --yes").await?;
+    let prompt = harness.exec_prompt("project init --yes").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -18,14 +15,10 @@ pub(crate) async fn init_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn init_creates_brain<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
+    let harness = Harness::<B>::init_project().await?;
 
     // Verify brain exists by listing levels (requires a working brain context)
-    let response = backend.exec_json("level list").await?;
+    let response = harness.exec_json("level list").await?;
 
     assert!(
         matches!(response.data, Responses::Level(LevelResponse::NoLevels)),

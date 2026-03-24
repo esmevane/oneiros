@@ -1,31 +1,27 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-/// Helper: bootstrap with agent + nature + two cognitions to connect.
-async fn setup_with_connectable_entities<B: Backend>(
-    backend: &mut B,
-) -> Result<(String, String), Box<dyn core::error::Error>> {
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend
+/// Helper: init project + persona + texture + nature + agent + two cognitions to connect.
+async fn with_connectable_entities<B: Backend>()
+-> Result<(Harness<B>, String, String), Box<dyn core::error::Error>> {
+    let harness = Harness::<B>::init_project().await?;
+    harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    backend
+    harness
         .exec_json("texture set observation --description 'Observations'")
         .await?;
-    backend
+    harness
         .exec_json("nature set caused --description 'One thought produced another'")
         .await?;
-    backend
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    // Create two cognitions to connect
-    let first_response = backend
+    let first_response = harness
         .exec_json("cognition add thinker.process observation 'First thought'")
         .await?;
-    let second_response = backend
+    let second_response = harness
         .exec_json("cognition add thinker.process observation 'Second thought'")
         .await?;
 
@@ -57,15 +53,14 @@ async fn setup_with_connectable_entities<B: Backend>(
         .expect("expected ref_token in meta for second cognition")
         .to_string();
 
-    Ok((first_ref, second_ref))
+    Ok((harness, first_ref, second_ref))
 }
 
 pub(crate) async fn create<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (from_ref, to_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
 
     let cmd = format!("connection create caused {from_ref} {to_ref}");
-    let response = backend.exec_json(&cmd).await?;
+    let response = harness.exec_json(&cmd).await?;
 
     assert!(
         matches!(
@@ -79,13 +74,9 @@ pub(crate) async fn create<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let response = backend.exec_json("connection list").await?;
+    let response = harness.exec_json("connection list").await?;
 
     assert!(
         matches!(
@@ -99,13 +90,12 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (from_ref, to_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
 
     let cmd = format!("connection create caused {from_ref} {to_ref}");
-    backend.exec_json(&cmd).await?;
+    harness.exec_json(&cmd).await?;
 
-    let response = backend.exec_json("connection list").await?;
+    let response = harness.exec_json("connection list").await?;
 
     match response.data {
         Responses::Connection(ConnectionResponse::Connections(connections)) => {
@@ -118,19 +108,17 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (from_ref, to_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
 
     let create_cmd = format!("connection create caused {from_ref} {to_ref}");
-    let create_response = backend.exec_json(&create_cmd).await?;
+    let create_response = harness.exec_json(&create_cmd).await?;
 
     let id = match create_response.data {
         Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.id,
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
-    let show_cmd = format!("connection show {id}");
-    let show_response = backend.exec_json(&show_cmd).await?;
+    let show_response = harness.exec_json(&format!("connection show {id}")).await?;
 
     match show_response.data {
         Responses::Connection(ConnectionResponse::ConnectionDetails(connection)) => {
@@ -143,19 +131,19 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (from_ref, to_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
 
     let create_cmd = format!("connection create caused {from_ref} {to_ref}");
-    let create_response = backend.exec_json(&create_cmd).await?;
+    let create_response = harness.exec_json(&create_cmd).await?;
 
     let id = match create_response.data {
         Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.id,
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
-    let remove_cmd = format!("connection remove {id}");
-    let remove_response = backend.exec_json(&remove_cmd).await?;
+    let remove_response = harness
+        .exec_json(&format!("connection remove {id}"))
+        .await?;
 
     assert!(
         matches!(
@@ -165,8 +153,7 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
         "expected ConnectionRemoved, got {remove_response:?}"
     );
 
-    // Verify it's gone
-    let list_response = backend.exec_json("connection list").await?;
+    let list_response = harness.exec_json("connection list").await?;
 
     assert!(
         matches!(
@@ -180,10 +167,9 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, first_ref, second_ref) = with_connectable_entities::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json(&format!(
             "connection create caused {first_ref} {second_ref}"
         ))
@@ -193,7 +179,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt(&format!("connection show {id}"))
         .await?;
 
@@ -206,15 +192,14 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
-    backend
+    let (harness, first_ref, second_ref) = with_connectable_entities::<B>().await?;
+    harness
         .exec_json(&format!(
             "connection create caused {first_ref} {second_ref}"
         ))
         .await?;
 
-    let prompt = backend.exec_prompt("connection list").await?;
+    let prompt = harness.exec_prompt("connection list").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -225,10 +210,9 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, first_ref, second_ref) = with_connectable_entities::<B>().await?;
 
-    let response = backend
+    let response = harness
         .exec_json(&format!(
             "connection create caused {first_ref} {second_ref}"
         ))
@@ -238,7 +222,7 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt(&format!("connection remove {id}"))
         .await?;
 
@@ -251,10 +235,9 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn create_prompt_confirms_creation<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    let (first_ref, second_ref) = setup_with_connectable_entities(&mut backend).await?;
+    let (harness, first_ref, second_ref) = with_connectable_entities::<B>().await?;
 
-    let prompt = backend
+    let prompt = harness
         .exec_prompt(&format!(
             "connection create caused {first_ref} {second_ref}"
         ))

@@ -2,13 +2,9 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn core_prompt<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let prompt = backend.exec_prompt("seed core").await?;
+    let prompt = harness.exec_prompt("seed core").await?;
 
     assert!(!prompt.is_empty(), "seed core prompt should not be empty");
 
@@ -16,13 +12,9 @@ pub(crate) async fn core_prompt<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn core_creates_default_levels<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::init_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-
-    let response = backend.exec_json("seed core").await?;
+    let response = harness.exec_json("seed core").await?;
 
     assert!(
         matches!(response.data, Responses::Seed(SeedResponse::SeedComplete)),
@@ -30,7 +22,7 @@ pub(crate) async fn core_creates_default_levels<B: Backend>() -> TestResult {
     );
 
     // Verify levels were created
-    let list_response = backend.exec_json("level list").await?;
+    let list_response = harness.exec_json("level list").await?;
 
     match list_response.data {
         Responses::Level(LevelResponse::Levels(levels)) => {

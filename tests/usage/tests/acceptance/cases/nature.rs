@@ -1,61 +1,183 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-use super::vocabulary::{self, VocabularyDomain};
-
-const DOMAIN: VocabularyDomain = VocabularyDomain {
-    command: "nature",
-    is_set: |r| matches!(r, Responses::Nature(NatureResponse::NatureSet(_))),
-    is_details: |r| matches!(r, Responses::Nature(NatureResponse::NatureDetails(_))),
-    extract_details: |r| match r {
-        Responses::Nature(NatureResponse::NatureDetails(n)) => Some((
-            n.name.as_str().to_owned(),
-            n.description.as_str().to_owned(),
-            n.prompt.as_str().to_owned(),
-        )),
-        _ => None,
-    },
-    is_list: |r| matches!(r, Responses::Nature(NatureResponse::Natures(_))),
-    extract_list_count: |r| match r {
-        Responses::Nature(NatureResponse::Natures(list)) => Some(list.len()),
-        _ => None,
-    },
-    is_empty: |r| matches!(r, Responses::Nature(NatureResponse::NoNatures)),
-    is_removed: |r| matches!(r, Responses::Nature(NatureResponse::NatureRemoved(_))),
-};
-
 pub(crate) async fn set_creates<B: Backend>() -> TestResult {
-    vocabulary::set_creates_a_new_entry::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    let response = harness
+        .exec_json("nature set context --description 'Provides background' --prompt 'Use when one thing frames another.'")
+        .await?;
+
+    assert!(
+        matches!(
+            response.data,
+            Responses::Nature(NatureResponse::NatureSet(_))
+        ),
+        "expected NatureSet, got {response:#?}"
+    );
+
+    let show_response = harness.exec_json("nature show context").await?;
+
+    match show_response.data {
+        Responses::Nature(NatureResponse::NatureDetails(n)) => {
+            assert_eq!(n.name.as_str(), "context");
+            assert_eq!(n.description.as_str(), "Provides background");
+        }
+        other => panic!("expected NatureDetails, got {other:#?}"),
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn set_updates<B: Backend>() -> TestResult {
-    vocabulary::set_updates_existing_entry::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("nature set draft --description 'Original' --prompt 'Original.'")
+        .await?;
+
+    harness
+        .exec_json("nature set draft --description 'Updated' --prompt 'Updated.'")
+        .await?;
+
+    let show_response = harness.exec_json("nature show draft").await?;
+
+    match show_response.data {
+        Responses::Nature(NatureResponse::NatureDetails(n)) => {
+            assert_eq!(n.description.as_str(), "Updated");
+        }
+        other => panic!("expected NatureDetails, got {other:#?}"),
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
-    vocabulary::list_returns_empty_when_none_exist::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    let response = harness.exec_json("nature list").await?;
+
+    assert!(
+        matches!(response.data, Responses::Nature(NatureResponse::NoNatures)),
+        "expected NoNatures, got {response:#?}"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
-    vocabulary::list_returns_created_entries::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("nature set first --description 'First' --prompt 'First.'")
+        .await?;
+
+    harness
+        .exec_json("nature set second --description 'Second' --prompt 'Second.'")
+        .await?;
+
+    let response = harness.exec_json("nature list").await?;
+
+    match response.data {
+        Responses::Nature(NatureResponse::Natures(list)) => {
+            assert_eq!(list.len(), 2);
+        }
+        other => panic!("expected Natures, got {other:#?}"),
+    }
+
+    Ok(())
 }
 
 pub(crate) async fn remove<B: Backend>() -> TestResult {
-    vocabulary::remove_makes_it_unlisted::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("nature set temporary --description 'Will be removed' --prompt 'Temporary.'")
+        .await?;
+
+    let remove_response = harness.exec_json("nature remove temporary").await?;
+
+    assert!(
+        matches!(
+            remove_response.data,
+            Responses::Nature(NatureResponse::NatureRemoved(_))
+        ),
+        "expected NatureRemoved, got {remove_response:?}"
+    );
+
+    let list_response = harness.exec_json("nature list").await?;
+
+    assert!(
+        matches!(
+            list_response.data,
+            Responses::Nature(NatureResponse::NoNatures)
+        ),
+        "expected NoNatures after removal, got {list_response:?}"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
-    vocabulary::set_prompt_confirms_creation::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    let prompt = harness
+        .exec_prompt("nature set test-nature --description 'A test nature' --prompt 'Test prompt.'")
+        .await?;
+
+    assert!(!prompt.is_empty(), "nature set prompt should not be empty");
+
+    Ok(())
 }
 
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
-    vocabulary::show_prompt_contains_entry::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("nature set test-nature --description 'A test nature' --prompt 'Test prompt.'")
+        .await?;
+
+    let prompt = harness.exec_prompt("nature show test-nature").await?;
+
+    assert!(!prompt.is_empty(), "nature show prompt should not be empty");
+    assert!(
+        prompt.contains("test-nature"),
+        "nature show prompt should contain the entry name"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    vocabulary::list_prompt_contains_entries::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("nature set test-nature --description 'A test nature' --prompt 'Test prompt.'")
+        .await?;
+
+    let prompt = harness.exec_prompt("nature list").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "nature list prompt should not be empty when entries exist"
+    );
+
+    Ok(())
 }
 
 pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
-    vocabulary::remove_prompt_confirms_removal::<B>(&DOMAIN).await
+    let harness = Harness::<B>::init_project().await?;
+
+    harness
+        .exec_json("nature set temporary --description 'Will be removed' --prompt 'Temporary.'")
+        .await?;
+
+    let prompt = harness.exec_prompt("nature remove temporary").await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "nature remove prompt should not be empty"
+    );
+
+    Ok(())
 }

@@ -2,14 +2,9 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::seed_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-
-    let response = backend
+    let response = harness
         .exec_json("emerge newborn process --description 'A new agent'")
         .await?;
 
@@ -26,7 +21,7 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     }
 
     // Verify the agent exists via typed response
-    let show = backend.exec_json("agent show newborn.process").await?;
+    let show = harness.exec_json("agent show newborn.process").await?;
 
     assert!(
         matches!(show.data, Responses::Agent(AgentResponse::AgentDetails(_))),
@@ -37,14 +32,9 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn emerge_prompt_contains_identity<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::seed_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-
-    let prompt = backend
+    let prompt = harness
         .exec_prompt("emerge thinker process --description 'A thinking agent'")
         .await?;
 
@@ -61,17 +51,12 @@ pub(crate) async fn emerge_prompt_contains_identity<B: Backend>() -> TestResult 
 }
 
 pub(crate) async fn recede_prompt_contains_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-    backend
+    let harness = Harness::<B>::seed_project().await?;
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let prompt = backend.exec_prompt("recede thinker.process").await?;
+    let prompt = harness.exec_prompt("recede thinker.process").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -86,18 +71,13 @@ pub(crate) async fn recede_prompt_contains_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
+    let harness = Harness::<B>::seed_project().await?;
 
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-
-    backend
+    harness
         .exec_json("agent create retiring process --description 'Will retire'")
         .await?;
 
-    let response = backend.exec_json("recede retiring.process").await?;
+    let response = harness.exec_json("recede retiring.process").await?;
 
     match &response.data {
         // Engine: typed continuity response

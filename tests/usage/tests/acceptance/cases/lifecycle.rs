@@ -2,22 +2,19 @@ use oneiros_engine::*;
 use oneiros_usage::*;
 
 /// Helper: bootstrap with seeded vocabulary + an agent.
-async fn setup_with_seeded_agent<B: Backend>(backend: &mut B) -> TestResult {
-    backend.exec_json("system init --name test --yes").await?;
-    backend.start_service().await?;
-    backend.exec_json("project init --yes").await?;
-    backend.exec_json("seed core").await?;
-    backend
+async fn with_seeded_agent<B: Backend>() -> Result<Harness<B>, Box<dyn core::error::Error>> {
+    let harness = Harness::<B>::seed_project().await?;
+    harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
-        .await?;
-    Ok(())
+        .await
+        .map_err(|e| -> Box<dyn core::error::Error> { e.to_string().into() })?;
+    Ok(harness)
 }
 
 pub(crate) async fn wake<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let response = backend.exec_json("wake thinker.process").await?;
+    let response = harness.exec_json("wake thinker.process").await?;
 
     assert!(
         matches!(
@@ -31,10 +28,9 @@ pub(crate) async fn wake<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn dream<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let response = backend.exec_json("dream thinker.process").await?;
+    let response = harness.exec_json("dream thinker.process").await?;
 
     assert!(
         matches!(
@@ -48,10 +44,9 @@ pub(crate) async fn dream<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn introspect<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let response = backend.exec_json("introspect thinker.process").await?;
+    let response = harness.exec_json("introspect thinker.process").await?;
 
     assert!(
         matches!(
@@ -65,10 +60,9 @@ pub(crate) async fn introspect<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn reflect<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let response = backend.exec_json("reflect thinker.process").await?;
+    let response = harness.exec_json("reflect thinker.process").await?;
 
     assert!(
         matches!(
@@ -82,10 +76,9 @@ pub(crate) async fn reflect<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn sleep<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let response = backend.exec_json("sleep thinker.process").await?;
+    let response = harness.exec_json("sleep thinker.process").await?;
 
     assert!(
         matches!(
@@ -101,15 +94,14 @@ pub(crate) async fn sleep<B: Backend>() -> TestResult {
 /// Dream context should include vocabulary (textures, levels, sensations, natures, urges),
 /// connections, and pressure readings — not just agent + cognitions + memories + experiences.
 pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
     // Add a cognition so we have something to connect
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'First thought'")
         .await?;
 
-    let response = backend.exec_json("dream thinker.process").await?;
+    let response = harness.exec_json("dream thinker.process").await?;
 
     match response.data {
         Responses::Continuity(ContinuityResponse::Dreaming(ctx)) => {
@@ -147,10 +139,9 @@ pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> T
 }
 
 pub(crate) async fn guidebook<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let response = backend.exec_json("guidebook thinker.process").await?;
+    let response = harness.exec_json("guidebook thinker.process").await?;
 
     assert!(
         matches!(
@@ -166,10 +157,9 @@ pub(crate) async fn guidebook<B: Backend>() -> TestResult {
 // -- Prompt output tests --
 
 pub(crate) async fn dream_prompt_contains_identity<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
         prompt.contains("thinker.process"),
@@ -189,10 +179,9 @@ pub(crate) async fn dream_prompt_contains_identity<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn dream_prompt_contains_vocabulary<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
         prompt.contains("## Cognitive Textures"),
@@ -211,14 +200,13 @@ pub(crate) async fn dream_prompt_contains_vocabulary<B: Backend>() -> TestResult
 }
 
 pub(crate) async fn dream_prompt_contains_memories<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    backend
+    harness
         .exec_json("memory add thinker.process core 'I remember everything'")
         .await?;
 
-    let prompt = backend.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
         prompt.contains("## Your Memories"),
@@ -233,14 +221,13 @@ pub(crate) async fn dream_prompt_contains_memories<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn dream_prompt_contains_cognitions<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    backend
+    harness
         .exec_json("cognition add thinker.process observation 'Something interesting happened'")
         .await?;
 
-    let prompt = backend.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
         prompt.contains("## Your Cognitions"),
@@ -255,10 +242,9 @@ pub(crate) async fn dream_prompt_contains_cognitions<B: Backend>() -> TestResult
 }
 
 pub(crate) async fn introspect_prompt_contains_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("introspect thinker.process").await?;
+    let prompt = harness.exec_prompt("introspect thinker.process").await?;
 
     assert!(
         prompt.contains("thinker.process"),
@@ -273,10 +259,9 @@ pub(crate) async fn introspect_prompt_contains_agent<B: Backend>() -> TestResult
 }
 
 pub(crate) async fn reflect_prompt_contains_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("reflect thinker.process").await?;
+    let prompt = harness.exec_prompt("reflect thinker.process").await?;
 
     assert!(
         prompt.contains("thinker.process"),
@@ -291,10 +276,9 @@ pub(crate) async fn reflect_prompt_contains_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn guidebook_prompt_contains_capabilities<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("guidebook thinker.process").await?;
+    let prompt = harness.exec_prompt("guidebook thinker.process").await?;
 
     assert!(
         prompt.contains("Cognitive Guidebook"),
@@ -317,10 +301,9 @@ pub(crate) async fn guidebook_prompt_contains_capabilities<B: Backend>() -> Test
 }
 
 pub(crate) async fn wake_prompt_contains_identity<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("wake thinker.process").await?;
+    let prompt = harness.exec_prompt("wake thinker.process").await?;
 
     assert!(
         prompt.contains("thinker.process"),
@@ -335,10 +318,9 @@ pub(crate) async fn wake_prompt_contains_identity<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn sleep_prompt_contains_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("sleep thinker.process").await?;
+    let prompt = harness.exec_prompt("sleep thinker.process").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -353,10 +335,9 @@ pub(crate) async fn sleep_prompt_contains_agent<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn sense_prompt_contains_agent<B: Backend>() -> TestResult {
-    let mut backend = B::start().await?;
-    setup_with_seeded_agent(&mut backend).await?;
+    let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = backend.exec_prompt("sense thinker.process").await?;
+    let prompt = harness.exec_prompt("sense thinker.process").await?;
 
     assert!(!prompt.is_empty(), "sense prompt should not be empty");
     assert!(
