@@ -3,8 +3,6 @@ use clap::Subcommand;
 use crate::contexts::SystemContext;
 use crate::*;
 
-pub struct TicketCli;
-
 #[derive(Debug, Subcommand)]
 pub enum TicketCommands {
     Issue {
@@ -19,16 +17,34 @@ pub enum TicketCommands {
     List,
 }
 
-impl TicketCli {
-    pub fn execute(context: &SystemContext, cmd: TicketCommands) -> Result<Responses, TicketError> {
-        let result = match cmd {
+impl TicketCommands {
+    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, TicketError> {
+        let response = match self {
             TicketCommands::Issue {
                 actor_id,
                 brain_name,
-            } => TicketService::create(context, actor_id, BrainName::new(brain_name))?.into(),
-            TicketCommands::Validate { id } => TicketService::validate(context, &id)?.into(),
-            TicketCommands::List => TicketService::list(context)?.into(),
+            } => TicketService::create(context, actor_id.clone(), BrainName::new(brain_name))?,
+            TicketCommands::Validate { id } => TicketService::validate(context, id)?,
+            TicketCommands::List => TicketService::list(context)?,
         };
-        Ok(result)
+
+        let prompt = match &response {
+            TicketResponse::Created(ticket) => {
+                format!("Ticket issued for brain '{}'.", ticket.brain_name)
+            }
+            TicketResponse::Found(ticket) => {
+                format!("Ticket for brain '{}'.", ticket.brain_name)
+            }
+            TicketResponse::Validated(ticket) => {
+                format!("Ticket for brain '{}' is valid.", ticket.brain_name)
+            }
+            TicketResponse::Listed(tickets) => format!("{} ticket(s) found.", tickets.len()),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

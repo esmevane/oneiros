@@ -1,4 +1,6 @@
+pub(crate) mod actor;
 pub(crate) mod agent;
+pub(crate) mod brain;
 pub(crate) mod cognition;
 pub(crate) mod connection;
 pub(crate) mod doctor;
@@ -19,5 +21,7 @@ pub(crate) mod sensation;
 pub(crate) mod status;
 pub(crate) mod storage;
 pub(crate) mod system;
+pub(crate) mod tenant;
 pub(crate) mod texture;
+pub(crate) mod ticket;
 pub(crate) mod urge;

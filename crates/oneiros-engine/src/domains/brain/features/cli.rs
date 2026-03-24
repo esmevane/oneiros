@@ -3,8 +3,6 @@ use clap::Subcommand;
 use crate::contexts::SystemContext;
 use crate::*;
 
-pub struct BrainCli;
-
 #[derive(Debug, Subcommand)]
 pub enum BrainCommands {
     Create { name: String },
@@ -12,17 +10,24 @@ pub enum BrainCommands {
     List,
 }
 
-impl BrainCli {
-    pub fn execute(context: &SystemContext, cmd: BrainCommands) -> Result<Responses, BrainError> {
-        let result = match cmd {
-            BrainCommands::Create { name } => {
-                BrainService::create(context, BrainName::new(name))?.into()
-            }
-            BrainCommands::Get { name } => {
-                BrainService::get(context, &BrainName::new(name))?.into()
-            }
-            BrainCommands::List => BrainService::list(context)?.into(),
+impl BrainCommands {
+    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, BrainError> {
+        let response = match self {
+            BrainCommands::Create { name } => BrainService::create(context, BrainName::new(name))?,
+            BrainCommands::Get { name } => BrainService::get(context, &BrainName::new(name))?,
+            BrainCommands::List => BrainService::list(context)?,
         };
-        Ok(result)
+
+        let prompt = match &response {
+            BrainResponse::Created(brain) => format!("Brain '{}' created.", brain.name),
+            BrainResponse::Found(brain) => format!("Brain '{}'", brain.name),
+            BrainResponse::Listed(brains) => format!("{} brain(s) found.", brains.len()),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }

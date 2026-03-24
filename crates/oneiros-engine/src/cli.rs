@@ -49,6 +49,16 @@ pub enum Command {
     #[command(subcommand)]
     Seed(SeedCommands),
 
+    // System-scoped domains
+    #[command(subcommand)]
+    Tenant(TenantCommands),
+    #[command(subcommand)]
+    Actor(ActorCommands),
+    #[command(subcommand)]
+    Brain(BrainCommands),
+    #[command(subcommand)]
+    Ticket(TicketCommands),
+
     // Vocabulary domains (project-scoped)
     #[command(subcommand)]
     Level(LevelCommands),
@@ -145,6 +155,20 @@ impl Command {
                 .map_err(|e| Error::Context(e.to_string()))?,
             Command::Seed(seed) => seed
                 .execute(engine.project()?)
+                .map_err(|e| Error::Context(e.to_string()))?,
+
+            // System-scoped domains
+            Command::Tenant(tenant) => tenant
+                .execute(engine.system())
+                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::Actor(actor) => actor
+                .execute(engine.system())
+                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::Brain(brain) => brain
+                .execute(engine.system())
+                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::Ticket(ticket) => ticket
+                .execute(engine.system())
                 .map_err(|e| Error::Context(e.to_string()))?,
 
             // Project-scoped domains — vocabulary

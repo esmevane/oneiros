@@ -116,6 +116,26 @@ async fn system_init_prompt() -> TestResult {
     cases::system::init_prompt::<EngineBackend>().await
 }
 
+// Tenant
+#[tokio::test]
+async fn tenant_list_after_system_init() -> TestResult {
+    cases::tenant::list_after_system_init::<EngineBackend>().await
+}
+#[tokio::test]
+async fn tenant_list_prompt() -> TestResult {
+    cases::tenant::list_prompt::<EngineBackend>().await
+}
+
+// Actor (system-scoped)
+#[tokio::test]
+async fn actor_list_after_system_init() -> TestResult {
+    cases::actor::list_after_system_init::<EngineBackend>().await
+}
+#[tokio::test]
+async fn actor_list_prompt() -> TestResult {
+    cases::actor::list_prompt::<EngineBackend>().await
+}
+
 #[tokio::test]
 async fn project_init_prompt() -> TestResult {
     cases::project::init_prompt::<EngineBackend>().await
@@ -123,6 +143,30 @@ async fn project_init_prompt() -> TestResult {
 #[tokio::test]
 async fn project_init_creates_brain() -> TestResult {
     cases::project::init_creates_brain::<EngineBackend>().await
+}
+
+// Brain
+#[tokio::test]
+async fn brain_list_after_project_init() -> TestResult {
+    cases::brain::list_after_project_init::<EngineBackend>().await
+}
+#[tokio::test]
+async fn brain_get_by_name() -> TestResult {
+    cases::brain::get_by_name::<EngineBackend>().await
+}
+#[tokio::test]
+async fn brain_list_prompt() -> TestResult {
+    cases::brain::list_prompt::<EngineBackend>().await
+}
+
+// Ticket
+#[tokio::test]
+async fn ticket_list_after_project_init() -> TestResult {
+    cases::ticket::list_after_project_init::<EngineBackend>().await
+}
+#[tokio::test]
+async fn ticket_list_prompt() -> TestResult {
+    cases::ticket::list_prompt::<EngineBackend>().await
 }
 
 #[tokio::test]

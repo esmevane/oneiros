@@ -3,8 +3,6 @@ use clap::Subcommand;
 use crate::contexts::SystemContext;
 use crate::*;
 
-pub struct ActorCli;
-
 #[derive(Debug, Subcommand)]
 pub enum ActorCommands {
     Create {
@@ -18,20 +16,28 @@ pub enum ActorCommands {
     List,
 }
 
-impl ActorCli {
-    pub fn execute(context: &SystemContext, cmd: ActorCommands) -> Result<Responses, ActorError> {
-        let result = match cmd {
+impl ActorCommands {
+    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, ActorError> {
+        let response = match self {
             ActorCommands::Create { tenant_id, name } => ActorService::create(
                 context,
                 tenant_id.parse::<TenantId>()?,
                 ActorName::new(name),
-            )?
-            .into(),
-            ActorCommands::Get { id } => {
-                ActorService::get(context, &id.parse::<ActorId>()?)?.into()
-            }
-            ActorCommands::List => ActorService::list(context)?.into(),
+            )?,
+            ActorCommands::Get { id } => ActorService::get(context, &id.parse::<ActorId>()?)?,
+            ActorCommands::List => ActorService::list(context)?,
         };
-        Ok(result)
+
+        let prompt = match &response {
+            ActorResponse::Created(actor) => format!("Actor '{}' created.", actor.name),
+            ActorResponse::Found(actor) => format!("Actor '{}' ({})", actor.name, actor.id),
+            ActorResponse::Listed(actors) => format!("{} actor(s) found.", actors.len()),
+        };
+
+        Ok(Rendered::new(
+            Response::new(response.into()),
+            prompt,
+            String::new(),
+        ))
     }
 }
