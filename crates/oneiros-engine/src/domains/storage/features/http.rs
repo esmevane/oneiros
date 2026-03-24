@@ -39,7 +39,8 @@ async fn upload(
         StorageKey::new(body.key),
         Description::new(body.description),
         body.data,
-    )?;
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -58,5 +59,7 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    Ok(Json(StorageService::remove(&ctx, &StorageKey::new(key))?))
+    Ok(Json(
+        StorageService::remove(&ctx, &StorageKey::new(key)).await?,
+    ))
 }

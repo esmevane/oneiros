@@ -26,7 +26,10 @@ async fn set(
     Json(mut texture): Json<Texture>,
 ) -> Result<(StatusCode, Json<TextureResponse>), TextureError> {
     texture.name = TextureName::new(name);
-    Ok((StatusCode::OK, Json(TextureService::set(&ctx, texture)?)))
+    Ok((
+        StatusCode::OK,
+        Json(TextureService::set(&ctx, texture).await?),
+    ))
 }
 
 async fn list(State(ctx): State<ProjectContext>) -> Result<Json<TextureResponse>, TextureError> {
@@ -44,5 +47,7 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<TextureResponse>, TextureError> {
-    Ok(Json(TextureService::remove(&ctx, &TextureName::new(name))?))
+    Ok(Json(
+        TextureService::remove(&ctx, &TextureName::new(name)).await?,
+    ))
 }

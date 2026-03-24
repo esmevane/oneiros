@@ -36,7 +36,7 @@ pub mod storage_mcp {
         &["list_storage", "get_storage", "remove_storage"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         ctx: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -58,6 +58,7 @@ pub mod storage_mcp {
                 let p: KeyParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = StorageService::remove(ctx, &StorageKey::new(p.key))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

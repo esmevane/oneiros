@@ -48,7 +48,7 @@ pub mod continuity_mcp {
         &["dream", "introspect", "reflect", "sense", "sleep"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -61,6 +61,7 @@ pub mod continuity_mcp {
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response =
                     ContinuityService::dream(context, &AgentName::new(&p.agent), &no_overrides)
+                        .await
                         .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -72,6 +73,7 @@ pub mod continuity_mcp {
                     &AgentName::new(&p.agent),
                     &no_overrides,
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -80,6 +82,7 @@ pub mod continuity_mcp {
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response =
                     ContinuityService::reflect(context, &AgentName::new(&p.agent), &no_overrides)
+                        .await
                         .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -93,6 +96,7 @@ pub mod continuity_mcp {
                     &content,
                     &no_overrides,
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -101,6 +105,7 @@ pub mod continuity_mcp {
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response =
                     ContinuityService::sleep(context, &AgentName::new(&p.agent), &no_overrides)
+                        .await
                         .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

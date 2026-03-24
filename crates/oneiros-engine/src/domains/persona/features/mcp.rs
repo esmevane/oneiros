@@ -42,7 +42,7 @@ pub mod persona_mcp {
         ]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         ctx: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -52,6 +52,7 @@ pub mod persona_mcp {
                 let persona: Persona = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = PersonaService::set(ctx, persona)
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -71,6 +72,7 @@ pub mod persona_mcp {
                 let p: NameParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = PersonaService::remove(ctx, &PersonaName::new(p.name))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

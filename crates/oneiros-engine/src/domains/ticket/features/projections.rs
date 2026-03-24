@@ -10,6 +10,7 @@ impl TicketProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "ticket",
+    migrate: |conn| TicketRepo::new(conn).migrate(),
     apply: |conn, event| TicketRepo::new(conn).handle(event),
     reset: |conn| TicketRepo::new(conn).reset(),
 }];

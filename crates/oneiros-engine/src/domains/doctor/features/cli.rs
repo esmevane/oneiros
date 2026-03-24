@@ -3,7 +3,7 @@ use crate::*;
 pub struct DoctorCli;
 
 impl DoctorCli {
-    pub fn execute(ctx: &SystemContext) -> Result<Rendered<Responses>, Box<dyn std::error::Error>> {
+    pub async fn execute(ctx: &SystemContext) -> Result<Rendered<Responses>, DoctorError> {
         let response = DoctorService::check(ctx);
 
         let prompt = match &response {

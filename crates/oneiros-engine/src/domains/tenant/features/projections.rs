@@ -10,6 +10,7 @@ impl TenantProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "tenant",
+    migrate: |conn| TenantRepo::new(conn).migrate(),
     apply: |conn, event| TenantRepo::new(conn).handle(event),
     reset: |conn| TenantRepo::new(conn).reset(),
 }];

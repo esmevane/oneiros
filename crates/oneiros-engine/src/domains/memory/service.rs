@@ -3,7 +3,7 @@ use crate::*;
 pub struct MemoryService;
 
 impl MemoryService {
-    pub fn add(
+    pub async fn add(
         context: &ProjectContext,
         agent: &AgentName,
         level: LevelName,
@@ -19,7 +19,9 @@ impl MemoryService {
             .content(content)
             .build();
 
-        context.emit(MemoryEvents::MemoryAdded(memory.clone()));
+        context
+            .emit(MemoryEvents::MemoryAdded(memory.clone()))
+            .await?;
         Ok(MemoryResponse::MemoryAdded(memory))
     }
 

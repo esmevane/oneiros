@@ -44,7 +44,7 @@ pub mod memory_mcp {
         &["add_memory", "get_memory", "list_memories"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -59,6 +59,7 @@ pub mod memory_mcp {
                     LevelName::new(&p.level),
                     Content::new(p.content),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

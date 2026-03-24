@@ -145,31 +145,23 @@ impl Command {
     pub async fn execute(&self, engine: &Engine) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
             // Workflow domains — each knows its context
-            Command::System(system) => system.execute(engine.system())?,
-            Command::Project(project) => project
-                .execute(
-                    engine.system(),
-                    engine.project.as_ref(),
-                    engine.brain_name(),
-                )
-                .map_err(|e| Error::Context(e.to_string()))?,
-            Command::Seed(seed) => seed
-                .execute(engine.project()?)
-                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::System(system) => system.execute(engine.system()).await?,
+            Command::Project(project) => {
+                project
+                    .execute(
+                        engine.system(),
+                        engine.project.as_ref(),
+                        engine.brain_name(),
+                    )
+                    .await?
+            }
+            Command::Seed(seed) => seed.execute(engine.project()?).await?,
 
             // System-scoped domains
-            Command::Tenant(tenant) => tenant
-                .execute(engine.system())
-                .map_err(|e| Error::Context(e.to_string()))?,
-            Command::Actor(actor) => actor
-                .execute(engine.system())
-                .map_err(|e| Error::Context(e.to_string()))?,
-            Command::Brain(brain) => brain
-                .execute(engine.system())
-                .map_err(|e| Error::Context(e.to_string()))?,
-            Command::Ticket(ticket) => ticket
-                .execute(engine.system())
-                .map_err(|e| Error::Context(e.to_string()))?,
+            Command::Tenant(tenant) => tenant.execute(engine.system()).await?,
+            Command::Actor(actor) => actor.execute(engine.system()).await?,
+            Command::Brain(brain) => brain.execute(engine.system()).await?,
+            Command::Ticket(ticket) => ticket.execute(engine.system()).await?,
 
             // Project-scoped domains — vocabulary
             Command::Level(level) => level.execute(engine.project()?).await?,
@@ -191,9 +183,7 @@ impl Command {
             Command::Pressure(pressure) => pressure.execute(engine.project()?).await?,
 
             // Doctor — system diagnostics
-            Command::Doctor => {
-                DoctorCli::execute(engine.system()).map_err(|e| Error::Context(e.to_string()))?
-            }
+            Command::Doctor => DoctorCli::execute(engine.system()).await?,
 
             // Continuity — domain subcommands go through the presenter
             Command::Continuity(continuity) => continuity.execute(engine.project()?).await?,

@@ -3,7 +3,7 @@ use crate::*;
 pub struct ConnectionService;
 
 impl ConnectionService {
-    pub fn create(
+    pub async fn create(
         context: &ProjectContext,
         from_ref: String,
         to_ref: String,
@@ -24,7 +24,9 @@ impl ConnectionService {
             .nature(nature)
             .build();
 
-        context.emit(ConnectionEvents::ConnectionCreated(connection.clone()));
+        context
+            .emit(ConnectionEvents::ConnectionCreated(connection.clone()))
+            .await?;
         Ok(ConnectionResponse::ConnectionCreated(connection))
     }
 
@@ -63,7 +65,7 @@ impl ConnectionService {
         }
     }
 
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         id: &ConnectionId,
     ) -> Result<ConnectionResponse, ConnectionError> {
@@ -76,9 +78,11 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(*id));
         }
 
-        context.emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
-            id: *id,
-        }));
+        context
+            .emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
+                id: *id,
+            }))
+            .await?;
         Ok(ConnectionResponse::ConnectionRemoved(*id))
     }
 }

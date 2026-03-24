@@ -43,7 +43,8 @@ async fn add(
         &AgentName::new(&body.agent),
         TextureName::new(&body.texture),
         Content::new(body.content),
-    )?;
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

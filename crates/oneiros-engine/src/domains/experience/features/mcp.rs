@@ -72,7 +72,7 @@ pub mod experience_mcp {
         ]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -87,6 +87,7 @@ pub mod experience_mcp {
                     SensationName::new(&p.sensation),
                     Description::new(&p.description),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -121,6 +122,7 @@ pub mod experience_mcp {
                     &id,
                     Description::new(&p.description),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -135,6 +137,7 @@ pub mod experience_mcp {
                     &id,
                     SensationName::new(&p.sensation),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

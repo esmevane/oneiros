@@ -10,6 +10,7 @@ impl CognitionProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "cognition",
+    migrate: |conn| CognitionRepo::new(conn).migrate(),
     apply: |conn, event| CognitionRepo::new(conn).handle(event),
     reset: |conn| CognitionRepo::new(conn).reset(),
 }];

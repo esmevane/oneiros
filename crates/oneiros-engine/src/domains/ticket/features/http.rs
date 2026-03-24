@@ -37,7 +37,8 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<TicketResponse>), TicketError> {
-    let response = TicketService::create(&ctx, body.actor_id, BrainName::new(body.brain_name))?;
+    let response =
+        TicketService::create(&ctx, body.actor_id, BrainName::new(body.brain_name)).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

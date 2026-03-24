@@ -3,9 +3,9 @@ use crate::*;
 pub struct UrgeService;
 
 impl UrgeService {
-    pub fn set(context: &ProjectContext, urge: Urge) -> Result<UrgeResponse, UrgeError> {
+    pub async fn set(context: &ProjectContext, urge: Urge) -> Result<UrgeResponse, UrgeError> {
         let name = urge.name.clone();
-        context.emit(UrgeEvents::UrgeSet(urge));
+        context.emit(UrgeEvents::UrgeSet(urge)).await?;
         Ok(UrgeResponse::UrgeSet(name))
     }
 
@@ -27,8 +27,13 @@ impl UrgeService {
         }
     }
 
-    pub fn remove(context: &ProjectContext, name: &UrgeName) -> Result<UrgeResponse, UrgeError> {
-        context.emit(UrgeEvents::UrgeRemoved(UrgeRemoved { name: name.clone() }));
+    pub async fn remove(
+        context: &ProjectContext,
+        name: &UrgeName,
+    ) -> Result<UrgeResponse, UrgeError> {
+        context
+            .emit(UrgeEvents::UrgeRemoved(UrgeRemoved { name: name.clone() }))
+            .await?;
         Ok(UrgeResponse::UrgeRemoved(name.clone()))
     }
 }

@@ -14,6 +14,7 @@ impl PressureProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "pressure",
+    migrate: |conn| PressureRepo::new(conn).migrate(),
     apply: |conn, event| PressureRepo::new(conn).handle(event),
     reset: |conn| PressureRepo::new(conn).reset(),
 }];

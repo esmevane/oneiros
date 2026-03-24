@@ -45,7 +45,7 @@ pub mod cognition_mcp {
         &["add_cognition", "get_cognition", "list_cognitions"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -60,6 +60,7 @@ pub mod cognition_mcp {
                     TextureName::new(&p.texture),
                     Content::new(p.content),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

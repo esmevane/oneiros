@@ -10,6 +10,7 @@ impl SearchProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "search",
+    migrate: |conn| SearchRepo::new(conn).migrate(),
     apply: |conn, event| SearchRepo::new(conn).handle(event),
     reset: |conn| SearchRepo::new(conn).reset(),
 }];

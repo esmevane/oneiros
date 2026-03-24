@@ -13,11 +13,11 @@ pub enum SystemCommands {
 }
 
 impl SystemCommands {
-    pub fn execute(&self, ctx: &SystemContext) -> Result<Rendered<Responses>, SystemError> {
+    pub async fn execute(&self, ctx: &SystemContext) -> Result<Rendered<Responses>, SystemError> {
         let response = match self {
             SystemCommands::Init { name, .. } => {
                 let name = name.clone().unwrap_or_else(|| "onerios user".to_string());
-                SystemService::init(ctx, name)?
+                SystemService::init(ctx, name).await?
             }
         };
 

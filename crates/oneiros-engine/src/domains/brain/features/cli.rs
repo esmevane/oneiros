@@ -11,9 +11,14 @@ pub enum BrainCommands {
 }
 
 impl BrainCommands {
-    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, BrainError> {
+    pub async fn execute(
+        &self,
+        context: &SystemContext,
+    ) -> Result<Rendered<Responses>, BrainError> {
         let response = match self {
-            BrainCommands::Create { name } => BrainService::create(context, BrainName::new(name))?,
+            BrainCommands::Create { name } => {
+                BrainService::create(context, BrainName::new(name)).await?
+            }
             BrainCommands::Get { name } => BrainService::get(context, &BrainName::new(name))?,
             BrainCommands::List => BrainService::list(context)?,
         };

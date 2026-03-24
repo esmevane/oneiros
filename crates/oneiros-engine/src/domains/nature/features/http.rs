@@ -26,7 +26,10 @@ async fn set(
     Json(mut nature): Json<Nature>,
 ) -> Result<(StatusCode, Json<NatureResponse>), NatureError> {
     nature.name = NatureName::new(name);
-    Ok((StatusCode::OK, Json(NatureService::set(&ctx, nature)?)))
+    Ok((
+        StatusCode::OK,
+        Json(NatureService::set(&ctx, nature).await?),
+    ))
 }
 
 async fn list(State(ctx): State<ProjectContext>) -> Result<Json<NatureResponse>, NatureError> {
@@ -44,5 +47,7 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<NatureResponse>, NatureError> {
-    Ok(Json(NatureService::remove(&ctx, &NatureName::new(name))?))
+    Ok(Json(
+        NatureService::remove(&ctx, &NatureName::new(name)).await?,
+    ))
 }

@@ -1,3 +1,5 @@
+mod errors;
 mod responses;
 
-pub use responses::SeedResponse;
+pub use errors::*;
+pub use responses::*;

@@ -6,7 +6,7 @@ use crate::*;
 pub struct TicketService;
 
 impl TicketService {
-    pub fn create(
+    pub async fn create(
         context: &SystemContext,
         actor_id: ActorId,
         brain_name: BrainName,
@@ -19,7 +19,9 @@ impl TicketService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        context.emit(TicketEvents::TicketIssued(ticket.clone()));
+        context
+            .emit(TicketEvents::TicketIssued(ticket.clone()))
+            .await?;
         Ok(TicketResponse::Created(ticket))
     }
 

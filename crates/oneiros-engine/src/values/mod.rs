@@ -16,6 +16,7 @@ mod label;
 mod observation;
 mod pressure_reading;
 // pressure_summary lives in domains::pressure::model (co-located with Pressure)
+mod frames;
 mod projection;
 mod prompt;
 mod ref_token;
@@ -59,6 +60,7 @@ pub use pressure_reading::PressureReading;
 pub use rendered::Rendered;
 pub use skill::Skill;
 // PressureSummary re-exported from domains::pressure
+pub use frames::{Frame, FrameRunner, Frames};
 pub use projection::Projection;
 pub use prompt::Prompt;
 pub use ref_token::RefToken;

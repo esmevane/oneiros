@@ -8,12 +8,9 @@ pub enum SeedCommands {
 }
 
 impl SeedCommands {
-    pub fn execute(
-        &self,
-        ctx: &ProjectContext,
-    ) -> Result<Rendered<Responses>, Box<dyn std::error::Error>> {
+    pub async fn execute(&self, ctx: &ProjectContext) -> Result<Rendered<Responses>, SeedError> {
         let response = match self {
-            SeedCommands::Core => SeedService::core(ctx)?,
+            SeedCommands::Core => SeedService::core(ctx).await?,
         };
 
         let prompt = match &response {

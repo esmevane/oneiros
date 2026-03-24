@@ -3,7 +3,7 @@ use crate::*;
 pub struct SeedService;
 
 impl SeedService {
-    pub fn core(ctx: &ProjectContext) -> Result<SeedResponse, Box<dyn std::error::Error>> {
+    pub async fn core(ctx: &ProjectContext) -> Result<SeedResponse, SeedError> {
         for (name, description, prompt) in [
             (
                 "working",
@@ -38,7 +38,8 @@ impl SeedService {
                     description: Description::from(description),
                     prompt: Prompt::from(prompt),
                 },
-            )?;
+            )
+            .await?;
         }
 
         for (name, description) in [
@@ -75,7 +76,8 @@ impl SeedService {
                     description: Description::from(description),
                     prompt: Prompt::default(),
                 },
-            )?;
+            )
+            .await?;
         }
 
         for (name, description) in [
@@ -108,7 +110,8 @@ impl SeedService {
                     description: Description::from(description),
                     prompt: Prompt::default(),
                 },
-            )?;
+            )
+            .await?;
         }
 
         for (name, description) in [
@@ -138,7 +141,8 @@ impl SeedService {
                     description: Description::from(description),
                     prompt: Prompt::default(),
                 },
-            )?;
+            )
+            .await?;
         }
 
         for (name, description) in [
@@ -159,7 +163,8 @@ impl SeedService {
                     description: Description::from(description),
                     prompt: Prompt::default(),
                 },
-            )?;
+            )
+            .await?;
         }
 
         for (name, description, prompt) in [
@@ -191,7 +196,8 @@ impl SeedService {
                     description: Description::from(description),
                     prompt: Prompt::from(prompt),
                 },
-            )?;
+            )
+            .await?;
         }
 
         Ok(SeedResponse::SeedComplete)

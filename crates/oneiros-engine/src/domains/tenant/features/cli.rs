@@ -11,10 +11,13 @@ pub enum TenantCommands {
 }
 
 impl TenantCommands {
-    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, TenantError> {
+    pub async fn execute(
+        &self,
+        context: &SystemContext,
+    ) -> Result<Rendered<Responses>, TenantError> {
         let response = match self {
             TenantCommands::Create { name } => {
-                TenantService::create(context, TenantName::new(name))?
+                TenantService::create(context, TenantName::new(name)).await?
             }
             TenantCommands::Get { id } => TenantService::get(context, &id.parse::<TenantId>()?)?,
             TenantCommands::List => TenantService::list(context)?,

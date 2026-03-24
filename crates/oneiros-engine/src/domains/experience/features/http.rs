@@ -54,7 +54,8 @@ async fn create(
         &AgentName::new(&body.agent),
         SensationName::new(&body.sensation),
         Description::new(&body.description),
-    )?;
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -86,11 +87,10 @@ async fn update_description(
     let id: ExperienceId = id
         .parse()
         .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?;
-    Ok(Json(ExperienceService::update_description(
-        &context,
-        &id,
-        Description::new(&body.description),
-    )?))
+    Ok(Json(
+        ExperienceService::update_description(&context, &id, Description::new(&body.description))
+            .await?,
+    ))
 }
 
 async fn update_sensation(
@@ -101,9 +101,8 @@ async fn update_sensation(
     let id: ExperienceId = id
         .parse()
         .map_err(|e: IdParseError| ExperienceError::Database(e.into()))?;
-    Ok(Json(ExperienceService::update_sensation(
-        &context,
-        &id,
-        SensationName::new(&body.sensation),
-    )?))
+    Ok(Json(
+        ExperienceService::update_sensation(&context, &id, SensationName::new(&body.sensation))
+            .await?,
+    ))
 }

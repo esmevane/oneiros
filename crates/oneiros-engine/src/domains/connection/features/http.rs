@@ -37,7 +37,8 @@ async fn create(
     State(context): State<ProjectContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
-    let response = ConnectionService::create(&context, body.from_ref, body.to_ref, body.nature)?;
+    let response =
+        ConnectionService::create(&context, body.from_ref, body.to_ref, body.nature).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -68,5 +69,5 @@ async fn remove(
     let id: ConnectionId = id
         .parse()
         .map_err(|e: IdParseError| ConnectionError::Database(e.into()))?;
-    Ok(Json(ConnectionService::remove(&context, &id)?))
+    Ok(Json(ConnectionService::remove(&context, &id).await?))
 }

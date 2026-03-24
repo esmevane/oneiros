@@ -1,38 +1,35 @@
 //! Project context — brain-scoped infrastructure.
 //!
-//! Carries the brain database, projections, event broadcast, config, and source.
-//! All project-scoped domain services receive this as their first argument.
+//! Carries the event bus, config, and source. All project-scoped
+//! domain services receive this as their first argument.
 
 use rusqlite::Connection;
-use std::{
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::path::Path;
+use std::sync::Arc;
 use tokio::sync::broadcast;
 
+use crate::event::EventError;
+use crate::event_bus::EventBus;
 use crate::*;
 
 /// The project-scoped application context.
 ///
 /// All project-scoped domain services (Agent, Level, Cognition, etc.)
-/// receive this. It wraps the brain database behind a mutex, holds
-/// the collected projections, and provides the event bus.
+/// receive this. The bus handles event persistence and notification.
+/// Projections run asynchronously via Frames.
 #[derive(Clone)]
 pub struct ProjectContext {
-    db: Arc<Mutex<Connection>>,
-    projections: &'static [&'static [Projection]],
-    events: broadcast::Sender<StoredEvent>,
+    bus: EventBus,
+    frames: Frames,
     config: Option<Arc<Config>>,
     source: Source,
 }
 
 impl ProjectContext {
-    pub fn new(conn: Connection, projections: &'static [&'static [Projection]]) -> Self {
-        let (events, _) = broadcast::channel(256);
+    pub fn new(bus: EventBus, frames: Frames) -> Self {
         Self {
-            db: Arc::new(Mutex::new(conn)),
-            projections,
-            events,
+            bus,
+            frames,
             config: None,
             source: Source::default(),
         }
@@ -74,32 +71,27 @@ impl ProjectContext {
 
     /// Execute a read operation against the database.
     pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
-        let conn = self.db.lock().expect("db lock");
-        f(&conn)
+        self.bus.with_db(f)
     }
 
-    /// Emit an event: persist + run projections + broadcast.
-    pub fn emit(&self, event: impl Into<Events>) -> StoredEvent {
-        let new_event = NewEvent {
-            data: event.into(),
-            source: self.source,
-        };
-
-        let stored = self.with_db(|conn| {
-            repo::log_event(conn, &new_event, self.projections).expect("log event")
-        });
-
-        let _ = self.events.send(stored.clone());
-        stored
+    /// Emit an event: append + dispatch + broadcast.
+    pub async fn emit(&self, event: impl Into<Events>) -> Result<StoredEvent, EventError> {
+        self.bus.emit(event, self.source).await
     }
 
-    /// Subscribe to the event broadcast.
+    /// Subscribe to the event broadcast (for SSE, dashboard).
     pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
-        self.events.subscribe()
+        self.bus.subscribe()
     }
 
     /// Replay all events through projections, rebuilding read models.
-    pub fn replay(&self) -> Result<usize, Box<dyn std::error::Error>> {
-        self.with_db(|conn| repo::replay(conn, self.projections).map_err(|e| e.into()))
+    pub fn replay(&self) -> Result<usize, EventError> {
+        let events = self.bus.load_events()?;
+        self.frames.replay(&events)
+    }
+
+    /// Access the event bus directly (for export/import operations).
+    pub fn bus(&self) -> &EventBus {
+        &self.bus
     }
 }

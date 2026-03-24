@@ -3,9 +3,9 @@ use crate::*;
 pub struct LevelService;
 
 impl LevelService {
-    pub fn set(context: &ProjectContext, level: Level) -> Result<LevelResponse, LevelError> {
+    pub async fn set(context: &ProjectContext, level: Level) -> Result<LevelResponse, LevelError> {
         let name = level.name.clone();
-        context.emit(LevelEvents::LevelSet(level));
+        context.emit(LevelEvents::LevelSet(level)).await?;
         Ok(LevelResponse::LevelSet(name))
     }
 
@@ -27,10 +27,15 @@ impl LevelService {
         }
     }
 
-    pub fn remove(context: &ProjectContext, name: &LevelName) -> Result<LevelResponse, LevelError> {
-        context.emit(LevelEvents::LevelRemoved(LevelRemoved {
-            name: name.clone(),
-        }));
+    pub async fn remove(
+        context: &ProjectContext,
+        name: &LevelName,
+    ) -> Result<LevelResponse, LevelError> {
+        context
+            .emit(LevelEvents::LevelRemoved(LevelRemoved {
+                name: name.clone(),
+            }))
+            .await?;
         Ok(LevelResponse::LevelRemoved(name.clone()))
     }
 }

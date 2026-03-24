@@ -4,7 +4,7 @@ pub struct StorageService;
 
 impl StorageService {
     /// Upload content — hash it, store the blob, record the metadata.
-    pub fn upload(
+    pub async fn upload(
         context: &ProjectContext,
         key: StorageKey,
         description: Description,
@@ -22,7 +22,9 @@ impl StorageService {
         };
 
         // Emit StorageSet — this drives the storage metadata projection.
-        context.emit(StorageEvents::StorageSet(entry.clone()));
+        context
+            .emit(StorageEvents::StorageSet(entry.clone()))
+            .await?;
 
         Ok(StorageResponse::StorageSet(entry))
     }
@@ -53,7 +55,7 @@ impl StorageService {
     }
 
     /// Remove storage metadata by key. The blob is NOT deleted (dedup preservation).
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         key: &StorageKey,
     ) -> Result<StorageResponse, StorageError> {
@@ -62,9 +64,11 @@ impl StorageService {
             .with_db(|conn| StorageRepo::new(conn).get_storage(key))?
             .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
 
-        context.emit(StorageEvents::StorageRemoved(SelectStorageByKey {
-            key: key.clone(),
-        }));
+        context
+            .emit(StorageEvents::StorageRemoved(SelectStorageByKey {
+                key: key.clone(),
+            }))
+            .await?;
 
         Ok(StorageResponse::StorageRemoved(key.clone()))
     }

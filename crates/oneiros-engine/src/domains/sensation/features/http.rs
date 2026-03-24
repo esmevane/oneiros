@@ -28,7 +28,7 @@ async fn set(
     sensation.name = SensationName::new(name);
     Ok((
         StatusCode::OK,
-        Json(SensationService::set(&ctx, sensation)?),
+        Json(SensationService::set(&ctx, sensation).await?),
     ))
 }
 
@@ -52,8 +52,7 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::remove(
-        &ctx,
-        &SensationName::new(name),
-    )?))
+    Ok(Json(
+        SensationService::remove(&ctx, &SensationName::new(name)).await?,
+    ))
 }

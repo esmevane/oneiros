@@ -3,7 +3,7 @@ use crate::*;
 pub struct ExperienceService;
 
 impl ExperienceService {
-    pub fn create(
+    pub async fn create(
         context: &ProjectContext,
         agent: &AgentName,
         sensation: SensationName,
@@ -19,7 +19,9 @@ impl ExperienceService {
             .description(description)
             .build();
 
-        context.emit(ExperienceEvents::ExperienceCreated(experience.clone()));
+        context
+            .emit(ExperienceEvents::ExperienceCreated(experience.clone()))
+            .await?;
         Ok(ExperienceResponse::ExperienceCreated(experience))
     }
 
@@ -56,7 +58,7 @@ impl ExperienceService {
         })
     }
 
-    pub fn update_description(
+    pub async fn update_description(
         context: &ProjectContext,
         id: &ExperienceId,
         description: Description,
@@ -67,16 +69,18 @@ impl ExperienceService {
 
         experience.description = description.clone();
 
-        context.emit(ExperienceEvents::ExperienceDescriptionUpdated(
-            ExperienceDescriptionUpdate {
-                id: *id,
-                description,
-            },
-        ));
+        context
+            .emit(ExperienceEvents::ExperienceDescriptionUpdated(
+                ExperienceDescriptionUpdate {
+                    id: *id,
+                    description,
+                },
+            ))
+            .await?;
         Ok(ExperienceResponse::ExperienceUpdated(experience))
     }
 
-    pub fn update_sensation(
+    pub async fn update_sensation(
         context: &ProjectContext,
         id: &ExperienceId,
         sensation: SensationName,
@@ -87,9 +91,11 @@ impl ExperienceService {
 
         experience.sensation = sensation.clone();
 
-        context.emit(ExperienceEvents::ExperienceSensationUpdated(
-            ExperienceSensationUpdate { id: *id, sensation },
-        ));
+        context
+            .emit(ExperienceEvents::ExperienceSensationUpdated(
+                ExperienceSensationUpdate { id: *id, sensation },
+            ))
+            .await?;
         Ok(ExperienceResponse::ExperienceUpdated(experience))
     }
 }

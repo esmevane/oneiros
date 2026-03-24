@@ -3,12 +3,12 @@ use crate::*;
 pub struct PersonaService;
 
 impl PersonaService {
-    pub fn set(
+    pub async fn set(
         context: &ProjectContext,
         persona: Persona,
     ) -> Result<PersonaResponse, PersonaError> {
         let name = persona.name.clone();
-        context.emit(PersonaEvents::PersonaSet(persona));
+        context.emit(PersonaEvents::PersonaSet(persona)).await?;
         Ok(PersonaResponse::PersonaSet(name))
     }
 
@@ -31,13 +31,15 @@ impl PersonaService {
         }
     }
 
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         persona_name: &PersonaName,
     ) -> Result<PersonaResponse, PersonaError> {
-        context.emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
-            name: persona_name.clone(),
-        }));
+        context
+            .emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
+                name: persona_name.clone(),
+            }))
+            .await?;
         Ok(PersonaResponse::PersonaRemoved(persona_name.clone()))
     }
 }

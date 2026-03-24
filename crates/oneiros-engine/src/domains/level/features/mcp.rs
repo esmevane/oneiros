@@ -37,7 +37,7 @@ pub mod level_mcp {
         &["set_level", "get_level", "list_levels", "remove_level"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         ctx: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -46,8 +46,9 @@ pub mod level_mcp {
             "set_level" => {
                 let level: Level = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response =
-                    LevelService::set(ctx, level).map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response = LevelService::set(ctx, level)
+                    .await
+                    .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "get_level" => {
@@ -66,6 +67,7 @@ pub mod level_mcp {
                 let p: NameParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = LevelService::remove(ctx, &LevelName::new(p.name))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

@@ -26,7 +26,10 @@ async fn set(
     Json(mut persona): Json<Persona>,
 ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
     persona.name = PersonaName::new(name);
-    Ok((StatusCode::OK, Json(PersonaService::set(&ctx, persona)?)))
+    Ok((
+        StatusCode::OK,
+        Json(PersonaService::set(&ctx, persona).await?),
+    ))
 }
 
 async fn list(State(ctx): State<ProjectContext>) -> Result<Json<PersonaResponse>, PersonaError> {
@@ -44,5 +47,7 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::remove(&ctx, &PersonaName::new(name))?))
+    Ok(Json(
+        PersonaService::remove(&ctx, &PersonaName::new(name)).await?,
+    ))
 }

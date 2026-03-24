@@ -21,27 +21,24 @@ pub enum ProjectCommands {
 }
 
 impl ProjectCommands {
-    pub fn execute(
+    pub async fn execute(
         &self,
         ctx: &SystemContext,
         project: Option<&ProjectContext>,
-        brain_name: &str,
-    ) -> Result<Rendered<Responses>, Box<dyn std::error::Error>> {
+        brain_name: BrainName,
+    ) -> Result<Rendered<Responses>, ProjectError> {
         let response = match self {
-            ProjectCommands::Init { .. } => ProjectService::init(ctx, brain_name.to_string())?,
+            ProjectCommands::Init { .. } => ProjectService::init(ctx, brain_name).await?,
             ProjectCommands::Export { target } => {
-                let project =
-                    project.ok_or("project context required — call start_service first")?;
-                ProjectService::export(project, &target, brain_name)?
+                let project = project.ok_or(ProjectError::Missing)?;
+                ProjectService::export(project, &target, &brain_name)?
             }
             ProjectCommands::Import { file } => {
-                let project =
-                    project.ok_or("project context required — call start_service first")?;
+                let project = project.ok_or(ProjectError::Missing)?;
                 ProjectService::import(project, &file)?
             }
             ProjectCommands::Replay => {
-                let project =
-                    project.ok_or("project context required — call start_service first")?;
+                let project = project.ok_or(ProjectError::Missing)?;
                 ProjectService::replay(project)?
             }
         };

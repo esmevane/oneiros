@@ -54,7 +54,7 @@ pub mod connection_mcp {
         ]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -64,6 +64,7 @@ pub mod connection_mcp {
                 let p: CreateConnectionParams = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = ConnectionService::create(context, p.from_ref, p.to_ref, p.nature)
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -91,6 +92,7 @@ pub mod connection_mcp {
                     p.id.parse()
                         .map_err(|e: IdParseError| ToolError::Parameter(e.to_string()))?;
                 let response = ConnectionService::remove(context, &id)
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

@@ -56,7 +56,7 @@ pub mod agent_mcp {
         ]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -72,6 +72,7 @@ pub mod agent_mcp {
                     Description::new(&p.description),
                     Prompt::new(&p.prompt),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -97,6 +98,7 @@ pub mod agent_mcp {
                     Description::new(&p.description),
                     Prompt::new(&p.prompt),
                 )
+                .await
                 .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -104,6 +106,7 @@ pub mod agent_mcp {
                 let p: NameParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = AgentService::remove(context, &AgentName::new(&p.name))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

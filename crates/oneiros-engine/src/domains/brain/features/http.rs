@@ -30,7 +30,7 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<BrainResponse>), BrainError> {
-    let response = BrainService::create(&ctx, BrainName::new(body.name))?;
+    let response = BrainService::create(&ctx, BrainName::new(body.name)).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

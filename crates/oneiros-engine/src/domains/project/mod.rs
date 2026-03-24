@@ -4,4 +4,4 @@ mod service;
 
 pub use features::*;
 pub use protocol::*;
-pub use service::ProjectService;
+pub use service::*;

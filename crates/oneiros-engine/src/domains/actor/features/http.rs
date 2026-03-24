@@ -31,7 +31,7 @@ async fn create(
     State(ctx): State<SystemContext>,
     Json(body): Json<CreateBody>,
 ) -> Result<(StatusCode, Json<ActorResponse>), ActorError> {
-    let response = ActorService::create(&ctx, body.tenant_id, ActorName::new(body.name))?;
+    let response = ActorService::create(&ctx, body.tenant_id, ActorName::new(body.name)).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

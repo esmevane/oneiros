@@ -42,7 +42,8 @@ async fn add(
         &AgentName::new(&body.agent),
         LevelName::new(&body.level),
         Content::new(body.content),
-    )?;
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

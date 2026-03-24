@@ -3,12 +3,12 @@ use crate::*;
 pub struct TextureService;
 
 impl TextureService {
-    pub fn set(
+    pub async fn set(
         context: &ProjectContext,
         texture: Texture,
     ) -> Result<TextureResponse, TextureError> {
         let name = texture.name.clone();
-        context.emit(TextureEvents::TextureSet(texture));
+        context.emit(TextureEvents::TextureSet(texture)).await?;
         Ok(TextureResponse::TextureSet(name))
     }
 
@@ -33,13 +33,15 @@ impl TextureService {
         }
     }
 
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         name: &TextureName,
     ) -> Result<TextureResponse, TextureError> {
-        context.emit(TextureEvents::TextureRemoved(TextureRemoved {
-            name: name.clone(),
-        }));
+        context
+            .emit(TextureEvents::TextureRemoved(TextureRemoved {
+                name: name.clone(),
+            }))
+            .await?;
         Ok(TextureResponse::TextureRemoved(name.clone()))
     }
 }

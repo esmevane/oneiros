@@ -10,6 +10,7 @@ impl BrainProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "brain",
+    migrate: |conn| BrainRepo::new(conn).migrate(),
     apply: |conn, event| BrainRepo::new(conn).handle(event),
     reset: |conn| BrainRepo::new(conn).reset(),
 }];

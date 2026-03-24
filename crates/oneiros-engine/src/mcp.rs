@@ -47,37 +47,56 @@ fn all_tools() -> Vec<&'static ToolDef> {
     sources.iter().flat_map(|s| s.iter()).collect()
 }
 
-type Dispatcher = fn(&ProjectContext, &str, &str) -> Result<serde_json::Value, ToolError>;
-
 /// Domain dispatch table — routes tool names to domain dispatchers.
-fn dispatch(
+async fn dispatch(
     ctx: &ProjectContext,
     tool_name: &str,
     params: &str,
 ) -> Result<serde_json::Value, ToolError> {
-    // Check each domain's tool catalog
-    let dispatchers: &[(&[&str], Dispatcher)] = &[
-        (level_mcp::tool_names(), level_mcp::dispatch),
-        (texture_mcp::tool_names(), texture_mcp::dispatch),
-        (sensation_mcp::tool_names(), sensation_mcp::dispatch),
-        (nature_mcp::tool_names(), nature_mcp::dispatch),
-        (persona_mcp::tool_names(), persona_mcp::dispatch),
-        (urge_mcp::tool_names(), urge_mcp::dispatch),
-        (agent_mcp::tool_names(), agent_mcp::dispatch),
-        (cognition_mcp::tool_names(), cognition_mcp::dispatch),
-        (memory_mcp::tool_names(), memory_mcp::dispatch),
-        (experience_mcp::tool_names(), experience_mcp::dispatch),
-        (connection_mcp::tool_names(), connection_mcp::dispatch),
-        (continuity_mcp::tool_names(), continuity_mcp::dispatch),
-        (search_mcp::tool_names(), search_mcp::dispatch),
-        (storage_mcp::tool_names(), storage_mcp::dispatch),
-        (pressure_mcp::tool_names(), pressure_mcp::dispatch),
-    ];
-
-    for (names, handler) in dispatchers {
-        if names.contains(&tool_name) {
-            return handler(ctx, tool_name, params);
-        }
+    if level_mcp::tool_names().contains(&tool_name) {
+        return level_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if texture_mcp::tool_names().contains(&tool_name) {
+        return texture_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if sensation_mcp::tool_names().contains(&tool_name) {
+        return sensation_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if nature_mcp::tool_names().contains(&tool_name) {
+        return nature_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if persona_mcp::tool_names().contains(&tool_name) {
+        return persona_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if urge_mcp::tool_names().contains(&tool_name) {
+        return urge_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if agent_mcp::tool_names().contains(&tool_name) {
+        return agent_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if cognition_mcp::tool_names().contains(&tool_name) {
+        return cognition_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if memory_mcp::tool_names().contains(&tool_name) {
+        return memory_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if experience_mcp::tool_names().contains(&tool_name) {
+        return experience_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if connection_mcp::tool_names().contains(&tool_name) {
+        return connection_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if continuity_mcp::tool_names().contains(&tool_name) {
+        return continuity_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if search_mcp::tool_names().contains(&tool_name) {
+        return search_mcp::dispatch(ctx, tool_name, params);
+    }
+    if storage_mcp::tool_names().contains(&tool_name) {
+        return storage_mcp::dispatch(ctx, tool_name, params).await;
+    }
+    if pressure_mcp::tool_names().contains(&tool_name) {
+        return pressure_mcp::dispatch(ctx, tool_name, params);
     }
 
     Err(ToolError::UnknownTool(tool_name.to_string()))
@@ -135,7 +154,7 @@ impl ServerHandler for EngineToolBox {
         let params = serde_json::to_string(&request.arguments.unwrap_or_default())
             .unwrap_or_else(|_| "{}".to_string());
 
-        match dispatch(&self.ctx, tool_name, &params) {
+        match dispatch(&self.ctx, tool_name, &params).await {
             Ok(value) => Ok(CallToolResult::success(vec![
                 Content::json(value).expect("content"),
             ])),

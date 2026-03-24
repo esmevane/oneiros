@@ -1,25 +1,24 @@
-use chrono::Utc;
-
 use crate::*;
 
 pub struct BrainService;
 
 impl BrainService {
-    pub fn create(context: &SystemContext, name: BrainName) -> Result<BrainResponse, BrainError> {
-        let already_exists = context
-            .with_db(|conn| BrainRepo::new(conn).name_exists(&name))
-            .map_err(BrainError::Database)?;
+    pub async fn create(
+        context: &SystemContext,
+        name: BrainName,
+    ) -> Result<BrainResponse, BrainError> {
+        let already_exists = context.with_db(|conn| BrainRepo::new(conn).name_exists(&name))?;
 
         if already_exists {
             return Err(BrainError::Conflict(name));
         }
 
-        let brain = Brain {
-            name,
-            created_at: Utc::now().to_rfc3339(),
-        };
+        let brain = Brain::builder().name(name).build();
 
-        context.emit(BrainEvents::BrainCreated(brain.clone()));
+        context
+            .emit(BrainEvents::BrainCreated(brain.clone()))
+            .await?;
+
         Ok(BrainResponse::Created(brain))
     }
 
@@ -31,9 +30,7 @@ impl BrainService {
     }
 
     pub fn list(context: &SystemContext) -> Result<BrainResponse, BrainError> {
-        let brains = context
-            .with_db(|conn| BrainRepo::new(conn).list())
-            .map_err(BrainError::Database)?;
+        let brains = context.with_db(|conn| BrainRepo::new(conn).list())?;
         Ok(BrainResponse::Listed(brains))
     }
 }

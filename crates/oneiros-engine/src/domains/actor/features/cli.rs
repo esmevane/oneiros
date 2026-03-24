@@ -17,13 +17,19 @@ pub enum ActorCommands {
 }
 
 impl ActorCommands {
-    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, ActorError> {
+    pub async fn execute(
+        &self,
+        context: &SystemContext,
+    ) -> Result<Rendered<Responses>, ActorError> {
         let response = match self {
-            ActorCommands::Create { tenant_id, name } => ActorService::create(
-                context,
-                tenant_id.parse::<TenantId>()?,
-                ActorName::new(name),
-            )?,
+            ActorCommands::Create { tenant_id, name } => {
+                ActorService::create(
+                    context,
+                    tenant_id.parse::<TenantId>()?,
+                    ActorName::new(name),
+                )
+                .await?
+            }
             ActorCommands::Get { id } => ActorService::get(context, &id.parse::<ActorId>()?)?,
             ActorCommands::List => ActorService::list(context)?,
         };

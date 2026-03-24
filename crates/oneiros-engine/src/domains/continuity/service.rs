@@ -22,14 +22,15 @@ pub struct ContinuityService;
 
 impl ContinuityService {
     /// Emerge — create an agent and immediately activate its continuity.
-    pub fn emerge(
+    pub async fn emerge(
         ctx: &ProjectContext,
         name: AgentName,
         persona: PersonaName,
         description: Description,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let created = AgentService::create(ctx, name, persona, description, Prompt::new(""))?;
+        let created =
+            AgentService::create(ctx, name, persona, description, Prompt::new("")).await?;
 
         let agent_name = match created {
             AgentResponse::AgentCreated(n) => n,
@@ -41,17 +42,17 @@ impl ContinuityService {
         };
 
         // Wake activates continuity; then gather the full context for the response.
-        Self::wake(ctx, &agent_name, overrides)?;
+        Self::wake(ctx, &agent_name, overrides).await?;
         let context = Self::gather_context(ctx, &agent_name, overrides)?;
         Ok(ContinuityResponse::Emerged(context))
     }
 
     /// Recede — retire an agent, ending its continuity.
-    pub fn recede(
+    pub async fn recede(
         ctx: &ProjectContext,
         name: &AgentName,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        AgentService::remove(ctx, name)?;
+        AgentService::remove(ctx, name).await?;
         Ok(ContinuityResponse::Receded(name.clone()))
     }
 
@@ -66,7 +67,7 @@ impl ContinuityService {
     }
 
     /// Wake — restore an agent's full cognitive context (initial session start).
-    pub fn wake(
+    pub async fn wake(
         ctx: &ProjectContext,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
@@ -76,13 +77,14 @@ impl ContinuityService {
         ctx.emit(ContinuityEvents::Dreamed(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
-        }));
+        }))
+        .await?;
 
         Ok(ContinuityResponse::Waking(context))
     }
 
     /// Dream — restore an agent's full cognitive context.
-    pub fn dream(
+    pub async fn dream(
         ctx: &ProjectContext,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
@@ -92,13 +94,14 @@ impl ContinuityService {
         ctx.emit(ContinuityEvents::Dreamed(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
-        }));
+        }))
+        .await?;
 
         Ok(ContinuityResponse::Dreaming(context))
     }
 
     /// Introspect — look inward, consolidate cognitive state.
-    pub fn introspect(
+    pub async fn introspect(
         ctx: &ProjectContext,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
@@ -108,13 +111,14 @@ impl ContinuityService {
         ctx.emit(ContinuityEvents::Introspected(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
-        }));
+        }))
+        .await?;
 
         Ok(ContinuityResponse::Introspecting(context))
     }
 
     /// Reflect — pause on something significant.
-    pub fn reflect(
+    pub async fn reflect(
         ctx: &ProjectContext,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
@@ -124,13 +128,14 @@ impl ContinuityService {
         ctx.emit(ContinuityEvents::Reflected(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
-        }));
+        }))
+        .await?;
 
         Ok(ContinuityResponse::Reflecting(context))
     }
 
     /// Sense — receive and interpret something from outside.
-    pub fn sense(
+    pub async fn sense(
         ctx: &ProjectContext,
         agent_name: &AgentName,
         content: &Content,
@@ -142,13 +147,14 @@ impl ContinuityService {
             agent: agent_name.clone(),
             content: Content::new(content.as_str()),
             created_at: Timestamp::now(),
-        }));
+        }))
+        .await?;
 
         Ok(ContinuityResponse::Sleeping(context))
     }
 
     /// Sleep — end a session, capture continuity.
-    pub fn sleep(
+    pub async fn sleep(
         ctx: &ProjectContext,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
@@ -158,7 +164,8 @@ impl ContinuityService {
         ctx.emit(ContinuityEvents::Slept(ContinuityEvent {
             agent: agent_name.clone(),
             created_at: Timestamp::now(),
-        }));
+        }))
+        .await?;
 
         Ok(ContinuityResponse::Sleeping(context))
     }

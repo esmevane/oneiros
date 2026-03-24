@@ -46,7 +46,8 @@ async fn create(
         PersonaName::new(&body.persona),
         Description::new(&body.description),
         Prompt::new(&body.prompt),
-    )?;
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -66,21 +67,23 @@ async fn update(
     Path(name): Path<String>,
     Json(body): Json<UpdateBody>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::update(
-        &context,
-        AgentName::new(&name),
-        PersonaName::new(&body.persona),
-        Description::new(&body.description),
-        Prompt::new(&body.prompt),
-    )?))
+    Ok(Json(
+        AgentService::update(
+            &context,
+            AgentName::new(&name),
+            PersonaName::new(&body.persona),
+            Description::new(&body.description),
+            Prompt::new(&body.prompt),
+        )
+        .await?,
+    ))
 }
 
 async fn remove(
     State(context): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::remove(
-        &context,
-        &AgentName::new(&name),
-    )?))
+    Ok(Json(
+        AgentService::remove(&context, &AgentName::new(&name)).await?,
+    ))
 }

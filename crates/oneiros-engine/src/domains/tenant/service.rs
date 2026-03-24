@@ -5,7 +5,7 @@ use crate::*;
 pub struct TenantService;
 
 impl TenantService {
-    pub fn create(
+    pub async fn create(
         context: &SystemContext,
         name: TenantName,
     ) -> Result<TenantResponse, TenantError> {
@@ -15,7 +15,9 @@ impl TenantService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        context.emit(TenantEvents::TenantCreated(tenant.clone()));
+        context
+            .emit(TenantEvents::TenantCreated(tenant.clone()))
+            .await?;
         Ok(TenantResponse::Created(tenant))
     }
 

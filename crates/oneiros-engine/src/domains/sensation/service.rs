@@ -3,12 +3,14 @@ use crate::*;
 pub struct SensationService;
 
 impl SensationService {
-    pub fn set(
+    pub async fn set(
         context: &ProjectContext,
         sensation: Sensation,
     ) -> Result<SensationResponse, SensationError> {
         let name = sensation.name.clone();
-        context.emit(SensationEvents::SensationSet(sensation));
+        context
+            .emit(SensationEvents::SensationSet(sensation))
+            .await?;
         Ok(SensationResponse::SensationSet(name))
     }
 
@@ -33,13 +35,15 @@ impl SensationService {
         }
     }
 
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         name: &SensationName,
     ) -> Result<SensationResponse, SensationError> {
-        context.emit(SensationEvents::SensationRemoved(SensationRemoved {
-            name: name.clone(),
-        }));
+        context
+            .emit(SensationEvents::SensationRemoved(SensationRemoved {
+                name: name.clone(),
+            }))
+            .await?;
         Ok(SensationResponse::SensationRemoved(name.clone()))
     }
 }

@@ -42,7 +42,7 @@ pub mod sensation_mcp {
         ]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         ctx: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -52,6 +52,7 @@ pub mod sensation_mcp {
                 let sensation: Sensation = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = SensationService::set(ctx, sensation)
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -71,6 +72,7 @@ pub mod sensation_mcp {
                 let p: NameParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = SensationService::remove(ctx, &SensationName::new(p.name))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

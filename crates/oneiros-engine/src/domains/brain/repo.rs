@@ -28,9 +28,9 @@ impl<'a> BrainRepo<'a> {
 
     pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS brains (
-                name TEXT PRIMARY KEY,
-                created_at TEXT NOT NULL DEFAULT ''
+            "create table if not exists brains (
+                name text primary key,
+                created_at text not null default ''
             )",
         )?;
         Ok(())
@@ -41,7 +41,7 @@ impl<'a> BrainRepo<'a> {
     pub fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT name, created_at FROM brains WHERE name = ?1")?;
+            .prepare("select name, created_at from brains where name = ?1")?;
 
         let raw = stmt.query_row(params![name.to_string()], |row| {
             let name: String = row.get(0)?;
@@ -50,10 +50,12 @@ impl<'a> BrainRepo<'a> {
         });
 
         match raw {
-            Ok((name, created_at)) => Ok(Some(Brain {
-                name: BrainName::new(name),
-                created_at,
-            })),
+            Ok((name, created_at)) => Ok(Some(
+                Brain::builder()
+                    .name(name)
+                    .created_at(Timestamp::parse_str(created_at)?)
+                    .build(),
+            )),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -62,7 +64,7 @@ impl<'a> BrainRepo<'a> {
     pub fn list(&self) -> Result<Vec<Brain>, EventError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT name, created_at FROM brains ORDER BY name")?;
+            .prepare("select name, created_at from brains order by name")?;
 
         let raw: Vec<(String, String)> = stmt
             .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -71,10 +73,12 @@ impl<'a> BrainRepo<'a> {
         let mut brains = vec![];
 
         for (name, created_at) in raw {
-            brains.push(Brain {
-                name: BrainName::new(name),
-                created_at,
-            });
+            brains.push(
+                Brain::builder()
+                    .name(name)
+                    .created_at(Timestamp::parse_str(created_at)?)
+                    .build(),
+            );
         }
 
         Ok(brains)
@@ -82,7 +86,7 @@ impl<'a> BrainRepo<'a> {
 
     pub fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
         let count: i64 = self.conn.query_row(
-            "SELECT COUNT(*) FROM brains WHERE name = ?1",
+            "select count(*) from brains where name = ?1",
             params![name.to_string()],
             |row| row.get(0),
         )?;
@@ -93,8 +97,8 @@ impl<'a> BrainRepo<'a> {
 
     fn create_record(&self, brain: &Brain) -> Result<(), EventError> {
         self.conn.execute(
-            "INSERT OR REPLACE INTO brains (name, created_at) VALUES (?1, ?2)",
-            params![brain.name.to_string(), brain.created_at],
+            "insert or replace into brains (name, created_at) values (?1, ?2)",
+            params![brain.name.to_string(), brain.created_at.to_string()],
         )?;
         Ok(())
     }

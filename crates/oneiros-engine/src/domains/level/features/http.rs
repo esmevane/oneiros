@@ -26,7 +26,7 @@ async fn set(
     Json(mut level): Json<Level>,
 ) -> Result<(StatusCode, Json<LevelResponse>), LevelError> {
     level.name = LevelName::new(name);
-    Ok((StatusCode::OK, Json(LevelService::set(&ctx, level)?)))
+    Ok((StatusCode::OK, Json(LevelService::set(&ctx, level).await?)))
 }
 
 async fn list(State(ctx): State<ProjectContext>) -> Result<Json<LevelResponse>, LevelError> {
@@ -44,5 +44,7 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<LevelResponse>, LevelError> {
-    Ok(Json(LevelService::remove(&ctx, &LevelName::new(name))?))
+    Ok(Json(
+        LevelService::remove(&ctx, &LevelName::new(name)).await?,
+    ))
 }

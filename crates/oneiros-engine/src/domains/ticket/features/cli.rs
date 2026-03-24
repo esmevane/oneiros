@@ -18,12 +18,17 @@ pub enum TicketCommands {
 }
 
 impl TicketCommands {
-    pub fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, TicketError> {
+    pub async fn execute(
+        &self,
+        context: &SystemContext,
+    ) -> Result<Rendered<Responses>, TicketError> {
         let response = match self {
             TicketCommands::Issue {
                 actor_id,
                 brain_name,
-            } => TicketService::create(context, actor_id.clone(), BrainName::new(brain_name))?,
+            } => {
+                TicketService::create(context, actor_id.clone(), BrainName::new(brain_name)).await?
+            }
             TicketCommands::Validate { id } => TicketService::validate(context, id)?,
             TicketCommands::List => TicketService::list(context)?,
         };

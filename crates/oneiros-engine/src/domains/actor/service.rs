@@ -5,7 +5,7 @@ use crate::*;
 pub struct ActorService;
 
 impl ActorService {
-    pub fn create(
+    pub async fn create(
         context: &SystemContext,
         tenant_id: TenantId,
         name: ActorName,
@@ -17,7 +17,9 @@ impl ActorService {
             created_at: Utc::now().to_rfc3339(),
         };
 
-        context.emit(ActorEvents::ActorCreated(actor.clone()));
+        context
+            .emit(ActorEvents::ActorCreated(actor.clone()))
+            .await?;
         Ok(ActorResponse::Created(actor))
     }
 

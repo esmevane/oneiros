@@ -1,42 +1,83 @@
 //! Engine bootstrap — the single entry point for the oneiros engine.
 //!
-//! `Engine` owns everything needed to run: databases, projections, contexts,
-//! and the knowledge of how to set itself up. Both direct access (CLI, tests)
-//! and the HTTP server go through `Engine`.
+//! `Engine` owns everything needed to run: databases, buses, contexts,
+//! and the knowledge of how to set itself up. Both direct access (CLI,
+//! tests) and the HTTP server go through `Engine`.
 
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use rusqlite::Connection;
 
+use crate::event_bus::EventBus;
+use crate::event_log::EventLog;
 use crate::*;
 
-// ── Projection constants ────────────────────────────────────────
+// ── Frame definitions ──────────────────────────────────────────
 
-/// All project-scoped projections in registration order.
-static PROJECT_PROJECTIONS: &[&[Projection]] = &[
-    LevelProjections.all(),
-    TextureProjections.all(),
-    SensationProjections.all(),
-    NatureProjections.all(),
-    PersonaProjections.all(),
-    UrgeProjections.all(),
-    AgentProjections.all(),
-    CognitionProjections.all(),
-    MemoryProjections.all(),
-    ExperienceProjections.all(),
-    ConnectionProjections.all(),
-    PressureProjections.all(),
-    StorageProjections.all(),
-    SearchProjections.all(),
-];
+/// Project-scoped frames, ordered by dependency.
+fn project_frames() -> Vec<Frame> {
+    vec![
+        // Frame 0: Base entity materialization
+        Frame::new(LevelProjections.all()),
+        Frame::new(TextureProjections.all()),
+        Frame::new(SensationProjections.all()),
+        Frame::new(NatureProjections.all()),
+        Frame::new(PersonaProjections.all()),
+        Frame::new(UrgeProjections.all()),
+        Frame::new(AgentProjections.all()),
+        Frame::new(CognitionProjections.all()),
+        Frame::new(MemoryProjections.all()),
+        Frame::new(ExperienceProjections.all()),
+        Frame::new(ConnectionProjections.all()),
+        Frame::new(StorageProjections.all()),
+        // Frame 1: Derived / cross-domain (depends on frame 0 entities)
+        Frame::new(PressureProjections.all()),
+        Frame::new(SearchProjections.all()),
+    ]
+}
 
-/// All system-scoped projections in registration order.
-static SYSTEM_PROJECTIONS: &[&[Projection]] = &[
-    TenantProjections.all(),
-    ActorProjections.all(),
-    BrainProjections.all(),
-    TicketProjections.all(),
-];
+/// System-scoped frames.
+fn system_frames() -> Vec<Frame> {
+    vec![
+        Frame::new(TenantProjections.all()),
+        Frame::new(ActorProjections.all()),
+        Frame::new(BrainProjections.all()),
+        Frame::new(TicketProjections.all()),
+    ]
+}
+
+/// Bootstrap a bus + frames for a database connection.
+///
+/// Creates the bus, runs EventLog and projection migrations,
+/// constructs Frames, spawns the FrameRunner task, and returns
+/// both the bus and a Frames handle for replay operations.
+fn bootstrap(conn: Connection, frame_defs: Vec<Frame>) -> Result<(EventBus, Frames), Error> {
+    let db = Arc::new(Mutex::new(conn));
+
+    // Run EventLog migration
+    {
+        let conn = db.lock().expect("db lock");
+        EventLog::new(&conn)
+            .migrate()
+            .map_err(|e| Error::Context(format!("event log migration: {e}")))?;
+    }
+
+    // Create bus (gets the dispatch sender)
+    let (bus, receiver) = EventBus::new(db.clone());
+
+    // Create and migrate Frames
+    let frames = Frames::new(frame_defs, db);
+    frames
+        .migrate()
+        .map_err(|e| Error::Context(format!("projection migration: {e}")))?;
+
+    // Spawn FrameRunner as a background task (clone of Frames for live events)
+    let runner = FrameRunner::new(frames.clone(), receiver);
+    tokio::spawn(runner.run());
+
+    Ok((bus, frames))
+}
 
 // ── Engine ──────────────────────────────────────────────────────
 
@@ -55,9 +96,8 @@ pub struct Engine {
 impl Engine {
     /// Bootstrap an engine from a directory path.
     ///
-    /// Opens (or creates) the system database, runs migrations, and
-    /// constructs the system context. The project context is not yet
-    /// available — call `init_project` to activate it.
+    /// Opens (or creates) the system database, creates the bus and
+    /// Frames, runs migrations, and spawns the projection task.
     pub fn init(path: impl AsRef<Path>) -> Result<Self, Error> {
         let path = path.as_ref();
         std::fs::create_dir_all(path)
@@ -67,9 +107,8 @@ impl Engine {
         let conn = Connection::open(&db_path)
             .map_err(|e| Error::Context(format!("open system db: {e}")))?;
 
-        migrate_system(&conn)?;
-
-        let system = SystemContext::new(conn, SYSTEM_PROJECTIONS);
+        let (bus, _frames) = bootstrap(conn, system_frames())?;
+        let system = SystemContext::new(bus);
 
         Ok(Self {
             system,
@@ -80,16 +119,12 @@ impl Engine {
     }
 
     /// Bootstrap an in-memory engine for tests.
-    ///
-    /// Both system and project databases live in memory — no filesystem
-    /// needed. The project context is not yet available.
     pub fn in_memory() -> Result<Self, Error> {
         let conn = Connection::open_in_memory()
             .map_err(|e| Error::Context(format!("open in-memory db: {e}")))?;
 
-        migrate_system(&conn)?;
-
-        let system = SystemContext::new(conn, SYSTEM_PROJECTIONS);
+        let (bus, _frames) = bootstrap(conn, system_frames())?;
+        let system = SystemContext::new(bus);
 
         Ok(Self {
             system,
@@ -100,17 +135,11 @@ impl Engine {
     }
 
     /// Activate the project (brain) context.
-    ///
-    /// Opens (or creates) the brain database, runs migrations, and makes
-    /// project-scoped commands available. Uses the default service address.
     pub fn init_project(&mut self, name: impl Into<String>) -> Result<(), Error> {
         self.init_project_with_config(name, None)
     }
 
     /// Activate the project with a specific service address.
-    ///
-    /// Use this when the server binds to a dynamic port (e.g. port 0 in tests)
-    /// and the client needs to know where to connect.
     pub fn init_project_with_addr(
         &mut self,
         name: impl Into<String>,
@@ -134,8 +163,6 @@ impl Engine {
         }
         .map_err(|e| Error::Context(format!("open brain db: {e}")))?;
 
-        migrate_project(&conn)?;
-
         let data_dir = if self.data_dir.as_os_str().is_empty() {
             None
         } else {
@@ -145,7 +172,8 @@ impl Engine {
             Some(dir)
         };
 
-        let mut project = ProjectContext::new(conn, PROJECT_PROJECTIONS);
+        let (bus, frames) = bootstrap(conn, project_frames())?;
+        let mut project = ProjectContext::new(bus, frames);
 
         if let Some(dir) = data_dir {
             let mut config = Config::new(dir);
@@ -177,8 +205,8 @@ impl Engine {
     }
 
     /// The brain name, if a project has been initialized.
-    pub fn brain_name(&self) -> &str {
-        &self.brain_name
+    pub fn brain_name(&self) -> BrainName {
+        BrainName::new(&self.brain_name)
     }
 
     /// Build the project-scoped HTTP router.

@@ -1,33 +1,27 @@
 //! System context — system-scoped infrastructure.
 //!
-//! Carries the system database (tenants, actors, tickets, brains).
-//! System-scoped domain services receive this as their first argument.
+//! Carries the event bus for system-scoped domains (tenants, actors,
+//! tickets, brains). System-scoped domain services receive this.
 
 use rusqlite::Connection;
-use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
-use crate::Source;
-use crate::event::repo;
+use crate::event::EventError;
+use crate::event_bus::EventBus;
 use crate::events::Events;
-use crate::{NewEvent, Projection, StoredEvent};
+use crate::{Source, StoredEvent};
 
 /// The system-scoped application context.
 #[derive(Clone)]
 pub struct SystemContext {
-    db: Arc<Mutex<Connection>>,
-    projections: &'static [&'static [Projection]],
-    events: broadcast::Sender<StoredEvent>,
+    bus: EventBus,
     source: Source,
 }
 
 impl SystemContext {
-    pub fn new(conn: Connection, projections: &'static [&'static [Projection]]) -> Self {
-        let (events, _) = broadcast::channel(256);
+    pub fn new(bus: EventBus) -> Self {
         Self {
-            db: Arc::new(Mutex::new(conn)),
-            projections,
-            events,
+            bus,
             source: Source::default(),
         }
     }
@@ -38,25 +32,14 @@ impl SystemContext {
     }
 
     pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
-        let conn = self.db.lock().expect("db lock");
-        f(&conn)
+        self.bus.with_db(f)
     }
 
-    pub fn emit(&self, event: impl Into<Events>) -> StoredEvent {
-        let new_event = NewEvent {
-            data: event.into(),
-            source: self.source,
-        };
-
-        let stored = self.with_db(|conn| {
-            repo::log_event(conn, &new_event, self.projections).expect("log event")
-        });
-
-        let _ = self.events.send(stored.clone());
-        stored
+    pub async fn emit(&self, event: impl Into<Events>) -> Result<StoredEvent, EventError> {
+        self.bus.emit(event, self.source).await
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
-        self.events.subscribe()
+        self.bus.subscribe()
     }
 }

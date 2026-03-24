@@ -10,6 +10,7 @@ impl NatureProjections {
 
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "nature",
+    migrate: |conn| NatureRepo::new(conn).migrate(),
     apply: |conn, event| NatureRepo::new(conn).handle(event),
     reset: |conn| NatureRepo::new(conn).reset(),
 }];

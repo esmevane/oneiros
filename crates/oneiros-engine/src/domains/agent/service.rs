@@ -3,7 +3,7 @@ use crate::*;
 pub struct AgentService;
 
 impl AgentService {
-    pub fn create(
+    pub async fn create(
         context: &ProjectContext,
         agent_name: AgentName,
         persona: PersonaName,
@@ -35,7 +35,7 @@ impl AgentService {
             .prompt(prompt)
             .build();
 
-        context.emit(AgentEvents::AgentCreated(agent));
+        context.emit(AgentEvents::AgentCreated(agent)).await?;
 
         Ok(AgentResponse::AgentCreated(normalized_name))
     }
@@ -58,7 +58,7 @@ impl AgentService {
         }
     }
 
-    pub fn update(
+    pub async fn update(
         ctx: &ProjectContext,
         agent_name: AgentName,
         persona: PersonaName,
@@ -77,11 +77,11 @@ impl AgentService {
             .prompt(prompt)
             .build();
 
-        ctx.emit(AgentEvents::AgentUpdated(agent));
+        ctx.emit(AgentEvents::AgentUpdated(agent)).await?;
         Ok(AgentResponse::AgentUpdated(agent_name))
     }
 
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         agent_name: &AgentName,
     ) -> Result<AgentResponse, AgentError> {
@@ -91,9 +91,11 @@ impl AgentService {
             return Err(AgentError::NotFound(agent_name.clone()));
         }
 
-        context.emit(AgentEvents::AgentRemoved(AgentRemoved {
-            name: agent_name.clone(),
-        }));
+        context
+            .emit(AgentEvents::AgentRemoved(AgentRemoved {
+                name: agent_name.clone(),
+            }))
+            .await?;
 
         Ok(AgentResponse::AgentRemoved(agent_name.clone()))
     }

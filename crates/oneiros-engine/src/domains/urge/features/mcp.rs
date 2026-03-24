@@ -37,7 +37,7 @@ pub mod urge_mcp {
         &["set_urge", "get_urge", "list_urges", "remove_urge"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         ctx: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -46,8 +46,9 @@ pub mod urge_mcp {
             "set_urge" => {
                 let urge: Urge = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response =
-                    UrgeService::set(ctx, urge).map_err(|e| ToolError::Domain(e.to_string()))?;
+                let response = UrgeService::set(ctx, urge)
+                    .await
+                    .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
             "get_urge" => {
@@ -66,6 +67,7 @@ pub mod urge_mcp {
                 let p: NameParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = UrgeService::remove(ctx, &UrgeName::new(p.name))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }

@@ -3,7 +3,7 @@ use crate::*;
 pub struct CognitionService;
 
 impl CognitionService {
-    pub fn add(
+    pub async fn add(
         context: &ProjectContext,
         agent: &AgentName,
         texture: TextureName,
@@ -19,7 +19,9 @@ impl CognitionService {
             .content(content)
             .build();
 
-        context.emit(CognitionEvents::CognitionAdded(cognition.clone()));
+        context
+            .emit(CognitionEvents::CognitionAdded(cognition.clone()))
+            .await?;
         Ok(CognitionResponse::CognitionAdded(cognition))
     }
 

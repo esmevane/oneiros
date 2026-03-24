@@ -26,7 +26,7 @@ async fn set(
     Json(mut urge): Json<Urge>,
 ) -> Result<(StatusCode, Json<UrgeResponse>), UrgeError> {
     urge.name = UrgeName::new(name);
-    Ok((StatusCode::OK, Json(UrgeService::set(&ctx, urge)?)))
+    Ok((StatusCode::OK, Json(UrgeService::set(&ctx, urge).await?)))
 }
 
 async fn list(State(ctx): State<ProjectContext>) -> Result<Json<UrgeResponse>, UrgeError> {
@@ -44,5 +44,5 @@ async fn remove(
     State(ctx): State<ProjectContext>,
     Path(name): Path<String>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
-    Ok(Json(UrgeService::remove(&ctx, &UrgeName::new(name))?))
+    Ok(Json(UrgeService::remove(&ctx, &UrgeName::new(name)).await?))
 }

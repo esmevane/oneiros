@@ -15,8 +15,8 @@ pub enum Error {
     Cognition(#[from] CognitionError),
     #[error(transparent)]
     Connection(#[from] ConnectionError),
-    // #[error(transparent)]
-    // Doctor(#[from] DcotroError),
+    #[error(transparent)]
+    Doctor(#[from] DoctorError),
     #[error(transparent)]
     Event(#[from] EventError),
     #[error(transparent)]
@@ -33,8 +33,10 @@ pub enum Error {
     Persona(#[from] PersonaError),
     #[error(transparent)]
     Pressure(#[from] PressureError),
-    // #[error(transparent)]
-    // Project(#[from] ProjectError),
+    #[error(transparent)]
+    Project(#[from] ProjectError),
+    #[error(transparent)]
+    Seed(#[from] SeedError),
     #[error(transparent)]
     Search(#[from] SearchError),
     #[error(transparent)]

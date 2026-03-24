@@ -3,9 +3,12 @@ use crate::*;
 pub struct NatureService;
 
 impl NatureService {
-    pub fn set(context: &ProjectContext, nature: Nature) -> Result<NatureResponse, NatureError> {
+    pub async fn set(
+        context: &ProjectContext,
+        nature: Nature,
+    ) -> Result<NatureResponse, NatureError> {
         let name = nature.name.clone();
-        context.emit(NatureEvents::NatureSet(nature));
+        context.emit(NatureEvents::NatureSet(nature)).await?;
         Ok(NatureResponse::NatureSet(name))
     }
 
@@ -27,13 +30,15 @@ impl NatureService {
         }
     }
 
-    pub fn remove(
+    pub async fn remove(
         context: &ProjectContext,
         name: &NatureName,
     ) -> Result<NatureResponse, NatureError> {
-        context.emit(NatureEvents::NatureRemoved(NatureRemoved {
-            name: name.clone(),
-        }));
+        context
+            .emit(NatureEvents::NatureRemoved(NatureRemoved {
+                name: name.clone(),
+            }))
+            .await?;
         Ok(NatureResponse::NatureRemoved(name.clone()))
     }
 }

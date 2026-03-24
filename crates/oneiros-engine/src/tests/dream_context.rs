@@ -4,15 +4,15 @@ use crate::*;
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-fn seeded_ctx() -> ProjectContext {
+async fn seeded_ctx() -> ProjectContext {
     let mut engine = Engine::in_memory().expect("init engine");
     engine.init_project("test").expect("init project");
     let ctx = engine.project().unwrap().clone();
-    SeedService::core(&ctx).expect("seed core");
+    SeedService::core(&ctx).await.expect("seed core");
     ctx
 }
 
-fn seed_agent(ctx: &ProjectContext) -> AgentName {
+async fn seed_agent(ctx: &ProjectContext) -> AgentName {
     AgentService::create(
         ctx,
         "thinker".into(),
@@ -20,17 +20,19 @@ fn seed_agent(ctx: &ProjectContext) -> AgentName {
         "A thinking agent".into(),
         "You think.".into(),
     )
+    .await
     .unwrap();
     AgentName::new("thinker.process")
 }
 
-fn add_cognition(ctx: &ProjectContext, agent: &AgentName, content: &str) -> CognitionId {
+async fn add_cognition(ctx: &ProjectContext, agent: &AgentName, content: &str) -> CognitionId {
     match CognitionService::add(
         ctx,
         agent,
         TextureName::new("observation"),
         Content::new(content),
     )
+    .await
     .unwrap()
     {
         CognitionResponse::CognitionAdded(c) => c.id,
@@ -38,20 +40,33 @@ fn add_cognition(ctx: &ProjectContext, agent: &AgentName, content: &str) -> Cogn
     }
 }
 
-fn add_memory(ctx: &ProjectContext, agent: &AgentName, level: &str, content: &str) -> MemoryId {
-    match MemoryService::add(ctx, agent, LevelName::new(level), Content::new(content)).unwrap() {
+async fn add_memory(
+    ctx: &ProjectContext,
+    agent: &AgentName,
+    level: &str,
+    content: &str,
+) -> MemoryId {
+    match MemoryService::add(ctx, agent, LevelName::new(level), Content::new(content))
+        .await
+        .unwrap()
+    {
         MemoryResponse::MemoryAdded(m) => m.id,
         other => panic!("expected MemoryAdded, got {other:?}"),
     }
 }
 
-fn add_experience(ctx: &ProjectContext, agent: &AgentName, description: &str) -> ExperienceId {
+async fn add_experience(
+    ctx: &ProjectContext,
+    agent: &AgentName,
+    description: &str,
+) -> ExperienceId {
     match ExperienceService::create(
         ctx,
         agent,
         SensationName::new("echoes"),
         Description::new(description),
     )
+    .await
     .unwrap()
     {
         ExperienceResponse::ExperienceCreated(e) => e.id,
@@ -59,21 +74,31 @@ fn add_experience(ctx: &ProjectContext, agent: &AgentName, description: &str) ->
     }
 }
 
-fn connect(ctx: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId {
+async fn connect(ctx: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId {
     let from_token = RefToken::from(from.clone()).to_string();
     let to_token = RefToken::from(to.clone()).to_string();
-    match ConnectionService::create(ctx, from_token, to_token, "reference".to_string()).unwrap() {
+    match ConnectionService::create(ctx, from_token, to_token, "reference".to_string())
+        .await
+        .unwrap()
+    {
         ConnectionResponse::ConnectionCreated(c) => c.id,
         other => panic!("expected ConnectionCreated, got {other:?}"),
     }
 }
 
-fn dream(ctx: &ProjectContext, agent: &AgentName) -> DreamContext {
-    dream_with(ctx, agent, &DreamOverrides::default())
+async fn dream(ctx: &ProjectContext, agent: &AgentName) -> DreamContext {
+    dream_with(ctx, agent, &DreamOverrides::default()).await
 }
 
-fn dream_with(ctx: &ProjectContext, agent: &AgentName, overrides: &DreamOverrides) -> DreamContext {
-    match ContinuityService::dream(ctx, agent, overrides).unwrap() {
+async fn dream_with(
+    ctx: &ProjectContext,
+    agent: &AgentName,
+    overrides: &DreamOverrides,
+) -> DreamContext {
+    match ContinuityService::dream(ctx, agent, overrides)
+        .await
+        .unwrap()
+    {
         ContinuityResponse::Dreaming(context) => context,
         other => panic!("expected Dreaming, got {other:?}"),
     }
@@ -81,12 +106,12 @@ fn dream_with(ctx: &ProjectContext, agent: &AgentName, overrides: &DreamOverride
 
 // ── Vocabulary ───────────────────────────────────────────────────
 
-#[test]
-fn dream_includes_all_vocabulary() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn dream_includes_all_vocabulary() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
     assert_eq!(context.textures.len(), 10, "seed creates 10 textures");
     assert_eq!(context.levels.len(), 5, "seed creates 5 levels");
@@ -95,12 +120,12 @@ fn dream_includes_all_vocabulary() {
     assert_eq!(context.urges.len(), 4, "seed creates 4 urges");
 }
 
-#[test]
-fn dream_includes_persona() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn dream_includes_persona() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
     let persona = context.persona.expect("persona should be present");
     assert_eq!(persona.name, PersonaName::new("process"));
@@ -108,18 +133,15 @@ fn dream_includes_persona() {
 
 // ── Memory filtering ─────────────────────────────────────────────
 
-#[test]
-fn core_memories_always_included() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn core_memories_always_included() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    add_memory(&ctx, &agent, "core", "identity fundament");
-    add_memory(&ctx, &agent, "archival", "old history");
+    add_memory(&ctx, &agent, "core", "identity fundament").await;
+    add_memory(&ctx, &agent, "archival", "old history").await;
 
-    // Default config has recollection_level=project (priority 2).
-    // archival has priority 1 — below threshold, excluded.
-    // core has priority 5 — always included regardless of threshold.
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
     let memory_contents: Vec<&str> = context
         .memories
@@ -136,24 +158,18 @@ fn core_memories_always_included() {
     );
 }
 
-#[test]
-fn level_threshold_filters_lower_priority() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn level_threshold_filters_lower_priority() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    add_memory(&ctx, &agent, "core", "core memory");
-    add_memory(&ctx, &agent, "project", "project memory");
-    add_memory(&ctx, &agent, "session", "session memory");
-    add_memory(&ctx, &agent, "working", "working memory");
-    add_memory(&ctx, &agent, "archival", "archival memory");
+    add_memory(&ctx, &agent, "core", "core memory").await;
+    add_memory(&ctx, &agent, "project", "project memory").await;
+    add_memory(&ctx, &agent, "session", "session memory").await;
+    add_memory(&ctx, &agent, "working", "working memory").await;
+    add_memory(&ctx, &agent, "archival", "archival memory").await;
 
-    // Default: recollection_level=project (priority 2)
-    // Should include: core (always), project (>=2)
-    // Should exclude: session (3? no — session is 3, project is 2, so session IS included)
-    // Wait: level_priority: core=5, working=4, session=3, project=2, archival=1
-    // Threshold=project means min_priority=2, so include >=2: core, working, session, project
-    // Exclude: archival (1)
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
     let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_str()).collect();
     assert!(levels.contains(&"core"), "core always included");
@@ -166,23 +182,22 @@ fn level_threshold_filters_lower_priority() {
     );
 }
 
-#[test]
-fn level_threshold_override_changes_filter() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn level_threshold_override_changes_filter() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    add_memory(&ctx, &agent, "core", "core memory");
-    add_memory(&ctx, &agent, "project", "project memory");
-    add_memory(&ctx, &agent, "session", "session memory");
-    add_memory(&ctx, &agent, "working", "working memory");
-    add_memory(&ctx, &agent, "archival", "archival memory");
+    add_memory(&ctx, &agent, "core", "core memory").await;
+    add_memory(&ctx, &agent, "project", "project memory").await;
+    add_memory(&ctx, &agent, "session", "session memory").await;
+    add_memory(&ctx, &agent, "working", "working memory").await;
+    add_memory(&ctx, &agent, "archival", "archival memory").await;
 
-    // Override to core level (priority 5) — only core survives
     let overrides = DreamOverrides {
         recollection_level: Some(LevelName::new("core")),
         ..Default::default()
     };
-    let context = dream_with(&ctx, &agent, &overrides);
+    let context = dream_with(&ctx, &agent, &overrides).await;
 
     let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_str()).collect();
     assert!(levels.contains(&"core"), "core always included");
@@ -193,23 +208,21 @@ fn level_threshold_override_changes_filter() {
     );
 }
 
-#[test]
-fn recollection_size_caps_non_core_memories() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn recollection_size_caps_non_core_memories() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    // Add 5 project memories
     for i in 0..5 {
-        add_memory(&ctx, &agent, "project", &format!("project memory {i}"));
+        add_memory(&ctx, &agent, "project", &format!("project memory {i}")).await;
     }
-    add_memory(&ctx, &agent, "core", "core memory");
+    add_memory(&ctx, &agent, "core", "core memory").await;
 
-    // Cap non-core at 2
     let overrides = DreamOverrides {
         recollection_size: Some(2),
         ..Default::default()
     };
-    let context = dream_with(&ctx, &agent, &overrides);
+    let context = dream_with(&ctx, &agent, &overrides).await;
 
     let core_count = context
         .memories
@@ -228,17 +241,16 @@ fn recollection_size_caps_non_core_memories() {
 
 // ── Cognition selection ──────────────────────────────────────────
 
-#[test]
-fn sparse_graph_includes_all_cognitions() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn sparse_graph_includes_all_cognitions() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    // Add cognitions but no connections — sparse graph
     for i in 0..5 {
-        add_cognition(&ctx, &agent, &format!("thought {i}"));
+        add_cognition(&ctx, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
     assert_eq!(
         context.cognitions.len(),
         5,
@@ -246,23 +258,22 @@ fn sparse_graph_includes_all_cognitions() {
     );
 }
 
-#[test]
-fn cognition_size_cap_keeps_most_recent() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn cognition_size_cap_keeps_most_recent() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
     for i in 0..10 {
-        add_cognition(&ctx, &agent, &format!("thought {i}"));
+        add_cognition(&ctx, &agent, &format!("thought {i}")).await;
     }
 
     let overrides = DreamOverrides {
         cognition_size: Some(3),
         ..Default::default()
     };
-    let context = dream_with(&ctx, &agent, &overrides);
+    let context = dream_with(&ctx, &agent, &overrides).await;
 
     assert_eq!(context.cognitions.len(), 3, "capped at cognition_size");
-    // Should be the most recent (highest numbers)
     let contents: Vec<&str> = context
         .cognitions
         .iter()
@@ -284,24 +295,22 @@ fn cognition_size_cap_keeps_most_recent() {
 
 // ── BFS graph traversal ──────────────────────────────────────────
 
-#[test]
-fn bfs_discovers_connected_cognitions() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn bfs_discovers_connected_cognitions() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    let mem_id = add_memory(&ctx, &agent, "project", "seed memory");
-    let connected_cog = add_cognition(&ctx, &agent, "connected thought");
-    let _unconnected_cog = add_cognition(&ctx, &agent, "unconnected thought");
+    let mem_id = add_memory(&ctx, &agent, "project", "seed memory").await;
+    let connected_cog = add_cognition(&ctx, &agent, "connected thought").await;
+    let _unconnected_cog = add_cognition(&ctx, &agent, "unconnected thought").await;
 
-    // Connect the memory to one cognition
-    connect(&ctx, &Ref::memory(mem_id), &Ref::cognition(connected_cog));
+    connect(&ctx, &Ref::memory(mem_id), &Ref::cognition(connected_cog)).await;
 
-    // Use a large cognition_size so the cap doesn't interfere
     let overrides = DreamOverrides {
         cognition_size: Some(100),
         ..Default::default()
     };
-    let context = dream_with(&ctx, &agent, &overrides);
+    let context = dream_with(&ctx, &agent, &overrides).await;
 
     let cog_ids: HashSet<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
 
@@ -309,26 +318,24 @@ fn bfs_discovers_connected_cognitions() {
         cog_ids.contains(&connected_cog),
         "BFS should discover connected cognition"
     );
-    // The unconnected one should also appear because recent cognitions
-    // are included via the orientation window
 }
 
-#[test]
-fn bfs_discovers_connected_experiences() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn bfs_discovers_connected_experiences() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    let mem_id = add_memory(&ctx, &agent, "project", "seed memory");
-    let connected_exp = add_experience(&ctx, &agent, "connected experience");
-    let _unconnected_exp = add_experience(&ctx, &agent, "unconnected experience");
+    let mem_id = add_memory(&ctx, &agent, "project", "seed memory").await;
+    let connected_exp = add_experience(&ctx, &agent, "connected experience").await;
+    let _unconnected_exp = add_experience(&ctx, &agent, "unconnected experience").await;
 
-    connect(&ctx, &Ref::memory(mem_id), &Ref::experience(connected_exp));
+    connect(&ctx, &Ref::memory(mem_id), &Ref::experience(connected_exp)).await;
 
     let overrides = DreamOverrides {
         experience_size: Some(100),
         ..Default::default()
     };
-    let context = dream_with(&ctx, &agent, &overrides);
+    let context = dream_with(&ctx, &agent, &overrides).await;
 
     let exp_ids: HashSet<ExperienceId> = context.experiences.iter().map(|e| e.id).collect();
     assert!(
@@ -339,51 +346,47 @@ fn bfs_discovers_connected_experiences() {
 
 // ── Experience selection ─────────────────────────────────────────
 
-#[test]
-fn experience_size_cap_keeps_most_recent() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn experience_size_cap_keeps_most_recent() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
     for i in 0..8 {
-        add_experience(&ctx, &agent, &format!("experience {i}"));
+        add_experience(&ctx, &agent, &format!("experience {i}")).await;
     }
 
     let overrides = DreamOverrides {
         experience_size: Some(3),
         ..Default::default()
     };
-    let context = dream_with(&ctx, &agent, &overrides);
+    let context = dream_with(&ctx, &agent, &overrides).await;
 
     assert_eq!(context.experiences.len(), 3, "capped at experience_size");
 }
 
 // ── Connection pruning ───────────────────────────────────────────
 
-#[test]
-fn connections_pruned_to_included_endpoints() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn connections_pruned_to_included_endpoints() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    let mem_id = add_memory(&ctx, &agent, "project", "seed memory");
-    let cog_id = add_cognition(&ctx, &agent, "connected thought");
-    let orphan_cog = add_cognition(&ctx, &agent, "orphan thought");
+    let mem_id = add_memory(&ctx, &agent, "project", "seed memory").await;
+    let cog_id = add_cognition(&ctx, &agent, "connected thought").await;
+    let orphan_cog = add_cognition(&ctx, &agent, "orphan thought").await;
 
-    // Create two connections — one between included entities, one to an "orphan"
-    let _included_conn = connect(&ctx, &Ref::memory(mem_id), &Ref::cognition(cog_id));
+    let _included_conn = connect(&ctx, &Ref::memory(mem_id), &Ref::cognition(cog_id)).await;
 
-    // This connection goes to a cognition that might get filtered out
-    // We need a scenario where one endpoint is excluded.
-    // Create a memory at archival level (excluded by default threshold)
-    let archival_mem = add_memory(&ctx, &agent, "archival", "old memory");
+    let archival_mem = add_memory(&ctx, &agent, "archival", "old memory").await;
     let _excluded_conn = connect(
         &ctx,
         &Ref::memory(archival_mem),
         &Ref::cognition(orphan_cog),
-    );
+    )
+    .await;
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
-    // Every connection in the result should have both endpoints present in the result
     let included_refs: HashSet<Ref> = context
         .memories
         .iter()
@@ -408,22 +411,18 @@ fn connections_pruned_to_included_endpoints() {
 
 // ── Pressure readings ────────────────────────────────────────────
 
-#[test]
-fn pressures_paired_with_urge_ctas() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn pressures_paired_with_urge_ctas() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    // Add some cognitions to generate pressure (introspect heuristic)
     for i in 0..10 {
-        add_cognition(&ctx, &agent, &format!("thought {i}"));
+        add_cognition(&ctx, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
-    // Pressures may or may not be populated depending on whether the
-    // pressure projection ran. If they are populated, verify the pairing.
     for reading in &context.pressures {
-        // The CTA should come from the matching urge
         let urge = context
             .urges
             .iter()
@@ -439,29 +438,26 @@ fn pressures_paired_with_urge_ctas() {
 
 // ── Config override integration ──────────────────────────────────
 
-#[test]
-fn dream_overrides_change_output() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn dream_overrides_change_output() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    // Seed enough data to make caps meaningful
     for i in 0..10 {
-        add_cognition(&ctx, &agent, &format!("thought {i}"));
+        add_cognition(&ctx, &agent, &format!("thought {i}")).await;
     }
     for i in 0..10 {
-        add_memory(&ctx, &agent, "project", &format!("memory {i}"));
+        add_memory(&ctx, &agent, "project", &format!("memory {i}")).await;
     }
 
-    // Default dream
-    let default_context = dream(&ctx, &agent);
+    let default_context = dream(&ctx, &agent).await;
 
-    // Restricted dream
     let overrides = DreamOverrides {
         cognition_size: Some(2),
         recollection_size: Some(2),
         ..Default::default()
     };
-    let restricted_context = dream_with(&ctx, &agent, &overrides);
+    let restricted_context = dream_with(&ctx, &agent, &overrides).await;
 
     assert!(
         restricted_context.cognitions.len() <= 2,
@@ -469,24 +465,24 @@ fn dream_overrides_change_output() {
     );
     assert!(
         restricted_context.memories.len() < default_context.memories.len()
-            || default_context.memories.len() <= 3, // 2 non-core + potential core
+            || default_context.memories.len() <= 3,
         "override should restrict memories"
     );
 }
 
 // ── Ordering ─────────────────────────────────────────────────────
 
-#[test]
-fn memories_sorted_by_created_at() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn memories_sorted_by_created_at() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    add_memory(&ctx, &agent, "core", "first core");
-    add_memory(&ctx, &agent, "project", "first project");
-    add_memory(&ctx, &agent, "core", "second core");
-    add_memory(&ctx, &agent, "project", "second project");
+    add_memory(&ctx, &agent, "core", "first core").await;
+    add_memory(&ctx, &agent, "project", "first project").await;
+    add_memory(&ctx, &agent, "core", "second core").await;
+    add_memory(&ctx, &agent, "project", "second project").await;
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
     for window in context.memories.windows(2) {
         assert!(
@@ -496,16 +492,16 @@ fn memories_sorted_by_created_at() {
     }
 }
 
-#[test]
-fn cognitions_sorted_by_created_at() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn cognitions_sorted_by_created_at() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
     for i in 0..5 {
-        add_cognition(&ctx, &agent, &format!("thought {i}"));
+        add_cognition(&ctx, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
 
     for window in context.cognitions.windows(2) {
         assert!(
@@ -517,15 +513,15 @@ fn cognitions_sorted_by_created_at() {
 
 // ── Template rendering ───────────────────────────────────────────
 
-#[test]
-fn dream_template_renders_agent_identity() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn dream_template_renders_agent_identity() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    add_memory(&ctx, &agent, "core", "I am a thinker");
-    add_cognition(&ctx, &agent, "something interesting");
+    add_memory(&ctx, &agent, "core", "I am a thinker").await;
+    add_cognition(&ctx, &agent, "something interesting").await;
 
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
     let rendered = DreamTemplate::new(&context).to_string();
 
     assert!(
@@ -550,20 +546,17 @@ fn dream_template_renders_agent_identity() {
     );
 }
 
-#[test]
-fn dream_template_omits_empty_sections() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
+#[tokio::test]
+async fn dream_template_omits_empty_sections() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
 
-    // Dream with no cognitions, memories, experiences, or connections
-    let context = dream(&ctx, &agent);
+    let context = dream(&ctx, &agent).await;
     let rendered = DreamTemplate::new(&context).to_string();
 
-    // Identity and vocabulary should still be present
     assert!(rendered.contains("thinker.process"));
     assert!(rendered.contains("## Cognitive Textures"));
 
-    // Empty sections should be omitted
     assert!(
         !rendered.contains("## Your Memories"),
         "empty memories section should be omitted"
@@ -578,11 +571,11 @@ fn dream_template_omits_empty_sections() {
     );
 }
 
-#[test]
-fn introspect_template_renders() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
-    let context = dream(&ctx, &agent);
+#[tokio::test]
+async fn introspect_template_renders() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
+    let context = dream(&ctx, &agent).await;
 
     let pressures = RelevantPressures::from_pressures(
         context
@@ -597,16 +590,16 @@ fn introspect_template_renders() {
     assert!(rendered.contains("Before your context compacts"));
 }
 
-#[test]
-fn guidebook_template_renders_vocabulary() {
-    let ctx = seeded_ctx();
-    let agent = seed_agent(&ctx);
-    let context = dream(&ctx, &agent);
+#[tokio::test]
+async fn guidebook_template_renders_vocabulary() {
+    let ctx = seeded_ctx().await;
+    let agent = seed_agent(&ctx).await;
+    let context = dream(&ctx, &agent).await;
 
     let rendered = GuidebookTemplate::new(&context).to_string();
 
     assert!(rendered.contains("Cognitive Guidebook"));
     assert!(rendered.contains("thinker.process"));
-    assert!(rendered.contains("observation")); // seeded texture
+    assert!(rendered.contains("observation"));
     assert!(rendered.contains("Your Lifecycle"));
 }

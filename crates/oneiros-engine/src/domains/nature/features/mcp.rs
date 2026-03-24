@@ -37,7 +37,7 @@ pub mod nature_mcp {
         &["set_nature", "get_nature", "list_natures", "remove_nature"]
     }
 
-    pub fn dispatch(
+    pub async fn dispatch(
         ctx: &ProjectContext,
         tool_name: &str,
         params: &str,
@@ -47,6 +47,7 @@ pub mod nature_mcp {
                 let nature: Nature = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = NatureService::set(ctx, nature)
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
@@ -66,6 +67,7 @@ pub mod nature_mcp {
                 let p: NameParam = serde_json::from_str(params)
                     .map_err(|e| ToolError::Parameter(e.to_string()))?;
                 let response = NatureService::remove(ctx, &NatureName::new(p.name))
+                    .await
                     .map_err(|e| ToolError::Domain(e.to_string()))?;
                 serde_json::to_value(response)
             }
