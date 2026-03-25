@@ -1,0 +1,65 @@
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    http::StatusCode,
+    routing,
+};
+use serde::Deserialize;
+
+use crate::*;
+
+pub struct StorageRouter;
+
+impl StorageRouter {
+    pub fn routes(&self) -> Router<ProjectContext> {
+        Router::new().nest(
+            "/storage",
+            Router::new()
+                .route("/", routing::get(list).post(upload))
+                .route("/{key}", routing::get(show).delete(remove)),
+        )
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct UploadBody {
+    key: String,
+    #[serde(default)]
+    description: String,
+    /// Base64-encoded binary data for JSON transport.
+    data: Vec<u8>,
+}
+
+async fn upload(
+    State(ctx): State<ProjectContext>,
+    Json(body): Json<UploadBody>,
+) -> Result<(StatusCode, Json<StorageResponse>), StorageError> {
+    let response = StorageService::upload(
+        &ctx,
+        StorageKey::new(body.key),
+        Description::new(body.description),
+        body.data,
+    )
+    .await?;
+    Ok((StatusCode::CREATED, Json(response)))
+}
+
+async fn list(State(ctx): State<ProjectContext>) -> Result<Json<StorageResponse>, StorageError> {
+    Ok(Json(StorageService::list(&ctx)?))
+}
+
+async fn show(
+    State(ctx): State<ProjectContext>,
+    Path(key): Path<String>,
+) -> Result<Json<StorageResponse>, StorageError> {
+    Ok(Json(StorageService::show(&ctx, &StorageKey::new(key))?))
+}
+
+async fn remove(
+    State(ctx): State<ProjectContext>,
+    Path(key): Path<String>,
+) -> Result<Json<StorageResponse>, StorageError> {
+    Ok(Json(
+        StorageService::remove(&ctx, &StorageKey::new(key)).await?,
+    ))
+}

@@ -1,0 +1,30 @@
+use axum::Json;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+
+#[derive(Debug, thiserror::Error)]
+pub enum ServiceError {
+    #[error("Service not initialized — run `oneiros system init` first")]
+    NotInitialized,
+
+    #[error("Service manager error: {0}")]
+    Manager(String),
+
+    #[error("Health check failed: {0}")]
+    HealthCheck(String),
+
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+}
+
+impl IntoResponse for ServiceError {
+    fn into_response(self) -> Response {
+        let (status, message) = match &self {
+            ServiceError::NotInitialized => (StatusCode::PRECONDITION_FAILED, self.to_string()),
+            ServiceError::Manager(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ServiceError::HealthCheck(_) => (StatusCode::SERVICE_UNAVAILABLE, self.to_string()),
+            ServiceError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+        };
+        (status, Json(serde_json::json!({ "error": message }))).into_response()
+    }
+}

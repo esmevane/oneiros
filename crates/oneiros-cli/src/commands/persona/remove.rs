@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemovePersonaOutcomes {
-    #[outcome(message("Persona '{0}' removed."))]
+    #[outcome(message("Persona '{0}' removed."), prompt("Persona '{0}' removed."))]
     PersonaRemoved(PersonaName),
 }
 

@@ -4,20 +4,11 @@ use oneiros_outcomes::*;
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct MemoryAddedResult {
-    pub id: MemoryId,
-    #[serde(skip)]
-    pub ref_token: RefToken,
-    #[serde(skip)]
-    pub gauge: String,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AddMemoryOutcomes {
-    #[outcome(message("Memory added: {}", .0.ref_token), prompt("{}", .0.gauge))]
-    MemoryAdded(MemoryAddedResult),
+    #[outcome(message("Memory added: {}", .0.ref_token()), prompt("Memory recorded: {}", .0.ref_token()))]
+    MemoryAdded(Memory),
 }
 
 #[derive(Clone, Args)]
@@ -36,7 +27,14 @@ impl AddMemory {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<AddMemoryOutcomes>, Vec<PressureSummary>), MemoryCommandError> {
+    ) -> Result<
+        (
+            Outcomes<AddMemoryOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        MemoryCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -53,22 +51,11 @@ impl AddMemory {
             )
             .await?;
         let summaries = add_response.pressure_summaries();
+        let ref_token = add_response.ref_token();
         let memory: Memory = add_response.data()?;
 
-        let all: Vec<Memory> = client
-            .list_memories(&token, Some(&self.agent), None)
-            .await?
-            .data()?;
-        let gauge = crate::gauge::memory_gauge(&self.agent, &all);
+        outcomes.emit(AddMemoryOutcomes::MemoryAdded(memory));
 
-        let ref_token = memory.ref_token();
-
-        outcomes.emit(AddMemoryOutcomes::MemoryAdded(MemoryAddedResult {
-            id: memory.id,
-            ref_token,
-            gauge,
-        }));
-
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }

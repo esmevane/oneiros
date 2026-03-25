@@ -23,7 +23,10 @@ pub enum InitSystemOutcomes {
     EnsuredDirectories,
     #[outcome(message("Database ready at {0:?}."), level = "debug")]
     DatabaseReady(std::path::PathBuf),
-    #[outcome(message("System already initialized."))]
+    #[outcome(
+        message("System already initialized."),
+        prompt("System already initialized.")
+    )]
     HostAlreadyInitialized,
     #[outcome(message("Resolved tenant name: {0}"), level = "debug")]
     ResolvedTenant(TenantName),
@@ -33,7 +36,10 @@ pub enum InitSystemOutcomes {
     ActorCreated,
     #[outcome(message("Created config file at {0:?}."), level = "debug")]
     ConfigurationEnsured(std::path::PathBuf),
-    #[outcome(message("System initialized for '{0}'."))]
+    #[outcome(
+        message("System initialized for '{0}'."),
+        prompt("System initialized for '{0}'.")
+    )]
     SystemInitialized(TenantName),
     #[outcome(
         message("Could not resolve tenant name, using default."),

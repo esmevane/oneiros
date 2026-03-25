@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveUrgeOutcomes {
-    #[outcome(message("Urge '{0}' removed."))]
+    #[outcome(message("Urge '{0}' removed."), prompt("Urge '{0}' removed."))]
     UrgeRemoved(UrgeName),
 }
 

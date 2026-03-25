@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SetLevelOutcomes {
-    #[outcome(message("Level '{0}' set."))]
+    #[outcome(message("Level '{0}' set."), prompt("Level '{0}' set."))]
     LevelSet(LevelName),
 }
 

@@ -1,0 +1,20 @@
+[package]
+name = "oneiros-ducks-poc"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+oneiros-db = { workspace = true }
+oneiros-model = { workspace = true }
+axum = { workspace = true }
+http-body-util = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tower = { workspace = true, features = ["util"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }

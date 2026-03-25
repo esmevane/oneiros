@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveTextureOutcomes {
-    #[outcome(message("Texture '{0}' removed."))]
+    #[outcome(message("Texture '{0}' removed."), prompt("Texture '{0}' removed."))]
     TextureRemoved(TextureName),
 }
 

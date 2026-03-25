@@ -7,10 +7,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListTexturesOutcomes {
-    #[outcome(message("No textures configured."))]
+    #[outcome(message("No textures configured."), prompt("No textures configured."))]
     NoTextures,
 
-    #[outcome(message("Textures: {0:?}"))]
+    #[outcome(message("Textures: {0:?}"), prompt("Textures: {0:?}"))]
     Textures(Vec<Texture>),
 }
 

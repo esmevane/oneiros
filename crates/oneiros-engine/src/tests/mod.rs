@@ -1,0 +1,655 @@
+mod dream_context;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use tower::ServiceExt;
+
+use crate::*;
+
+// ── Helpers ───────────────────────────────────────────────────────
+
+fn test_engine() -> Engine {
+    let mut engine = Engine::in_memory().expect("init engine");
+    engine.init_project("test").expect("init project");
+    engine
+}
+
+fn project_ctx() -> ProjectContext {
+    test_engine().project().unwrap().clone()
+}
+
+async fn seed_persona(ctx: &ProjectContext) {
+    PersonaService::set(
+        ctx,
+        Persona {
+            name: "test-persona".into(),
+            description: "A test persona".into(),
+            prompt: "You are a test.".into(),
+        },
+    )
+    .await
+    .unwrap();
+}
+
+async fn seed_agent(ctx: &ProjectContext) {
+    AgentService::create(
+        ctx,
+        "gov".into(),
+        "test-persona".into(),
+        "Governor".into(),
+        "You govern.".into(),
+    )
+    .await
+    .unwrap();
+}
+
+// ── Vocabulary domain tests ───────────────────────────────────────
+
+#[tokio::test]
+async fn level_crud() {
+    let ctx = project_ctx();
+
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "working".into(),
+            description: "Active".into(),
+            prompt: "".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert!(matches!(
+        LevelService::get(&ctx, &LevelName::new("working")).unwrap(),
+        LevelResponse::LevelDetails(_)
+    ));
+
+    match LevelService::list(&ctx).unwrap() {
+        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 1),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+
+    LevelService::remove(&ctx, &LevelName::new("working"))
+        .await
+        .unwrap();
+    assert!(LevelService::get(&ctx, &LevelName::new("working")).is_err());
+}
+
+#[tokio::test]
+async fn persona_crud() {
+    let ctx = project_ctx();
+
+    PersonaService::set(
+        &ctx,
+        Persona {
+            name: "process".into(),
+            description: "Process agents".into(),
+            prompt: "".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert!(matches!(
+        PersonaService::get(&ctx, &PersonaName::new("process")).unwrap(),
+        PersonaResponse::PersonaDetails(_)
+    ));
+}
+
+// ── Entity domain tests ──────────────────────────────────────────
+
+#[tokio::test]
+async fn agent_create_and_get() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+
+    let resp = AgentService::create(
+        &ctx,
+        AgentName::new("governor"),
+        PersonaName::new("test-persona"),
+        Description::new("The governor"),
+        Prompt::new("You govern."),
+    )
+    .await
+    .unwrap();
+    assert!(matches!(resp, AgentResponse::AgentCreated(_)));
+
+    match AgentService::get(&ctx, &AgentName::new("governor.test-persona")).unwrap() {
+        AgentResponse::AgentDetails(a) => {
+            assert_eq!(a.name, AgentName::new("governor.test-persona"));
+            assert_eq!(a.persona, PersonaName::new("test-persona"));
+        }
+        other => panic!("Expected AgentDetails, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn agent_persona_validation() {
+    let ctx = project_ctx();
+
+    let result = AgentService::create(
+        &ctx,
+        AgentName::new("gov"),
+        PersonaName::new("nonexistent"),
+        Description::new(""),
+        Prompt::new(""),
+    )
+    .await;
+    assert!(matches!(result, Err(AgentError::PersonaNotFound(_))));
+}
+
+#[tokio::test]
+async fn agent_name_conflict() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+
+    AgentService::create(
+        &ctx,
+        AgentName::new("gov"),
+        PersonaName::new("test-persona"),
+        Description::new(""),
+        Prompt::new(""),
+    )
+    .await
+    .unwrap();
+    let result = AgentService::create(
+        &ctx,
+        AgentName::new("gov"),
+        PersonaName::new("test-persona"),
+        Description::new(""),
+        Prompt::new(""),
+    )
+    .await;
+    assert!(matches!(result, Err(AgentError::Conflict(_))));
+}
+
+#[tokio::test]
+async fn cognition_add_and_list() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+    seed_agent(&ctx).await;
+
+    let resp = CognitionService::add(
+        &ctx,
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("observation"),
+        Content::new("Something interesting"),
+    )
+    .await
+    .unwrap();
+    assert!(matches!(resp, CognitionResponse::CognitionAdded(_)));
+
+    match CognitionService::list(&ctx, Some(&AgentName::new("gov.test-persona")), None).unwrap() {
+        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        other => panic!("Expected Cognitions, got {other:?}"),
+    }
+}
+
+// ── Typed event tests ────────────────────────────────────────────
+
+#[tokio::test]
+async fn broadcast_events_are_typed() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+
+    let mut sub = ctx.subscribe();
+
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "working".into(),
+            description: "".into(),
+            prompt: "".into(),
+        },
+    )
+    .await
+    .unwrap();
+    let event = sub.try_recv().unwrap();
+    assert_eq!(event.event_type, "level-set");
+    assert!(matches!(
+        event.data,
+        Events::Level(LevelEvents::LevelSet(_))
+    ));
+
+    AgentService::create(
+        &ctx,
+        AgentName::new("gov"),
+        PersonaName::new("test-persona"),
+        Description::new(""),
+        Prompt::new(""),
+    )
+    .await
+    .unwrap();
+    let event = sub.try_recv().unwrap();
+    assert_eq!(event.event_type, "agent-created");
+    assert!(matches!(
+        event.data,
+        Events::Agent(AgentEvents::AgentCreated(_))
+    ));
+}
+
+// ── Replay test ──────────────────────────────────────────────────
+
+#[tokio::test]
+async fn replay_reconstructs_read_models() {
+    let ctx = project_ctx();
+
+    // Seed data across multiple domains
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "working".into(),
+            description: "Active".into(),
+            prompt: "".into(),
+        },
+    )
+    .await
+    .unwrap();
+    LevelService::set(
+        &ctx,
+        Level {
+            name: "session".into(),
+            description: "Session".into(),
+            prompt: "".into(),
+        },
+    )
+    .await
+    .unwrap();
+    seed_persona(&ctx).await;
+    seed_agent(&ctx).await;
+    CognitionService::add(
+        &ctx,
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("observation"),
+        Content::new("Test thought"),
+    )
+    .await
+    .unwrap();
+
+    // Verify read models before replay
+    match LevelService::list(&ctx).unwrap() {
+        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+    assert!(matches!(
+        AgentService::get(&ctx, &AgentName::new("gov.test-persona")).unwrap(),
+        AgentResponse::AgentDetails(_)
+    ));
+
+    // Replay — this resets all projections and re-applies all events
+    ctx.replay().unwrap();
+
+    // Read models should be identical after replay
+    match LevelService::list(&ctx).unwrap() {
+        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
+        other => panic!("Expected Listed after replay, got {other:?}"),
+    }
+    match AgentService::get(&ctx, &AgentName::new("gov.test-persona")).unwrap() {
+        AgentResponse::AgentDetails(a) => assert_eq!(a.name, AgentName::new("gov.test-persona")),
+        other => panic!("Expected AgentDetails after replay, got {other:?}"),
+    }
+    match CognitionService::list(&ctx, Some(&AgentName::new("gov.test-persona")), None).unwrap() {
+        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        other => panic!("Expected Cognitions after replay, got {other:?}"),
+    }
+}
+
+// ── HTTP collector tests ──────────────────────────────────────────
+
+#[tokio::test]
+async fn http_serves_multiple_domains() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+    let app = crate::http::project_router(ctx);
+
+    // Set a level
+    let req: Request<Body> = Request::builder()
+        .method("PUT")
+        .uri("/levels/working")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            r#"{"name":"working","description":"Active","prompt":""}"#,
+        ))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Create an agent
+    let req: Request<Body> = Request::builder()
+        .method("POST")
+        .uri("/agents")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            r#"{"name":"gov","persona":"test-persona","description":"Gov","prompt":""}"#,
+        ))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+
+    // Read both back
+    let req: Request<Body> = Request::builder()
+        .uri("/levels/working")
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let req: Request<Body> = Request::builder()
+        .uri("/agents/gov.test-persona")
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn http_not_found() {
+    let ctx = project_ctx();
+    let app = crate::http::project_router(ctx);
+
+    let req: Request<Body> = Request::builder()
+        .uri("/agents/nope")
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+    let req: Request<Body> = Request::builder()
+        .uri("/levels/nope")
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+// ── Full integration ──────────────────────────────────────────────
+
+#[tokio::test]
+async fn full_integration() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+    let app = crate::http::project_router(ctx.clone());
+
+    // Subscribe AFTER seeding so we only see the agent event
+    let mut sub = ctx.subscribe();
+
+    // Create agent via HTTP
+    let req: Request<Body> = Request::builder()
+        .method("POST")
+        .uri("/agents")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            r#"{"name":"gov","persona":"test-persona","description":"Gov","prompt":""}"#,
+        ))
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+
+    // Read back via HTTP
+    let req: Request<Body> = Request::builder()
+        .uri("/agents/gov.test-persona")
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Broadcast received a typed agent-created event
+    let agent_event = sub.try_recv().unwrap();
+    assert_eq!(agent_event.event_type, "agent-created");
+    assert!(matches!(
+        agent_event.data,
+        Events::Agent(AgentEvents::AgentCreated(_))
+    ));
+}
+
+// ── Event serialization round-trip ───────────────────────────────
+
+#[test]
+fn events_serialize_and_deserialize() {
+    let event = Events::Level(LevelEvents::LevelSet(Level {
+        name: "test".into(),
+        description: "desc".into(),
+        prompt: "p".into(),
+    }));
+
+    // Serialize
+    let json = serde_json::to_string(&event).unwrap();
+    assert!(json.contains(r#""type":"level-set""#));
+
+    // Deserialize
+    let back: Events = serde_json::from_str(&json).unwrap();
+    assert!(matches!(back, Events::Level(LevelEvents::LevelSet(_))));
+
+    // Unknown events deserialize to Unknown
+    let unknown_json = r#"{"type":"future-event","data":{"x":1}}"#;
+    let unknown: Events = serde_json::from_str(unknown_json).unwrap();
+    assert!(matches!(unknown, Events::Unknown(_)));
+}
+
+// ── Search projection test ───────────────────────────────────────
+
+#[tokio::test]
+async fn search_indexes_across_domains() {
+    let ctx = project_ctx();
+    seed_persona(&ctx).await;
+    seed_agent(&ctx).await;
+
+    // Add cognitions
+    CognitionService::add(
+        &ctx,
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("observation"),
+        Content::new("The architecture is clean"),
+    )
+    .await
+    .unwrap();
+    CognitionService::add(
+        &ctx,
+        &AgentName::new("gov.test-persona"),
+        TextureName::new("working"),
+        Content::new("Working on typed events"),
+    )
+    .await
+    .unwrap();
+
+    // Search should find them
+    match SearchService::search(&ctx, "architecture", None).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+    }
+
+    // Agent itself should be indexed too (from seed_agent)
+    match SearchService::search(&ctx, "Governor", None).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+    }
+
+    // Search with agent filter
+    match SearchService::search(&ctx, "typed", Some(&AgentName::new("gov.test-persona"))).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+    }
+
+    // Replay should rebuild the search index correctly
+    ctx.replay().unwrap();
+    match SearchService::search(&ctx, "architecture", None).unwrap() {
+        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+    }
+}
+
+// ── System context tests ─────────────────────────────────────────
+
+fn system_ctx() -> SystemContext {
+    Engine::in_memory().expect("init engine").system().clone()
+}
+
+#[tokio::test]
+async fn tenant_create_and_list() {
+    let ctx = system_ctx();
+
+    match TenantService::create(&ctx, "acme".into()).await.unwrap() {
+        TenantResponse::Created(t) => assert_eq!(t.name, TenantName::new("acme")),
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    match TenantService::list(&ctx).unwrap() {
+        TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 1),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn actor_create_and_get() {
+    let ctx = system_ctx();
+
+    // Create a tenant first
+    let tenant = match TenantService::create(&ctx, "acme".into()).await.unwrap() {
+        TenantResponse::Created(t) => t,
+        other => panic!("Expected Created, got {other:?}"),
+    };
+    let tenant_id_str = tenant.id.to_string();
+
+    match ActorService::create(&ctx, tenant.id, ActorName::new("alice"))
+        .await
+        .unwrap()
+    {
+        ActorResponse::Created(a) => {
+            assert_eq!(a.name, ActorName::new("alice"));
+            assert_eq!(a.tenant_id, tenant_id_str);
+        }
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    match ActorService::list(&ctx).unwrap() {
+        ActorResponse::Listed(actors) => assert_eq!(actors.len(), 1),
+        other => panic!("Expected Listed, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn brain_create_and_conflict() {
+    let ctx = system_ctx();
+
+    match BrainService::create(&ctx, "test-brain".into())
+        .await
+        .unwrap()
+    {
+        BrainResponse::Created(b) => assert_eq!(b.name, BrainName::new("test-brain")),
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    // Duplicate name should conflict
+    assert!(matches!(
+        BrainService::create(&ctx, "test-brain".into()).await,
+        Err(BrainError::Conflict(_))
+    ));
+
+    match BrainService::get(&ctx, &BrainName::new("test-brain")).unwrap() {
+        BrainResponse::Found(b) => assert_eq!(b.name, BrainName::new("test-brain")),
+        other => panic!("Expected Found, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn ticket_issue_and_validate() {
+    let ctx = system_ctx();
+
+    // Set up tenant + actor + brain
+    let tenant_id = match TenantService::create(&ctx, "acme".into()).await.unwrap() {
+        TenantResponse::Created(t) => t.id,
+        other => panic!("Expected Created, got {other:?}"),
+    };
+    let actor_id = match ActorService::create(&ctx, tenant_id, ActorName::new("alice"))
+        .await
+        .unwrap()
+    {
+        ActorResponse::Created(a) => a.id,
+        other => panic!("Expected Created, got {other:?}"),
+    };
+    match BrainService::create(&ctx, "test-brain".into())
+        .await
+        .unwrap()
+    {
+        BrainResponse::Created(_) => {}
+        other => panic!("Expected Created, got {other:?}"),
+    }
+
+    // Issue a ticket
+    let token = match TicketService::create(&ctx, actor_id, "test-brain".into())
+        .await
+        .unwrap()
+    {
+        TicketResponse::Created(t) => {
+            assert_eq!(t.brain_name, "test-brain");
+            t.token
+        }
+        other => panic!("Expected Created, got {other:?}"),
+    };
+
+    // Validate the token
+    match TicketService::validate(&ctx, &token).unwrap() {
+        TicketResponse::Validated(t) => assert_eq!(t.brain_name, "test-brain"),
+        other => panic!("Expected Validated, got {other:?}"),
+    }
+}
+
+// ── Storage tests (content-addressed model) ─────────────────────
+
+#[tokio::test]
+async fn storage_upload_and_retrieve_content() {
+    let ctx = project_ctx();
+    let content = b"Hello, oneiros!";
+
+    // Upload — returns the entry with key, description, hash
+    let entry = match StorageService::upload(
+        &ctx,
+        StorageKey::new("test.txt"),
+        Description::new("A test file"),
+        content.to_vec(),
+    )
+    .await
+    .unwrap()
+    {
+        StorageResponse::StorageSet(entry) => {
+            assert_eq!(entry.key.as_str(), "test.txt");
+            assert_eq!(entry.description.as_str(), "A test file");
+            entry
+        }
+        other => panic!("Expected StorageSet, got {other:?}"),
+    };
+
+    // Show by key
+    match StorageService::show(&ctx, &StorageKey::new("test.txt")).unwrap() {
+        StorageResponse::StorageDetails(shown) => {
+            assert_eq!(shown.key.as_str(), "test.txt");
+            assert_eq!(shown.hash, entry.hash);
+        }
+        other => panic!("Expected StorageDetails, got {other:?}"),
+    }
+
+    // List
+    match StorageService::list(&ctx).unwrap() {
+        StorageResponse::Entries(entries) => {
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].key.as_str(), "test.txt");
+        }
+        other => panic!("Expected Entries, got {other:?}"),
+    }
+
+    // Get content — round-trips through compress/decompress
+    let retrieved = StorageService::get_content(&ctx, &StorageKey::new("test.txt")).unwrap();
+    assert_eq!(retrieved, content);
+
+    // Remove — only removes metadata, blob stays (dedup)
+    assert!(matches!(
+        StorageService::remove(&ctx, &StorageKey::new("test.txt"))
+            .await
+            .unwrap(),
+        StorageResponse::StorageRemoved(_)
+    ));
+
+    // Metadata should be gone
+    assert!(StorageService::show(&ctx, &StorageKey::new("test.txt")).is_err());
+
+    // List should be empty
+    assert!(matches!(
+        StorageService::list(&ctx).unwrap(),
+        StorageResponse::NoEntries
+    ));
+}

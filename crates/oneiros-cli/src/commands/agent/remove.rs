@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveAgentOutcomes {
-    #[outcome(message("Agent '{0}' removed."))]
+    #[outcome(message("Agent '{0}' removed."), prompt("Agent '{0}' removed."))]
     AgentRemoved(AgentName),
 }
 

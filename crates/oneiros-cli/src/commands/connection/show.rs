@@ -17,7 +17,7 @@ impl core::fmt::Display for ConnectionDetail {
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowConnectionOutcomes {
-    #[outcome(message("{0}"))]
+    #[outcome(message("{0}"), prompt("{0}"))]
     ConnectionDetails(ConnectionDetail),
 }
 

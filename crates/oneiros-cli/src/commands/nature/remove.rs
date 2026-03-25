@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveNatureOutcomes {
-    #[outcome(message("Nature '{0}' removed."))]
+    #[outcome(message("Nature '{0}' removed."), prompt("Nature '{0}' removed."))]
     NatureRemoved(NatureName),
 }
 

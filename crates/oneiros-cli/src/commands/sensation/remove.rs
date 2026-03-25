@@ -7,7 +7,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveSensationOutcomes {
-    #[outcome(message("Sensation '{0}' removed."))]
+    #[outcome(
+        message("Sensation '{0}' removed."),
+        prompt("Sensation '{0}' removed.")
+    )]
     SensationRemoved(SensationName),
 }
 

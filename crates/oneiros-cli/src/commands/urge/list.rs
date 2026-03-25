@@ -7,10 +7,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListUrgesOutcomes {
-    #[outcome(message("No urges configured."))]
+    #[outcome(message("No urges configured."), prompt("No urges configured."))]
     NoUrges,
 
-    #[outcome(message("Urges: {0:?}"))]
+    #[outcome(message("Urges: {0:?}"), prompt("Urges: {0:?}"))]
     Urges(Vec<Urge>),
 }
 

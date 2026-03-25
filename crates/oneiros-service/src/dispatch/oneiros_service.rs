@@ -184,7 +184,8 @@ impl OneirosService {
         let request = request.into();
         let agent_scope = request.agent_scope().cloned();
         let data = self.dispatch_data(request)?;
-        let meta = self.assemble_meta(agent_scope.as_ref());
+        let ref_token = extract_ref_token(&data);
+        let meta = self.assemble_meta_with_ref_token(agent_scope.as_ref(), ref_token);
         Ok(Response { data, meta })
     }
 
@@ -314,13 +315,28 @@ impl OneirosService {
     /// Brain-scoped: only pressures above threshold.
     /// System-scoped (no brain): None.
     pub fn assemble_meta(&self, agent_scope: Option<&AgentName>) -> Option<ResponseMeta> {
-        let summaries = self.pressure_summaries(agent_scope).ok()?;
+        self.assemble_meta_with_ref_token(agent_scope, None)
+    }
 
-        if summaries.is_empty() {
+    /// Assemble meta with both pressure summaries and an optional ref token.
+    ///
+    /// Returns `None` only when there are no pressures and no ref_token to include.
+    fn assemble_meta_with_ref_token(
+        &self,
+        agent_scope: Option<&AgentName>,
+        ref_token: Option<RefToken>,
+    ) -> Option<ResponseMeta> {
+        let summaries = self
+            .pressure_summaries(agent_scope)
+            .ok()
+            .unwrap_or_default();
+
+        if summaries.is_empty() && ref_token.is_none() {
             None
         } else {
             Some(ResponseMeta {
                 pressure: summaries,
+                ref_token,
             })
         }
     }
@@ -334,13 +350,17 @@ impl OneirosService {
         db: &Database,
         agent_scope: Option<&AgentName>,
     ) -> Option<ResponseMeta> {
-        let summaries = self.pressure_summaries_from(db, agent_scope).ok()?;
+        let summaries = self
+            .pressure_summaries_from(db, agent_scope)
+            .ok()
+            .unwrap_or_default();
 
         if summaries.is_empty() {
             None
         } else {
             Some(ResponseMeta {
                 pressure: summaries,
+                ..Default::default()
             })
         }
     }
@@ -403,5 +423,20 @@ impl OneirosService {
         let decompressed = blob.data.decompressed()?;
 
         Ok(decompressed)
+    }
+}
+
+/// Extract a `RefToken` from entity-creating response variants.
+///
+/// Only responses that create a new entity carry a ref_token. All other
+/// response variants return `None`.
+fn extract_ref_token(data: &Responses) -> Option<RefToken> {
+    match data {
+        Responses::Cognition(CognitionResponses::CognitionAdded(c)) => Some(c.ref_token()),
+        Responses::Memory(MemoryResponses::MemoryAdded(m)) => Some(m.ref_token()),
+        Responses::Experience(ExperienceResponses::ExperienceCreated(e)) => Some(e.ref_token()),
+        Responses::Connection(ConnectionResponses::ConnectionCreated(c)) => Some(c.ref_token()),
+        Responses::Agent(AgentResponses::AgentCreated(a)) => Some(RefToken::new(Ref::agent(a.id))),
+        _ => None,
     }
 }
