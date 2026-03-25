@@ -1,7 +1,5 @@
 //! Engine configuration — pure data, loaded at startup.
-
-use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::{net::SocketAddr, path::PathBuf};
 
 use crate::DreamConfig;
 

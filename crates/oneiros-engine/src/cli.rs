@@ -59,6 +59,10 @@ pub enum Command {
     #[command(subcommand)]
     Ticket(TicketCommands),
 
+    // Service management
+    #[command(subcommand)]
+    Service(ServiceCommands),
+
     // Vocabulary domains (project-scoped)
     #[command(subcommand)]
     Level(LevelCommands),
@@ -108,6 +112,11 @@ pub enum Command {
     Reflect {
         name: AgentName,
     },
+    Sense {
+        name: AgentName,
+        #[arg(default_value = "")]
+        content: Content,
+    },
     Sleep {
         name: AgentName,
     },
@@ -144,6 +153,13 @@ impl Command {
     /// - `Rendered::Data` is the default for domains without a presenter
     pub async fn execute(&self, engine: &Engine) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
+            // Service management — operates before/outside HTTP transport
+            Command::Service(service) => {
+                service
+                    .execute(engine, engine.service_addr(), engine.data_dir())
+                    .await?
+            }
+
             // Workflow domains — each knows its context
             Command::System(system) => system.execute(engine.system()).await?,
             Command::Project(project) => {
@@ -213,6 +229,14 @@ impl Command {
             Command::Reflect { name } => {
                 ContinuityCommands::Reflect {
                     agent: name.clone(),
+                }
+                .execute(engine.project()?)
+                .await?
+            }
+            Command::Sense { name, content } => {
+                ContinuityCommands::Sense {
+                    agent: name.clone(),
+                    content: content.clone(),
                 }
                 .execute(engine.project()?)
                 .await?

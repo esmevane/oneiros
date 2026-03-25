@@ -1,8 +1,9 @@
 mod cli;
 mod http;
 mod projections;
-pub mod skills;
+mod skills;
 
-pub use cli::ActorCommands;
-pub use http::ActorRouter;
-pub use projections::ActorProjections;
+pub use cli::*;
+pub use http::*;
+pub use projections::*;
+pub use skills::*;

@@ -1794,10 +1794,12 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "service-manager",
  "sha2",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-stream",
  "tower",
  "uuid",
 ]

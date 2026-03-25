@@ -15,6 +15,7 @@ mod project;
 mod search;
 mod seed;
 mod sensation;
+mod service;
 mod storage;
 mod system;
 mod tenant;
@@ -23,7 +24,6 @@ mod ticket;
 mod urge;
 
 pub mod event;
-pub mod skills;
 
 pub use actor::*;
 pub use agent::*;
@@ -43,6 +43,7 @@ pub use project::*;
 pub use search::*;
 pub use seed::*;
 pub use sensation::*;
+pub use service::*;
 pub use storage::*;
 pub use system::*;
 pub use tenant::*;

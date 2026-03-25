@@ -15,6 +15,7 @@ mod requests;
 mod response;
 mod responses;
 mod server;
+mod skill;
 #[cfg(test)]
 mod tests;
 mod values;
@@ -35,6 +36,7 @@ pub use requests::*;
 pub use response::*;
 pub use responses::*;
 pub use server::*;
+pub use skill::*;
 pub use values::*;
 
 use macros::*;

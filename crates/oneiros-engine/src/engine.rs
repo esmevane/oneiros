@@ -218,4 +218,17 @@ impl Engine {
     pub fn system_router(&self) -> axum::Router {
         system_router(self.system.clone())
     }
+
+    /// The service address — from project config or default.
+    pub fn service_addr(&self) -> std::net::SocketAddr {
+        self.project
+            .as_ref()
+            .and_then(|p| p.config().map(|c| c.service_addr))
+            .unwrap_or_else(|| std::net::SocketAddr::from(([127, 0, 0, 1], 2100)))
+    }
+
+    /// The engine data directory.
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
 }

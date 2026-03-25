@@ -6,4 +6,4 @@ mod cli {
     pub enum EventCommands {}
 }
 
-pub use cli::EventCommands;
+pub use cli::*;

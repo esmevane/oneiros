@@ -1,5 +1,9 @@
 use crate::Skill;
 
-pub fn skills() -> Vec<Skill> {
-    vec![Skill::new("system-init", include_str!("skills/init.md"))]
+pub struct SystemSkills;
+
+impl SystemSkills {
+    pub fn all() -> Vec<Skill> {
+        vec![Skill::new("system-init", include_str!("skills/init.md"))]
+    }
 }

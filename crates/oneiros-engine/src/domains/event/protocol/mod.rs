@@ -7,5 +7,5 @@ mod responses {
     pub enum EventResponse {}
 }
 
-pub use errors::EventError;
-pub use responses::EventResponse;
+pub use errors::*;
+pub use responses::*;

@@ -12,7 +12,7 @@ use chrono::{DateTime, Utc};
 use rusqlite::{Connection, params};
 
 use crate::events::Events;
-use crate::{EventError, Source, StoredEvent};
+use crate::{EventError, StoredEvent};
 
 pub struct EventRepo<'a> {
     conn: &'a Connection,

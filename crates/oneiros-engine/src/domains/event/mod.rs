@@ -6,4 +6,4 @@ mod repo;
 pub use features::*;
 pub use model::*;
 pub use protocol::*;
-pub use repo::EventRepo;
+pub use repo::*;

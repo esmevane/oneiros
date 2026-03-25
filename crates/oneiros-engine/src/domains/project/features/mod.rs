@@ -1,4 +1,7 @@
 mod cli;
-pub mod skills;
+mod http;
+mod skills;
 
 pub use cli::*;
+pub use http::*;
+pub use skills::*;

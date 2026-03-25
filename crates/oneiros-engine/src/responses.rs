@@ -34,6 +34,7 @@ pub enum Responses {
     Actor(ActorResponse),
     Brain(BrainResponse),
     Ticket(TicketResponse),
+    Service(ServiceResponse),
     /// Escape hatch for composite operations that don't map to a single domain response.
     Json(serde_json::Value),
 }
@@ -138,6 +139,11 @@ impl From<TicketResponse> for Responses {
 impl From<ProjectResponse> for Responses {
     fn from(r: ProjectResponse) -> Self {
         Responses::Project(r)
+    }
+}
+impl From<ServiceResponse> for Responses {
+    fn from(r: ServiceResponse) -> Self {
+        Responses::Service(r)
     }
 }
 impl From<serde_json::Value> for Responses {

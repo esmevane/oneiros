@@ -811,7 +811,6 @@ async fn prompt_sleep_contains_agent() -> TestResult {
     cases::lifecycle::sleep_prompt_contains_agent::<EngineBackend>().await
 }
 #[tokio::test]
-#[ignore = "engine does not have a sense command yet"]
 async fn prompt_sense_contains_agent() -> TestResult {
     cases::lifecycle::sense_prompt_contains_agent::<EngineBackend>().await
 }

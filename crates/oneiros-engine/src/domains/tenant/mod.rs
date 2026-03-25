@@ -5,9 +5,9 @@ mod protocol;
 mod repo;
 mod service;
 
-pub use client::TenantClient;
-pub use features::{TenantCommands, TenantProjections, TenantRouter, skills};
-pub use model::{Tenant, TenantId, TenantName};
-pub use protocol::{TenantError, TenantEvents, TenantRequest, TenantResponse};
-pub use repo::TenantRepo;
-pub use service::TenantService;
+pub use client::*;
+pub use features::*;
+pub use model::*;
+pub use protocol::*;
+pub use repo::*;
+pub use service::*;

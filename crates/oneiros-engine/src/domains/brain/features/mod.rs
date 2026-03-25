@@ -1,8 +1,9 @@
 mod cli;
 mod http;
 mod projections;
-pub mod skills;
+mod skills;
 
-pub use cli::BrainCommands;
-pub use http::BrainRouter;
-pub use projections::BrainProjections;
+pub use cli::*;
+pub use http::*;
+pub use projections::*;
+pub use skills::*;

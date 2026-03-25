@@ -42,6 +42,8 @@ pub enum Error {
     #[error(transparent)]
     Sensation(#[from] SensationError),
     #[error(transparent)]
+    Service(#[from] ServiceError),
+    #[error(transparent)]
     Storage(#[from] StorageError),
     #[error(transparent)]
     System(#[from] SystemError),

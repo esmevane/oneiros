@@ -56,6 +56,11 @@ impl ProjectContext {
         self
     }
 
+    /// The project configuration, if set.
+    pub fn config(&self) -> Option<&Config> {
+        self.config.as_deref()
+    }
+
     /// The data directory for filesystem operations (blobs, exports).
     pub fn data_dir(&self) -> Option<&Path> {
         self.config.as_ref().map(|c| c.data_dir.as_path())

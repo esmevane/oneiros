@@ -24,6 +24,7 @@ pub fn project_router(ctx: ProjectContext) -> Router {
         .merge(PressureRouter.routes())
         .merge(ContinuityRouter.routes())
         .merge(SearchRouter.routes())
+        .merge(ProjectRouter.routes())
         .with_state(ctx)
 }
 

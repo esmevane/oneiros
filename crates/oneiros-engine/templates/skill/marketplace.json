@@ -1,0 +1,18 @@
+{
+  "name": "oneiros",
+  "owner": {
+    "name": "JC McCormick",
+    "url": "https://esmevane.com"
+  },
+  "metadata": {
+    "description": "Persistent identity and continuity for AI agents."
+  },
+  "plugins": [
+    {
+      "name": "oneiros",
+      "source": "./dist",
+      "description": "Persistent identity and continuity for AI agents.",
+      "version": "{{VERSION}}"
+    }
+  ]
+}
