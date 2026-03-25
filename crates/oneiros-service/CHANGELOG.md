@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9](https://github.com/esmevane/oneiros/compare/oneiros-service-v0.0.8...oneiros-service-v0.0.9) - 2026-03-25
+
+### Other
+
+- Testability update
+- Storage fetch fix, pressure N+1 fix.
+- Compact pressures.
+- Dispatchers.
+
 ## [0.0.8](https://github.com/esmevane/oneiros/compare/oneiros-service-v0.0.7...oneiros-service-v0.0.8) - 2026-03-13
 
 ### Other
