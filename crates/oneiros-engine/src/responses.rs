@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 /// All known response types across every domain.
+#[expect(
+    clippy::large_enum_variant,
+    reason = "We can reduce the size of the ContinuityResponse later"
+)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Responses {

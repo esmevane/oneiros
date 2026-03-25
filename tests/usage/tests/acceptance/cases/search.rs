@@ -126,7 +126,7 @@ pub(crate) async fn finds_agent_description<B: Backend>() -> TestResult {
     let results = extract_results(response);
 
     assert!(
-        results.len() >= 1,
+        !results.is_empty(),
         "expected at least 1 result for agent description"
     );
 
@@ -141,7 +141,7 @@ pub(crate) async fn finds_persona_description<B: Backend>() -> TestResult {
     let results = extract_results(response);
 
     assert!(
-        results.len() >= 1,
+        !results.is_empty(),
         "expected at least 1 result for persona description"
     );
 

@@ -27,7 +27,7 @@ impl TicketCommands {
                 actor_id,
                 brain_name,
             } => {
-                TicketService::create(context, actor_id.clone(), BrainName::new(brain_name)).await?
+                TicketService::create(context, *actor_id, BrainName::new(brain_name)).await?
             }
             TicketCommands::Validate { id } => TicketService::validate(context, id)?,
             TicketCommands::List => TicketService::list(context)?,

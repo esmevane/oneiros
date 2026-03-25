@@ -401,11 +401,10 @@ impl ContinuityService {
 
         // Graph-discovered
         for id in graph_ids {
-            if seen.insert(*id) {
-                if let Some(cog) = context.with_db(|conn| CognitionRepo::new(conn).get(id))? {
+            if seen.insert(*id)
+                && let Some(cog) = context.with_db(|conn| CognitionRepo::new(conn).get(id))? {
                     cognitions.push(cog);
                 }
-            }
         }
 
         cognitions.sort_by(|a, b| a.created_at.cmp(&b.created_at));
@@ -429,11 +428,10 @@ impl ContinuityService {
 
         // Graph-discovered
         for id in graph_ids {
-            if seen.insert(*id) {
-                if let Some(exp) = context.with_db(|conn| ExperienceRepo::new(conn).get(id))? {
+            if seen.insert(*id)
+                && let Some(exp) = context.with_db(|conn| ExperienceRepo::new(conn).get(id))? {
                     experiences.push(exp);
                 }
-            }
         }
 
         experiences.sort_by(|a, b| a.created_at.cmp(&b.created_at));

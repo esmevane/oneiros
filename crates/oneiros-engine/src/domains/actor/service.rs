@@ -26,7 +26,7 @@ impl ActorService {
     pub fn get(context: &SystemContext, id: &ActorId) -> Result<ActorResponse, ActorError> {
         let actor = context
             .with_db(|conn| ActorRepo::new(conn).get(id))?
-            .ok_or_else(|| ActorError::NotFound(id.clone()))?;
+            .ok_or_else(|| ActorError::NotFound(*id))?;
         Ok(ActorResponse::Found(actor))
     }
 

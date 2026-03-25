@@ -31,11 +31,11 @@ impl ProjectCommands {
             ProjectCommands::Init { .. } => ProjectService::init(ctx, brain_name).await?,
             ProjectCommands::Export { target } => {
                 let project = project.ok_or(ProjectError::Missing)?;
-                ProjectService::export(project, &target, &brain_name)?
+                ProjectService::export(project, target, &brain_name)?
             }
             ProjectCommands::Import { file } => {
                 let project = project.ok_or(ProjectError::Missing)?;
-                ProjectService::import(project, &file)?
+                ProjectService::import(project, file)?
             }
             ProjectCommands::Replay => {
                 let project = project.ok_or(ProjectError::Missing)?;

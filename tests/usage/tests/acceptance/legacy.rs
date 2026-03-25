@@ -160,10 +160,10 @@ impl Drop for Legacy {
 fn shell_words(input: &str) -> Vec<String> {
     let mut words = Vec::new();
     let mut current = String::new();
-    let mut chars = input.chars().peekable();
+    let chars = input.chars().peekable();
     let mut in_quote: Option<char> = None;
 
-    while let Some(ch) = chars.next() {
+    for ch in chars {
         match (ch, in_quote) {
             ('\'' | '"', None) => in_quote = Some(ch),
             (q, Some(open)) if q == open => in_quote = None,

@@ -9,15 +9,14 @@ impl SearchService {
         agent: Option<&AgentName>,
     ) -> Result<SearchResponse, SearchError> {
         let agent_id = agent
-            .map(|name| {
+            .and_then(|name| {
                 context
                     .with_db(|conn| AgentRepo::new(conn).get(name))
                     .map_err(SearchError::Database)
                     .ok()
                     .flatten()
                     .map(|a| a.id)
-            })
-            .flatten();
+            });
 
         let results =
             context.with_db(|conn| SearchRepo::new(conn).search(query, agent_id.as_ref()))?;

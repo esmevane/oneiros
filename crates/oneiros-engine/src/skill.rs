@@ -84,33 +84,28 @@ impl SkillPackage {
     ///
     /// Version placeholders (`{{VERSION}}`) are stamped at call time.
     pub fn assets() -> Vec<SkillAsset> {
-        let mut assets = Vec::new();
-
-        // Core metadata (version-stamped)
-        assets.push(SkillAsset {
-            path: "skills/oneiros/SKILL.md",
-            content: Self::stamp(SKILL_MD),
-        });
-        assets.push(SkillAsset {
-            path: ".claude-plugin/plugin.json",
-            content: Self::stamp(PLUGIN_JSON),
-        });
-        assets.push(SkillAsset {
-            path: ".claude-plugin/marketplace.json",
-            content: Self::stamp(MARKETPLACE_JSON),
-        });
-
-        // Hooks (no stamping needed)
-        assets.push(SkillAsset {
-            path: "hooks/hooks.json",
-            content: HOOKS_JSON.to_string(),
-        });
-
-        // AGENTS.md template
-        assets.push(SkillAsset {
-            path: "agents-md.md",
-            content: AGENTS_MD.to_string(),
-        });
+        let mut assets = vec![
+            SkillAsset {
+                path: "skills/oneiros/SKILL.md",
+                content: Self::stamp(SKILL_MD),
+            },
+            SkillAsset {
+                path: ".claude-plugin/plugin.json",
+                content: Self::stamp(PLUGIN_JSON),
+            },
+            SkillAsset {
+                path: ".claude-plugin/marketplace.json",
+                content: Self::stamp(MARKETPLACE_JSON),
+            },
+            SkillAsset {
+                path: "hooks/hooks.json",
+                content: HOOKS_JSON.to_string(),
+            },
+            SkillAsset {
+                path: "agents-md.md",
+                content: AGENTS_MD.to_string(),
+            },
+        ];
 
         // Agent definitions
         for (name, content) in Self::agents() {

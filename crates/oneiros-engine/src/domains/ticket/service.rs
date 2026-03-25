@@ -28,7 +28,7 @@ impl TicketService {
     pub fn get(context: &SystemContext, id: &TicketId) -> Result<TicketResponse, TicketError> {
         let ticket = context
             .with_db(|conn| TicketRepo::new(conn).get(id))?
-            .ok_or_else(|| TicketError::NotFound(id.clone()))?;
+            .ok_or_else(|| TicketError::NotFound(*id))?;
         Ok(TicketResponse::Found(ticket))
     }
 

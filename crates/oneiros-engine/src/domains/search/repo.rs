@@ -28,11 +28,11 @@ impl<'a> SearchRepo<'a> {
                     Ref::cognition(c.id),
                     "cognition-content",
                     &c.content,
-                    &c.agent_id,
+                    c.agent_id,
                 )?;
             }
             Events::Memory(MemoryEvents::MemoryAdded(m)) => {
-                self.index(Ref::memory(m.id), "memory-content", &m.content, &m.agent_id)?;
+                self.index(Ref::memory(m.id), "memory-content", &m.content, m.agent_id)?;
             }
             Events::Agent(AgentEvents::AgentCreated(a)) => {
                 let content = format!("{} {}", a.name, a.description);
@@ -51,7 +51,7 @@ impl<'a> SearchRepo<'a> {
                     Ref::experience(e.id),
                     "experience-description",
                     &e.description,
-                    &e.agent_id,
+                    e.agent_id,
                 )?;
             }
             Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(update)) => {
@@ -61,7 +61,7 @@ impl<'a> SearchRepo<'a> {
                         Ref::experience(update.id),
                         "experience-description",
                         &update.description,
-                        &exp.agent_id,
+                        exp.agent_id,
                     )?;
                 }
             }

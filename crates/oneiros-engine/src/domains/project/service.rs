@@ -19,7 +19,7 @@ impl ProjectService {
         let actors = ctx.with_db(|conn| ActorRepo::new(conn).list())?;
 
         if let Some(actor) = actors.first() {
-            TicketService::create(ctx, actor.id.clone(), brain_name.clone()).await?;
+            TicketService::create(ctx, actor.id, brain_name.clone()).await?;
         }
 
         Ok(ProjectResponse::BrainCreated(brain_name))
@@ -41,8 +41,8 @@ impl ProjectService {
         let mut buffer = String::new();
         for event in &events {
             // Synthesize ephemeral BlobStored events for storage portability.
-            if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data {
-                if let Ok(Some(blob)) =
+            if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data
+                && let Ok(Some(blob)) =
                     ctx.with_db(|conn| StorageRepo::new(conn).get_blob(&entry.hash))
                 {
                     let synthetic = ExportEvent {
@@ -55,7 +55,6 @@ impl ProjectService {
                     buffer.push_str(&serde_json::to_string(&synthetic)?);
                     buffer.push('\n');
                 }
-            }
 
             let export: ExportEvent = event.clone().into();
             buffer.push_str(&serde_json::to_string(&export)?);
