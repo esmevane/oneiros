@@ -27,11 +27,10 @@ impl ProjectService {
 
     /// Export all events to a JSONL file in the target directory.
     ///
-    /// When a `StorageSet` event is encountered, a synthetic `BlobStored` event
-    /// is prepended carrying the binary content. This makes the export portable —
-    /// the receiving brain can materialize the blob from the event stream.
-    /// The `BlobStored` event is transient: the import projection materializes
-    /// the blob into the `blob` table, then deletes the event.
+    /// When a `StorageSet` event is encountered, an ephemeral `BlobStored`
+    /// event is prepended carrying the binary content. This makes the export
+    /// portable — the receiving brain materializes the blob at import time
+    /// without persisting the ephemeral event to the log.
     pub fn export(
         ctx: &ProjectContext,
         target_dir: &Path,
@@ -41,7 +40,7 @@ impl ProjectService {
 
         let mut buffer = String::new();
         for event in &events {
-            // Synthesize BlobStored events for storage portability.
+            // Synthesize ephemeral BlobStored events for storage portability.
             if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data {
                 if let Ok(Some(blob)) =
                     ctx.with_db(|conn| StorageRepo::new(conn).get_blob(&entry.hash))
@@ -51,7 +50,7 @@ impl ProjectService {
                         sequence: 0,
                         timestamp: event.created_at.to_rfc3339(),
                         source: event.source,
-                        data: Events::Storage(StorageEvents::BlobStored(blob)),
+                        data: Events::Ephemeral(EphemeralEvents::BlobStored(blob)),
                     };
                     buffer.push_str(&serde_json::to_string(&synthetic)?);
                     buffer.push('\n');
@@ -75,6 +74,11 @@ impl ProjectService {
     }
 
     /// Import events from a JSONL file and replay projections.
+    ///
+    /// Ephemeral events (like BlobStored) are materialized directly
+    /// at the import boundary — they never enter the event log.
+    /// Domain events are persisted normally, then all projections
+    /// are replayed to rebuild the read models.
     pub fn import(ctx: &ProjectContext, file_path: &Path) -> Result<ProjectResponse, ProjectError> {
         let file = std::fs::File::open(file_path)?;
         let reader = std::io::BufReader::new(file);
@@ -88,6 +92,13 @@ impl ProjectService {
 
             let event: ImportEvent = serde_json::from_str(&line)?;
             let event = event.with_source(Source::default());
+
+            // Check if this is an ephemeral event — materialize directly,
+            // don't persist to the log.
+            if Self::handle_ephemeral(ctx, &event)? {
+                continue;
+            }
+
             ctx.bus().import(&event)?;
             imported += 1;
         }
@@ -98,6 +109,29 @@ impl ProjectService {
             imported,
             replayed,
         }))
+    }
+
+    /// Handle an ephemeral event at the import boundary.
+    ///
+    /// Returns true if the event was ephemeral and handled, false if it
+    /// should be persisted to the log normally.
+    fn handle_ephemeral(ctx: &ProjectContext, event: &ImportEvent) -> Result<bool, ProjectError> {
+        let data = match event {
+            ImportEvent::Sourced { data, .. } => data,
+            ImportEvent::Unsourced { data, .. } => data,
+        };
+
+        // Try to parse as a typed Events to check for Ephemeral variant
+        if let Ok(Events::Ephemeral(ephemeral)) = serde_json::from_value(data.clone()) {
+            match ephemeral {
+                EphemeralEvents::BlobStored(content) => {
+                    ctx.with_db(|conn| StorageRepo::new(conn).put_blob(&content))?;
+                }
+            }
+            return Ok(true);
+        }
+
+        Ok(false)
     }
 
     /// Replay all events through projections, rebuilding read models.

@@ -34,7 +34,20 @@ pub enum Events {
     Actor(ActorEvents),
     Brain(BrainEvents),
     Ticket(TicketEvents),
+    Ephemeral(EphemeralEvents),
     Unknown(serde_json::Value),
+}
+
+/// Ephemeral events — transport artifacts that are never persisted to the log.
+///
+/// These carry data between brains during export/import but are materialized
+/// directly at the import boundary. They never enter the event log and are
+/// never seen by projections.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type", content = "data")]
+pub enum EphemeralEvents {
+    /// Carries compressed blob binary for export/import portability.
+    BlobStored(BlobContent),
 }
 
 /// Extract the event type string from a serialized Events value.
@@ -153,5 +166,11 @@ impl From<BrainEvents> for Events {
 impl From<TicketEvents> for Events {
     fn from(e: TicketEvents) -> Self {
         Events::Ticket(e)
+    }
+}
+
+impl From<EphemeralEvents> for Events {
+    fn from(e: EphemeralEvents) -> Self {
+        Events::Ephemeral(e)
     }
 }

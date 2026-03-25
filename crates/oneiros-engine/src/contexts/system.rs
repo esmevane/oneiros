@@ -31,8 +31,10 @@ impl SystemContext {
         self
     }
 
+    /// Panics if the database mutex is poisoned (another thread panicked
+    /// while holding the lock). This is an unrecoverable state.
     pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
-        self.bus.with_db(f)
+        self.bus.with_db(f).expect("database lock poisoned")
     }
 
     pub async fn emit(&self, event: impl Into<Events>) -> Result<StoredEvent, EventError> {

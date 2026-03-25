@@ -10,7 +10,7 @@
 //! Import bypasses the bus entirely — it writes to the EventLog directly
 //! and then triggers a replay through the Frames.
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use rusqlite::Connection;
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -32,6 +32,11 @@ pub struct EventBus {
     db: Arc<Mutex<Connection>>,
     dispatch: mpsc::UnboundedSender<Dispatch>,
     broadcast: broadcast::Sender<StoredEvent>,
+}
+
+/// Acquire the database lock, converting PoisonError to EventError.
+fn lock(db: &Mutex<Connection>) -> Result<MutexGuard<'_, Connection>, EventError> {
+    db.lock().map_err(|e| EventError::Lock(e.to_string()))
 }
 
 impl EventBus {
@@ -62,7 +67,7 @@ impl EventBus {
     pub async fn publish(&self, event: NewEvent) -> Result<StoredEvent, EventError> {
         // 1. Append — persist to the event log
         let stored = {
-            let conn = self.db.lock().expect("db lock");
+            let conn = lock(&self.db)?;
             EventLog::new(&conn).append(&event)?
         };
 
@@ -101,9 +106,9 @@ impl EventBus {
     }
 
     /// Execute a read operation against the database.
-    pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> T {
-        let conn = self.db.lock().expect("db lock");
-        f(&conn)
+    pub fn with_db<T>(&self, f: impl FnOnce(&Connection) -> T) -> Result<T, EventError> {
+        let conn = lock(&self.db)?;
+        Ok(f(&conn))
     }
 
     /// Access the shared database handle (for Frames construction).
@@ -113,7 +118,7 @@ impl EventBus {
 
     /// Load all events from the log (for export, replay source).
     pub fn load_events(&self) -> Result<Vec<StoredEvent>, EventError> {
-        let conn = self.db.lock().expect("db lock");
+        let conn = lock(&self.db)?;
         EventLog::new(&conn).load_all()
     }
 
@@ -137,7 +142,7 @@ impl EventBus {
     /// For bulk import. After import, call replay to dispatch all events
     /// through the projection pipeline.
     pub fn import(&self, event: &crate::ImportEvent) -> Result<(), EventError> {
-        let conn = self.db.lock().expect("db lock");
+        let conn = lock(&self.db)?;
         EventLog::new(&conn).import(event)
     }
 }

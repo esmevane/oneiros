@@ -126,7 +126,10 @@ impl<'a> EventLog<'a> {
         Ok(())
     }
 
-    /// Delete a single event by ID — used for transient events like BlobStored.
+    /// Delete a single event by ID.
+    ///
+    /// Rarely needed — the event log is append-only by design.
+    /// Exists for administrative operations, not domain logic.
     pub fn delete(&self, event_id: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM events WHERE id = ?1", params![event_id])?;

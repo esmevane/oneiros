@@ -1,6 +1,6 @@
 use crate::{BlobError, IdParseError, TimestampParseError};
 
-/// Event store errors.
+/// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
 pub enum EventError {
     #[error(transparent)]
@@ -20,4 +20,7 @@ pub enum EventError {
 
     #[error("Import error: {0}")]
     Import(String),
+
+    #[error("Database lock poisoned: {0}")]
+    Lock(String),
 }

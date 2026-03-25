@@ -1,6 +1,5 @@
 use rusqlite::{Connection, params};
 
-use crate::event_log::EventLog;
 use crate::*;
 
 /// Storage read model — content-addressed blob storage with human-readable key mapping.
@@ -18,16 +17,6 @@ impl<'a> StorageRepo<'a> {
     }
 
     // ── Projection handling ─────────────────────────────────────
-
-    pub fn handle_blob_stored(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Storage(StorageEvents::BlobStored(content)) = &event.data {
-            self.put_blob(content)?;
-            // Delete the transient event — the blob is materialized, the event
-            // served its purpose (carrying binary for export/import portability).
-            EventLog::new(self.conn).delete(&event.id)?;
-        }
-        Ok(())
-    }
 
     pub fn handle_storage_set(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data {

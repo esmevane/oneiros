@@ -4,7 +4,7 @@
 //! level. The FrameRunner consumes events from a channel and applies
 //! them. The FrameSet provides direct access for replay operations.
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use rusqlite::Connection;
 use tokio::sync::mpsc;
@@ -13,6 +13,11 @@ use crate::StoredEvent;
 use crate::event::EventError;
 use crate::event_bus::Dispatch;
 use crate::values::projection::Projection;
+
+/// Acquire the database lock, converting PoisonError to EventError.
+fn lock(db: &Mutex<Connection>) -> Result<MutexGuard<'_, Connection>, EventError> {
+    db.lock().map_err(|e| EventError::Lock(e.to_string()))
+}
 
 /// A single frame — a set of independent projections at one dependency level.
 pub struct Frame {
@@ -67,7 +72,7 @@ impl Frames {
 
     /// Run all projection migrations.
     pub fn migrate(&self) -> Result<(), EventError> {
-        let conn = self.db.lock().expect("db lock");
+        let conn = lock(&self.db)?;
         for frame in self.frames.iter() {
             frame.migrate(&conn)?;
         }
@@ -76,7 +81,7 @@ impl Frames {
 
     /// Apply a single event through all frames in order.
     pub fn apply(&self, event: &StoredEvent) -> Result<(), EventError> {
-        let conn = self.db.lock().expect("db lock");
+        let conn = lock(&self.db)?;
         for frame in self.frames.iter() {
             frame.apply(&conn, event)?;
         }
@@ -85,7 +90,7 @@ impl Frames {
 
     /// Reset all projections across all frames.
     pub fn reset(&self) -> Result<(), EventError> {
-        let conn = self.db.lock().expect("db lock");
+        let conn = lock(&self.db)?;
         for frame in self.frames.iter() {
             frame.reset(&conn)?;
         }
