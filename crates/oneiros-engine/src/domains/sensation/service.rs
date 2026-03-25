@@ -1,0 +1,48 @@
+use crate::*;
+
+pub struct SensationService;
+
+impl SensationService {
+    pub async fn set(
+        context: &ProjectContext,
+        sensation: Sensation,
+    ) -> Result<SensationResponse, SensationError> {
+        let name = sensation.name.clone();
+        context
+            .emit(SensationEvents::SensationSet(sensation))
+            .await?;
+        Ok(SensationResponse::SensationSet(name))
+    }
+
+    pub async fn get(
+        context: &ProjectContext,
+        name: &SensationName,
+    ) -> Result<SensationResponse, SensationError> {
+        let sensation = SensationRepo::new(context)
+            .get(name)
+            .await?
+            .ok_or_else(|| SensationError::NotFound(name.clone()))?;
+        Ok(SensationResponse::SensationDetails(sensation))
+    }
+
+    pub async fn list(context: &ProjectContext) -> Result<SensationResponse, SensationError> {
+        let sensations = SensationRepo::new(context).list().await?;
+        if sensations.is_empty() {
+            Ok(SensationResponse::NoSensations)
+        } else {
+            Ok(SensationResponse::Sensations(sensations))
+        }
+    }
+
+    pub async fn remove(
+        context: &ProjectContext,
+        name: &SensationName,
+    ) -> Result<SensationResponse, SensationError> {
+        context
+            .emit(SensationEvents::SensationRemoved(SensationRemoved {
+                name: name.clone(),
+            }))
+            .await?;
+        Ok(SensationResponse::SensationRemoved(name.clone()))
+    }
+}

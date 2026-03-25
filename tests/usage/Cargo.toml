@@ -1,0 +1,22 @@
+[package]
+name = "oneiros-usage"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+oneiros-engine = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+axum = { workspace = true }
+clap = { workspace = true }
+oneiros-cli = { workspace = true }
+oneiros-config = { workspace = true }
+oneiros-context = { workspace = true }
+oneiros-detect-project-name = { workspace = true }
+oneiros-http = { workspace = true }
+oneiros-outcomes = { workspace = true }
+rusqlite = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true }
