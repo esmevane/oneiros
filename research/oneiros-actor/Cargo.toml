@@ -1,0 +1,10 @@
+[package]
+name = "oneiros-actor"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt"] }

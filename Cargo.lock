@@ -1350,6 +1350,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "oneiros-actor"
+version = "0.0.8"
+dependencies = [
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "oneiros-actor-poc"
+version = "0.0.8"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "oneiros-actor",
+ "oneiros-db",
+ "oneiros-model",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "oneiros-cli"
 version = "0.0.8"
 dependencies = [
@@ -1444,6 +1469,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "oneiros-ducks-poc"
+version = "0.0.8"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "oneiros-db",
+ "oneiros-model",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "oneiros-fs"
 version = "0.0.8"
 
@@ -1526,6 +1567,28 @@ dependencies = [
  "syn",
  "tracing",
  "trybuild",
+]
+
+[[package]]
+name = "oneiros-resource"
+version = "0.0.8"
+
+[[package]]
+name = "oneiros-resource-poc"
+version = "0.0.8"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "hyper",
+ "oneiros-db",
+ "oneiros-model",
+ "oneiros-resource",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
 ]
 
 [[package]]
