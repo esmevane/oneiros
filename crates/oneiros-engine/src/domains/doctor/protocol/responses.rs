@@ -1,0 +1,52 @@
+use serde::{Deserialize, Serialize};
+
+/// The filename or path label identifying which database was checked.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct DatabaseLabel(pub String);
+
+impl DatabaseLabel {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+}
+
+impl core::fmt::Display for DatabaseLabel {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// The number of events present in the event log.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct LogEventCount(pub i64);
+
+impl LogEventCount {
+    pub fn new(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+impl core::fmt::Display for LogEventCount {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// A single diagnostic check item emitted during a doctor checkup.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+pub enum DoctorCheck {
+    Initialized,
+    NotInitialized,
+    DatabaseOk(DatabaseLabel),
+    EventLogReady(LogEventCount),
+}
+
+/// All responses the doctor domain can produce.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+pub enum DoctorResponse {
+    CheckupStatus(Vec<DoctorCheck>),
+}
