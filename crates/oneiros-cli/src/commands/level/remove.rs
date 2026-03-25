@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum RemoveLevelOutcomes {
-    #[outcome(message("Level '{0}' removed."))]
+    #[outcome(message("Level '{0}' removed."), prompt("Level '{0}' removed."))]
     LevelRemoved(LevelName),
 }
 

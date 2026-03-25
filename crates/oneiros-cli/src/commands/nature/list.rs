@@ -7,10 +7,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListNaturesOutcomes {
-    #[outcome(message("No natures configured."))]
+    #[outcome(message("No natures configured."), prompt("No natures configured."))]
     NoNatures,
 
-    #[outcome(message("Natures: {0:?}"))]
+    #[outcome(message("Natures: {0:?}"), prompt("Natures: {0:?}"))]
     Natures(Vec<Nature>),
 }
 

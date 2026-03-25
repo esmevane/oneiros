@@ -1,6 +1,7 @@
 use clap::Args;
 use oneiros_model::*;
 use oneiros_outcomes::{Outcome, Outcomes};
+use oneiros_templates::IntrospectTemplate;
 
 use crate::*;
 
@@ -16,11 +17,18 @@ pub enum SleepError {
     Parse(#[from] serde_json::Error),
 }
 
+#[derive(Clone, serde::Serialize)]
+pub struct SleepContext {
+    agent: Agent,
+    #[serde(skip)]
+    prompt: String,
+}
+
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SleepOutcomes {
-    #[outcome(message("'{}' is sleeping.", .0.name))]
-    Sleeping(Agent),
+    #[outcome(message("'{}' is sleeping.", .0.agent.name), prompt("{}", .0.prompt))]
+    Sleeping(SleepContext),
 }
 
 /// Put an agent to sleep — record the lifecycle event and introspect.
@@ -40,9 +48,11 @@ impl SleepOp {
         let client = context.client();
         let response = client.sleep(&context.ticket_token()?, &self.name).await?;
         let summaries = response.pressure_summaries();
-        let result: Agent = response.data()?;
+        let agent: Agent = response.data()?;
+        let pressures = RelevantPressures::from_summaries(summaries.clone());
+        let prompt = IntrospectTemplate::new(&agent, pressures).to_string();
 
-        outcomes.emit(SleepOutcomes::Sleeping(result));
+        outcomes.emit(SleepOutcomes::Sleeping(SleepContext { agent, prompt }));
 
         Ok((outcomes, summaries))
     }

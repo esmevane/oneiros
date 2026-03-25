@@ -381,9 +381,12 @@ impl From<UrgeResponses> for Responses {
 
 /// Ambient metadata carried alongside every response.
 /// Extensible for future cross-cutting concerns.
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ResponseMeta {
     pub pressure: Vec<PressureSummary>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub ref_token: Option<RefToken>,
 }
 
 /// Unified protocol response. Every transport returns this shape.
@@ -435,6 +438,11 @@ impl Response {
             .as_ref()
             .map(|m| m.pressure.clone())
             .unwrap_or_default()
+    }
+
+    /// Get the ref token from the response meta, if present.
+    pub fn ref_token(&self) -> Option<RefToken> {
+        self.meta.as_ref().and_then(|m| m.ref_token.clone())
     }
 }
 
