@@ -8,15 +8,21 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum InitProjectOutcomes {
-    #[outcome(message("Brain '{0}' created."))]
+    #[outcome(message("Brain '{0}' created."), prompt("Brain '{0}' created."))]
     BrainCreated(BrainName),
-    #[outcome(message("Brain '{0}' already exists."))]
+    #[outcome(
+        message("Brain '{0}' already exists."),
+        prompt("Brain '{0}' already exists.")
+    )]
     BrainAlreadyExists(BrainName),
-    #[outcome(message("MCP config written to {}", .0.display()))]
+    #[outcome(message("MCP config written to {}", .0.display()), prompt("MCP config written to {}", .0.display()))]
     McpConfigWritten(std::path::PathBuf),
-    #[outcome(message("MCP config already exists at {}, skipping.", .0.display()))]
+    #[outcome(message("MCP config already exists at {}, skipping.", .0.display()), prompt("MCP config already exists at {}, skipping.", .0.display()))]
     McpConfigExists(std::path::PathBuf),
-    #[outcome(message("Added .mcp.json to .gitignore."))]
+    #[outcome(
+        message("Added .mcp.json to .gitignore."),
+        prompt("Added .mcp.json to .gitignore.")
+    )]
     GitignoreUpdated,
 }
 

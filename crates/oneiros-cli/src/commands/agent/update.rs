@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum UpdateAgentOutcomes {
-    #[outcome(message("Agent '{0}' updated."))]
+    #[outcome(message("Agent '{0}' updated."), prompt("Agent '{0}' updated."))]
     AgentUpdated(AgentName),
 }
 

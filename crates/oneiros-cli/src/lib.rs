@@ -8,7 +8,7 @@ mod prefix_id;
 use clap::Parser;
 
 pub(crate) use logging::*;
-pub(crate) use oneiros_context::{Context, ContextError};
+pub use oneiros_context::{Context, ContextError};
 pub(crate) use oneiros_model::*;
 pub(crate) use oneiros_service::projections;
 pub(crate) use prefix_id::*;

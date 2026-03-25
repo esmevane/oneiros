@@ -4,20 +4,11 @@ use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct ExperienceUpdatedResult {
-    pub id: ExperienceId,
-    #[serde(skip)]
-    pub ref_token: RefToken,
-    #[serde(skip)]
-    pub gauge: String,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum UpdateExperienceOutcomes {
-    #[outcome(message("Experience updated: {}", .0.ref_token), prompt("{}", .0.gauge))]
-    ExperienceUpdated(ExperienceUpdatedResult),
+    #[outcome(message("Experience updated: {}", .0.ref_token()), prompt("Experience updated: {}", .0.ref_token()))]
+    ExperienceUpdated(Experience),
 }
 
 #[derive(Clone, Args)]
@@ -95,31 +86,7 @@ impl UpdateExperience {
         // At least one flag was provided (checked above), so experience is Some.
         let experience = experience.unwrap();
 
-        let agents: Vec<Agent> = client.list_agents(&token).await?.data()?;
-        let gauge_str = agents
-            .iter()
-            .find(|agent| agent.id == experience.agent_id)
-            .map(|agent| agent.name.clone());
-
-        let gauge_str = if let Some(agent_name) = gauge_str {
-            let all: Vec<Experience> = client
-                .list_experiences(&token, Some(&agent_name), None)
-                .await?
-                .data()?;
-            crate::gauge::experience_gauge(&agent_name, &all)
-        } else {
-            String::new()
-        };
-
-        let ref_token = experience.ref_token();
-
-        outcomes.emit(UpdateExperienceOutcomes::ExperienceUpdated(
-            ExperienceUpdatedResult {
-                id: experience.id,
-                ref_token,
-                gauge: gauge_str,
-            },
-        ));
+        outcomes.emit(UpdateExperienceOutcomes::ExperienceUpdated(experience));
 
         Ok((outcomes, summaries))
     }

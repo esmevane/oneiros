@@ -44,23 +44,30 @@ impl ExperienceOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<(Outcomes<ExperienceOutcomes>, Vec<PressureSummary>), ExperienceCommandError> {
+    ) -> Result<
+        (
+            Outcomes<ExperienceOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        ExperienceCommandError,
+    > {
         Ok(match &self.command {
             ExperienceCommands::Create(cmd) => {
-                let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                let (o, s, r) = cmd.run(context).await?;
+                (o.map_into(), s, r)
             }
             ExperienceCommands::List(cmd) => {
                 let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                (o.map_into(), s, None)
             }
             ExperienceCommands::Show(cmd) => {
                 let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                (o.map_into(), s, None)
             }
             ExperienceCommands::Update(cmd) => {
                 let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                (o.map_into(), s, None)
             }
         })
     }

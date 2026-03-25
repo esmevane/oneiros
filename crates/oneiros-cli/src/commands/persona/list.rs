@@ -7,10 +7,10 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ListPersonasOutcomes {
-    #[outcome(message("No personas configured."))]
+    #[outcome(message("No personas configured."), prompt("No personas configured."))]
     NoPersonas,
 
-    #[outcome(message("Personas: {0:?}"))]
+    #[outcome(message("Personas: {0:?}"), prompt("Personas: {0:?}"))]
     Personas(Vec<Persona>),
 }
 

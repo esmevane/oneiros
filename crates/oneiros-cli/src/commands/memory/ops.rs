@@ -39,19 +39,26 @@ impl MemoryOps {
     pub async fn run(
         &self,
         context: &crate::Context,
-    ) -> Result<(Outcomes<MemoryOutcomes>, Vec<PressureSummary>), MemoryCommandError> {
+    ) -> Result<
+        (
+            Outcomes<MemoryOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        MemoryCommandError,
+    > {
         Ok(match &self.command {
             MemoryCommands::Add(cmd) => {
-                let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                let (o, s, r) = cmd.run(context).await?;
+                (o.map_into(), s, r)
             }
             MemoryCommands::List(cmd) => {
                 let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                (o.map_into(), s, None)
             }
             MemoryCommands::Show(cmd) => {
                 let (o, s) = cmd.run(context).await?;
-                (o.map_into(), s)
+                (o.map_into(), s, None)
             }
         })
     }

@@ -883,6 +883,7 @@ mod tests {
                 urge: UrgeName::new("introspect"),
                 percent: 69,
             }],
+            ..Default::default()
         }
     }
 

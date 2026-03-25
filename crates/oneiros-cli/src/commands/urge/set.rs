@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SetUrgeOutcomes {
-    #[outcome(message("Urge '{0}' set."))]
+    #[outcome(message("Urge '{0}' set."), prompt("Urge '{0}' set."))]
     UrgeSet(UrgeName),
 }
 

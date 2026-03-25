@@ -4,18 +4,11 @@ use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct ConnectionCreatedResult {
-    pub id: ConnectionId,
-    #[serde(skip)]
-    pub ref_token: RefToken,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CreateConnectionOutcomes {
-    #[outcome(message("Connection created: {}", .0.ref_token))]
-    ConnectionCreated(ConnectionCreatedResult),
+    #[outcome(message("Connection created: {}", .0.ref_token()), prompt("Connection recorded: {}", .0.ref_token()))]
+    ConnectionCreated(Connection),
 }
 
 #[derive(Clone, Args)]
@@ -34,8 +27,14 @@ impl CreateConnection {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<CreateConnectionOutcomes>, Vec<PressureSummary>), ConnectionCommandError>
-    {
+    ) -> Result<
+        (
+            Outcomes<CreateConnectionOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        ConnectionCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -51,17 +50,11 @@ impl CreateConnection {
             )
             .await?;
         let summaries = response.pressure_summaries();
+        let ref_token = response.ref_token();
         let connection: Connection = response.data()?;
 
-        let ref_token = connection.ref_token();
+        outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(connection));
 
-        outcomes.emit(CreateConnectionOutcomes::ConnectionCreated(
-            ConnectionCreatedResult {
-                id: connection.id,
-                ref_token,
-            },
-        ));
-
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }

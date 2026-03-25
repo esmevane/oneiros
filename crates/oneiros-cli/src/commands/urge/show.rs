@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ShowUrgeOutcomes {
-    #[outcome(message("Urge '{}'\n  Description: {}\n  Prompt: {}", .0.name, .0.description, .0.prompt))]
+    #[outcome(message("Urge '{}'\n  Description: {}\n  Prompt: {}", .0.name, .0.description, .0.prompt), prompt("Urge '{}'\n  Description: {}\n  Prompt: {}", .0.name, .0.description, .0.prompt))]
     UrgeDetails(Urge),
 }
 

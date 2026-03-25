@@ -1,23 +1,14 @@
 use clap::Args;
-use oneiros_model::{Experience, ExperienceId};
+use oneiros_model::Experience;
 use oneiros_outcomes::{Outcome, Outcomes};
 
 use crate::*;
 
-#[derive(Clone, serde::Serialize)]
-pub struct ExperienceCreatedResult {
-    pub id: ExperienceId,
-    #[serde(skip)]
-    pub ref_token: RefToken,
-    #[serde(skip)]
-    pub gauge: String,
-}
-
 #[derive(Clone, serde::Serialize, Outcome)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CreateExperienceOutcomes {
-    #[outcome(message("Experience created: {}", .0.ref_token), prompt("{}", .0.gauge))]
-    ExperienceCreated(ExperienceCreatedResult),
+    #[outcome(message("Experience created: {}", .0.ref_token()), prompt("Experience recorded: {}", .0.ref_token()))]
+    ExperienceCreated(Experience),
 }
 
 #[derive(Clone, Args)]
@@ -36,8 +27,14 @@ impl CreateExperience {
     pub async fn run(
         &self,
         context: &Context,
-    ) -> Result<(Outcomes<CreateExperienceOutcomes>, Vec<PressureSummary>), ExperienceCommandError>
-    {
+    ) -> Result<
+        (
+            Outcomes<CreateExperienceOutcomes>,
+            Vec<PressureSummary>,
+            Option<RefToken>,
+        ),
+        ExperienceCommandError,
+    > {
         let mut outcomes = Outcomes::new();
 
         let client = context.client();
@@ -54,24 +51,11 @@ impl CreateExperience {
             )
             .await?;
         let summaries = create_response.pressure_summaries();
+        let ref_token = create_response.ref_token();
         let experience: Experience = create_response.data()?;
 
-        let all: Vec<Experience> = client
-            .list_experiences(&token, Some(&self.agent), None)
-            .await?
-            .data()?;
-        let gauge = crate::gauge::experience_gauge(&self.agent, &all);
+        outcomes.emit(CreateExperienceOutcomes::ExperienceCreated(experience));
 
-        let ref_token = experience.ref_token();
-
-        outcomes.emit(CreateExperienceOutcomes::ExperienceCreated(
-            ExperienceCreatedResult {
-                id: experience.id,
-                ref_token,
-                gauge,
-            },
-        ));
-
-        Ok((outcomes, summaries))
+        Ok((outcomes, summaries, ref_token))
     }
 }
