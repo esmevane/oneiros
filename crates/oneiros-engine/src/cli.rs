@@ -154,11 +154,7 @@ impl Command {
     pub async fn execute(&self, engine: &Engine) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
             // Service management — operates before/outside HTTP transport
-            Command::Service(service) => {
-                service
-                    .execute(engine, engine.service_addr(), engine.data_dir())
-                    .await?
-            }
+            Command::Service(service) => service.execute(engine).await?,
 
             // Workflow domains — each knows its context
             Command::System(system) => system.execute(engine.system()).await?,

@@ -33,6 +33,7 @@ mod tool_def;
 // mod token_version;
 mod output_mode;
 mod rendered;
+mod service_config;
 mod skill;
 
 pub use blob::*;
@@ -67,6 +68,7 @@ pub use size::*;
 pub use source::*;
 // pub use storage_ref::{StorageRef, StorageRefError};
 pub use brain_summary::*;
+pub use service_config::*;
 pub use timestamp::*;
 pub use tool_def::{ToolDef, schema_for};
 // pub use token::{Token, TokenError};

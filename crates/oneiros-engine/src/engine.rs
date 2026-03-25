@@ -219,12 +219,17 @@ impl Engine {
         system_router(self.system.clone())
     }
 
-    /// The service address — from project config or default.
-    pub fn service_addr(&self) -> std::net::SocketAddr {
+    /// The service configuration — from project config or defaults.
+    pub fn service_config(&self) -> ServiceConfig {
         self.project
             .as_ref()
-            .and_then(|p| p.config().map(|c| c.service_addr))
-            .unwrap_or_else(|| std::net::SocketAddr::from(([127, 0, 0, 1], 2100)))
+            .and_then(|p| p.config().map(|c| c.service.clone()))
+            .unwrap_or_default()
+    }
+
+    /// The service address (convenience accessor).
+    pub fn service_addr(&self) -> std::net::SocketAddr {
+        self.service_config().addr
     }
 
     /// The engine data directory.
