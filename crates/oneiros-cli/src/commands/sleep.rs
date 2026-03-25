@@ -18,7 +18,7 @@ pub enum SleepError {
 }
 
 #[derive(Clone, serde::Serialize)]
-struct SleepContext {
+pub struct SleepContext {
     agent: Agent,
     #[serde(skip)]
     prompt: String,

@@ -14,7 +14,7 @@ pub enum RecedeError {
 }
 
 #[derive(Clone, serde::Serialize)]
-struct RecedeContext {
+pub struct RecedeContext {
     name: AgentName,
     #[serde(skip)]
     prompt: String,

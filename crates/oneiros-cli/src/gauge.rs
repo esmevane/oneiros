@@ -1,21 +1,6 @@
 use oneiros_model::*;
 use std::collections::BTreeMap;
 
-pub(crate) fn cognition_gauge(agent: &AgentName, cognitions: &[Cognition]) -> String {
-    let breakdown = group_by(cognitions, |c| c.texture.to_string());
-    format_gauge(agent, "cognitions", &breakdown)
-}
-
-pub(crate) fn memory_gauge(agent: &AgentName, memories: &[Memory]) -> String {
-    let breakdown = group_by(memories, |m| m.level.to_string());
-    format_gauge(agent, "memories", &breakdown)
-}
-
-pub(crate) fn experience_gauge(agent: &AgentName, experiences: &[Experience]) -> String {
-    let breakdown = group_by(experiences, |e| e.sensation.to_string());
-    format_gauge(agent, "experiences", &breakdown)
-}
-
 pub(crate) fn full_status(
     agent: &AgentName,
     cognitions: &[Cognition],
@@ -69,17 +54,32 @@ fn format_breakdown(breakdown: &[(String, usize)]) -> String {
     format!("{}{suffix}", parts.join(", "))
 }
 
-fn format_gauge(agent: &AgentName, entity_name: &str, breakdown: &[(String, usize)]) -> String {
-    let total: usize = breakdown.iter().map(|(_, n)| n).sum();
-    format!(
-        "[{agent} · {total} {entity_name} · {}]",
-        format_breakdown(breakdown)
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn format_gauge(agent: &AgentName, entity_name: &str, breakdown: &[(String, usize)]) -> String {
+        let total: usize = breakdown.iter().map(|(_, n)| n).sum();
+        format!(
+            "[{agent} · {total} {entity_name} · {}]",
+            format_breakdown(breakdown)
+        )
+    }
+
+    pub(crate) fn cognition_gauge(agent: &AgentName, cognitions: &[Cognition]) -> String {
+        let breakdown = group_by(cognitions, |c| c.texture.to_string());
+        format_gauge(agent, "cognitions", &breakdown)
+    }
+
+    pub(crate) fn memory_gauge(agent: &AgentName, memories: &[Memory]) -> String {
+        let breakdown = group_by(memories, |m| m.level.to_string());
+        format_gauge(agent, "memories", &breakdown)
+    }
+
+    pub(crate) fn experience_gauge(agent: &AgentName, experiences: &[Experience]) -> String {
+        let breakdown = group_by(experiences, |e| e.sensation.to_string());
+        format_gauge(agent, "experiences", &breakdown)
+    }
 
     fn make_cognition(texture: &str) -> Cognition {
         Cognition::create(
