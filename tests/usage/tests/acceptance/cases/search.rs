@@ -62,7 +62,7 @@ async fn with_searchable<B: Backend>() -> Result<Harness<B>, Box<dyn core::error
 }
 
 /// Helper: extract the results vec from a search response.
-fn extract_results(response: Response<Responses>) -> Vec<SearchResult> {
+fn extract_results(response: Response<Responses>) -> Vec<Expression> {
     match response.data {
         Responses::Search(SearchResponse::Results(search_results)) => search_results.results,
         other => panic!("expected Search(Results), got {other:#?}"),

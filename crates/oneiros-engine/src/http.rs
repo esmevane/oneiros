@@ -1,14 +1,29 @@
 //! HTTP layer collector — merges all domain HTTP routes into one router.
 
-use axum::Router;
+use axum::{Router, response::Html, routing};
 
 use crate::*;
+
+/// The dashboard HTML, embedded at compile time.
+const DASHBOARD_HTML: &str = include_str!("../templates/dashboard/index.html");
+
+/// Serve the dashboard HTML.
+async fn index() -> Html<&'static str> {
+    Html(DASHBOARD_HTML)
+}
+
+/// Simple health check endpoint.
+async fn health() -> &'static str {
+    "ok"
+}
 
 /// Build the project-scoped HTTP router.
 ///
 /// Each domain contributes its own routes and path prefix.
 pub fn project_router(ctx: ProjectContext) -> Router {
     Router::new()
+        .route("/", routing::get(index))
+        .route("/health", routing::get(health))
         .merge(LevelRouter.routes())
         .merge(TextureRouter.routes())
         .merge(SensationRouter.routes())

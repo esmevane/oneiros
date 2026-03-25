@@ -1,12 +1,12 @@
+use axum::{
+    Json, Router,
+    extract::State,
+    http::HeaderMap,
+    response::sse::{Event as SseEvent, KeepAlive, Sse},
+    routing,
+};
 use std::convert::Infallible;
-
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
-use axum::{Json, Router, routing};
-use serde::Serialize;
-use tokio_stream::StreamExt;
-use tokio_stream::wrappers::BroadcastStream;
+use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 
 use crate::*;
 
@@ -17,21 +17,7 @@ impl ProjectRouter {
         Router::new()
             .route("/summary", routing::get(summary))
             .route("/activity", routing::get(activity))
-            .route("/health", routing::get(health))
     }
-}
-
-/// Brain summary — counts and recent data for the dashboard.
-#[derive(Debug, Clone, Serialize)]
-pub struct BrainSummary {
-    pub agents: Vec<Agent>,
-    pub agent_count: usize,
-    pub cognition_count: usize,
-    pub memory_count: usize,
-    pub experience_count: usize,
-    pub connection_count: usize,
-    pub event_count: usize,
-    pub recent_cognitions: Vec<Cognition>,
 }
 
 async fn summary(
@@ -92,8 +78,8 @@ async fn activity(
 ) -> Sse<impl tokio_stream::Stream<Item = Result<SseEvent, Infallible>>> {
     let last_event_id: Option<i64> = headers
         .get("last-event-id")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|s| s.parse().ok());
+        .and_then(|header| header.to_str().ok())
+        .and_then(|given_value| given_value.parse().ok());
 
     let rx = context.subscribe();
     let mut last_sent = last_event_id.unwrap_or(0);
@@ -114,9 +100,4 @@ async fn activity(
     });
 
     Sse::new(stream).keep_alive(KeepAlive::default())
-}
-
-/// Simple health check endpoint.
-async fn health() -> &'static str {
-    "ok"
 }

@@ -19,9 +19,8 @@ impl SearchService {
             })
             .flatten();
 
-        let results = context
-            .with_db(|conn| SearchRepo::new(conn).search(query, agent_id.as_ref()))
-            .map_err(SearchError::Database)?;
+        let results =
+            context.with_db(|conn| SearchRepo::new(conn).search(query, agent_id.as_ref()))?;
         Ok(SearchResponse::Results(SearchResults {
             query: query.to_string(),
             results,

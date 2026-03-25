@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oneiros</title>
+<style>
+:root {
+  --bg: #0e0e10;
+  --surface: #1a1a1f;
+  --border: #2a2a32;
+  --text: #c8c8d0;
+  --text-dim: #6e6e7a;
+  --accent: #8b7ec8;
+  --accent-dim: #5c5480;
+  --green: #5a9e6f;
+  --orange: #c49a5a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 14px;
+}
+.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+header h1 { font-size: 20px; font-weight: 600; color: var(--accent); }
+header .status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--green);
+  color: var(--bg);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+.stat .value { font-size: 28px; font-weight: 700; color: var(--accent); }
+.stat .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+section { margin-bottom: 32px; }
+section h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.agent-list { display: flex; flex-direction: column; gap: 8px; }
+.agent {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+.agent .name { font-weight: 600; color: var(--accent); }
+.agent .persona { color: var(--text-dim); font-size: 12px; }
+.cognition-list { display: flex; flex-direction: column; gap: 4px; }
+.cognition {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.cognition .meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.cognition .texture { color: var(--orange); }
+.cognition .content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#activity {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 80px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+#activity:empty::before {
+  content: 'listening...';
+  font-style: italic;
+}
+.event-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  word-break: break-word;
+}
+.event-entry:last-child { border-bottom: none; }
+.event-type { color: var(--accent); font-weight: 600; }
+.loading { color: var(--text-dim); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>oneiros</h1>
+    <span class="status">active</span>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="value" id="agent-count">-</div><div class="label">Agents</div></div>
+    <div class="stat"><div class="value" id="cognition-count">-</div><div class="label">Cognitions</div></div>
+    <div class="stat"><div class="value" id="memory-count">-</div><div class="label">Memories</div></div>
+    <div class="stat"><div class="value" id="experience-count">-</div><div class="label">Experiences</div></div>
+    <div class="stat"><div class="value" id="connection-count">-</div><div class="label">Connections</div></div>
+    <div class="stat"><div class="value" id="event-count">-</div><div class="label">Events</div></div>
+  </div>
+
+  <section id="agents-section" style="display:none">
+    <h2>Agents</h2>
+    <div class="agent-list" id="agents"></div>
+  </section>
+
+  <section id="cognitions-section" style="display:none">
+    <h2>Recent Cognitions</h2>
+    <div class="cognition-list" id="cognitions"></div>
+  </section>
+
+  <section>
+    <h2>Activity</h2>
+    <div id="activity"></div>
+  </section>
+</div>
+
+<script>
+(function() {
+  // Fetch summary data
+  fetch('/summary')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('agent-count').textContent = data.agent_count;
+      document.getElementById('cognition-count').textContent = data.cognition_count;
+      document.getElementById('memory-count').textContent = data.memory_count;
+      document.getElementById('experience-count').textContent = data.experience_count;
+      document.getElementById('connection-count').textContent = data.connection_count;
+      document.getElementById('event-count').textContent = data.event_count;
+
+      // Agents
+      if (data.agents && data.agents.length > 0) {
+        var section = document.getElementById('agents-section');
+        section.style.display = '';
+        var list = document.getElementById('agents');
+        data.agents.forEach(function(agent) {
+          var div = document.createElement('div');
+          div.className = 'agent';
+          var name = document.createElement('span');
+          name.className = 'name';
+          name.textContent = agent.name;
+          var persona = document.createElement('span');
+          persona.className = 'persona';
+          persona.textContent = ' ' + (agent.persona || '');
+          div.appendChild(name);
+          div.appendChild(persona);
+          list.appendChild(div);
+        });
+      }
+
+      // Recent cognitions
+      if (data.recent_cognitions && data.recent_cognitions.length > 0) {
+        var section = document.getElementById('cognitions-section');
+        section.style.display = '';
+        var list = document.getElementById('cognitions');
+        data.recent_cognitions.forEach(function(cog) {
+          var div = document.createElement('div');
+          div.className = 'cognition';
+          var meta = document.createElement('div');
+          meta.className = 'meta';
+          var texture = document.createElement('span');
+          texture.className = 'texture';
+          texture.textContent = cog.texture || '';
+          var time = document.createElement('span');
+          time.textContent = cog.created_at ? new Date(cog.created_at).toLocaleString() : '';
+          meta.appendChild(texture);
+          meta.appendChild(time);
+          var content = document.createElement('div');
+          content.className = 'content';
+          content.textContent = cog.content || '';
+          div.appendChild(meta);
+          div.appendChild(content);
+          list.appendChild(div);
+        });
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load summary:', err);
+    });
+
+  // SSE activity stream
+  var feed = document.getElementById('activity');
+  var source = new EventSource('/activity');
+
+  source.onmessage = function(e) {
+    try {
+      var data = JSON.parse(e.data);
+      var type = data.event_type || 'unknown';
+      var entry = document.createElement('div');
+      entry.className = 'event-entry';
+      var typeSpan = document.createElement('span');
+      typeSpan.className = 'event-type';
+      typeSpan.textContent = type;
+      entry.appendChild(typeSpan);
+      entry.appendChild(document.createTextNode(' ' + new Date().toLocaleTimeString()));
+      feed.prepend(entry);
+
+      while (feed.children.length > 100) {
+        feed.removeChild(feed.lastChild);
+      }
+    } catch(err) {
+      // skip malformed events
+    }
+  };
+
+  source.onerror = function() {
+    var entry = document.createElement('div');
+    entry.className = 'event-entry';
+    entry.textContent = 'connection lost, retrying...';
+    feed.prepend(entry);
+  };
+})();
+</script>
+</body>
+</html>

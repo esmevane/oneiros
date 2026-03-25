@@ -81,7 +81,7 @@ impl<'a> SearchRepo<'a> {
         &self,
         query: &str,
         agent: Option<&AgentId>,
-    ) -> Result<Vec<SearchResult>, EventError> {
+    ) -> Result<Vec<Expression>, EventError> {
         let base =
             "select resource_ref, kind, content from search_index where search_index match ?1";
 
@@ -139,13 +139,13 @@ impl<'a> SearchRepo<'a> {
 
     // ── Helpers ──────────────────────────────────────────────────
 
-    fn map_row(row: &rusqlite::Row) -> rusqlite::Result<SearchResult> {
+    fn map_row(row: &rusqlite::Row) -> rusqlite::Result<Expression> {
         let ref_json: String = row.get(0)?;
         let resource_ref: Ref = serde_json::from_str(&ref_json).map_err(|e| {
             rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
         })?;
 
-        Ok(SearchResult::builder()
+        Ok(Expression::builder()
             .resource_ref(resource_ref)
             .kind(row.get::<_, String>(1)?)
             .content(row.get::<_, String>(2)?)
