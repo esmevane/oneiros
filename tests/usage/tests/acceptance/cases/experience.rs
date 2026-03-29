@@ -1,0 +1,218 @@
+use oneiros_engine::*;
+use oneiros_usage::*;
+
+/// Helper: init project + persona + sensation + agent for experience tests.
+async fn with_agent_and_sensation<B: Backend>() -> Result<Harness<B>, Box<dyn core::error::Error>> {
+    let harness = Harness::<B>::init_project().await?;
+    harness
+        .exec_json("persona set process --description 'Process agents'")
+        .await?;
+    harness
+        .exec_json("sensation set caused --description 'One thought produced another'")
+        .await?;
+    harness
+        .exec_json("agent create observer process --description 'An observing agent'")
+        .await?;
+    Ok(harness)
+}
+
+pub(crate) async fn create<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let response = harness
+        .exec_json("experience create observer.process caused 'A caused B'")
+        .await?;
+
+    assert!(
+        matches!(
+            response.data,
+            Responses::Experience(ExperienceResponse::ExperienceCreated(_))
+        ),
+        "expected ExperienceCreated, got {response:#?}"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_empty<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let response = harness.exec_json("experience list").await?;
+
+    assert!(
+        matches!(
+            response.data,
+            Responses::Experience(ExperienceResponse::NoExperiences)
+        ),
+        "expected NoExperiences, got {response:#?}"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_populated<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    harness
+        .exec_json("experience create observer.process caused 'First experience'")
+        .await?;
+    harness
+        .exec_json("experience create observer.process caused 'Second experience'")
+        .await?;
+
+    let response = harness.exec_json("experience list").await?;
+
+    match response.data {
+        Responses::Experience(ExperienceResponse::Experiences(experiences)) => {
+            assert_eq!(experiences.len(), 2);
+        }
+        other => panic!("expected Experiences, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let create_response = harness
+        .exec_json("experience create observer.process caused 'Show me this'")
+        .await?;
+
+    let id = match create_response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => experience.id,
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let show_response = harness.exec_json(&format!("experience show {id}")).await?;
+
+    match show_response.data {
+        Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
+            assert_eq!(experience.description.as_str(), "Show me this");
+        }
+        other => panic!("expected ExperienceDetails, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn update_description<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let create_response = harness
+        .exec_json("experience create observer.process caused 'Original'")
+        .await?;
+
+    let id = match create_response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => experience.id,
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let update_response = harness
+        .exec_json(&format!(
+            "experience update {id} --description 'Updated description'"
+        ))
+        .await?;
+
+    assert!(
+        matches!(
+            update_response.data,
+            Responses::Experience(ExperienceResponse::ExperienceUpdated(_))
+        ),
+        "expected ExperienceUpdated, got {update_response:?}"
+    );
+
+    let show_response = harness.exec_json(&format!("experience show {id}")).await?;
+
+    match show_response.data {
+        Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
+            assert_eq!(experience.description.as_str(), "Updated description");
+        }
+        other => panic!("expected ExperienceDetails, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let response = harness
+        .exec_json("experience create observer.process caused 'Show this'")
+        .await?;
+    let id = match response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.id.to_string(),
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let prompt = harness
+        .exec_prompt(&format!("experience show {id}"))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience show prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+    harness
+        .exec_json("experience create observer.process caused 'An experience'")
+        .await?;
+
+    let prompt = harness
+        .exec_prompt("experience list --agent observer.process")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience list prompt should not be empty when experiences exist"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let response = harness
+        .exec_json("experience create observer.process caused 'Original'")
+        .await?;
+    let id = match response.data {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.id.to_string(),
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let prompt = harness
+        .exec_prompt(&format!("experience update {id} --description 'Updated'"))
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience update prompt should not be empty"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn create_prompt_confirms_creation<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let prompt = harness
+        .exec_prompt("experience create observer.process caused 'A prompted experience'")
+        .await?;
+
+    assert!(
+        !prompt.is_empty(),
+        "experience create prompt should not be empty — confirm what was recorded"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "experience create prompt should contain a ref token for the created experience"
+    );
+
+    Ok(())
+}

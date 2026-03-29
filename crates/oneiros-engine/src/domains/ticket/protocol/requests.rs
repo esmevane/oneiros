@@ -1,0 +1,19 @@
+use serde::{Deserialize, Serialize};
+
+use crate::*;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+pub enum TicketRequest {
+    Create {
+        actor_id: ActorId,
+        brain_name: BrainName,
+    },
+    Get {
+        id: TicketId,
+    },
+    List,
+    Validate {
+        token: Token,
+    },
+}
