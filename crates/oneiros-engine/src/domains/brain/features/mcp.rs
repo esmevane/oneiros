@@ -1,40 +1,50 @@
-pub mod brain_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
+pub struct BrainTools;
+
+impl BrainTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        brain_mcp::tool_defs()
+    }
+
+    pub const fn names(&self) -> &'static [&'static str] {
+        brain_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        brain_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod brain_mcp {
     use crate::*;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct CreateParams {
-        name: BrainName,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct GetParams {
-        name: BrainName,
-    }
-
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "create_brain",
-                description: "Create a new brain in the system",
-                input_schema: schema_for::<CreateParams>,
+                description: "Create a new brain",
+                input_schema: schema_for::<CreateBrain>,
             },
             ToolDef {
                 name: "get_brain",
                 description: "Look up a specific brain by name",
-                input_schema: schema_for::<GetParams>,
+                input_schema: schema_for::<GetBrain>,
             },
             ToolDef {
                 name: "list_brains",
-                description: "List all brains in the system",
+                description: "List all brains",
                 input_schema: schema_for::<serde_json::Value>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["create_brain", "get_brain", "list_brains"]
     }
 
@@ -46,30 +56,13 @@ pub mod brain_mcp {
         let system = SystemContext::new(context.config.clone());
 
         let value = match tool_name {
-            "create_brain" => {
-                let p: CreateParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = BrainService::create(&system, p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_brain" => {
-                let p: GetParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = BrainService::get(&system, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_brains" => {
-                let response = BrainService::list(&system)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "create_brain" => BrainService::create(&system, &serde_json::from_str(params)?).await,
+            "get_brain" => BrainService::get(&system, &serde_json::from_str(params)?).await,
+            "list_brains" => BrainService::list(&system).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

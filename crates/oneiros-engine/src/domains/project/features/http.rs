@@ -4,7 +4,6 @@ use axum::{
     response::sse::{Event as SseEvent, KeepAlive, Sse},
     routing,
 };
-use serde::Deserialize;
 use std::convert::Infallible;
 use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 
@@ -23,16 +22,11 @@ impl ProjectRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct InitBody {
-    brain_name: BrainName,
-}
-
 async fn init(
     context: SystemContext,
-    Json(body): Json<InitBody>,
+    Json(body): Json<InitProject>,
 ) -> Result<(StatusCode, Json<ProjectResponse>), ProjectError> {
-    let response = ProjectService::init(&context, body.brain_name).await?;
+    let response = ProjectService::init(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 

@@ -9,12 +9,7 @@ impl<'a> ProjectClient<'a> {
         Self { client }
     }
 
-    pub async fn init(&self, brain_name: &BrainName) -> Result<ProjectResponse, ClientError> {
-        self.client
-            .post(
-                "/project/init",
-                &serde_json::json!({ "brain_name": brain_name }),
-            )
-            .await
+    pub async fn init(&self, request: &InitProject) -> Result<ProjectResponse, ClientError> {
+        self.client.post("/projects", request).await
     }
 }

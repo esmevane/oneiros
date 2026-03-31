@@ -1,39 +1,55 @@
-pub mod texture_mcp {
-    //! Texture MCP driving adapter — translates tool calls into domain service calls.
+use crate::*;
 
-    use crate::*;
+pub struct TextureTools;
 
-    #[derive(serde::Deserialize, schemars::JsonSchema)]
-    struct NameParam {
-        name: TextureName,
+impl TextureTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        texture_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        texture_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        texture_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod texture_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "set_texture",
                 description: "Define a quality of thought",
-                input_schema: schema_for::<Texture>,
+                input_schema: schema_for::<SetTexture>,
             },
             ToolDef {
                 name: "get_texture",
                 description: "Look up a thought category",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<GetTexture>,
             },
             ToolDef {
                 name: "list_textures",
-                description: "See all thought categories",
+                description: "See all the ways thoughts can be textured",
                 input_schema: schema_for::<serde_json::Value>,
             },
             ToolDef {
                 name: "remove_texture",
                 description: "Remove a thought category",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<RemoveTexture>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &[
             "set_texture",
             "get_texture",
@@ -48,38 +64,16 @@ pub mod texture_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "set_texture" => {
-                let texture: Texture = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = TextureService::set(context, texture)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_texture" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = TextureService::get(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_textures" => {
-                let response = TextureService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "set_texture" => TextureService::set(context, &serde_json::from_str(params)?).await,
+            "get_texture" => TextureService::get(context, &serde_json::from_str(params)?).await,
+            "list_textures" => TextureService::list(context).await,
             "remove_texture" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = TextureService::remove(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                TextureService::remove(context, &serde_json::from_str(params)?).await
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

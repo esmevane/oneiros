@@ -5,9 +5,9 @@ pub struct TenantService;
 impl TenantService {
     pub async fn create(
         context: &SystemContext,
-        name: TenantName,
+        CreateTenant { name }: &CreateTenant,
     ) -> Result<TenantResponse, TenantError> {
-        let tenant = Tenant::builder().name(name).build();
+        let tenant = Tenant::builder().name(name.clone()).build();
 
         context
             .emit(TenantEvents::TenantCreated(tenant.clone()))
@@ -17,12 +17,12 @@ impl TenantService {
 
     pub async fn get(
         context: &SystemContext,
-        id: &TenantId,
+        selector: &GetTenant,
     ) -> Result<TenantResponse, TenantError> {
         let tenant = TenantRepo::new(context)
-            .get(id)
+            .get(&selector.id)
             .await?
-            .ok_or_else(|| TenantError::NotFound(*id))?;
+            .ok_or_else(|| TenantError::NotFound(selector.id))?;
 
         Ok(TenantResponse::Found(tenant))
     }

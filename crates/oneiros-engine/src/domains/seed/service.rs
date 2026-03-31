@@ -33,7 +33,7 @@ impl SeedService {
         ] {
             LevelService::set(
                 context,
-                Level::builder()
+                &SetLevel::builder()
                     .name(LevelName::new(name))
                     .description(Description::from(description))
                     .prompt(Prompt::from(prompt))
@@ -71,10 +71,9 @@ impl SeedService {
         ] {
             TextureService::set(
                 context,
-                Texture::builder()
+                &SetTexture::builder()
                     .name(TextureName::new(name))
                     .description(Description::from(description))
-                    .prompt(Prompt::default())
                     .build(),
             )
             .await?;
@@ -105,10 +104,9 @@ impl SeedService {
         ] {
             SensationService::set(
                 context,
-                Sensation::builder()
-                    .name(SensationName::new(name))
-                    .description(Description::from(description))
-                    .prompt(Prompt::default())
+                &SetSensation::builder()
+                    .name(name)
+                    .description(description)
                     .build(),
             )
             .await?;
@@ -136,10 +134,9 @@ impl SeedService {
         ] {
             NatureService::set(
                 context,
-                Nature::builder()
-                    .name(NatureName::new(name))
-                    .description(Description::from(description))
-                    .prompt(Prompt::default())
+                &SetNature::builder()
+                    .name(name)
+                    .description(description)
                     .build(),
             )
             .await?;
@@ -158,10 +155,9 @@ impl SeedService {
         ] {
             PersonaService::set(
                 context,
-                Persona::builder()
-                    .name(PersonaName::new(name))
-                    .description(Description::from(description))
-                    .prompt(Prompt::default())
+                &SetPersona::builder()
+                    .name(name)
+                    .description(description)
                     .build(),
             )
             .await?;
@@ -191,10 +187,10 @@ impl SeedService {
         ] {
             UrgeService::set(
                 context,
-                Urge::builder()
-                    .name(UrgeName::new(name))
-                    .description(Description::from(description))
-                    .prompt(Prompt::from(prompt))
+                &SetUrge::builder()
+                    .name(name)
+                    .description(description)
+                    .prompt(prompt)
                     .build(),
             )
             .await?;

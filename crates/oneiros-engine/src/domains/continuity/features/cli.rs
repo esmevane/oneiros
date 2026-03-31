@@ -25,49 +25,24 @@ impl ContinuityCommands {
         let continuity_client = ContinuityClient::new(&client);
 
         let result = match self {
-            ContinuityCommands::Wake(wake) => {
-                ContinuityPresenter::new(continuity_client.wake(&wake.agent).await?).render()
-            }
-            ContinuityCommands::Dream(dream) => {
-                ContinuityPresenter::new(continuity_client.dream(&dream.agent).await?).render()
-            }
+            ContinuityCommands::Wake(wake) => continuity_client.wake(&wake.agent).await?,
+            ContinuityCommands::Dream(dream) => continuity_client.dream(&dream.agent).await?,
             ContinuityCommands::Introspect(introspect) => {
-                ContinuityPresenter::new(continuity_client.introspect(&introspect.agent).await?)
-                    .render()
+                continuity_client.introspect(&introspect.agent).await?
             }
             ContinuityCommands::Reflect(reflect) => {
-                ContinuityPresenter::new(continuity_client.reflect(&reflect.agent).await?).render()
+                continuity_client.reflect(&reflect.agent).await?
             }
-            ContinuityCommands::Sense(sense) => ContinuityPresenter::new(
-                continuity_client
-                    .sense(&sense.agent, sense.content.clone())
-                    .await?,
-            )
-            .render(),
-            ContinuityCommands::Sleep(sleep) => {
-                ContinuityPresenter::new(continuity_client.sleep(&sleep.agent).await?).render()
-            }
+            ContinuityCommands::Sense(sense) => continuity_client.sense(sense).await?,
+            ContinuityCommands::Sleep(sleep) => continuity_client.sleep(&sleep.agent).await?,
             ContinuityCommands::Guidebook(guidebook) => {
-                ContinuityPresenter::new(continuity_client.guidebook(&guidebook.agent).await?)
-                    .render()
+                continuity_client.guidebook(&guidebook.agent).await?
             }
-            ContinuityCommands::Emerge(emerge) => ContinuityPresenter::new(
-                continuity_client
-                    .emerge(
-                        emerge.name.clone(),
-                        emerge.persona.clone(),
-                        emerge.description.clone(),
-                    )
-                    .await?,
-            )
-            .render(),
-            ContinuityCommands::Recede(recede) => {
-                ContinuityPresenter::new(continuity_client.recede(&recede.agent).await?).render()
-            }
-            ContinuityCommands::Status(status) => {
-                ContinuityPresenter::new(continuity_client.status(&status.agent).await?).render()
-            }
+            ContinuityCommands::Emerge(emerge) => continuity_client.emerge(emerge).await?,
+            ContinuityCommands::Recede(recede) => continuity_client.recede(&recede.agent).await?,
+            ContinuityCommands::Status(status) => continuity_client.status(&status.agent).await?,
         };
-        Ok(result)
+
+        Ok(ContinuityPresenter::new(result).render())
     }
 }

@@ -1,5 +1,4 @@
 use std::io::BufRead;
-use std::path::Path;
 
 use crate::*;
 
@@ -8,18 +7,40 @@ pub struct ProjectService;
 impl ProjectService {
     pub async fn init(
         context: &SystemContext,
-        brain_name: BrainName,
+        request: &InitProject,
     ) -> Result<ProjectResponse, ProjectError> {
-        if let Ok(BrainResponse::Found(_)) = BrainService::get(context, &brain_name).await {
+        let brain_name = request
+            .name
+            .clone()
+            .unwrap_or_else(|| context.config.brain.clone());
+
+        if let Ok(BrainResponse::Found(_)) = BrainService::get(
+            context,
+            &GetBrain::builder().name(brain_name.clone()).build(),
+        )
+        .await
+        {
             return Ok(ProjectResponse::BrainAlreadyExists(brain_name));
         }
 
-        BrainService::create(context, brain_name.clone()).await?;
+        BrainService::create(
+            context,
+            &CreateBrain::builder().name(brain_name.clone()).build(),
+        )
+        .await?;
 
         let actors = ActorRepo::new(context).list().await?;
 
         let token = if let Some(actor) = actors.first() {
-            match TicketService::create(context, actor.id, brain_name.clone()).await? {
+            match TicketService::create(
+                context,
+                &CreateTicket::builder()
+                    .actor_id(actor.id)
+                    .brain_name(brain_name.clone())
+                    .build(),
+            )
+            .await?
+            {
                 TicketResponse::Created(ticket) => ticket.token,
                 _ => return Err(ProjectError::Missing),
             }
@@ -49,9 +70,10 @@ impl ProjectService {
     /// without persisting the ephemeral event to the log.
     pub fn export(
         context: &ProjectContext,
-        target_dir: &Path,
-        project_name: &BrainName,
+        request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
+        let target_dir = &request.target;
+        let project_name = context.brain_name();
         let events = EventLog::new(&context.db()?).load_all()?;
         let db = context.db()?;
         let storage = StorageStore::new(&db);
@@ -97,9 +119,9 @@ impl ProjectService {
     /// are replayed to rebuild the read models.
     pub fn import(
         context: &ProjectContext,
-        file_path: &Path,
+        request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
-        let file = std::fs::File::open(file_path)?;
+        let file = std::fs::File::open(&request.file)?;
         let reader = std::io::BufReader::new(file);
         let mut imported = vec![];
 

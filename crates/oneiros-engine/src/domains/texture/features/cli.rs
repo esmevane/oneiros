@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum TextureCommands {
-    Set(Texture),
+    Set(SetTexture),
     Show(GetTexture),
     List,
     Remove(RemoveTexture),
@@ -19,7 +19,7 @@ impl TextureCommands {
         let texture_client = TextureClient::new(&client);
 
         let response = match self {
-            TextureCommands::Set(texture) => texture_client.set(texture).await?,
+            TextureCommands::Set(set) => texture_client.set(set).await?,
             TextureCommands::Show(get) => texture_client.get(&get.name).await?,
             TextureCommands::List => texture_client.list().await?,
             TextureCommands::Remove(removal) => texture_client.remove(&removal.name).await?,

@@ -17,54 +17,28 @@ impl MemoryCommands {
         let client = context.client();
         let memory_client = MemoryClient::new(&client);
 
-        match self {
-            MemoryCommands::Add(addition) => {
-                let response = memory_client
-                    .add(
-                        addition.agent.clone(),
-                        addition.level.clone(),
-                        addition.content.clone(),
-                    )
-                    .await?;
-                let ref_token = match &response {
-                    MemoryResponse::MemoryAdded(m) => Some(RefToken::new(Ref::memory(m.id))),
-                    _ => None,
-                };
-                let prompt = ref_token
-                    .as_ref()
-                    .map(|rt| format!("Memory recorded: {rt}"))
-                    .unwrap_or_default();
-                let mut envelope = Response::new(response.into());
-                if let Some(rt) = ref_token {
-                    envelope = envelope.with_ref_token(rt);
-                }
-                Ok(Rendered::new(envelope, prompt, String::new()))
+        let response = match self {
+            MemoryCommands::Add(addition) => memory_client.add(addition).await?,
+            MemoryCommands::Show(get) => memory_client.get(get).await?,
+            MemoryCommands::List(listing) => memory_client.list(listing).await?,
+        };
+
+        let prompt = match &response {
+            MemoryResponse::MemoryAdded(m) => {
+                format!("Memory recorded: {}", RefToken::new(Ref::memory(m.id)))
             }
-            MemoryCommands::Show(get) => {
-                let response = memory_client.get(&get.id).await?;
-                let prompt = match &response {
-                    MemoryResponse::MemoryDetails(m) => format!("[{}] {}", m.level, m.content),
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
+            MemoryResponse::MemoryDetails(m) => format!("[{}] {}", m.level, m.content),
+            MemoryResponse::Memories(list) => format!("{} memories.", list.len()),
+            MemoryResponse::NoMemories => "No memories.".to_string(),
+        };
+
+        let envelope = match response.clone() {
+            MemoryResponse::MemoryAdded(m) => {
+                Response::new(response.into()).with_ref_token(RefToken::new(Ref::memory(m.id)))
             }
-            MemoryCommands::List(listing) => {
-                let response = memory_client.list(listing.agent.as_ref()).await?;
-                let prompt = match &response {
-                    MemoryResponse::Memories(list) => format!("{} memories.", list.len()),
-                    MemoryResponse::NoMemories => "No memories.".to_string(),
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
-            }
-        }
+            otherwise => Response::new(otherwise.into()),
+        };
+
+        Ok(Rendered::new(envelope, prompt, String::new()))
     }
 }

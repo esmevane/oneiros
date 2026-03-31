@@ -1,5 +1,4 @@
 use axum::{Json, Router, extract::Query, routing};
-use serde::Deserialize;
 
 use crate::*;
 
@@ -11,17 +10,9 @@ impl SearchRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct SearchQuery {
-    q: String,
-    agent: Option<AgentName>,
-}
-
 async fn search(
     context: ProjectContext,
     Query(params): Query<SearchQuery>,
 ) -> Result<Json<SearchResponse>, SearchError> {
-    Ok(Json(
-        SearchService::search(&context, &params.q, params.agent.as_ref()).await?,
-    ))
+    Ok(Json(SearchService::search(&context, &params).await?))
 }

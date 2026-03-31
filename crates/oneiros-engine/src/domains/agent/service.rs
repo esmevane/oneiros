@@ -5,19 +5,21 @@ pub struct AgentService;
 impl AgentService {
     pub async fn create(
         context: &ProjectContext,
-        agent_name: AgentName,
-        persona: PersonaName,
-        description: Description,
-        prompt: Prompt,
+        CreateAgent {
+            name,
+            persona,
+            description,
+            prompt,
+        }: &CreateAgent,
     ) -> Result<AgentResponse, AgentError> {
         // Cross-resource validation: persona must exist
         //
-        if PersonaRepo::new(context).get(&persona).await?.is_none() {
-            return Err(AgentError::PersonaNotFound(persona));
+        if PersonaRepo::new(context).get(persona).await?.is_none() {
+            return Err(AgentError::PersonaNotFound(persona.clone()));
         }
 
         // Normalize name: append .persona if not already present
-        let normalized_name = agent_name.normalize_with(&persona);
+        let normalized_name = name.normalize_with(persona);
 
         // Validate name uniqueness
         if AgentRepo::new(context)
@@ -29,9 +31,9 @@ impl AgentService {
 
         let agent = Agent::builder()
             .name(normalized_name.clone())
-            .persona(persona)
-            .description(description)
-            .prompt(prompt)
+            .persona(persona.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
             .build();
 
         context.emit(AgentEvents::AgentCreated(agent)).await?;
@@ -41,12 +43,12 @@ impl AgentService {
 
     pub async fn get(
         context: &ProjectContext,
-        name: &AgentName,
+        selector: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
         let agent = AgentRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| AgentError::NotFound(name.clone()))?;
+            .ok_or_else(|| AgentError::NotFound(selector.name.clone()))?;
 
         Ok(AgentResponse::AgentDetails(agent))
     }
@@ -63,45 +65,47 @@ impl AgentService {
 
     pub async fn update(
         context: &ProjectContext,
-        agent_name: AgentName,
-        persona: PersonaName,
-        description: Description,
-        prompt: Prompt,
+        UpdateAgent {
+            name,
+            persona,
+            description,
+            prompt,
+        }: &UpdateAgent,
     ) -> Result<AgentResponse, AgentError> {
         let existing = AgentRepo::new(context)
-            .get(&agent_name)
+            .get(name)
             .await?
-            .ok_or_else(|| AgentError::NotFound(agent_name.clone()))?;
+            .ok_or_else(|| AgentError::NotFound(name.clone()))?;
 
         let agent = Agent::builder()
             .id(existing.id)
-            .name(agent_name.clone())
-            .persona(persona)
-            .description(description)
-            .prompt(prompt)
+            .name(name.clone())
+            .persona(persona.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
             .build();
 
         context.emit(AgentEvents::AgentUpdated(agent)).await?;
 
-        Ok(AgentResponse::AgentUpdated(agent_name))
+        Ok(AgentResponse::AgentUpdated(name.clone()))
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &RemoveAgent,
     ) -> Result<AgentResponse, AgentError> {
-        let exists = AgentRepo::new(context).name_exists(agent_name).await?;
+        let exists = AgentRepo::new(context).name_exists(&selector.name).await?;
 
         if !exists {
-            return Err(AgentError::NotFound(agent_name.clone()));
+            return Err(AgentError::NotFound(selector.name.clone()));
         }
 
         context
             .emit(AgentEvents::AgentRemoved(AgentRemoved {
-                name: agent_name.clone(),
+                name: selector.name.clone(),
             }))
             .await?;
 
-        Ok(AgentResponse::AgentRemoved(agent_name.clone()))
+        Ok(AgentResponse::AgentRemoved(selector.name.clone()))
     }
 }

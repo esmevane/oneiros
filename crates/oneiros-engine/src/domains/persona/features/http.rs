@@ -18,12 +18,12 @@ impl PersonaRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<PersonaName>,
-    Json(mut persona): Json<Persona>,
+    Json(mut body): Json<SetPersona>,
 ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
-    persona.name = name;
+    body.name = name;
     Ok((
         StatusCode::OK,
-        Json(PersonaService::set(&context, persona).await?),
+        Json(PersonaService::set(&context, &body).await?),
     ))
 }
 
@@ -35,12 +35,16 @@ async fn show(
     context: ProjectContext,
     Path(name): Path<PersonaName>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::get(&context, &name).await?))
+    Ok(Json(
+        PersonaService::get(&context, &GetPersona::builder().name(name).build()).await?,
+    ))
 }
 
 async fn remove(
     context: ProjectContext,
     Path(name): Path<PersonaName>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::remove(&context, &name).await?))
+    Ok(Json(
+        PersonaService::remove(&context, &RemovePersona::builder().name(name).build()).await?,
+    ))
 }

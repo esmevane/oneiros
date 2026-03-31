@@ -25,6 +25,9 @@ pub enum TicketError {
 
     #[error(transparent)]
     Event(#[from] EventError),
+
+    #[error(transparent)]
+    Client(#[from] ClientError),
 }
 
 impl IntoResponse for TicketError {
@@ -34,7 +37,7 @@ impl IntoResponse for TicketError {
             TicketError::InvalidToken => (StatusCode::UNAUTHORIZED, self.to_string()),
             TicketError::BrainNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TicketError::ActorNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
-            TicketError::Database(_) | TicketError::Event(_) => {
+            TicketError::Database(_) | TicketError::Event(_) | TicketError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };

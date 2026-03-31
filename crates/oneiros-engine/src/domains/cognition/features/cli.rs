@@ -17,60 +17,39 @@ impl CognitionCommands {
         let client = context.client();
         let cognition_client = CognitionClient::new(&client);
 
-        match self {
-            CognitionCommands::Add(addition) => {
-                let response = cognition_client
-                    .add(
-                        addition.agent.clone(),
-                        addition.texture.clone(),
-                        addition.content.clone(),
-                    )
-                    .await?;
-                let ref_token = match &response {
-                    CognitionResponse::CognitionAdded(c) => {
-                        Some(RefToken::new(Ref::cognition(c.id)))
-                    }
-                    _ => None,
-                };
-                let prompt = ref_token
-                    .as_ref()
-                    .map(|rt| format!("Cognition recorded: {rt}"))
-                    .unwrap_or_default();
-                let mut envelope = Response::new(response.into());
-                if let Some(rt) = ref_token {
-                    envelope = envelope.with_ref_token(rt);
-                }
-                Ok(Rendered::new(envelope, prompt, String::new()))
+        let response = match self {
+            CognitionCommands::Add(addition) => cognition_client.add(addition).await?,
+            CognitionCommands::Show(get) => cognition_client.get(get).await?,
+            CognitionCommands::List(listing) => cognition_client.list(listing).await?,
+        };
+
+        let prompt = match &response {
+            CognitionResponse::CognitionAdded(cognition) => {
+                let ref_token = RefToken::new(Ref::cognition(cognition.id));
+                format!("Cognition recorded: {ref_token}")
             }
-            CognitionCommands::Show(get) => {
-                let response = cognition_client.get(&get.id).await?;
-                let prompt = match &response {
-                    CognitionResponse::CognitionDetails(c) => {
-                        format!("[{}] {}", c.texture, c.content)
-                    }
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
-            }
-            CognitionCommands::List(listing) => {
-                let response = cognition_client
-                    .list(listing.agent.as_ref(), listing.texture.as_ref())
-                    .await?;
-                let prompt = match &response {
-                    CognitionResponse::Cognitions(list) => format!("{} cognitions.", list.len()),
-                    CognitionResponse::NoCognitions => "No cognitions.".to_string(),
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
-            }
-        }
+            CognitionResponse::CognitionDetails(Cognition {
+                id: _,
+                agent_id: _,
+                texture,
+                content,
+                created_at: _,
+            }) => format!("[{texture}] {content}"),
+            CognitionResponse::Cognitions(list) => format!("{} cognitions.", list.len()),
+            CognitionResponse::NoCognitions => "No cognitions.".to_string(),
+        };
+
+        let envelope = match response.clone() {
+            CognitionResponse::CognitionAdded(Cognition {
+                id,
+                agent_id: _,
+                texture: _,
+                content: _,
+                created_at: _,
+            }) => Response::new(response.into()).with_ref_token(RefToken::new(Ref::cognition(id))),
+            otherwise => Response::new(otherwise.into()),
+        };
+
+        Ok(Rendered::new(envelope, prompt, String::new()))
     }
 }

@@ -29,14 +29,17 @@ async fn project_context() -> (ProjectContext, tempfile::TempDir) {
     let system = config.system();
 
     // Create system entities so ProjectService::init can issue a ticket.
-    SystemService::init(&system, "test".to_string())
+    SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await
         .unwrap();
 
     // Create brain + ticket.
-    ProjectService::init(&system, BrainName::new("test"))
-        .await
-        .unwrap();
+    ProjectService::init(
+        &system,
+        &InitProject::builder().name(BrainName::new("test")).build(),
+    )
+    .await
+    .unwrap();
 
     (config.project(), dir)
 }
@@ -44,7 +47,7 @@ async fn project_context() -> (ProjectContext, tempfile::TempDir) {
 async fn seed_persona(context: &ProjectContext) {
     PersonaService::set(
         context,
-        Persona::builder()
+        &SetPersona::builder()
             .name("test-persona")
             .description("A test persona")
             .prompt("You are a test.")
@@ -57,10 +60,12 @@ async fn seed_persona(context: &ProjectContext) {
 async fn seed_agent(context: &ProjectContext) {
     AgentService::create(
         context,
-        "gov".into(),
-        "test-persona".into(),
-        "Governor".into(),
-        "You govern.".into(),
+        &CreateAgent::builder()
+            .name("gov")
+            .persona("test-persona")
+            .description("Governor")
+            .prompt("You govern")
+            .build(),
     )
     .await
     .unwrap();
@@ -74,7 +79,7 @@ async fn level_crud() {
 
     LevelService::set(
         &context,
-        Level::builder()
+        &SetLevel::builder()
             .name("working")
             .description("Active")
             .prompt("")
@@ -83,7 +88,7 @@ async fn level_crud() {
     .await
     .unwrap();
     assert!(matches!(
-        LevelService::get(&context, &LevelName::new("working"))
+        LevelService::get(&context, &GetLevel::builder().name("working").build())
             .await
             .unwrap(),
         LevelResponse::LevelDetails(_)
@@ -94,11 +99,11 @@ async fn level_crud() {
         other => panic!("Expected Listed, got {other:?}"),
     }
 
-    LevelService::remove(&context, &LevelName::new("working"))
+    LevelService::remove(&context, &RemoveLevel::builder().name("working").build())
         .await
         .unwrap();
     assert!(
-        LevelService::get(&context, &LevelName::new("working"))
+        LevelService::get(&context, &GetLevel::builder().name("working").build())
             .await
             .is_err()
     );
@@ -110,7 +115,7 @@ async fn persona_crud() {
 
     PersonaService::set(
         &context,
-        Persona::builder()
+        &SetPersona::builder()
             .name("process")
             .description("Process agents")
             .prompt("")
@@ -119,7 +124,7 @@ async fn persona_crud() {
     .await
     .unwrap();
     assert!(matches!(
-        PersonaService::get(&context, &PersonaName::new("process"))
+        PersonaService::get(&context, &GetPersona::builder().name("process").build())
             .await
             .unwrap(),
         PersonaResponse::PersonaDetails(_)
@@ -135,22 +140,27 @@ async fn agent_create_and_get() {
 
     let resp = AgentService::create(
         &context,
-        AgentName::new("governor"),
-        PersonaName::new("test-persona"),
-        Description::new("The governor"),
-        Prompt::new("You govern."),
+        &CreateAgent::builder()
+            .name("governor")
+            .persona("test-persona")
+            .description("The governor")
+            .prompt("You govern.")
+            .build(),
     )
     .await
     .unwrap();
     assert!(matches!(resp, AgentResponse::AgentCreated(_)));
 
-    match AgentService::get(&context, &AgentName::new("governor.test-persona"))
-        .await
-        .unwrap()
+    match AgentService::get(
+        &context,
+        &GetAgent::builder().name("governor.test-persona").build(),
+    )
+    .await
+    .unwrap()
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.name, AgentName::new("governor.test-persona"));
-            assert_eq!(a.persona, PersonaName::new("test-persona"));
+        AgentResponse::AgentDetails(agent) => {
+            assert_eq!(agent.name, AgentName::new("governor.test-persona"));
+            assert_eq!(agent.persona, PersonaName::new("test-persona"));
         }
         other => panic!("Expected AgentDetails, got {other:?}"),
     }
@@ -162,10 +172,10 @@ async fn agent_persona_validation() {
 
     let result = AgentService::create(
         &context,
-        AgentName::new("gov"),
-        PersonaName::new("nonexistent"),
-        Description::new(""),
-        Prompt::new(""),
+        &CreateAgent::builder()
+            .name("gov")
+            .persona("nonexistent")
+            .build(),
     )
     .await;
     assert!(matches!(result, Err(AgentError::PersonaNotFound(_))));
@@ -178,19 +188,19 @@ async fn agent_name_conflict() {
 
     AgentService::create(
         &context,
-        AgentName::new("gov"),
-        PersonaName::new("test-persona"),
-        Description::new(""),
-        Prompt::new(""),
+        &CreateAgent::builder()
+            .name("gov")
+            .persona("test-persona")
+            .build(),
     )
     .await
     .unwrap();
     let result = AgentService::create(
         &context,
-        AgentName::new("gov"),
-        PersonaName::new("test-persona"),
-        Description::new(""),
-        Prompt::new(""),
+        &CreateAgent::builder()
+            .name("gov")
+            .persona("test-persona")
+            .build(),
     )
     .await;
     assert!(matches!(result, Err(AgentError::Conflict(_))));
@@ -204,17 +214,25 @@ async fn cognition_add_and_list() {
 
     let resp = CognitionService::add(
         &context,
-        AgentName::new("gov.test-persona"),
-        TextureName::new("observation"),
-        Content::new("Something interesting"),
+        &AddCognition::builder()
+            .agent("gov.test-persona")
+            .texture("observation")
+            .content("Something interesting")
+            .build(),
     )
     .await
     .unwrap();
     assert!(matches!(resp, CognitionResponse::CognitionAdded(_)));
 
-    match CognitionService::list(&context, Some(AgentName::new("gov.test-persona")), None)
-        .await
-        .unwrap()
+    match CognitionService::list(
+        &context,
+        &ListCognitions {
+            agent: Some(AgentName::new("gov.test-persona")),
+            texture: None,
+        },
+    )
+    .await
+    .unwrap()
     {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("Expected Cognitions, got {other:?}"),
@@ -232,7 +250,7 @@ async fn broadcast_events_are_typed() {
 
     LevelService::set(
         &context,
-        Level::builder()
+        &SetLevel::builder()
             .name("working")
             .description("")
             .prompt("")
@@ -248,10 +266,10 @@ async fn broadcast_events_are_typed() {
 
     AgentService::create(
         &context,
-        AgentName::new("gov"),
-        PersonaName::new("test-persona"),
-        Description::new(""),
-        Prompt::new(""),
+        &CreateAgent::builder()
+            .name("gov")
+            .persona("test-persona")
+            .build(),
     )
     .await
     .unwrap();
@@ -271,7 +289,7 @@ async fn replay_reconstructs_read_models() {
     // Seed data across multiple domains
     LevelService::set(
         &context,
-        Level::builder()
+        &SetLevel::builder()
             .name("working")
             .description("Active")
             .prompt("")
@@ -281,7 +299,7 @@ async fn replay_reconstructs_read_models() {
     .unwrap();
     LevelService::set(
         &context,
-        Level::builder()
+        &SetLevel::builder()
             .name("session")
             .description("Session")
             .prompt("")
@@ -293,9 +311,11 @@ async fn replay_reconstructs_read_models() {
     seed_agent(&context).await;
     CognitionService::add(
         &context,
-        AgentName::new("gov.test-persona"),
-        TextureName::new("observation"),
-        Content::new("Test thought"),
+        &AddCognition::builder()
+            .agent("gov.test-persona")
+            .texture("observation")
+            .content("Test thought")
+            .build(),
     )
     .await
     .unwrap();
@@ -306,9 +326,12 @@ async fn replay_reconstructs_read_models() {
         other => panic!("Expected Listed, got {other:?}"),
     }
     assert!(matches!(
-        AgentService::get(&context, &AgentName::new("gov.test-persona"))
-            .await
-            .unwrap(),
+        AgentService::get(
+            &context,
+            &GetAgent::builder().name("gov.test-persona").build()
+        )
+        .await
+        .unwrap(),
         AgentResponse::AgentDetails(_)
     ));
 
@@ -320,16 +343,25 @@ async fn replay_reconstructs_read_models() {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
-    match AgentService::get(&context, &AgentName::new("gov.test-persona"))
-        .await
-        .unwrap()
+    match AgentService::get(
+        &context,
+        &GetAgent::builder().name("gov.test-persona").build(),
+    )
+    .await
+    .unwrap()
     {
         AgentResponse::AgentDetails(a) => assert_eq!(a.name, AgentName::new("gov.test-persona")),
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
-    match CognitionService::list(&context, Some(AgentName::new("gov.test-persona")), None)
-        .await
-        .unwrap()
+    match CognitionService::list(
+        &context,
+        &ListCognitions {
+            agent: Some(AgentName::new("gov.test-persona")),
+            texture: None,
+        },
+    )
+    .await
+    .unwrap()
     {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("Expected Cognitions after replay, got {other:?}"),
@@ -345,14 +377,19 @@ async fn http_setup() -> (axum::Router, String, tempfile::TempDir) {
     let system = config.system();
 
     // Create system entities.
-    SystemService::init(&system, "test".to_string())
+    SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await
         .unwrap();
 
     // Create brain + ticket via ProjectService.
-    let token = match ProjectService::init(&system, BrainName::new("test-brain"))
-        .await
-        .unwrap()
+    let token = match ProjectService::init(
+        &system,
+        &InitProject::builder()
+            .name(BrainName::new("test-brain"))
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         ProjectResponse::Initialized(result) => result.token,
         other => panic!("expected Initialized, got {other:?}"),
@@ -520,31 +557,38 @@ async fn search_indexes_across_domains() {
     // Add cognitions
     CognitionService::add(
         &context,
-        AgentName::new("gov.test-persona"),
-        TextureName::new("observation"),
-        Content::new("The architecture is clean"),
+        &AddCognition::builder()
+            .agent("gov.test-persona")
+            .texture("observation")
+            .content("The architecture is clean")
+            .build(),
     )
     .await
     .unwrap();
     CognitionService::add(
         &context,
-        AgentName::new("gov.test-persona"),
-        TextureName::new("working"),
-        Content::new("Working on typed events"),
+        &AddCognition::builder()
+            .agent("gov.test-persona")
+            .texture("working")
+            .content("Working on typed events")
+            .build(),
     )
     .await
     .unwrap();
 
     // Search should find them
-    match SearchService::search(&context, "architecture", None)
-        .await
-        .unwrap()
+    match SearchService::search(
+        &context,
+        &SearchQuery::builder().query("architecture").build(),
+    )
+    .await
+    .unwrap()
     {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 
     // Agent itself should be indexed too (from seed_agent)
-    match SearchService::search(&context, "Governor", None)
+    match SearchService::search(&context, &SearchQuery::builder().query("Governor").build())
         .await
         .unwrap()
     {
@@ -552,18 +596,27 @@ async fn search_indexes_across_domains() {
     }
 
     // Search with agent filter
-    match SearchService::search(&context, "typed", Some(&AgentName::new("gov.test-persona")))
-        .await
-        .unwrap()
+    match SearchService::search(
+        &context,
+        &SearchQuery {
+            query: "typed".to_string(),
+            agent: Some(AgentName::new("gov.test-persona")),
+        },
+    )
+    .await
+    .unwrap()
     {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
 
     // Replay should rebuild the search index correctly
     context.replay().unwrap();
-    match SearchService::search(&context, "architecture", None)
-        .await
-        .unwrap()
+    match SearchService::search(
+        &context,
+        &SearchQuery::builder().query("architecture").build(),
+    )
+    .await
+    .unwrap()
     {
         SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
     }
@@ -580,7 +633,7 @@ fn system_context() -> (SystemContext, tempfile::TempDir) {
 async fn tenant_create_and_list() {
     let (context, _dir) = system_context();
 
-    match TenantService::create(&context, "acme".into())
+    match TenantService::create(&context, &CreateTenant::builder().name("acme").build())
         .await
         .unwrap()
     {
@@ -599,18 +652,25 @@ async fn actor_create_and_get() {
     let (context, _dir) = system_context();
 
     // Create a tenant first
-    let tenant = match TenantService::create(&context, "acme".into())
-        .await
-        .unwrap()
-    {
-        TenantResponse::Created(t) => t,
-        other => panic!("Expected Created, got {other:?}"),
-    };
+    let tenant =
+        match TenantService::create(&context, &CreateTenant::builder().name("acme").build())
+            .await
+            .unwrap()
+        {
+            TenantResponse::Created(t) => t,
+            other => panic!("Expected Created, got {other:?}"),
+        };
     let tenant_id_str = tenant.id.to_string();
 
-    match ActorService::create(&context, tenant.id, ActorName::new("alice"))
-        .await
-        .unwrap()
+    match ActorService::create(
+        &context,
+        &CreateActor::builder()
+            .tenant_id(tenant.id)
+            .name(ActorName::new("alice"))
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         ActorResponse::Created(a) => {
             assert_eq!(a.name, ActorName::new("alice"));
@@ -629,7 +689,7 @@ async fn actor_create_and_get() {
 async fn brain_create_and_conflict() {
     let (context, _dir) = system_context();
 
-    match BrainService::create(&context, "test-brain".into())
+    match BrainService::create(&context, &CreateBrain::builder().name("test-brain").build())
         .await
         .unwrap()
     {
@@ -639,11 +699,11 @@ async fn brain_create_and_conflict() {
 
     // Duplicate name should conflict
     assert!(matches!(
-        BrainService::create(&context, "test-brain".into()).await,
+        BrainService::create(&context, &CreateBrain::builder().name("test-brain").build()).await,
         Err(BrainError::Conflict(_))
     ));
 
-    match BrainService::get(&context, &BrainName::new("test-brain"))
+    match BrainService::get(&context, &GetBrain::builder().name("test-brain").build())
         .await
         .unwrap()
     {
@@ -657,21 +717,28 @@ async fn ticket_issue_and_validate() {
     let (context, _dir) = system_context();
 
     // Set up tenant + actor + brain
-    let tenant_id = match TenantService::create(&context, "acme".into())
-        .await
-        .unwrap()
-    {
-        TenantResponse::Created(t) => t.id,
-        other => panic!("Expected Created, got {other:?}"),
-    };
-    let actor_id = match ActorService::create(&context, tenant_id, ActorName::new("alice"))
-        .await
-        .unwrap()
+    let tenant_id =
+        match TenantService::create(&context, &CreateTenant::builder().name("acme").build())
+            .await
+            .unwrap()
+        {
+            TenantResponse::Created(t) => t.id,
+            other => panic!("Expected Created, got {other:?}"),
+        };
+    let actor_id = match ActorService::create(
+        &context,
+        &CreateActor::builder()
+            .tenant_id(tenant_id)
+            .name(ActorName::new("alice"))
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         ActorResponse::Created(a) => a.id,
         other => panic!("Expected Created, got {other:?}"),
     };
-    match BrainService::create(&context, "test-brain".into())
+    match BrainService::create(&context, &CreateBrain::builder().name("test-brain").build())
         .await
         .unwrap()
     {
@@ -680,9 +747,15 @@ async fn ticket_issue_and_validate() {
     }
 
     // Issue a ticket
-    let token = match TicketService::create(&context, actor_id, "test-brain".into())
-        .await
-        .unwrap()
+    let token = match TicketService::create(
+        &context,
+        &CreateTicket::builder()
+            .actor_id(actor_id)
+            .brain_name(BrainName::new("test-brain"))
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         TicketResponse::Created(t) => {
             assert_eq!(t.brain_name, BrainName::new("test-brain"));
@@ -692,9 +765,12 @@ async fn ticket_issue_and_validate() {
     };
 
     // Validate the token
-    match TicketService::validate(&context, token.as_str())
-        .await
-        .unwrap()
+    match TicketService::validate(
+        &context,
+        &ValidateTicket::builder().token(token.clone()).build(),
+    )
+    .await
+    .unwrap()
     {
         TicketResponse::Validated(t) => assert_eq!(t.brain_name, BrainName::new("test-brain")),
         other => panic!("Expected Validated, got {other:?}"),
@@ -711,9 +787,11 @@ async fn storage_upload_and_retrieve_content() {
     // Upload — returns the entry with key, description, hash
     let entry = match StorageService::upload(
         &context,
-        StorageKey::new("test.txt"),
-        Description::new("A test file"),
-        content.to_vec(),
+        &UploadStorage::builder()
+            .key("test.txt")
+            .description("A test file")
+            .data(content.to_vec())
+            .build(),
     )
     .await
     .unwrap()
@@ -727,7 +805,7 @@ async fn storage_upload_and_retrieve_content() {
     };
 
     // Show by key
-    match StorageService::show(&context, &StorageKey::new("test.txt"))
+    match StorageService::show(&context, &GetStorage::builder().key("test.txt").build())
         .await
         .unwrap()
     {
@@ -755,7 +833,7 @@ async fn storage_upload_and_retrieve_content() {
 
     // Remove — only removes metadata, blob stays (dedup)
     assert!(matches!(
-        StorageService::remove(&context, &StorageKey::new("test.txt"))
+        StorageService::remove(&context, &RemoveStorage::builder().key("test.txt").build(),)
             .await
             .unwrap(),
         StorageResponse::StorageRemoved(_)
@@ -763,7 +841,7 @@ async fn storage_upload_and_retrieve_content() {
 
     // Metadata should be gone
     assert!(
-        StorageService::show(&context, &StorageKey::new("test.txt"))
+        StorageService::show(&context, &GetStorage::builder().key("test.txt").build(),)
             .await
             .is_err()
     );

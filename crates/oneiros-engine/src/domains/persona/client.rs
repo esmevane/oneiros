@@ -9,9 +9,9 @@ impl<'a> PersonaClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, persona: &Persona) -> Result<PersonaResponse, ClientError> {
+    pub async fn set(&self, set: &SetPersona) -> Result<PersonaResponse, ClientError> {
         self.client
-            .put(&format!("/personas/{}", persona.name), persona)
+            .put(&format!("/personas/{}", set.name), set)
             .await
     }
 

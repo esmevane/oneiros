@@ -5,15 +5,15 @@ pub struct BrainService;
 impl BrainService {
     pub async fn create(
         context: &SystemContext,
-        name: BrainName,
+        CreateBrain { name }: &CreateBrain,
     ) -> Result<BrainResponse, BrainError> {
-        let already_exists = BrainRepo::new(context).name_exists(&name).await?;
+        let already_exists = BrainRepo::new(context).name_exists(name).await?;
 
         if already_exists {
-            return Err(BrainError::Conflict(name));
+            return Err(BrainError::Conflict(name.clone()));
         }
 
-        let brain = Brain::builder().name(name).build();
+        let brain = Brain::builder().name(name.clone()).build();
 
         context
             .emit(BrainEvents::BrainCreated(brain.clone()))
@@ -24,12 +24,12 @@ impl BrainService {
 
     pub async fn get(
         context: &SystemContext,
-        name: &BrainName,
+        selector: &GetBrain,
     ) -> Result<BrainResponse, BrainError> {
         let brain = BrainRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| BrainError::NotFound(name.clone()))?;
+            .ok_or_else(|| BrainError::NotFound(selector.name.clone()))?;
         Ok(BrainResponse::Found(brain))
     }
 

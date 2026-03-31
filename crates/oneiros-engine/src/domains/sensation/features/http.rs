@@ -18,12 +18,12 @@ impl SensationRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<SensationName>,
-    Json(mut sensation): Json<Sensation>,
+    Json(mut body): Json<SetSensation>,
 ) -> Result<(StatusCode, Json<SensationResponse>), SensationError> {
-    sensation.name = name;
+    body.name = name;
     Ok((
         StatusCode::OK,
-        Json(SensationService::set(&context, sensation).await?),
+        Json(SensationService::set(&context, &body).await?),
     ))
 }
 
@@ -35,12 +35,16 @@ async fn show(
     context: ProjectContext,
     Path(name): Path<SensationName>,
 ) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::get(&context, &name).await?))
+    Ok(Json(
+        SensationService::get(&context, &GetSensation::builder().name(name).build()).await?,
+    ))
 }
 
 async fn remove(
     context: ProjectContext,
     Path(name): Path<SensationName>,
 ) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::remove(&context, &name).await?))
+    Ok(Json(
+        SensationService::remove(&context, &RemoveSensation::builder().name(name).build()).await?,
+    ))
 }

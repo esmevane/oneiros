@@ -4,12 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum SystemCommands {
-    Init {
-        #[arg(long, short)]
-        name: Option<String>,
-        #[arg(long, short)]
-        yes: bool,
-    },
+    Init(InitSystem),
 }
 
 impl SystemCommands {
@@ -18,10 +13,7 @@ impl SystemCommands {
         context: SystemContext,
     ) -> Result<Rendered<Responses>, SystemError> {
         let response = match self {
-            SystemCommands::Init { name, .. } => {
-                let name = name.clone().unwrap_or_else(|| "onerios user".to_string());
-                SystemService::init(&context, name).await?
-            }
+            SystemCommands::Init(init) => SystemService::init(&context, init).await?,
         };
 
         let prompt = match &response {

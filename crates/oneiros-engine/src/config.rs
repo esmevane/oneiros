@@ -91,24 +91,18 @@ impl Config {
     ///
     /// Creates the data_dir, brain_dir, tickets dir, and runs
     /// EventLog + projection migrations on both system and brain databases.
-    pub fn bootstrap(&self) -> Result<(), Error> {
+    pub fn bootstrap(&self) -> Result<(), Box<dyn core::error::Error>> {
         // Ensure directories
-        std::fs::create_dir_all(&self.data_dir)
-            .map_err(|e| Error::Context(format!("data_dir: {e}")))?;
-        std::fs::create_dir_all(self.brain_dir())
-            .map_err(|e| Error::Context(format!("brain_dir: {e}")))?;
+        std::fs::create_dir_all(&self.data_dir)?;
+        std::fs::create_dir_all(self.brain_dir())?;
 
         // System database
-        let system_db = self
-            .system_db()
-            .map_err(|e| Error::Context(format!("system_db: {e}")))?;
+        let system_db = self.system_db()?;
         EventLog::new(&system_db).migrate()?;
         Projections::system().migrate(&system_db)?;
 
         // Brain database
-        let brain_db = self
-            .brain_db()
-            .map_err(|e| Error::Context(format!("brain_db: {e}")))?;
+        let brain_db = self.brain_db()?;
         EventLog::new(&brain_db).migrate()?;
         Projections::project().migrate(&brain_db)?;
 

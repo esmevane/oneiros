@@ -1,6 +1,5 @@
 use clap::Subcommand;
 
-use crate::contexts::SystemContext;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
@@ -15,12 +14,13 @@ impl TenantCommands {
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, TenantError> {
+        let client = context.client();
+        let tenant_client = TenantClient::new(&client);
+
         let response = match self {
-            TenantCommands::Create(create) => {
-                TenantService::create(context, create.name.clone()).await?
-            }
-            TenantCommands::Get(get) => TenantService::get(context, &get.id).await?,
-            TenantCommands::List => TenantService::list(context).await?,
+            TenantCommands::Create(create) => tenant_client.create(create).await?,
+            TenantCommands::Get(get) => tenant_client.get(&get.id).await?,
+            TenantCommands::List => tenant_client.list().await?,
         };
 
         let prompt = match &response {

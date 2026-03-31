@@ -9,10 +9,8 @@ impl<'a> UrgeClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, urge: &Urge) -> Result<UrgeResponse, ClientError> {
-        self.client
-            .put(&format!("/urges/{}", urge.name), urge)
-            .await
+    pub async fn set(&self, set: &SetUrge) -> Result<UrgeResponse, ClientError> {
+        self.client.put(&format!("/urges/{}", set.name), set).await
     }
 
     pub async fn get(&self, name: &UrgeName) -> Result<UrgeResponse, ClientError> {

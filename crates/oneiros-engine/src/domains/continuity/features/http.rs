@@ -4,7 +4,6 @@ use axum::{
     http::StatusCode,
     routing,
 };
-use serde::Deserialize;
 
 use crate::*;
 
@@ -28,34 +27,13 @@ impl ContinuityRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct EmergeBody {
-    name: AgentName,
-    persona: PersonaName,
-    description: Description,
-}
-
-#[derive(Debug, Deserialize)]
-struct SenseBody {
-    content: Content,
-}
-
 async fn emerge(
     context: ProjectContext,
-    Json(body): Json<EmergeBody>,
+    Json(body): Json<EmergeAgent>,
 ) -> Result<(StatusCode, Json<ContinuityResponse>), ContinuityError> {
     Ok((
         StatusCode::CREATED,
-        Json(
-            ContinuityService::emerge(
-                &context,
-                body.name,
-                body.persona,
-                body.description,
-                &DreamOverrides::default(),
-            )
-            .await?,
-        ),
+        Json(ContinuityService::emerge(&context, &body, &DreamOverrides::default()).await?),
     ))
 }
 
@@ -63,7 +41,9 @@ async fn recede(
     context: ProjectContext,
     Path(agent): Path<AgentName>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
-    Ok(Json(ContinuityService::recede(&context, &agent).await?))
+    Ok(Json(
+        ContinuityService::recede(&context, &RecedeAgent::builder().agent(agent).build()).await?,
+    ))
 }
 
 async fn status(
@@ -72,7 +52,9 @@ async fn status(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(ContinuityService::status(
-        &context, &agent, &overrides,
+        &context,
+        &StatusAgent::builder().agent(agent).build(),
+        &overrides,
     )?))
 }
 
@@ -82,7 +64,12 @@ async fn wake(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
-        ContinuityService::wake(&context, &agent, &overrides).await?,
+        ContinuityService::wake(
+            &context,
+            &WakeAgent::builder().agent(agent).build(),
+            &overrides,
+        )
+        .await?,
     ))
 }
 
@@ -92,7 +79,12 @@ async fn dream(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
-        ContinuityService::dream(&context, &agent, &overrides).await?,
+        ContinuityService::dream(
+            &context,
+            &DreamAgent::builder().agent(agent).build(),
+            &overrides,
+        )
+        .await?,
     ))
 }
 
@@ -102,7 +94,12 @@ async fn introspect(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
-        ContinuityService::introspect(&context, &agent, &overrides).await?,
+        ContinuityService::introspect(
+            &context,
+            &IntrospectAgent::builder().agent(agent).build(),
+            &overrides,
+        )
+        .await?,
     ))
 }
 
@@ -112,18 +109,26 @@ async fn reflect(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
-        ContinuityService::reflect(&context, &agent, &overrides).await?,
+        ContinuityService::reflect(
+            &context,
+            &ReflectAgent::builder().agent(agent).build(),
+            &overrides,
+        )
+        .await?,
     ))
 }
 
 async fn sense(
     context: ProjectContext,
     Path(agent): Path<AgentName>,
-    Json(body): Json<SenseBody>,
+    Json(body): Json<SenseContent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
+    let selector = SenseContent::builder()
+        .agent(agent)
+        .content(body.content)
+        .build();
     Ok(Json(
-        ContinuityService::sense(&context, &agent, &body.content, &DreamOverrides::default())
-            .await?,
+        ContinuityService::sense(&context, &selector, &DreamOverrides::default()).await?,
     ))
 }
 
@@ -133,7 +138,12 @@ async fn sleep(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
-        ContinuityService::sleep(&context, &agent, &overrides).await?,
+        ContinuityService::sleep(
+            &context,
+            &SleepAgent::builder().agent(agent).build(),
+            &overrides,
+        )
+        .await?,
     ))
 }
 
@@ -143,6 +153,8 @@ async fn guidebook(
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(ContinuityService::guidebook(
-        &context, &agent, &overrides,
+        &context,
+        &GuidebookAgent::builder().agent(agent).build(),
+        &overrides,
     )?))
 }

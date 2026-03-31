@@ -1,24 +1,38 @@
-pub mod search_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
-    use crate::*;
+pub struct SearchTools;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct SearchParams {
-        query: String,
-        agent: Option<AgentName>,
+impl SearchTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        search_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        search_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        search_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod search_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[ToolDef {
             name: "search",
             description: "Search across everything in the brain",
-            input_schema: schema_for::<SearchParams>,
+            input_schema: schema_for::<SearchQuery>,
         }]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["search"]
     }
 
@@ -28,16 +42,11 @@ pub mod search_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "search" => {
-                let p: SearchParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = SearchService::search(context, &p.query, p.agent.as_ref())
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "search" => SearchService::search(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

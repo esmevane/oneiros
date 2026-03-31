@@ -14,6 +14,11 @@ impl SystemContext {
         }
     }
 
+    /// Build an HTTP client for system operations.
+    pub fn client(&self) -> Client {
+        Client::new(self.config.base_url())
+    }
+
     /// Open the system database.
     pub fn db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         self.config.system_db()

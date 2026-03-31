@@ -5,11 +5,11 @@ pub struct PressureService;
 impl PressureService {
     pub async fn get(
         context: &ProjectContext,
-        agent: &AgentName,
+        selector: &GetPressure,
     ) -> Result<PressureResponse, PressureError> {
-        let pressures = PressureRepo::new(context).get(agent).await?;
+        let pressures = PressureRepo::new(context).get(&selector.agent).await?;
         Ok(PressureResponse::Readings(PressureResult {
-            agent: agent.clone(),
+            agent: selector.agent.clone(),
             pressures,
         }))
     }

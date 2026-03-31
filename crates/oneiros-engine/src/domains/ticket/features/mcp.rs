@@ -1,51 +1,55 @@
-pub mod ticket_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
+pub struct TicketTools;
+
+impl TicketTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        ticket_mcp::tool_defs()
+    }
+
+    pub const fn names(&self) -> &'static [&'static str] {
+        ticket_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        ticket_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod ticket_mcp {
     use crate::*;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct CreateParams {
-        actor_id: ActorId,
-        brain_name: BrainName,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct GetParams {
-        id: TicketId,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct ValidateParams {
-        token: String,
-    }
-
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "create_ticket",
                 description: "Issue a new ticket for an actor and brain",
-                input_schema: schema_for::<CreateParams>,
+                input_schema: schema_for::<CreateTicket>,
             },
             ToolDef {
                 name: "get_ticket",
                 description: "Look up a specific ticket by ID",
-                input_schema: schema_for::<GetParams>,
+                input_schema: schema_for::<GetTicket>,
             },
             ToolDef {
                 name: "list_tickets",
-                description: "List all tickets in the system",
+                description: "List all tickets",
                 input_schema: schema_for::<serde_json::Value>,
             },
             ToolDef {
                 name: "validate_ticket",
                 description: "Validate a ticket token",
-                input_schema: schema_for::<ValidateParams>,
+                input_schema: schema_for::<ValidateTicket>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &[
             "create_ticket",
             "get_ticket",
@@ -62,38 +66,16 @@ pub mod ticket_mcp {
         let system = SystemContext::new(context.config.clone());
 
         let value = match tool_name {
-            "create_ticket" => {
-                let p: CreateParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = TicketService::create(&system, p.actor_id, p.brain_name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_ticket" => {
-                let p: GetParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = TicketService::get(&system, &p.id)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_tickets" => {
-                let response = TicketService::list(&system)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "create_ticket" => TicketService::create(&system, &serde_json::from_str(params)?).await,
+            "get_ticket" => TicketService::get(&system, &serde_json::from_str(params)?).await,
+            "list_tickets" => TicketService::list(&system).await,
             "validate_ticket" => {
-                let p: ValidateParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = TicketService::validate(&system, &p.token)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                TicketService::validate(&system, &serde_json::from_str(params)?).await
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

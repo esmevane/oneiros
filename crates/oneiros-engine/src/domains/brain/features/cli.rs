@@ -1,6 +1,5 @@
 use clap::Subcommand;
 
-use crate::contexts::SystemContext;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
@@ -15,12 +14,13 @@ impl BrainCommands {
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, BrainError> {
+        let client = context.client();
+        let brain_client = BrainClient::new(&client);
+
         let response = match self {
-            BrainCommands::Create(create) => {
-                BrainService::create(context, create.name.clone()).await?
-            }
-            BrainCommands::Get(get) => BrainService::get(context, &get.name).await?,
-            BrainCommands::List => BrainService::list(context).await?,
+            BrainCommands::Create(create) => brain_client.create(create).await?,
+            BrainCommands::Get(get) => brain_client.get(&get.name).await?,
+            BrainCommands::List => brain_client.list().await?,
         };
 
         let prompt = match &response {

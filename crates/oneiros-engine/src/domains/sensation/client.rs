@@ -9,9 +9,9 @@ impl<'a> SensationClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, sensation: &Sensation) -> Result<SensationResponse, ClientError> {
+    pub async fn set(&self, set: &SetSensation) -> Result<SensationResponse, ClientError> {
         self.client
-            .put(&format!("/sensations/{}", sensation.name), sensation)
+            .put(&format!("/sensations/{}", set.name), set)
             .await
     }
 

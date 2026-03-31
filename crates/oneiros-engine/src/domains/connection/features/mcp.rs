@@ -1,52 +1,55 @@
-pub mod connection_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
+pub struct ConnectionTools;
+
+impl ConnectionTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        connection_mcp::tool_defs()
+    }
+
+    pub const fn names(&self) -> &'static [&'static str] {
+        connection_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        connection_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod connection_mcp {
     use crate::*;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct IdParam {
-        id: ConnectionId,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct CreateConnectionParams {
-        from_ref: String,
-        to_ref: String,
-        nature: String,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct ListConnectionsParams {
-        entity: Option<String>,
-    }
-
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "create_connection",
                 description: "Draw a line between two related things",
-                input_schema: schema_for::<CreateConnectionParams>,
+                input_schema: schema_for::<CreateConnection>,
             },
             ToolDef {
                 name: "get_connection",
                 description: "Examine a specific connection",
-                input_schema: schema_for::<IdParam>,
+                input_schema: schema_for::<GetConnection>,
             },
             ToolDef {
                 name: "list_connections",
                 description: "See how things connect",
-                input_schema: schema_for::<ListConnectionsParams>,
+                input_schema: schema_for::<ListConnections>,
             },
             ToolDef {
                 name: "remove_connection",
-                description: "Remove a connection between two entities",
-                input_schema: schema_for::<IdParam>,
+                description: "Remove a connection",
+                input_schema: schema_for::<RemoveConnection>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &[
             "create_connection",
             "get_connection",
@@ -62,39 +65,21 @@ pub mod connection_mcp {
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
             "create_connection" => {
-                let p: CreateConnectionParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ConnectionService::create(context, p.from_ref, p.to_ref, p.nature)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                ConnectionService::create(context, &serde_json::from_str(params)?).await
             }
             "get_connection" => {
-                let p: IdParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ConnectionService::get(context, &p.id)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                ConnectionService::get(context, &serde_json::from_str(params)?).await
             }
             "list_connections" => {
-                let p: ListConnectionsParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ConnectionService::list(context, p.entity.as_deref())
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                ConnectionService::list(context, &serde_json::from_str(params)?).await
             }
             "remove_connection" => {
-                let p: IdParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ConnectionService::remove(context, &p.id)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                ConnectionService::remove(context, &serde_json::from_str(params)?).await
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

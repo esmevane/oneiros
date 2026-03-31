@@ -1,25 +1,40 @@
-pub mod level_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
-    use crate::*;
+pub struct LevelTools;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct NameParam {
-        name: LevelName,
+impl LevelTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        level_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        level_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        level_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod level_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "set_level",
                 description: "Define how long a kind of memory should be kept",
-                input_schema: schema_for::<Level>,
+                input_schema: schema_for::<SetLevel>,
             },
             ToolDef {
                 name: "get_level",
                 description: "Look up a memory retention tier",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<GetLevel>,
             },
             ToolDef {
                 name: "list_levels",
@@ -29,12 +44,12 @@ pub mod level_mcp {
             ToolDef {
                 name: "remove_level",
                 description: "Remove a memory retention tier",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<RemoveLevel>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["set_level", "get_level", "list_levels", "remove_level"]
     }
 
@@ -44,38 +59,14 @@ pub mod level_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "set_level" => {
-                let level: Level = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LevelService::set(context, level)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_level" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LevelService::get(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_levels" => {
-                let response = LevelService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "remove_level" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = LevelService::remove(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "set_level" => LevelService::set(context, &serde_json::from_str(params)?).await,
+            "get_level" => LevelService::get(context, &serde_json::from_str(params)?).await,
+            "list_levels" => LevelService::list(context).await,
+            "remove_level" => LevelService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

@@ -9,9 +9,9 @@ impl<'a> TextureClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, texture: &Texture) -> Result<TextureResponse, ClientError> {
+    pub async fn set(&self, set: &SetTexture) -> Result<TextureResponse, ClientError> {
         self.client
-            .put(&format!("/textures/{}", texture.name), texture)
+            .put(&format!("/textures/{}", set.name), set)
             .await
     }
 

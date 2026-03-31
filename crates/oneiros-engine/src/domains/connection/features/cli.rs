@@ -18,77 +18,33 @@ impl ConnectionCommands {
         let client = context.client();
         let connection_client = ConnectionClient::new(&client);
 
-        match self {
-            ConnectionCommands::Create(creation) => {
-                let from = creation.from_ref.clone().into_inner();
-                let to = creation.to_ref.clone().into_inner();
-                let response = connection_client
-                    .create(from, to, creation.nature.clone())
-                    .await?;
-                let ref_token = match &response {
-                    ConnectionResponse::ConnectionCreated(c) => {
-                        Some(RefToken::new(Ref::connection(c.id)))
-                    }
-                    _ => None,
-                };
+        let response = match self {
+            ConnectionCommands::Create(creation) => connection_client.create(creation).await?,
+            ConnectionCommands::Show(get) => connection_client.get(get).await?,
+            ConnectionCommands::List(list) => connection_client.list(list).await?,
+            ConnectionCommands::Remove(remove) => connection_client.remove(remove).await?,
+        };
 
-                let prompt = ref_token
-                    .as_ref()
-                    .map(|rt| format!("Connection recorded: {rt}"))
-                    .unwrap_or_default();
+        let prompt = match &response {
+            ConnectionResponse::ConnectionCreated(c) => {
+                format!(
+                    "Connection recorded: {}",
+                    RefToken::new(Ref::connection(c.id))
+                )
+            }
+            ConnectionResponse::ConnectionDetails(c) => format!("{c:?}"),
+            ConnectionResponse::Connections(list) => format!("{} connections.", list.len()),
+            ConnectionResponse::NoConnections => "No connections.".to_string(),
+            ConnectionResponse::ConnectionRemoved(id) => format!("Connection {id} removed."),
+        };
 
-                let mut envelope = Response::new(response.into());
-                if let Some(rt) = ref_token {
-                    envelope = envelope.with_ref_token(rt);
-                }
+        let envelope = match response.clone() {
+            ConnectionResponse::ConnectionCreated(c) => {
+                Response::new(response.into()).with_ref_token(RefToken::new(Ref::connection(c.id)))
+            }
+            otherwise => Response::new(otherwise.into()),
+        };
 
-                Ok(Rendered::new(envelope, prompt, String::new()))
-            }
-            ConnectionCommands::Show(get) => {
-                let response = connection_client.get(&get.id).await?;
-                let prompt = match &response {
-                    ConnectionResponse::ConnectionCreated(c)
-                    | ConnectionResponse::ConnectionDetails(c) => {
-                        format!("{c:?}")
-                    }
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
-            }
-            ConnectionCommands::List(list) => {
-                let token = list.entity.clone();
-                let response = connection_client
-                    .list(token.map(|entity| entity.clone().into_inner()).as_ref())
-                    .await?;
-                let prompt = match &response {
-                    ConnectionResponse::Connections(list) => format!("{} connections.", list.len()),
-                    ConnectionResponse::NoConnections => "No connections.".to_string(),
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
-            }
-            ConnectionCommands::Remove(remove) => {
-                let response = connection_client.remove(&remove.id).await?;
-                let prompt = match &response {
-                    ConnectionResponse::ConnectionRemoved(id) => {
-                        format!("Connection {id} removed.")
-                    }
-                    other => format!("{other:?}"),
-                };
-                Ok(Rendered::new(
-                    Response::new(response.into()),
-                    prompt,
-                    String::new(),
-                ))
-            }
-        }
+        Ok(Rendered::new(envelope, prompt, String::new()))
     }
 }

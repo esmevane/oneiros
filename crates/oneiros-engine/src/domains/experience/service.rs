@@ -5,19 +5,21 @@ pub struct ExperienceService;
 impl ExperienceService {
     pub async fn create(
         context: &ProjectContext,
-        agent: AgentName,
-        sensation: SensationName,
-        description: Description,
+        CreateExperience {
+            agent,
+            sensation,
+            description,
+        }: &CreateExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let agent_record = AgentRepo::new(context)
-            .get(&agent)
+            .get(agent)
             .await?
             .ok_or_else(|| ExperienceError::AgentNotFound(agent.clone()))?;
 
         let experience = Experience::builder()
             .agent_id(agent_record.id)
-            .sensation(sensation)
-            .description(description)
+            .sensation(sensation.clone())
+            .description(description.clone())
             .build();
 
         context
@@ -28,23 +30,23 @@ impl ExperienceService {
 
     pub async fn get(
         context: &ProjectContext,
-        id: &ExperienceId,
+        selector: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let experience = ExperienceRepo::new(context)
-            .get(id)
+            .get(&selector.id)
             .await?
-            .ok_or_else(|| ExperienceError::NotFound(*id))?;
+            .ok_or_else(|| ExperienceError::NotFound(selector.id))?;
         Ok(ExperienceResponse::ExperienceDetails(experience))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        agent: Option<AgentName>,
+        ListExperiences { agent }: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let agent_id = match agent {
             Some(name) => {
                 let record = AgentRepo::new(context)
-                    .get(&name)
+                    .get(name)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
                 Some(record.id.to_string())
@@ -64,8 +66,7 @@ impl ExperienceService {
 
     pub async fn update_description(
         context: &ProjectContext,
-        id: &ExperienceId,
-        description: Description,
+        UpdateExperienceDescription { id, description }: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let mut experience = ExperienceRepo::new(context)
             .get(id)
@@ -78,7 +79,7 @@ impl ExperienceService {
             .emit(ExperienceEvents::ExperienceDescriptionUpdated(
                 ExperienceDescriptionUpdate {
                     id: *id,
-                    description,
+                    description: description.clone(),
                 },
             ))
             .await?;
@@ -87,8 +88,7 @@ impl ExperienceService {
 
     pub async fn update_sensation(
         context: &ProjectContext,
-        id: &ExperienceId,
-        sensation: SensationName,
+        UpdateExperienceSensation { id, sensation }: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let mut experience = ExperienceRepo::new(context)
             .get(id)
@@ -99,7 +99,10 @@ impl ExperienceService {
 
         context
             .emit(ExperienceEvents::ExperienceSensationUpdated(
-                ExperienceSensationUpdate { id: *id, sensation },
+                ExperienceSensationUpdate {
+                    id: *id,
+                    sensation: sensation.clone(),
+                },
             ))
             .await?;
         Ok(ExperienceResponse::ExperienceUpdated(experience))

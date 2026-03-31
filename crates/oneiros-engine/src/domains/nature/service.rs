@@ -5,21 +5,29 @@ pub struct NatureService;
 impl NatureService {
     pub async fn set(
         context: &ProjectContext,
-        nature: Nature,
+        SetNature {
+            name,
+            description,
+            prompt,
+        }: &SetNature,
     ) -> Result<NatureResponse, NatureError> {
-        let name = nature.name.clone();
+        let nature = Nature::builder()
+            .name(name.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
+            .build();
         context.emit(NatureEvents::NatureSet(nature)).await?;
-        Ok(NatureResponse::NatureSet(name))
+        Ok(NatureResponse::NatureSet(name.clone()))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        name: &NatureName,
+        selector: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
         let nature = NatureRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| NatureError::NotFound(name.clone()))?;
+            .ok_or_else(|| NatureError::NotFound(selector.name.clone()))?;
         Ok(NatureResponse::NatureDetails(nature))
     }
 
@@ -34,13 +42,13 @@ impl NatureService {
 
     pub async fn remove(
         context: &ProjectContext,
-        name: &NatureName,
+        selector: &RemoveNature,
     ) -> Result<NatureResponse, NatureError> {
         context
             .emit(NatureEvents::NatureRemoved(NatureRemoved {
-                name: name.clone(),
+                name: selector.name.clone(),
             }))
             .await?;
-        Ok(NatureResponse::NatureRemoved(name.clone()))
+        Ok(NatureResponse::NatureRemoved(selector.name.clone()))
     }
 }

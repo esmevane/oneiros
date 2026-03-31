@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum UrgeCommands {
-    Set(Urge),
+    Set(SetUrge),
     Show(GetUrge),
     List,
     Remove(RemoveUrge),
@@ -19,7 +19,7 @@ impl UrgeCommands {
         let urge_client = UrgeClient::new(&client);
 
         let response = match self {
-            UrgeCommands::Set(urge) => urge_client.set(urge).await?,
+            UrgeCommands::Set(set) => urge_client.set(set).await?,
             UrgeCommands::Show(get) => urge_client.get(&get.name).await?,
             UrgeCommands::List => urge_client.list().await?,
             UrgeCommands::Remove(removal) => urge_client.remove(&removal.name).await?,

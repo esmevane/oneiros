@@ -1,5 +1,4 @@
 use axum::{Json, Router, extract::Path, http::StatusCode, routing};
-use serde::Deserialize;
 
 use crate::*;
 
@@ -16,26 +15,11 @@ impl AgentRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct CreateBody {
-    name: AgentName,
-    persona: PersonaName,
-    description: Description,
-    prompt: Prompt,
-}
-
 async fn create(
     context: ProjectContext,
-    Json(body): Json<CreateBody>,
+    Json(body): Json<CreateAgent>,
 ) -> Result<(StatusCode, Json<AgentResponse>), AgentError> {
-    let response = AgentService::create(
-        &context,
-        body.name,
-        body.persona,
-        body.description,
-        body.prompt,
-    )
-    .await?;
+    let response = AgentService::create(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -45,42 +29,26 @@ async fn list(context: ProjectContext) -> Result<Json<AgentResponse>, AgentError
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<String>,
+    Path(name): Path<AgentName>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
-        AgentService::get(&context, &AgentName::new(&name)).await?,
+        AgentService::get(&context, &GetAgent::builder().name(name).build()).await?,
     ))
-}
-
-#[derive(Debug, Deserialize)]
-struct UpdateBody {
-    persona: PersonaName,
-    description: Description,
-    prompt: Prompt,
 }
 
 async fn update(
     context: ProjectContext,
-    Path(name): Path<String>,
-    Json(body): Json<UpdateBody>,
+    Path(_): Path<AgentName>,
+    Json(body): Json<UpdateAgent>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(
-        AgentService::update(
-            &context,
-            AgentName::new(&name),
-            body.persona,
-            body.description,
-            body.prompt,
-        )
-        .await?,
-    ))
+    Ok(Json(AgentService::update(&context, &body).await?))
 }
 
 async fn remove(
     context: ProjectContext,
-    Path(name): Path<String>,
+    Path(name): Path<AgentName>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
-        AgentService::remove(&context, &AgentName::new(&name)).await?,
+        AgentService::remove(&context, &RemoveAgent::builder().name(name).build()).await?,
     ))
 }

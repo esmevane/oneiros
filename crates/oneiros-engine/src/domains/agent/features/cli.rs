@@ -20,28 +20,10 @@ impl AgentCommands {
         let agent_client = AgentClient::new(&client);
 
         let response = match self {
-            Self::Create(creation) => {
-                agent_client
-                    .create(
-                        creation.name.clone(),
-                        creation.persona.clone(),
-                        creation.description.clone(),
-                        creation.prompt.clone(),
-                    )
-                    .await?
-            }
+            Self::Create(creation) => agent_client.create(creation).await?,
             Self::Show(get) => agent_client.get(&get.name).await?,
             Self::List => agent_client.list().await?,
-            Self::Update(update) => {
-                agent_client
-                    .update(
-                        &update.name,
-                        update.persona.clone(),
-                        update.description.clone(),
-                        update.prompt.clone(),
-                    )
-                    .await?
-            }
+            Self::Update(update) => agent_client.update(update).await?,
             Self::Remove(removal) => agent_client.remove(&removal.name).await?,
         };
 

@@ -9,14 +9,10 @@ impl<'a> SearchClient<'a> {
         Self { client }
     }
 
-    pub async fn search(
-        &self,
-        query: &str,
-        agent: Option<&AgentName>,
-    ) -> Result<SearchResponse, ClientError> {
-        let path = match agent {
-            Some(a) => format!("/search?q={query}&agent={a}"),
-            None => format!("/search?q={query}"),
+    pub async fn search(&self, request: &SearchQuery) -> Result<SearchResponse, ClientError> {
+        let path = match &request.agent {
+            Some(a) => format!("/search?query={}&agent={a}", request.query),
+            None => format!("/search?query={}", request.query),
         };
 
         self.client.get(&path).await

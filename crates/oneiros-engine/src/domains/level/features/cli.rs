@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum LevelCommands {
-    Set(Level),
+    Set(SetLevel),
     Show(GetLevel),
     List,
     Remove(RemoveLevel),
@@ -19,7 +19,7 @@ impl LevelCommands {
         let level_client = LevelClient::new(&client);
 
         let response = match self {
-            LevelCommands::Set(level) => level_client.set(level).await?,
+            LevelCommands::Set(set) => level_client.set(set).await?,
             LevelCommands::Show(get) => level_client.get(&get.name).await?,
             LevelCommands::List => level_client.list().await?,
             LevelCommands::Remove(removal) => level_client.remove(&removal.name).await?,

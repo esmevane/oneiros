@@ -1,5 +1,4 @@
 use axum::{Json, Router, extract::Path, http::StatusCode, routing};
-use serde::Deserialize;
 
 use crate::*;
 
@@ -16,16 +15,11 @@ impl BrainRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct CreateBody {
-    name: String,
-}
-
 async fn create(
     context: SystemContext,
-    Json(body): Json<CreateBody>,
+    Json(body): Json<CreateBrain>,
 ) -> Result<(StatusCode, Json<BrainResponse>), BrainError> {
-    let response = BrainService::create(&context, BrainName::new(body.name)).await?;
+    let response = BrainService::create(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -38,6 +32,6 @@ async fn show(
     Path(name): Path<String>,
 ) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(
-        BrainService::get(&context, &BrainName::new(name)).await?,
+        BrainService::get(&context, &GetBrain::builder().name(name).build()).await?,
     ))
 }

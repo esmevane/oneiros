@@ -1,24 +1,40 @@
-pub mod urge_mcp {
-    //! Urge MCP driving adapter — translates tool calls into domain service calls.
+use crate::*;
 
-    use crate::*;
+pub struct UrgeTools;
 
-    #[derive(serde::Deserialize, schemars::JsonSchema)]
-    struct NameParam {
-        name: UrgeName,
+impl UrgeTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        urge_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        urge_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        urge_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod urge_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "set_urge",
                 description: "Define a cognitive drive",
-                input_schema: schema_for::<Urge>,
+                input_schema: schema_for::<SetUrge>,
             },
             ToolDef {
                 name: "get_urge",
                 description: "Look up a cognitive drive",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<GetUrge>,
             },
             ToolDef {
                 name: "list_urges",
@@ -28,12 +44,12 @@ pub mod urge_mcp {
             ToolDef {
                 name: "remove_urge",
                 description: "Remove a cognitive drive",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<RemoveUrge>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["set_urge", "get_urge", "list_urges", "remove_urge"]
     }
 
@@ -43,38 +59,14 @@ pub mod urge_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "set_urge" => {
-                let urge: Urge = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = UrgeService::set(context, urge)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_urge" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = UrgeService::get(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_urges" => {
-                let response = UrgeService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "remove_urge" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = UrgeService::remove(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "set_urge" => UrgeService::set(context, &serde_json::from_str(params)?).await,
+            "get_urge" => UrgeService::get(context, &serde_json::from_str(params)?).await,
+            "list_urges" => UrgeService::list(context).await,
+            "remove_urge" => UrgeService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

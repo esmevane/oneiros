@@ -3,20 +3,31 @@ use crate::*;
 pub struct LevelService;
 
 impl LevelService {
-    pub async fn set(context: &ProjectContext, level: Level) -> Result<LevelResponse, LevelError> {
-        let name = level.name.clone();
+    pub async fn set(
+        context: &ProjectContext,
+        SetLevel {
+            name,
+            description,
+            prompt,
+        }: &SetLevel,
+    ) -> Result<LevelResponse, LevelError> {
+        let level = Level::builder()
+            .name(name.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
+            .build();
         context.emit(LevelEvents::LevelSet(level)).await?;
-        Ok(LevelResponse::LevelSet(name))
+        Ok(LevelResponse::LevelSet(name.clone()))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        name: &LevelName,
+        selector: &GetLevel,
     ) -> Result<LevelResponse, LevelError> {
         let level = LevelRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| LevelError::NotFound(name.clone()))?;
+            .ok_or_else(|| LevelError::NotFound(selector.name.clone()))?;
         Ok(LevelResponse::LevelDetails(level))
     }
 
@@ -31,13 +42,13 @@ impl LevelService {
 
     pub async fn remove(
         context: &ProjectContext,
-        name: &LevelName,
+        selector: &RemoveLevel,
     ) -> Result<LevelResponse, LevelError> {
         context
             .emit(LevelEvents::LevelRemoved(LevelRemoved {
-                name: name.clone(),
+                name: selector.name.clone(),
             }))
             .await?;
-        Ok(LevelResponse::LevelRemoved(name.clone()))
+        Ok(LevelResponse::LevelRemoved(selector.name.clone()))
     }
 }

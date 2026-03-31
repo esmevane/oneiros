@@ -16,9 +16,7 @@ impl SearchCommands {
         let client = context.client();
         let search_client = SearchClient::new(&client);
 
-        let response = search_client
-            .search(&self.query.query, self.query.agent.as_ref())
-            .await?;
+        let response = search_client.search(&self.query).await?;
         Ok(SearchPresenter::new(response).render())
     }
 }

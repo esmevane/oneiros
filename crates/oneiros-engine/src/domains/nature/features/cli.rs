@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum NatureCommands {
-    Set(Nature),
+    Set(SetNature),
     Show(GetNature),
     List,
     Remove(RemoveNature),
@@ -19,7 +19,7 @@ impl NatureCommands {
         let nature_client = NatureClient::new(&client);
 
         let response = match self {
-            NatureCommands::Set(nature) => nature_client.set(nature).await?,
+            NatureCommands::Set(set) => nature_client.set(set).await?,
             NatureCommands::Show(get) => nature_client.get(&get.name).await?,
             NatureCommands::List => nature_client.list().await?,
             NatureCommands::Remove(removal) => nature_client.remove(&removal.name).await?,

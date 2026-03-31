@@ -5,21 +5,29 @@ pub struct PersonaService;
 impl PersonaService {
     pub async fn set(
         context: &ProjectContext,
-        persona: Persona,
+        SetPersona {
+            name,
+            description,
+            prompt,
+        }: &SetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
-        let name = persona.name.clone();
+        let persona = Persona::builder()
+            .name(name.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
+            .build();
         context.emit(PersonaEvents::PersonaSet(persona)).await?;
-        Ok(PersonaResponse::PersonaSet(name))
+        Ok(PersonaResponse::PersonaSet(name.clone()))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        name: &PersonaName,
+        selector: &GetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let persona = PersonaRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| PersonaError::NotFound(name.clone()))?;
+            .ok_or_else(|| PersonaError::NotFound(selector.name.clone()))?;
         Ok(PersonaResponse::PersonaDetails(persona))
     }
 
@@ -34,13 +42,13 @@ impl PersonaService {
 
     pub async fn remove(
         context: &ProjectContext,
-        persona_name: &PersonaName,
+        selector: &RemovePersona,
     ) -> Result<PersonaResponse, PersonaError> {
         context
             .emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
-                name: persona_name.clone(),
+                name: selector.name.clone(),
             }))
             .await?;
-        Ok(PersonaResponse::PersonaRemoved(persona_name.clone()))
+        Ok(PersonaResponse::PersonaRemoved(selector.name.clone()))
     }
 }

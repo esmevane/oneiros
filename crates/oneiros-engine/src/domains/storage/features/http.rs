@@ -1,5 +1,4 @@
 use axum::{Json, Router, extract::Path, http::StatusCode, routing};
-use serde::Deserialize;
 
 use crate::*;
 
@@ -16,20 +15,11 @@ impl StorageRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct UploadBody {
-    key: StorageKey,
-    #[serde(default)]
-    description: Description,
-    /// Base64-encoded binary data for JSON transport.
-    data: Vec<u8>,
-}
-
 async fn upload(
     context: ProjectContext,
-    Json(body): Json<UploadBody>,
+    Json(body): Json<UploadStorage>,
 ) -> Result<(StatusCode, Json<StorageResponse>), StorageError> {
-    let response = StorageService::upload(&context, body.key, body.description, body.data).await?;
+    let response = StorageService::upload(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -43,7 +33,9 @@ async fn show(
 ) -> Result<Json<StorageResponse>, StorageError> {
     let storage_ref = StorageRef(ref_key);
     let key = storage_ref.decode().map_err(|_| StorageError::InvalidRef)?;
-    Ok(Json(StorageService::show(&context, &key).await?))
+    Ok(Json(
+        StorageService::show(&context, &GetStorage::builder().key(key).build()).await?,
+    ))
 }
 
 async fn remove(
@@ -52,5 +44,7 @@ async fn remove(
 ) -> Result<Json<StorageResponse>, StorageError> {
     let storage_ref = StorageRef(ref_key);
     let key = storage_ref.decode().map_err(|_| StorageError::InvalidRef)?;
-    Ok(Json(StorageService::remove(&context, &key).await?))
+    Ok(Json(
+        StorageService::remove(&context, &RemoveStorage::builder().key(key).build()).await?,
+    ))
 }

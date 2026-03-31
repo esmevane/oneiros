@@ -211,8 +211,9 @@ impl<B: Backend> Harness<B> {
         Ok(harness)
     }
 
-    /// Start the backing service. Required between system init and project init
-    /// for backends that route through HTTP.
+    /// Start the backing service explicitly. Most tests don't need this —
+    /// `setup_system` starts the service automatically. Use for tests that
+    /// need fine-grained control over sequencing.
     pub async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
         self.backend.start_service().await?;
         Ok(self)

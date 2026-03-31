@@ -13,22 +13,8 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Emerge — create and activate an agent's continuity.
-    pub async fn emerge(
-        &self,
-        name: AgentName,
-        persona: PersonaName,
-        description: Description,
-    ) -> Result<ContinuityResponse, ClientError> {
-        self.client
-            .post(
-                "/continuity",
-                &serde_json::json!({
-                    "name": name,
-                    "persona": persona,
-                    "description": description,
-                }),
-            )
-            .await
+    pub async fn emerge(&self, body: &EmergeAgent) -> Result<ContinuityResponse, ClientError> {
+        self.client.post("/continuity", body).await
     }
 
     /// Recede — end an agent's continuity.
@@ -89,18 +75,12 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Run the sense continuity operation for the given agent with the provided content.
-    pub async fn sense(
-        &self,
-        agent: &AgentName,
-        content: Content,
-    ) -> Result<ContinuityResponse, ClientError> {
-        #[derive(serde::Serialize)]
-        struct Body {
-            content: Content,
-        }
-
+    pub async fn sense(&self, selector: &SenseContent) -> Result<ContinuityResponse, ClientError> {
         self.client
-            .post(&format!("/continuity/{agent}/sense"), &Body { content })
+            .post(
+                &format!("/continuity/{agent}/sense", agent = selector.agent),
+                selector,
+            )
             .await
     }
 
