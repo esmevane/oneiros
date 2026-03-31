@@ -9,59 +9,40 @@ impl<'a> CognitionClient<'a> {
         Self { client }
     }
 
-    pub async fn add(
-        &self,
-        agent: AgentName,
-        texture: TextureName,
-        content: Content,
-    ) -> Result<CognitionResponse, ClientError> {
-        #[derive(serde::Serialize)]
-        struct Body {
-            agent: AgentName,
-            texture: TextureName,
-            content: Content,
-        }
-
-        self.client
-            .post(
-                "/cognitions",
-                &Body {
-                    agent,
-                    texture,
-                    content,
-                },
-            )
-            .await
+    pub async fn add(&self, request: &AddCognition) -> Result<CognitionResponse, ClientError> {
+        self.client.post("/cognitions", request).await
     }
 
-    pub async fn list(
-        &self,
-        agent: Option<&AgentName>,
-        texture: Option<&TextureName>,
-    ) -> Result<CognitionResponse, ClientError> {
-        let mut params: Vec<(&str, &str)> = Vec::new();
-        if let Some(a) = agent {
-            params.push(("agent", a.as_str()));
-        }
-        if let Some(t) = texture {
-            params.push(("texture", t.as_str()));
+    pub async fn list(&self, request: &ListCognitions) -> Result<CognitionResponse, ClientError> {
+        let mut params: Vec<(&str, String)> = Vec::new();
+
+        if let Some(agent_name) = &request.agent {
+            params.push(("agent", agent_name.to_string()));
         }
 
-        let path = if params.is_empty() {
-            "/cognitions".to_string()
+        if let Some(texture_name) = &request.texture {
+            params.push(("texture", texture_name.to_string()));
+        }
+
+        let query = params
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        let prefix = "/cognitions".to_string();
+        let path = if query.is_empty() {
+            prefix
         } else {
-            let query = params
-                .iter()
-                .map(|(k, v)| format!("{k}={v}"))
-                .collect::<Vec<_>>()
-                .join("&");
-            format!("/cognitions?{query}")
+            format!("{prefix}?{query}")
         };
 
         self.client.get(&path).await
     }
 
-    pub async fn get(&self, id: &CognitionId) -> Result<CognitionResponse, ClientError> {
-        self.client.get(&format!("/cognitions/{id}")).await
+    pub async fn get(&self, request: &GetCognition) -> Result<CognitionResponse, ClientError> {
+        self.client
+            .get(&format!("/cognitions/{}", request.id))
+            .await
     }
 }

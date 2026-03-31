@@ -32,12 +32,18 @@ impl StorageCommands {
             } => {
                 let data = std::fs::read(file)?;
                 storage_client
-                    .upload(&StorageKey::new(key), &Description::new(description), data)
+                    .upload(
+                        &UploadStorage::builder()
+                            .key(StorageKey::new(key))
+                            .description(Description::new(description))
+                            .data(data)
+                            .build(),
+                    )
                     .await?
             }
-            StorageCommands::Show(get) => storage_client.show(&get.key).await?,
+            StorageCommands::Show(get) => storage_client.show(get).await?,
             StorageCommands::List => storage_client.list().await?,
-            StorageCommands::Remove(remove) => storage_client.remove(&remove.key).await?,
+            StorageCommands::Remove(remove) => storage_client.remove(remove).await?,
         };
 
         let prompt = match &response {

@@ -13,7 +13,7 @@ pub struct EngineBackend {
 impl Backend for EngineBackend {
     async fn start() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::TempDir::new()?;
-        let config = Config::builder()
+        let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .brain(BrainName::new("test-project"))
             .service(
@@ -25,10 +25,25 @@ impl Backend for EngineBackend {
 
         config.bootstrap()?;
 
+        // Start the HTTP server eagerly — the engine CLI routes all
+        // commands through HTTP clients, so the service must be running
+        // before any commands execute.
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+        config.service.address = addr;
+
+        let server_config = config.clone();
+        let server = tokio::spawn(async move {
+            Server::new(server_config)
+                .serve(listener)
+                .await
+                .expect("server failed");
+        });
+
         Ok(Self {
             config,
             _dir: dir,
-            server: None,
+            server: Some(server),
         })
     }
 
@@ -55,21 +70,7 @@ impl Backend for EngineBackend {
     }
 
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
-        let config = self.config.clone();
-
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let addr = listener.local_addr()?;
-
-        // Update config with the actual bound address.
-        self.config.service.address = addr;
-
-        self.server = Some(tokio::spawn(async move {
-            Server::new(config)
-                .serve(listener)
-                .await
-                .expect("server failed");
-        }));
-
+        // Server is started eagerly in start() — this is a no-op.
         Ok(())
     }
 }

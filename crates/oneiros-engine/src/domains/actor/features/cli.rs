@@ -1,6 +1,5 @@
 use clap::Subcommand;
 
-use crate::contexts::SystemContext;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
@@ -15,12 +14,13 @@ impl ActorCommands {
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, ActorError> {
+        let client = context.client();
+        let actor_client = ActorClient::new(&client);
+
         let response = match self {
-            ActorCommands::Create(creation) => {
-                ActorService::create(context, creation.tenant_id, creation.name.clone()).await?
-            }
-            ActorCommands::Get(get) => ActorService::get(context, get.id).await?,
-            ActorCommands::List => ActorService::list(context).await?,
+            ActorCommands::Create(creation) => actor_client.create(creation).await?,
+            ActorCommands::Get(get) => actor_client.get(&get.id).await?,
+            ActorCommands::List => actor_client.list().await?,
         };
 
         let prompt = match &response {

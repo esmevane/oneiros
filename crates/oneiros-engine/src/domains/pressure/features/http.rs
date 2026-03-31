@@ -19,7 +19,9 @@ async fn get(
     context: ProjectContext,
     Path(agent): Path<AgentName>,
 ) -> Result<Json<PressureResponse>, PressureError> {
-    Ok(Json(PressureService::get(&context, &agent).await?))
+    Ok(Json(
+        PressureService::get(&context, &GetPressure::builder().agent(agent).build()).await?,
+    ))
 }
 
 async fn list(context: ProjectContext) -> Result<Json<PressureResponse>, PressureError> {

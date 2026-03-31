@@ -1,31 +1,40 @@
-pub mod actor_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
+pub struct ActorTools;
+
+impl ActorTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        actor_mcp::tool_defs()
+    }
+
+    pub const fn names(&self) -> &'static [&'static str] {
+        actor_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        actor_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod actor_mcp {
     use crate::*;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct CreateParams {
-        tenant_id: TenantId,
-        name: ActorName,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct GetParams {
-        id: ActorId,
-    }
-
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "create_actor",
                 description: "Create a new actor in the system",
-                input_schema: schema_for::<CreateParams>,
+                input_schema: schema_for::<CreateActor>,
             },
             ToolDef {
                 name: "get_actor",
                 description: "Look up a specific actor by ID",
-                input_schema: schema_for::<GetParams>,
+                input_schema: schema_for::<GetActor>,
             },
             ToolDef {
                 name: "list_actors",
@@ -35,7 +44,7 @@ pub mod actor_mcp {
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["create_actor", "get_actor", "list_actors"]
     }
 
@@ -47,30 +56,13 @@ pub mod actor_mcp {
         let system = SystemContext::new(context.config.clone());
 
         let value = match tool_name {
-            "create_actor" => {
-                let p: CreateParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ActorService::create(&system, p.tenant_id, p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_actor" => {
-                let p: GetParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ActorService::get(&system, p.id)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_actors" => {
-                let response = ActorService::list(&system)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "create_actor" => ActorService::create(&system, &serde_json::from_str(params)?).await,
+            "get_actor" => ActorService::get(&system, &serde_json::from_str(params)?).await,
+            "list_actors" => ActorService::list(&system).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

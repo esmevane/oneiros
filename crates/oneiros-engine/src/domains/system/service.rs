@@ -5,7 +5,7 @@ pub struct SystemService;
 impl SystemService {
     pub async fn init(
         context: &SystemContext,
-        name: String,
+        request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {
         let tenants = TenantRepo::new(context).list().await?;
 
@@ -13,14 +13,30 @@ impl SystemService {
             return Ok(SystemResponse::HostAlreadyInitialized);
         }
 
+        let name = request
+            .name
+            .clone()
+            .unwrap_or_else(|| "oneiros user".to_string());
+
         let tenant_name = TenantName::new(&name);
 
-        TenantService::create(context, TenantName::new(&name)).await?;
+        TenantService::create(
+            context,
+            &CreateTenant::builder().name(tenant_name.clone()).build(),
+        )
+        .await?;
 
         let tenants = TenantRepo::new(context).list().await?;
 
         if let Some(tenant) = tenants.first() {
-            ActorService::create(context, tenant.id, ActorName::new(&name)).await?;
+            ActorService::create(
+                context,
+                &CreateActor::builder()
+                    .tenant_id(tenant.id)
+                    .name(ActorName::new(&name))
+                    .build(),
+            )
+            .await?;
         }
 
         Ok(SystemResponse::SystemInitialized(tenant_name))

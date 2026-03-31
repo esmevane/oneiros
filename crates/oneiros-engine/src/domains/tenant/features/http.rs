@@ -1,5 +1,4 @@
 use axum::{Json, Router, extract::Path, http::StatusCode, routing};
-use serde::Deserialize;
 
 use crate::*;
 
@@ -16,16 +15,11 @@ impl TenantRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct CreateBody {
-    name: String,
-}
-
 async fn create(
     context: SystemContext,
-    Json(body): Json<CreateBody>,
+    Json(body): Json<CreateTenant>,
 ) -> Result<(StatusCode, Json<TenantResponse>), TenantError> {
-    let response = TenantService::create(&context, TenantName::new(body.name)).await?;
+    let response = TenantService::create(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -37,5 +31,7 @@ async fn show(
     context: SystemContext,
     Path(id): Path<TenantId>,
 ) -> Result<Json<TenantResponse>, TenantError> {
-    Ok(Json(TenantService::get(&context, &id).await?))
+    Ok(Json(
+        TenantService::get(&context, &GetTenant::builder().id(id).build()).await?,
+    ))
 }

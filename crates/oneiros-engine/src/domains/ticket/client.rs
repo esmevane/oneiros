@@ -13,17 +13,8 @@ impl<'a> TicketClient<'a> {
     }
 
     /// Issue a new ticket for the given actor and brain.
-    pub async fn issue(
-        &self,
-        actor_id: &ActorId,
-        brain_name: &BrainName,
-    ) -> Result<TicketResponse, ClientError> {
-        self.client
-            .post(
-                "/tickets/",
-                &serde_json::json!({ "actor_id": actor_id, "brain_name": brain_name }),
-            )
-            .await
+    pub async fn issue(&self, creation: &CreateTicket) -> Result<TicketResponse, ClientError> {
+        self.client.post("/tickets", creation).await
     }
 
     /// Retrieve a single ticket by ID.
@@ -33,13 +24,14 @@ impl<'a> TicketClient<'a> {
 
     /// List all tickets.
     pub async fn list(&self) -> Result<TicketResponse, ClientError> {
-        self.client.get("/tickets/").await
+        self.client.get("/tickets").await
     }
 
     /// Validate a ticket token.
-    pub async fn validate(&self, token: &str) -> Result<TicketResponse, ClientError> {
-        self.client
-            .post("/tickets/validate", &serde_json::json!({ "token": token }))
-            .await
+    pub async fn validate(
+        &self,
+        validation: &ValidateTicket,
+    ) -> Result<TicketResponse, ClientError> {
+        self.client.post("/tickets/validate", validation).await
     }
 }

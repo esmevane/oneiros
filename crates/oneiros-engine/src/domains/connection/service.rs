@@ -5,23 +5,19 @@ pub struct ConnectionService;
 impl ConnectionService {
     pub async fn create(
         context: &ProjectContext,
-        from_ref: String,
-        to_ref: String,
-        nature: String,
+        CreateConnection {
+            from_ref,
+            to_ref,
+            nature,
+        }: &CreateConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        let from: Ref = from_ref
-            .parse::<RefToken>()
-            .map_err(|e| ConnectionError::InvalidRef(e.to_string()))?
-            .into_inner();
-        let to: Ref = to_ref
-            .parse::<RefToken>()
-            .map_err(|e| ConnectionError::InvalidRef(e.to_string()))?
-            .into_inner();
+        let from = from_ref.clone().into_inner();
+        let to = to_ref.clone().into_inner();
 
         let connection = Connection::builder()
             .from_ref(from)
             .to_ref(to)
-            .nature(nature)
+            .nature(nature.clone())
             .build();
 
         context
@@ -32,26 +28,23 @@ impl ConnectionService {
 
     pub async fn get(
         context: &ProjectContext,
-        id: &ConnectionId,
+        selector: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let connection = ConnectionRepo::new(context)
-            .get(id)
+            .get(&selector.id)
             .await?
-            .ok_or_else(|| ConnectionError::NotFound(*id))?;
+            .ok_or_else(|| ConnectionError::NotFound(selector.id))?;
         Ok(ConnectionResponse::ConnectionDetails(connection))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        entity_ref: Option<&str>,
+        ListConnections { entity }: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        // If an entity ref is provided, parse it and JSON-encode for the DB query
-        let ref_json = entity_ref
-            .map(|s| {
-                let token: RefToken = s
-                    .parse()
-                    .map_err(|e: RefError| ConnectionError::InvalidRef(e.to_string()))?;
-                serde_json::to_string(&token.into_inner())
+        let ref_json = entity
+            .as_ref()
+            .map(|token| {
+                serde_json::to_string(&token.clone().into_inner())
                     .map_err(|e| ConnectionError::Event(e.into()))
             })
             .transpose()?;
@@ -68,17 +61,21 @@ impl ConnectionService {
 
     pub async fn remove(
         context: &ProjectContext,
-        id: &ConnectionId,
+        selector: &RemoveConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        if ConnectionRepo::new(context).get(id).await?.is_none() {
-            return Err(ConnectionError::NotFound(*id));
+        if ConnectionRepo::new(context)
+            .get(&selector.id)
+            .await?
+            .is_none()
+        {
+            return Err(ConnectionError::NotFound(selector.id));
         }
 
         context
             .emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
-                id: *id,
+                id: selector.id,
             }))
             .await?;
-        Ok(ConnectionResponse::ConnectionRemoved(*id))
+        Ok(ConnectionResponse::ConnectionRemoved(selector.id))
     }
 }

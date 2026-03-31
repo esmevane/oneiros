@@ -24,18 +24,6 @@ impl ExperienceRouter {
 }
 
 #[derive(Debug, Deserialize)]
-struct CreateBody {
-    agent: AgentName,
-    sensation: SensationName,
-    description: Description,
-}
-
-#[derive(Debug, Deserialize)]
-struct ListQuery {
-    agent: Option<AgentName>,
-}
-
-#[derive(Debug, Deserialize)]
 struct UpdateDescriptionBody {
     description: Description,
 }
@@ -47,25 +35,26 @@ struct UpdateSensationBody {
 
 async fn create(
     context: ProjectContext,
-    Json(body): Json<CreateBody>,
+    Json(body): Json<CreateExperience>,
 ) -> Result<(StatusCode, Json<ExperienceResponse>), ExperienceError> {
-    let response =
-        ExperienceService::create(&context, body.agent, body.sensation, body.description).await?;
+    let response = ExperienceService::create(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
     context: ProjectContext,
-    Query(params): Query<ListQuery>,
+    Query(params): Query<ListExperiences>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
-    Ok(Json(ExperienceService::list(&context, params.agent).await?))
+    Ok(Json(ExperienceService::list(&context, &params).await?))
 }
 
 async fn show(
     context: ProjectContext,
     Path(id): Path<ExperienceId>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
-    Ok(Json(ExperienceService::get(&context, &id).await?))
+    Ok(Json(
+        ExperienceService::get(&context, &GetExperience::builder().id(id).build()).await?,
+    ))
 }
 
 async fn update_description(
@@ -74,7 +63,14 @@ async fn update_description(
     Json(body): Json<UpdateDescriptionBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
-        ExperienceService::update_description(&context, &id, body.description).await?,
+        ExperienceService::update_description(
+            &context,
+            &UpdateExperienceDescription::builder()
+                .id(id)
+                .description(body.description)
+                .build(),
+        )
+        .await?,
     ))
 }
 
@@ -84,6 +80,13 @@ async fn update_sensation(
     Json(body): Json<UpdateSensationBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
-        ExperienceService::update_sensation(&context, &id, body.sensation).await?,
+        ExperienceService::update_sensation(
+            &context,
+            &UpdateExperienceSensation::builder()
+                .id(id)
+                .sensation(body.sensation)
+                .build(),
+        )
+        .await?,
     ))
 }

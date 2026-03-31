@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum PersonaCommands {
-    Set(Persona),
+    Set(SetPersona),
     Show(GetPersona),
     List,
     Remove(RemovePersona),
@@ -19,7 +19,7 @@ impl PersonaCommands {
         let persona_client = PersonaClient::new(&client);
 
         let response = match self {
-            PersonaCommands::Set(persona) => persona_client.set(persona).await?,
+            PersonaCommands::Set(set) => persona_client.set(set).await?,
             PersonaCommands::Show(get) => persona_client.get(&get.name).await?,
             PersonaCommands::List => persona_client.list().await?,
             PersonaCommands::Remove(removal) => persona_client.remove(&removal.name).await?,

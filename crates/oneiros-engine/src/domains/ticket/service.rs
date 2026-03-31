@@ -5,31 +5,33 @@ pub struct TicketService;
 impl TicketService {
     pub async fn create(
         context: &SystemContext,
-        actor_id: ActorId,
-        brain_name: BrainName,
+        CreateTicket {
+            actor_id,
+            brain_name,
+        }: &CreateTicket,
     ) -> Result<TicketResponse, TicketError> {
         // Look up the brain to get its ID for the token claims
         let brain = BrainRepo::new(context)
-            .get(&brain_name)
+            .get(brain_name)
             .await?
             .ok_or_else(|| TicketError::BrainNotFound(brain_name.clone()))?;
 
         // Look up the actor to get its tenant_id for the token claims
         let actor = ActorRepo::new(context)
-            .get(actor_id)
+            .get(*actor_id)
             .await?
-            .ok_or_else(|| TicketError::ActorNotFound(actor_id))?;
+            .ok_or_else(|| TicketError::ActorNotFound(*actor_id))?;
 
         let claims = TokenClaims::builder()
             .brain_id(brain.id)
             .tenant_id(actor.tenant_id)
-            .actor_id(actor_id)
+            .actor_id(*actor_id)
             .build();
 
         let token = Token::issue(claims);
         let ticket = Ticket::builder()
-            .actor_id(actor_id)
-            .brain_name(brain_name)
+            .actor_id(*actor_id)
+            .brain_name(brain_name.clone())
             .brain_id(brain.id)
             .token(token)
             .build();
@@ -42,12 +44,12 @@ impl TicketService {
 
     pub async fn get(
         context: &SystemContext,
-        id: &TicketId,
+        selector: &GetTicket,
     ) -> Result<TicketResponse, TicketError> {
         let ticket = TicketRepo::new(context)
-            .get(id)
+            .get(&selector.id)
             .await?
-            .ok_or_else(|| TicketError::NotFound(*id))?;
+            .ok_or_else(|| TicketError::NotFound(selector.id))?;
         Ok(TicketResponse::Found(ticket))
     }
 
@@ -58,10 +60,10 @@ impl TicketService {
 
     pub async fn validate(
         context: &SystemContext,
-        token: &str,
+        ValidateTicket { token }: &ValidateTicket,
     ) -> Result<TicketResponse, TicketError> {
         let ticket = TicketRepo::new(context)
-            .get_by_token(token)
+            .get_by_token(token.as_str())
             .await?
             .ok_or(TicketError::InvalidToken)?;
         Ok(TicketResponse::Validated(ticket))

@@ -9,9 +9,9 @@ impl<'a> NatureClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, nature: &Nature) -> Result<NatureResponse, ClientError> {
+    pub async fn set(&self, set: &SetNature) -> Result<NatureResponse, ClientError> {
         self.client
-            .put(&format!("/natures/{}", nature.name), nature)
+            .put(&format!("/natures/{}", set.name), set)
             .await
     }
 

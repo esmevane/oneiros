@@ -1,32 +1,58 @@
+use bon::Builder;
 use clap::Args;
+use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct CreateTicket {
     #[arg(long)]
+    #[builder(into)]
     pub actor_id: ActorId,
     #[arg(long)]
+    #[builder(into)]
     pub brain_name: BrainName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetTicket {
+    #[builder(into)]
     pub id: TicketId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct ValidateTicket {
+    #[builder(into)]
     pub token: Token,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+#[kinded(kind = TicketRequestType, display = "kebab-case")]
 pub enum TicketRequest {
-    Create(CreateTicket),
-    Get(GetTicket),
-    List,
-    Validate(ValidateTicket),
+    CreateTicket(CreateTicket),
+    GetTicket(GetTicket),
+    ListTickets,
+    ValidateTicket(ValidateTicket),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn request_types_are_kebab_cased() {
+        let cases = [
+            (TicketRequestType::CreateTicket, "create-ticket"),
+            (TicketRequestType::GetTicket, "get-ticket"),
+            (TicketRequestType::ListTickets, "list-tickets"),
+            (TicketRequestType::ValidateTicket, "validate-ticket"),
+        ];
+
+        for (request_type, expectation) in cases {
+            assert_eq!(&request_type.to_string(), expectation)
+        }
+    }
 }

@@ -4,7 +4,6 @@ use axum::{
     http::StatusCode,
     routing,
 };
-use serde::Deserialize;
 
 use crate::*;
 
@@ -21,36 +20,26 @@ impl MemoryRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct AddBody {
-    agent: AgentName,
-    level: LevelName,
-    content: Content,
-}
-
-#[derive(Debug, Deserialize)]
-struct ListQuery {
-    agent: Option<AgentName>,
-}
-
 async fn add(
     context: ProjectContext,
-    Json(body): Json<AddBody>,
+    Json(body): Json<AddMemory>,
 ) -> Result<(StatusCode, Json<MemoryResponse>), MemoryError> {
-    let response = MemoryService::add(&context, body.agent, body.level, body.content).await?;
+    let response = MemoryService::add(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
     context: ProjectContext,
-    Query(params): Query<ListQuery>,
+    Query(params): Query<ListMemories>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
-    Ok(Json(MemoryService::list(&context, params.agent).await?))
+    Ok(Json(MemoryService::list(&context, &params).await?))
 }
 
 async fn show(
     context: ProjectContext,
     Path(id): Path<MemoryId>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
-    Ok(Json(MemoryService::get(&context, &id).await?))
+    Ok(Json(
+        MemoryService::get(&context, &GetMemory::builder().id(id).build()).await?,
+    ))
 }

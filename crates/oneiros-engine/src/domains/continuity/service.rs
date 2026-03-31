@@ -24,13 +24,22 @@ impl ContinuityService {
     /// Emerge — create an agent and immediately activate its continuity.
     pub async fn emerge(
         context: &ProjectContext,
-        name: AgentName,
-        persona: PersonaName,
-        description: Description,
+        EmergeAgent {
+            name,
+            persona,
+            description,
+        }: &EmergeAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let created =
-            AgentService::create(context, name, persona, description, Prompt::new("")).await?;
+        let created = AgentService::create(
+            context,
+            &CreateAgent::builder()
+                .name(name.clone())
+                .persona(persona.clone())
+                .description(description.clone())
+                .build(),
+        )
+        .await?;
 
         let agent_name = match created {
             AgentResponse::AgentCreated(n) => n,
@@ -40,7 +49,12 @@ impl ContinuityService {
         };
 
         // Wake activates continuity; then gather the full context for the response.
-        Self::wake(context, &agent_name, overrides).await?;
+        Self::wake(
+            context,
+            &WakeAgent::builder().agent(agent_name.clone()).build(),
+            overrides,
+        )
+        .await?;
         let dream = Self::gather_context(context, &agent_name, overrides)?;
         Ok(ContinuityResponse::Emerged(dream))
     }
@@ -48,33 +62,37 @@ impl ContinuityService {
     /// Recede — retire an agent, ending its continuity.
     pub async fn recede(
         context: &ProjectContext,
-        name: &AgentName,
+        selector: &RecedeAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        AgentService::remove(context, name).await?;
-        Ok(ContinuityResponse::Receded(name.clone()))
+        AgentService::remove(
+            context,
+            &RemoveAgent::builder().name(selector.agent.clone()).build(),
+        )
+        .await?;
+        Ok(ContinuityResponse::Receded(selector.agent.clone()))
     }
 
     /// Status — read the current state of an agent's continuity.
     pub fn status(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &StatusAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
         Ok(ContinuityResponse::Status(dream))
     }
 
     /// Wake — restore an agent's full cognitive context (initial session start).
     pub async fn wake(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &WakeAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
             .emit(ContinuityEvents::Dreamed(ContinuityEvent {
-                agent: agent_name.clone(),
+                agent: selector.agent.clone(),
                 created_at: Timestamp::now(),
             }))
             .await?;
@@ -85,14 +103,14 @@ impl ContinuityService {
     /// Dream — restore an agent's full cognitive context.
     pub async fn dream(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &DreamAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
             .emit(ContinuityEvents::Dreamed(ContinuityEvent {
-                agent: agent_name.clone(),
+                agent: selector.agent.clone(),
                 created_at: Timestamp::now(),
             }))
             .await?;
@@ -103,14 +121,14 @@ impl ContinuityService {
     /// Introspect — look inward, consolidate cognitive state.
     pub async fn introspect(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &IntrospectAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
             .emit(ContinuityEvents::Introspected(ContinuityEvent {
-                agent: agent_name.clone(),
+                agent: selector.agent.clone(),
                 created_at: Timestamp::now(),
             }))
             .await?;
@@ -121,14 +139,14 @@ impl ContinuityService {
     /// Reflect — pause on something significant.
     pub async fn reflect(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &ReflectAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
             .emit(ContinuityEvents::Reflected(ContinuityEvent {
-                agent: agent_name.clone(),
+                agent: selector.agent.clone(),
                 created_at: Timestamp::now(),
             }))
             .await?;
@@ -139,16 +157,15 @@ impl ContinuityService {
     /// Sense — receive and interpret something from outside.
     pub async fn sense(
         context: &ProjectContext,
-        agent_name: &AgentName,
-        content: &Content,
+        selector: &SenseContent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
             .emit(ContinuityEvents::Sensed(SensedEvent {
-                agent: agent_name.clone(),
-                content: Content::new(content.as_str()),
+                agent: selector.agent.clone(),
+                content: Content::new(selector.content.as_str()),
                 created_at: Timestamp::now(),
             }))
             .await?;
@@ -159,14 +176,14 @@ impl ContinuityService {
     /// Sleep — end a session, capture continuity.
     pub async fn sleep(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &SleepAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
             .emit(ContinuityEvents::Slept(ContinuityEvent {
-                agent: agent_name.clone(),
+                agent: selector.agent.clone(),
                 created_at: Timestamp::now(),
             }))
             .await?;
@@ -180,10 +197,10 @@ impl ContinuityService {
     /// sensations, levels, urges) without marking a continuity transition.
     pub fn guidebook(
         context: &ProjectContext,
-        agent_name: &AgentName,
+        selector: &GuidebookAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, agent_name, overrides)?;
+        let dream = Self::gather_context(context, &selector.agent, overrides)?;
         Ok(ContinuityResponse::Guidebook(dream))
     }
 

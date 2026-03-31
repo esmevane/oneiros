@@ -3,17 +3,31 @@ use crate::*;
 pub struct UrgeService;
 
 impl UrgeService {
-    pub async fn set(context: &ProjectContext, urge: Urge) -> Result<UrgeResponse, UrgeError> {
-        let name = urge.name.clone();
+    pub async fn set(
+        context: &ProjectContext,
+        SetUrge {
+            name,
+            description,
+            prompt,
+        }: &SetUrge,
+    ) -> Result<UrgeResponse, UrgeError> {
+        let urge = Urge::builder()
+            .name(name.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
+            .build();
         context.emit(UrgeEvents::UrgeSet(urge)).await?;
-        Ok(UrgeResponse::UrgeSet(name))
+        Ok(UrgeResponse::UrgeSet(name.clone()))
     }
 
-    pub async fn get(context: &ProjectContext, name: &UrgeName) -> Result<UrgeResponse, UrgeError> {
+    pub async fn get(
+        context: &ProjectContext,
+        selector: &GetUrge,
+    ) -> Result<UrgeResponse, UrgeError> {
         let urge = UrgeRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| UrgeError::NotFound(name.clone()))?;
+            .ok_or_else(|| UrgeError::NotFound(selector.name.clone()))?;
         Ok(UrgeResponse::UrgeDetails(urge))
     }
 
@@ -28,11 +42,13 @@ impl UrgeService {
 
     pub async fn remove(
         context: &ProjectContext,
-        name: &UrgeName,
+        selector: &RemoveUrge,
     ) -> Result<UrgeResponse, UrgeError> {
         context
-            .emit(UrgeEvents::UrgeRemoved(UrgeRemoved { name: name.clone() }))
+            .emit(UrgeEvents::UrgeRemoved(UrgeRemoved {
+                name: selector.name.clone(),
+            }))
             .await?;
-        Ok(UrgeResponse::UrgeRemoved(name.clone()))
+        Ok(UrgeResponse::UrgeRemoved(selector.name.clone()))
     }
 }

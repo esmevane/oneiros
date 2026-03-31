@@ -9,33 +9,12 @@ impl<'a> MemoryClient<'a> {
         Self { client }
     }
 
-    pub async fn add(
-        &self,
-        agent: AgentName,
-        level: LevelName,
-        content: Content,
-    ) -> Result<MemoryResponse, ClientError> {
-        #[derive(serde::Serialize)]
-        struct Body {
-            agent: AgentName,
-            level: LevelName,
-            content: Content,
-        }
-
-        self.client
-            .post(
-                "/memories",
-                &Body {
-                    agent,
-                    level,
-                    content,
-                },
-            )
-            .await
+    pub async fn add(&self, request: &AddMemory) -> Result<MemoryResponse, ClientError> {
+        self.client.post("/memories", request).await
     }
 
-    pub async fn list(&self, agent: Option<&AgentName>) -> Result<MemoryResponse, ClientError> {
-        let path = match agent {
+    pub async fn list(&self, request: &ListMemories) -> Result<MemoryResponse, ClientError> {
+        let path = match &request.agent {
             Some(a) => format!("/memories?agent={a}"),
             None => "/memories".to_string(),
         };
@@ -43,7 +22,7 @@ impl<'a> MemoryClient<'a> {
         self.client.get(&path).await
     }
 
-    pub async fn get(&self, id: &MemoryId) -> Result<MemoryResponse, ClientError> {
-        self.client.get(&format!("/memories/{id}")).await
+    pub async fn get(&self, request: &GetMemory) -> Result<MemoryResponse, ClientError> {
+        self.client.get(&format!("/memories/{}", request.id)).await
     }
 }

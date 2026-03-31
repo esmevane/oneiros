@@ -1,51 +1,60 @@
-pub mod continuity_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
+pub struct ContinuityTools;
+
+impl ContinuityTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        continuity_mcp::tool_defs()
+    }
+
+    pub const fn names(&self) -> &'static [&'static str] {
+        continuity_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        continuity_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod continuity_mcp {
     use crate::*;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct AgentParam {
-        agent: AgentName,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct SenseParams {
-        agent: AgentName,
-        content: Content,
-    }
-
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "dream",
                 description: "Restore an agent's full identity and cognitive context",
-                input_schema: schema_for::<AgentParam>,
+                input_schema: schema_for::<DreamAgent>,
             },
             ToolDef {
                 name: "introspect",
-                description: "Look inward — consolidate what matters",
-                input_schema: schema_for::<AgentParam>,
+                description: "Look inward before context compacts",
+                input_schema: schema_for::<IntrospectAgent>,
             },
             ToolDef {
                 name: "reflect",
                 description: "Pause on something significant",
-                input_schema: schema_for::<AgentParam>,
+                input_schema: schema_for::<ReflectAgent>,
             },
             ToolDef {
                 name: "sense",
                 description: "Receive and interpret something from outside",
-                input_schema: schema_for::<SenseParams>,
+                input_schema: schema_for::<SenseContent>,
             },
             ToolDef {
                 name: "sleep",
                 description: "End a session — capture continuity before resting",
-                input_schema: schema_for::<AgentParam>,
+                input_schema: schema_for::<SleepAgent>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["dream", "introspect", "reflect", "sense", "sleep"]
     }
 
@@ -58,48 +67,33 @@ pub mod continuity_mcp {
 
         let value = match tool_name {
             "dream" => {
-                let p: AgentParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::dream(context, &p.agent, &no_overrides)
+                ContinuityService::dream(context, &serde_json::from_str(params)?, &no_overrides)
                     .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
             }
             "introspect" => {
-                let p: AgentParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::introspect(context, &p.agent, &no_overrides)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                ContinuityService::introspect(
+                    context,
+                    &serde_json::from_str(params)?,
+                    &no_overrides,
+                )
+                .await
             }
             "reflect" => {
-                let p: AgentParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::reflect(context, &p.agent, &no_overrides)
+                ContinuityService::reflect(context, &serde_json::from_str(params)?, &no_overrides)
                     .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
             }
             "sense" => {
-                let p: SenseParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response =
-                    ContinuityService::sense(context, &p.agent, &p.content, &no_overrides)
-                        .await
-                        .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                ContinuityService::sense(context, &serde_json::from_str(params)?, &no_overrides)
+                    .await
             }
             "sleep" => {
-                let p: AgentParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = ContinuityService::sleep(context, &p.agent, &no_overrides)
+                ContinuityService::sleep(context, &serde_json::from_str(params)?, &no_overrides)
                     .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

@@ -17,6 +17,9 @@ pub enum ActorError {
 
     #[error(transparent)]
     Event(#[from] crate::EventError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for ActorError {
@@ -24,7 +27,7 @@ impl IntoResponse for ActorError {
         let (status, message) = match &self {
             ActorError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ActorError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            ActorError::Database(_) | ActorError::Event(_) => {
+            ActorError::Database(_) | ActorError::Event(_) | ActorError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };

@@ -22,6 +22,9 @@ pub enum TenantError {
 
     #[error(transparent)]
     TimestampParse(#[from] TimestampParseError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for TenantError {
@@ -29,9 +32,10 @@ impl IntoResponse for TenantError {
         let (status, message) = match &self {
             TenantError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TenantError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            TenantError::TimestampParse(_) | TenantError::Event(_) | TenantError::Database(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
-            }
+            TenantError::TimestampParse(_)
+            | TenantError::Event(_)
+            | TenantError::Database(_)
+            | TenantError::Client(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }

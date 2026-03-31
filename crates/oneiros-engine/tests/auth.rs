@@ -25,14 +25,19 @@ async fn setup() -> (axum::Router, String, tempfile::TempDir) {
     let system = config.system();
 
     // Create system entities.
-    SystemService::init(&system, "test".to_string())
+    SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await
         .unwrap();
 
     // Create brain + ticket via ProjectService.
-    let token = match ProjectService::init(&system, BrainName::new("test-brain"))
-        .await
-        .unwrap()
+    let token = match ProjectService::init(
+        &system,
+        &InitProject::builder()
+            .name(BrainName::new("test-brain"))
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         ProjectResponse::Initialized(result) => result.token,
         other => panic!("expected Initialized, got {other:?}"),

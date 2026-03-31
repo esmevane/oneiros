@@ -5,21 +5,29 @@ pub struct TextureService;
 impl TextureService {
     pub async fn set(
         context: &ProjectContext,
-        texture: Texture,
+        SetTexture {
+            name,
+            description,
+            prompt,
+        }: &SetTexture,
     ) -> Result<TextureResponse, TextureError> {
-        let name = texture.name.clone();
+        let texture = Texture::builder()
+            .name(name.clone())
+            .description(description.clone())
+            .prompt(prompt.clone())
+            .build();
         context.emit(TextureEvents::TextureSet(texture)).await?;
-        Ok(TextureResponse::TextureSet(name))
+        Ok(TextureResponse::TextureSet(name.clone()))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        name: &TextureName,
+        selector: &GetTexture,
     ) -> Result<TextureResponse, TextureError> {
         let texture = TextureRepo::new(context)
-            .get(name)
+            .get(&selector.name)
             .await?
-            .ok_or_else(|| TextureError::NotFound(name.clone()))?;
+            .ok_or_else(|| TextureError::NotFound(selector.name.clone()))?;
         Ok(TextureResponse::TextureDetails(texture))
     }
 
@@ -34,13 +42,13 @@ impl TextureService {
 
     pub async fn remove(
         context: &ProjectContext,
-        name: &TextureName,
+        selector: &RemoveTexture,
     ) -> Result<TextureResponse, TextureError> {
         context
             .emit(TextureEvents::TextureRemoved(TextureRemoved {
-                name: name.clone(),
+                name: selector.name.clone(),
             }))
             .await?;
-        Ok(TextureResponse::TextureRemoved(name.clone()))
+        Ok(TextureResponse::TextureRemoved(selector.name.clone()))
     }
 }

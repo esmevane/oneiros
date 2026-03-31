@@ -17,6 +17,9 @@ pub enum BrainError {
 
     #[error(transparent)]
     Event(#[from] crate::EventError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
 }
 
 impl IntoResponse for BrainError {
@@ -24,7 +27,7 @@ impl IntoResponse for BrainError {
         let (status, message) = match &self {
             BrainError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             BrainError::Conflict(_) => (StatusCode::CONFLICT, self.to_string()),
-            BrainError::Database(_) | BrainError::Event(_) => {
+            BrainError::Database(_) | BrainError::Event(_) | BrainError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };

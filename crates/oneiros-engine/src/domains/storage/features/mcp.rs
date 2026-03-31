@@ -1,15 +1,30 @@
-pub mod storage_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
-    use crate::*;
+pub struct StorageTools;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct KeyParam {
-        key: StorageKey,
+impl StorageTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        storage_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        storage_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        storage_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod storage_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "list_storage",
@@ -18,18 +33,18 @@ pub mod storage_mcp {
             },
             ToolDef {
                 name: "get_storage",
-                description: "Check on a stored artifact",
-                input_schema: schema_for::<KeyParam>,
+                description: "Retrieve a stored artifact",
+                input_schema: schema_for::<GetStorage>,
             },
             ToolDef {
                 name: "remove_storage",
                 description: "Remove a stored artifact",
-                input_schema: schema_for::<KeyParam>,
+                input_schema: schema_for::<RemoveStorage>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["list_storage", "get_storage", "remove_storage"]
     }
 
@@ -39,30 +54,15 @@ pub mod storage_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "list_storage" => {
-                let response = StorageService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_storage" => {
-                let p: KeyParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = StorageService::show(context, &p.key)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "list_storage" => StorageService::list(context).await,
+            "get_storage" => StorageService::show(context, &serde_json::from_str(params)?).await,
             "remove_storage" => {
-                let p: KeyParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = StorageService::remove(context, &p.key)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                StorageService::remove(context, &serde_json::from_str(params)?).await
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

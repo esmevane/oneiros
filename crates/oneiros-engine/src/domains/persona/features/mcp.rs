@@ -1,24 +1,40 @@
-pub mod persona_mcp {
-    //! Persona MCP driving adapter — translates tool calls into domain service calls.
+use crate::*;
 
-    use crate::*;
+pub struct PersonaTools;
 
-    #[derive(serde::Deserialize, schemars::JsonSchema)]
-    struct NameParam {
-        name: PersonaName,
+impl PersonaTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        persona_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        persona_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        persona_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod persona_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "set_persona",
                 description: "Define a category of agent",
-                input_schema: schema_for::<Persona>,
+                input_schema: schema_for::<SetPersona>,
             },
             ToolDef {
                 name: "get_persona",
                 description: "Look up an agent category",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<GetPersona>,
             },
             ToolDef {
                 name: "list_personas",
@@ -28,12 +44,12 @@ pub mod persona_mcp {
             ToolDef {
                 name: "remove_persona",
                 description: "Remove an agent category",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<RemovePersona>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &[
             "set_persona",
             "get_persona",
@@ -48,38 +64,16 @@ pub mod persona_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "set_persona" => {
-                let persona: Persona = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = PersonaService::set(context, persona)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_persona" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = PersonaService::get(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_personas" => {
-                let response = PersonaService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "set_persona" => PersonaService::set(context, &serde_json::from_str(params)?).await,
+            "get_persona" => PersonaService::get(context, &serde_json::from_str(params)?).await,
+            "list_personas" => PersonaService::list(context).await,
             "remove_persona" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = PersonaService::remove(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
+                PersonaService::remove(context, &serde_json::from_str(params)?).await
             }
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

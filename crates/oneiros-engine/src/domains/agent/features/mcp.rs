@@ -1,33 +1,40 @@
-pub mod agent_mcp {
-    use schemars::JsonSchema;
-    use serde::Deserialize;
+use crate::*;
 
+pub struct AgentTools;
+
+impl AgentTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        agent_mcp::tool_defs()
+    }
+
+    pub const fn names(&self) -> &'static [&'static str] {
+        agent_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        agent_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod agent_mcp {
     use crate::*;
 
-    #[derive(Deserialize, JsonSchema)]
-    struct NameParam {
-        name: AgentName,
-    }
-
-    #[derive(Deserialize, JsonSchema)]
-    struct AgentParams {
-        name: AgentName,
-        persona: PersonaName,
-        description: Description,
-        prompt: Prompt,
-    }
-
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "create_agent",
                 description: "Bring a new agent into the brain",
-                input_schema: schema_for::<AgentParams>,
+                input_schema: schema_for::<CreateAgent>,
             },
             ToolDef {
                 name: "get_agent",
                 description: "Learn about a specific agent",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<GetAgent>,
             },
             ToolDef {
                 name: "list_agents",
@@ -37,17 +44,17 @@ pub mod agent_mcp {
             ToolDef {
                 name: "update_agent",
                 description: "Reshape an agent's identity",
-                input_schema: schema_for::<AgentParams>,
+                input_schema: schema_for::<UpdateAgent>,
             },
             ToolDef {
                 name: "remove_agent",
                 description: "Remove an agent from the brain",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<RemoveAgent>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &[
             "create_agent",
             "get_agent",
@@ -63,48 +70,15 @@ pub mod agent_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "create_agent" => {
-                let p: AgentParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response =
-                    AgentService::create(context, p.name, p.persona, p.description, p.prompt)
-                        .await
-                        .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_agent" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = AgentService::get(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_agents" => {
-                let response = AgentService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "update_agent" => {
-                let p: AgentParams = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response =
-                    AgentService::update(context, p.name, p.persona, p.description, p.prompt)
-                        .await
-                        .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "remove_agent" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = AgentService::remove(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "create_agent" => AgentService::create(context, &serde_json::from_str(params)?).await,
+            "get_agent" => AgentService::get(context, &serde_json::from_str(params)?).await,
+            "list_agents" => AgentService::list(context).await,
+            "update_agent" => AgentService::update(context, &serde_json::from_str(params)?).await,
+            "remove_agent" => AgentService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

@@ -5,8 +5,7 @@ pub struct SearchService;
 impl SearchService {
     pub async fn search(
         context: &ProjectContext,
-        query: &str,
-        agent: Option<&AgentName>,
+        SearchQuery { query, agent }: &SearchQuery,
     ) -> Result<SearchResponse, SearchError> {
         let agent_id = match agent {
             Some(name) => AgentRepo::new(context).get(name).await?.map(|a| a.id),

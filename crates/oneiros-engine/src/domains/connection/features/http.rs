@@ -4,7 +4,6 @@ use axum::{
     http::StatusCode,
     routing,
 };
-use serde::Deserialize;
 
 use crate::*;
 
@@ -21,46 +20,35 @@ impl ConnectionRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct CreateBody {
-    from_ref: String,
-    to_ref: String,
-    nature: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct ListQuery {
-    entity: Option<String>,
-}
-
 async fn create(
     context: ProjectContext,
-    Json(body): Json<CreateBody>,
+    Json(body): Json<CreateConnection>,
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
-    let response =
-        ConnectionService::create(&context, body.from_ref, body.to_ref, body.nature).await?;
+    let response = ConnectionService::create(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
     context: ProjectContext,
-    Query(params): Query<ListQuery>,
+    Query(params): Query<ListConnections>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
-    Ok(Json(
-        ConnectionService::list(&context, params.entity.as_deref()).await?,
-    ))
+    Ok(Json(ConnectionService::list(&context, &params).await?))
 }
 
 async fn show(
     context: ProjectContext,
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
-    Ok(Json(ConnectionService::get(&context, &id).await?))
+    Ok(Json(
+        ConnectionService::get(&context, &GetConnection::builder().id(id).build()).await?,
+    ))
 }
 
 async fn remove(
     context: ProjectContext,
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
-    Ok(Json(ConnectionService::remove(&context, &id).await?))
+    Ok(Json(
+        ConnectionService::remove(&context, &RemoveConnection::builder().id(id).build()).await?,
+    ))
 }

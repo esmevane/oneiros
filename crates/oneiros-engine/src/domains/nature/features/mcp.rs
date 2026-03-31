@@ -1,39 +1,55 @@
-pub mod nature_mcp {
-    //! Nature MCP driving adapter — translates tool calls into domain service calls.
+use crate::*;
 
-    use crate::*;
+pub struct NatureTools;
 
-    #[derive(serde::Deserialize, schemars::JsonSchema)]
-    struct NameParam {
-        name: NatureName,
+impl NatureTools {
+    pub const fn defs(&self) -> &'static [ToolDef] {
+        nature_mcp::tool_defs()
     }
 
-    pub fn tool_defs() -> &'static [ToolDef] {
+    pub const fn names(&self) -> &'static [&'static str] {
+        nature_mcp::tool_names()
+    }
+
+    pub async fn dispatch(
+        &self,
+        context: &ProjectContext,
+        tool_name: &str,
+        params: &str,
+    ) -> Result<serde_json::Value, ToolError> {
+        nature_mcp::dispatch(context, tool_name, params).await
+    }
+}
+
+mod nature_mcp {
+    use crate::*;
+
+    pub const fn tool_defs() -> &'static [ToolDef] {
         &[
             ToolDef {
                 name: "set_nature",
                 description: "Define a kind of relationship between things",
-                input_schema: schema_for::<Nature>,
+                input_schema: schema_for::<SetNature>,
             },
             ToolDef {
                 name: "get_nature",
                 description: "Look up a relationship category",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<GetNature>,
             },
             ToolDef {
                 name: "list_natures",
-                description: "See all relationship categories",
+                description: "See all the kinds of relationships",
                 input_schema: schema_for::<serde_json::Value>,
             },
             ToolDef {
                 name: "remove_nature",
                 description: "Remove a relationship category",
-                input_schema: schema_for::<NameParam>,
+                input_schema: schema_for::<RemoveNature>,
             },
         ]
     }
 
-    pub fn tool_names() -> &'static [&'static str] {
+    pub const fn tool_names() -> &'static [&'static str] {
         &["set_nature", "get_nature", "list_natures", "remove_nature"]
     }
 
@@ -43,38 +59,14 @@ pub mod nature_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "set_nature" => {
-                let nature: Nature = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = NatureService::set(context, nature)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "get_nature" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = NatureService::get(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "list_natures" => {
-                let response = NatureService::list(context)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
-            "remove_nature" => {
-                let p: NameParam = serde_json::from_str(params)
-                    .map_err(|e| ToolError::Parameter(e.to_string()))?;
-                let response = NatureService::remove(context, &p.name)
-                    .await
-                    .map_err(|e| ToolError::Domain(e.to_string()))?;
-                serde_json::to_value(response)
-            }
+            "set_nature" => NatureService::set(context, &serde_json::from_str(params)?).await,
+            "get_nature" => NatureService::get(context, &serde_json::from_str(params)?).await,
+            "list_natures" => NatureService::list(context).await,
+            "remove_nature" => NatureService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
-        };
-        value.map_err(|e| ToolError::Parameter(e.to_string()))
+        }
+        .map_err(Error::from)?;
+
+        Ok(serde_json::to_value(value)?)
     }
 }

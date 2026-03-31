@@ -24,10 +24,10 @@ impl<'a> EventRepo<'a> {
     /// Get a single event by ID.
     pub async fn get(&self, id: &str) -> Result<Option<StoredEvent>, EventError> {
         let db = self.context.db()?;
-        let mut stmt =
-            db.prepare("SELECT id, rowid, data, source, created_at FROM events WHERE id = ?1")?;
+        let mut statement =
+            db.prepare("select id, rowid, data, source, created_at from events where id = ?1")?;
 
-        let result = stmt.query_row(params![id], Self::row_to_event);
+        let result = statement.query_row(params![id], Self::row_to_event);
 
         match result {
             Ok(event) => Ok(Some(event)),
@@ -44,19 +44,23 @@ impl<'a> EventRepo<'a> {
         let db = self.context.db()?;
 
         if let Some(event_type) = event_type {
-            let mut stmt = db.prepare(
-                "SELECT id, rowid, data, source, created_at FROM events WHERE event_type = ?1 ORDER BY rowid",
+            let mut statement = db.prepare(
+                "select id, rowid, data, source, created_at from events where event_type = ?1 order by rowid",
             )?;
-            let events = stmt
+
+            let events = statement
                 .query_map(params![event_type], Self::row_to_event)?
                 .collect::<Result<Vec<_>, _>>()?;
+
             Ok(events)
         } else {
-            let mut stmt = db
-                .prepare("SELECT id, rowid, data, source, created_at FROM events ORDER BY rowid")?;
-            let events = stmt
+            let mut statement = db
+                .prepare("select id, rowid, data, source, created_at from events order by rowid")?;
+
+            let events = statement
                 .query_map([], Self::row_to_event)?
                 .collect::<Result<Vec<_>, _>>()?;
+
             Ok(events)
         }
     }

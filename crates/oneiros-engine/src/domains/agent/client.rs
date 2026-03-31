@@ -9,32 +9,8 @@ impl<'a> AgentClient<'a> {
         Self { client }
     }
 
-    pub async fn create(
-        &self,
-        name: AgentName,
-        persona: PersonaName,
-        description: Description,
-        prompt: Prompt,
-    ) -> Result<AgentResponse, ClientError> {
-        #[derive(serde::Serialize)]
-        struct Body {
-            name: AgentName,
-            persona: PersonaName,
-            description: Description,
-            prompt: Prompt,
-        }
-
-        self.client
-            .post(
-                "/agents",
-                &Body {
-                    name,
-                    persona,
-                    description,
-                    prompt,
-                },
-            )
-            .await
+    pub async fn create(&self, creation: &CreateAgent) -> Result<AgentResponse, ClientError> {
+        self.client.post("/agents", creation).await
     }
 
     pub async fn list(&self) -> Result<AgentResponse, ClientError> {
@@ -45,29 +21,9 @@ impl<'a> AgentClient<'a> {
         self.client.get(&format!("/agents/{name}")).await
     }
 
-    pub async fn update(
-        &self,
-        name: &AgentName,
-        persona: PersonaName,
-        description: Description,
-        prompt: Prompt,
-    ) -> Result<AgentResponse, ClientError> {
-        #[derive(serde::Serialize)]
-        struct Body {
-            persona: PersonaName,
-            description: Description,
-            prompt: Prompt,
-        }
-
+    pub async fn update(&self, changes: &UpdateAgent) -> Result<AgentResponse, ClientError> {
         self.client
-            .put(
-                &format!("/agents/{name}"),
-                &Body {
-                    persona,
-                    description,
-                    prompt,
-                },
-            )
+            .put(&format!("/agents/{name}", name = changes.name), changes)
             .await
     }
 

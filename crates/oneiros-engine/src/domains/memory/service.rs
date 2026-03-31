@@ -5,19 +5,21 @@ pub struct MemoryService;
 impl MemoryService {
     pub async fn add(
         context: &ProjectContext,
-        agent: AgentName,
-        level: LevelName,
-        content: Content,
+        AddMemory {
+            agent,
+            level,
+            content,
+        }: &AddMemory,
     ) -> Result<MemoryResponse, MemoryError> {
         let agent_record = AgentRepo::new(context)
-            .get(&agent)
+            .get(agent)
             .await?
             .ok_or_else(|| MemoryError::AgentNotFound(agent.clone()))?;
 
         let memory = Memory::builder()
             .agent_id(agent_record.id)
-            .level(level)
-            .content(content)
+            .level(level.clone())
+            .content(content.clone())
             .build();
 
         context
@@ -28,23 +30,23 @@ impl MemoryService {
 
     pub async fn get(
         context: &ProjectContext,
-        id: &MemoryId,
+        selector: &GetMemory,
     ) -> Result<MemoryResponse, MemoryError> {
         let memory = MemoryRepo::new(context)
-            .get(id)
+            .get(&selector.id)
             .await?
-            .ok_or_else(|| MemoryError::NotFound(*id))?;
+            .ok_or_else(|| MemoryError::NotFound(selector.id))?;
         Ok(MemoryResponse::MemoryDetails(memory))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        agent: Option<AgentName>,
+        ListMemories { agent }: &ListMemories,
     ) -> Result<MemoryResponse, MemoryError> {
         let agent_id = match agent {
             Some(name) => {
                 let record = AgentRepo::new(context)
-                    .get(&name)
+                    .get(name)
                     .await?
                     .ok_or_else(|| MemoryError::AgentNotFound(name.clone()))?;
                 Some(record.id.to_string())

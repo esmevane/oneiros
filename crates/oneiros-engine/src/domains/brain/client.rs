@@ -13,10 +13,8 @@ impl<'a> BrainClient<'a> {
     }
 
     /// Create a new brain with the given name.
-    pub async fn create(&self, name: &BrainName) -> Result<BrainResponse, ClientError> {
-        self.client
-            .post("/brains/", &serde_json::json!({ "name": name }))
-            .await
+    pub async fn create(&self, creation: &CreateBrain) -> Result<BrainResponse, ClientError> {
+        self.client.post("/brains", creation).await
     }
 
     /// Retrieve a single brain by name.
@@ -26,6 +24,6 @@ impl<'a> BrainClient<'a> {
 
     /// List all brains.
     pub async fn list(&self) -> Result<BrainResponse, ClientError> {
-        self.client.get("/brains/").await
+        self.client.get("/brains").await
     }
 }

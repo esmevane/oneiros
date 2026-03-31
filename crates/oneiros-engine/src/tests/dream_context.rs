@@ -12,13 +12,16 @@ async fn seeded_context() -> (ProjectContext, tempfile::TempDir) {
     config.bootstrap().expect("bootstrap");
 
     let system = config.system();
-    SystemService::init(&system, "test".to_string())
+    SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await
         .unwrap();
 
-    ProjectService::init(&system, BrainName::new("test"))
-        .await
-        .unwrap();
+    ProjectService::init(
+        &system,
+        &InitProject::builder().name(BrainName::new("test")).build(),
+    )
+    .await
+    .unwrap();
 
     let context = config.project();
     SeedService::core(&context).await.expect("seed core");
@@ -28,10 +31,12 @@ async fn seeded_context() -> (ProjectContext, tempfile::TempDir) {
 async fn seed_agent(context: &ProjectContext) -> AgentName {
     AgentService::create(
         context,
-        "thinker".into(),
-        "process".into(),
-        "A thinking agent".into(),
-        "You think.".into(),
+        &CreateAgent::builder()
+            .name("thinker")
+            .persona("process")
+            .description("A thinking agent")
+            .prompt("You think")
+            .build(),
     )
     .await
     .unwrap();
@@ -41,9 +46,11 @@ async fn seed_agent(context: &ProjectContext) -> AgentName {
 async fn add_cognition(context: &ProjectContext, agent: &AgentName, content: &str) -> CognitionId {
     match CognitionService::add(
         context,
-        agent.clone(),
-        TextureName::new("observation"),
-        Content::new(content),
+        &AddCognition::builder()
+            .agent(agent.clone())
+            .texture("observation")
+            .content(content)
+            .build(),
     )
     .await
     .unwrap()
@@ -61,9 +68,11 @@ async fn add_memory(
 ) -> MemoryId {
     match MemoryService::add(
         context,
-        agent.clone(),
-        LevelName::new(level),
-        Content::new(content),
+        &AddMemory::builder()
+            .agent(agent.clone())
+            .level(level)
+            .content(content)
+            .build(),
     )
     .await
     .unwrap()
@@ -80,9 +89,11 @@ async fn add_experience(
 ) -> ExperienceId {
     match ExperienceService::create(
         context,
-        agent.clone(),
-        SensationName::new("echoes"),
-        Description::new(description),
+        &CreateExperience::builder()
+            .agent(agent.clone())
+            .sensation("echoes")
+            .description(description)
+            .build(),
     )
     .await
     .unwrap()
@@ -93,11 +104,16 @@ async fn add_experience(
 }
 
 async fn connect(context: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId {
-    let from_token = RefToken::from(from.clone()).to_string();
-    let to_token = RefToken::from(to.clone()).to_string();
-    match ConnectionService::create(context, from_token, to_token, "reference".to_string())
-        .await
-        .unwrap()
+    match ConnectionService::create(
+        context,
+        &CreateConnection::builder()
+            .from_ref(RefToken::from(from.clone()))
+            .to_ref(RefToken::from(to.clone()))
+            .nature("reference")
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         ConnectionResponse::ConnectionCreated(c) => c.id,
         other => panic!("expected ConnectionCreated, got {other:?}"),
@@ -113,9 +129,13 @@ async fn dream_with(
     agent: &AgentName,
     overrides: &DreamOverrides,
 ) -> DreamContext {
-    match ContinuityService::dream(context, agent, overrides)
-        .await
-        .unwrap()
+    match ContinuityService::dream(
+        context,
+        &DreamAgent::builder().agent(agent.clone()).build(),
+        overrides,
+    )
+    .await
+    .unwrap()
     {
         ContinuityResponse::Dreaming(context) => context,
         other => panic!("expected Dreaming, got {other:?}"),

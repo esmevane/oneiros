@@ -5,10 +5,12 @@ pub struct ActorService;
 impl ActorService {
     pub async fn create(
         context: &SystemContext,
-        tenant_id: TenantId,
-        name: ActorName,
+        CreateActor { tenant_id, name }: &CreateActor,
     ) -> Result<ActorResponse, ActorError> {
-        let actor = Actor::builder().tenant_id(tenant_id).name(name).build();
+        let actor = Actor::builder()
+            .tenant_id(*tenant_id)
+            .name(name.clone())
+            .build();
 
         context
             .emit(ActorEvents::ActorCreated(actor.clone()))
@@ -16,11 +18,14 @@ impl ActorService {
         Ok(ActorResponse::Created(actor))
     }
 
-    pub async fn get(context: &SystemContext, id: ActorId) -> Result<ActorResponse, ActorError> {
+    pub async fn get(
+        context: &SystemContext,
+        selector: &GetActor,
+    ) -> Result<ActorResponse, ActorError> {
         let actor = ActorRepo::new(context)
-            .get(id)
+            .get(selector.id)
             .await?
-            .ok_or_else(|| ActorError::NotFound(id))?;
+            .ok_or_else(|| ActorError::NotFound(selector.id))?;
         Ok(ActorResponse::Found(actor))
     }
 

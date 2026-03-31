@@ -4,7 +4,6 @@ use axum::{
     http::StatusCode,
     routing,
 };
-use serde::Deserialize;
 
 use crate::*;
 
@@ -21,39 +20,26 @@ impl CognitionRouter {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct AddBody {
-    agent: AgentName,
-    texture: TextureName,
-    content: Content,
-}
-
 async fn add(
     context: ProjectContext,
-    Json(body): Json<AddBody>,
+    Json(body): Json<AddCognition>,
 ) -> Result<(StatusCode, Json<CognitionResponse>), CognitionError> {
-    let response = CognitionService::add(&context, body.agent, body.texture, body.content).await?;
+    let response = CognitionService::add(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
-}
-
-#[derive(Debug, Deserialize)]
-struct ListQuery {
-    agent: Option<AgentName>,
-    texture: Option<TextureName>,
 }
 
 async fn list(
     context: ProjectContext,
-    Query(params): Query<ListQuery>,
+    Query(params): Query<ListCognitions>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
-    Ok(Json(
-        CognitionService::list(&context, params.agent, params.texture).await?,
-    ))
+    Ok(Json(CognitionService::list(&context, &params).await?))
 }
 
 async fn show(
     context: ProjectContext,
     Path(id): Path<CognitionId>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
-    Ok(Json(CognitionService::get(&context, &id).await?))
+    Ok(Json(
+        CognitionService::get(&context, &GetCognition::builder().id(id).build()).await?,
+    ))
 }

@@ -1,6 +1,5 @@
 use clap::Subcommand;
 
-use crate::contexts::SystemContext;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
@@ -15,14 +14,13 @@ impl TicketCommands {
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, TicketError> {
+        let client = context.client();
+        let ticket_client = TicketClient::new(&client);
+
         let response = match self {
-            TicketCommands::Issue(create) => {
-                TicketService::create(context, create.actor_id, create.brain_name.clone()).await?
-            }
-            TicketCommands::Validate(validate) => {
-                TicketService::validate(context, validate.token.as_str()).await?
-            }
-            TicketCommands::List => TicketService::list(context).await?,
+            TicketCommands::Issue(create) => ticket_client.issue(create).await?,
+            TicketCommands::Validate(validate) => ticket_client.validate(validate).await?,
+            TicketCommands::List => ticket_client.list().await?,
         };
 
         let prompt = match &response {

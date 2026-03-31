@@ -4,27 +4,21 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::*;
-
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateBrain {
+pub struct InitSystem {
+    #[arg(long, short)]
     #[builder(into)]
-    pub name: BrainName,
-}
-
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetBrain {
-    #[builder(into)]
-    pub name: BrainName,
+    pub name: Option<String>,
+    #[arg(long, short)]
+    #[builder(default)]
+    pub yes: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-#[kinded(kind = BrainRequestType, display = "kebab-case")]
-pub enum BrainRequest {
-    CreateBrain(CreateBrain),
-    GetBrain(GetBrain),
-    ListBrains,
+#[kinded(kind = SystemRequestType, display = "kebab-case")]
+pub enum SystemRequest {
+    InitSystem(InitSystem),
 }
 
 #[cfg(test)]
@@ -33,11 +27,7 @@ mod tests {
 
     #[test]
     fn request_types_are_kebab_cased() {
-        let cases = [
-            (BrainRequestType::CreateBrain, "create-brain"),
-            (BrainRequestType::GetBrain, "get-brain"),
-            (BrainRequestType::ListBrains, "list-brains"),
-        ];
+        let cases = [(SystemRequestType::InitSystem, "init-system")];
 
         for (request_type, expectation) in cases {
             assert_eq!(&request_type.to_string(), expectation)

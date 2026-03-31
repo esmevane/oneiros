@@ -12,6 +12,12 @@ use crate::*;
 /// Errors that can occur during MCP tool dispatch.
 #[derive(Debug, thiserror::Error)]
 pub enum ToolError {
+    #[error("Application error: {0}")]
+    App(#[from] Error),
+
+    #[error("Malformed input: {0}")]
+    Malformed(#[from] serde_json::Error),
+
     /// The requested tool name is not handled by this domain.
     #[error("Unknown tool: {0}")]
     UnknownTool(String),
@@ -28,28 +34,27 @@ pub enum ToolError {
 /// Collect all tool definitions from every domain's catalog.
 fn all_tools() -> Vec<&'static ToolDef> {
     let sources: &[&[ToolDef]] = &[
-        // System domains
-        actor_mcp::tool_defs(),
-        tenant_mcp::tool_defs(),
-        brain_mcp::tool_defs(),
-        ticket_mcp::tool_defs(),
-        // Project domains
-        level_mcp::tool_defs(),
-        texture_mcp::tool_defs(),
-        sensation_mcp::tool_defs(),
-        nature_mcp::tool_defs(),
-        persona_mcp::tool_defs(),
-        urge_mcp::tool_defs(),
-        agent_mcp::tool_defs(),
-        cognition_mcp::tool_defs(),
-        memory_mcp::tool_defs(),
-        experience_mcp::tool_defs(),
-        connection_mcp::tool_defs(),
-        continuity_mcp::tool_defs(),
-        search_mcp::tool_defs(),
-        storage_mcp::tool_defs(),
-        pressure_mcp::tool_defs(),
+        ActorTools.defs(),
+        TenantTools.defs(),
+        BrainTools.defs(),
+        TicketTools.defs(),
+        LevelTools.defs(),
+        TextureTools.defs(),
+        SensationTools.defs(),
+        NatureTools.defs(),
+        PersonaTools.defs(),
+        UrgeTools.defs(),
+        AgentTools.defs(),
+        CognitionTools.defs(),
+        MemoryTools.defs(),
+        ExperienceTools.defs(),
+        ConnectionTools.defs(),
+        ContinuityTools.defs(),
+        SearchTools.defs(),
+        StorageTools.defs(),
+        PressureTools.defs(),
     ];
+
     sources.iter().flat_map(|s| s.iter()).collect()
 }
 
@@ -60,63 +65,63 @@ async fn dispatch(
     params: &str,
 ) -> Result<serde_json::Value, ToolError> {
     // System domains
-    if actor_mcp::tool_names().contains(&tool_name) {
-        return actor_mcp::dispatch(context, tool_name, params).await;
+    if ActorTools.names().contains(&tool_name) {
+        return ActorTools.dispatch(context, tool_name, params).await;
     }
-    if tenant_mcp::tool_names().contains(&tool_name) {
-        return tenant_mcp::dispatch(context, tool_name, params).await;
+    if TenantTools.names().contains(&tool_name) {
+        return TenantTools.dispatch(context, tool_name, params).await;
     }
-    if brain_mcp::tool_names().contains(&tool_name) {
-        return brain_mcp::dispatch(context, tool_name, params).await;
+    if BrainTools.names().contains(&tool_name) {
+        return BrainTools.dispatch(context, tool_name, params).await;
     }
-    if ticket_mcp::tool_names().contains(&tool_name) {
-        return ticket_mcp::dispatch(context, tool_name, params).await;
+    if TicketTools.names().contains(&tool_name) {
+        return TicketTools.dispatch(context, tool_name, params).await;
     }
     // Project domains
-    if level_mcp::tool_names().contains(&tool_name) {
-        return level_mcp::dispatch(context, tool_name, params).await;
+    if LevelTools.names().contains(&tool_name) {
+        return LevelTools.dispatch(context, tool_name, params).await;
     }
-    if texture_mcp::tool_names().contains(&tool_name) {
-        return texture_mcp::dispatch(context, tool_name, params).await;
+    if TextureTools.names().contains(&tool_name) {
+        return TextureTools.dispatch(context, tool_name, params).await;
     }
-    if sensation_mcp::tool_names().contains(&tool_name) {
-        return sensation_mcp::dispatch(context, tool_name, params).await;
+    if SensationTools.names().contains(&tool_name) {
+        return SensationTools.dispatch(context, tool_name, params).await;
     }
-    if nature_mcp::tool_names().contains(&tool_name) {
-        return nature_mcp::dispatch(context, tool_name, params).await;
+    if NatureTools.names().contains(&tool_name) {
+        return NatureTools.dispatch(context, tool_name, params).await;
     }
-    if persona_mcp::tool_names().contains(&tool_name) {
-        return persona_mcp::dispatch(context, tool_name, params).await;
+    if PersonaTools.names().contains(&tool_name) {
+        return PersonaTools.dispatch(context, tool_name, params).await;
     }
-    if urge_mcp::tool_names().contains(&tool_name) {
-        return urge_mcp::dispatch(context, tool_name, params).await;
+    if UrgeTools.names().contains(&tool_name) {
+        return UrgeTools.dispatch(context, tool_name, params).await;
     }
-    if agent_mcp::tool_names().contains(&tool_name) {
-        return agent_mcp::dispatch(context, tool_name, params).await;
+    if AgentTools.names().contains(&tool_name) {
+        return AgentTools.dispatch(context, tool_name, params).await;
     }
-    if cognition_mcp::tool_names().contains(&tool_name) {
-        return cognition_mcp::dispatch(context, tool_name, params).await;
+    if CognitionTools.names().contains(&tool_name) {
+        return CognitionTools.dispatch(context, tool_name, params).await;
     }
-    if memory_mcp::tool_names().contains(&tool_name) {
-        return memory_mcp::dispatch(context, tool_name, params).await;
+    if MemoryTools.names().contains(&tool_name) {
+        return MemoryTools.dispatch(context, tool_name, params).await;
     }
-    if experience_mcp::tool_names().contains(&tool_name) {
-        return experience_mcp::dispatch(context, tool_name, params).await;
+    if ExperienceTools.names().contains(&tool_name) {
+        return ExperienceTools.dispatch(context, tool_name, params).await;
     }
-    if connection_mcp::tool_names().contains(&tool_name) {
-        return connection_mcp::dispatch(context, tool_name, params).await;
+    if ConnectionTools.names().contains(&tool_name) {
+        return ConnectionTools.dispatch(context, tool_name, params).await;
     }
-    if continuity_mcp::tool_names().contains(&tool_name) {
-        return continuity_mcp::dispatch(context, tool_name, params).await;
+    if ContinuityTools.names().contains(&tool_name) {
+        return ContinuityTools.dispatch(context, tool_name, params).await;
     }
-    if search_mcp::tool_names().contains(&tool_name) {
-        return search_mcp::dispatch(context, tool_name, params).await;
+    if SearchTools.names().contains(&tool_name) {
+        return SearchTools.dispatch(context, tool_name, params).await;
     }
-    if storage_mcp::tool_names().contains(&tool_name) {
-        return storage_mcp::dispatch(context, tool_name, params).await;
+    if StorageTools.names().contains(&tool_name) {
+        return StorageTools.dispatch(context, tool_name, params).await;
     }
-    if pressure_mcp::tool_names().contains(&tool_name) {
-        return pressure_mcp::dispatch(context, tool_name, params).await;
+    if PressureTools.names().contains(&tool_name) {
+        return PressureTools.dispatch(context, tool_name, params).await;
     }
 
     Err(ToolError::UnknownTool(tool_name.to_string()))

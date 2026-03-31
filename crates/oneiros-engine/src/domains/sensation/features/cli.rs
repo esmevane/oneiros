@@ -4,7 +4,7 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub enum SensationCommands {
-    Set(Sensation),
+    Set(SetSensation),
     Show(GetSensation),
     List,
     Remove(RemoveSensation),
@@ -19,7 +19,7 @@ impl SensationCommands {
         let sensation_client = SensationClient::new(&client);
 
         let response = match self {
-            SensationCommands::Set(sensation) => sensation_client.set(sensation).await?,
+            SensationCommands::Set(set) => sensation_client.set(set).await?,
             SensationCommands::Show(get) => sensation_client.get(&get.name).await?,
             SensationCommands::List => sensation_client.list().await?,
             SensationCommands::Remove(removal) => sensation_client.remove(&removal.name).await?,

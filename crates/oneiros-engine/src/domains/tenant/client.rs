@@ -13,10 +13,8 @@ impl<'a> TenantClient<'a> {
     }
 
     /// Create a new tenant with the given name.
-    pub async fn create(&self, name: &TenantName) -> Result<TenantResponse, ClientError> {
-        self.client
-            .post("/tenants/", &serde_json::json!({ "name": name }))
-            .await
+    pub async fn create(&self, creation: &CreateTenant) -> Result<TenantResponse, ClientError> {
+        self.client.post("/tenants", creation).await
     }
 
     /// Retrieve a single tenant by ID.
@@ -26,6 +24,6 @@ impl<'a> TenantClient<'a> {
 
     /// List all tenants.
     pub async fn list(&self) -> Result<TenantResponse, ClientError> {
-        self.client.get("/tenants/").await
+        self.client.get("/tenants").await
     }
 }

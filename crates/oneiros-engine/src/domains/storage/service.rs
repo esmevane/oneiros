@@ -6,18 +6,20 @@ impl StorageService {
     /// Upload content — hash it, store the blob, record the metadata.
     pub async fn upload(
         context: &ProjectContext,
-        key: StorageKey,
-        description: Description,
-        data: Vec<u8>,
+        UploadStorage {
+            key,
+            description,
+            data,
+        }: &UploadStorage,
     ) -> Result<StorageResponse, StorageError> {
-        let blob = BlobContent::create(&data)?;
+        let blob = BlobContent::create(data)?;
 
         // Put the blob directly (not via event — the blob table is the durable store).
         StorageStore::new(&context.db()?).put_blob(&blob)?;
 
         let entry = StorageEntry {
-            key,
-            description,
+            key: key.clone(),
+            description: description.clone(),
             hash: blob.hash,
         };
 
@@ -32,12 +34,12 @@ impl StorageService {
     /// Show storage metadata by key.
     pub async fn show(
         context: &ProjectContext,
-        key: &StorageKey,
+        selector: &GetStorage,
     ) -> Result<StorageResponse, StorageError> {
         let entry = StorageRepo::new(context)
-            .get_storage(key)
+            .get_storage(&selector.key)
             .await?
-            .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
+            .ok_or_else(|| StorageError::KeyNotFound(selector.key.clone()))?;
 
         Ok(StorageResponse::StorageDetails(entry))
     }
@@ -56,21 +58,21 @@ impl StorageService {
     /// Remove storage metadata by key. The blob is NOT deleted (dedup preservation).
     pub async fn remove(
         context: &ProjectContext,
-        key: &StorageKey,
+        selector: &RemoveStorage,
     ) -> Result<StorageResponse, StorageError> {
         // Confirm the key exists before emitting.
         StorageRepo::new(context)
-            .get_storage(key)
+            .get_storage(&selector.key)
             .await?
-            .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
+            .ok_or_else(|| StorageError::KeyNotFound(selector.key.clone()))?;
 
         context
             .emit(StorageEvents::StorageRemoved(SelectStorageByKey {
-                key: key.clone(),
+                key: selector.key.clone(),
             }))
             .await?;
 
-        Ok(StorageResponse::StorageRemoved(key.clone()))
+        Ok(StorageResponse::StorageRemoved(selector.key.clone()))
     }
 
     /// Retrieve the raw binary content for a storage key.

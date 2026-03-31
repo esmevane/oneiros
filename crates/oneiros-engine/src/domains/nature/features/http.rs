@@ -18,12 +18,12 @@ impl NatureRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<NatureName>,
-    Json(mut nature): Json<Nature>,
+    Json(mut body): Json<SetNature>,
 ) -> Result<(StatusCode, Json<NatureResponse>), NatureError> {
-    nature.name = name;
+    body.name = name;
     Ok((
         StatusCode::OK,
-        Json(NatureService::set(&context, nature).await?),
+        Json(NatureService::set(&context, &body).await?),
     ))
 }
 
@@ -35,12 +35,16 @@ async fn show(
     context: ProjectContext,
     Path(name): Path<NatureName>,
 ) -> Result<Json<NatureResponse>, NatureError> {
-    Ok(Json(NatureService::get(&context, &name).await?))
+    Ok(Json(
+        NatureService::get(&context, &GetNature::builder().name(name).build()).await?,
+    ))
 }
 
 async fn remove(
     context: ProjectContext,
     Path(name): Path<NatureName>,
 ) -> Result<Json<NatureResponse>, NatureError> {
-    Ok(Json(NatureService::remove(&context, &name).await?))
+    Ok(Json(
+        NatureService::remove(&context, &RemoveNature::builder().name(name).build()).await?,
+    ))
 }

@@ -9,10 +9,8 @@ impl<'a> LevelClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, level: &Level) -> Result<LevelResponse, ClientError> {
-        self.client
-            .put(&format!("/levels/{}", level.name), level)
-            .await
+    pub async fn set(&self, set: &SetLevel) -> Result<LevelResponse, ClientError> {
+        self.client.put(&format!("/levels/{}", set.name), set).await
     }
 
     pub async fn get(&self, name: &LevelName) -> Result<LevelResponse, ClientError> {
