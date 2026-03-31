@@ -268,7 +268,7 @@ pub(crate) async fn reflect_prompt_contains_agent<B: Backend>() -> TestResult {
         "reflect prompt should contain agent name"
     );
     assert!(
-        prompt.contains("Something significant"),
+        prompt.contains("Something shifted"),
         "reflect prompt should contain reflection instructions"
     );
 

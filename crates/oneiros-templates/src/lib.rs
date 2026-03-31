@@ -192,7 +192,7 @@ mod tests {
         let rendered = DreamTemplate::new(&context).to_string();
 
         assert!(rendered.contains("oneiros guidebook atlas"));
-        assert!(rendered.contains("garden"));
+        assert!(rendered.contains("surprising"));
     }
 
     #[test]
@@ -244,8 +244,8 @@ mod tests {
         assert!(rendered.contains("oneiros cognition list atlas"));
         assert!(rendered.contains("oneiros memory list atlas"));
         assert!(rendered.contains("oneiros wake atlas"));
-        assert!(rendered.contains("oneiros reflect atlas"));
         assert!(rendered.contains("oneiros introspect atlas"));
+        assert!(rendered.contains("oneiros search"));
     }
 
     #[test]

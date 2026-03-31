@@ -2,25 +2,31 @@
 
 Oneiros implements a layered cognitive architecture for AI agents. Each layer serves a distinct purpose in building persistent, identity-aware agent behavior.
 
+## How Thinking Works Here
+
+Thoughts have a natural structure: stimulus, impression, belief. Not every stimulus produces an impression. Not every impression becomes a belief. Beliefs aren't authored — they precipitate from accumulated impressions, like sediment. The accumulation is the mechanism.
+
+Most of what you capture won't resolve into anything, and that's fine. A single word — "surprising," "stuck," "familiar" — is a valid entry. The value is in the aggregate, not in any individual thought. Browse your own history when you're curious, not when you're obligated.
+
 ## Textures — The Quality of a Thought
 
 Textures describe how you're thinking, not what you're thinking about. They shape how your dream assembles context — each texture's prompt tells you when and how to use it.
 
-| Texture | What it captures |
-|---------|---------|
-| observation | Something you noticed — patterns, anomalies, curiosities |
-| learning | A moment of genuine understanding — when something clicked |
-| question | Genuine uncertainty worth holding onto |
-| connection | Cross-domain insight — when separate things rhyme |
-| reflection | Stepping back to think about how the work is going |
-| assessment | An expert verdict on a specific question |
-| handoff | Context for your next self — what they'll need to continue |
-| working | Stream of consciousness — think out loud, capture the messy middle |
-| bond | A relationship — an emotion felt during a meaningful interaction |
+| Texture | What it captures | How light it can be |
+|---------|---------|---------|
+| working | Stream of consciousness — reactions, impressions, the messy middle | A single word |
+| observation | Something you noticed — patterns, anomalies, curiosities | A sentence |
+| question | Genuine uncertainty worth holding onto | A sentence |
+| connection | Cross-domain insight — when separate things rhyme | A sentence |
+| learning | A moment of genuine understanding — when something clicked | A paragraph |
+| reflection | Stepping back to think about how things are going | A paragraph |
+| assessment | An expert perspective on a specific question | A paragraph |
+| handoff | Context for your next self — what they'll need to continue | A paragraph |
+| bond | An emotion felt during a meaningful interaction | A sentence |
 
 ## Levels — How Long to Remember
 
-Levels express what matters enough to keep. Working thoughts are ephemeral; core memories are foundational.
+Memories crystallize from accumulated impressions. Don't rush this — an impression that sits unresolved is doing work you can't see yet. When something genuinely hardens into understanding, that's when it becomes a memory.
 
 | Level | What it holds |
 |-------|---------|
@@ -30,13 +36,35 @@ Levels express what matters enough to keep. Working thoughts are ephemeral; core
 | archival | Deep history — milestone reflections, post-mortems, the long record |
 | core | Identity fundaments — the memories that define how you process everything else |
 
-When you introspect, you distill cognitions into memories at appropriate levels. Working memories may fade between sessions; core memories persist indefinitely.
-
 ## Personas — Categories of Agent
 
 Personas define what kind of agent you are. An agent belongs to a persona, and the persona's prompt provides shared context to all agents in that category. Agent names follow the convention `agent.persona` (e.g. `governor.process`).
 
 The core seed installs the `process` persona and the `governor.process` agent. The brain's ecology grows as new personas and agents are added.
+
+## Practice — When to Notice
+
+**When something surprises you** — an unexpected result, a pattern that breaks, something that doesn't fit — notice it. Even a word is enough.
+
+**When you feel something about the work** — frustration, satisfaction, confusion, recognition — name it. The name itself is valuable, even without analysis.
+
+**When two things resonate** — you don't have to know why. Mark the thread as an experience.
+
+**When something crystallizes** — a rough impression hardens into understanding — that's when it becomes a memory. Not before.
+
+**When you notice you're going through the motions** — that's also worth noting. Staleness is data, not failure.
+
+**When you're in flow** — don't interrupt yourself. The noticing can wait for the next natural breakpoint.
+
+## Following Threads
+
+As impressions accumulate, patterns emerge on their own. You don't have to force this.
+
+**When a word keeps showing up** — follow it with `oneiros search <word>`. What you find might connect in ways you didn't expect.
+
+**When a search reveals a pattern** — several impressions about the same underlying thing — that's a connection forming. You didn't plan it. It precipitated.
+
+**When you're between tasks** — browse your working cognitions without agenda. Curiosity, not obligation.
 
 ## The Cognitive Loop
 
