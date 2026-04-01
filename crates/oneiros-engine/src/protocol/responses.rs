@@ -39,6 +39,8 @@ pub enum Responses {
     Brain(BrainResponse),
     Ticket(TicketResponse),
     Service(ServiceResponse),
+    McpConfig(McpConfigResponse),
+    Setup(SetupResponse),
     /// Escape hatch for composite operations that don't map to a single domain response.
     Json(serde_json::Value),
 }
@@ -168,5 +170,15 @@ impl From<DoctorResponse> for Responses {
 impl From<SystemResponse> for Responses {
     fn from(r: SystemResponse) -> Self {
         Responses::System(r)
+    }
+}
+impl From<McpConfigResponse> for Responses {
+    fn from(r: McpConfigResponse) -> Self {
+        Responses::McpConfig(r)
+    }
+}
+impl From<SetupResponse> for Responses {
+    fn from(r: SetupResponse) -> Self {
+        Responses::Setup(r)
     }
 }

@@ -49,6 +49,7 @@ impl SkillInventory {
         skills.extend(DoctorSkills::all());
         skills.extend(ExperienceSkills::all());
         skills.extend(LevelSkills::all());
+        skills.extend(McpConfigSkills::all());
         skills.extend(MemorySkills::all());
         skills.extend(NatureSkills::all());
         skills.extend(PersonaSkills::all());
@@ -58,6 +59,7 @@ impl SkillInventory {
         skills.extend(SeedSkills::all());
         skills.extend(SensationSkills::all());
         skills.extend(ServiceSkills::all());
+        skills.extend(SetupSkills::all());
         skills.extend(StorageSkills::all());
         skills.extend(SystemSkills::all());
         skills.extend(TenantSkills::all());

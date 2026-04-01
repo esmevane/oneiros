@@ -26,6 +26,8 @@ pub enum Error {
     #[error(transparent)]
     Continuity(#[from] ContinuityError),
     #[error(transparent)]
+    McpConfig(#[from] McpConfigError),
+    #[error(transparent)]
     Memory(#[from] MemoryError),
     #[error(transparent)]
     Nature(#[from] NatureError),
@@ -43,6 +45,8 @@ pub enum Error {
     Sensation(#[from] SensationError),
     #[error(transparent)]
     Service(#[from] ServiceError),
+    #[error(transparent)]
+    Setup(#[from] SetupError),
     #[error(transparent)]
     Storage(#[from] StorageError),
     #[error(transparent)]
