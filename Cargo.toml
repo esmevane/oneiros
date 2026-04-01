@@ -28,6 +28,7 @@ data-encoding = "2"
 # directories = "5"
 etcetera = "0.11.0"
 flate2 = "1"
+inquire = "0.9.4"
 kinded = "0.5.0"
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.8" }
 postcard = { version = "1", features = ["alloc"] }

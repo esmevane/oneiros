@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::*;
+
 /// The filename or path label identifying which database was checked.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -42,6 +44,17 @@ pub enum DoctorCheck {
     NotInitialized,
     DatabaseOk(DatabaseLabel),
     EventLogReady(LogEventCount),
+    BrainExists(BrainName),
+    BrainMissing(BrainName),
+    VocabularySeeded,
+    VocabularyMissing,
+    AgentsSeeded,
+    AgentsMissing,
+    McpConfigured,
+    McpMissing,
+    ServiceRunning,
+    ServiceStopped,
+    ServiceNotInstalled,
 }
 
 /// All responses the doctor domain can produce.

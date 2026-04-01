@@ -52,6 +52,10 @@ pub enum Command {
     Project(ProjectCommands),
     #[command(subcommand)]
     Seed(SeedCommands),
+    #[command(subcommand)]
+    Mcp(McpCommands),
+    /// Guided first-run setup.
+    Setup(#[command(flatten)] SetupRequest),
 
     // System-scoped domains
     #[command(subcommand)]
@@ -164,6 +168,8 @@ impl Command {
             Command::System(system) => system.execute(config.system()).await?,
             Command::Project(project) => project.execute(config).await?,
             Command::Seed(seed) => seed.execute(&config.project()).await?,
+            Command::Mcp(mcp) => mcp.execute(config)?,
+            Command::Setup(setup) => SetupCli::execute(config, setup).await?,
 
             // System-scoped domains
             Command::Tenant(tenant) => tenant.execute(&config.system()).await?,
@@ -191,7 +197,7 @@ impl Command {
             Command::Pressure(pressure) => pressure.execute(&config.project()).await?,
 
             // Doctor — system diagnostics
-            Command::Doctor => DoctorCli::execute(&config.system()).await?,
+            Command::Doctor => DoctorCli::execute(config).await?,
 
             // Continuity — domain subcommands go through the presenter
             Command::Continuity(continuity) => continuity.execute(&config.project()).await?,

@@ -198,4 +198,60 @@ impl SeedService {
 
         Ok(SeedResponse::SeedComplete)
     }
+
+    pub async fn agents(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
+        // Verify required personas exist — hint at `seed core` if missing.
+        let personas = PersonaRepo::new(context).list().await?;
+        let persona_names: Vec<&str> = personas.iter().map(|p| p.name.as_str()).collect();
+
+        if !persona_names.contains(&"process") || !persona_names.contains(&"scribe") {
+            return Err(SeedError::MissingPersonas);
+        }
+
+        let agents = [
+            (
+                "governor",
+                "process",
+                "Primary orchestration agent — routes work, enforces cognitive processes.",
+                include_str!("../../../templates/seed/agents/governor.md"),
+            ),
+            (
+                "oneiroi",
+                "process",
+                "The brain's self-awareness — watches the cognitive loop, notices drift, tends the garden from inside.",
+                include_str!("../../../templates/seed/agents/oneiroi.md"),
+            ),
+            (
+                "activity",
+                "scribe",
+                "Watches for artifacts worth preserving — outputs, documents, and references that deserve a place in the brain's archive.",
+                include_str!("../../../templates/seed/agents/activity.md"),
+            ),
+        ];
+
+        for (name, persona, description, prompt) in agents {
+            // Skip agents that already exist (idempotent).
+            let agent_name = AgentName::new(name);
+
+            if AgentRepo::new(context)
+                .name_exists(&agent_name.normalize_with(&PersonaName::new(persona)))
+                .await?
+            {
+                continue;
+            }
+
+            AgentService::create(
+                context,
+                &CreateAgent::builder()
+                    .name(agent_name)
+                    .persona(PersonaName::new(persona))
+                    .description(Description::from(description))
+                    .prompt(Prompt::from(prompt))
+                    .build(),
+            )
+            .await?;
+        }
+
+        Ok(SeedResponse::AgentsSeedComplete)
+    }
 }
