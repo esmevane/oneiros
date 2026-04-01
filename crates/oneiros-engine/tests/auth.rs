@@ -20,11 +20,9 @@ async fn setup() -> (axum::Router, String, tempfile::TempDir) {
         .brain(BrainName::new("test-brain"))
         .build();
 
-    config.bootstrap().expect("bootstrap");
-
     let system = config.system();
 
-    // Create system entities.
+    // SystemService::init creates the data dir and migrates the system DB.
     SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await
         .unwrap();

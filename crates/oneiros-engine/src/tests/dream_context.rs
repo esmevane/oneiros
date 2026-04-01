@@ -9,8 +9,6 @@ async fn seeded_context() -> (ProjectContext, tempfile::TempDir) {
         .brain(BrainName::new("test"))
         .build();
 
-    config.bootstrap().expect("bootstrap");
-
     let system = config.system();
     SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await

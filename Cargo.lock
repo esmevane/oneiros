@@ -1690,27 +1690,9 @@ name = "oneiros"
 version = "0.0.8"
 dependencies = [
  "clap",
- "clap-verbosity-flag",
- "colorchoice-clap",
- "directories",
- "oneiros-cli",
- "oneiros-client",
- "oneiros-context",
- "oneiros-db",
- "oneiros-http",
- "oneiros-model",
- "oneiros-outcomes",
- "oneiros-service",
- "oneiros-skill",
- "oneiros-templates",
- "serde",
+ "oneiros-engine",
  "serde_json",
- "service-manager",
- "tempfile",
- "thiserror 2.0.18",
  "tokio",
- "toml 0.8.23",
- "tracing",
  "tracing-subscriber",
 ]
 

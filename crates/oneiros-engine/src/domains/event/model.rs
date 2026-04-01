@@ -21,6 +21,7 @@ pub struct NewEvent {
 #[derive(Debug, Clone, Builder, Serialize, Deserialize)]
 pub struct StoredEvent {
     pub id: EventId,
+    #[serde(default)]
     pub sequence: i64,
     pub data: Events,
     #[serde(default)]

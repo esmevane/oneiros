@@ -23,8 +23,6 @@ impl Backend for EngineBackend {
             )
             .build();
 
-        config.bootstrap()?;
-
         // Start the HTTP server eagerly — the engine CLI routes all
         // commands through HTTP clients, so the service must be running
         // before any commands execute.

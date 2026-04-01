@@ -21,8 +21,6 @@ async fn setup() -> (axum::Router, String, tempfile::TempDir) {
         .brain(BrainName::new("test-brain"))
         .build();
 
-    config.bootstrap().expect("bootstrap");
-
     let system = config.system();
 
     SystemService::init(&system, &InitSystem::builder().name("test").build())

@@ -7,6 +7,13 @@ impl SystemService {
         context: &SystemContext,
         request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {
+        // system init is the bootstrapper — ensure data dir and schema exist.
+        std::fs::create_dir_all(&context.config.data_dir)?;
+        let db = context.db()?;
+        EventLog::new(&db).migrate()?;
+        context.projections.migrate(&db)?;
+        drop(db);
+
         let tenants = TenantRepo::new(context).list().await?;
 
         if !tenants.is_empty() {

@@ -8,10 +8,7 @@ use crate::*;
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-/// Create a bootstrapped Config in a tempdir.
-///
-/// Returns the config and the tempdir handle (which must be held
-/// to keep the directory alive for the test's duration).
+/// Create a test Config in a tempdir.
 fn test_config(brain: &str) -> (Config, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create tempdir");
     let config = Config::builder()
@@ -19,21 +16,18 @@ fn test_config(brain: &str) -> (Config, tempfile::TempDir) {
         .brain(BrainName::new(brain))
         .build();
 
-    config.bootstrap().expect("bootstrap");
-
     (config, dir)
 }
 
+/// Create a fully initialized system + project context.
 async fn project_context() -> (ProjectContext, tempfile::TempDir) {
     let (config, dir) = test_config("test");
     let system = config.system();
 
-    // Create system entities so ProjectService::init can issue a ticket.
     SystemService::init(&system, &InitSystem::builder().name("test").build())
         .await
         .unwrap();
 
-    // Create brain + ticket.
     ProjectService::init(
         &system,
         &InitProject::builder().name(BrainName::new("test")).build(),
@@ -624,14 +618,20 @@ async fn search_indexes_across_domains() {
 
 // ── System context tests ─────────────────────────────────────────
 
-fn system_context() -> (SystemContext, tempfile::TempDir) {
+async fn system_context() -> (SystemContext, tempfile::TempDir) {
     let (config, dir) = test_config("test");
-    (config.system(), dir)
+    let system = config.system();
+
+    SystemService::init(&system, &InitSystem::builder().name("test").build())
+        .await
+        .unwrap();
+
+    (system, dir)
 }
 
 #[tokio::test]
 async fn tenant_create_and_list() {
-    let (context, _dir) = system_context();
+    let (context, _dir) = system_context().await;
 
     match TenantService::create(&context, &CreateTenant::builder().name("acme").build())
         .await
@@ -642,14 +642,15 @@ async fn tenant_create_and_list() {
     }
 
     match TenantService::list(&context).await.unwrap() {
-        TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 1),
+        // init seeds a "test" tenant, plus we created "acme"
+        TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 2),
         other => panic!("Expected Listed, got {other:?}"),
     }
 }
 
 #[tokio::test]
 async fn actor_create_and_get() {
-    let (context, _dir) = system_context();
+    let (context, _dir) = system_context().await;
 
     // Create a tenant first
     let tenant =
@@ -680,14 +681,15 @@ async fn actor_create_and_get() {
     }
 
     match ActorService::list(&context).await.unwrap() {
-        ActorResponse::Listed(actors) => assert_eq!(actors.len(), 1),
+        // init seeds a "test" actor, plus we created "alice"
+        ActorResponse::Listed(actors) => assert_eq!(actors.len(), 2),
         other => panic!("Expected Listed, got {other:?}"),
     }
 }
 
 #[tokio::test]
 async fn brain_create_and_conflict() {
-    let (context, _dir) = system_context();
+    let (context, _dir) = system_context().await;
 
     match BrainService::create(&context, &CreateBrain::builder().name("test-brain").build())
         .await
@@ -714,7 +716,7 @@ async fn brain_create_and_conflict() {
 
 #[tokio::test]
 async fn ticket_issue_and_validate() {
-    let (context, _dir) = system_context();
+    let (context, _dir) = system_context().await;
 
     // Set up tenant + actor + brain
     let tenant_id =

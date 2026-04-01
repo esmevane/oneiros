@@ -14,6 +14,12 @@ pub enum SystemError {
 
     #[error(transparent)]
     Database(#[from] rusqlite::Error),
+
+    #[error(transparent)]
+    Event(#[from] EventError),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 impl IntoResponse for SystemError {
@@ -22,7 +28,9 @@ impl IntoResponse for SystemError {
             SystemError::Tenant(_) | SystemError::Actor(_) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
-            SystemError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            SystemError::Database(_) | SystemError::Event(_) | SystemError::Io(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }

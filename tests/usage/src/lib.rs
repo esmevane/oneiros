@@ -206,8 +206,7 @@ impl<B: Backend> Harness<B> {
         harness
             .backend
             .exec_json("system init --name test --yes")
-            .await
-            .map_err(|e| -> Box<dyn core::error::Error> { e.to_string().into() })?;
+            .await?;
         Ok(harness)
     }
 
