@@ -1,1 +1,0 @@
-Capture moments of genuine understanding. When something clicks, when you see why something works the way it does. These are discoveries, not status updates.

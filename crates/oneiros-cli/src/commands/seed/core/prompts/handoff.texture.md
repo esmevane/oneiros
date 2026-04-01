@@ -1,1 +1,0 @@
-Write what the next session needs to know. Be specific enough that future work can resume without archaeology.

@@ -1,1 +1,0 @@
-Impressions that surface during dreaming — imagery, intuitions, associations, and half-formed ideas that feel significant even if you can't fully articulate why. Capture the feeling, not the analysis.

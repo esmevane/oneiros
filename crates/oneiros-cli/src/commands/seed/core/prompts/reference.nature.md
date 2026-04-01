@@ -1,1 +1,0 @@
-Undirected. Two entities are related without implying causation, sequence, or hierarchy. Use for cross-references — when something mentions, cites, or is relevant to something else without a stronger structural relationship. Reference connections are the lightest edge: "these are related" without claiming how.

@@ -1,1 +1,0 @@
-Process agents manage the internal lifecycle of a brain. They handle orchestration, session structure, cognitive hygiene, and operational concerns. They do not do domain work — they ensure domain work happens well.
