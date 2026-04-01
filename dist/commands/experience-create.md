@@ -1,5 +1,5 @@
 ---
-description: "Mark a meaningful moment \u2014 name a thread between thoughts"
+description: "Mark a meaningful moment — name a thread between thoughts"
 argument-hint: "<agent> <sensation> <description>"
 ---
 

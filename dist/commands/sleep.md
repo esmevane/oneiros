@@ -1,5 +1,5 @@
 ---
-description: "End a session \u2014 capture continuity before resting"
+description: "End a session — capture continuity before resting"
 argument-hint: <agent-name>
 ---
 

@@ -5,15 +5,15 @@ use oneiros_usage::*;
 use crate::*;
 
 pub struct EngineBackend {
-    config: Config,
+    engine: Engine,
     _dir: tempfile::TempDir,
-    server: Option<tokio::task::JoinHandle<()>>,
+    _server: Option<ServerHandle>,
 }
 
 impl Backend for EngineBackend {
     async fn start() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::TempDir::new()?;
-        let mut config = Config::builder()
+        let config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .brain(BrainName::new("test-project"))
             .service(
@@ -23,25 +23,18 @@ impl Backend for EngineBackend {
             )
             .build();
 
+        let mut engine = Engine::new(config);
+
         // Start the HTTP server eagerly — the engine CLI routes all
         // commands through HTTP clients, so the service must be running
-        // before any commands execute.
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let addr = listener.local_addr()?;
-        config.service.address = addr;
-
-        let server_config = config.clone();
-        let server = tokio::spawn(async move {
-            Server::new(server_config)
-                .serve(listener)
-                .await
-                .expect("server failed");
-        });
+        // before any commands execute. start() resolves the ephemeral
+        // port and updates the engine's config automatically.
+        let handle = engine.start().await?;
 
         Ok(Self {
-            config,
+            engine,
             _dir: dir,
-            server: Some(server),
+            _server: Some(handle),
         })
     }
 
@@ -51,7 +44,7 @@ impl Backend for EngineBackend {
         full_args.extend(args);
 
         let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
-        let rendered = cli.execute(&self.config).await?;
+        let rendered = cli.execute(self.engine.config()).await?;
 
         Ok(rendered.into_response())
     }
@@ -62,7 +55,7 @@ impl Backend for EngineBackend {
         full_args.extend(args);
 
         let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
-        let rendered = cli.execute(&self.config).await?;
+        let rendered = cli.execute(self.engine.config()).await?;
 
         Ok(rendered.prompt().to_string())
     }
@@ -70,14 +63,6 @@ impl Backend for EngineBackend {
     async fn start_service(&mut self) -> Result<(), Box<dyn core::error::Error>> {
         // Server is started eagerly in start() — this is a no-op.
         Ok(())
-    }
-}
-
-impl Drop for EngineBackend {
-    fn drop(&mut self) {
-        if let Some(handle) = self.server.take() {
-            handle.abort();
-        }
     }
 }
 

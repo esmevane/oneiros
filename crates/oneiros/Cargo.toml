@@ -14,7 +14,6 @@ name = "oneiros"
 path = "src/main.rs"
 
 [dependencies]
-clap.workspace = true
 oneiros-engine.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

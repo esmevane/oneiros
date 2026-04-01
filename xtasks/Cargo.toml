@@ -1,0 +1,12 @@
+[package]
+name = "xtasks"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+oneiros-engine.workspace = true
