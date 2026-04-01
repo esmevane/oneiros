@@ -1,5 +1,6 @@
 use bon::Builder;
 use clap::Parser;
+use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, path::PathBuf};
 
 use crate::*;
@@ -23,7 +24,8 @@ fn default_data_dir() -> PathBuf {
 ///
 /// Carries paths, service address, and tuning knobs. Shared between
 /// Server (which binds to the address) and Client (which connects to it).
-#[derive(Builder, Debug, Clone, Parser)]
+#[derive(Builder, Debug, Clone, Parser, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     /// Root directory for brain data (blobs, exports, etc.)
     #[arg(long, short, global = true, default_value_os_t = default_data_dir())]
@@ -34,17 +36,29 @@ pub struct Config {
     #[builder(into, default = detect_brain_name())]
     pub brain: BrainName,
     /// Service management configuration.
-    #[arg(skip = ServiceConfig::default())]
+    #[command(flatten)]
     #[builder(default)]
     pub service: ServiceConfig,
     /// Default dream assembly configuration.
-    #[arg(skip = DreamConfig::default())]
+    #[command(flatten)]
     #[builder(default)]
     pub dream: DreamConfig,
-    /// Output format: json (default), text, or prompt.
-    #[arg(long, short, default_value = "json", global = true)]
+    /// Output format: prompt (default), json, or text.
+    #[arg(long, short, default_value_t, global = true)]
     #[builder(default)]
     pub output: OutputMode,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            data_dir: default_data_dir(),
+            brain: detect_brain_name(),
+            service: ServiceConfig::default(),
+            dream: DreamConfig::default(),
+            output: OutputMode::default(),
+        }
+    }
 }
 
 impl Config {
@@ -61,6 +75,11 @@ impl Config {
     /// Path to the brain's data directory.
     pub fn brain_dir(&self) -> PathBuf {
         self.data_dir.join(self.brain.as_str())
+    }
+
+    /// Path to the config file in the data directory.
+    pub fn config_path(&self) -> PathBuf {
+        self.data_dir.join("config.toml")
     }
 
     /// Open the system database.
@@ -87,26 +106,82 @@ impl Config {
             .map(|s| Token::from(s.trim()))
     }
 
-    /// Ensure the data directories and database schemas exist.
+    /// Load a config file from `{data_dir}/config.toml` and merge
+    /// file values under CLI values.
     ///
-    /// Creates the data_dir, brain_dir, tickets dir, and runs
-    /// EventLog + projection migrations on both system and brain databases.
-    pub fn bootstrap(&self) -> Result<(), Box<dyn core::error::Error>> {
-        // Ensure directories
-        std::fs::create_dir_all(&self.data_dir)?;
-        std::fs::create_dir_all(self.brain_dir())?;
+    /// File values provide the base; CLI-provided values override them.
+    /// If no file exists or is empty, returns self unchanged.
+    pub fn with_config_file(mut self) -> Self {
+        let path = self.config_path();
 
-        // System database
-        let system_db = self.system_db()?;
-        EventLog::new(&system_db).migrate()?;
-        Projections::system().migrate(&system_db)?;
+        let file_config = match std::fs::read_to_string(&path) {
+            Ok(contents) if !contents.trim().is_empty() => {
+                match toml::from_str::<Config>(&contents) {
+                    Ok(config) => config,
+                    Err(err) => {
+                        eprintln!(
+                            "warning: ignoring malformed config file {}: {err}",
+                            path.display()
+                        );
+                        return self;
+                    }
+                }
+            }
+            _ => return self,
+        };
 
-        // Brain database
-        let brain_db = self.brain_db()?;
-        EventLog::new(&brain_db).migrate()?;
-        Projections::project().migrate(&brain_db)?;
+        let defaults = Config::default();
 
-        Ok(())
+        // Merge: if the CLI value matches the default, take the file value.
+        // This heuristic cannot distinguish "user explicitly passed the default"
+        // from "default was used" — a known limitation until we adopt figment.
+
+        // Top-level
+        if self.data_dir == defaults.data_dir {
+            self.data_dir = file_config.data_dir;
+        }
+        if self.brain == defaults.brain {
+            self.brain = file_config.brain;
+        }
+        if self.output == defaults.output {
+            self.output = file_config.output;
+        }
+
+        // Service
+        if self.service.address == defaults.service.address {
+            self.service.address = file_config.service.address;
+        }
+        if self.service.label == defaults.service.label {
+            self.service.label = file_config.service.label;
+        }
+        if self.service.restart_delay_secs == defaults.service.restart_delay_secs {
+            self.service.restart_delay_secs = file_config.service.restart_delay_secs;
+        }
+        if self.service.health_check_delays_ms == defaults.service.health_check_delays_ms {
+            self.service.health_check_delays_ms = file_config.service.health_check_delays_ms;
+        }
+
+        // Dream
+        if self.dream.recent_window == defaults.dream.recent_window {
+            self.dream.recent_window = file_config.dream.recent_window;
+        }
+        if self.dream.dream_depth == defaults.dream.dream_depth {
+            self.dream.dream_depth = file_config.dream.dream_depth;
+        }
+        if self.dream.cognition_size == defaults.dream.cognition_size {
+            self.dream.cognition_size = file_config.dream.cognition_size;
+        }
+        if self.dream.recollection_level == defaults.dream.recollection_level {
+            self.dream.recollection_level = file_config.dream.recollection_level;
+        }
+        if self.dream.recollection_size == defaults.dream.recollection_size {
+            self.dream.recollection_size = file_config.dream.recollection_size;
+        }
+        if self.dream.experience_size == defaults.dream.experience_size {
+            self.dream.experience_size = file_config.dream.experience_size;
+        }
+
+        self
     }
 
     /// Build a system context from this config.
@@ -117,5 +192,183 @@ impl Config {
     /// Build a project context from this config.
     pub fn project(&self) -> ProjectContext {
         ProjectContext::new(self.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build a Config pointing at a tempdir for isolated file tests.
+    fn config_in(dir: &std::path::Path) -> Config {
+        Config::builder()
+            .data_dir(dir.to_path_buf())
+            .brain(BrainName::new("test"))
+            .build()
+    }
+
+    fn write_config(dir: &std::path::Path, contents: &str) {
+        std::fs::create_dir_all(dir).unwrap();
+        std::fs::write(dir.join("config.toml"), contents).unwrap();
+    }
+
+    #[test]
+    fn missing_file_returns_config_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = config_in(dir.path());
+        let merged = config.clone().with_config_file();
+
+        assert_eq!(merged.service.address, config.service.address);
+        assert_eq!(merged.dream.cognition_size, config.dream.cognition_size);
+        assert_eq!(merged.output, config.output);
+    }
+
+    #[test]
+    fn empty_file_returns_config_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(dir.path(), "");
+        let config = config_in(dir.path());
+        let merged = config.clone().with_config_file();
+
+        assert_eq!(merged.service.address, config.service.address);
+    }
+
+    #[test]
+    fn malformed_file_returns_config_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(dir.path(), "this is not valid toml {{{{");
+        let config = config_in(dir.path());
+        let merged = config.clone().with_config_file();
+
+        assert_eq!(merged.service.address, config.service.address);
+    }
+
+    #[test]
+    fn file_overrides_default_service_address() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[service]
+address = "127.0.0.1:3000"
+"#,
+        );
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(
+            merged.service.address,
+            "127.0.0.1:3000".parse::<SocketAddr>().unwrap()
+        );
+    }
+
+    #[test]
+    fn file_overrides_default_dream_config() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[dream]
+cognition_size = 50
+dream_depth = 3
+"#,
+        );
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.dream.cognition_size, 50);
+        assert_eq!(merged.dream.dream_depth, 3);
+        // Unspecified fields keep their defaults
+        assert_eq!(merged.dream.recent_window, 5);
+        assert_eq!(merged.dream.recollection_size, 30);
+    }
+
+    #[test]
+    fn cli_override_survives_file_merge() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[service]
+address = "127.0.0.1:3000"
+
+[dream]
+cognition_size = 50
+"#,
+        );
+        let mut config = config_in(dir.path());
+        // Simulate CLI setting a non-default value
+        config.service.address = "127.0.0.1:9999".parse().unwrap();
+        config.dream.cognition_size = 5;
+
+        let merged = config.with_config_file();
+
+        // CLI values survive — they differ from defaults
+        assert_eq!(
+            merged.service.address,
+            "127.0.0.1:9999".parse::<SocketAddr>().unwrap()
+        );
+        assert_eq!(merged.dream.cognition_size, 5);
+    }
+
+    #[test]
+    fn file_overrides_output_mode() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(dir.path(), r#"output = "json""#);
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.output, OutputMode::Json);
+    }
+
+    #[test]
+    fn file_overrides_health_check_delays() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[service]
+health_check_delays_ms = [100, 200]
+"#,
+        );
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.service.health_check_delays_ms, vec![100, 200]);
+    }
+
+    #[test]
+    fn partial_dream_section_fills_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[dream]
+experience_size = 25
+"#,
+        );
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.dream.experience_size, 25);
+        assert_eq!(merged.dream.cognition_size, 20); // default preserved
+        assert_eq!(merged.dream.dream_depth, 1); // default preserved
+    }
+
+    #[test]
+    fn unknown_field_in_config_file_is_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[sevice]
+address = "127.0.0.1:3000"
+"#,
+        );
+        let config = config_in(dir.path());
+        // Should warn and return unchanged (typo "sevice" is unknown)
+        let merged = config.clone().with_config_file();
+
+        assert_eq!(merged.service.address, config.service.address);
     }
 }

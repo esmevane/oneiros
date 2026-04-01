@@ -29,6 +29,14 @@ impl ProjectService {
         )
         .await?;
 
+        // Ensure brain directory and DB schema exist (mirrors legacy create_brain_db).
+        let brain_dir = context.config.data_dir.join(brain_name.as_str());
+        std::fs::create_dir_all(&brain_dir)?;
+        let brain_db = rusqlite::Connection::open(brain_dir.join("brain.db"))?;
+        EventLog::new(&brain_db).migrate()?;
+        Projections::project().migrate(&brain_db)?;
+        drop(brain_db);
+
         let actors = ActorRepo::new(context).list().await?;
 
         let token = if let Some(actor) = actors.first() {

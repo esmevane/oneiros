@@ -284,7 +284,7 @@ impl ContinuityService {
 
                 // Only discover entities within the depth limit.
                 let neighbor_depth = depth + 1;
-                let within_depth = config.dream_depth.is_none_or(|max| neighbor_depth <= max);
+                let within_depth = neighbor_depth <= config.dream_depth;
 
                 if within_depth {
                     match other.resource() {
@@ -315,11 +315,9 @@ impl ContinuityService {
         };
 
         // Apply cognition_size cap — keep the most recent.
-        if let Some(max) = config.cognition_size
-            && cognitions.len() > max
-        {
+        if cognitions.len() > config.cognition_size {
             cognitions.sort_by(|a, b| a.created_at.cmp(&b.created_at));
-            cognitions = cognitions.split_off(cognitions.len() - max);
+            cognitions = cognitions.split_off(cognitions.len() - config.cognition_size);
         }
 
         // Assemble experiences: recent + graph-discovered, deduped
@@ -327,11 +325,9 @@ impl ContinuityService {
             Self::assemble_experiences(&db, &recent_experiences, &experience_ids)?;
 
         // Apply experience_size cap — keep the most recent.
-        if let Some(max) = config.experience_size
-            && experiences.len() > max
-        {
+        if experiences.len() > config.experience_size {
             experiences.sort_by(|a, b| a.created_at.cmp(&b.created_at));
-            experiences = experiences.split_off(experiences.len() - max);
+            experiences = experiences.split_off(experiences.len() - config.experience_size);
         }
 
         // Filter connections: only retain edges whose endpoints are in the result.
@@ -371,18 +367,14 @@ impl ContinuityService {
 
     fn filter_memories(config: &DreamConfig, mut memories: Vec<Memory>) -> Vec<Memory> {
         // Filter by level threshold (log-level semantics)
-        if let Some(threshold) = &config.recollection_level {
-            let min_priority = level_priority(threshold);
-            memories.retain(|m| level_priority(&m.level) >= min_priority);
-        }
+        let min_priority = level_priority(&config.recollection_level);
+        memories.retain(|m| level_priority(&m.level) >= min_priority);
 
         // Sort by created_at descending for recency-based capping
         memories.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
         // Cap at recollection_size
-        if let Some(max) = config.recollection_size {
-            memories.truncate(max);
-        }
+        memories.truncate(config.recollection_size);
 
         memories
     }

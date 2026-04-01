@@ -27,6 +27,11 @@ impl Cli {
         self.command.execute(config).await
     }
 
+    /// The parsed config (from CLI flags).
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     /// The selected output mode.
     pub fn output_mode(&self) -> &OutputMode {
         &self.config.output
