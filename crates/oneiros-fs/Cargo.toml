@@ -1,9 +1,0 @@
-[package]
-name = "oneiros-fs"
-version.workspace = true
-edition.workspace = true
-description = "Thin wrapper for common oneiros file system operations"
-repository.workspace = true
-license.workspace = true
-
-[dependencies]

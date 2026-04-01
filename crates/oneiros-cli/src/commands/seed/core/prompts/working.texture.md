@@ -1,1 +1,0 @@
-Capture thoughts as they happen during implementation. Ephemeral, low-commitment. Think out loud.

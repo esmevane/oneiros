@@ -1,1 +1,0 @@
-When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.

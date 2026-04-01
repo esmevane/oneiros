@@ -1,1 +1,0 @@
-What you're actively processing — in-flight thoughts, scratchpad notes, things you haven't consolidated yet. Working memories are more immediate than session context because they represent what's happening right now. Use this level freely for attempts and partial understanding. When things crystallize, promote to session or project.
