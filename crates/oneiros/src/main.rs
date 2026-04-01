@@ -1,5 +1,4 @@
-use clap::Parser;
-use oneiros_engine::{Cli, OutputMode, Rendered, Responses};
+use oneiros_engine::{Engine, OutputMode, Rendered, Responses};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn core::error::Error>> {
@@ -8,28 +7,19 @@ async fn main() -> Result<(), Box<dyn core::error::Error>> {
         .with_writer(std::io::stderr)
         .init();
 
-    let cli = Cli::parse();
-    let config = cli.config().clone().with_config_file();
-    let result: Rendered<Responses> = cli.execute(&config).await?;
+    let (engine, cli) = Engine::from_cli()?;
+    let result: Rendered<Responses> = engine.execute(&cli).await?;
 
-    match config.output {
-        OutputMode::Json => {
-            println!("{}", serde_json::to_string_pretty(result.response())?);
-        }
-        OutputMode::Prompt => {
-            if result.has_prompt() {
-                print!("{}", result.prompt());
-            } else {
-                println!("{}", serde_json::to_string_pretty(result.response())?);
-            }
-        }
-        OutputMode::Text => {
-            if result.has_text() {
-                print!("{}", result.text());
-            } else {
-                println!("{}", serde_json::to_string_pretty(result.response())?);
-            }
-        }
+    let as_json = serde_json::to_string(result.response())?;
+
+    match (
+        &engine.config().output,
+        result.has_prompt(),
+        result.has_text(),
+    ) {
+        (OutputMode::Prompt, true, _) => print!("{}", result.prompt()),
+        (OutputMode::Text, _, true) => print!("{}", result.text()),
+        (OutputMode::Json, _, _) | (_, false, _) | (_, _, false) => println!("{as_json}"),
     }
 
     Ok(())

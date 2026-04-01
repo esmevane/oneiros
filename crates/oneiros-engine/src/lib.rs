@@ -1,6 +1,7 @@
 mod cli;
 mod client;
 mod config;
+mod engine;
 mod contexts;
 mod domains;
 mod error;
@@ -19,6 +20,7 @@ mod values;
 pub use cli::*;
 pub use client::*;
 pub use config::*;
+pub use engine::*;
 pub use contexts::*;
 pub use domains::*;
 pub use error::*;

@@ -1,5 +1,5 @@
 ---
-description: "Read the cognitive guidebook \u2014 learn how your tools work"
+description: "Read the cognitive guidebook — learn how your tools work"
 argument-hint: <agent-name>
 ---
 

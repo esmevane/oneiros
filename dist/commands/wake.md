@@ -1,5 +1,5 @@
 ---
-description: "Wake an agent \u2014 restore identity and begin a session"
+description: "Wake an agent — restore identity and begin a session"
 argument-hint: <agent-name>
 ---
 

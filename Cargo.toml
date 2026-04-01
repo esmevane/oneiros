@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "crates/*",
   "tests/*",
+  "xtasks",
 ]
 
 [workspace.package]
@@ -12,31 +13,25 @@ repository = "https://github.com/esmevane/oneiros"
 license = "MIT"
 
 [workspace.dependencies]
-anstream = "0.6.21"
+# anstream = "0.6.21"
 askama = "0.15"
-axum = { version = "0.8.8", features = ["macros"] }
+axum = "0.8.8"
 bon = "3.8"
-bytes = "1.11"
+# bytes = "1.11"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
-clap-verbosity-flag = { version = "3", default-features = false, features = [
-  "tracing"
-] }
-colorchoice-clap = "1.0.7"
+# clap-verbosity-flag = { version = "3", default-features = false, features = [
+#   "tracing"
+# ] }
+# colorchoice-clap = "1.0.7"
 data-encoding = "2"
-directories = "5"
+# directories = "5"
 etcetera = "0.11.0"
 flate2 = "1"
-hyper = { version = "1.8", features = ["full"] }
-hyper-util = { version = "0.1.20", features = ["tokio"] }
-inquire = "0.7"
 kinded = "0.5.0"
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.8" }
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"
-prettyplease = "0.2"
-proc-macro2 = "1"
-quote = "1"
 reqwest = { version = "0.13", features = ["json"] }
 rmcp = { version = "1.1.1", features = [
   "server",
@@ -53,20 +48,19 @@ serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 service-manager = "0.10"
 sha2 = "0.10"
-syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 toml = "0.8"
 tower = { version = "0.5.3", features = ["util"] }
-tower-http = { version = "0.6", features = ["trace"] }
+# tower-http = { version = "0.6", features = ["trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-trybuild = "1"
-urlencoding = "2.1"
+# trybuild = "1"
+# urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
-whoami = "1"
+# whoami = "1"
 
 # The profile that 'dist' will build with
 [profile.dist]
