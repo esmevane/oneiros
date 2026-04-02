@@ -4,250 +4,549 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>oneiros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Spectral:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0e0e10;
-  --surface: #1a1a1f;
-  --border: #2a2a32;
-  --text: #c8c8d0;
-  --text-dim: #6e6e7a;
-  --accent: #8b7ec8;
-  --accent-dim: #5c5480;
-  --green: #5a9e6f;
-  --orange: #c49a5a;
+  --colors-neutral-100:#e8edf4;--colors-neutral-200:#cfd7e2;--colors-neutral-300:#b6c0d0;
+  --colors-neutral-400:#9daabd;--colors-neutral-500:#8494ab;--colors-neutral-600:#6b7d99;
+  --colors-neutral-700:#566985;--colors-neutral-800:#47566e;--colors-neutral-900:#374357;
+  --colors-neutral-1000:#273040;--colors-neutral-1100:#181e29;--colors-neutral-1200:#080b12;
+  --colors-primary-100:#b0f0f0;--colors-primary-200:#8cdfe8;--colors-primary-300:#63cedf;
+  --colors-primary-400:#2bbdd7;--colors-primary-500:#04a8c1;--colors-primary-600:#0891a7;
+  --colors-primary-700:#0a7b8e;--colors-primary-800:#0b6676;--colors-primary-900:#0a515e;
+  --colors-primary-1000:#083d48;--colors-primary-1100:#062b32;--colors-primary-1200:#04191e;
+  --colors-accent-100:#e8d0f8;--colors-accent-200:#d1ace4;--colors-accent-300:#b988d0;
+  --colors-accent-400:#a264bc;--colors-accent-500:#8e51a7;--colors-accent-800:#59306a;
+  --colors-accent-900:#482657;
+  --colors-success-300:#6fae7a;--colors-success-500:#2a7f48;
+  --colors-warn-300:#e4bc64;--colors-warn-500:#c1921f;
+  --colors-error-300:#e787a1;--colors-error-500:#c14c6f;
+  --colors-info-300:#7673d5;--colors-info-500:#4436b0;
+  --color-bg:var(--colors-neutral-1200);--color-bg-raised:var(--colors-neutral-1100);
+  --color-bg-overlay:var(--colors-neutral-1000);--color-text:var(--colors-neutral-100);
+  --color-text-secondary:var(--colors-neutral-400);--color-text-muted:var(--colors-neutral-600);
+  --color-border:var(--colors-neutral-900);--color-border-strong:var(--colors-neutral-800);
+  --color-interactive:var(--colors-primary-500);
+  --font-family-mono:'DM Mono',ui-monospace,monospace;
+  --font-family-sans:'DM Sans',system-ui,sans-serif;
+  --font-family-serif:Spectral,Georgia,serif;
+  --font-size-3xs:0.8rem;--font-size-xxs:0.9rem;--font-size-xs:1rem;--font-size-sm:1.1rem;
+  --font-size-md:1.2rem;--font-size-lg:1.44rem;--font-size-xl:1.728rem;
+  --font-size-xxl:2rem;--font-size-3xl:3rem;
+  --font-weight-300:300;--font-weight-400:400;--font-weight-500:500;
+  --font-weight-600:600;--font-weight-700:700;--font-weight-800:800;
+  --line-height-xs:1.2;--line-height-lg:1.65;--line-height-xl:1.75;
+  --letter-spacing-tight:-0.02em;--letter-spacing-wide:0.04em;
+  --letter-spacing-wider:0.08em;--letter-spacing-widest:0.14em;--letter-spacing-ultra:0.22em;
+  --space-3xs:2px;--space-xxs:4px;--space-xs:8px;--space-sm:12px;--space-md:16px;
+  --space-lg:24px;--space-xl:32px;--space-xxl:48px;--space-3xl:80px;
+  --border-radius:4px;--border-width-sm:1px;--border-width-md:2px;
+  --gradient-identity:linear-gradient(135deg,#63cedf,#48b7ca,#2aa0b5,#3b8daa,#747eb2,#986bb9,#ae76c6,#bf91d5,#d1ace4);
+  --gradient-ocean:linear-gradient(135deg,#63cedf,#5ba9d5,#5385ca,#4b60be,#4436b0);
+  --gradient-heat:linear-gradient(135deg,#e787a1,#e69c8e,#e5b077,#e0b75d,#d2a746,#c5972b);
+  --gradient-ember:linear-gradient(135deg,#e787a1,#d9718e,#cb5b7b,#bd5079,#b25b96,#a662b3);
+  --gradient-frost:linear-gradient(135deg,#9d9ae3,#7976d1,#5751bd,#4247a8,#3e6c8b,#3e8968);
+  --transition-default:0.15s ease;--transition-slow:0.3s ease;--opacity-noise:0.025;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', monospace;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
-  font-size: 14px;
-}
-.container { max-width: 960px; margin: 0 auto; padding: 24px; }
-header {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 32px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 16px;
-}
-header h1 { font-size: 20px; font-weight: 600; color: var(--accent); }
-header .status {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: var(--green);
-  color: var(--bg);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
-  margin-bottom: 32px;
-}
-.stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 16px;
-}
-.stat .value { font-size: 28px; font-weight: 700; color: var(--accent); }
-.stat .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-section { margin-bottom: 32px; }
-section h2 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
-}
-.agent-list { display: flex; flex-direction: column; gap: 8px; }
-.agent {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 16px;
-}
-.agent .name { font-weight: 600; color: var(--accent); }
-.agent .persona { color: var(--text-dim); font-size: 12px; }
-.cognition-list { display: flex; flex-direction: column; gap: 4px; }
-.cognition {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 13px;
-}
-.cognition .meta {
-  display: flex;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-bottom: 4px;
-}
-.cognition .texture { color: var(--orange); }
-.cognition .content {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#activity {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
-  min-height: 80px;
-  max-height: 300px;
-  overflow-y: auto;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-#activity:empty::before {
-  content: 'listening...';
-  font-style: italic;
-}
-.event-entry {
-  padding: 4px 0;
-  border-bottom: 1px solid var(--border);
-  word-break: break-word;
-}
-.event-entry:last-child { border-bottom: none; }
-.event-type { color: var(--accent); font-weight: 600; }
-.loading { color: var(--text-dim); font-style: italic; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--color-bg);color:var(--color-text);font-family:var(--font-family-serif);font-size:var(--font-size-xs);line-height:var(--line-height-xl);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:var(--opacity-noise);pointer-events:none;z-index:1000}
+a{color:inherit;text-decoration:none}
+.identity-strip{height:3px;background:var(--gradient-identity);position:fixed;top:0;left:0;right:0;z-index:100}
+.shell{display:grid;grid-template-columns:220px 1fr;max-width:1280px;margin:0 auto;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;padding:var(--space-xxl) 0 var(--space-xxl) var(--space-xl);border-right:var(--border-width-sm) solid var(--color-border);display:flex;flex-direction:column}
+.sidebar::-webkit-scrollbar{width:3px}.sidebar::-webkit-scrollbar-thumb{background:var(--color-border-strong);border-radius:2px}
+.sb-brand{font-family:var(--font-family-mono);font-size:var(--font-size-sm);letter-spacing:var(--letter-spacing-widest);color:var(--colors-primary-500);text-transform:uppercase;margin-bottom:var(--space-xxs);cursor:pointer}
+.sb-tagline{font-family:var(--font-family-serif);font-style:italic;font-size:var(--font-size-xxs);color:var(--color-text-muted);margin-bottom:var(--space-xl)}
+.sb-heading{font-family:var(--font-family-sans);font-size:var(--font-size-3xs);font-weight:var(--font-weight-700);letter-spacing:var(--letter-spacing-ultra);text-transform:uppercase;color:var(--color-text-muted);margin:var(--space-lg) 0 var(--space-xs)}
+.sb-link{display:block;font-family:var(--font-family-sans);font-size:var(--font-size-xxs);color:var(--color-text-secondary);padding:var(--space-3xs) var(--space-sm);border-left:var(--border-width-md) solid transparent;margin-left:calc(-1 * var(--space-sm));transition:color var(--transition-default),border-color var(--transition-default);cursor:pointer}
+.sb-link:hover{color:var(--color-text);border-left-color:var(--colors-primary-900)}
+.sb-link.active{color:var(--colors-primary-500);border-left-color:var(--colors-primary-500)}
+.sb-link.sub{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--color-text-muted);padding-left:var(--space-lg);letter-spacing:var(--letter-spacing-wide)}
+.sb-spacer{flex:1}
+.sb-footer{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--colors-neutral-700);letter-spacing:var(--letter-spacing-wide)}
+.content{padding:var(--space-3xl) var(--space-xxl);max-width:980px;min-height:100vh}
+.page{display:none}.page.active{display:block}
+.eyebrow{font-family:var(--font-family-mono);font-size:var(--font-size-xxs);letter-spacing:var(--letter-spacing-ultra);text-transform:uppercase;color:var(--colors-primary-500);margin-bottom:var(--space-md);display:flex;align-items:center;gap:var(--space-sm)}
+.eyebrow::after{content:"";display:inline-block;height:1px;width:56px;background:var(--colors-primary-900)}
+.title{font-family:var(--font-family-sans);font-size:var(--font-size-3xl);font-weight:var(--font-weight-800);line-height:var(--line-height-xs);letter-spacing:var(--letter-spacing-tight);margin-bottom:var(--space-xs)}
+.subtitle{font-family:var(--font-family-serif);font-style:italic;font-size:var(--font-size-lg);font-weight:var(--font-weight-300);color:var(--color-text-secondary);line-height:var(--line-height-lg);margin-bottom:var(--space-3xl);max-width:620px}
+.section{margin-bottom:var(--space-3xl)}
+.section-head{display:flex;align-items:baseline;gap:var(--space-sm);margin-bottom:var(--space-lg);padding-bottom:var(--space-sm);border-bottom:var(--border-width-sm) solid var(--color-border)}
+.section-num{font-family:var(--font-family-mono);font-size:var(--font-size-xxs);color:var(--colors-primary-500);letter-spacing:var(--letter-spacing-wider);flex-shrink:0}
+.section h2{font-family:var(--font-family-sans);font-size:var(--font-size-xl);font-weight:var(--font-weight-700);letter-spacing:var(--letter-spacing-tight)}
+.card{background:var(--color-bg-raised);border:var(--border-width-sm) solid var(--color-border);border-radius:var(--border-radius);transition:border-color var(--transition-default)}
+.card:hover{border-color:var(--color-border-strong)}
+.card-click{cursor:pointer}
+.mono-lbl{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);font-weight:var(--font-weight-500);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase}
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-sm);margin-bottom:var(--space-3xl)}
+.stat{padding:var(--space-lg)}
+.stat-val{font-family:var(--font-family-sans);font-size:var(--font-size-xxl);font-weight:var(--font-weight-800);color:var(--colors-primary-400);line-height:1;margin-bottom:var(--space-xxs)}
+.stat-lbl{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--color-text-muted);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase}
+/* Pressure */
+.pressure-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-sm)}
+.p-card{padding:var(--space-lg);position:relative;overflow:hidden}
+.p-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.p-card[data-i="low"]::before{background:var(--gradient-frost)}
+.p-card[data-i="med"]::before{background:var(--gradient-ocean)}
+.p-card[data-i="high"]::before{background:var(--gradient-heat)}
+.p-card[data-i="crit"]::before{background:var(--gradient-ember)}
+.p-name{font-family:var(--font-family-sans);font-size:var(--font-size-sm);font-weight:var(--font-weight-600);margin-bottom:var(--space-xs)}
+.p-track{height:6px;background:var(--color-bg-overlay);border-radius:3px;margin-bottom:var(--space-xs);overflow:hidden}
+.p-fill{height:100%;border-radius:3px;transition:width var(--transition-slow)}
+.p-fill[data-i="low"]{background:var(--gradient-frost)}
+.p-fill[data-i="med"]{background:var(--gradient-ocean)}
+.p-fill[data-i="high"]{background:var(--gradient-heat)}
+.p-fill[data-i="crit"]{background:var(--gradient-ember)}
+.p-row{display:flex;justify-content:space-between;align-items:baseline}
+.p-pct{font-family:var(--font-family-mono);font-size:var(--font-size-lg);font-weight:var(--font-weight-700)}
+.p-pct[data-i="low"]{color:var(--colors-success-300)}
+.p-pct[data-i="med"]{color:var(--colors-primary-300)}
+.p-pct[data-i="high"]{color:var(--colors-warn-300)}
+.p-pct[data-i="crit"]{color:var(--colors-error-300)}
+.p-cta{font-family:var(--font-family-serif);font-style:italic;font-size:var(--font-size-3xs);color:var(--color-text-muted);max-width:240px;text-align:right}
+/* Agents */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-sm)}
+.a-card{padding:var(--space-lg)}
+.a-name{font-family:var(--font-family-sans);font-size:var(--font-size-sm);font-weight:var(--font-weight-600);color:var(--colors-primary-400);margin-bottom:var(--space-3xs)}
+.a-persona{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--color-text-muted);letter-spacing:var(--letter-spacing-wide);margin-bottom:var(--space-sm)}
+.a-desc{font-family:var(--font-family-serif);font-size:var(--font-size-xxs);color:var(--color-text-secondary);line-height:var(--line-height-lg)}
+/* Cognitions */
+.cog-stream{display:flex;flex-direction:column;gap:var(--space-xs)}
+.cog{padding:var(--space-md) var(--space-lg)}
+.cog-meta{display:flex;align-items:baseline;gap:var(--space-sm);margin-bottom:var(--space-xxs)}
+.cog-tex{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);font-weight:var(--font-weight-500);letter-spacing:var(--letter-spacing-wide);text-transform:uppercase}
+.cog-tex[data-t="observation"]{color:var(--colors-primary-400)}
+.cog-tex[data-t="reflection"]{color:var(--colors-accent-300)}
+.cog-tex[data-t="working"]{color:var(--color-text-muted)}
+.cog-tex[data-t="learning"]{color:var(--colors-success-300)}
+.cog-tex[data-t="connection"]{color:var(--colors-info-300)}
+.cog-tex[data-t="bond"]{color:var(--colors-error-300)}
+.cog-tex[data-t="dream"]{color:var(--colors-accent-200)}
+.cog-tex[data-t="handoff"]{color:var(--colors-warn-300)}
+.cog-who{font-family:var(--font-family-sans);font-size:var(--font-size-3xs);font-weight:var(--font-weight-600);color:var(--color-text-secondary)}
+.cog-when{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--colors-neutral-700);margin-left:auto}
+.cog-txt{font-family:var(--font-family-serif);font-size:var(--font-size-xxs);color:var(--color-text-secondary);line-height:var(--line-height-lg);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* Activity */
+.feed{padding:var(--space-md);max-height:320px;overflow-y:auto}
+.feed::-webkit-scrollbar{width:3px}.feed::-webkit-scrollbar-thumb{background:var(--color-border-strong);border-radius:2px}
+.feed-row{display:flex;align-items:baseline;gap:var(--space-sm);padding:var(--space-xxs) 0;border-bottom:var(--border-width-sm) solid rgba(255,255,255,0.03);font-size:var(--font-size-3xs)}
+.feed-row:last-child{border-bottom:none}
+.feed-type{font-family:var(--font-family-mono);font-weight:var(--font-weight-500);color:var(--colors-primary-500);letter-spacing:var(--letter-spacing-wide);flex-shrink:0}
+.feed-detail{font-family:var(--font-family-serif);color:var(--color-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed-time{font-family:var(--font-family-mono);color:var(--colors-neutral-700);margin-left:auto;flex-shrink:0}
+/* Search */
+.search-box{position:relative;margin-bottom:var(--space-3xl)}
+.search-input{width:100%;background:var(--color-bg-raised);border:var(--border-width-sm) solid var(--color-border);border-radius:var(--border-radius);padding:var(--space-md) var(--space-lg) var(--space-md) var(--space-xxl);font-family:var(--font-family-serif);font-size:var(--font-size-md);color:var(--color-text);outline:none;transition:border-color var(--transition-default)}
+.search-input::placeholder{color:var(--color-text-muted);font-style:italic}
+.search-input:focus{border-color:var(--colors-primary-700)}
+.search-icon{position:absolute;left:var(--space-lg);top:50%;transform:translateY(-50%);font-family:var(--font-family-mono);color:var(--color-text-muted);font-size:var(--font-size-sm)}
+.search-results{display:flex;flex-direction:column;gap:var(--space-sm)}
+.sr{padding:var(--space-lg)}
+.sr-head{display:flex;align-items:baseline;gap:var(--space-sm);margin-bottom:var(--space-xxs)}
+.sr-kind{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);letter-spacing:var(--letter-spacing-wider);text-transform:uppercase;padding:var(--space-3xs) var(--space-xs);border-radius:var(--border-radius)}
+.sr-kind[data-k="cognition"]{color:var(--colors-primary-400);background:rgba(4,168,193,0.1)}
+.sr-kind[data-k="memory"]{color:var(--colors-accent-300);background:rgba(185,136,208,0.1)}
+.sr-kind[data-k="experience"]{color:var(--colors-info-300);background:rgba(118,115,213,0.1)}
+.sr-time{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--colors-neutral-700);margin-left:auto}
+.sr-txt{font-family:var(--font-family-serif);font-size:var(--font-size-xxs);color:var(--color-text-secondary);line-height:var(--line-height-lg)}
+.sr-txt mark{background:rgba(4,168,193,0.15);color:var(--colors-primary-300);border-radius:2px;padding:0 2px}
+.loading{color:var(--color-text-muted);font-style:italic;font-family:var(--font-family-serif)}
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>oneiros</h1>
-    <span class="status">active</span>
-  </header>
-
-  <div class="stats">
-    <div class="stat"><div class="value" id="agent-count">-</div><div class="label">Agents</div></div>
-    <div class="stat"><div class="value" id="cognition-count">-</div><div class="label">Cognitions</div></div>
-    <div class="stat"><div class="value" id="memory-count">-</div><div class="label">Memories</div></div>
-    <div class="stat"><div class="value" id="experience-count">-</div><div class="label">Experiences</div></div>
-    <div class="stat"><div class="value" id="connection-count">-</div><div class="label">Connections</div></div>
-    <div class="stat"><div class="value" id="event-count">-</div><div class="label">Events</div></div>
+<div class="identity-strip"></div>
+<div class="shell">
+  <div class="sidebar">
+    <div class="sb-brand" onclick="go('project')">oneiros</div>
+    <div class="sb-tagline" id="sb-brain">continuous cognition</div>
+    <div class="sb-heading">BRAIN</div>
+    <a class="sb-link" data-page="project" onclick="go('project')">Overview</a>
+    <a class="sb-link" data-page="search" onclick="go('search')">Search</a>
+    <div class="sb-heading" id="sb-agents-heading" style="display:none">AGENTS</div>
+    <div id="sb-agents"></div>
+    <div class="sb-spacer"></div>
+    <div class="sb-footer">oneiros &middot; engine</div>
   </div>
+  <div class="content">
 
-  <section id="agents-section" style="display:none">
-    <h2>Agents</h2>
-    <div class="agent-list" id="agents"></div>
-  </section>
+    <!-- PROJECT -->
+    <div class="page" id="page-project">
+      <div class="eyebrow">project</div>
+      <h1 class="title" id="proj-title">loading&hellip;</h1>
+      <p class="subtitle" id="proj-subtitle"></p>
+      <div class="stats" id="proj-stats"></div>
+      <div class="section" id="pressure-section" style="display:none">
+        <div class="section-head"><span class="section-num">01</span><h2>Pressure</h2></div>
+        <div class="pressure-grid" id="pressure-grid"></div>
+      </div>
+      <div class="section" id="agents-section" style="display:none">
+        <div class="section-head"><span class="section-num">02</span><h2>Agents</h2></div>
+        <div class="agent-grid" id="agent-grid"></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-num">03</span><h2>Recent Cognitions</h2></div>
+        <div class="cog-stream" id="cog-stream"><div class="loading">loading&hellip;</div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-num">04</span><h2>Activity</h2></div>
+        <div class="card feed" id="activity"><div class="loading">listening&hellip;</div></div>
+      </div>
+    </div>
 
-  <section id="cognitions-section" style="display:none">
-    <h2>Recent Cognitions</h2>
-    <div class="cognition-list" id="cognitions"></div>
-  </section>
+    <!-- SEARCH -->
+    <div class="page" id="page-search">
+      <div class="eyebrow">search</div>
+      <h1 class="title">Search</h1>
+      <p class="subtitle">Full-text search across cognitions, memories, experiences, and agents.</p>
+      <div class="search-box">
+        <span class="search-icon">/</span>
+        <input class="search-input" id="search-input" type="text" placeholder="What are you looking for?">
+      </div>
+      <div class="search-results" id="search-results"></div>
+    </div>
 
-  <section>
-    <h2>Activity</h2>
-    <div id="activity"></div>
-  </section>
+    <!-- AGENT DETAIL -->
+    <div class="page" id="page-agent">
+      <div class="eyebrow">agent</div>
+      <div id="agent-detail"><div class="loading">loading&hellip;</div></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
 (function() {
-  // Fetch summary data
-  fetch('/summary')
+  var TOKEN = null;
+  var BRAIN = null;
+
+  // Bootstrap: fetch token and brain name, then load the page
+  fetch('/dashboard/config')
     .then(function(r) { return r.json(); })
-    .then(function(data) {
-      document.getElementById('agent-count').textContent = data.agent_count;
-      document.getElementById('cognition-count').textContent = data.cognition_count;
-      document.getElementById('memory-count').textContent = data.memory_count;
-      document.getElementById('experience-count').textContent = data.experience_count;
-      document.getElementById('connection-count').textContent = data.connection_count;
-      document.getElementById('event-count').textContent = data.event_count;
+    .then(function(cfg) {
+      TOKEN = cfg.token;
+      BRAIN = cfg.brain;
+      document.getElementById('sb-brain').textContent = BRAIN || 'continuous cognition';
+      var hash = location.hash.replace('#', '') || 'project';
+      go(hash);
+    })
+    .catch(function() { go('project'); });
+
+  // Authenticated fetch helper
+  function api(path) {
+    var opts = {};
+    if (TOKEN) opts.headers = { 'Authorization': 'Bearer ' + TOKEN };
+    return fetch(path, opts).then(function(r) {
+      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      return r.json();
+    });
+  }
+
+  // Navigation
+  window.go = function(page, detail) {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.sb-link').forEach(function(l) { l.classList.remove('active'); });
+    var el = document.getElementById('page-' + page);
+    if (el) el.classList.add('active');
+    var link = document.querySelector('.sb-link[data-page="' + page + '"]');
+    if (link) link.classList.add('active');
+    location.hash = detail ? page + '/' + detail : page;
+    window.scrollTo(0, 0);
+
+    if (page === 'project') loadProject();
+    if (page === 'search') document.getElementById('search-input').focus();
+    if (page === 'agent' && detail) loadAgent(detail);
+  };
+
+  window.addEventListener('hashchange', function() {
+    var parts = location.hash.replace('#', '').split('/');
+    go(parts[0] || 'project', parts[1]);
+  });
+
+  // ── Project Page ──
+  var projectLoaded = false;
+  function loadProject() {
+    if (projectLoaded) return;
+    api('/summary').then(function(d) {
+      projectLoaded = true;
+      document.getElementById('proj-title').textContent = BRAIN || 'oneiros';
+      document.getElementById('proj-subtitle').textContent =
+        'A brain with ' + d.agent_count + ' agents, ' +
+        d.cognition_count.toLocaleString() + ' thoughts, and ' +
+        d.event_count.toLocaleString() + ' events.';
+
+      // Stats
+      var stats = document.getElementById('proj-stats');
+      stats.innerHTML = '';
+      [
+        [d.agent_count, 'Agents'], [d.cognition_count, 'Cognitions'],
+        [d.memory_count, 'Memories'], [d.experience_count, 'Experiences'],
+        [d.connection_count, 'Connections'], [d.event_count, 'Events']
+      ].forEach(function(s) {
+        var card = document.createElement('div');
+        card.className = 'card stat';
+        card.innerHTML = '<div class="stat-val">' + s[0].toLocaleString() + '</div><div class="stat-lbl">' + s[1] + '</div>';
+        stats.appendChild(card);
+      });
 
       // Agents
-      if (data.agents && data.agents.length > 0) {
-        var section = document.getElementById('agents-section');
-        section.style.display = '';
-        var list = document.getElementById('agents');
-        data.agents.forEach(function(agent) {
-          var div = document.createElement('div');
-          div.className = 'agent';
-          var name = document.createElement('span');
-          name.className = 'name';
-          name.textContent = agent.name;
-          var persona = document.createElement('span');
-          persona.className = 'persona';
-          persona.textContent = ' ' + (agent.persona || '');
-          div.appendChild(name);
-          div.appendChild(persona);
-          list.appendChild(div);
+      if (d.agents && d.agents.length) {
+        document.getElementById('agents-section').style.display = '';
+        document.getElementById('sb-agents-heading').style.display = '';
+        var grid = document.getElementById('agent-grid');
+        var sbAgents = document.getElementById('sb-agents');
+        grid.innerHTML = '';
+        sbAgents.innerHTML = '';
+        d.agents.forEach(function(a) {
+          var card = document.createElement('div');
+          card.className = 'card a-card card-click';
+          card.onclick = function() { go('agent', a.name); };
+          card.innerHTML = '<div class="a-name">' + esc(a.name) + '</div>' +
+            '<div class="a-persona">' + esc(a.persona || '') + '</div>' +
+            '<div class="a-desc">' + esc(a.description || '') + '</div>';
+          grid.appendChild(card);
+
+          var link = document.createElement('a');
+          link.className = 'sb-link sub';
+          link.textContent = a.name;
+          link.onclick = function() { go('agent', a.name); };
+          sbAgents.appendChild(link);
         });
       }
 
       // Recent cognitions
-      if (data.recent_cognitions && data.recent_cognitions.length > 0) {
-        var section = document.getElementById('cognitions-section');
-        section.style.display = '';
-        var list = document.getElementById('cognitions');
-        data.recent_cognitions.forEach(function(cog) {
-          var div = document.createElement('div');
-          div.className = 'cognition';
-          var meta = document.createElement('div');
-          meta.className = 'meta';
-          var texture = document.createElement('span');
-          texture.className = 'texture';
-          texture.textContent = cog.texture || '';
-          var time = document.createElement('span');
-          time.textContent = cog.created_at ? new Date(cog.created_at).toLocaleString() : '';
-          meta.appendChild(texture);
-          meta.appendChild(time);
-          var content = document.createElement('div');
-          content.className = 'content';
-          content.textContent = cog.content || '';
-          div.appendChild(meta);
-          div.appendChild(content);
-          list.appendChild(div);
-        });
-      }
-    })
-    .catch(function(err) {
-      console.error('Failed to load summary:', err);
+      var stream = document.getElementById('cog-stream');
+      stream.innerHTML = '';
+      (d.recent_cognitions || []).slice(0, 20).forEach(function(c) {
+        stream.appendChild(cogCard(c));
+      });
+
+      // Load pressures
+      loadPressures();
+    }).catch(function(e) {
+      document.getElementById('proj-title').textContent = 'oneiros';
+      document.getElementById('proj-subtitle').textContent = 'Could not load summary: ' + e.message;
     });
 
-  // SSE activity stream
-  var feed = document.getElementById('activity');
-  var source = new EventSource('/activity');
-
-  source.onmessage = function(e) {
-    try {
-      var data = JSON.parse(e.data);
-      var type = data.event_type || 'unknown';
-      var entry = document.createElement('div');
-      entry.className = 'event-entry';
-      var typeSpan = document.createElement('span');
-      typeSpan.className = 'event-type';
-      typeSpan.textContent = type;
-      entry.appendChild(typeSpan);
-      entry.appendChild(document.createTextNode(' ' + new Date().toLocaleTimeString()));
-      feed.prepend(entry);
-
-      while (feed.children.length > 100) {
-        feed.removeChild(feed.lastChild);
-      }
-    } catch(err) {
-      // skip malformed events
+    // SSE activity stream
+    if (!window._sse) {
+      var feed = document.getElementById('activity');
+      var opts = {};
+      // EventSource doesn't support custom headers, so we skip auth for SSE
+      // (this may need a cookie or query param approach later)
+      window._sse = new EventSource('/activity');
+      window._sse.onmessage = function(e) {
+        try {
+          var ev = JSON.parse(e.data);
+          var type = ev.event_type || ev.events && Object.keys(ev.events)[0] || 'event';
+          if (feed.querySelector('.loading')) feed.innerHTML = '';
+          var row = document.createElement('div');
+          row.className = 'feed-row';
+          row.innerHTML = '<span class="feed-type">' + esc(type) + '</span>' +
+            '<span class="feed-detail">' + esc(JSON.stringify(ev).substring(0, 120)) + '</span>' +
+            '<span class="feed-time">' + new Date().toLocaleTimeString() + '</span>';
+          feed.prepend(row);
+          while (feed.children.length > 100) feed.removeChild(feed.lastChild);
+        } catch(err) {}
+      };
+      window._sse.onerror = function() {
+        var row = document.createElement('div');
+        row.className = 'feed-row';
+        row.innerHTML = '<span class="feed-detail">reconnecting&hellip;</span>';
+        feed.prepend(row);
+      };
     }
-  };
+  }
 
-  source.onerror = function() {
-    var entry = document.createElement('div');
-    entry.className = 'event-entry';
-    entry.textContent = 'connection lost, retrying...';
-    feed.prepend(entry);
-  };
+  function loadPressures() {
+    api('/pressures').then(function(pressures) {
+      if (!pressures || !pressures.length) return;
+      document.getElementById('pressure-section').style.display = '';
+      var grid = document.getElementById('pressure-grid');
+      grid.innerHTML = '';
+      pressures.forEach(function(p) {
+        var pct = p.percent || (p.pressure && p.pressure.percent) || 0;
+        var urge = p.urge || (p.pressure && p.pressure.urge) || 'unknown';
+        var intensity = pct >= 75 ? 'crit' : pct >= 65 ? 'high' : pct >= 50 ? 'med' : 'low';
+        var card = document.createElement('div');
+        card.className = 'card p-card';
+        card.setAttribute('data-i', intensity);
+        card.innerHTML =
+          '<div class="p-name">' + esc(urge) + '</div>' +
+          '<div class="p-track"><div class="p-fill" data-i="' + intensity + '" style="width:' + pct + '%"></div></div>' +
+          '<div class="p-row"><span class="p-pct" data-i="' + intensity + '">' + pct + '%</span></div>';
+        grid.appendChild(card);
+      });
+    }).catch(function() {});
+  }
+
+  // ── Search ──
+  var searchTimer = null;
+  document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('search-input');
+    if (input) {
+      input.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() { doSearch(input.value); }, 300);
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { clearTimeout(searchTimer); doSearch(input.value); }
+      });
+    }
+  });
+
+  function doSearch(q) {
+    var results = document.getElementById('search-results');
+    if (!q || q.length < 2) { results.innerHTML = ''; return; }
+    results.innerHTML = '<div class="loading">searching&hellip;</div>';
+    api('/search?query=' + encodeURIComponent(q)).then(function(data) {
+      results.innerHTML = '';
+      var items = Array.isArray(data) ? data : (data.results || [data]);
+      items.forEach(function(r) {
+        var kind = r.kind || r.type || 'result';
+        var content = r.content || r.description || r.text || JSON.stringify(r);
+        var card = document.createElement('div');
+        card.className = 'card sr';
+        card.innerHTML =
+          '<div class="sr-head"><span class="sr-kind" data-k="' + esc(kind) + '">' + esc(kind) + '</span></div>' +
+          '<div class="sr-txt">' + highlightSearch(esc(content), q) + '</div>';
+        results.appendChild(card);
+      });
+      if (!items.length) results.innerHTML = '<div class="loading">no results</div>';
+    }).catch(function(e) {
+      results.innerHTML = '<div class="loading">search failed: ' + esc(e.message) + '</div>';
+    });
+  }
+
+  function highlightSearch(text, query) {
+    if (!query) return text;
+    var re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return text.replace(re, '<mark>$1</mark>');
+  }
+
+  // ── Agent Detail ──
+  function loadAgent(name) {
+    var container = document.getElementById('agent-detail');
+    container.innerHTML = '<div class="loading">loading ' + esc(name) + '&hellip;</div>';
+
+    Promise.all([
+      api('/agents/' + encodeURIComponent(name)),
+      api('/pressures/' + encodeURIComponent(name)).catch(function() { return null; }),
+      api('/cognitions?agent=' + encodeURIComponent(name)).catch(function() { return []; }),
+      api('/memories?agent=' + encodeURIComponent(name)).catch(function() { return []; })
+    ]).then(function(results) {
+      var agent = results[0];
+      var pressures = results[1];
+      var cognitions = Array.isArray(results[2]) ? results[2] : (results[2].data || results[2].cognitions || []);
+      var memories = Array.isArray(results[3]) ? results[3] : (results[3].data || results[3].memories || []);
+
+      // Handle wrapped agent response
+      var a = agent.agent || agent;
+      if (Array.isArray(a)) a = a[0];
+
+      var html = '';
+      // Identity card
+      html += '<div class="card" style="overflow:hidden;margin-bottom:var(--space-3xl)">';
+      html += '<div style="height:48px;background:var(--gradient-identity)"></div>';
+      html += '<div style="padding:var(--space-xl)">';
+      html += '<h1 style="font-family:var(--font-family-sans);font-size:var(--font-size-xxl);font-weight:800;margin-bottom:var(--space-xxs)">' + esc(a.name || name) + '</h1>';
+      html += '<div style="font-family:var(--font-family-mono);font-size:var(--font-size-xxs);color:var(--colors-primary-500);letter-spacing:var(--letter-spacing-wider);margin-bottom:var(--space-md)">' + esc(a.persona || '') + '</div>';
+      html += '<p style="font-family:var(--font-family-serif);font-size:var(--font-size-sm);color:var(--color-text-secondary);line-height:var(--line-height-lg);max-width:560px">' + esc(a.description || '') + '</p>';
+      html += '</div></div>';
+
+      // Pressures
+      if (pressures) {
+        var pList = Array.isArray(pressures) ? pressures : (pressures.readings || [pressures]);
+        if (pList.length) {
+          html += '<div class="section"><div class="section-head"><span class="section-num">01</span><h2>Pressure</h2></div>';
+          html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-sm)">';
+          pList.forEach(function(p) {
+            var pct = p.percent || 0;
+            var urge = p.urge || 'unknown';
+            var intensity = pct >= 75 ? 'crit' : pct >= 65 ? 'high' : pct >= 50 ? 'med' : 'low';
+            html += '<div class="card" style="padding:var(--space-md) var(--space-lg);position:relative;overflow:hidden">';
+            html += '<div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gradient-' +
+              (intensity === 'crit' ? 'ember' : intensity === 'high' ? 'heat' : intensity === 'med' ? 'ocean' : 'frost') + ')"></div>';
+            html += '<div class="mono-lbl" style="color:var(--color-text-muted);margin-bottom:var(--space-xxs)">' + esc(urge) + '</div>';
+            html += '<div style="font-family:var(--font-family-sans);font-size:var(--font-size-xl);font-weight:700;color:var(--colors-' +
+              (intensity === 'crit' ? 'error' : intensity === 'high' ? 'warn' : intensity === 'med' ? 'primary' : 'success') + '-300)">' + pct + '%</div>';
+            html += '</div>';
+          });
+          html += '</div></div>';
+        }
+      }
+
+      // Cognitions
+      if (cognitions.length) {
+        html += '<div class="section"><div class="section-head"><span class="section-num">02</span><h2>Cognitions</h2></div>';
+        html += '<div class="cog-stream">';
+        cognitions.slice(0, 30).forEach(function(c) {
+          html += cogCardHtml(c);
+        });
+        html += '</div></div>';
+      }
+
+      // Memories
+      if (memories.length) {
+        html += '<div class="section"><div class="section-head"><span class="section-num">03</span><h2>Memories</h2></div>';
+        html += '<div style="display:flex;flex-direction:column;gap:var(--space-xs)">';
+        memories.forEach(function(m) {
+          var level = m.level || 'unknown';
+          var levelColor = level === 'core' ? 'var(--colors-accent-300)' :
+            level === 'project' ? 'var(--colors-primary-400)' :
+            level === 'session' ? 'var(--colors-success-300)' : 'var(--color-text-muted)';
+          html += '<div class="card" style="padding:var(--space-md) var(--space-lg)">';
+          html += '<div class="mono-lbl" style="color:' + levelColor + ';margin-bottom:var(--space-xxs)">' + esc(level) + '</div>';
+          html += '<div style="font-family:var(--font-family-serif);font-size:var(--font-size-xxs);color:var(--color-text-secondary);line-height:var(--line-height-lg);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(m.content || '') + '</div>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+      }
+
+      container.innerHTML = html;
+    }).catch(function(e) {
+      container.innerHTML = '<div class="loading">Failed to load agent: ' + esc(e.message) + '</div>';
+    });
+  }
+
+  // Helpers
+  function cogCard(c) {
+    var div = document.createElement('div');
+    div.className = 'card cog';
+    div.innerHTML = cogCardHtml(c);
+    return div;
+  }
+
+  function cogCardHtml(c) {
+    var tex = c.texture || '';
+    var agent = c.agent || c.agent_name || '';
+    var time = c.created_at ? timeAgo(c.created_at) : '';
+    return '<div class="cog-meta"><span class="cog-tex" data-t="' + esc(tex) + '">' + esc(tex) + '</span>' +
+      '<span class="cog-who">' + esc(agent) + '</span>' +
+      '<span class="cog-when">' + esc(time) + '</span></div>' +
+      '<div class="cog-txt">' + esc(c.content || '') + '</div>';
+  }
+
+  function timeAgo(ts) {
+    var d = new Date(ts);
+    var now = Date.now();
+    var diff = Math.floor((now - d.getTime()) / 1000);
+    if (diff < 60) return diff + 's';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+    return Math.floor(diff / 86400) + 'd';
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
 })();
 </script>
 </body>

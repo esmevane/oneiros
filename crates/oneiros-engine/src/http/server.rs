@@ -1,4 +1,4 @@
-use axum::{Router, response::Html, routing};
+use axum::{Json, Router, extract::State, response::Html, routing};
 use tokio::net::TcpListener;
 
 use crate::*;
@@ -40,17 +40,17 @@ impl Server {
     }
 
     pub fn router(&self) -> Router {
-        async fn index() -> Html<&'static str> {
-            Html(DASHBOARD_HTML)
-        }
-
-        async fn health() -> &'static str {
-            "ok"
+        /// Returns the dashboard bootstrap config: token + brain name.
+        async fn dashboard_config(State(state): State<ServerState>) -> Json<serde_json::Value> {
+            let token = state.token().map(|t| t.to_string());
+            let brain = state.brain_name().to_string();
+            Json(serde_json::json!({ "token": token, "brain": brain }))
         }
 
         let root = Router::new()
-            .route("/", routing::get(index))
-            .route("/health", routing::get(health));
+            .route("/", routing::get(async || Html(DASHBOARD_HTML)))
+            .route("/health", routing::get(async || "ok"))
+            .route("/dashboard/config", routing::get(dashboard_config));
 
         Router::new()
             .merge(root)

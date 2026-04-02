@@ -15,6 +15,16 @@ impl ServerState {
     pub fn new(config: Config) -> Self {
         Self { config }
     }
+
+    /// The token for the configured brain, if one exists.
+    pub fn token(&self) -> Option<Token> {
+        self.config.token()
+    }
+
+    /// The brain name from the server config.
+    pub fn brain_name(&self) -> &BrainName {
+        &self.config.brain
+    }
 }
 
 impl FromRequestParts<ServerState> for SystemContext {
