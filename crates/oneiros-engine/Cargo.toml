@@ -33,6 +33,8 @@ tower.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+futures.workspace = true
 pretty_assertions.workspace = true
+shlex.workspace = true
 tempfile.workspace = true
 tokio.workspace = true

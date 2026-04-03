@@ -1,19 +1,28 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
+use tokio::sync::broadcast;
 
 use crate::*;
 
 /// Shared state for the HTTP server.
 ///
-/// Carries the system context (always available) and a registry of
-/// open brain infrastructure (resolved per-request via Bearer token).
+/// Carries the system context (always available), a shared broadcast
+/// channel for SSE subscribers, and resolves brain context per-request
+/// via Bearer token.
 #[derive(Clone)]
 pub struct ServerState {
     config: Config,
+    broadcast: broadcast::Sender<StoredEvent>,
 }
 
 impl ServerState {
     pub fn new(config: Config) -> Self {
-        Self { config }
+        let (broadcast, _) = broadcast::channel(256);
+        Self { config, broadcast }
+    }
+
+    /// The server configuration.
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 
     /// The token for the configured brain, if one exists.
@@ -24,6 +33,16 @@ impl ServerState {
     /// The brain name from the server config.
     pub fn brain_name(&self) -> &BrainName {
         &self.config.brain
+    }
+
+    /// The shared broadcast sender for SSE event streaming.
+    pub fn broadcast(&self) -> &broadcast::Sender<StoredEvent> {
+        &self.broadcast
+    }
+
+    /// Build a project context that shares this server's broadcast channel.
+    pub fn project_context(&self, config: Config) -> ProjectContext {
+        ProjectContext::with_broadcast(config, self.broadcast.clone())
     }
 }
 
@@ -76,11 +95,10 @@ impl FromRequestParts<ServerState> for ProjectContext {
             _ => return Err(AuthError::InvalidToken),
         }
 
-        // Assemble ProjectContext per-request — override brain from the token
+        // Assemble ProjectContext with shared broadcast channel
         let mut config = state.config.clone();
         config.brain = ticket.brain_name;
-        let context = ProjectContext::new(config);
 
-        Ok(context)
+        Ok(state.project_context(config))
     }
 }
