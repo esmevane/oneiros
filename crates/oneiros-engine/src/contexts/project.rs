@@ -20,6 +20,18 @@ impl ProjectContext {
         }
     }
 
+    /// Create a context that shares an existing broadcast channel.
+    ///
+    /// Used by the HTTP server so all per-request contexts and SSE
+    /// subscribers share the same event stream.
+    pub fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
+        Self {
+            config,
+            projections: Projections::project(),
+            broadcast,
+        }
+    }
+
     /// The brain name for this project.
     pub fn brain_name(&self) -> &BrainName {
         &self.config.brain

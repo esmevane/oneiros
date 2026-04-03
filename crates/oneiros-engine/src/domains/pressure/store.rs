@@ -20,26 +20,20 @@ impl<'a> PressureStore<'a> {
 
     /// Recompute pressure for the agent associated with this event.
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        let agent_name_str = match self.resolve_agent_name(event) {
-            Some(name) => name,
-            None => return Ok(()),
-        };
+        let agents = self.resolve_agents(event)?;
 
-        let agent_name = AgentName::new(&agent_name_str);
+        if agents.is_empty() {
+            return Ok(());
+        }
 
-        // Look up the agent by name
-        let agent = match AgentStore::new(self.conn).get(&agent_name)? {
-            Some(a) => a,
-            None => return Ok(()),
-        };
-
-        // Get all urges
         let urges = UrgeStore::new(self.conn).list()?;
         let now = Timestamp::now();
 
-        for urge in &urges {
-            let gauge = self.compute_gauge(&urge.name, &agent.id, &agent.name)?;
-            self.upsert(&agent.id, &urge.name, &gauge, &now)?;
+        for agent in &agents {
+            for urge in &urges {
+                let gauge = self.compute_gauge(&urge.name, &agent.id, &agent.name)?;
+                self.upsert(&agent.id, &urge.name, &gauge, &now)?;
+            }
         }
 
         Ok(())
@@ -139,22 +133,45 @@ impl<'a> PressureStore<'a> {
 
     // ── Private compute helpers ───────────────────────────────────
 
-    fn resolve_agent_name(&self, event: &StoredEvent) -> Option<String> {
-        match &event.data {
-            Events::Cognition(CognitionEvents::CognitionAdded(c)) => AgentStore::new(self.conn)
-                .get_name_by_id(&c.agent_id)
-                .ok()
-                .flatten()
+    /// Resolve which agents should have their pressure recomputed for this event.
+    ///
+    /// Most events map to a single agent. Connection and experience events may
+    /// affect pressure gauges that count orphaned/unconnected entities, so we
+    /// recompute for all agents when we can't resolve a single one.
+    fn resolve_agents(&self, event: &StoredEvent) -> Result<Vec<Agent>, EventError> {
+        let agent_store = AgentStore::new(self.conn);
+
+        // Try to resolve a single agent first
+        let agent_name = match &event.data {
+            Events::Cognition(CognitionEvents::CognitionAdded(c)) => agent_store
+                .get_name_by_id(&c.agent_id)?
                 .map(|n| n.to_string()),
-            Events::Memory(MemoryEvents::MemoryAdded(m)) => AgentStore::new(self.conn)
-                .get_name_by_id(&m.agent_id)
-                .ok()
-                .flatten()
+            Events::Memory(MemoryEvents::MemoryAdded(m)) => agent_store
+                .get_name_by_id(&m.agent_id)?
+                .map(|n| n.to_string()),
+            Events::Experience(ExperienceEvents::ExperienceCreated(e)) => agent_store
+                .get_name_by_id(&e.agent_id)?
                 .map(|n| n.to_string()),
             Events::Continuity(ContinuityEvents::Introspected(a)) => Some(a.agent.to_string()),
             Events::Continuity(ContinuityEvents::Reflected(a)) => Some(a.agent.to_string()),
             Events::Continuity(ContinuityEvents::Dreamed(a)) => Some(a.agent.to_string()),
-            _ => None,
+            Events::Continuity(ContinuityEvents::Slept(a)) => Some(a.agent.to_string()),
+            Events::Continuity(ContinuityEvents::Sensed(a)) => Some(a.agent.to_string()),
+            // Connection events affect orphaned/unconnected counts for any agent
+            // whose entities are referenced. Recompute for all agents.
+            Events::Connection(_) => None,
+            _ => return Ok(vec![]),
+        };
+
+        match agent_name {
+            Some(name) => {
+                let agent = agent_store.get(&AgentName::new(&name))?;
+                Ok(agent.into_iter().collect())
+            }
+            None => {
+                // Broad recompute — connection events may affect any agent's pressure
+                Ok(agent_store.list()?)
+            }
         }
     }
 
@@ -335,7 +352,7 @@ impl<'a> PressureStore<'a> {
         let orphaned: u64 = self
             .conn
             .query_row(
-                "SELECT COUNT(*) FROM cognitions c WHERE c.agent_id = ?1 AND NOT EXISTS (SELECT 1 FROM connections WHERE source_ref LIKE '%' || c.id || '%' OR target_ref LIKE '%' || c.id || '%')",
+                "SELECT COUNT(*) FROM cognitions c WHERE c.agent_id = ?1 AND NOT EXISTS (SELECT 1 FROM connections WHERE from_ref LIKE '%' || c.id || '%' OR to_ref LIKE '%' || c.id || '%')",
                 params![agent_id_str],
                 |row| row.get(0),
             )
@@ -389,7 +406,7 @@ impl<'a> PressureStore<'a> {
         let connected_experiences: u64 = self
             .conn
             .query_row(
-                "SELECT COUNT(DISTINCT e.id) FROM experiences e INNER JOIN connections c ON c.source_ref LIKE '%' || e.id || '%' OR c.target_ref LIKE '%' || e.id || '%' WHERE e.agent_id = ?1",
+                "SELECT COUNT(DISTINCT e.id) FROM experiences e INNER JOIN connections c ON c.from_ref LIKE '%' || e.id || '%' OR c.to_ref LIKE '%' || e.id || '%' WHERE e.agent_id = ?1",
                 params![agent_id_str],
                 |row| row.get(0),
             )

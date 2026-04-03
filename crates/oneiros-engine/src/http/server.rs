@@ -1,4 +1,9 @@
+use std::sync::Arc;
+
 use axum::{Json, Router, extract::State, response::Html, routing};
+use rmcp::transport::streamable_http_server::{
+    session::local::LocalSessionManager, tower::StreamableHttpService,
+};
 use tokio::net::TcpListener;
 
 use crate::*;
@@ -52,8 +57,22 @@ impl Server {
             .route("/health", routing::get(async || "ok"))
             .route("/dashboard/config", routing::get(dashboard_config));
 
+        // MCP streamable HTTP transport — each session gets its own EngineToolBox
+        // that shares the server's broadcast channel for event observability.
+        let state = ServerState::new(self.config.clone());
+        let mcp_state = state.clone();
+        let mcp_service = StreamableHttpService::new(
+            move || {
+                let context = mcp_state.project_context(mcp_state.config().clone());
+                Ok(EngineToolBox::new(context))
+            },
+            Arc::new(LocalSessionManager::default()),
+            Default::default(),
+        );
+
         Router::new()
             .merge(root)
+            .nest("/mcp", Router::new().route_service("/", mcp_service))
             .merge(LevelRouter.routes())
             .merge(TextureRouter.routes())
             .merge(SensationRouter.routes())
@@ -74,6 +93,6 @@ impl Server {
             .merge(ActorRouter.routes())
             .merge(TicketRouter.routes())
             .merge(BrainRouter.routes())
-            .with_state(ServerState::new(self.config.clone()))
+            .with_state(state)
     }
 }
