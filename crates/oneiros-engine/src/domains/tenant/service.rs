@@ -12,7 +12,10 @@ impl TenantService {
         context
             .emit(TenantEvents::TenantCreated(tenant.clone()))
             .await?;
-        Ok(TenantResponse::Created(tenant))
+        let ref_token = RefToken::new(Ref::tenant(tenant.id));
+        Ok(TenantResponse::Created(
+            Response::new(tenant).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -23,8 +26,10 @@ impl TenantService {
             .get(&selector.id)
             .await?
             .ok_or_else(|| TenantError::NotFound(selector.id))?;
-
-        Ok(TenantResponse::Found(tenant))
+        let ref_token = RefToken::new(Ref::tenant(tenant.id));
+        Ok(TenantResponse::Found(
+            Response::new(tenant).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -32,6 +37,9 @@ impl TenantService {
         ListTenants { filters }: &ListTenants,
     ) -> Result<TenantResponse, TenantError> {
         let listed = TenantRepo::new(context).list(filters).await?;
-        Ok(TenantResponse::Listed(listed))
+        Ok(TenantResponse::Listed(listed.map(|t| {
+            let ref_token = RefToken::new(Ref::tenant(t.id));
+            Response::new(t).with_ref_token(ref_token)
+        })))
     }
 }

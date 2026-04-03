@@ -24,24 +24,26 @@ impl CognitionCommands {
         };
 
         let prompt = match &response {
-            CognitionResponse::CognitionAdded(cognition) => {
-                let ref_token = RefToken::new(Ref::cognition(cognition.id));
-                format!("Cognition recorded: {ref_token}")
+            CognitionResponse::CognitionAdded(wrapped) => wrapped
+                .meta()
+                .ref_token()
+                .map(|ref_token| format!("Cognition recorded: {ref_token}"))
+                .unwrap_or_default(),
+            CognitionResponse::CognitionDetails(wrapped) => {
+                format!("[{}] {}", wrapped.data.texture, wrapped.data.content)
             }
-            CognitionResponse::CognitionDetails(Cognition {
-                id: _,
-                agent_id: _,
-                texture,
-                content,
-                created_at: _,
-            }) => format!("[{texture}] {content}"),
             CognitionResponse::Cognitions(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for cognition in &listed.items {
-                    let ref_token = RefToken::new(Ref::cognition(cognition.id));
+                for wrapped in &listed.items {
+                    let ref_token = wrapped
+                        .meta()
+                        .ref_token()
+                        .map(|ref_token| ref_token.to_string())
+                        .unwrap_or_default();
+
                     out.push_str(&format!(
                         "  [{}] {}\n    {}\n\n",
-                        cognition.texture, cognition.content, ref_token
+                        wrapped.data.texture, wrapped.data.content, ref_token
                     ));
                 }
                 out
@@ -49,17 +51,6 @@ impl CognitionCommands {
             CognitionResponse::NoCognitions => "No cognitions.".to_string(),
         };
 
-        let envelope = match response.clone() {
-            CognitionResponse::CognitionAdded(Cognition {
-                id,
-                agent_id: _,
-                texture: _,
-                content: _,
-                created_at: _,
-            }) => Response::new(response.into()).with_ref_token(RefToken::new(Ref::cognition(id))),
-            otherwise => Response::new(otherwise.into()),
-        };
-
-        Ok(Rendered::new(envelope, prompt, String::new()))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

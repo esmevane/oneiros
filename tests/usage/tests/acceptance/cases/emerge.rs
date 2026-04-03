@@ -8,7 +8,7 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
         .exec_json("emerge newborn process --description 'A new agent'")
         .await?;
 
-    match &response.data {
+    match &response {
         // Engine: typed continuity response
         Responses::Continuity(ContinuityResponse::Emerged(ctx)) => {
             assert_eq!(ctx.agent.name, AgentName::new("newborn.process"));
@@ -24,7 +24,7 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     let show = harness.exec_json("agent show newborn.process").await?;
 
     assert!(
-        matches!(show.data, Responses::Agent(AgentResponse::AgentDetails(_))),
+        matches!(show, Responses::Agent(AgentResponse::AgentDetails(_))),
         "expected AgentDetails after emerge, got {show:#?}"
     );
 
@@ -79,7 +79,7 @@ pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("recede retiring.process").await?;
 
-    match &response.data {
+    match &response {
         // Engine: typed continuity response
         Responses::Continuity(ContinuityResponse::Receded(name)) => {
             assert_eq!(*name, AgentName::new("retiring.process"));

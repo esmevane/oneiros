@@ -10,7 +10,7 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Sensation(SensationResponse::SensationSet(_))
         ),
         "expected SensationSet, got {response:#?}"
@@ -18,10 +18,10 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("sensation show echoes").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Sensation(SensationResponse::SensationDetails(s)) => {
-            assert_eq!(s.name.as_str(), "echoes");
-            assert_eq!(s.description.as_str(), "Resonance between thoughts");
+            assert_eq!(s.data.name.as_str(), "echoes");
+            assert_eq!(s.data.description.as_str(), "Resonance between thoughts");
         }
         other => panic!("expected SensationDetails, got {other:#?}"),
     }
@@ -42,9 +42,9 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("sensation show draft").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Sensation(SensationResponse::SensationDetails(s)) => {
-            assert_eq!(s.description.as_str(), "Updated");
+            assert_eq!(s.data.description.as_str(), "Updated");
         }
         other => panic!("expected SensationDetails, got {other:#?}"),
     }
@@ -59,7 +59,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Sensation(SensationResponse::NoSensations)
         ),
         "expected NoSensations, got {response:#?}"
@@ -81,7 +81,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("sensation list").await?;
 
-    match response.data {
+    match response {
         Responses::Sensation(SensationResponse::Sensations(list)) => {
             assert_eq!(list.len(), 2);
         }
@@ -102,7 +102,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Sensation(SensationResponse::SensationRemoved(_))
         ),
         "expected SensationRemoved, got {remove_response:?}"
@@ -112,7 +112,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            list_response.data,
+            list_response,
             Responses::Sensation(SensationResponse::NoSensations)
         ),
         "expected NoSensations after removal, got {list_response:?}"

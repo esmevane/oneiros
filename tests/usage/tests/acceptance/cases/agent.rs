@@ -24,10 +24,7 @@ pub(crate) async fn create_with_persona<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Agent(AgentResponse::AgentCreated(_))
-        ),
+        matches!(response, Responses::Agent(AgentResponse::AgentCreated(_))),
         "expected AgentCreated, got {response:#?}"
     );
 
@@ -45,8 +42,8 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
         .query("agent show viewer.process")
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.name.as_str() == "viewer.process"
-                    && agent.persona.as_str() == "process"
+                if agent.data.name.as_str() == "viewer.process"
+                    && agent.data.persona.as_str() == "process"
         ))
         .await
 }
@@ -92,10 +89,7 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Agent(AgentResponse::AgentUpdated(_))
-        ),
+        matches!(response, Responses::Agent(AgentResponse::AgentUpdated(_))),
         "expected AgentUpdated, got {response:#?}"
     );
 
@@ -103,7 +97,7 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
         .query("agent show mutable.process")
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.description.as_str() == "Updated"
+                if agent.data.description.as_str() == "Updated"
         ))
         .await
 }
@@ -118,10 +112,7 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     let response = harness.exec_json("agent remove temporary.process").await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Agent(AgentResponse::AgentRemoved(_))
-        ),
+        matches!(response, Responses::Agent(AgentResponse::AgentRemoved(_))),
         "expected AgentRemoved, got {response:#?}"
     );
 
@@ -229,7 +220,7 @@ pub(crate) async fn name_includes_persona_suffix<B: Backend>() -> TestResult {
         .query("agent show governor.process")
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.name.as_str() == "governor.process"
+                if agent.data.name.as_str() == "governor.process"
         ))
         .await
 }

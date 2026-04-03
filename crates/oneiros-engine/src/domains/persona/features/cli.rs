@@ -27,16 +27,19 @@ impl PersonaCommands {
 
         let prompt = match &response {
             PersonaResponse::PersonaSet(name) => format!("Persona '{name}' set."),
-            PersonaResponse::PersonaDetails(p) => {
+            PersonaResponse::PersonaDetails(wrapped) => {
                 format!(
                     "Persona '{}'\n  Description: {}\n  Prompt: {}",
-                    p.name, p.description, p.prompt
+                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
                 )
             }
             PersonaResponse::Personas(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for persona in &listed.items {
-                    out.push_str(&format!("  {} — {}\n\n", persona.name, persona.description,));
+                for wrapped in &listed.items {
+                    out.push_str(&format!(
+                        "  {} — {}\n\n",
+                        wrapped.data.name, wrapped.data.description,
+                    ));
                 }
                 out
             }
@@ -44,10 +47,6 @@ impl PersonaCommands {
             PersonaResponse::PersonaRemoved(name) => format!("Persona '{name}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

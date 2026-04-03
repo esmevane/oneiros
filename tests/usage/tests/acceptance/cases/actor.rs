@@ -6,14 +6,14 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("actor list").await?;
 
-    match response.data {
+    match response {
         Responses::Actor(ActorResponse::Listed(actors)) => {
             assert_eq!(
                 actors.len(),
                 1,
                 "system init should create exactly one actor"
             );
-            assert_eq!(actors.items[0].name.as_str(), "test");
+            assert_eq!(actors.items[0].data.name.as_str(), "test");
         }
         other => panic!("expected Actor(Listed), got {other:#?}"),
     }

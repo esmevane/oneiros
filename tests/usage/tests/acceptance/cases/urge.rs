@@ -9,13 +9,13 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(response.data, Responses::Urge(UrgeResponse::UrgeSet(_))),
+        matches!(response, Responses::Urge(UrgeResponse::UrgeSet(_))),
         "expected UrgeSet, got {response:#?}"
     );
 
     let show_response = harness.exec_json("urge show introspect").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Urge(UrgeResponse::UrgeDetails(u)) => {
             assert_eq!(u.name.as_str(), "introspect");
             assert_eq!(u.description.as_str(), "The pull to look inward");
@@ -39,7 +39,7 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("urge show draft").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Urge(UrgeResponse::UrgeDetails(u)) => {
             assert_eq!(u.description.as_str(), "Updated");
         }
@@ -55,7 +55,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let response = harness.exec_json("urge list").await?;
 
     assert!(
-        matches!(response.data, Responses::Urge(UrgeResponse::NoUrges)),
+        matches!(response, Responses::Urge(UrgeResponse::NoUrges)),
         "expected NoUrges, got {response:#?}"
     );
 
@@ -75,7 +75,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("urge list").await?;
 
-    match response.data {
+    match response {
         Responses::Urge(UrgeResponse::Urges(list)) => {
             assert_eq!(list.len(), 2);
         }
@@ -96,7 +96,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Urge(UrgeResponse::UrgeRemoved(_))
         ),
         "expected UrgeRemoved, got {remove_response:?}"
@@ -105,7 +105,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
     let list_response = harness.exec_json("urge list").await?;
 
     assert!(
-        matches!(list_response.data, Responses::Urge(UrgeResponse::NoUrges)),
+        matches!(list_response, Responses::Urge(UrgeResponse::NoUrges)),
         "expected NoUrges after removal, got {list_response:?}"
     );
 

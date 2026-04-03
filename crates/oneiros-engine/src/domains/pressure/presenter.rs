@@ -12,7 +12,7 @@ impl PressurePresenter {
     pub fn render(self) -> Rendered<Responses> {
         let prompt = self.render_prompt();
         let text = self.render_text();
-        let data = Response::new(Responses::from(self.response));
+        let data = Responses::from(self.response);
 
         Rendered::new(data, prompt, text)
     }

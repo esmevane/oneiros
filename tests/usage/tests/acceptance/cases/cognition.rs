@@ -25,7 +25,7 @@ pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Cognition(CognitionResponse::CognitionAdded(_))
         ),
         "expected CognitionAdded, got {response:#?}"
@@ -41,7 +41,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Cognition(CognitionResponse::NoCognitions)
         ),
         "expected NoCognitions, got {response:#?}"
@@ -62,7 +62,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("cognition list").await?;
 
-    match response.data {
+    match response {
         Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
             assert_eq!(cognitions.len(), 2);
         }
@@ -90,7 +90,7 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .exec_json("cognition list --agent thinker.process")
         .await?;
 
-    match response.data {
+    match response {
         Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
             assert_eq!(cognitions.len(), 1);
         }
@@ -107,16 +107,16 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
 
-    let id = match add_response.data {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.id,
+    let id = match add_response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id,
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("cognition show {id}")).await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Cognition(CognitionResponse::CognitionDetails(cognition)) => {
-            assert_eq!(cognition.content.as_str(), "Show me this");
+            assert_eq!(cognition.data.content.as_str(), "Show me this");
         }
         other => panic!("expected CognitionDetails, got {other:#?}"),
     }
@@ -130,8 +130,8 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
     let response = harness
         .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
-    let id = match response.data {
-        Responses::Cognition(CognitionResponse::CognitionAdded(c)) => c.id.to_string(),
+    let id = match response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(c)) => c.data.id.to_string(),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
@@ -159,6 +159,69 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
         !prompt.is_empty(),
         "cognition list prompt should not be empty when cognitions exist"
     );
+
+    Ok(())
+}
+
+pub(crate) async fn show_json_includes_ref<B: Backend>() -> TestResult {
+    let harness = with_agent::<B>().await?;
+
+    let add_response = harness
+        .exec_json("cognition add thinker.process observation 'Show me this'")
+        .await?;
+
+    let id = match add_response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id,
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
+
+    let show_response = harness.exec_json(&format!("cognition show {id}")).await?;
+
+    match show_response {
+        Responses::Cognition(CognitionResponse::CognitionDetails(wrapped)) => {
+            let ref_token = wrapped
+                .meta
+                .and_then(|m| m.ref_token)
+                .expect("show response should include ref_token in entity meta");
+            assert!(
+                ref_token.to_string().starts_with("ref:"),
+                "ref_token should be a valid ref token"
+            );
+        }
+        other => panic!("expected CognitionDetails, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn list_json_items_include_refs<B: Backend>() -> TestResult {
+    let harness = with_agent::<B>().await?;
+
+    harness
+        .exec_json("cognition add thinker.process observation 'First thought'")
+        .await?;
+    harness
+        .exec_json("cognition add thinker.process observation 'Second thought'")
+        .await?;
+
+    let response = harness.exec_json("cognition list").await?;
+    let json = serde_json::to_value(&response)?;
+
+    let items = json["data"]["items"]
+        .as_array()
+        .expect("cognition list should have data.items array");
+
+    assert_eq!(items.len(), 2);
+
+    for item in items {
+        let ref_token = item["meta"]["ref_token"]
+            .as_str()
+            .expect("each listed cognition should have meta.ref_token");
+        assert!(
+            ref_token.starts_with("ref:"),
+            "ref_token should start with 'ref:', got: {ref_token}"
+        );
+    }
 
     Ok(())
 }

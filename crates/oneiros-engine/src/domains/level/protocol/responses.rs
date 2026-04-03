@@ -6,8 +6,8 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum LevelResponse {
     LevelSet(LevelName),
-    LevelDetails(Level),
-    Levels(Listed<Level>),
+    LevelDetails(Response<Level>),
+    Levels(Listed<Response<Level>>),
     NoLevels,
     LevelRemoved(LevelName),
 }

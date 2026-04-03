@@ -9,19 +9,16 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Persona(PersonaResponse::PersonaSet(_))
-        ),
+        matches!(response, Responses::Persona(PersonaResponse::PersonaSet(_))),
         "expected PersonaSet, got {response:#?}"
     );
 
     let show_response = harness.exec_json("persona show process").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Persona(PersonaResponse::PersonaDetails(p)) => {
-            assert_eq!(p.name.as_str(), "process");
-            assert_eq!(p.description.as_str(), "Process agents");
+            assert_eq!(p.data.name.as_str(), "process");
+            assert_eq!(p.data.description.as_str(), "Process agents");
         }
         other => panic!("expected PersonaDetails, got {other:#?}"),
     }
@@ -42,9 +39,9 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("persona show draft").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Persona(PersonaResponse::PersonaDetails(p)) => {
-            assert_eq!(p.description.as_str(), "Updated");
+            assert_eq!(p.data.description.as_str(), "Updated");
         }
         other => panic!("expected PersonaDetails, got {other:#?}"),
     }
@@ -58,10 +55,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let response = harness.exec_json("persona list").await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Persona(PersonaResponse::NoPersonas)
-        ),
+        matches!(response, Responses::Persona(PersonaResponse::NoPersonas)),
         "expected NoPersonas, got {response:#?}"
     );
 
@@ -81,7 +75,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("persona list").await?;
 
-    match response.data {
+    match response {
         Responses::Persona(PersonaResponse::Personas(list)) => {
             assert_eq!(list.len(), 2);
         }
@@ -102,7 +96,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Persona(PersonaResponse::PersonaRemoved(_))
         ),
         "expected PersonaRemoved, got {remove_response:?}"
@@ -112,7 +106,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            list_response.data,
+            list_response,
             Responses::Persona(PersonaResponse::NoPersonas)
         ),
         "expected NoPersonas after removal, got {list_response:?}"

@@ -27,16 +27,19 @@ impl TextureCommands {
 
         let prompt = match &response {
             TextureResponse::TextureSet(name) => format!("Texture '{name}' set."),
-            TextureResponse::TextureDetails(t) => {
+            TextureResponse::TextureDetails(wrapped) => {
                 format!(
                     "Texture '{}'\n  Description: {}\n  Prompt: {}",
-                    t.name, t.description, t.prompt
+                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
                 )
             }
             TextureResponse::Textures(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for texture in &listed.items {
-                    out.push_str(&format!("  {} — {}\n\n", texture.name, texture.description,));
+                for wrapped in &listed.items {
+                    out.push_str(&format!(
+                        "  {} — {}\n\n",
+                        wrapped.data.name, wrapped.data.description,
+                    ));
                 }
                 out
             }
@@ -44,10 +47,6 @@ impl TextureCommands {
             TextureResponse::TextureRemoved(name) => format!("Texture '{name}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

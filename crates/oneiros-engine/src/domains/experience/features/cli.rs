@@ -71,44 +71,37 @@ impl ExperienceCommands {
         };
 
         let prompt = match &response {
-            ExperienceResponse::ExperienceCreated(e) => {
-                format!(
-                    "Experience recorded: {}",
-                    RefToken::new(Ref::experience(e.id))
-                )
-            }
-            ExperienceResponse::ExperienceDetails(e) => {
-                format!("[{}] {}", e.sensation, e.description)
+            ExperienceResponse::ExperienceCreated(wrapped) => wrapped
+                .meta()
+                .ref_token()
+                .map(|ref_token| format!("Experience recorded: {ref_token}"))
+                .unwrap_or_default(),
+            ExperienceResponse::ExperienceDetails(wrapped) => {
+                format!("[{}] {}", wrapped.data.sensation, wrapped.data.description)
             }
             ExperienceResponse::Experiences(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for experience in &listed.items {
-                    let ref_token = RefToken::new(Ref::experience(experience.id));
+                for wrapped in &listed.items {
+                    let ref_token = &wrapped
+                        .meta()
+                        .ref_token()
+                        .map(|ref_token| ref_token.to_string())
+                        .unwrap_or_default();
                     out.push_str(&format!(
                         "  [{}] {}\n    {}\n\n",
-                        experience.sensation, experience.description, ref_token
+                        wrapped.data.sensation, wrapped.data.description, ref_token
                     ));
                 }
                 out
             }
             ExperienceResponse::NoExperiences => "No experiences.".to_string(),
-            ExperienceResponse::ExperienceUpdated(e) => {
-                format!(
-                    "Experience updated: {}",
-                    RefToken::new(Ref::experience(e.id))
-                )
-            }
+            ExperienceResponse::ExperienceUpdated(wrapped) => wrapped
+                .meta()
+                .ref_token()
+                .map(|ref_token| format!("Experience updated: {ref_token}"))
+                .unwrap_or_default(),
         };
 
-        let envelope =
-            match response.clone() {
-                ExperienceResponse::ExperienceCreated(e) => Response::new(response.into())
-                    .with_ref_token(RefToken::new(Ref::experience(e.id))),
-                ExperienceResponse::ExperienceUpdated(e) => Response::new(response.into())
-                    .with_ref_token(RefToken::new(Ref::experience(e.id))),
-                otherwise => Response::new(otherwise.into()),
-            };
-
-        Ok(Rendered::new(envelope, prompt, String::new()))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

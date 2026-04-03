@@ -47,19 +47,19 @@ impl StorageCommands {
         };
 
         let prompt = match &response {
-            StorageResponse::StorageSet(e) => format!("Stored '{}'.", e.key),
-            StorageResponse::StorageDetails(e) => {
+            StorageResponse::StorageSet(wrapped) => format!("Stored '{}'.", wrapped.data.key),
+            StorageResponse::StorageDetails(wrapped) => {
                 format!(
                     "Key: {}\n  Description: {}\n  Hash: {}",
-                    e.key, e.description, e.hash
+                    wrapped.data.key, wrapped.data.description, wrapped.data.hash
                 )
             }
             StorageResponse::Entries(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for entry in &listed.items {
+                for wrapped in &listed.items {
                     out.push_str(&format!(
                         "  {} — {}\n    hash: {}\n\n",
-                        entry.key, entry.description, entry.hash
+                        wrapped.data.key, wrapped.data.description, wrapped.data.hash
                     ));
                 }
                 out
@@ -68,10 +68,6 @@ impl StorageCommands {
             StorageResponse::StorageRemoved(key) => format!("Storage entry '{key}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

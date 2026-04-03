@@ -5,8 +5,8 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum CognitionResponse {
-    CognitionAdded(Cognition),
-    CognitionDetails(Cognition),
-    Cognitions(Listed<Cognition>),
+    CognitionAdded(Response<Cognition>),
+    CognitionDetails(Response<Cognition>),
+    Cognitions(Listed<Response<Cognition>>),
     NoCognitions,
 }

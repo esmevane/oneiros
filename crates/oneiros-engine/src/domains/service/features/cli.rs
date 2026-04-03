@@ -30,7 +30,7 @@ impl ServiceCommands {
         };
 
         Ok(Rendered::new(
-            Response::new(response.clone().into()),
+            response.clone().into(),
             response.to_string(),
             String::new(),
         ))

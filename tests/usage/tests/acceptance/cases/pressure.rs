@@ -18,9 +18,9 @@ pub(crate) async fn pressure_prompt_contains_readings<B: Backend>() -> TestResul
     Ok(())
 }
 
-/// Helper: extract pressure readings from a `Response<Responses>` value.
-fn extract_pressures(response: Response<Responses>) -> Vec<Pressure> {
-    match response.data {
+/// Helper: extract pressure readings from a `Responses` value.
+fn extract_pressures(response: Responses) -> Vec<Pressure> {
+    match response {
         Responses::Pressure(PressureResponse::Readings(result)) => result.pressures,
         other => panic!("expected Pressure(Readings), got {other:#?}"),
     }

@@ -55,6 +55,40 @@ Your current levels:
 {% endfor -%}
 {% endif -%}
 
+### Connections — Drawing Lines Between Things
+
+When two records resonate — a cognition led to a memory, a memory grounds an experience — you can draw a connection between them using **ref tokens**.
+
+Every entity in oneiros has a ref token: an opaque identifier that looks like `ref:AAcQAZ1...`. Ref tokens appear in:
+- The `meta.ref_token` field of JSON output (use `-o json`)
+- The prompt output after creating or listing entities
+
+To connect two things, use their ref tokens:
+```bash
+oneiros connection create <nature> <from-ref> <to-ref>
+```
+
+For example, to connect a cognition to a memory:
+```bash
+# List cognitions to find their refs
+oneiros cognition list {{ context.agent.name }}
+
+# List memories to find their refs
+oneiros memory list {{ context.agent.name }}
+
+# Connect them (use the ref tokens from the listings)
+oneiros connection create context ref:AAcQ... ref:AAcQ...
+```
+
+{% if !context.natures.is_empty() -%}
+Your current connection natures:
+{% for nature in context.natures -%}
+- **{{ nature.name }}** — {{ nature.description }}
+{% endfor -%}
+{% endif -%}
+
+Connections appear in your dream, showing how your thoughts, memories, and experiences relate to each other.
+
 ### Exploring Your History
 
 When a word keeps showing up in your thoughts — "surprising" three times, "stuck" across sessions — that's a thread worth following. Browse your own stream. What you find might connect in ways you didn't plan.
@@ -64,6 +98,16 @@ oneiros cognition list {{ context.agent.name }}
 oneiros memory list {{ context.agent.name }}
 oneiros search <query>
 ```
+
+### Output Formats
+
+Oneiros supports three output formats, each serving a different purpose:
+
+- **prompt** (default) — Designed for agent consumption. Includes ref tokens inline for easy cross-referencing.
+- **json** (`-o json`) — Structured data with `meta.ref_token` on each entity. Best for programmatic work.
+- **text** (`-o text`) — Human-readable summaries.
+
+When working programmatically (creating connections, scripting), use `-o json` to get ref tokens in a structured format you can extract reliably.
 
 ### Storage — Your Artifacts
 

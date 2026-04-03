@@ -38,7 +38,7 @@ impl Backend for EngineBackend {
         })
     }
 
-    async fn exec_json(&self, command: &str) -> Result<Response<Responses>, Error> {
+    async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
@@ -301,6 +301,14 @@ async fn connection_remove_prompt() -> TestResult {
 #[tokio::test]
 async fn cognition_add() -> TestResult {
     cases::cognition::add_creates_cognition::<EngineBackend>().await
+}
+#[tokio::test]
+async fn cognition_show_json_includes_ref() -> TestResult {
+    cases::cognition::show_json_includes_ref::<EngineBackend>().await
+}
+#[tokio::test]
+async fn cognition_list_json_items_include_refs() -> TestResult {
+    cases::cognition::list_json_items_include_refs::<EngineBackend>().await
 }
 #[tokio::test]
 async fn cognition_list_empty() -> TestResult {
@@ -759,6 +767,21 @@ async fn urge_list_prompt() -> TestResult {
 #[tokio::test]
 async fn urge_remove_prompt() -> TestResult {
     cases::urge::remove_prompt::<EngineBackend>().await
+}
+
+// Compact dream rendering
+#[tokio::test]
+async fn prompt_dream_vocabulary_names_only() -> TestResult {
+    cases::lifecycle::dream_prompt_vocabulary_names_only::<EngineBackend>().await
+}
+#[tokio::test]
+async fn prompt_dream_non_core_memories_summarized() -> TestResult {
+    cases::lifecycle::dream_prompt_non_core_memories_summarized::<EngineBackend>().await
+}
+
+#[tokio::test]
+async fn prompt_dream_deep_includes_full_vocabulary() -> TestResult {
+    cases::lifecycle::dream_deep_prompt_includes_full_vocabulary::<EngineBackend>().await
 }
 
 // Prompt output — lifecycle

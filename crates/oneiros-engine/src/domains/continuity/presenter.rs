@@ -8,60 +8,46 @@ use crate::*;
 
 pub struct ContinuityPresenter {
     response: ContinuityResponse,
+    deep: bool,
 }
 
 impl ContinuityPresenter {
     pub fn new(response: ContinuityResponse) -> Self {
-        Self { response }
+        Self {
+            response,
+            deep: false,
+        }
+    }
+
+    pub fn with_deep(mut self, deep: bool) -> Self {
+        self.deep = deep;
+        self
     }
 
     /// Render this continuity response into all available forms.
     ///
     /// Lifecycle commands (dream, wake, introspect, sleep, emerge, reflect)
-    /// carry compact pressure summaries in response meta — ambient awareness
-    /// of cognitive state without needing a separate pressure query.
+    /// carry the full `DreamContext` — callers can access pressure data
+    /// directly from the inner context rather than via response-level meta.
     pub fn render(self) -> Rendered<Responses> {
-        let summaries = self.pressure_summaries();
-        let mut data = Response::new(Responses::from(self.response.clone()));
-
-        if !summaries.is_empty() {
-            let meta = data.meta.get_or_insert_with(ResponseMeta::default);
-            meta.pressures = summaries;
-        }
-
+        let data = Responses::from(self.response.clone());
         let prompt = self.render_prompt();
         let text = self.render_text();
 
         Rendered::new(data, prompt, text)
     }
 
-    /// Extract compact pressure summaries from lifecycle responses.
-    fn pressure_summaries(&self) -> Vec<PressureSummary> {
-        let context = match &self.response {
-            ContinuityResponse::Dreaming(ctx)
-            | ContinuityResponse::Waking(ctx)
-            | ContinuityResponse::Emerged(ctx)
-            | ContinuityResponse::Introspecting(ctx)
-            | ContinuityResponse::Reflecting(ctx)
-            | ContinuityResponse::Sleeping(ctx) => Some(ctx),
-            _ => None,
-        };
-
-        context
-            .map(|ctx| {
-                ctx.pressures
-                    .iter()
-                    .map(|r| PressureSummary::from(&r.pressure))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
-
     fn render_prompt(&self) -> String {
         match &self.response {
             ContinuityResponse::Dreaming(context)
             | ContinuityResponse::Waking(context)
-            | ContinuityResponse::Emerged(context) => DreamTemplate::new(context).to_string(),
+            | ContinuityResponse::Emerged(context) => {
+                if self.deep {
+                    DreamTemplate::deep(context).to_string()
+                } else {
+                    DreamTemplate::new(context).to_string()
+                }
+            }
             ContinuityResponse::Status(table) => table.to_string(),
             ContinuityResponse::Introspecting(context) => {
                 let pressures = Self::relevant_pressures(context);

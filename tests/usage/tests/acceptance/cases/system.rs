@@ -8,7 +8,7 @@ pub(crate) async fn init_creates_tenant_and_actor<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::System(SystemResponse::SystemInitialized(_))
         ),
         "expected SystemInitialized, got {response:#?}"
@@ -36,7 +36,7 @@ pub(crate) async fn init_is_idempotent<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::System(SystemResponse::HostAlreadyInitialized)
         ),
         "expected HostAlreadyInitialized, got {response:#?}"

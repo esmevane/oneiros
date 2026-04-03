@@ -28,7 +28,10 @@ impl StorageService {
             .emit(StorageEvents::StorageSet(entry.clone()))
             .await?;
 
-        Ok(StorageResponse::StorageSet(entry))
+        let ref_token = RefToken::new(Ref::storage(entry.key.clone()));
+        Ok(StorageResponse::StorageSet(
+            Response::new(entry).with_ref_token(ref_token),
+        ))
     }
 
     /// Show storage metadata by key.
@@ -40,8 +43,10 @@ impl StorageService {
             .get_storage(&selector.key)
             .await?
             .ok_or_else(|| StorageError::KeyNotFound(selector.key.clone()))?;
-
-        Ok(StorageResponse::StorageDetails(entry))
+        let ref_token = RefToken::new(Ref::storage(entry.key.clone()));
+        Ok(StorageResponse::StorageDetails(
+            Response::new(entry).with_ref_token(ref_token),
+        ))
     }
 
     /// List all storage entries.
@@ -54,7 +59,10 @@ impl StorageService {
         if listed.total == 0 {
             Ok(StorageResponse::NoEntries)
         } else {
-            Ok(StorageResponse::Entries(listed))
+            Ok(StorageResponse::Entries(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::storage(e.key.clone()));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

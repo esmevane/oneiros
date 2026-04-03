@@ -27,16 +27,19 @@ impl LevelCommands {
 
         let prompt = match &response {
             LevelResponse::LevelSet(name) => format!("Level '{name}' set."),
-            LevelResponse::LevelDetails(l) => {
+            LevelResponse::LevelDetails(wrapped) => {
                 format!(
                     "Level '{}'\n  Description: {}\n  Prompt: {}",
-                    l.name, l.description, l.prompt
+                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
                 )
             }
             LevelResponse::Levels(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for level in &listed.items {
-                    out.push_str(&format!("  {} — {}\n\n", level.name, level.description,));
+                for wrapped in &listed.items {
+                    out.push_str(&format!(
+                        "  {} — {}\n\n",
+                        wrapped.data.name, wrapped.data.description,
+                    ));
                 }
                 out
             }
@@ -44,10 +47,6 @@ impl LevelCommands {
             LevelResponse::LevelRemoved(name) => format!("Level '{name}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

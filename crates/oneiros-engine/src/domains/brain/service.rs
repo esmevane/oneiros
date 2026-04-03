@@ -19,7 +19,10 @@ impl BrainService {
             .emit(BrainEvents::BrainCreated(brain.clone()))
             .await?;
 
-        Ok(BrainResponse::Created(brain))
+        let ref_token = RefToken::new(Ref::brain(brain.id));
+        Ok(BrainResponse::Created(
+            Response::new(brain).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -30,7 +33,10 @@ impl BrainService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| BrainError::NotFound(selector.name.clone()))?;
-        Ok(BrainResponse::Found(brain))
+        let ref_token = RefToken::new(Ref::brain(brain.id));
+        Ok(BrainResponse::Found(
+            Response::new(brain).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -38,6 +44,9 @@ impl BrainService {
         ListBrains { filters }: &ListBrains,
     ) -> Result<BrainResponse, BrainError> {
         let listed = BrainRepo::new(context).list(filters).await?;
-        Ok(BrainResponse::Listed(listed))
+        Ok(BrainResponse::Listed(listed.map(|b| {
+            let ref_token = RefToken::new(Ref::brain(b.id));
+            Response::new(b).with_ref_token(ref_token)
+        })))
     }
 }

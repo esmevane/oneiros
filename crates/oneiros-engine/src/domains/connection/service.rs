@@ -23,7 +23,10 @@ impl ConnectionService {
         context
             .emit(ConnectionEvents::ConnectionCreated(connection.clone()))
             .await?;
-        Ok(ConnectionResponse::ConnectionCreated(connection))
+        let ref_token = RefToken::new(Ref::connection(connection.id));
+        Ok(ConnectionResponse::ConnectionCreated(
+            Response::new(connection).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -34,7 +37,10 @@ impl ConnectionService {
             .get(&selector.id)
             .await?
             .ok_or_else(|| ConnectionError::NotFound(selector.id))?;
-        Ok(ConnectionResponse::ConnectionDetails(connection))
+        let ref_token = RefToken::new(Ref::connection(connection.id));
+        Ok(ConnectionResponse::ConnectionDetails(
+            Response::new(connection).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -55,7 +61,10 @@ impl ConnectionService {
         if listed.total == 0 {
             Ok(ConnectionResponse::NoConnections)
         } else {
-            Ok(ConnectionResponse::Connections(listed))
+            Ok(ConnectionResponse::Connections(listed.map(|c| {
+                let ref_token = RefToken::new(Ref::connection(c.id));
+                Response::new(c).with_ref_token(ref_token)
+            })))
         }
     }
 

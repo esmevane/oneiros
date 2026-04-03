@@ -28,7 +28,10 @@ impl NatureService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| NatureError::NotFound(selector.name.clone()))?;
-        Ok(NatureResponse::NatureDetails(nature))
+        let ref_token = RefToken::new(Ref::nature(nature.name.clone()));
+        Ok(NatureResponse::NatureDetails(
+            Response::new(nature).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -39,7 +42,10 @@ impl NatureService {
         if listed.total == 0 {
             Ok(NatureResponse::NoNatures)
         } else {
-            Ok(NatureResponse::Natures(listed))
+            Ok(NatureResponse::Natures(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::nature(e.name.clone()));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

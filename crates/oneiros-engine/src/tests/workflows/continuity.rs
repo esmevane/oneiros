@@ -69,7 +69,7 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         MemoryResponse::MemoryAdded(m) => {
-            assert_eq!(m.level.as_str(), "core");
+            assert_eq!(m.data.level.as_str(), "core");
             m
         }
         other => panic!("expected MemoryAdded, got {other:?}"),
@@ -131,8 +131,8 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .connection()
         .create(
             &CreateConnection::builder()
-                .from_ref(RefToken::new(Ref::memory(core_memory.id)))
-                .to_ref(RefToken::new(Ref::experience(experience.id)))
+                .from_ref(RefToken::new(Ref::memory(core_memory.data.id)))
+                .to_ref(RefToken::new(Ref::experience(experience.data.id)))
                 .nature("context")
                 .build(),
         )
@@ -455,7 +455,7 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     // Verify via client
     match client.agent().get(&agent).await? {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.persona, PersonaName::new("custom"));
+            assert_eq!(a.data.persona, PersonaName::new("custom"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -665,6 +665,110 @@ async fn activity_status_shows_all_agents() -> Result<(), Box<dyn core::error::E
         prompt.contains("Cog") || prompt.contains("cog"),
         "expected cognition column header in status, got:\n{prompt}"
     );
+
+    Ok(())
+}
+
+/// The feedback scenario: list entities via the typed client, extract refs
+/// from response meta, and use those refs to create connections — without
+/// ever manually constructing a RefToken from a raw ID.
+#[tokio::test]
+async fn connect_via_listed_refs() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    let client = app.client();
+    let agent = AgentName::new("thinker.process");
+
+    client
+        .continuity()
+        .emerge(
+            &EmergeAgent::builder()
+                .name("thinker")
+                .persona("process")
+                .build(),
+        )
+        .await?;
+
+    // Add a cognition and a memory
+    app.command(r#"cognition add thinker.process observation "A thought worth connecting""#)
+        .await?;
+    app.command(r#"memory add thinker.process session "A memory worth connecting""#)
+        .await?;
+
+    // List cognitions — extract ref from response meta, not from raw ID
+    let cognition_ref = match client
+        .cognition()
+        .list(&ListCognitions {
+            agent: Some(agent.clone()),
+            texture: None,
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
+        CognitionResponse::Cognitions(listed) => {
+            let first = &listed.items[0];
+            first
+                .meta
+                .as_ref()
+                .and_then(|m| m.ref_token.as_ref())
+                .expect("listed cognition should carry ref_token in meta")
+                .clone()
+        }
+        other => panic!("expected Cognitions, got {other:?}"),
+    };
+
+    // List memories — same pattern
+    let memory_ref = match client
+        .memory()
+        .list(&ListMemories {
+            agent: Some(agent.clone()),
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
+        MemoryResponse::Memories(listed) => {
+            let first = &listed.items[0];
+            first
+                .meta
+                .as_ref()
+                .and_then(|m| m.ref_token.as_ref())
+                .expect("listed memory should carry ref_token in meta")
+                .clone()
+        }
+        other => panic!("expected Memories, got {other:?}"),
+    };
+
+    // Connect using only the refs we extracted — no manual RefToken construction
+    client
+        .connection()
+        .create(
+            &CreateConnection::builder()
+                .from_ref(cognition_ref)
+                .to_ref(memory_ref)
+                .nature("context")
+                .build(),
+        )
+        .await?;
+
+    // Verify the connection exists
+    match client
+        .connection()
+        .list(&ListConnections {
+            entity: None,
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
+        ConnectionResponse::Connections(conns) => assert_eq!(conns.len(), 1),
+        other => panic!("expected Connections, got {other:?}"),
+    }
 
     Ok(())
 }

@@ -23,10 +23,6 @@ impl SeedCommands {
             SeedResponse::AgentsSeedComplete => "Agent seed complete.".to_string(),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

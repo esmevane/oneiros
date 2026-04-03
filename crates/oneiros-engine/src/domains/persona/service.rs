@@ -28,7 +28,10 @@ impl PersonaService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| PersonaError::NotFound(selector.name.clone()))?;
-        Ok(PersonaResponse::PersonaDetails(persona))
+        let ref_token = RefToken::new(Ref::persona(persona.name.clone()));
+        Ok(PersonaResponse::PersonaDetails(
+            Response::new(persona).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -39,7 +42,10 @@ impl PersonaService {
         if listed.total == 0 {
             Ok(PersonaResponse::NoPersonas)
         } else {
-            Ok(PersonaResponse::Personas(listed))
+            Ok(PersonaResponse::Personas(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::persona(e.name.clone()));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

@@ -26,22 +26,23 @@ impl ConnectionCommands {
         };
 
         let prompt = match &response {
-            ConnectionResponse::ConnectionCreated(c) => {
-                format!(
-                    "Connection recorded: {}",
-                    RefToken::new(Ref::connection(c.id))
-                )
-            }
-            ConnectionResponse::ConnectionDetails(c) => format!("{c:?}"),
+            ConnectionResponse::ConnectionCreated(wrapped) => wrapped
+                .meta()
+                .ref_token()
+                .map(|ref_token| format!("Connection recorded: {ref_token}"))
+                .unwrap_or_default(),
+            ConnectionResponse::ConnectionDetails(wrapped) => format!("{:?}", wrapped.data),
             ConnectionResponse::Connections(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for c in &listed.items {
+                for wrapped in &listed.items {
+                    let ref_token = wrapped
+                        .meta()
+                        .ref_token()
+                        .map(|ref_token| ref_token.to_string())
+                        .unwrap_or_default();
                     out.push_str(&format!(
                         "  [{}] {} -> {}\n    {}\n\n",
-                        c.nature,
-                        c.from_ref,
-                        c.to_ref,
-                        RefToken::new(Ref::connection(c.id)),
+                        wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref, ref_token,
                     ));
                 }
                 out
@@ -50,13 +51,6 @@ impl ConnectionCommands {
             ConnectionResponse::ConnectionRemoved(id) => format!("Connection {id} removed."),
         };
 
-        let envelope = match response.clone() {
-            ConnectionResponse::ConnectionCreated(c) => {
-                Response::new(response.into()).with_ref_token(RefToken::new(Ref::connection(c.id)))
-            }
-            otherwise => Response::new(otherwise.into()),
-        };
-
-        Ok(Rendered::new(envelope, prompt, String::new()))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

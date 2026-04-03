@@ -9,17 +9,17 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(response.data, Responses::Level(LevelResponse::LevelSet(_))),
+        matches!(response, Responses::Level(LevelResponse::LevelSet(_))),
         "expected LevelSet, got {response:#?}"
     );
 
     // Verify the level exists via show command
     let show_response = harness.exec_json("level show ephemeral").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
-            assert_eq!(level.name.as_str(), "ephemeral");
-            assert_eq!(level.description.as_str(), "Short-lived context");
+            assert_eq!(level.data.name.as_str(), "ephemeral");
+            assert_eq!(level.data.description.as_str(), "Short-lived context");
         }
         other => panic!("expected LevelDetails, got {other:#?}"),
     }
@@ -44,10 +44,10 @@ pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("level show working").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
-            assert_eq!(level.description.as_str(), "Updated description");
-            assert_eq!(level.prompt.as_str(), "Updated prompt.");
+            assert_eq!(level.data.description.as_str(), "Updated description");
+            assert_eq!(level.data.prompt.as_str(), "Updated prompt.");
         }
         other => panic!("expected LevelDetails, got {other:#?}"),
     }
@@ -61,7 +61,7 @@ pub(crate) async fn list_returns_empty_when_none_exist<B: Backend>() -> TestResu
     let response = harness.exec_json("level list").await?;
 
     assert!(
-        matches!(response.data, Responses::Level(LevelResponse::NoLevels)),
+        matches!(response, Responses::Level(LevelResponse::NoLevels)),
         "expected NoLevels, got {response:#?}"
     );
 
@@ -83,7 +83,7 @@ pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("level list").await?;
 
-    match response.data {
+    match response {
         Responses::Level(LevelResponse::Levels(levels)) => {
             assert_eq!(levels.len(), 2);
         }
@@ -168,7 +168,7 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Level(LevelResponse::LevelRemoved(_))
         ),
         "expected LevelRemoved, got {remove_response:?}"
@@ -178,10 +178,7 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
     let list_response = harness.exec_json("level list").await?;
 
     assert!(
-        matches!(
-            list_response.data,
-            Responses::Level(LevelResponse::NoLevels)
-        ),
+        matches!(list_response, Responses::Level(LevelResponse::NoLevels)),
         "expected NoLevels after removal, got {list_response:?}"
     );
 

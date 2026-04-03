@@ -5,9 +5,9 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ExperienceResponse {
-    ExperienceCreated(Experience),
-    ExperienceDetails(Experience),
-    Experiences(Listed<Experience>),
+    ExperienceCreated(Response<Experience>),
+    ExperienceDetails(Response<Experience>),
+    Experiences(Listed<Response<Experience>>),
     NoExperiences,
-    ExperienceUpdated(Experience),
+    ExperienceUpdated(Response<Experience>),
 }

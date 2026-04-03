@@ -9,19 +9,16 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Texture(TextureResponse::TextureSet(_))
-        ),
+        matches!(response, Responses::Texture(TextureResponse::TextureSet(_))),
         "expected TextureSet, got {response:#?}"
     );
 
     let show_response = harness.exec_json("texture show observation").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Texture(TextureResponse::TextureDetails(t)) => {
-            assert_eq!(t.name.as_str(), "observation");
-            assert_eq!(t.description.as_str(), "Noticing patterns");
+            assert_eq!(t.data.name.as_str(), "observation");
+            assert_eq!(t.data.description.as_str(), "Noticing patterns");
         }
         other => panic!("expected TextureDetails, got {other:#?}"),
     }
@@ -42,9 +39,9 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("texture show draft").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Texture(TextureResponse::TextureDetails(t)) => {
-            assert_eq!(t.description.as_str(), "Updated");
+            assert_eq!(t.data.description.as_str(), "Updated");
         }
         other => panic!("expected TextureDetails, got {other:#?}"),
     }
@@ -58,10 +55,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let response = harness.exec_json("texture list").await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Texture(TextureResponse::NoTextures)
-        ),
+        matches!(response, Responses::Texture(TextureResponse::NoTextures)),
         "expected NoTextures, got {response:#?}"
     );
 
@@ -81,7 +75,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("texture list").await?;
 
-    match response.data {
+    match response {
         Responses::Texture(TextureResponse::Textures(list)) => {
             assert_eq!(list.len(), 2);
         }
@@ -102,7 +96,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Texture(TextureResponse::TextureRemoved(_))
         ),
         "expected TextureRemoved, got {remove_response:?}"
@@ -112,7 +106,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            list_response.data,
+            list_response,
             Responses::Texture(TextureResponse::NoTextures)
         ),
         "expected NoTextures after removal, got {list_response:?}"

@@ -5,8 +5,8 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum MemoryResponse {
-    MemoryAdded(Memory),
-    MemoryDetails(Memory),
-    Memories(Listed<Memory>),
+    MemoryAdded(Response<Memory>),
+    MemoryDetails(Response<Memory>),
+    Memories(Listed<Response<Memory>>),
     NoMemories,
 }

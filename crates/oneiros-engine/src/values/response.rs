@@ -33,6 +33,10 @@ impl<T> Response<T> {
             .ref_token = Some(ref_token);
         self
     }
+
+    pub fn meta(&self) -> ResponseMeta {
+        self.meta.clone().unwrap_or_default()
+    }
 }
 
 impl<T> From<T> for Response<T> {
@@ -49,4 +53,10 @@ pub struct ResponseMeta {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub ref_token: Option<RefToken>,
+}
+
+impl ResponseMeta {
+    pub fn ref_token(&self) -> Option<RefToken> {
+        self.ref_token.clone()
+    }
 }

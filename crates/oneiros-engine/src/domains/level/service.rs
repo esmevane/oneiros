@@ -28,7 +28,10 @@ impl LevelService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| LevelError::NotFound(selector.name.clone()))?;
-        Ok(LevelResponse::LevelDetails(level))
+        let ref_token = RefToken::new(Ref::level(level.name.clone()));
+        Ok(LevelResponse::LevelDetails(
+            Response::new(level).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -39,7 +42,10 @@ impl LevelService {
         if listed.total == 0 {
             Ok(LevelResponse::NoLevels)
         } else {
-            Ok(LevelResponse::Levels(listed))
+            Ok(LevelResponse::Levels(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::level(e.name.clone()));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

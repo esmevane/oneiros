@@ -6,7 +6,7 @@ pub(crate) async fn list_after_project_init<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("ticket list").await?;
 
-    match response.data {
+    match response {
         Responses::Ticket(TicketResponse::Listed(tickets)) => {
             assert!(
                 !tickets.is_empty(),

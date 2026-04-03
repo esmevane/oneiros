@@ -162,7 +162,7 @@ async fn mcp_session() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         PersonaResponse::PersonaDetails(p) => {
-            assert_eq!(p.description.to_string(), "Created via MCP");
+            assert_eq!(p.data.description.to_string(), "Created via MCP");
         }
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
