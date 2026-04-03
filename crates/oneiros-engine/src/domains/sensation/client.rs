@@ -19,8 +19,12 @@ impl<'a> SensationClient<'a> {
         self.client.get(&format!("/sensations/{name}")).await
     }
 
-    pub async fn list(&self) -> Result<SensationResponse, ClientError> {
-        self.client.get("/sensations").await
+    pub async fn list(&self, request: &ListSensations) -> Result<SensationResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/sensations?{query}")).await
     }
 
     pub async fn remove(&self, name: &SensationName) -> Result<SensationResponse, ClientError> {

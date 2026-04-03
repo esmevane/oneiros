@@ -1,4 +1,9 @@
-use axum::{Json, Router, extract::Path, http::StatusCode, routing};
+use axum::{
+    Json, Router,
+    extract::{Path, Query},
+    http::StatusCode,
+    routing,
+};
 
 use crate::*;
 
@@ -27,8 +32,11 @@ async fn set(
     ))
 }
 
-async fn list(context: ProjectContext) -> Result<Json<UrgeResponse>, UrgeError> {
-    Ok(Json(UrgeService::list(&context).await?))
+async fn list(
+    context: ProjectContext,
+    Query(params): Query<ListUrges>,
+) -> Result<Json<UrgeResponse>, UrgeError> {
+    Ok(Json(UrgeService::list(&context, &params).await?))
 }
 
 async fn show(

@@ -30,13 +30,21 @@ pub struct RemoveSensation {
     pub name: SensationName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListSensations {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SensationRequestType, display = "kebab-case")]
 pub enum SensationRequest {
     SetSensation(SetSensation),
     GetSensation(GetSensation),
-    ListSensations,
+    ListSensations(ListSensations),
     RemoveSensation(RemoveSensation),
 }
 

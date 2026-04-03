@@ -26,6 +26,14 @@ pub struct GetAgent {
     pub name: AgentName,
 }
 
+#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListAgents {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct RemoveAgent {
     #[builder(into)]
@@ -52,7 +60,7 @@ pub struct UpdateAgent {
 pub enum AgentRequest {
     CreateAgent(CreateAgent),
     GetAgent(GetAgent),
-    ListAgents,
+    ListAgents(ListAgents),
     UpdateAgent(UpdateAgent),
     RemoveAgent(RemoveAgent),
 }

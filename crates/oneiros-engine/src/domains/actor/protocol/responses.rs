@@ -7,5 +7,5 @@ use crate::*;
 pub enum ActorResponse {
     Created(Actor),
     Found(Actor),
-    Listed(Vec<Actor>),
+    Listed(Listed<Actor>),
 }

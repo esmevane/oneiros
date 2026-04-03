@@ -37,9 +37,13 @@ impl ProjectService {
         Projections::project().migrate(&brain_db)?;
         drop(brain_db);
 
-        let actors = ActorRepo::new(context).list().await?;
+        let all_filters = SearchFilters {
+            limit: Limit(usize::MAX),
+            offset: Offset(0),
+        };
+        let actors = ActorRepo::new(context).list(&all_filters).await?;
 
-        let token = if let Some(actor) = actors.first() {
+        let token = if let Some(actor) = actors.items.first() {
             match TicketService::create(
                 context,
                 &CreateTicket::builder()

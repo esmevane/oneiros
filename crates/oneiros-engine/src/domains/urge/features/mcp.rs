@@ -39,7 +39,7 @@ mod urge_mcp {
             ToolDef {
                 name: "list_urges",
                 description: "See all cognitive drives",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListUrges>,
             },
             ToolDef {
                 name: "remove_urge",
@@ -61,7 +61,7 @@ mod urge_mcp {
         let value = match tool_name {
             "set_urge" => UrgeService::set(context, &serde_json::from_str(params)?).await,
             "get_urge" => UrgeService::get(context, &serde_json::from_str(params)?).await,
-            "list_urges" => UrgeService::list(context).await,
+            "list_urges" => UrgeService::list(context, &serde_json::from_str(params)?).await,
             "remove_urge" => UrgeService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }

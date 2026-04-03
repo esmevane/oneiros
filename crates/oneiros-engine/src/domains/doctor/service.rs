@@ -17,9 +17,17 @@ impl DoctorService {
             }
         };
 
-        let tenants = TenantRepo::new(&context).list().await.unwrap_or_default();
+        let all_filters = SearchFilters {
+            limit: Limit(usize::MAX),
+            offset: Offset(0),
+        };
+        let tenant_count = TenantRepo::new(&context)
+            .list(&all_filters)
+            .await
+            .map(|l| l.total)
+            .unwrap_or(0);
 
-        if tenants.is_empty() {
+        if tenant_count == 0 {
             checks.push(DoctorCheck::NotInitialized);
             return DoctorResponse::CheckupStatus(checks);
         }

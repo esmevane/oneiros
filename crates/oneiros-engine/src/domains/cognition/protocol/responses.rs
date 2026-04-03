@@ -7,6 +7,6 @@ use crate::*;
 pub enum CognitionResponse {
     CognitionAdded(Cognition),
     CognitionDetails(Cognition),
-    Cognitions(Vec<Cognition>),
+    Cognitions(Listed<Cognition>),
     NoCognitions,
 }

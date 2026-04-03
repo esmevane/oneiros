@@ -51,37 +51,51 @@ impl<'a> CognitionRepo<'a> {
         &self,
         agent: Option<&AgentId>,
         texture: Option<&TextureName>,
-    ) -> Result<Vec<Cognition>, EventError> {
+        filters: &SearchFilters,
+    ) -> Result<Listed<Cognition>, EventError> {
         let db = self.context.db()?;
 
-        // Build query dynamically based on filters present.
-        let sql = match (agent, texture) {
-            (Some(_), Some(_)) => {
-                "SELECT id, agent_id, texture, content, created_at
-                 FROM cognitions
-                 WHERE agent_id = ?1 AND texture = ?2
-                 ORDER BY created_at"
-            }
-            (Some(_), None) => {
-                "SELECT id, agent_id, texture, content, created_at
-                 FROM cognitions
-                 WHERE agent_id = ?1
-                 ORDER BY created_at"
-            }
-            (None, Some(_)) => {
-                "SELECT id, agent_id, texture, content, created_at
-                 FROM cognitions
-                 WHERE texture = ?1
-                 ORDER BY created_at"
-            }
-            (None, None) => {
-                "SELECT id, agent_id, texture, content, created_at
-                 FROM cognitions
-                 ORDER BY created_at"
-            }
+        // Build WHERE clause from filters.
+        let mut conditions = Vec::new();
+        let mut bind_values: Vec<String> = Vec::new();
+
+        if let Some(a) = agent {
+            bind_values.push(a.to_string());
+            conditions.push(format!("agent_id = ?{}", bind_values.len()));
+        }
+        if let Some(t) = texture {
+            bind_values.push(t.to_string());
+            conditions.push(format!("texture = ?{}", bind_values.len()));
+        }
+
+        let where_clause = if conditions.is_empty() {
+            String::new()
+        } else {
+            format!(" WHERE {}", conditions.join(" AND "))
         };
 
-        let mut stmt = db.prepare(sql)?;
+        // Count total matching rows.
+        let count_sql = format!("SELECT COUNT(*) FROM cognitions{where_clause}");
+        let total = {
+            let mut stmt = db.prepare(&count_sql)?;
+            let params: Vec<&dyn rusqlite::ToSql> = bind_values
+                .iter()
+                .map(|v| v as &dyn rusqlite::ToSql)
+                .collect();
+            stmt.query_row(&*params, |row| row.get::<_, usize>(0))?
+        };
+
+        // Fetch the bounded window.
+        let select_sql = format!(
+            "SELECT id, agent_id, texture, content, created_at
+             FROM cognitions{where_clause}
+             ORDER BY created_at DESC
+             LIMIT ?{} OFFSET ?{}",
+            bind_values.len() + 1,
+            bind_values.len() + 2,
+        );
+
+        let mut stmt = db.prepare(&select_sql)?;
 
         let map_row = |row: &rusqlite::Row<'_>| {
             Ok((
@@ -93,13 +107,18 @@ impl<'a> CognitionRepo<'a> {
             ))
         };
 
-        let raw = match (agent, texture) {
-            (Some(a), Some(t)) => stmt.query_map(params![a.to_string(), t.as_str()], map_row),
-            (Some(a), None) => stmt.query_map(params![a.to_string()], map_row),
-            (None, Some(t)) => stmt.query_map(params![t.as_str()], map_row),
-            (None, None) => stmt.query_map([], map_row),
-        }?
-        .collect::<Result<Vec<_>, _>>()?;
+        let mut all_params: Vec<Box<dyn rusqlite::ToSql>> = bind_values
+            .into_iter()
+            .map(|v| Box::new(v) as Box<dyn rusqlite::ToSql>)
+            .collect();
+        all_params.push(Box::new(filters.limit));
+        all_params.push(Box::new(filters.offset));
+
+        let param_refs: Vec<&dyn rusqlite::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
+
+        let raw = stmt
+            .query_map(&*param_refs, map_row)?
+            .collect::<Result<Vec<_>, _>>()?;
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
@@ -114,7 +133,7 @@ impl<'a> CognitionRepo<'a> {
             );
         }
 
-        Ok(cognitions)
+        Ok(Listed::new(cognitions, total))
     }
 
     /// Most recent cognitions for an agent, ordered newest-first.

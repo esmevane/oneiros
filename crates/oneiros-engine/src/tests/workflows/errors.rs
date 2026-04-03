@@ -125,11 +125,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     );
 
     assert!(
-        client.continuity().status(&ghost).await.is_err(),
-        "status of nonexistent agent should fail via client"
-    );
-
-    assert!(
         client.continuity().sleep(&ghost).await.is_err(),
         "sleeping nonexistent agent should fail via client"
     );

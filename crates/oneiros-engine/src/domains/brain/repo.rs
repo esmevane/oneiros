@@ -60,12 +60,21 @@ impl<'a> BrainRepo<'a> {
         }
     }
 
-    pub async fn list(&self) -> Result<Vec<Brain>, EventError> {
+    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Brain>, EventError> {
         let db = self.context.db()?;
-        let mut stmt = db.prepare("select id, name, created_at from brains order by name")?;
+
+        let total = {
+            let mut stmt = db.prepare("SELECT COUNT(*) FROM brains")?;
+            stmt.query_row([], |row| row.get::<_, usize>(0))?
+        };
+
+        let mut stmt =
+            db.prepare("SELECT id, name, created_at FROM brains ORDER BY name LIMIT ?1 OFFSET ?2")?;
 
         let raw: Vec<(String, String, String)> = stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })?
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut brains = vec![];
@@ -80,7 +89,7 @@ impl<'a> BrainRepo<'a> {
             );
         }
 
-        Ok(brains)
+        Ok(Listed::new(brains, total))
     }
 
     pub async fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {

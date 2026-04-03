@@ -19,8 +19,12 @@ impl<'a> TextureClient<'a> {
         self.client.get(&format!("/textures/{name}")).await
     }
 
-    pub async fn list(&self) -> Result<TextureResponse, ClientError> {
-        self.client.get("/textures").await
+    pub async fn list(&self, request: &ListTextures) -> Result<TextureResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/textures?{query}")).await
     }
 
     pub async fn remove(&self, name: &TextureName) -> Result<TextureResponse, ClientError> {

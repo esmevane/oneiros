@@ -7,7 +7,7 @@ use crate::*;
 pub enum SensationResponse {
     SensationSet(SensationName),
     SensationDetails(Sensation),
-    Sensations(Vec<Sensation>),
+    Sensations(Listed<Sensation>),
     NoSensations,
     SensationRemoved(SensationName),
 }

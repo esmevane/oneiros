@@ -18,13 +18,21 @@ pub struct GetBrain {
     pub name: BrainName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListBrains {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = BrainRequestType, display = "kebab-case")]
 pub enum BrainRequest {
     CreateBrain(CreateBrain),
     GetBrain(GetBrain),
-    ListBrains,
+    ListBrains(ListBrains),
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@ use crate::*;
 pub enum ExperienceResponse {
     ExperienceCreated(Experience),
     ExperienceDetails(Experience),
-    Experiences(Vec<Experience>),
+    Experiences(Listed<Experience>),
     NoExperiences,
     ExperienceUpdated(Experience),
 }

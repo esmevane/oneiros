@@ -30,13 +30,21 @@ pub struct RemoveLevel {
     pub name: LevelName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListLevels {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = LevelRequestType, display = "kebab-case")]
 pub enum LevelRequest {
     SetLevel(SetLevel),
     GetLevel(GetLevel),
-    ListLevels,
+    ListLevels(ListLevels),
     RemoveLevel(RemoveLevel),
 }
 

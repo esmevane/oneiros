@@ -17,8 +17,12 @@ impl<'a> LevelClient<'a> {
         self.client.get(&format!("/levels/{name}")).await
     }
 
-    pub async fn list(&self) -> Result<LevelResponse, ClientError> {
-        self.client.get("/levels").await
+    pub async fn list(&self, request: &ListLevels) -> Result<LevelResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/levels?{query}")).await
     }
 
     pub async fn remove(&self, name: &LevelName) -> Result<LevelResponse, ClientError> {

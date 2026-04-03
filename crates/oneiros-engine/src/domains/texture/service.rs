@@ -31,12 +31,15 @@ impl TextureService {
         Ok(TextureResponse::TextureDetails(texture))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<TextureResponse, TextureError> {
-        let textures = TextureRepo::new(context).list().await?;
-        if textures.is_empty() {
+    pub async fn list(
+        context: &ProjectContext,
+        ListTextures { filters }: &ListTextures,
+    ) -> Result<TextureResponse, TextureError> {
+        let listed = TextureRepo::new(context).list(filters).await?;
+        if listed.total == 0 {
             Ok(TextureResponse::NoTextures)
         } else {
-            Ok(TextureResponse::Textures(textures))
+            Ok(TextureResponse::Textures(listed))
         }
     }
 

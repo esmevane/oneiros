@@ -80,7 +80,17 @@ impl ExperienceCommands {
             ExperienceResponse::ExperienceDetails(e) => {
                 format!("[{}] {}", e.sensation, e.description)
             }
-            ExperienceResponse::Experiences(list) => format!("{} experiences.", list.len()),
+            ExperienceResponse::Experiences(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for experience in &listed.items {
+                    let ref_token = RefToken::new(Ref::experience(experience.id));
+                    out.push_str(&format!(
+                        "  [{}] {}\n    {}\n\n",
+                        experience.sensation, experience.description, ref_token
+                    ));
+                }
+                out
+            }
             ExperienceResponse::NoExperiences => "No experiences.".to_string(),
             ExperienceResponse::ExperienceUpdated(e) => {
                 format!(

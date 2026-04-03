@@ -6,7 +6,7 @@ use crate::*;
 pub enum TicketCommands {
     Issue(CreateTicket),
     Validate(ValidateTicket),
-    List,
+    List(ListTickets),
 }
 
 impl TicketCommands {
@@ -20,7 +20,7 @@ impl TicketCommands {
         let response = match self {
             TicketCommands::Issue(create) => ticket_client.issue(create).await?,
             TicketCommands::Validate(validate) => ticket_client.validate(validate).await?,
-            TicketCommands::List => ticket_client.list().await?,
+            TicketCommands::List(list) => ticket_client.list(list).await?,
         };
 
         let prompt = match &response {
@@ -33,7 +33,16 @@ impl TicketCommands {
             TicketResponse::Validated(ticket) => {
                 format!("Ticket for brain '{}' is valid.", ticket.brain_name)
             }
-            TicketResponse::Listed(tickets) => format!("{} ticket(s) found.", tickets.len()),
+            TicketResponse::Listed(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for ticket in &listed.items {
+                    out.push_str(&format!(
+                        "  {} ({})\n\n",
+                        ticket.brain_name, ticket.actor_id,
+                    ));
+                }
+                out
+            }
         };
 
         Ok(Rendered::new(

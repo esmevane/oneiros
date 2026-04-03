@@ -1,4 +1,9 @@
-use axum::{Json, Router, extract::Path, http::StatusCode, routing};
+use axum::{
+    Json, Router,
+    extract::{Path, Query},
+    http::StatusCode,
+    routing,
+};
 
 use crate::*;
 
@@ -23,8 +28,11 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(context: SystemContext) -> Result<Json<BrainResponse>, BrainError> {
-    Ok(Json(BrainService::list(&context).await?))
+async fn list(
+    context: SystemContext,
+    Query(params): Query<ListBrains>,
+) -> Result<Json<BrainResponse>, BrainError> {
+    Ok(Json(BrainService::list(&context, &params).await?))
 }
 
 async fn show(

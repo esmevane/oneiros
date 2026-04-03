@@ -41,7 +41,11 @@ impl CognitionService {
 
     pub async fn list(
         context: &ProjectContext,
-        ListCognitions { agent, texture }: &ListCognitions,
+        ListCognitions {
+            agent,
+            texture,
+            filters,
+        }: &ListCognitions,
     ) -> Result<CognitionResponse, CognitionError> {
         let agent_id = match agent {
             Some(name) => {
@@ -54,13 +58,13 @@ impl CognitionService {
             None => None,
         };
 
-        let cognitions = CognitionRepo::new(context)
-            .list(agent_id.as_ref(), texture.as_ref())
+        let listed = CognitionRepo::new(context)
+            .list(agent_id.as_ref(), texture.as_ref(), filters)
             .await?;
-        Ok(if cognitions.is_empty() {
+        Ok(if listed.total == 0 {
             CognitionResponse::NoCognitions
         } else {
-            CognitionResponse::Cognitions(cognitions)
+            CognitionResponse::Cognitions(listed)
         })
     }
 }

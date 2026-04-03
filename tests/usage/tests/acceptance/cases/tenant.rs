@@ -13,7 +13,7 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
                 1,
                 "system init should create exactly one tenant"
             );
-            assert_eq!(tenants[0].name.as_str(), "test");
+            assert_eq!(tenants.items[0].name.as_str(), "test");
         }
         other => panic!("expected Tenant(Listed), got {other:#?}"),
     }
@@ -28,7 +28,7 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 
     assert!(!prompt.is_empty(), "tenant list prompt should not be empty");
     assert!(
-        prompt.contains("1 tenant"),
+        prompt.contains("1 found"),
         "tenant list prompt should describe the tenant count, got: {prompt}"
     );
 

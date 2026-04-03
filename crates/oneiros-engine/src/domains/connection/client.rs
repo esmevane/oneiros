@@ -17,12 +17,22 @@ impl<'a> ConnectionClient<'a> {
     }
 
     pub async fn list(&self, request: &ListConnections) -> Result<ConnectionResponse, ClientError> {
-        let path = match &request.entity {
-            Some(e) => format!("/connections?entity={e}"),
-            None => "/connections".to_string(),
-        };
+        let mut params: Vec<(&str, String)> = Vec::new();
 
-        self.client.get(&path).await
+        if let Some(entity) = &request.entity {
+            params.push(("entity", entity.to_string()));
+        }
+
+        params.push(("limit", request.filters.limit.to_string()));
+        params.push(("offset", request.filters.offset.to_string()));
+
+        let query = params
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        self.client.get(&format!("/connections?{query}")).await
     }
 
     pub async fn get(&self, request: &GetConnection) -> Result<ConnectionResponse, ClientError> {

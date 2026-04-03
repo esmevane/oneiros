@@ -7,5 +7,5 @@ use crate::*;
 pub enum TenantResponse {
     Created(Tenant),
     Found(Tenant),
-    Listed(Vec<Tenant>),
+    Listed(Listed<Tenant>),
 }

@@ -22,9 +22,9 @@ impl<'a> ContinuityClient<'a> {
         self.client.delete(&format!("/continuity/{agent}")).await
     }
 
-    /// Status — read the current state of an agent's continuity.
-    pub async fn status(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
-        self.client.get(&format!("/continuity/{agent}")).await
+    /// Status — cross-agent activity overview.
+    pub async fn status(&self) -> Result<ContinuityResponse, ClientError> {
+        self.client.get("/continuity").await
     }
 
     /// Wake an agent.

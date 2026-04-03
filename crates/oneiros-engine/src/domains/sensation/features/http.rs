@@ -1,4 +1,9 @@
-use axum::{Json, Router, extract::Path, http::StatusCode, routing};
+use axum::{
+    Json, Router,
+    extract::{Path, Query},
+    http::StatusCode,
+    routing,
+};
 
 use crate::*;
 
@@ -27,8 +32,11 @@ async fn set(
     ))
 }
 
-async fn list(context: ProjectContext) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::list(&context).await?))
+async fn list(
+    context: ProjectContext,
+    Query(params): Query<ListSensations>,
+) -> Result<Json<SensationResponse>, SensationError> {
+    Ok(Json(SensationService::list(&context, &params).await?))
 }
 
 async fn show(

@@ -72,14 +72,75 @@ impl ContinuityService {
         Ok(ContinuityResponse::Receded(selector.agent.clone()))
     }
 
-    /// Status — read the current state of an agent's continuity.
+    /// Status — cross-agent activity overview.
     pub fn status(
         context: &ProjectContext,
-        selector: &StatusAgent,
-        overrides: &DreamOverrides,
+        _selector: &StatusAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let dream = Self::gather_context(context, &selector.agent, overrides)?;
-        Ok(ContinuityResponse::Status(dream))
+        let db = context.db()?;
+        let agents = AgentStore::new(&db).list()?;
+
+        let mut rows = Vec::with_capacity(agents.len());
+
+        for agent in &agents {
+            let agent_id = agent.id.to_string();
+
+            let cognition_count: usize = db.query_row(
+                "SELECT COUNT(*) FROM cognitions WHERE agent_id = ?1",
+                rusqlite::params![agent_id],
+                |row| row.get(0),
+            )?;
+
+            let cognition_latest: Option<String> = db
+                .query_row(
+                    "SELECT created_at FROM cognitions WHERE agent_id = ?1 ORDER BY created_at DESC LIMIT 1",
+                    rusqlite::params![agent_id],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let memory_count: usize = db.query_row(
+                "SELECT COUNT(*) FROM memories WHERE agent_id = ?1",
+                rusqlite::params![agent_id],
+                |row| row.get(0),
+            )?;
+
+            let memory_latest: Option<String> = db
+                .query_row(
+                    "SELECT created_at FROM memories WHERE agent_id = ?1 ORDER BY created_at DESC LIMIT 1",
+                    rusqlite::params![agent_id],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let experience_count: usize = db.query_row(
+                "SELECT COUNT(*) FROM experiences WHERE agent_id = ?1",
+                rusqlite::params![agent_id],
+                |row| row.get(0),
+            )?;
+
+            let experience_latest: Option<String> = db
+                .query_row(
+                    "SELECT created_at FROM experiences WHERE agent_id = ?1 ORDER BY created_at DESC LIMIT 1",
+                    rusqlite::params![agent_id],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            rows.push(AgentActivity {
+                name: agent.name.clone(),
+                cognition_count,
+                cognition_latest: cognition_latest.and_then(|s| Timestamp::parse_str(&s).ok()),
+                memory_count,
+                memory_latest: memory_latest.and_then(|s| Timestamp::parse_str(&s).ok()),
+                experience_count,
+                experience_latest: experience_latest.and_then(|s| Timestamp::parse_str(&s).ok()),
+            });
+        }
+
+        Ok(ContinuityResponse::Status(AgentActivityTable {
+            agents: rows,
+        }))
     }
 
     /// Wake — restore an agent's full cognitive context (initial session start).

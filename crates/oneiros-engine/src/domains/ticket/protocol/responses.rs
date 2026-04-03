@@ -7,6 +7,6 @@ use crate::*;
 pub enum TicketResponse {
     Created(Ticket),
     Found(Ticket),
-    Listed(Vec<Ticket>),
+    Listed(Listed<Ticket>),
     Validated(Ticket),
 }

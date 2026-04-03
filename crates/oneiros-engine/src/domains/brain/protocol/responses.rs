@@ -7,5 +7,5 @@ use crate::*;
 pub enum BrainResponse {
     Created(Brain),
     Found(Brain),
-    Listed(Vec<Brain>),
+    Listed(Listed<Brain>),
 }

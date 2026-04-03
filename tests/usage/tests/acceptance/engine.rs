@@ -447,8 +447,8 @@ async fn recede_retires_agent() -> TestResult {
 
 // Status
 #[tokio::test]
-async fn status_returns_agent_status() -> TestResult {
-    cases::status::returns_agent_status::<EngineBackend>().await
+async fn status_returns_activity_table_json() -> TestResult {
+    cases::status::returns_activity_table::<EngineBackend>().await
 }
 
 // Doctor
@@ -815,8 +815,13 @@ async fn prompt_recede_contains_agent() -> TestResult {
 
 // Prompt output — status
 #[tokio::test]
-async fn prompt_status_contains_agent() -> TestResult {
-    cases::status::status_prompt_contains_agent::<EngineBackend>().await
+async fn prompt_status_shows_agents() -> TestResult {
+    cases::status::status_shows_agents::<EngineBackend>().await
+}
+
+#[tokio::test]
+async fn status_returns_activity_table() -> TestResult {
+    cases::status::returns_activity_table::<EngineBackend>().await
 }
 
 // Prompt output — pressure

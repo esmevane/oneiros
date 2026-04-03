@@ -30,13 +30,21 @@ pub struct RemoveTexture {
     pub name: TextureName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListTextures {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TextureRequestType, display = "kebab-case")]
 pub enum TextureRequest {
     SetTexture(SetTexture),
     GetTexture(GetTexture),
-    ListTextures,
+    ListTextures(ListTextures),
     RemoveTexture(RemoveTexture),
 }
 

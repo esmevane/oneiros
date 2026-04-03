@@ -36,12 +36,20 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
-    pub async fn list_storage(&self) -> Result<Vec<StorageEntry>, EventError> {
+    pub async fn list_storage(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<StorageEntry>, EventError> {
         let db = self.context.db()?;
-        let mut stmt = db.prepare("SELECT key, description, hash FROM storage ORDER BY key")?;
+
+        let total: usize = db.query_row("SELECT COUNT(*) FROM storage", [], |row| row.get(0))?;
+
+        let mut stmt = db.prepare(
+            "SELECT key, description, hash FROM storage ORDER BY key LIMIT ?1 OFFSET ?2",
+        )?;
 
         let entries = stmt
-            .query_map([], |row| {
+            .query_map(params![filters.limit, filters.offset], |row| {
                 let key: String = row.get(0)?;
                 let description: String = row.get(1)?;
                 let hash: String = row.get(2)?;
@@ -49,14 +57,16 @@ impl<'a> StorageRepo<'a> {
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(entries
+        let items = entries
             .into_iter()
             .map(|(key, description, hash)| StorageEntry {
                 key: StorageKey::new(key),
                 description: Description::new(description),
                 hash: ContentHash::new(hash),
             })
-            .collect())
+            .collect();
+
+        Ok(Listed::new(items, total))
     }
 
     pub async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {

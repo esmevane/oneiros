@@ -14,9 +14,14 @@ impl SystemService {
         context.projections.migrate(&db)?;
         drop(db);
 
-        let tenants = TenantRepo::new(context).list().await?;
+        let all_filters = SearchFilters {
+            limit: Limit(usize::MAX),
+            offset: Offset(0),
+        };
 
-        if !tenants.is_empty() {
+        let tenants = TenantRepo::new(context).list(&all_filters).await?;
+
+        if tenants.total > 0 {
             return Ok(SystemResponse::HostAlreadyInitialized);
         }
 
@@ -33,9 +38,9 @@ impl SystemService {
         )
         .await?;
 
-        let tenants = TenantRepo::new(context).list().await?;
+        let tenants = TenantRepo::new(context).list(&all_filters).await?;
 
-        if let Some(tenant) = tenants.first() {
+        if let Some(tenant) = tenants.items.first() {
             ActorService::create(
                 context,
                 &CreateActor::builder()

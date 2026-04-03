@@ -7,7 +7,7 @@ use crate::*;
 pub enum ConnectionResponse {
     ConnectionCreated(Connection),
     ConnectionDetails(Connection),
-    Connections(Vec<Connection>),
+    Connections(Listed<Connection>),
     NoConnections,
     ConnectionRemoved(ConnectionId),
 }

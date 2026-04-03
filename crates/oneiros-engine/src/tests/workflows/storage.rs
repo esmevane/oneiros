@@ -44,7 +44,7 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     // List — one entry
-    match client.storage().list().await? {
+    match client.storage().list(&ListStorage::default()).await? {
         StorageResponse::Entries(entries) => assert_eq!(entries.len(), 1),
         other => panic!("expected Entries, got {other:?}"),
     }
@@ -63,7 +63,7 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
             .is_err()
     );
 
-    match client.storage().list().await? {
+    match client.storage().list(&ListStorage::default()).await? {
         StorageResponse::NoEntries => {}
         other => panic!("expected NoEntries, got {other:?}"),
     }

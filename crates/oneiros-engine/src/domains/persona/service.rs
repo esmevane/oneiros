@@ -31,12 +31,15 @@ impl PersonaService {
         Ok(PersonaResponse::PersonaDetails(persona))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<PersonaResponse, PersonaError> {
-        let personas = PersonaRepo::new(context).list().await?;
-        if personas.is_empty() {
+    pub async fn list(
+        context: &ProjectContext,
+        ListPersonas { filters }: &ListPersonas,
+    ) -> Result<PersonaResponse, PersonaError> {
+        let listed = PersonaRepo::new(context).list(filters).await?;
+        if listed.total == 0 {
             Ok(PersonaResponse::NoPersonas)
         } else {
-            Ok(PersonaResponse::Personas(personas))
+            Ok(PersonaResponse::Personas(listed))
         }
     }
 

@@ -31,12 +31,15 @@ impl NatureService {
         Ok(NatureResponse::NatureDetails(nature))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<NatureResponse, NatureError> {
-        let natures = NatureRepo::new(context).list().await?;
-        if natures.is_empty() {
+    pub async fn list(
+        context: &ProjectContext,
+        ListNatures { filters }: &ListNatures,
+    ) -> Result<NatureResponse, NatureError> {
+        let listed = NatureRepo::new(context).list(filters).await?;
+        if listed.total == 0 {
             Ok(NatureResponse::NoNatures)
         } else {
-            Ok(NatureResponse::Natures(natures))
+            Ok(NatureResponse::Natures(listed))
         }
     }
 

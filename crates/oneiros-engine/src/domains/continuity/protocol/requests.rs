@@ -67,10 +67,12 @@ pub struct RecedeAgent {
     pub agent: AgentName,
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
 pub struct StatusAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

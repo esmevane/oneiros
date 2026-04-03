@@ -34,12 +34,22 @@ impl<'a> TenantRepo<'a> {
         }
     }
 
-    pub async fn list(&self) -> Result<Vec<Tenant>, TenantError> {
+    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Tenant>, TenantError> {
         let db = self.context.db()?;
-        let mut stmt = db.prepare("select id, name, created_at from tenants order by name")?;
+
+        let count_sql = "SELECT COUNT(*) FROM tenants";
+        let total = {
+            let mut stmt = db.prepare(count_sql)?;
+            stmt.query_row([], |row| row.get::<_, usize>(0))?
+        };
+
+        let mut stmt = db
+            .prepare("SELECT id, name, created_at FROM tenants ORDER BY name LIMIT ?1 OFFSET ?2")?;
 
         let raw: Vec<(String, String, String)> = stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })?
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut tenants = vec![];
@@ -52,6 +62,6 @@ impl<'a> TenantRepo<'a> {
             });
         }
 
-        Ok(tenants)
+        Ok(Listed::new(tenants, total))
     }
 }

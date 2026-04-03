@@ -48,6 +48,7 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .list(&ListCognitions {
             agent: Some(agent.clone()),
             texture: Some(TextureName::new("observation")),
+            filters: SearchFilters::default(),
         })
         .await?
     {
@@ -89,6 +90,7 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .memory()
         .list(&ListMemories {
             agent: Some(agent.clone()),
+            filters: SearchFilters::default(),
         })
         .await?
     {
@@ -116,6 +118,7 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .experience()
         .list(&ListExperiences {
             agent: Some(agent.clone()),
+            filters: SearchFilters::default(),
         })
         .await?
     {
@@ -137,7 +140,10 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .connection()
-        .list(&ListConnections { entity: None })
+        .list(&ListConnections {
+            entity: None,
+            filters: SearchFilters::default(),
+        })
         .await?
     {
         ConnectionResponse::Connections(conns) => assert_eq!(conns.len(), 1),
@@ -184,6 +190,248 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
 }
 
 #[tokio::test]
+async fn listing_cognitions() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    // Create an agent and some cognitions
+    app.command(r#"agent create thinker process --description "A thinking agent""#)
+        .await?;
+
+    app.command(r#"cognition add thinker.process observation "The sky is blue""#)
+        .await?;
+    app.command(r#"cognition add thinker.process working "Building something new""#)
+        .await?;
+    app.command(r#"cognition add thinker.process reflection "This approach feels right""#)
+        .await?;
+
+    // List should show actual items, not just a count
+    let result = app
+        .command("cognition list --agent thinker.process")
+        .await?;
+
+    let prompt = result.prompt();
+
+    assert!(
+        prompt.contains("3 found"),
+        "expected '3 found' in prompt, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("The sky is blue"),
+        "expected cognition content in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("Building something new"),
+        "expected cognition content in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("This approach feels right"),
+        "expected cognition content in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("observation"),
+        "expected texture label in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "expected ref tokens in listing, got:\n{prompt}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn listing_cognitions_with_limit() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    app.command(r#"agent create thinker process --description "A thinking agent""#)
+        .await?;
+
+    for i in 0..5 {
+        app.command(&format!(
+            r#"cognition add thinker.process observation "Thought number {i}""#
+        ))
+        .await?;
+    }
+
+    let result = app
+        .command("cognition list --agent thinker.process --limit 2")
+        .await?;
+
+    let prompt = result.prompt();
+
+    assert!(
+        prompt.contains("2 found"),
+        "expected '2 found' in prompt, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("of 5"),
+        "expected 'of 5' total in prompt, got:\n{prompt}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn listing_cognitions_with_offset() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    app.command(r#"agent create thinker process --description "A thinking agent""#)
+        .await?;
+
+    for i in 0..5 {
+        app.command(&format!(
+            r#"cognition add thinker.process observation "Thought {i}""#
+        ))
+        .await?;
+    }
+
+    let result = app
+        .command("cognition list --agent thinker.process --offset 3")
+        .await?;
+
+    let prompt = result.prompt();
+
+    assert!(
+        prompt.contains("2 found"),
+        "expected '2 found' in prompt, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("of 5"),
+        "expected 'of 5' total in prompt, got:\n{prompt}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn listing_cognitions_empty() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    app.command(r#"agent create thinker process --description "A thinking agent""#)
+        .await?;
+
+    let result = app
+        .command("cognition list --agent thinker.process")
+        .await?;
+    let prompt = result.prompt();
+
+    assert!(
+        prompt.contains("No cognitions"),
+        "expected 'No cognitions' for empty list, got:\n{prompt}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn listing_memories() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    app.command(r#"agent create thinker process --description "A thinking agent""#)
+        .await?;
+
+    app.command(r#"memory add thinker.process session "Event sourcing is powerful""#)
+        .await?;
+    app.command(r#"memory add thinker.process project "Architecture settled""#)
+        .await?;
+
+    let result = app.command("memory list --agent thinker.process").await?;
+    let prompt = result.prompt();
+
+    assert!(
+        prompt.contains("2 found"),
+        "expected '2 found' in prompt, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("Event sourcing is powerful"),
+        "expected memory content in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("session"),
+        "expected level label in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("ref:"),
+        "expected ref tokens in listing, got:\n{prompt}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn listing_experiences() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    app.command(r#"agent create thinker process --description "A thinking agent""#)
+        .await?;
+
+    app.command(r#"experience create thinker.process echoes "These insights rhyme""#)
+        .await?;
+
+    let result = app
+        .command("experience list --agent thinker.process")
+        .await?;
+    let prompt = result.prompt();
+
+    assert!(
+        prompt.contains("1 found"),
+        "expected '1 found' in prompt, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("These insights rhyme"),
+        "expected experience description in listing, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("echoes"),
+        "expected sensation label in listing, got:\n{prompt}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
@@ -213,8 +461,10 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     // Status — via continuity client
-    match client.continuity().status(&agent).await? {
-        ContinuityResponse::Status(_) => {}
+    match client.continuity().status().await? {
+        ContinuityResponse::Status(table) => {
+            assert!(!table.agents.is_empty(), "should have agents in status");
+        }
         other => panic!("expected Status, got {other:?}"),
     }
 
@@ -362,6 +612,59 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
             "events should be in sequence order"
         );
     }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn activity_status_shows_all_agents() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    // Create two agents with different activity levels
+    app.command(r#"agent create alpha process --description "First agent""#)
+        .await?;
+    app.command(r#"agent create beta process --description "Second agent""#)
+        .await?;
+
+    // Alpha has cognitions and memories
+    app.command(r#"cognition add alpha.process observation "Alpha sees things""#)
+        .await?;
+    app.command(r#"cognition add alpha.process working "Alpha is working""#)
+        .await?;
+    app.command(r#"memory add alpha.process session "Alpha remembers""#)
+        .await?;
+
+    // Beta has only one cognition
+    app.command(r#"cognition add beta.process observation "Beta observes""#)
+        .await?;
+
+    // Status — no agent name required, shows all agents
+    let result = app.command("continuity status").await?;
+    let prompt = result.prompt();
+
+    // Should contain both agent names
+    assert!(
+        prompt.contains("alpha.process"),
+        "expected alpha.process in status, got:\n{prompt}"
+    );
+    assert!(
+        prompt.contains("beta.process"),
+        "expected beta.process in status, got:\n{prompt}"
+    );
+
+    // Should show counts — alpha has 2 cognitions, 1 memory
+    // The table format shows Cog/Mem/Exp columns
+    assert!(
+        prompt.contains("Cog") || prompt.contains("cog"),
+        "expected cognition column header in status, got:\n{prompt}"
+    );
 
     Ok(())
 }

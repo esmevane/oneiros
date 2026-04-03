@@ -105,7 +105,15 @@ async fn replay_reconstructs_read_models() {
     .unwrap();
 
     // Verify read models before replay
-    match LevelService::list(&context).await.unwrap() {
+    match LevelService::list(
+        &context,
+        &ListLevels {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .unwrap()
+    {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed, got {other:?}"),
     }
@@ -114,7 +122,15 @@ async fn replay_reconstructs_read_models() {
     context.replay().unwrap();
 
     // Read models should be identical after replay
-    match LevelService::list(&context).await.unwrap() {
+    match LevelService::list(
+        &context,
+        &ListLevels {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .unwrap()
+    {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
@@ -133,6 +149,7 @@ async fn replay_reconstructs_read_models() {
         &ListCognitions {
             agent: Some(AgentName::new("gov.test-persona")),
             texture: None,
+            filters: SearchFilters::default(),
         },
     )
     .await

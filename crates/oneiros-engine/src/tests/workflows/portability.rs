@@ -154,6 +154,7 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .list(&ListCognitions {
             agent: Some(agent.clone()),
             texture: None,
+            filters: SearchFilters::default(),
         })
         .await?
     {
@@ -172,6 +173,7 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .memory()
         .list(&ListMemories {
             agent: Some(agent.clone()),
+            filters: SearchFilters::default(),
         })
         .await?
     {
@@ -181,7 +183,7 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
                 dream_a.memories.len(),
                 "memory count should match"
             );
-            let contents: Vec<&str> = mems.iter().map(|m| m.content.as_str()).collect();
+            let contents: Vec<&str> = mems.items.iter().map(|m| m.content.as_str()).collect();
             assert!(
                 contents.contains(&"I think in types"),
                 "core memory should survive"
@@ -195,6 +197,7 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .experience()
         .list(&ListExperiences {
             agent: Some(agent.clone()),
+            filters: SearchFilters::default(),
         })
         .await?
     {

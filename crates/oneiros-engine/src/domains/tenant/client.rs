@@ -23,7 +23,11 @@ impl<'a> TenantClient<'a> {
     }
 
     /// List all tenants.
-    pub async fn list(&self) -> Result<TenantResponse, ClientError> {
-        self.client.get("/tenants").await
+    pub async fn list(&self, request: &ListTenants) -> Result<TenantResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/tenants?{query}")).await
     }
 }

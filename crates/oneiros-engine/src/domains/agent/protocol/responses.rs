@@ -7,7 +7,7 @@ use crate::*;
 pub enum AgentResponse {
     AgentCreated(AgentName),
     AgentDetails(Agent),
-    Agents(Vec<Agent>),
+    Agents(Listed<Agent>),
     NoAgents,
     AgentUpdated(AgentName),
     AgentRemoved(AgentName),

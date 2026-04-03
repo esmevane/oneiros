@@ -26,6 +26,10 @@ pub struct GetExperience {
 pub struct ListExperiences {
     #[arg(long)]
     pub agent: Option<AgentName>,
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

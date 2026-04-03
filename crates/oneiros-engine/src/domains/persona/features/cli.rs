@@ -6,7 +6,7 @@ use crate::*;
 pub enum PersonaCommands {
     Set(SetPersona),
     Show(GetPersona),
-    List,
+    List(ListPersonas),
     Remove(RemovePersona),
 }
 
@@ -21,7 +21,7 @@ impl PersonaCommands {
         let response = match self {
             PersonaCommands::Set(set) => persona_client.set(set).await?,
             PersonaCommands::Show(get) => persona_client.get(&get.name).await?,
-            PersonaCommands::List => persona_client.list().await?,
+            PersonaCommands::List(list) => persona_client.list(list).await?,
             PersonaCommands::Remove(removal) => persona_client.remove(&removal.name).await?,
         };
 
@@ -33,7 +33,13 @@ impl PersonaCommands {
                     p.name, p.description, p.prompt
                 )
             }
-            PersonaResponse::Personas(personas) => format!("Personas: {personas:?}"),
+            PersonaResponse::Personas(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for persona in &listed.items {
+                    out.push_str(&format!("  {} — {}\n\n", persona.name, persona.description,));
+                }
+                out
+            }
             PersonaResponse::NoPersonas => "No personas configured.".to_string(),
             PersonaResponse::PersonaRemoved(name) => format!("Persona '{name}' removed."),
         };

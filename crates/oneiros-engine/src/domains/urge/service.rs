@@ -31,12 +31,15 @@ impl UrgeService {
         Ok(UrgeResponse::UrgeDetails(urge))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<UrgeResponse, UrgeError> {
-        let urges = UrgeRepo::new(context).list().await?;
-        if urges.is_empty() {
+    pub async fn list(
+        context: &ProjectContext,
+        ListUrges { filters }: &ListUrges,
+    ) -> Result<UrgeResponse, UrgeError> {
+        let listed = UrgeRepo::new(context).list(filters).await?;
+        if listed.total == 0 {
             Ok(UrgeResponse::NoUrges)
         } else {
-            Ok(UrgeResponse::Urges(urges))
+            Ok(UrgeResponse::Urges(listed))
         }
     }
 

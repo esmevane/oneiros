@@ -39,7 +39,7 @@ mod nature_mcp {
             ToolDef {
                 name: "list_natures",
                 description: "See all the kinds of relationships",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListNatures>,
             },
             ToolDef {
                 name: "remove_nature",
@@ -61,7 +61,7 @@ mod nature_mcp {
         let value = match tool_name {
             "set_nature" => NatureService::set(context, &serde_json::from_str(params)?).await,
             "get_nature" => NatureService::get(context, &serde_json::from_str(params)?).await,
-            "list_natures" => NatureService::list(context).await,
+            "list_natures" => NatureService::list(context, &serde_json::from_str(params)?).await,
             "remove_nature" => NatureService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }

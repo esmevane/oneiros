@@ -54,7 +54,10 @@ mod storage_mcp {
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
         let value = match tool_name {
-            "list_storage" => StorageService::list(context).await,
+            "list_storage" => {
+                let request: ListStorage = serde_json::from_str(params).unwrap_or_default();
+                StorageService::list(context, &request).await
+            }
             "get_storage" => StorageService::show(context, &serde_json::from_str(params)?).await,
             "remove_storage" => {
                 StorageService::remove(context, &serde_json::from_str(params)?).await

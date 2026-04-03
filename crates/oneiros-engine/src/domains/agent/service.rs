@@ -53,13 +53,16 @@ impl AgentService {
         Ok(AgentResponse::AgentDetails(agent))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<AgentResponse, AgentError> {
-        let agents = AgentRepo::new(context).list().await?;
+    pub async fn list(
+        context: &ProjectContext,
+        ListAgents { filters }: &ListAgents,
+    ) -> Result<AgentResponse, AgentError> {
+        let listed = AgentRepo::new(context).list(filters).await?;
 
-        if agents.is_empty() {
+        if listed.total == 0 {
             Ok(AgentResponse::NoAgents)
         } else {
-            Ok(AgentResponse::Agents(agents))
+            Ok(AgentResponse::Agents(listed))
         }
     }
 

@@ -6,7 +6,7 @@ use crate::*;
 pub enum TextureCommands {
     Set(SetTexture),
     Show(GetTexture),
-    List,
+    List(ListTextures),
     Remove(RemoveTexture),
 }
 
@@ -21,7 +21,7 @@ impl TextureCommands {
         let response = match self {
             TextureCommands::Set(set) => texture_client.set(set).await?,
             TextureCommands::Show(get) => texture_client.get(&get.name).await?,
-            TextureCommands::List => texture_client.list().await?,
+            TextureCommands::List(list) => texture_client.list(list).await?,
             TextureCommands::Remove(removal) => texture_client.remove(&removal.name).await?,
         };
 
@@ -33,7 +33,13 @@ impl TextureCommands {
                     t.name, t.description, t.prompt
                 )
             }
-            TextureResponse::Textures(textures) => format!("Textures: {textures:?}"),
+            TextureResponse::Textures(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for texture in &listed.items {
+                    out.push_str(&format!("  {} — {}\n\n", texture.name, texture.description,));
+                }
+                out
+            }
             TextureResponse::NoTextures => "No textures configured.".to_string(),
             TextureResponse::TextureRemoved(name) => format!("Texture '{name}' removed."),
         };

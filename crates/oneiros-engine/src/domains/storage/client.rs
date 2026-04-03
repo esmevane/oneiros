@@ -13,8 +13,12 @@ impl<'a> StorageClient<'a> {
         self.client.post("/storage", request).await
     }
 
-    pub async fn list(&self) -> Result<StorageResponse, ClientError> {
-        self.client.get("/storage").await
+    pub async fn list(&self, request: &ListStorage) -> Result<StorageResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset
+        );
+        self.client.get(&format!("/storage?{query}")).await
     }
 
     pub async fn show(&self, request: &GetStorage) -> Result<StorageResponse, ClientError> {

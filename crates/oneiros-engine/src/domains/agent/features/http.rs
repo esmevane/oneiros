@@ -1,4 +1,9 @@
-use axum::{Json, Router, extract::Path, http::StatusCode, routing};
+use axum::{
+    Json, Router,
+    extract::{Path, Query},
+    http::StatusCode,
+    routing,
+};
 
 use crate::*;
 
@@ -23,8 +28,11 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn list(context: ProjectContext) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::list(&context).await?))
+async fn list(
+    context: ProjectContext,
+    Query(params): Query<ListAgents>,
+) -> Result<Json<AgentResponse>, AgentError> {
+    Ok(Json(AgentService::list(&context, &params).await?))
 }
 
 async fn show(

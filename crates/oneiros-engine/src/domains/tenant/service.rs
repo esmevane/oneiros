@@ -27,9 +27,11 @@ impl TenantService {
         Ok(TenantResponse::Found(tenant))
     }
 
-    pub async fn list(context: &SystemContext) -> Result<TenantResponse, TenantError> {
-        let tenants = TenantRepo::new(context).list().await?;
-
-        Ok(TenantResponse::Listed(tenants))
+    pub async fn list(
+        context: &SystemContext,
+        ListTenants { filters }: &ListTenants,
+    ) -> Result<TenantResponse, TenantError> {
+        let listed = TenantRepo::new(context).list(filters).await?;
+        Ok(TenantResponse::Listed(listed))
     }
 }

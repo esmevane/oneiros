@@ -39,7 +39,7 @@ mod sensation_mcp {
             ToolDef {
                 name: "list_sensations",
                 description: "See all the ways experiences can feel",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListSensations>,
             },
             ToolDef {
                 name: "remove_sensation",
@@ -66,7 +66,9 @@ mod sensation_mcp {
         let value = match tool_name {
             "set_sensation" => SensationService::set(context, &serde_json::from_str(params)?).await,
             "get_sensation" => SensationService::get(context, &serde_json::from_str(params)?).await,
-            "list_sensations" => SensationService::list(context).await,
+            "list_sensations" => {
+                SensationService::list(context, &serde_json::from_str(params)?).await
+            }
             "remove_sensation" => {
                 SensationService::remove(context, &serde_json::from_str(params)?).await
             }

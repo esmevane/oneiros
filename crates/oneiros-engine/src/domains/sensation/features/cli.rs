@@ -6,7 +6,7 @@ use crate::*;
 pub enum SensationCommands {
     Set(SetSensation),
     Show(GetSensation),
-    List,
+    List(ListSensations),
     Remove(RemoveSensation),
 }
 
@@ -21,14 +21,28 @@ impl SensationCommands {
         let response = match self {
             SensationCommands::Set(set) => sensation_client.set(set).await?,
             SensationCommands::Show(get) => sensation_client.get(&get.name).await?,
-            SensationCommands::List => sensation_client.list().await?,
+            SensationCommands::List(list) => sensation_client.list(list).await?,
             SensationCommands::Remove(removal) => sensation_client.remove(&removal.name).await?,
         };
 
         let prompt = match &response {
             SensationResponse::SensationSet(name) => format!("Sensation '{name}' set."),
-            SensationResponse::SensationDetails(s) => format!("Sensation details: {s:?}"),
-            SensationResponse::Sensations(sensations) => format!("Sensations: {sensations:?}"),
+            SensationResponse::SensationDetails(s) => {
+                format!(
+                    "Sensation '{}'\n  Description: {}\n  Prompt: {}",
+                    s.name, s.description, s.prompt
+                )
+            }
+            SensationResponse::Sensations(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for sensation in &listed.items {
+                    out.push_str(&format!(
+                        "  {} — {}\n\n",
+                        sensation.name, sensation.description,
+                    ));
+                }
+                out
+            }
             SensationResponse::NoSensations => "No sensations configured.".to_string(),
             SensationResponse::SensationRemoved(name) => format!("Sensation '{name}' removed."),
         };

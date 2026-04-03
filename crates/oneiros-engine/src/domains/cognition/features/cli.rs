@@ -35,7 +35,17 @@ impl CognitionCommands {
                 content,
                 created_at: _,
             }) => format!("[{texture}] {content}"),
-            CognitionResponse::Cognitions(list) => format!("{} cognitions.", list.len()),
+            CognitionResponse::Cognitions(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for cognition in &listed.items {
+                    let ref_token = RefToken::new(Ref::cognition(cognition.id));
+                    out.push_str(&format!(
+                        "  [{}] {}\n    {}\n\n",
+                        cognition.texture, cognition.content, ref_token
+                    ));
+                }
+                out
+            }
             CognitionResponse::NoCognitions => "No cognitions.".to_string(),
         };
 

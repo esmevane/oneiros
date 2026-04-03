@@ -1,41 +1,50 @@
 use oneiros_engine::*;
 use oneiros_usage::*;
 
-pub(crate) async fn status_prompt_contains_agent<B: Backend>() -> TestResult {
+pub(crate) async fn status_shows_agents<B: Backend>() -> TestResult {
     let harness = Harness::<B>::seed_project().await?;
     harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let prompt = harness.exec_prompt("status thinker.process").await?;
+    let prompt = harness.exec_prompt("status").await?;
 
     assert!(!prompt.is_empty(), "status prompt should not be empty");
     assert!(
         prompt.contains("thinker.process"),
         "status prompt should contain the agent name"
     );
+    assert!(
+        prompt.contains("Cog"),
+        "status prompt should contain column headers"
+    );
 
     Ok(())
 }
 
-pub(crate) async fn returns_agent_status<B: Backend>() -> TestResult {
+pub(crate) async fn returns_activity_table<B: Backend>() -> TestResult {
     let harness = Harness::<B>::seed_project().await?;
     harness
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let response = harness.exec_json("status thinker.process").await?;
+    let response = harness.exec_json("status").await?;
 
     match &response.data {
-        // Engine: typed continuity response
-        Responses::Continuity(ContinuityResponse::Status(ctx)) => {
-            assert_eq!(ctx.agent.name, AgentName::new("thinker.process"));
+        Responses::Continuity(ContinuityResponse::Status(table)) => {
+            assert!(
+                !table.agents.is_empty(),
+                "activity table should contain agents"
+            );
+            assert!(
+                table
+                    .agents
+                    .iter()
+                    .any(|a| a.name == AgentName::new("thinker.process")),
+                "activity table should include the created agent"
+            );
         }
-        // Legacy: inline JSON (will be removed when legacy is retired)
-        Responses::Json(v) => {
-            assert_eq!(v.get("type").and_then(|t| t.as_str()), Some("status"));
-        }
-        other => panic!("expected Continuity(Status) or Json(status), got {other:#?}"),
+        other => panic!("expected Continuity(Status), got {other:#?}"),
     }
 
     Ok(())

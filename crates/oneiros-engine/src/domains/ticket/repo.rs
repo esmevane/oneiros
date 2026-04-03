@@ -44,14 +44,23 @@ impl<'a> TicketRepo<'a> {
         }
     }
 
-    pub async fn list(&self) -> Result<Vec<Ticket>, EventError> {
+    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
         let db = self.context.db()?;
+
+        let total = {
+            let mut stmt = db.prepare("SELECT COUNT(*) FROM tickets")?;
+            stmt.query_row([], |row| row.get::<_, usize>(0))?
+        };
+
         let mut stmt = db.prepare(
-            "SELECT id, actor_id, brain_name, brain_id, token, created_at FROM tickets ORDER BY created_at",
+            "SELECT id, actor_id, brain_name, brain_id, token, created_at
+             FROM tickets
+             ORDER BY created_at DESC
+             LIMIT ?1 OFFSET ?2",
         )?;
 
         let raw: Vec<(String, String, String, String, String, String)> = stmt
-            .query_map([], |row| {
+            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
                 Ok((
                     row.get(0)?,
                     row.get(1)?,
@@ -76,7 +85,7 @@ impl<'a> TicketRepo<'a> {
             });
         }
 
-        Ok(tickets)
+        Ok(Listed::new(tickets, total))
     }
 
     pub async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {

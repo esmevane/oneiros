@@ -201,8 +201,12 @@ impl SeedService {
 
     pub async fn agents(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
         // Verify required personas exist — hint at `seed core` if missing.
-        let personas = PersonaRepo::new(context).list().await?;
-        let persona_names: Vec<&str> = personas.iter().map(|p| p.name.as_str()).collect();
+        let all_filters = SearchFilters {
+            limit: Limit(usize::MAX),
+            offset: Offset(0),
+        };
+        let personas = PersonaRepo::new(context).list(&all_filters).await?;
+        let persona_names: Vec<&str> = personas.items.iter().map(|p| p.name.as_str()).collect();
 
         if !persona_names.contains(&"process") || !persona_names.contains(&"scribe") {
             return Err(SeedError::MissingPersonas);
