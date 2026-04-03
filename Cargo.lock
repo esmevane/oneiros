@@ -1635,7 +1635,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "oneiros"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "oneiros-engine",
  "serde_json",
@@ -1645,7 +1645,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-engine"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "askama",
  "axum",
@@ -1680,7 +1680,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-usage"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "axum",
  "clap",
@@ -3690,7 +3690,7 @@ checksum = "3ae8337f8a065cfc972643663ea4279e04e7256de865aa66fe25cec5fb912d3f"
 
 [[package]]
 name = "xtasks"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "clap",
  "oneiros-engine",
