@@ -26,4 +26,11 @@ impl<T> Listed<T> {
     pub fn len(&self) -> usize {
         self.items.len()
     }
+
+    pub fn map<U>(self, f: impl FnMut(T) -> U) -> Listed<U> {
+        Listed {
+            items: self.items.into_iter().map(f).collect(),
+            total: self.total,
+        }
+    }
 }

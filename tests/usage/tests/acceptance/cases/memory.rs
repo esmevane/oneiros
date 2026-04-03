@@ -24,10 +24,7 @@ pub(crate) async fn add_creates_memory<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Memory(MemoryResponse::MemoryAdded(_))
-        ),
+        matches!(response, Responses::Memory(MemoryResponse::MemoryAdded(_))),
         "expected MemoryAdded, got {response:#?}"
     );
 
@@ -40,7 +37,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let response = harness.exec_json("memory list").await?;
 
     assert!(
-        matches!(response.data, Responses::Memory(MemoryResponse::NoMemories)),
+        matches!(response, Responses::Memory(MemoryResponse::NoMemories)),
         "expected NoMemories, got {response:#?}"
     );
 
@@ -59,7 +56,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("memory list").await?;
 
-    match response.data {
+    match response {
         Responses::Memory(MemoryResponse::Memories(memories)) => {
             assert_eq!(memories.len(), 2);
         }
@@ -87,7 +84,7 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .exec_json("memory list --agent learner.process")
         .await?;
 
-    match response.data {
+    match response {
         Responses::Memory(MemoryResponse::Memories(memories)) => {
             assert_eq!(memories.len(), 1);
         }
@@ -104,16 +101,16 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .exec_json("memory add learner.process session 'Show me this'")
         .await?;
 
-    let id = match add_response.data {
-        Responses::Memory(MemoryResponse::MemoryAdded(memory)) => memory.id,
+    let id = match add_response {
+        Responses::Memory(MemoryResponse::MemoryAdded(memory)) => memory.data.id,
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("memory show {id}")).await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Memory(MemoryResponse::MemoryDetails(memory)) => {
-            assert_eq!(memory.content.as_str(), "Show me this");
+            assert_eq!(memory.data.content.as_str(), "Show me this");
         }
         other => panic!("expected MemoryDetails, got {other:#?}"),
     }
@@ -127,8 +124,8 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
     let response = harness
         .exec_json("memory add learner.process session 'Show me this'")
         .await?;
-    let id = match response.data {
-        Responses::Memory(MemoryResponse::MemoryAdded(m)) => m.id.to_string(),
+    let id = match response {
+        Responses::Memory(MemoryResponse::MemoryAdded(m)) => m.data.id.to_string(),
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 

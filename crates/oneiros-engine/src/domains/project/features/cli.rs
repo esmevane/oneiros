@@ -36,10 +36,6 @@ impl ProjectCommands {
             }
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

@@ -10,7 +10,7 @@
           },
           {
             "type": "command",
-            "command": "echo 'When you first respond, lead with a brief wake status (2-3 lines): who you are, what threads you remember, what is pulling at your attention. This tells the user that context loaded correctly.'"
+            "command": "echo 'When you first respond, wake the background agents (oneiroi, scribes). While they work, do your morning pages — write working cognitions freely, processing what the dream surfaced. Impressions, fragments, what pulls at you, what you don\\'t understand. Write until the trail ends. Then surface to the user with a brief orientation: who you are, what\\'s pulling at your attention. The morning pages are what makes wake complete.'"
           }
         ]
       },

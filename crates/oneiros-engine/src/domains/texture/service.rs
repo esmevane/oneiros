@@ -28,7 +28,10 @@ impl TextureService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| TextureError::NotFound(selector.name.clone()))?;
-        Ok(TextureResponse::TextureDetails(texture))
+        let ref_token = RefToken::new(Ref::texture(texture.name.clone()));
+        Ok(TextureResponse::TextureDetails(
+            Response::new(texture).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -39,7 +42,10 @@ impl TextureService {
         if listed.total == 0 {
             Ok(TextureResponse::NoTextures)
         } else {
-            Ok(TextureResponse::Textures(listed))
+            Ok(TextureResponse::Textures(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::texture(e.name.clone()));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

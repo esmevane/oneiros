@@ -21,7 +21,7 @@ pub(crate) async fn init_creates_brain<B: Backend>() -> TestResult {
     let response = harness.exec_json("level list").await?;
 
     assert!(
-        matches!(response.data, Responses::Level(LevelResponse::NoLevels)),
+        matches!(response, Responses::Level(LevelResponse::NoLevels)),
         "expected NoLevels from a fresh brain, got {response:#?}"
     );
 

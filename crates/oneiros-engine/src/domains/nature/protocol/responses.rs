@@ -6,8 +6,8 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum NatureResponse {
     NatureSet(NatureName),
-    NatureDetails(Nature),
-    Natures(Listed<Nature>),
+    NatureDetails(Response<Nature>),
+    Natures(Listed<Response<Nature>>),
     NoNatures,
     NatureRemoved(NatureName),
 }

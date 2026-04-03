@@ -17,7 +17,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            set_response.data,
+            set_response,
             Responses::Storage(StorageResponse::StorageSet(_))
         ),
         "expected StorageSet, got {set_response:?}"
@@ -26,9 +26,9 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     // Verify via show
     let show_response = harness.exec_json("storage show test-doc").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
-            assert_eq!(entry.key.as_str(), "test-doc");
+            assert_eq!(entry.data.key.as_str(), "test-doc");
         }
         other => panic!("expected StorageDetails, got {other:#?}"),
     }
@@ -42,10 +42,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let response = harness.exec_json("storage list").await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Storage(StorageResponse::NoEntries)
-        ),
+        matches!(response, Responses::Storage(StorageResponse::NoEntries)),
         "expected NoEntries, got {response:#?}"
     );
 
@@ -64,7 +61,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("storage list").await?;
 
-    match response.data {
+    match response {
         Responses::Storage(StorageResponse::Entries(entries)) => {
             assert_eq!(entries.len(), 1);
         }
@@ -171,7 +168,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Storage(StorageResponse::StorageRemoved(_))
         ),
         "expected StorageRemoved, got {remove_response:?}"
@@ -182,7 +179,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            list_response.data,
+            list_response,
             Responses::Storage(StorageResponse::NoEntries)
         ),
         "expected NoEntries after removal, got {list_response:?}"

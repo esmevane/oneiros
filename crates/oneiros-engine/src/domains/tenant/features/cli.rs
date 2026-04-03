@@ -24,21 +24,21 @@ impl TenantCommands {
         };
 
         let prompt = match &response {
-            TenantResponse::Created(tenant) => format!("Tenant '{}' created.", tenant.name),
-            TenantResponse::Found(tenant) => format!("Tenant '{}' ({})", tenant.name, tenant.id),
+            TenantResponse::Created(wrapped) => {
+                format!("Tenant '{}' created.", wrapped.data.name)
+            }
+            TenantResponse::Found(wrapped) => {
+                format!("Tenant '{}' ({})", wrapped.data.name, wrapped.data.id)
+            }
             TenantResponse::Listed(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for tenant in &listed.items {
-                    out.push_str(&format!("  {}\n\n", tenant.name));
+                for wrapped in &listed.items {
+                    out.push_str(&format!("  {}\n\n", wrapped.data.name));
                 }
                 out
             }
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

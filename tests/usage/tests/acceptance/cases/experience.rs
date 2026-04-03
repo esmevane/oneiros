@@ -25,7 +25,7 @@ pub(crate) async fn create<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Experience(ExperienceResponse::ExperienceCreated(_))
         ),
         "expected ExperienceCreated, got {response:#?}"
@@ -41,7 +41,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Experience(ExperienceResponse::NoExperiences)
         ),
         "expected NoExperiences, got {response:#?}"
@@ -62,7 +62,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("experience list").await?;
 
-    match response.data {
+    match response {
         Responses::Experience(ExperienceResponse::Experiences(experiences)) => {
             assert_eq!(experiences.len(), 2);
         }
@@ -79,16 +79,18 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .exec_json("experience create observer.process caused 'Show me this'")
         .await?;
 
-    let id = match create_response.data {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => experience.id,
+    let id = match create_response {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => {
+            experience.data.id
+        }
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("experience show {id}")).await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.description.as_str(), "Show me this");
+            assert_eq!(experience.data.description.as_str(), "Show me this");
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -103,8 +105,10 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
         .exec_json("experience create observer.process caused 'Original'")
         .await?;
 
-    let id = match create_response.data {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => experience.id,
+    let id = match create_response {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => {
+            experience.data.id
+        }
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
@@ -116,7 +120,7 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            update_response.data,
+            update_response,
             Responses::Experience(ExperienceResponse::ExperienceUpdated(_))
         ),
         "expected ExperienceUpdated, got {update_response:?}"
@@ -124,9 +128,9 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json(&format!("experience show {id}")).await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.description.as_str(), "Updated description");
+            assert_eq!(experience.data.description.as_str(), "Updated description");
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -140,8 +144,8 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
     let response = harness
         .exec_json("experience create observer.process caused 'Show this'")
         .await?;
-    let id = match response.data {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.id.to_string(),
+    let id = match response {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id.to_string(),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
@@ -181,8 +185,8 @@ pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
     let response = harness
         .exec_json("experience create observer.process caused 'Original'")
         .await?;
-    let id = match response.data {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.id.to_string(),
+    let id = match response {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id.to_string(),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 

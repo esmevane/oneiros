@@ -10,12 +10,22 @@ use crate::*;
 pub struct WakeAgent {
     #[builder(into)]
     pub agent: AgentName,
+    /// Render the full dream with all vocabulary and memories inline.
+    #[arg(long)]
+    #[serde(default)]
+    #[builder(default)]
+    pub deep: bool,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct DreamAgent {
     #[builder(into)]
     pub agent: AgentName,
+    /// Render the full dream with all vocabulary and memories inline.
+    #[arg(long)]
+    #[serde(default)]
+    #[builder(default)]
+    pub deep: bool,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

@@ -6,8 +6,8 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AgentResponse {
     AgentCreated(AgentName),
-    AgentDetails(Agent),
-    Agents(Listed<Agent>),
+    AgentDetails(Response<Agent>),
+    Agents(Listed<Response<Agent>>),
     NoAgents,
     AgentUpdated(AgentName),
     AgentRemoved(AgentName),

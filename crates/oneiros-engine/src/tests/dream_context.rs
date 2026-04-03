@@ -53,7 +53,7 @@ async fn add_cognition(context: &ProjectContext, agent: &AgentName, content: &st
     .await
     .unwrap()
     {
-        CognitionResponse::CognitionAdded(c) => c.id,
+        CognitionResponse::CognitionAdded(c) => c.data.id,
         other => panic!("expected CognitionAdded, got {other:?}"),
     }
 }
@@ -75,7 +75,7 @@ async fn add_memory(
     .await
     .unwrap()
     {
-        MemoryResponse::MemoryAdded(m) => m.id,
+        MemoryResponse::MemoryAdded(m) => m.data.id,
         other => panic!("expected MemoryAdded, got {other:?}"),
     }
 }
@@ -96,7 +96,7 @@ async fn add_experience(
     .await
     .unwrap()
     {
-        ExperienceResponse::ExperienceCreated(e) => e.id,
+        ExperienceResponse::ExperienceCreated(e) => e.data.id,
         other => panic!("expected ExperienceCreated, got {other:?}"),
     }
 }
@@ -113,7 +113,7 @@ async fn connect(context: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId
     .await
     .unwrap()
     {
-        ConnectionResponse::ConnectionCreated(c) => c.id,
+        ConnectionResponse::ConnectionCreated(c) => c.data.id,
         other => panic!("expected ConnectionCreated, got {other:?}"),
     }
 }
@@ -555,6 +555,156 @@ async fn cognitions_sorted_by_created_at() {
             "cognitions should be sorted by created_at"
         );
     }
+}
+
+// ── Compact rendering (default) ─────────────────────────────────
+
+#[tokio::test]
+async fn compact_dream_vocabulary_shows_names_only() {
+    let (context, _dir) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    // Set a texture with a rich prompt so we can verify it's NOT shown in compact mode
+    TextureService::set(
+        &context,
+        &SetTexture::builder()
+            .name(TextureName::new("observation"))
+            .description("Noticing things")
+            .prompt("When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.")
+            .build(),
+    )
+    .await
+    .unwrap();
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    // Texture names should be present
+    assert!(
+        rendered.contains("observation"),
+        "compact dream should list texture names"
+    );
+    // But the full prompt should NOT be inline
+    assert!(
+        !rendered.contains("Focus on what you see, not what to do about it"),
+        "compact dream should not include full texture prompts"
+    );
+    // Should point to guidebook for details
+    assert!(
+        rendered.contains("guidebook"),
+        "compact dream should reference the guidebook for full vocabulary"
+    );
+}
+
+#[tokio::test]
+async fn compact_dream_core_memories_inline() {
+    let (context, _dir) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    add_memory(&context, &agent, "core", "I am fundamentally a thinker").await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    assert!(
+        rendered.contains("I am fundamentally a thinker"),
+        "core memories should appear inline in compact dream"
+    );
+}
+
+#[tokio::test]
+async fn compact_dream_non_core_memories_as_summary() {
+    let (context, _dir) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    add_memory(&context, &agent, "core", "core identity").await;
+    add_memory(
+        &context,
+        &agent,
+        "project",
+        "A very long project memory that contains detailed architectural information about the system design and implementation patterns that were discovered during session work",
+    )
+    .await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    // Core should be fully inline
+    assert!(
+        rendered.contains("core identity"),
+        "core memory should be fully inline"
+    );
+    // Non-core should be truncated/summarized, not full
+    assert!(
+        !rendered.contains("that were discovered during session work"),
+        "non-core memory should be truncated in compact dream"
+    );
+    // Should have ref tokens for lookup
+    assert!(
+        rendered.contains("ref:"),
+        "compact dream should include ref tokens for summarized memories"
+    );
+}
+
+// ── Deep rendering ──────────────────────────────────────────────
+
+#[tokio::test]
+async fn deep_dream_vocabulary_shows_full_prompts() {
+    let (context, _dir) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    // Set a texture with a rich prompt so we can verify it IS shown in deep mode
+    TextureService::set(
+        &context,
+        &SetTexture::builder()
+            .name(TextureName::new("observation"))
+            .description("Noticing things")
+            .prompt("When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.")
+            .build(),
+    )
+    .await
+    .unwrap();
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::deep(&context).to_string();
+
+    // Deep mode should include full texture prompts
+    assert!(
+        rendered.contains("observation"),
+        "deep dream should list texture names"
+    );
+    assert!(
+        rendered.contains("Focus on what you see, not what to do about it"),
+        "deep dream should include full texture prompts"
+    );
+}
+
+#[tokio::test]
+async fn deep_dream_all_memories_inline() {
+    let (context, _dir) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    add_memory(&context, &agent, "core", "core identity").await;
+    add_memory(
+        &context,
+        &agent,
+        "project",
+        "A very long project memory that contains detailed architectural information about the system design and implementation patterns that were discovered during session work",
+    )
+    .await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::deep(&context).to_string();
+
+    // Both core and non-core should be fully inline in deep mode
+    assert!(
+        rendered.contains("core identity"),
+        "core memory should be inline in deep dream"
+    );
+    assert!(
+        rendered.contains("that were discovered during session work"),
+        "non-core memory should be fully inline in deep dream"
+    );
 }
 
 // ── Template rendering ───────────────────────────────────────────

@@ -17,14 +17,14 @@ pub(crate) async fn core_creates_default_levels<B: Backend>() -> TestResult {
     let response = harness.exec_json("seed core").await?;
 
     assert!(
-        matches!(response.data, Responses::Seed(SeedResponse::SeedComplete)),
+        matches!(response, Responses::Seed(SeedResponse::SeedComplete)),
         "expected SeedComplete, got {response:#?}"
     );
 
     // Verify levels were created
     let list_response = harness.exec_json("level list").await?;
 
-    match list_response.data {
+    match list_response {
         Responses::Level(LevelResponse::Levels(levels)) => {
             // Core seed includes working, session, project, archival, core
             assert!(

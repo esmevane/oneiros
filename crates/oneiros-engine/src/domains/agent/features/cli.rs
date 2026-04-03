@@ -29,18 +29,21 @@ impl AgentCommands {
 
         let prompt = match &response {
             AgentResponse::AgentCreated(name) => format!("Agent '{name}' created."),
-            AgentResponse::AgentDetails(a) => {
+            AgentResponse::AgentDetails(wrapped) => {
                 format!(
                     "Agent '{}' (persona: {})\n  Description: {}\n  Prompt: {}",
-                    a.name, a.persona, a.description, a.prompt
+                    wrapped.data.name,
+                    wrapped.data.persona,
+                    wrapped.data.description,
+                    wrapped.data.prompt
                 )
             }
             AgentResponse::Agents(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for agent in &listed.items {
+                for wrapped in &listed.items {
                     out.push_str(&format!(
                         "  {} ({})\n    {}\n\n",
-                        agent.name, agent.persona, agent.description
+                        wrapped.data.name, wrapped.data.persona, wrapped.data.description
                     ));
                 }
                 out
@@ -50,10 +53,6 @@ impl AgentCommands {
             AgentResponse::AgentRemoved(name) => format!("Agent '{name}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

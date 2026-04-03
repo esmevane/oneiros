@@ -25,7 +25,10 @@ impl MemoryService {
         context
             .emit(MemoryEvents::MemoryAdded(memory.clone()))
             .await?;
-        Ok(MemoryResponse::MemoryAdded(memory))
+        let ref_token = RefToken::new(Ref::memory(memory.id));
+        Ok(MemoryResponse::MemoryAdded(
+            Response::new(memory).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -36,7 +39,10 @@ impl MemoryService {
             .get(&selector.id)
             .await?
             .ok_or_else(|| MemoryError::NotFound(selector.id))?;
-        Ok(MemoryResponse::MemoryDetails(memory))
+        let ref_token = RefToken::new(Ref::memory(memory.id));
+        Ok(MemoryResponse::MemoryDetails(
+            Response::new(memory).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -60,7 +66,10 @@ impl MemoryService {
         Ok(if listed.total == 0 {
             MemoryResponse::NoMemories
         } else {
-            MemoryResponse::Memories(listed)
+            MemoryResponse::Memories(listed.map(|m| {
+                let ref_token = RefToken::new(Ref::memory(m.id));
+                Response::new(m).with_ref_token(ref_token)
+            }))
         })
     }
 }

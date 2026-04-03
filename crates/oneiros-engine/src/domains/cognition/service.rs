@@ -25,7 +25,10 @@ impl CognitionService {
         context
             .emit(CognitionEvents::CognitionAdded(cognition.clone()))
             .await?;
-        Ok(CognitionResponse::CognitionAdded(cognition))
+        let ref_token = RefToken::new(Ref::cognition(cognition.id));
+        Ok(CognitionResponse::CognitionAdded(
+            Response::new(cognition).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -36,7 +39,10 @@ impl CognitionService {
             .get(&selector.id)
             .await?
             .ok_or_else(|| CognitionError::NotFound(selector.id))?;
-        Ok(CognitionResponse::CognitionDetails(cognition))
+        let ref_token = RefToken::new(Ref::cognition(cognition.id));
+        Ok(CognitionResponse::CognitionDetails(
+            Response::new(cognition).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -64,7 +70,10 @@ impl CognitionService {
         Ok(if listed.total == 0 {
             CognitionResponse::NoCognitions
         } else {
-            CognitionResponse::Cognitions(listed)
+            CognitionResponse::Cognitions(listed.map(|c| {
+                let ref_token = RefToken::new(Ref::cognition(c.id));
+                Response::new(c).with_ref_token(ref_token)
+            }))
         })
     }
 }

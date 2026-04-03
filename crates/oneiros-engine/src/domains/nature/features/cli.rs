@@ -27,16 +27,19 @@ impl NatureCommands {
 
         let prompt = match &response {
             NatureResponse::NatureSet(name) => format!("Nature '{name}' set."),
-            NatureResponse::NatureDetails(n) => {
+            NatureResponse::NatureDetails(wrapped) => {
                 format!(
                     "Nature '{}'\n  Description: {}\n  Prompt: {}",
-                    n.name, n.description, n.prompt
+                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
                 )
             }
             NatureResponse::Natures(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for nature in &listed.items {
-                    out.push_str(&format!("  {} — {}\n\n", nature.name, nature.description,));
+                for wrapped in &listed.items {
+                    out.push_str(&format!(
+                        "  {} — {}\n\n",
+                        wrapped.data.name, wrapped.data.description,
+                    ));
                 }
                 out
             }
@@ -44,10 +47,6 @@ impl NatureCommands {
             NatureResponse::NatureRemoved(name) => format!("Nature '{name}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

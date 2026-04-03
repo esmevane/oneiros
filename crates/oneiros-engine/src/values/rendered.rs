@@ -9,30 +9,30 @@ use crate::*;
 
 /// A rendered result that carries typed data alongside presentation.
 ///
-/// Always retains the `Response<T>` for programmatic access. The prompt
+/// Always retains `data` for programmatic access. The prompt
 /// and text fields carry richer representations when a domain presenter
 /// produced them. Empty strings indicate no presentation is available
 /// for that mode — the caller falls back to serializing `data`.
 #[derive(Debug)]
 pub struct Rendered<T> {
-    data: Response<T>,
+    data: T,
     prompt: String,
     text: String,
 }
 
 impl<T> Rendered<T> {
     /// Construct with all representations.
-    pub fn new(data: Response<T>, prompt: String, text: String) -> Self {
+    pub fn new(data: T, prompt: String, text: String) -> Self {
         Self { data, prompt, text }
     }
 
     /// The typed response — always available.
-    pub fn response(&self) -> &Response<T> {
+    pub fn response(&self) -> &T {
         &self.data
     }
 
     /// Consume into the typed response, discarding presentation.
-    pub fn into_response(self) -> Response<T> {
+    pub fn into_response(self) -> T {
         self.data
     }
 
@@ -58,10 +58,10 @@ impl<T> Rendered<T> {
 }
 
 /// Default rendering — data only, no presentation.
-impl From<Response<Responses>> for Rendered<Responses> {
-    fn from(response: Response<Responses>) -> Self {
+impl From<Responses> for Rendered<Responses> {
+    fn from(data: Responses) -> Self {
         Self {
-            data: response,
+            data,
             prompt: String::new(),
             text: String::new(),
         }

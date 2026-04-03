@@ -62,8 +62,8 @@ async fn with_searchable<B: Backend>() -> Result<Harness<B>, Box<dyn core::error
 }
 
 /// Helper: extract the results vec from a search response.
-fn extract_results(response: Response<Responses>) -> Vec<Expression> {
-    match response.data {
+fn extract_results(response: Responses) -> Vec<Expression> {
+    match response {
         Responses::Search(SearchResponse::Results(search_results)) => search_results.results,
         other => panic!("expected Search(Results), got {other:#?}"),
     }
@@ -221,8 +221,10 @@ pub(crate) async fn finds_updated_experience_description<B: Backend>() -> TestRe
         .exec_json("experience create thinker.process caused 'Initial description'")
         .await?;
 
-    let exp_id = match response.data {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(exp)) => exp.id.to_string(),
+    let exp_id = match response {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(exp)) => {
+            exp.data.id.to_string()
+        }
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 

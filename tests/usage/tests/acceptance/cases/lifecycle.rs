@@ -18,7 +18,7 @@ pub(crate) async fn wake<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Continuity(ContinuityResponse::Waking(_))
         ),
         "expected Waking, got {response:#?}"
@@ -34,7 +34,7 @@ pub(crate) async fn dream<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Continuity(ContinuityResponse::Dreaming(_))
         ),
         "expected Dreaming, got {response:#?}"
@@ -50,7 +50,7 @@ pub(crate) async fn introspect<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Continuity(ContinuityResponse::Introspecting(_))
         ),
         "expected Introspecting, got {response:#?}"
@@ -66,7 +66,7 @@ pub(crate) async fn reflect<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Continuity(ContinuityResponse::Reflecting(_))
         ),
         "expected Reflecting, got {response:#?}"
@@ -82,7 +82,7 @@ pub(crate) async fn sleep<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Continuity(ContinuityResponse::Sleeping(_))
         ),
         "expected Sleeping, got {response:#?}"
@@ -103,7 +103,7 @@ pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> T
 
     let response = harness.exec_json("dream thinker.process").await?;
 
-    match response.data {
+    match response {
         Responses::Continuity(ContinuityResponse::Dreaming(ctx)) => {
             // The dream context should have the seeded vocabulary
             let json = serde_json::to_value(&ctx).unwrap();
@@ -145,10 +145,91 @@ pub(crate) async fn guidebook<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            response.data,
+            response,
             Responses::Continuity(ContinuityResponse::Guidebook(_))
         ),
         "expected Guidebook, got {response:#?}"
+    );
+
+    Ok(())
+}
+
+// -- Compact dream prompt tests --
+
+pub(crate) async fn dream_prompt_vocabulary_names_only<B: Backend>() -> TestResult {
+    let harness = with_seeded_agent::<B>().await?;
+
+    // Set a texture with a rich prompt so we can verify it's NOT shown in compact dream
+    harness
+        .exec_json("texture set observation --description 'Noticing things' --prompt 'When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.'")
+        .await?;
+
+    let prompt = harness.exec_prompt("dream thinker.process").await?;
+
+    // Should have vocabulary names
+    assert!(
+        prompt.contains("observation"),
+        "dream prompt should list vocabulary names"
+    );
+    // Should NOT have full prompts inline
+    assert!(
+        !prompt.contains("Focus on what you see, not what to do about it"),
+        "dream prompt should not include full vocabulary prompts"
+    );
+    // Should reference guidebook
+    assert!(
+        prompt.contains("guidebook"),
+        "dream prompt should point to guidebook for vocabulary details"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn dream_prompt_non_core_memories_summarized<B: Backend>() -> TestResult {
+    let harness = with_seeded_agent::<B>().await?;
+
+    harness
+        .exec_json("memory add thinker.process core 'I am the core of all things'")
+        .await?;
+    harness
+        .exec_json("memory add thinker.process project 'A detailed project memory with extensive architectural context that describes the full system design and all the patterns we discovered along the way'")
+        .await?;
+
+    let prompt = harness.exec_prompt("dream thinker.process").await?;
+
+    // Core memory should be fully inline
+    assert!(
+        prompt.contains("I am the core of all things"),
+        "core memory should be fully inline"
+    );
+    // Non-core should be truncated
+    assert!(
+        !prompt.contains("all the patterns we discovered along the way"),
+        "non-core memory should be truncated in compact dream"
+    );
+    // Should have ref tokens
+    assert!(
+        prompt.contains("ref:"),
+        "compact dream should include ref tokens for summarized memories"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn dream_deep_prompt_includes_full_vocabulary<B: Backend>() -> TestResult {
+    let harness = with_seeded_agent::<B>().await?;
+
+    // Set a texture with a rich prompt
+    harness
+        .exec_json("texture set observation --description 'Noticing things' --prompt 'When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.'")
+        .await?;
+
+    let prompt = harness.exec_prompt("dream thinker.process --deep").await?;
+
+    // Deep mode should include full texture prompts
+    assert!(
+        prompt.contains("Focus on what you see, not what to do about it"),
+        "deep dream should include full texture prompts"
     );
 
     Ok(())

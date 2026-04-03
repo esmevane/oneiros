@@ -5,9 +5,9 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ConnectionResponse {
-    ConnectionCreated(Connection),
-    ConnectionDetails(Connection),
-    Connections(Listed<Connection>),
+    ConnectionCreated(Response<Connection>),
+    ConnectionDetails(Response<Connection>),
+    Connections(Listed<Response<Connection>>),
     NoConnections,
     ConnectionRemoved(ConnectionId),
 }

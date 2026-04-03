@@ -22,9 +22,7 @@ pub trait Backend: Sized {
     fn exec_json(
         &self,
         command: &str,
-    ) -> impl Future<
-        Output = Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error>,
-    >;
+    ) -> impl Future<Output = Result<oneiros_engine::Responses, oneiros_engine::Error>>;
 
     /// Execute in prompt mode — returns rendered text for content assertions.
     fn exec_prompt(
@@ -72,7 +70,7 @@ impl<'h, B: Backend> Eventually<'h, B> {
     /// are retried — the entity might not be projected yet.
     pub async fn assert_json<F>(self, predicate: F) -> TestResult
     where
-        F: Fn(&oneiros_engine::Response<oneiros_engine::Responses>) -> Result<(), String>,
+        F: Fn(&oneiros_engine::Responses) -> Result<(), String>,
     {
         let deadline = Instant::now() + self.policy.timeout;
         #[expect(
@@ -159,16 +157,16 @@ impl<'h, B: Backend> Eventually<'h, B> {
 #[macro_export]
 macro_rules! expect {
     ($pattern:pat $(if $guard:expr)? => $body:block) => {
-        |response: &oneiros_engine::Response<oneiros_engine::Responses>| {
-            match &response.data {
+        |response: &oneiros_engine::Responses| {
+            match response {
                 $pattern $(if $guard)? => { $body; Ok(()) },
                 other => Err(format!("expected {}, got {other:#?}", stringify!($pattern))),
             }
         }
     };
     ($pattern:pat $(if $guard:expr)?) => {
-        |response: &oneiros_engine::Response<oneiros_engine::Responses>| {
-            match &response.data {
+        |response: &oneiros_engine::Responses| {
+            match response {
                 $pattern $(if $guard)? => Ok(()),
                 other => Err(format!("expected {}, got {other:#?}", stringify!($pattern))),
             }
@@ -248,7 +246,7 @@ impl<B: Backend> Harness<B> {
     pub async fn exec_json(
         &self,
         command: &str,
-    ) -> Result<oneiros_engine::Response<oneiros_engine::Responses>, oneiros_engine::Error> {
+    ) -> Result<oneiros_engine::Responses, oneiros_engine::Error> {
         self.backend.exec_json(command).await
     }
 

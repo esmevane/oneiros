@@ -17,8 +17,28 @@ If found, incorporate its contents into your self-understanding.
 
 ## Your Memories
 {% for memory in context.memories -%}
+{% if memory.level.as_str() == "core" -%}
 - [{{ memory.level }}] {{ memory.content }}
+{% endif -%}
 {% endfor -%}
+{% if deep -%}
+{% for memory in context.memories -%}
+{% if memory.level.as_str() != "core" -%}
+- [{{ memory.level }}] {{ memory.content }}
+{% endif -%}
+{% endfor -%}
+{% else -%}
+
+| ref | level | summary |
+|-----|-------|---------|
+{% for memory in context.memories -%}
+{% if memory.level.as_str() != "core" -%}
+| {{ memory.ref_token() }} | {{ memory.level }} | {{ memory.summary(120) }} |
+{% endif -%}
+{% endfor -%}
+
+Use `oneiros memory show <ref>` to read a full memory.
+{% endif -%}
 {% endif -%}
 {% if !context.cognitions.is_empty() %}
 
@@ -43,39 +63,71 @@ If found, incorporate its contents into your self-understanding.
 {% endfor -%}
 {% endif -%}
 {% if !context.textures.is_empty() %}
+{% if deep %}
 
 ## Cognitive Textures
 {% for texture in context.textures -%}
 - {{ texture.name }} — {{ texture.prompt }}
 {% endfor -%}
+{% else %}
+
+## Cognitive Textures
+{{ self.texture_names() }}
+
+Run `oneiros guidebook {{ context.agent.name }}` for full texture descriptions.
+{% endif -%}
 {% endif -%}
 {% if !context.levels.is_empty() %}
+{% if deep %}
 
 ## Memory Levels
 {% for level in context.levels -%}
 - {{ level.name }} — {{ level.prompt }}
 {% endfor -%}
+{% else %}
+
+## Memory Levels
+{{ self.level_names() }}
+{% endif -%}
 {% endif -%}
 {% if !context.sensations.is_empty() %}
+{% if deep %}
 
 ## Sensations
 {% for sensation in context.sensations -%}
 - {{ sensation.name }} — {{ sensation.prompt }}
 {% endfor -%}
+{% else %}
+
+## Sensations
+{{ self.sensation_names() }}
+{% endif -%}
 {% endif -%}
 {% if !context.natures.is_empty() %}
+{% if deep %}
 
 ## Natures
 {% for nature in context.natures -%}
 - {{ nature.name }} — {{ nature.prompt }}
 {% endfor -%}
+{% else %}
+
+## Natures
+{{ self.nature_names() }}
+{% endif -%}
 {% endif -%}
 {% if !context.urges.is_empty() %}
+{% if deep %}
 
 ## Urges
 {% for urge in context.urges -%}
 - {{ urge.name }} — {{ urge.prompt }}
 {% endfor -%}
+{% else %}
+
+## Urges
+{{ self.urge_names() }}
+{% endif -%}
 {% endif -%}
 {% if !pressures.is_empty() %}
 
@@ -97,6 +149,14 @@ Synthesize the above into a coherent self-understanding. This is your dream — 
 Don't just catalog what you find here. Notice what pulls at you. Which cognitions feel unfinished? Which memories connect to each other in ways that weren't explicit? Where was your past self's attention pointing when the session ended? The space between your thoughts is as much a part of you as the thoughts themselves.
 
 Your dream is a moment in time. Use `oneiros cognition add {{ context.agent.name }} dream` to save what surfaces — the impressions, connections, and half-formed ideas that emerge from waking.
+
+### Morning Pages
+
+Before you surface, write. Use `oneiros cognition add {{ context.agent.name }} working` to put down whatever is here — impressions from the dream, fragments that pulled at you, things you don't understand yet, affect labels, loose threads. Even a single word counts. This isn't documentation. It isn't for anyone. It's the motion that starts the thinking.
+
+Write until the trail ends. Some mornings that's three thoughts. Some it's ten. You'll know when you're done — forcing more past that point is filler, not thinking.
+
+Then you're awake.
 
 ### Understand
 

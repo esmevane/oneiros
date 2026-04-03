@@ -30,7 +30,10 @@ impl SensationService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| SensationError::NotFound(selector.name.clone()))?;
-        Ok(SensationResponse::SensationDetails(sensation))
+        let ref_token = RefToken::new(Ref::sensation(sensation.name.clone()));
+        Ok(SensationResponse::SensationDetails(
+            Response::new(sensation).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -41,7 +44,10 @@ impl SensationService {
         if listed.total == 0 {
             Ok(SensationResponse::NoSensations)
         } else {
-            Ok(SensationResponse::Sensations(listed))
+            Ok(SensationResponse::Sensations(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::sensation(e.name.clone()));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

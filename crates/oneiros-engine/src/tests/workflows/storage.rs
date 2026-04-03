@@ -37,8 +37,8 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.key.as_str(), "notes/design.md");
-            assert_eq!(entry.description.as_str(), "Design notes");
+            assert_eq!(entry.data.key.as_str(), "notes/design.md");
+            assert_eq!(entry.data.description.as_str(), "Design notes");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -97,7 +97,7 @@ async fn storage_via_cli() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.key.as_str(), "test.txt");
+            assert_eq!(entry.data.key.as_str(), "test.txt");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -136,7 +136,7 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
         .show(&GetStorage::builder().key("integrity-test.txt").build())
         .await?
     {
-        StorageResponse::StorageDetails(entry) => entry.hash,
+        StorageResponse::StorageDetails(entry) => entry.data.hash,
         other => panic!("expected StorageDetails, got {other:?}"),
     };
 
@@ -174,9 +174,9 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.key.as_str(), "integrity-test.txt");
+            assert_eq!(entry.data.key.as_str(), "integrity-test.txt");
             assert_eq!(
-                entry.hash, original_hash,
+                entry.data.hash, original_hash,
                 "content hash should be identical after import"
             );
         }
@@ -219,7 +219,7 @@ async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.key.as_str(), "notes/design/architecture.md");
+            assert_eq!(entry.data.key.as_str(), "notes/design/architecture.md");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -246,7 +246,7 @@ async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.key.as_str(), "/usr/local/share/config.toml");
+            assert_eq!(entry.data.key.as_str(), "/usr/local/share/config.toml");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }

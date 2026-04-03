@@ -24,21 +24,17 @@ impl BrainCommands {
         };
 
         let prompt = match &response {
-            BrainResponse::Created(brain) => format!("Brain '{}' created.", brain.name),
-            BrainResponse::Found(brain) => format!("Brain '{}'", brain.name),
+            BrainResponse::Created(wrapped) => format!("Brain '{}' created.", wrapped.data.name),
+            BrainResponse::Found(wrapped) => format!("Brain '{}'", wrapped.data.name),
             BrainResponse::Listed(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for brain in &listed.items {
-                    out.push_str(&format!("  {}\n\n", brain.name));
+                for wrapped in &listed.items {
+                    out.push_str(&format!("  {}\n\n", wrapped.data.name));
                 }
                 out
             }
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

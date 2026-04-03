@@ -24,17 +24,25 @@ impl MemoryCommands {
         };
 
         let prompt = match &response {
-            MemoryResponse::MemoryAdded(m) => {
-                format!("Memory recorded: {}", RefToken::new(Ref::memory(m.id)))
+            MemoryResponse::MemoryAdded(wrapped) => wrapped
+                .meta()
+                .ref_token()
+                .map(|ref_token| format!("Memory recorded: {ref_token}"))
+                .unwrap_or_default(),
+            MemoryResponse::MemoryDetails(wrapped) => {
+                format!("[{}] {}", wrapped.data.level, wrapped.data.content)
             }
-            MemoryResponse::MemoryDetails(m) => format!("[{}] {}", m.level, m.content),
             MemoryResponse::Memories(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for memory in &listed.items {
-                    let ref_token = RefToken::new(Ref::memory(memory.id));
+                for wrapped in &listed.items {
+                    let ref_token = wrapped
+                        .meta()
+                        .ref_token()
+                        .map(|ref_token| ref_token.to_string())
+                        .unwrap_or_default();
                     out.push_str(&format!(
                         "  [{}] {}\n    {}\n\n",
-                        memory.level, memory.content, ref_token
+                        wrapped.data.level, wrapped.data.content, ref_token
                     ));
                 }
                 out
@@ -42,13 +50,6 @@ impl MemoryCommands {
             MemoryResponse::NoMemories => "No memories.".to_string(),
         };
 
-        let envelope = match response.clone() {
-            MemoryResponse::MemoryAdded(m) => {
-                Response::new(response.into()).with_ref_token(RefToken::new(Ref::memory(m.id)))
-            }
-            otherwise => Response::new(otherwise.into()),
-        };
-
-        Ok(Rendered::new(envelope, prompt, String::new()))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

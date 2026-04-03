@@ -25,7 +25,10 @@ impl ExperienceService {
         context
             .emit(ExperienceEvents::ExperienceCreated(experience.clone()))
             .await?;
-        Ok(ExperienceResponse::ExperienceCreated(experience))
+        let ref_token = RefToken::new(Ref::experience(experience.id));
+        Ok(ExperienceResponse::ExperienceCreated(
+            Response::new(experience).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -36,7 +39,10 @@ impl ExperienceService {
             .get(&selector.id)
             .await?
             .ok_or_else(|| ExperienceError::NotFound(selector.id))?;
-        Ok(ExperienceResponse::ExperienceDetails(experience))
+        let ref_token = RefToken::new(Ref::experience(experience.id));
+        Ok(ExperienceResponse::ExperienceDetails(
+            Response::new(experience).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -60,7 +66,10 @@ impl ExperienceService {
         Ok(if listed.total == 0 {
             ExperienceResponse::NoExperiences
         } else {
-            ExperienceResponse::Experiences(listed)
+            ExperienceResponse::Experiences(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::experience(e.id));
+                Response::new(e).with_ref_token(ref_token)
+            }))
         })
     }
 
@@ -83,7 +92,10 @@ impl ExperienceService {
                 },
             ))
             .await?;
-        Ok(ExperienceResponse::ExperienceUpdated(experience))
+        let ref_token = RefToken::new(Ref::experience(experience.id));
+        Ok(ExperienceResponse::ExperienceUpdated(
+            Response::new(experience).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn update_sensation(
@@ -105,6 +117,9 @@ impl ExperienceService {
                 },
             ))
             .await?;
-        Ok(ExperienceResponse::ExperienceUpdated(experience))
+        let ref_token = RefToken::new(Ref::experience(experience.id));
+        Ok(ExperienceResponse::ExperienceUpdated(
+            Response::new(experience).with_ref_token(ref_token),
+        ))
     }
 }

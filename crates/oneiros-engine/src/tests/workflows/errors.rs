@@ -333,7 +333,11 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     match client.persona().get(&PersonaName::new("custom")).await? {
         PersonaResponse::PersonaDetails(p) => {
-            assert_eq!(p.description.to_string(), "Second", "second set should win");
+            assert_eq!(
+                p.data.description.to_string(),
+                "Second",
+                "second set should win"
+            );
         }
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
@@ -380,7 +384,7 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
 
     match client.level().get(&LevelName::new("working")).await? {
         LevelResponse::LevelDetails(l) => {
-            assert_eq!(l.description.to_string(), "Still works");
+            assert_eq!(l.data.description.to_string(), "Still works");
         }
         other => panic!("expected LevelDetails, got {other:?}"),
     }

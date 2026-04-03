@@ -27,18 +27,18 @@ impl SensationCommands {
 
         let prompt = match &response {
             SensationResponse::SensationSet(name) => format!("Sensation '{name}' set."),
-            SensationResponse::SensationDetails(s) => {
+            SensationResponse::SensationDetails(wrapped) => {
                 format!(
                     "Sensation '{}'\n  Description: {}\n  Prompt: {}",
-                    s.name, s.description, s.prompt
+                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
                 )
             }
             SensationResponse::Sensations(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for sensation in &listed.items {
+                for wrapped in &listed.items {
                     out.push_str(&format!(
                         "  {} — {}\n\n",
-                        sensation.name, sensation.description,
+                        wrapped.data.name, wrapped.data.description,
                     ));
                 }
                 out
@@ -47,10 +47,6 @@ impl SensationCommands {
             SensationResponse::SensationRemoved(name) => format!("Sensation '{name}' removed."),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

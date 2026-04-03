@@ -24,21 +24,19 @@ impl ActorCommands {
         };
 
         let prompt = match &response {
-            ActorResponse::Created(actor) => format!("Actor '{}' created.", actor.name),
-            ActorResponse::Found(actor) => format!("Actor '{}' ({})", actor.name, actor.id),
+            ActorResponse::Created(wrapped) => format!("Actor '{}' created.", wrapped.data.name),
+            ActorResponse::Found(wrapped) => {
+                format!("Actor '{}' ({})", wrapped.data.name, wrapped.data.id)
+            }
             ActorResponse::Listed(listed) => {
                 let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for actor in &listed.items {
-                    out.push_str(&format!("  {}\n\n", actor.name));
+                for wrapped in &listed.items {
+                    out.push_str(&format!("  {}\n\n", wrapped.data.name));
                 }
                 out
             }
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }

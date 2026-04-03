@@ -6,8 +6,8 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum TextureResponse {
     TextureSet(TextureName),
-    TextureDetails(Texture),
-    Textures(Listed<Texture>),
+    TextureDetails(Response<Texture>),
+    Textures(Listed<Response<Texture>>),
     NoTextures,
     TextureRemoved(TextureName),
 }

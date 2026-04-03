@@ -49,8 +49,10 @@ impl AgentService {
             .get(&selector.name)
             .await?
             .ok_or_else(|| AgentError::NotFound(selector.name.clone()))?;
-
-        Ok(AgentResponse::AgentDetails(agent))
+        let ref_token = RefToken::new(Ref::agent(agent.id));
+        Ok(AgentResponse::AgentDetails(
+            Response::new(agent).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -62,7 +64,10 @@ impl AgentService {
         if listed.total == 0 {
             Ok(AgentResponse::NoAgents)
         } else {
-            Ok(AgentResponse::Agents(listed))
+            Ok(AgentResponse::Agents(listed.map(|e| {
+                let ref_token = RefToken::new(Ref::agent(e.id));
+                Response::new(e).with_ref_token(ref_token)
+            })))
         }
     }
 

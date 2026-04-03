@@ -6,8 +6,8 @@ use crate::*;
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SensationResponse {
     SensationSet(SensationName),
-    SensationDetails(Sensation),
-    Sensations(Listed<Sensation>),
+    SensationDetails(Response<Sensation>),
+    Sensations(Listed<Response<Sensation>>),
     NoSensations,
     SensationRemoved(SensationName),
 }

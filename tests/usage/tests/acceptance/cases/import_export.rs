@@ -16,7 +16,7 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
     let cmd = format!("project export --target {}", export_dir.path().display());
     let response = harness.exec_json(&cmd).await?;
 
-    let export_path = match response.data {
+    let export_path = match response {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
         other => panic!("expected WroteExport, got {other:#?}"),
     };
@@ -56,7 +56,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     let export_cmd = format!("project export --target {}", export_dir.path().display());
     let export_response = harness.exec_json(&export_cmd).await?;
 
-    let export_path = match export_response.data {
+    let export_path = match export_response {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
         other => panic!("expected WroteExport, got {other:#?}"),
     };
@@ -69,7 +69,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     // Verify data survived — the cognition should still be searchable
     let search_response = harness.exec_json("search Remember").await?;
 
-    match search_response.data {
+    match search_response {
         Responses::Search(SearchResponse::Results(results)) => {
             assert!(
                 !results.results.is_empty(),
@@ -107,7 +107,7 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     let export_cmd = format!("project export --target {}", export_dir.path().display());
     let export_response = brain_a.exec_json(&export_cmd).await?;
 
-    let export_path = match export_response.data {
+    let export_path = match export_response {
         Responses::Project(ProjectResponse::WroteExport(path)) => path,
         other => panic!("expected WroteExport, got {other:#?}"),
     };
@@ -122,9 +122,9 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     // Brain B should now have the storage entry
     let show_response = brain_b.exec_json("storage show portable-doc").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
-            assert_eq!(entry.key.as_str(), "portable-doc");
+            assert_eq!(entry.data.key.as_str(), "portable-doc");
         }
         other => panic!("expected StorageDetails on brain B after import, got {other:#?}"),
     }
@@ -151,7 +151,7 @@ pub(crate) async fn replay_rebuilds_projections<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            show_response.data,
+            show_response,
             Responses::Agent(AgentResponse::AgentDetails(_))
         ),
         "expected agent to survive replay, got {show_response:?}"

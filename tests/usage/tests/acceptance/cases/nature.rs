@@ -9,19 +9,16 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
         .await?;
 
     assert!(
-        matches!(
-            response.data,
-            Responses::Nature(NatureResponse::NatureSet(_))
-        ),
+        matches!(response, Responses::Nature(NatureResponse::NatureSet(_))),
         "expected NatureSet, got {response:#?}"
     );
 
     let show_response = harness.exec_json("nature show context").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Nature(NatureResponse::NatureDetails(n)) => {
-            assert_eq!(n.name.as_str(), "context");
-            assert_eq!(n.description.as_str(), "Provides background");
+            assert_eq!(n.data.name.as_str(), "context");
+            assert_eq!(n.data.description.as_str(), "Provides background");
         }
         other => panic!("expected NatureDetails, got {other:#?}"),
     }
@@ -42,9 +39,9 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     let show_response = harness.exec_json("nature show draft").await?;
 
-    match show_response.data {
+    match show_response {
         Responses::Nature(NatureResponse::NatureDetails(n)) => {
-            assert_eq!(n.description.as_str(), "Updated");
+            assert_eq!(n.data.description.as_str(), "Updated");
         }
         other => panic!("expected NatureDetails, got {other:#?}"),
     }
@@ -58,7 +55,7 @@ pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let response = harness.exec_json("nature list").await?;
 
     assert!(
-        matches!(response.data, Responses::Nature(NatureResponse::NoNatures)),
+        matches!(response, Responses::Nature(NatureResponse::NoNatures)),
         "expected NoNatures, got {response:#?}"
     );
 
@@ -78,7 +75,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("nature list").await?;
 
-    match response.data {
+    match response {
         Responses::Nature(NatureResponse::Natures(list)) => {
             assert_eq!(list.len(), 2);
         }
@@ -99,7 +96,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     assert!(
         matches!(
-            remove_response.data,
+            remove_response,
             Responses::Nature(NatureResponse::NatureRemoved(_))
         ),
         "expected NatureRemoved, got {remove_response:?}"
@@ -108,10 +105,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
     let list_response = harness.exec_json("nature list").await?;
 
     assert!(
-        matches!(
-            list_response.data,
-            Responses::Nature(NatureResponse::NoNatures)
-        ),
+        matches!(list_response, Responses::Nature(NatureResponse::NoNatures)),
         "expected NoNatures after removal, got {list_response:?}"
     );
 

@@ -30,7 +30,7 @@ pub(crate) async fn returns_activity_table<B: Backend>() -> TestResult {
 
     let response = harness.exec_json("status").await?;
 
-    match &response.data {
+    match &response {
         Responses::Continuity(ContinuityResponse::Status(table)) => {
             assert!(
                 !table.agents.is_empty(),

@@ -5,7 +5,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ActorResponse {
-    Created(Actor),
-    Found(Actor),
-    Listed(Listed<Actor>),
+    Created(Response<Actor>),
+    Found(Response<Actor>),
+    Listed(Listed<Response<Actor>>),
 }

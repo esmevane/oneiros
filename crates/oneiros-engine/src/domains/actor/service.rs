@@ -15,7 +15,10 @@ impl ActorService {
         context
             .emit(ActorEvents::ActorCreated(actor.clone()))
             .await?;
-        Ok(ActorResponse::Created(actor))
+        let ref_token = RefToken::new(Ref::actor(actor.id));
+        Ok(ActorResponse::Created(
+            Response::new(actor).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn get(
@@ -26,7 +29,10 @@ impl ActorService {
             .get(selector.id)
             .await?
             .ok_or_else(|| ActorError::NotFound(selector.id))?;
-        Ok(ActorResponse::Found(actor))
+        let ref_token = RefToken::new(Ref::actor(actor.id));
+        Ok(ActorResponse::Found(
+            Response::new(actor).with_ref_token(ref_token),
+        ))
     }
 
     pub async fn list(
@@ -34,6 +40,9 @@ impl ActorService {
         ListActors { filters }: &ListActors,
     ) -> Result<ActorResponse, ActorError> {
         let listed = ActorRepo::new(context).list(filters).await?;
-        Ok(ActorResponse::Listed(listed))
+        Ok(ActorResponse::Listed(listed.map(|a| {
+            let ref_token = RefToken::new(Ref::actor(a.id));
+            Response::new(a).with_ref_token(ref_token)
+        })))
     }
 }

@@ -23,10 +23,6 @@ impl SystemCommands {
             SystemResponse::HostAlreadyInitialized => "System already initialized.".to_string(),
         };
 
-        Ok(Rendered::new(
-            Response::new(response.into()),
-            prompt,
-            String::new(),
-        ))
+        Ok(Rendered::new(response.into(), prompt, String::new()))
     }
 }
