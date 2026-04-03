@@ -28,13 +28,21 @@ pub struct UploadStorage {
     pub data: Vec<u8>,
 }
 
+#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListStorage {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = StorageRequestType, display = "kebab-case")]
 pub enum StorageRequest {
     UploadStorage(UploadStorage),
     GetStorage(GetStorage),
-    ListStorage,
+    ListStorage(ListStorage),
     RemoveStorage(RemoveStorage),
 }
 

@@ -28,7 +28,17 @@ impl MemoryCommands {
                 format!("Memory recorded: {}", RefToken::new(Ref::memory(m.id)))
             }
             MemoryResponse::MemoryDetails(m) => format!("[{}] {}", m.level, m.content),
-            MemoryResponse::Memories(list) => format!("{} memories.", list.len()),
+            MemoryResponse::Memories(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for memory in &listed.items {
+                    let ref_token = RefToken::new(Ref::memory(memory.id));
+                    out.push_str(&format!(
+                        "  [{}] {}\n    {}\n\n",
+                        memory.level, memory.content, ref_token
+                    ));
+                }
+                out
+            }
             MemoryResponse::NoMemories => "No memories.".to_string(),
         };
 

@@ -23,8 +23,12 @@ impl<'a> TicketClient<'a> {
     }
 
     /// List all tickets.
-    pub async fn list(&self) -> Result<TicketResponse, ClientError> {
-        self.client.get("/tickets").await
+    pub async fn list(&self, request: &ListTickets) -> Result<TicketResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/tickets?{query}")).await
     }
 
     /// Validate a ticket token.

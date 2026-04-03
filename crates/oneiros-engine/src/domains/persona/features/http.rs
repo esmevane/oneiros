@@ -1,4 +1,9 @@
-use axum::{Json, Router, extract::Path, http::StatusCode, routing};
+use axum::{
+    Json, Router,
+    extract::{Path, Query},
+    http::StatusCode,
+    routing,
+};
 
 use crate::*;
 
@@ -27,8 +32,11 @@ async fn set(
     ))
 }
 
-async fn list(context: ProjectContext) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::list(&context).await?))
+async fn list(
+    context: ProjectContext,
+    Query(params): Query<ListPersonas>,
+) -> Result<Json<PersonaResponse>, PersonaError> {
+    Ok(Json(PersonaService::list(&context, &params).await?))
 }
 
 async fn show(

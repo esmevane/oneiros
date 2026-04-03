@@ -7,7 +7,7 @@ use crate::*;
 pub enum PersonaResponse {
     PersonaSet(PersonaName),
     PersonaDetails(Persona),
-    Personas(Vec<Persona>),
+    Personas(Listed<Persona>),
     NoPersonas,
     PersonaRemoved(PersonaName),
 }

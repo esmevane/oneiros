@@ -40,7 +40,7 @@ impl ContinuityCommands {
             }
             ContinuityCommands::Emerge(emerge) => continuity_client.emerge(emerge).await?,
             ContinuityCommands::Recede(recede) => continuity_client.recede(&recede.agent).await?,
-            ContinuityCommands::Status(status) => continuity_client.status(&status.agent).await?,
+            ContinuityCommands::Status(_) => continuity_client.status().await?,
         };
 
         Ok(ContinuityPresenter::new(result).render())

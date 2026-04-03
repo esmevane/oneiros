@@ -46,13 +46,19 @@ impl<'a> AgentRepo<'a> {
         }
     }
 
-    pub async fn list(&self) -> Result<Vec<Agent>, EventError> {
+    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Agent>, EventError> {
         let db = self.context.db()?;
-        let mut stmt =
-            db.prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
+
+        let total: usize = db.query_row("SELECT COUNT(*) FROM agents", [], |row| row.get(0))?;
+
+        let mut stmt = db.prepare(
+            "SELECT id, name, persona, description, prompt
+             FROM agents ORDER BY name
+             LIMIT ?1 OFFSET ?2",
+        )?;
 
         let raw: Vec<(String, String, String, String, String)> = stmt
-            .query_map([], |row| {
+            .query_map(params![filters.limit, filters.offset], |row| {
                 Ok((
                     row.get(0)?,
                     row.get(1)?,
@@ -77,7 +83,7 @@ impl<'a> AgentRepo<'a> {
             );
         }
 
-        Ok(agents)
+        Ok(Listed::new(agents, total))
     }
 
     pub async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {

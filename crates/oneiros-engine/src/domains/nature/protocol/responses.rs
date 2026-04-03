@@ -7,7 +7,7 @@ use crate::*;
 pub enum NatureResponse {
     NatureSet(NatureName),
     NatureDetails(Nature),
-    Natures(Vec<Nature>),
+    Natures(Listed<Nature>),
     NoNatures,
     NatureRemoved(NatureName),
 }

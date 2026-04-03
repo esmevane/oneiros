@@ -23,7 +23,11 @@ impl<'a> ActorClient<'a> {
     }
 
     /// List all actors.
-    pub async fn list(&self) -> Result<ActorResponse, ClientError> {
-        self.client.get("/actors").await
+    pub async fn list(&self, request: &ListActors) -> Result<ActorResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/actors?{query}")).await
     }
 }

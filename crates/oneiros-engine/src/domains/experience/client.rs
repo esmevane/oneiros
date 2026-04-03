@@ -17,12 +17,22 @@ impl<'a> ExperienceClient<'a> {
     }
 
     pub async fn list(&self, request: &ListExperiences) -> Result<ExperienceResponse, ClientError> {
-        let path = match &request.agent {
-            Some(a) => format!("/experiences?agent={a}"),
-            None => "/experiences".to_string(),
-        };
+        let mut params: Vec<(&str, String)> = Vec::new();
 
-        self.client.get(&path).await
+        if let Some(a) = &request.agent {
+            params.push(("agent", a.to_string()));
+        }
+
+        params.push(("limit", request.filters.limit.to_string()));
+        params.push(("offset", request.filters.offset.to_string()));
+
+        let query = params
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        self.client.get(&format!("/experiences?{query}")).await
     }
 
     pub async fn get(&self, request: &GetExperience) -> Result<ExperienceResponse, ClientError> {

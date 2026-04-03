@@ -29,8 +29,11 @@ impl ActorService {
         Ok(ActorResponse::Found(actor))
     }
 
-    pub async fn list(context: &SystemContext) -> Result<ActorResponse, ActorError> {
-        let actors = ActorRepo::new(context).list().await?;
-        Ok(ActorResponse::Listed(actors))
+    pub async fn list(
+        context: &SystemContext,
+        ListActors { filters }: &ListActors,
+    ) -> Result<ActorResponse, ActorError> {
+        let listed = ActorRepo::new(context).list(filters).await?;
+        Ok(ActorResponse::Listed(listed))
     }
 }

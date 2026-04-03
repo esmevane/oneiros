@@ -39,7 +39,7 @@ mod brain_mcp {
             ToolDef {
                 name: "list_brains",
                 description: "List all brains",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListBrains>,
             },
         ]
     }
@@ -58,7 +58,7 @@ mod brain_mcp {
         let value = match tool_name {
             "create_brain" => BrainService::create(&system, &serde_json::from_str(params)?).await,
             "get_brain" => BrainService::get(&system, &serde_json::from_str(params)?).await,
-            "list_brains" => BrainService::list(&system).await,
+            "list_brains" => BrainService::list(&system, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;

@@ -16,7 +16,13 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // ── Tenants ─────────────────────────────────────────────────
 
     // System init creates a default tenant
-    match client.tenant().list().await? {
+    match client
+        .tenant()
+        .list(&ListTenants {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         TenantResponse::Listed(tenants) => {
             assert!(!tenants.is_empty(), "init should create a default tenant");
         }
@@ -36,7 +42,13 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected Created, got {other:?}"),
     };
 
-    match client.tenant().list().await? {
+    match client
+        .tenant()
+        .list(&ListTenants {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 2),
         other => panic!("expected Listed, got {other:?}"),
     }
@@ -70,7 +82,13 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     // System init creates a default actor, plus ours
-    match client.actor().list().await? {
+    match client
+        .actor()
+        .list(&ListActors {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         ActorResponse::Listed(actors) => assert_eq!(actors.len(), 2),
         other => panic!("expected Listed, got {other:?}"),
     }
@@ -150,7 +168,13 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     // List tickets
-    match client.ticket().list().await? {
+    match client
+        .ticket()
+        .list(&ListTickets {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         TicketResponse::Listed(tickets) => {
             assert!(
                 !tickets.is_empty(),

@@ -6,7 +6,7 @@ use crate::*;
 pub enum TenantCommands {
     Create(CreateTenant),
     Get(GetTenant),
-    List,
+    List(ListTenants),
 }
 
 impl TenantCommands {
@@ -20,13 +20,19 @@ impl TenantCommands {
         let response = match self {
             TenantCommands::Create(create) => tenant_client.create(create).await?,
             TenantCommands::Get(get) => tenant_client.get(&get.id).await?,
-            TenantCommands::List => tenant_client.list().await?,
+            TenantCommands::List(list) => tenant_client.list(list).await?,
         };
 
         let prompt = match &response {
             TenantResponse::Created(tenant) => format!("Tenant '{}' created.", tenant.name),
             TenantResponse::Found(tenant) => format!("Tenant '{}' ({})", tenant.name, tenant.id),
-            TenantResponse::Listed(tenants) => format!("{} tenant(s) found.", tenants.len()),
+            TenantResponse::Listed(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for tenant in &listed.items {
+                    out.push_str(&format!("  {}\n\n", tenant.name));
+                }
+                out
+            }
         };
 
         Ok(Rendered::new(

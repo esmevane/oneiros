@@ -33,12 +33,15 @@ impl SensationService {
         Ok(SensationResponse::SensationDetails(sensation))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<SensationResponse, SensationError> {
-        let sensations = SensationRepo::new(context).list().await?;
-        if sensations.is_empty() {
+    pub async fn list(
+        context: &ProjectContext,
+        ListSensations { filters }: &ListSensations,
+    ) -> Result<SensationResponse, SensationError> {
+        let listed = SensationRepo::new(context).list(filters).await?;
+        if listed.total == 0 {
             Ok(SensationResponse::NoSensations)
         } else {
-            Ok(SensationResponse::Sensations(sensations))
+            Ok(SensationResponse::Sensations(listed))
         }
     }
 

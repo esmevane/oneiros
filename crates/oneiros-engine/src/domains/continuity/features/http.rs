@@ -14,8 +14,8 @@ impl ContinuityRouter {
         Router::new().nest(
             "/continuity",
             Router::new()
-                .route("/", routing::post(emerge))
-                .route("/{agent}", routing::get(status).delete(recede))
+                .route("/", routing::get(status).post(emerge))
+                .route("/{agent}", routing::delete(recede))
                 .route("/{agent}/wake", routing::post(wake))
                 .route("/{agent}/dream", routing::post(dream))
                 .route("/{agent}/introspect", routing::post(introspect))
@@ -48,14 +48,9 @@ async fn recede(
 
 async fn status(
     context: ProjectContext,
-    Path(agent): Path<AgentName>,
-    Query(overrides): Query<DreamOverrides>,
+    Query(params): Query<StatusAgent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
-    Ok(Json(ContinuityService::status(
-        &context,
-        &StatusAgent::builder().agent(agent).build(),
-        &overrides,
-    )?))
+    Ok(Json(ContinuityService::status(&context, &params)?))
 }
 
 async fn wake(

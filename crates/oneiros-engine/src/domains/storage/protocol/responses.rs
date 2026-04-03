@@ -7,7 +7,7 @@ use crate::*;
 pub enum StorageResponse {
     StorageSet(StorageEntry),
     StorageDetails(StorageEntry),
-    Entries(Vec<StorageEntry>),
+    Entries(Listed<StorageEntry>),
     NoEntries,
     StorageRemoved(StorageKey),
 }

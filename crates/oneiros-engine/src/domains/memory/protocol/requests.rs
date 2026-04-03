@@ -26,6 +26,10 @@ pub struct GetMemory {
 pub struct ListMemories {
     #[arg(long)]
     pub agent: Option<AgentName>,
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

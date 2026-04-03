@@ -53,9 +53,12 @@ impl TicketService {
         Ok(TicketResponse::Found(ticket))
     }
 
-    pub async fn list(context: &SystemContext) -> Result<TicketResponse, TicketError> {
-        let tickets = TicketRepo::new(context).list().await?;
-        Ok(TicketResponse::Listed(tickets))
+    pub async fn list(
+        context: &SystemContext,
+        ListTickets { filters }: &ListTickets,
+    ) -> Result<TicketResponse, TicketError> {
+        let listed = TicketRepo::new(context).list(filters).await?;
+        Ok(TicketResponse::Listed(listed))
     }
 
     pub async fn validate(

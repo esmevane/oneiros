@@ -41,7 +41,7 @@ impl MemoryService {
 
     pub async fn list(
         context: &ProjectContext,
-        ListMemories { agent }: &ListMemories,
+        ListMemories { agent, filters }: &ListMemories,
     ) -> Result<MemoryResponse, MemoryError> {
         let agent_id = match agent {
             Some(name) => {
@@ -54,11 +54,13 @@ impl MemoryService {
             None => None,
         };
 
-        let memories = MemoryRepo::new(context).list(agent_id.as_deref()).await?;
-        Ok(if memories.is_empty() {
+        let listed = MemoryRepo::new(context)
+            .list(agent_id.as_deref(), filters)
+            .await?;
+        Ok(if listed.total == 0 {
             MemoryResponse::NoMemories
         } else {
-            MemoryResponse::Memories(memories)
+            MemoryResponse::Memories(listed)
         })
     }
 }

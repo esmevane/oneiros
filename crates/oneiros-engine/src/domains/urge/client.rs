@@ -17,8 +17,12 @@ impl<'a> UrgeClient<'a> {
         self.client.get(&format!("/urges/{name}")).await
     }
 
-    pub async fn list(&self) -> Result<UrgeResponse, ClientError> {
-        self.client.get("/urges").await
+    pub async fn list(&self, request: &ListUrges) -> Result<UrgeResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/urges?{query}")).await
     }
 
     pub async fn remove(&self, name: &UrgeName) -> Result<UrgeResponse, ClientError> {

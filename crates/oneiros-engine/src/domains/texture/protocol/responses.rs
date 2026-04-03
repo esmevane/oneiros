@@ -7,7 +7,7 @@ use crate::*;
 pub enum TextureResponse {
     TextureSet(TextureName),
     TextureDetails(Texture),
-    Textures(Vec<Texture>),
+    Textures(Listed<Texture>),
     NoTextures,
     TextureRemoved(TextureName),
 }

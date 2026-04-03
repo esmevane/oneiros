@@ -39,7 +39,7 @@ mod tenant_mcp {
             ToolDef {
                 name: "list_tenants",
                 description: "List all tenants",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListTenants>,
             },
         ]
     }
@@ -58,7 +58,7 @@ mod tenant_mcp {
         let value = match tool_name {
             "create_tenant" => TenantService::create(&system, &serde_json::from_str(params)?).await,
             "get_tenant" => TenantService::get(&system, &serde_json::from_str(params)?).await,
-            "list_tenants" => TenantService::list(&system).await,
+            "list_tenants" => TenantService::list(&system, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;

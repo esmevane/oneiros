@@ -31,12 +31,15 @@ impl LevelService {
         Ok(LevelResponse::LevelDetails(level))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<LevelResponse, LevelError> {
-        let levels = LevelRepo::new(context).list().await?;
-        if levels.is_empty() {
+    pub async fn list(
+        context: &ProjectContext,
+        ListLevels { filters }: &ListLevels,
+    ) -> Result<LevelResponse, LevelError> {
+        let listed = LevelRepo::new(context).list(filters).await?;
+        if listed.total == 0 {
             Ok(LevelResponse::NoLevels)
         } else {
-            Ok(LevelResponse::Levels(levels))
+            Ok(LevelResponse::Levels(listed))
         }
     }
 

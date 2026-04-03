@@ -39,7 +39,7 @@ mod level_mcp {
             ToolDef {
                 name: "list_levels",
                 description: "See all memory retention tiers",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListLevels>,
             },
             ToolDef {
                 name: "remove_level",
@@ -61,7 +61,7 @@ mod level_mcp {
         let value = match tool_name {
             "set_level" => LevelService::set(context, &serde_json::from_str(params)?).await,
             "get_level" => LevelService::get(context, &serde_json::from_str(params)?).await,
-            "list_levels" => LevelService::list(context).await,
+            "list_levels" => LevelService::list(context, &serde_json::from_str(params)?).await,
             "remove_level" => LevelService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }

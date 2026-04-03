@@ -30,13 +30,21 @@ pub struct RemoveUrge {
     pub name: UrgeName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListUrges {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = UrgeRequestType, display = "kebab-case")]
 pub enum UrgeRequest {
     SetUrge(SetUrge),
     GetUrge(GetUrge),
-    ListUrges,
+    ListUrges(ListUrges),
     RemoveUrge(RemoveUrge),
 }
 

@@ -21,14 +21,26 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
 
     // The vocabulary is there — we can query it
     let client = app.client();
-    match client.level().list().await? {
+    match client
+        .level()
+        .list(&ListLevels {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         LevelResponse::Levels(levels) => {
             assert!(levels.len() >= 4, "seed should create at least 4 levels");
         }
         other => panic!("expected Levels, got {other:?}"),
     }
 
-    match client.persona().list().await? {
+    match client
+        .persona()
+        .list(&ListPersonas {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         PersonaResponse::Personas(personas) => {
             assert!(
                 !personas.is_empty(),

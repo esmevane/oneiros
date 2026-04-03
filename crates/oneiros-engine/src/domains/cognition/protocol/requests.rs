@@ -28,6 +28,10 @@ pub struct ListCognitions {
     pub agent: Option<AgentName>,
     #[arg(long)]
     pub texture: Option<TextureName>,
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

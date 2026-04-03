@@ -23,7 +23,11 @@ impl<'a> BrainClient<'a> {
     }
 
     /// List all brains.
-    pub async fn list(&self) -> Result<BrainResponse, ClientError> {
-        self.client.get("/brains").await
+    pub async fn list(&self, request: &ListBrains) -> Result<BrainResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/brains?{query}")).await
     }
 }

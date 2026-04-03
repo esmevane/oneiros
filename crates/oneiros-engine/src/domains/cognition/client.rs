@@ -24,20 +24,16 @@ impl<'a> CognitionClient<'a> {
             params.push(("texture", texture_name.to_string()));
         }
 
+        params.push(("limit", request.filters.limit.to_string()));
+        params.push(("offset", request.filters.offset.to_string()));
+
         let query = params
             .iter()
             .map(|(key, value)| format!("{key}={value}"))
             .collect::<Vec<_>>()
             .join("&");
 
-        let prefix = "/cognitions".to_string();
-        let path = if query.is_empty() {
-            prefix
-        } else {
-            format!("{prefix}?{query}")
-        };
-
-        self.client.get(&path).await
+        self.client.get(&format!("/cognitions?{query}")).await
     }
 
     pub async fn get(&self, request: &GetCognition) -> Result<CognitionResponse, ClientError> {

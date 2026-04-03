@@ -30,13 +30,21 @@ pub struct RemoveNature {
     pub name: NatureName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListNatures {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = NatureRequestType, display = "kebab-case")]
 pub enum NatureRequest {
     SetNature(SetNature),
     GetNature(GetNature),
-    ListNatures,
+    ListNatures(ListNatures),
     RemoveNature(RemoveNature),
 }
 

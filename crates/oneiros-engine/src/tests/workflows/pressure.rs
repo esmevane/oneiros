@@ -205,10 +205,11 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
         .list(&ListCognitions {
             agent: Some(agent.clone()),
             texture: None,
+            filters: SearchFilters::default(),
         })
         .await?
     {
-        CognitionResponse::Cognitions(c) => c,
+        CognitionResponse::Cognitions(c) => c.items,
         other => panic!("expected Cognitions, got {other:?}"),
     };
 
@@ -301,10 +302,11 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
         .experience()
         .list(&ListExperiences {
             agent: Some(agent.clone()),
+            filters: SearchFilters::default(),
         })
         .await?
     {
-        ExperienceResponse::Experiences(e) => e,
+        ExperienceResponse::Experiences(e) => e.items,
         other => panic!("expected Experiences, got {other:?}"),
     };
 

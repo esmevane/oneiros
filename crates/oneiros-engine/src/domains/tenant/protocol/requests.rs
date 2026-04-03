@@ -18,13 +18,21 @@ pub struct GetTenant {
     pub id: TenantId,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListTenants {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TenantRequestType, display = "kebab-case")]
 pub enum TenantRequest {
     CreateTenant(CreateTenant),
     GetTenant(GetTenant),
-    ListTenants,
+    ListTenants(ListTenants),
 }
 
 #[cfg(test)]

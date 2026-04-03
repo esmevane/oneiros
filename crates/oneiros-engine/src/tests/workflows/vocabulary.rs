@@ -25,7 +25,13 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     app.command(r#"level set session --description "Session context" --prompt "Current session""#)
         .await?;
 
-    match client.level().list().await? {
+    match client
+        .level()
+        .list(&ListLevels {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
         other => panic!("expected Levels, got {other:?}"),
     }
@@ -47,7 +53,13 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
             .is_err()
     );
 
-    match client.level().list().await? {
+    match client
+        .level()
+        .list(&ListLevels {
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
         LevelResponse::Levels(levels) => assert_eq!(levels.len(), 1),
         other => panic!("expected Levels, got {other:?}"),
     }

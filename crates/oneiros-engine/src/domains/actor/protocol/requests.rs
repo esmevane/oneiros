@@ -21,13 +21,21 @@ pub struct GetActor {
     pub id: ActorId,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListActors {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ActorRequestType, display = "kebab-case")]
 pub enum ActorRequest {
     CreateActor(CreateActor),
     GetActor(GetActor),
-    ListActors,
+    ListActors(ListActors),
 }
 
 #[cfg(test)]

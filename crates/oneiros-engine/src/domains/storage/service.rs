@@ -45,13 +45,16 @@ impl StorageService {
     }
 
     /// List all storage entries.
-    pub async fn list(context: &ProjectContext) -> Result<StorageResponse, StorageError> {
-        let entries = StorageRepo::new(context).list_storage().await?;
+    pub async fn list(
+        context: &ProjectContext,
+        ListStorage { filters }: &ListStorage,
+    ) -> Result<StorageResponse, StorageError> {
+        let listed = StorageRepo::new(context).list_storage(filters).await?;
 
-        if entries.is_empty() {
+        if listed.total == 0 {
             Ok(StorageResponse::NoEntries)
         } else {
-            Ok(StorageResponse::Entries(entries))
+            Ok(StorageResponse::Entries(listed))
         }
     }
 

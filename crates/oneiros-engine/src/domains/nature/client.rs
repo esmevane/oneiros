@@ -19,8 +19,12 @@ impl<'a> NatureClient<'a> {
         self.client.get(&format!("/natures/{name}")).await
     }
 
-    pub async fn list(&self) -> Result<NatureResponse, ClientError> {
-        self.client.get("/natures").await
+    pub async fn list(&self, request: &ListNatures) -> Result<NatureResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/natures?{query}")).await
     }
 
     pub async fn remove(&self, name: &NatureName) -> Result<NatureResponse, ClientError> {

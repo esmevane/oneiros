@@ -39,7 +39,7 @@ mod texture_mcp {
             ToolDef {
                 name: "list_textures",
                 description: "See all the ways thoughts can be textured",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListTextures>,
             },
             ToolDef {
                 name: "remove_texture",
@@ -66,7 +66,7 @@ mod texture_mcp {
         let value = match tool_name {
             "set_texture" => TextureService::set(context, &serde_json::from_str(params)?).await,
             "get_texture" => TextureService::get(context, &serde_json::from_str(params)?).await,
-            "list_textures" => TextureService::list(context).await,
+            "list_textures" => TextureService::list(context, &serde_json::from_str(params)?).await,
             "remove_texture" => {
                 TextureService::remove(context, &serde_json::from_str(params)?).await
             }

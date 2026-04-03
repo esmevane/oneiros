@@ -13,7 +13,7 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
                 1,
                 "system init should create exactly one actor"
             );
-            assert_eq!(actors[0].name.as_str(), "test");
+            assert_eq!(actors.items[0].name.as_str(), "test");
         }
         other => panic!("expected Actor(Listed), got {other:#?}"),
     }
@@ -28,7 +28,7 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 
     assert!(!prompt.is_empty(), "actor list prompt should not be empty");
     assert!(
-        prompt.contains("1 actor"),
+        prompt.contains("1 found"),
         "actor list prompt should describe the actor count, got: {prompt}"
     );
 

@@ -33,8 +33,11 @@ impl BrainService {
         Ok(BrainResponse::Found(brain))
     }
 
-    pub async fn list(context: &SystemContext) -> Result<BrainResponse, BrainError> {
-        let brains = BrainRepo::new(context).list().await?;
-        Ok(BrainResponse::Listed(brains))
+    pub async fn list(
+        context: &SystemContext,
+        ListBrains { filters }: &ListBrains,
+    ) -> Result<BrainResponse, BrainError> {
+        let listed = BrainRepo::new(context).list(filters).await?;
+        Ok(BrainResponse::Listed(listed))
     }
 }

@@ -36,12 +36,20 @@ impl<'a> UrgeRepo<'a> {
         }
     }
 
-    pub async fn list(&self) -> Result<Vec<Urge>, EventError> {
+    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
         let db = self.context.db()?;
-        let mut stmt = db.prepare("SELECT name, description, prompt FROM urges ORDER BY name")?;
 
-        let urges = stmt
-            .query_map([], |row| {
+        let total = {
+            let mut stmt = db.prepare("SELECT COUNT(*) FROM urges")?;
+            stmt.query_row([], |row| row.get::<_, usize>(0))?
+        };
+
+        let mut stmt = db.prepare(
+            "SELECT name, description, prompt FROM urges ORDER BY name LIMIT ?1 OFFSET ?2",
+        )?;
+
+        let items = stmt
+            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, String>(1)?,
@@ -59,6 +67,6 @@ impl<'a> UrgeRepo<'a> {
             })
             .collect();
 
-        Ok(urges)
+        Ok(Listed::new(items, total))
     }
 }

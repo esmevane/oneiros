@@ -14,12 +14,22 @@ impl<'a> MemoryClient<'a> {
     }
 
     pub async fn list(&self, request: &ListMemories) -> Result<MemoryResponse, ClientError> {
-        let path = match &request.agent {
-            Some(a) => format!("/memories?agent={a}"),
-            None => "/memories".to_string(),
-        };
+        let mut params: Vec<(&str, String)> = Vec::new();
 
-        self.client.get(&path).await
+        if let Some(a) = &request.agent {
+            params.push(("agent", a.to_string()));
+        }
+
+        params.push(("limit", request.filters.limit.to_string()));
+        params.push(("offset", request.filters.offset.to_string()));
+
+        let query = params
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        self.client.get(&format!("/memories?{query}")).await
     }
 
     pub async fn get(&self, request: &GetMemory) -> Result<MemoryResponse, ClientError> {

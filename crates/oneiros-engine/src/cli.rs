@@ -143,10 +143,8 @@ pub enum Command {
         name: AgentName,
     },
 
-    // Status — summary of an agent's current cognitive state
-    Status {
-        name: AgentName,
-    },
+    // Status — cross-agent activity overview
+    Status,
 
     // Diagnostics
     Doctor,
@@ -275,12 +273,10 @@ impl Command {
                 .execute(&config.project())
                 .await?
             }
-            Command::Status { name } => {
-                ContinuityCommands::Status(StatusAgent {
-                    agent: name.clone(),
-                })
-                .execute(&config.project())
-                .await?
+            Command::Status => {
+                ContinuityCommands::Status(StatusAgent::default())
+                    .execute(&config.project())
+                    .await?
             }
         })
     }

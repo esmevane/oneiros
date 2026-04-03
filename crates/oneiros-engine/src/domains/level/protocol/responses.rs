@@ -7,7 +7,7 @@ use crate::*;
 pub enum LevelResponse {
     LevelSet(LevelName),
     LevelDetails(Level),
-    Levels(Vec<Level>),
+    Levels(Listed<Level>),
     NoLevels,
     LevelRemoved(LevelName),
 }

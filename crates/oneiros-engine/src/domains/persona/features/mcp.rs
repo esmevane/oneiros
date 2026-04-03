@@ -39,7 +39,7 @@ mod persona_mcp {
             ToolDef {
                 name: "list_personas",
                 description: "See all agent categories",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListPersonas>,
             },
             ToolDef {
                 name: "remove_persona",
@@ -66,7 +66,7 @@ mod persona_mcp {
         let value = match tool_name {
             "set_persona" => PersonaService::set(context, &serde_json::from_str(params)?).await,
             "get_persona" => PersonaService::get(context, &serde_json::from_str(params)?).await,
-            "list_personas" => PersonaService::list(context).await,
+            "list_personas" => PersonaService::list(context, &serde_json::from_str(params)?).await,
             "remove_persona" => {
                 PersonaService::remove(context, &serde_json::from_str(params)?).await
             }

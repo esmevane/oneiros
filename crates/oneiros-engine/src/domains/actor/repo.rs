@@ -40,13 +40,20 @@ impl<'a> ActorRepo<'a> {
         }
     }
 
-    pub async fn list(&self) -> Result<Vec<Actor>, EventError> {
+    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
         let db = self.context.db()?;
-        let mut statement =
-            db.prepare("select id, tenant_id, name, created_at from actors order by name")?;
+
+        let total = {
+            let mut stmt = db.prepare("SELECT COUNT(*) FROM actors")?;
+            stmt.query_row([], |row| row.get::<_, usize>(0))?
+        };
+
+        let select_sql =
+            "SELECT id, tenant_id, name, created_at FROM actors ORDER BY name LIMIT ?1 OFFSET ?2";
+        let mut statement = db.prepare(select_sql)?;
 
         let raw: Vec<(String, String, String, String)> = statement
-            .query_map([], |row| {
+            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
                 Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -64,6 +71,6 @@ impl<'a> ActorRepo<'a> {
             );
         }
 
-        Ok(actors)
+        Ok(Listed::new(actors, total))
     }
 }

@@ -6,7 +6,7 @@ use crate::*;
 pub enum BrainCommands {
     Create(CreateBrain),
     Get(GetBrain),
-    List,
+    List(ListBrains),
 }
 
 impl BrainCommands {
@@ -20,13 +20,19 @@ impl BrainCommands {
         let response = match self {
             BrainCommands::Create(create) => brain_client.create(create).await?,
             BrainCommands::Get(get) => brain_client.get(&get.name).await?,
-            BrainCommands::List => brain_client.list().await?,
+            BrainCommands::List(list) => brain_client.list(list).await?,
         };
 
         let prompt = match &response {
             BrainResponse::Created(brain) => format!("Brain '{}' created.", brain.name),
             BrainResponse::Found(brain) => format!("Brain '{}'", brain.name),
-            BrainResponse::Listed(brains) => format!("{} brain(s) found.", brains.len()),
+            BrainResponse::Listed(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for brain in &listed.items {
+                    out.push_str(&format!("  {}\n\n", brain.name));
+                }
+                out
+            }
         };
 
         Ok(Rendered::new(

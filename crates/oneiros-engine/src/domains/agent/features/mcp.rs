@@ -72,7 +72,10 @@ mod agent_mcp {
         let value = match tool_name {
             "create_agent" => AgentService::create(context, &serde_json::from_str(params)?).await,
             "get_agent" => AgentService::get(context, &serde_json::from_str(params)?).await,
-            "list_agents" => AgentService::list(context).await,
+            "list_agents" => {
+                let request: ListAgents = serde_json::from_str(params).unwrap_or_default();
+                AgentService::list(context, &request).await
+            }
             "update_agent" => AgentService::update(context, &serde_json::from_str(params)?).await,
             "remove_agent" => AgentService::remove(context, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),

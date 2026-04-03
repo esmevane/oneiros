@@ -12,7 +12,7 @@ pub enum StorageCommands {
         description: String,
     },
     Show(GetStorage),
-    List,
+    List(ListStorage),
     Remove(RemoveStorage),
 }
 
@@ -42,7 +42,7 @@ impl StorageCommands {
                     .await?
             }
             StorageCommands::Show(get) => storage_client.show(get).await?,
-            StorageCommands::List => storage_client.list().await?,
+            StorageCommands::List(listing) => storage_client.list(listing).await?,
             StorageCommands::Remove(remove) => storage_client.remove(remove).await?,
         };
 
@@ -54,7 +54,16 @@ impl StorageCommands {
                     e.key, e.description, e.hash
                 )
             }
-            StorageResponse::Entries(entries) => format!("Storage entries: {entries:?}"),
+            StorageResponse::Entries(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for entry in &listed.items {
+                    out.push_str(&format!(
+                        "  {} — {}\n    hash: {}\n\n",
+                        entry.key, entry.description, entry.hash
+                    ));
+                }
+                out
+            }
             StorageResponse::NoEntries => "No storage entries.".to_string(),
             StorageResponse::StorageRemoved(key) => format!("Storage entry '{key}' removed."),
         };

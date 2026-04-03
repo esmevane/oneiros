@@ -13,8 +13,12 @@ impl<'a> AgentClient<'a> {
         self.client.post("/agents", creation).await
     }
 
-    pub async fn list(&self) -> Result<AgentResponse, ClientError> {
-        self.client.get("/agents").await
+    pub async fn list(&self, request: &ListAgents) -> Result<AgentResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset
+        );
+        self.client.get(&format!("/agents?{query}")).await
     }
 
     pub async fn get(&self, name: &AgentName) -> Result<AgentResponse, ClientError> {

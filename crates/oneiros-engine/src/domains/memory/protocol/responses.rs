@@ -7,6 +7,6 @@ use crate::*;
 pub enum MemoryResponse {
     MemoryAdded(Memory),
     MemoryDetails(Memory),
-    Memories(Vec<Memory>),
+    Memories(Listed<Memory>),
     NoMemories,
 }

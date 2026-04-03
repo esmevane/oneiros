@@ -39,7 +39,7 @@ mod ticket_mcp {
             ToolDef {
                 name: "list_tickets",
                 description: "List all tickets",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListTickets>,
             },
             ToolDef {
                 name: "validate_ticket",
@@ -68,7 +68,7 @@ mod ticket_mcp {
         let value = match tool_name {
             "create_ticket" => TicketService::create(&system, &serde_json::from_str(params)?).await,
             "get_ticket" => TicketService::get(&system, &serde_json::from_str(params)?).await,
-            "list_tickets" => TicketService::list(&system).await,
+            "list_tickets" => TicketService::list(&system, &serde_json::from_str(params)?).await,
             "validate_ticket" => {
                 TicketService::validate(&system, &serde_json::from_str(params)?).await
             }

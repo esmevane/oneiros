@@ -19,8 +19,12 @@ impl<'a> PersonaClient<'a> {
         self.client.get(&format!("/personas/{name}")).await
     }
 
-    pub async fn list(&self) -> Result<PersonaResponse, ClientError> {
-        self.client.get("/personas").await
+    pub async fn list(&self, request: &ListPersonas) -> Result<PersonaResponse, ClientError> {
+        let query = format!(
+            "limit={}&offset={}",
+            request.filters.limit, request.filters.offset,
+        );
+        self.client.get(&format!("/personas?{query}")).await
     }
 
     pub async fn remove(&self, name: &PersonaName) -> Result<PersonaResponse, ClientError> {

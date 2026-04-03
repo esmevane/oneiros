@@ -41,7 +41,7 @@ impl ExperienceService {
 
     pub async fn list(
         context: &ProjectContext,
-        ListExperiences { agent }: &ListExperiences,
+        ListExperiences { agent, filters }: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let agent_id = match agent {
             Some(name) => {
@@ -54,13 +54,13 @@ impl ExperienceService {
             None => None,
         };
 
-        let experiences = ExperienceRepo::new(context)
-            .list(agent_id.as_deref())
+        let listed = ExperienceRepo::new(context)
+            .list(agent_id.as_deref(), filters)
             .await?;
-        Ok(if experiences.is_empty() {
+        Ok(if listed.total == 0 {
             ExperienceResponse::NoExperiences
         } else {
-            ExperienceResponse::Experiences(experiences)
+            ExperienceResponse::Experiences(listed)
         })
     }
 

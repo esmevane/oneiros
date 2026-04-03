@@ -7,7 +7,7 @@ use crate::*;
 pub enum UrgeResponse {
     UrgeSet(UrgeName),
     UrgeDetails(Urge),
-    Urges(Vec<Urge>),
+    Urges(Listed<Urge>),
     NoUrges,
     UrgeRemoved(UrgeName),
 }

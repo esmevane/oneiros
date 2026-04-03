@@ -39,7 +39,7 @@ mod actor_mcp {
             ToolDef {
                 name: "list_actors",
                 description: "List all actors in the system",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListActors>,
             },
         ]
     }
@@ -58,7 +58,7 @@ mod actor_mcp {
         let value = match tool_name {
             "create_actor" => ActorService::create(&system, &serde_json::from_str(params)?).await,
             "get_actor" => ActorService::get(&system, &serde_json::from_str(params)?).await,
-            "list_actors" => ActorService::list(&system).await,
+            "list_actors" => ActorService::list(&system, &serde_json::from_str(params)?).await,
             _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;

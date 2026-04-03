@@ -6,7 +6,7 @@ use crate::*;
 pub enum AgentCommands {
     Create(CreateAgent),
     Show(GetAgent),
-    List,
+    List(ListAgents),
     Update(UpdateAgent),
     Remove(RemoveAgent),
 }
@@ -22,7 +22,7 @@ impl AgentCommands {
         let response = match self {
             Self::Create(creation) => agent_client.create(creation).await?,
             Self::Show(get) => agent_client.get(&get.name).await?,
-            Self::List => agent_client.list().await?,
+            Self::List(listing) => agent_client.list(listing).await?,
             Self::Update(update) => agent_client.update(update).await?,
             Self::Remove(removal) => agent_client.remove(&removal.name).await?,
         };
@@ -35,7 +35,16 @@ impl AgentCommands {
                     a.name, a.persona, a.description, a.prompt
                 )
             }
-            AgentResponse::Agents(agents) => format!("Agents: {agents:?}"),
+            AgentResponse::Agents(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for agent in &listed.items {
+                    out.push_str(&format!(
+                        "  {} ({})\n    {}\n\n",
+                        agent.name, agent.persona, agent.description
+                    ));
+                }
+                out
+            }
             AgentResponse::NoAgents => "No agents configured.".to_string(),
             AgentResponse::AgentUpdated(name) => format!("Agent '{name}' updated."),
             AgentResponse::AgentRemoved(name) => format!("Agent '{name}' removed."),

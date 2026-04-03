@@ -24,6 +24,10 @@ pub struct GetConnection {
 pub struct ListConnections {
     #[arg(long)]
     pub entity: Option<RefToken>,
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

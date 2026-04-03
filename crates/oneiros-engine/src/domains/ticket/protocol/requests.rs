@@ -28,13 +28,21 @@ pub struct ValidateTicket {
     pub token: Token,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListTickets {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TicketRequestType, display = "kebab-case")]
 pub enum TicketRequest {
     CreateTicket(CreateTicket),
     GetTicket(GetTicket),
-    ListTickets,
+    ListTickets(ListTickets),
     ValidateTicket(ValidateTicket),
 }
 

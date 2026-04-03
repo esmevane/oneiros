@@ -12,6 +12,6 @@ pub enum ContinuityResponse {
     Reflecting(DreamContext),
     Sleeping(DreamContext),
     Receded(AgentName),
-    Status(DreamContext),
+    Status(AgentActivityTable),
     Guidebook(DreamContext),
 }

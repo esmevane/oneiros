@@ -39,7 +39,7 @@ impl ConnectionService {
 
     pub async fn list(
         context: &ProjectContext,
-        ListConnections { entity }: &ListConnections,
+        ListConnections { entity, filters }: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let ref_json = entity
             .as_ref()
@@ -49,13 +49,13 @@ impl ConnectionService {
             })
             .transpose()?;
 
-        let connections = ConnectionRepo::new(context)
-            .list(ref_json.as_deref())
+        let listed = ConnectionRepo::new(context)
+            .list(ref_json.as_deref(), filters)
             .await?;
-        if connections.is_empty() {
+        if listed.total == 0 {
             Ok(ConnectionResponse::NoConnections)
         } else {
-            Ok(ConnectionResponse::Connections(connections))
+            Ok(ConnectionResponse::Connections(listed))
         }
     }
 

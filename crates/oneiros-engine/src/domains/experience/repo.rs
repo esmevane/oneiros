@@ -47,18 +47,47 @@ impl<'a> ExperienceRepo<'a> {
         }
     }
 
-    pub async fn list(&self, agent: Option<&str>) -> Result<Vec<Experience>, EventError> {
+    pub async fn list(
+        &self,
+        agent: Option<&str>,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Experience>, EventError> {
         let db = self.context.db()?;
-        let mut stmt = match agent {
-            Some(_) => db.prepare(
-                "SELECT id, agent_id, sensation, description, created_at
-                 FROM experiences WHERE agent_id = ?1 ORDER BY created_at",
-            )?,
-            None => db.prepare(
-                "SELECT id, agent_id, sensation, description, created_at
-                 FROM experiences ORDER BY created_at",
-            )?,
+
+        let mut conditions = Vec::new();
+        let mut bind_values: Vec<String> = Vec::new();
+
+        if let Some(a) = agent {
+            bind_values.push(a.to_string());
+            conditions.push(format!("agent_id = ?{}", bind_values.len()));
+        }
+
+        let where_clause = if conditions.is_empty() {
+            String::new()
+        } else {
+            format!(" WHERE {}", conditions.join(" AND "))
         };
+
+        let count_sql = format!("SELECT COUNT(*) FROM experiences{where_clause}");
+        let total = {
+            let mut stmt = db.prepare(&count_sql)?;
+            let params: Vec<&dyn rusqlite::ToSql> = bind_values
+                .iter()
+                .map(|v| v as &dyn rusqlite::ToSql)
+                .collect();
+            stmt.query_row(&*params, |row| row.get::<_, usize>(0))?
+        };
+
+        let select_sql = format!(
+            "SELECT id, agent_id, sensation, description, created_at
+             FROM experiences{where_clause}
+             ORDER BY created_at DESC
+             LIMIT ?{} OFFSET ?{}",
+            bind_values.len() + 1,
+            bind_values.len() + 2,
+        );
+
+        let mut stmt = db.prepare(&select_sql)?;
 
         let map_row = |row: &rusqlite::Row<'_>| {
             Ok((
@@ -70,11 +99,18 @@ impl<'a> ExperienceRepo<'a> {
             ))
         };
 
-        let raw = match agent {
-            Some(a) => stmt.query_map(params![a], map_row),
-            None => stmt.query_map([], map_row),
-        }?
-        .collect::<Result<Vec<_>, _>>()?;
+        let mut all_params: Vec<Box<dyn rusqlite::ToSql>> = bind_values
+            .into_iter()
+            .map(|v| Box::new(v) as Box<dyn rusqlite::ToSql>)
+            .collect();
+        all_params.push(Box::new(filters.limit));
+        all_params.push(Box::new(filters.offset));
+
+        let param_refs: Vec<&dyn rusqlite::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
+
+        let raw = stmt
+            .query_map(&*param_refs, map_row)?
+            .collect::<Result<Vec<_>, _>>()?;
 
         let mut experiences = vec![];
         for (id, agent_id, sensation, description, created_at) in raw {
@@ -89,7 +125,7 @@ impl<'a> ExperienceRepo<'a> {
             );
         }
 
-        Ok(experiences)
+        Ok(Listed::new(experiences, total))
     }
 
     /// Most recent experiences for an agent, ordered newest-first.

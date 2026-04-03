@@ -13,7 +13,7 @@ pub(crate) async fn list_after_project_init<B: Backend>() -> TestResult {
                 1,
                 "project init should create exactly one brain"
             );
-            assert_eq!(brains[0].name.as_str(), "test-project");
+            assert_eq!(brains.items[0].name.as_str(), "test-project");
         }
         other => panic!("expected Brain(Listed), got {other:#?}"),
     }
@@ -43,7 +43,7 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 
     assert!(!prompt.is_empty(), "brain list prompt should not be empty");
     assert!(
-        prompt.contains("1 brain"),
+        prompt.contains("1 found"),
         "brain list prompt should describe the brain count, got: {prompt}"
     );
 

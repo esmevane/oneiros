@@ -33,7 +33,19 @@ impl ConnectionCommands {
                 )
             }
             ConnectionResponse::ConnectionDetails(c) => format!("{c:?}"),
-            ConnectionResponse::Connections(list) => format!("{} connections.", list.len()),
+            ConnectionResponse::Connections(listed) => {
+                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
+                for c in &listed.items {
+                    out.push_str(&format!(
+                        "  [{}] {} -> {}\n    {}\n\n",
+                        c.nature,
+                        c.from_ref,
+                        c.to_ref,
+                        RefToken::new(Ref::connection(c.id)),
+                    ));
+                }
+                out
+            }
             ConnectionResponse::NoConnections => "No connections.".to_string(),
             ConnectionResponse::ConnectionRemoved(id) => format!("Connection {id} removed."),
         };

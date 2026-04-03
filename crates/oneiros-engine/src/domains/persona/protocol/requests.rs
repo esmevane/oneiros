@@ -30,13 +30,21 @@ pub struct RemovePersona {
     pub name: PersonaName,
 }
 
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
+pub struct ListPersonas {
+    #[command(flatten)]
+    #[serde(flatten)]
+    #[builder(default)]
+    pub filters: SearchFilters,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PersonaRequestType, display = "kebab-case")]
 pub enum PersonaRequest {
     SetPersona(SetPersona),
     GetPersona(GetPersona),
-    ListPersonas,
+    ListPersonas(ListPersonas),
     RemovePersona(RemovePersona),
 }
 
