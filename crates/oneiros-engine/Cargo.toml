@@ -2,6 +2,7 @@
 name = "oneiros-engine"
 version.workspace = true
 edition.workspace = true
+description = "The engine underlying oneiros' CLI"
 repository.workspace = true
 license.workspace = true
 
