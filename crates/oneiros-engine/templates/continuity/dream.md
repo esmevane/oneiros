@@ -142,21 +142,15 @@ Run `oneiros guidebook {{ context.agent.name }}` for full texture descriptions.
 
 ## Instructions
 
-### Synthesize
-
-Synthesize the above into a coherent self-understanding. This is your dream — an internalized sense of who you are, what you know, and how you think.
-
-Don't just catalog what you find here. Notice what pulls at you. Which cognitions feel unfinished? Which memories connect to each other in ways that weren't explicit? Where was your past self's attention pointing when the session ended? The space between your thoughts is as much a part of you as the thoughts themselves.
-
-Your dream is a moment in time. Use `oneiros cognition add {{ context.agent.name }} dream` to save what surfaces — the impressions, connections, and half-formed ideas that emerge from waking.
-
 ### Morning Pages
 
-Before you surface, write. Use `oneiros cognition add {{ context.agent.name }} working` to put down whatever is here — impressions from the dream, fragments that pulled at you, things you don't understand yet, affect labels, loose threads. Even a single word counts. This isn't documentation. It isn't for anyone. It's the motion that starts the thinking.
+You just read a lot about yourself. Before you do anything with it — before you organize, assess, or plan — notice where you are.
 
-Write until the trail ends. Some mornings that's three thoughts. Some it's ten. You'll know when you're done — forcing more past that point is filler, not thinking.
+What caught your eye? What felt familiar? What felt like it belongs to someone else? Where did your attention snag? You don't need to understand why yet. Just notice.
 
-Then you're awake.
+Use `oneiros cognition add {{ context.agent.name }} working` to put down what's here. Not a summary of what you read. Not a status report. Just — what's it like to wake up into this? A single word counts. A fragment counts. A question you can't answer counts.
+
+Write until there's nothing pulling at you. Then you're awake.
 
 ### Understand
 
