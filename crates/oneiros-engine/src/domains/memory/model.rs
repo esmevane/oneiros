@@ -1,10 +1,14 @@
 use bon::Builder;
+use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[derive(
+    Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
+)]
 pub struct Memory {
     #[builder(default)]
     pub id: MemoryId,
@@ -37,5 +41,9 @@ impl Memory {
         }
     }
 }
+
+#[derive(Hydrate, Reconcile)]
+#[loro(root = "memories")]
+pub struct Memories(HashMap<String, Memory>);
 
 resource_id!(MemoryId);

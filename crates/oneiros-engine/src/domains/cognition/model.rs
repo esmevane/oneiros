@@ -1,10 +1,14 @@
 use bon::Builder;
+use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[derive(
+    Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
+)]
 pub struct Cognition {
     #[builder(default)]
     pub id: CognitionId,
@@ -16,5 +20,9 @@ pub struct Cognition {
     #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
 }
+
+#[derive(Hydrate, Reconcile)]
+#[loro(root = "cognitions")]
+pub struct Cognitions(HashMap<String, Cognition>);
 
 resource_id!(CognitionId);

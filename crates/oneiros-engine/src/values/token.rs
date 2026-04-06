@@ -10,7 +10,16 @@ pub enum TokenError {
     Format(#[from] postcard::Error),
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+    lorosurgeon::Hydrate,
+    lorosurgeon::Reconcile,
+)]
 #[serde(transparent)]
 pub struct Token(pub String);
 

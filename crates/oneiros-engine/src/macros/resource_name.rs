@@ -9,6 +9,8 @@ macro_rules! resource_name {
             serde::Serialize,
             serde::Deserialize,
             schemars::JsonSchema,
+            lorosurgeon::Hydrate,
+            lorosurgeon::Reconcile,
         )]
         #[serde(transparent)]
         pub struct $name(pub crate::Label);

@@ -32,6 +32,7 @@ futures = "0.3"
 inquire = "0.9.4"
 kinded = "0.5.0"
 loro = "1.10"
+lorosurgeon = { version = "0.2.1", features = ["uuid"] }
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.9" }
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"
@@ -49,9 +50,9 @@ rusqlite = { version = "0.31", features = [
 schemars = { version = "1.0", features = ["chrono04", "uuid1"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
-shlex = "1"
 service-manager = "0.10"
 sha2 = "0.10"
+shlex = "1"
 tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["full"] }

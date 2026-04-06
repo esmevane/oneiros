@@ -7,6 +7,8 @@ macro_rules! resource_id {
             PartialEq,
             Eq,
             Hash,
+            lorosurgeon::Hydrate,
+            lorosurgeon::Reconcile,
             serde::Serialize,
             serde::Deserialize,
             schemars::JsonSchema,
