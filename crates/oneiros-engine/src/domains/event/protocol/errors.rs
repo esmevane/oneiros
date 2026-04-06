@@ -18,6 +18,9 @@ pub enum EventError {
     #[error(transparent)]
     Blob(#[from] BlobError),
 
+    #[error(transparent)]
+    Loro(#[from] loro::LoroError),
+
     #[error("Import error: {0}")]
     Import(String),
 

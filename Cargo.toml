@@ -31,6 +31,7 @@ flate2 = "1"
 futures = "0.3"
 inquire = "0.9.4"
 kinded = "0.5.0"
+loro = "1.10"
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.9" }
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"

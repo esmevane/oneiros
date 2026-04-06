@@ -3,17 +3,20 @@ use crate::*;
 #[derive(Clone)]
 pub struct Projections {
     frames: Vec<Frames>,
+    canon: Canon,
 }
 
 impl Projections {
     pub fn new(frames: &[Frames]) -> Self {
         Self {
             frames: frames.to_vec(),
+            canon: Canon::new(),
         }
     }
 
     pub fn project() -> Self {
         Self {
+            canon: Canon::new(),
             frames: vec![
                 Frames::new(&[
                     Frame::new(LevelProjections.all()),
@@ -41,6 +44,7 @@ impl Projections {
 
     pub fn system() -> Self {
         Self {
+            canon: Canon::new(),
             frames: vec![Frames::new(&[
                 Frame::new(TenantProjections.all()),
                 Frame::new(ActorProjections.all()),
@@ -73,6 +77,8 @@ impl Projections {
             }
         }
 
+        self.canon.apply(event)?;
+
         Ok(())
     }
 
@@ -85,6 +91,8 @@ impl Projections {
                 }
             }
         }
+
+        self.canon.reset()?;
 
         Ok(())
     }
