@@ -11,6 +11,7 @@ mod macros;
 mod mcp;
 mod projections;
 mod protocol;
+mod reducers;
 mod skill;
 mod support;
 #[cfg(test)]
@@ -29,6 +30,7 @@ pub use http::*;
 pub use mcp::*;
 pub use projections::*;
 pub use protocol::*;
+pub use reducers::*;
 pub use skill::*;
 pub use support::*;
 pub use values::*;
