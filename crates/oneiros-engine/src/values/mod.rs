@@ -1,6 +1,7 @@
 mod agent_activity;
 mod blob;
 mod brain_summary;
+mod canon;
 mod claim;
 mod content;
 mod content_hash;
@@ -42,6 +43,7 @@ mod tool_def;
 pub use agent_activity::*;
 pub use blob::*;
 pub use brain_summary::*;
+pub use canon::*;
 pub use claim::*;
 pub use content::*;
 pub use content_hash::*;
