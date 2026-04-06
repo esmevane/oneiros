@@ -3,7 +3,7 @@ use crate::*;
 #[derive(Clone)]
 pub struct SystemContext {
     pub config: Config,
-    pub projections: Projections,
+    pub projections: Projections<SystemCanon>,
 }
 
 impl SystemContext {

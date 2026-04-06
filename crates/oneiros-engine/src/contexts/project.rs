@@ -5,7 +5,7 @@ use crate::*;
 #[derive(Clone)]
 pub struct ProjectContext {
     pub config: Config,
-    pub projections: Projections,
+    pub projections: Projections<BrainCanon>,
     broadcast: broadcast::Sender<StoredEvent>,
 }
 

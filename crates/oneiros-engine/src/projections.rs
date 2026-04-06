@@ -1,56 +1,18 @@
 use crate::*;
 
 #[derive(Clone)]
-pub struct Projections {
+pub struct Projections<T> {
     frames: Vec<Frames>,
+    reducers: ReducerPipeline<T>,
     canon: Canon,
 }
 
-impl Projections {
-    pub fn new(frames: &[Frames]) -> Self {
+impl<T: Clone + Default> Projections<T> {
+    pub fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
         Self {
             frames: frames.to_vec(),
+            reducers,
             canon: Canon::new(),
-        }
-    }
-
-    pub fn project() -> Self {
-        Self {
-            canon: Canon::new(),
-            frames: vec![
-                Frames::new(&[
-                    Frame::new(LevelProjections.all()),
-                    Frame::new(TextureProjections.all()),
-                    Frame::new(SensationProjections.all()),
-                    Frame::new(NatureProjections.all()),
-                    Frame::new(PersonaProjections.all()),
-                    Frame::new(UrgeProjections.all()),
-                ]),
-                Frames::new(&[
-                    Frame::new(AgentProjections.all()),
-                    Frame::new(CognitionProjections.all()),
-                    Frame::new(MemoryProjections.all()),
-                    Frame::new(ExperienceProjections.all()),
-                    Frame::new(ConnectionProjections.all()),
-                    Frame::new(StorageProjections.all()),
-                ]),
-                Frames::new(&[
-                    Frame::new(PressureProjections.all()),
-                    Frame::new(SearchProjections.all()),
-                ]),
-            ],
-        }
-    }
-
-    pub fn system() -> Self {
-        Self {
-            canon: Canon::new(),
-            frames: vec![Frames::new(&[
-                Frame::new(TenantProjections.all()),
-                Frame::new(ActorProjections.all()),
-                Frame::new(BrainProjections.all()),
-                Frame::new(TicketProjections.all()),
-            ])],
         }
     }
 
@@ -78,6 +40,7 @@ impl Projections {
         }
 
         self.canon.apply(event)?;
+        self.reducers.apply(&event.data);
 
         Ok(())
     }
@@ -93,6 +56,7 @@ impl Projections {
         }
 
         self.canon.reset()?;
+        self.reducers.reset();
 
         Ok(())
     }
@@ -108,5 +72,49 @@ impl Projections {
         }
 
         Ok(events.len())
+    }
+}
+
+impl Projections<BrainCanon> {
+    pub fn project() -> Self {
+        Self::new(
+            &[
+                Frames::new(&[
+                    Frame::new(LevelProjections.all()),
+                    Frame::new(TextureProjections.all()),
+                    Frame::new(SensationProjections.all()),
+                    Frame::new(NatureProjections.all()),
+                    Frame::new(PersonaProjections.all()),
+                    Frame::new(UrgeProjections.all()),
+                ]),
+                Frames::new(&[
+                    Frame::new(AgentProjections.all()),
+                    Frame::new(CognitionProjections.all()),
+                    Frame::new(MemoryProjections.all()),
+                    Frame::new(ExperienceProjections.all()),
+                    Frame::new(ConnectionProjections.all()),
+                    Frame::new(StorageProjections.all()),
+                ]),
+                Frames::new(&[
+                    Frame::new(PressureProjections.all()),
+                    Frame::new(SearchProjections.all()),
+                ]),
+            ],
+            ReducerPipeline::brain(),
+        )
+    }
+}
+
+impl Projections<SystemCanon> {
+    pub fn system() -> Self {
+        Self::new(
+            &[Frames::new(&[
+                Frame::new(TenantProjections.all()),
+                Frame::new(ActorProjections.all()),
+                Frame::new(BrainProjections.all()),
+                Frame::new(TicketProjections.all()),
+            ])],
+            ReducerPipeline::system(),
+        )
     }
 }
