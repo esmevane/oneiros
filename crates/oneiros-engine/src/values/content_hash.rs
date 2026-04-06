@@ -1,7 +1,15 @@
 use sha2::{Digest, Sha256};
 
 #[derive(
-    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+    lorosurgeon::Hydrate,
+    lorosurgeon::Reconcile,
 )]
 #[serde(transparent)]
 pub struct ContentHash(pub String);

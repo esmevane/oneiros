@@ -18,6 +18,7 @@ flate2.workspace = true
 inquire.workspace = true
 kinded.workspace = true
 loro.workspace = true
+lorosurgeon.workspace = true
 postcard.workspace = true
 reqwest.workspace = true
 rmcp.workspace = true

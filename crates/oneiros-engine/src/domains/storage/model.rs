@@ -1,15 +1,21 @@
+use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::*;
 
 /// Storage metadata entry — maps a human-readable key to a content-addressed blob.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile)]
 pub struct StorageEntry {
     pub key: StorageKey,
     pub description: Description,
     pub hash: ContentHash,
 }
+
+#[derive(Hydrate, Reconcile)]
+#[loro(root = "storage")]
+pub struct StorageEntries(HashMap<String, StorageEntry>);
 
 /// Binary content for transport — carries compressed blob data in the event stream.
 ///

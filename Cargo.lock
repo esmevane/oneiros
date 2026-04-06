@@ -1924,6 +1924,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "lorosurgeon"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63d747861253a489492b065caf89ad88ab000474a7c5710cc27fee8c21d7dad0"
+dependencies = [
+ "loro",
+ "lorosurgeon-derive",
+ "serde",
+ "serde_json",
+ "similar",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "lorosurgeon-derive"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f9cca5f38d033d46a51584110927ddeafbdf3aa42eebca0017222d0269cf9fc"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "lru-slab"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2125,6 +2151,7 @@ dependencies = [
  "inquire",
  "kinded",
  "loro",
+ "lorosurgeon",
  "postcard",
  "pretty_assertions",
  "reqwest",
@@ -3099,6 +3126,12 @@ name = "simd-adler32"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
+
+[[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
 
 [[package]]
 name = "sized-chunks"

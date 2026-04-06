@@ -65,3 +65,21 @@ impl From<DateTime<Utc>> for Timestamp {
         Self(value)
     }
 }
+
+impl lorosurgeon::Hydrate for Timestamp {
+    fn hydrate_string(given_string: &str) -> Result<Self, lorosurgeon::HydrateError> {
+        Self::parse_str(given_string).map_err(|_| {
+            lorosurgeon::HydrateError::unexpected("timestamp string", "unexpected string")
+        })
+    }
+}
+
+impl lorosurgeon::Reconcile for Timestamp {
+    type Key = lorosurgeon::NoKey;
+    fn reconcile<R: lorosurgeon::Reconciler>(
+        &self,
+        r: R,
+    ) -> Result<(), lorosurgeon::ReconcileError> {
+        r.str(&self.to_string())
+    }
+}

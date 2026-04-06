@@ -1,22 +1,25 @@
-use std::sync::Arc;
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    lorosurgeon::Hydrate,
+    lorosurgeon::Reconcile,
+)]
 #[serde(transparent)]
-pub struct Label(Arc<str>);
+pub struct Label(String);
 
 impl Label {
     pub fn new(label: impl AsRef<str>) -> Self {
-        Self(Arc::from(label.as_ref()))
+        Self(label.as_ref().into())
     }
 
     pub fn as_str(&self) -> &str {
         &self.0
-    }
-}
-
-impl Default for Label {
-    fn default() -> Self {
-        Self(Arc::from(""))
     }
 }
 
