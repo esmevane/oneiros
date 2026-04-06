@@ -2,6 +2,7 @@
 name = "oneiros-usage"
 version.workspace = true
 edition.workspace = true
+publish = false
 
 [dependencies]
 oneiros-engine = { workspace = true }
