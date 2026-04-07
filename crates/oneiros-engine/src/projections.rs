@@ -16,6 +16,19 @@ impl<T: Clone + Default + Materialize> Projections<T> {
         }
     }
 
+    pub fn with_canon(frames: &[Frames], reducers: ReducerPipeline<T>, canon: Canon) -> Self {
+        Self {
+            frames: frames.to_vec(),
+            reducers,
+            canon,
+        }
+    }
+
+    /// The underlying CRDT document.
+    pub fn canon(&self) -> &Canon {
+        &self.canon
+    }
+
     /// Run all projection migrations.
     pub fn migrate(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
         for frame_set in &self.frames {
@@ -77,7 +90,11 @@ impl<T: Clone + Default + Materialize> Projections<T> {
 
 impl Projections<BrainCanon> {
     pub fn project() -> Self {
-        Self::new(
+        Self::project_with_canon(Canon::new())
+    }
+
+    pub fn project_with_canon(canon: Canon) -> Self {
+        Self::with_canon(
             &[
                 Frames::new(&[
                     Frame::new(LevelProjections.all()),
@@ -101,13 +118,18 @@ impl Projections<BrainCanon> {
                 ]),
             ],
             ReducerPipeline::brain(),
+            canon,
         )
     }
 }
 
 impl Projections<SystemCanon> {
     pub fn system() -> Self {
-        Self::new(
+        Self::system_with_canon(Canon::new())
+    }
+
+    pub fn system_with_canon(canon: Canon) -> Self {
+        Self::with_canon(
             &[Frames::new(&[
                 Frame::new(TenantProjections.all()),
                 Frame::new(ActorProjections.all()),
@@ -115,6 +137,7 @@ impl Projections<SystemCanon> {
                 Frame::new(TicketProjections.all()),
             ])],
             ReducerPipeline::system(),
+            canon,
         )
     }
 }
