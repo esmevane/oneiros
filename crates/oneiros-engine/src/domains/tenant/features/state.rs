@@ -5,7 +5,7 @@ pub struct TenantState;
 impl TenantState {
     pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = event {
-            canon.tenants.insert(tenant.id.to_string(), tenant.clone());
+            canon.tenants.set(tenant);
         }
 
         canon

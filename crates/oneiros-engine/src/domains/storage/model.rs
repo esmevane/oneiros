@@ -13,9 +13,31 @@ pub struct StorageEntry {
     pub hash: ContentHash,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "storage")]
 pub struct StorageEntries(HashMap<String, StorageEntry>);
+
+impl StorageEntries {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, key: &StorageKey) -> Option<&StorageEntry> {
+        self.0.get(&key.to_string())
+    }
+
+    pub fn set(&mut self, entry: &StorageEntry) -> Option<StorageEntry> {
+        self.0.insert(entry.key.to_string(), entry.clone())
+    }
+
+    pub fn remove(&mut self, key: &StorageKey) -> Option<StorageEntry> {
+        self.0.remove(&key.to_string())
+    }
+}
 
 /// Binary content for transport — carries compressed blob data in the event stream.
 ///

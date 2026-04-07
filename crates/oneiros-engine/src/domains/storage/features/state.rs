@@ -4,14 +4,15 @@ pub struct StorageState;
 
 impl StorageState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        match event {
-            Events::Storage(StorageEvents::StorageSet(entry)) => {
-                canon.storage.insert(entry.key.to_string(), entry.clone());
-            }
-            Events::Storage(StorageEvents::StorageRemoved(removed)) => {
-                canon.storage.remove(&removed.key.to_string());
-            }
-            _ => {}
+        if let Events::Storage(storage_event) = event {
+            match storage_event {
+                StorageEvents::StorageSet(entry) => {
+                    canon.storage.set(entry);
+                }
+                StorageEvents::StorageRemoved(removed) => {
+                    canon.storage.remove(&removed.key);
+                }
+            };
         }
 
         canon

@@ -4,16 +4,15 @@ pub struct PersonaState;
 
 impl PersonaState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        match event {
-            Events::Persona(PersonaEvents::PersonaSet(persona)) => {
-                canon
-                    .personas
-                    .insert(persona.name.to_string(), persona.clone());
-            }
-            Events::Persona(PersonaEvents::PersonaRemoved(removed)) => {
-                canon.personas.remove(&removed.name.to_string());
-            }
-            _ => {}
+        if let Events::Persona(persona_event) = event {
+            match persona_event {
+                PersonaEvents::PersonaSet(persona) => {
+                    canon.personas.set(persona);
+                }
+                PersonaEvents::PersonaRemoved(removed) => {
+                    canon.personas.remove(&removed.name);
+                }
+            };
         }
 
         canon

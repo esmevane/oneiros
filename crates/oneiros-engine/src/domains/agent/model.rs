@@ -22,9 +22,35 @@ pub struct Agent {
     pub prompt: Prompt,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "agents")]
 pub struct Agents(HashMap<String, Agent>);
+
+impl Agents {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: AgentId) -> Option<&Agent> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, agent: &Agent) -> Option<Agent> {
+        self.0.insert(agent.id.to_string(), agent.clone())
+    }
+
+    pub fn remove(&mut self, agent_id: AgentId) -> Option<Agent> {
+        self.0.remove(&agent_id.to_string())
+    }
+
+    pub fn remove_by_name(&mut self, name: &AgentName) {
+        self.0.retain(|_, a| a.name != *name);
+    }
+}
 
 resource_id!(AgentId);
 resource_name!(AgentName);

@@ -42,8 +42,30 @@ impl Memory {
     }
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "memories")]
 pub struct Memories(HashMap<String, Memory>);
+
+impl Memories {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: MemoryId) -> Option<&Memory> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, memory: &Memory) -> Option<Memory> {
+        self.0.insert(memory.id.to_string(), memory.clone())
+    }
+
+    pub fn remove(&mut self, memory_id: MemoryId) -> Option<Memory> {
+        self.0.remove(&memory_id.to_string())
+    }
+}
 
 resource_id!(MemoryId);
