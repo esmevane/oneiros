@@ -1,4 +1,5 @@
 use crate::{BlobError, IdParseError, TimestampParseError};
+use lorosurgeon::ReconcileError;
 
 /// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
@@ -20,6 +21,9 @@ pub enum EventError {
 
     #[error(transparent)]
     Loro(#[from] loro::LoroError),
+
+    #[error(transparent)]
+    Reconcile(#[from] ReconcileError),
 
     #[error("Import error: {0}")]
     Import(String),

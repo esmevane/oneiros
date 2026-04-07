@@ -7,7 +7,7 @@ pub struct Projections<T> {
     canon: Canon,
 }
 
-impl<T: Clone + Default> Projections<T> {
+impl<T: Clone + Default + Materialize> Projections<T> {
     pub fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
         Self {
             frames: frames.to_vec(),
@@ -39,8 +39,8 @@ impl<T: Clone + Default> Projections<T> {
             }
         }
 
-        self.canon.apply(event)?;
         self.reducers.apply(&event.data);
+        self.canon.reconcile(&self.reducers.state())?;
 
         Ok(())
     }
@@ -55,8 +55,8 @@ impl<T: Clone + Default> Projections<T> {
             }
         }
 
-        self.canon.reset()?;
         self.reducers.reset();
+        self.canon.reset()?;
 
         Ok(())
     }

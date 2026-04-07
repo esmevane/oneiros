@@ -41,8 +41,8 @@ impl<T: Clone + Default> ReducerPipeline<T> {
     }
 
     pub fn state(&self) -> T {
-        let mut guard = self.state.lock().unwrap();
-        std::mem::take(&mut *guard).clone()
+        let guard = self.state.lock().unwrap();
+        guard.clone()
     }
 }
 
