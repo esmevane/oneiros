@@ -70,6 +70,11 @@ impl Canon {
         }
     }
 
+    /// The underlying Loro document.
+    pub fn doc(&self) -> &LoroDoc {
+        &self.doc
+    }
+
     /// Reconcile canon state into the CRDT document.
     pub fn reconcile<T: Materialize>(&self, state: &T) -> Result<(), EventError> {
         state.materialize(&self.doc)
@@ -202,5 +207,99 @@ mod tests {
 
         let agents = Agents::from_doc(&restored.doc).unwrap();
         assert_eq!(agents.len(), 1);
+    }
+
+    #[test]
+    fn reconcile_empty_clears_state() {
+        let canon = Canon::new();
+        let mut state = BrainCanon::default();
+
+        // Add data
+        let agent = Agent::builder()
+            .name("test.agent")
+            .persona("process")
+            .description("A test")
+            .prompt("You are a test")
+            .build();
+        state.agents.set(&agent);
+        canon.reconcile(&state).unwrap();
+
+        let agents = Agents::from_doc(&canon.doc).unwrap();
+        assert_eq!(agents.len(), 1);
+
+        // Reconcile with empty state — should clear the doc
+        let empty = BrainCanon::default();
+        canon.reconcile(&empty).unwrap();
+
+        let agents = Agents::from_doc(&canon.doc).unwrap();
+        assert_eq!(agents.len(), 0);
+    }
+
+    #[test]
+    fn replay_through_reducer_pipeline() {
+        // Simulates the replay flow: fold events through reducers,
+        // reconcile after each, verify the canon doc has correct data.
+        let pipeline = ReducerPipeline::brain();
+        let canon = Canon::new();
+
+        let agent = Agent::builder()
+            .name("test.agent")
+            .persona("process")
+            .description("A test")
+            .prompt("You are a test")
+            .build();
+        let cognition = Cognition::builder()
+            .agent_id(agent.id)
+            .texture("observation")
+            .content("First thought")
+            .build();
+        let level = Level::builder()
+            .name("working")
+            .description("Short-term")
+            .prompt("")
+            .build();
+
+        let events = vec![
+            Events::Agent(AgentEvents::AgentCreated(agent)),
+            Events::Cognition(CognitionEvents::CognitionAdded(cognition)),
+            Events::Level(LevelEvents::LevelSet(level)),
+        ];
+
+        // Replay: reduce each event, reconcile after each
+        for event in &events {
+            pipeline.apply(event);
+            canon.reconcile(&pipeline.state()).unwrap();
+        }
+
+        // Verify the canon doc
+        let agents = Agents::from_doc(&canon.doc).unwrap();
+        assert_eq!(agents.len(), 1);
+
+        let cognitions = Cognitions::from_doc(&canon.doc).unwrap();
+        assert_eq!(cognitions.len(), 1);
+
+        let levels = Levels::from_doc(&canon.doc).unwrap();
+        assert_eq!(levels.len(), 1);
+
+        // Now simulate reset + replay (what Projections::replay does)
+        pipeline.reset();
+        canon.reconcile(&pipeline.state()).unwrap();
+
+        // After reset, doc should be empty
+        let agents = Agents::from_doc(&canon.doc).unwrap();
+        assert_eq!(agents.len(), 0);
+
+        // Replay again
+        for event in &events {
+            pipeline.apply(event);
+            canon.reconcile(&pipeline.state()).unwrap();
+        }
+
+        // Should have the same data as before
+        let agents = Agents::from_doc(&canon.doc).unwrap();
+        assert_eq!(agents.len(), 1);
+
+        let cognitions = Cognitions::from_doc(&canon.doc).unwrap();
+        assert_eq!(cognitions.len(), 1);
     }
 }

@@ -60,6 +60,7 @@ impl Server {
         // MCP streamable HTTP transport — each session gets its own EngineToolBox
         // that shares the server's broadcast channel for event observability.
         let state = ServerState::new(self.config.clone());
+        state.hydrate();
         let mcp_state = state.clone();
         let mcp_service = StreamableHttpService::new(
             move || {

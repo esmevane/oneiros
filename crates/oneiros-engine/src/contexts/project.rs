@@ -32,6 +32,19 @@ impl ProjectContext {
         }
     }
 
+    /// Create a context with shared broadcast and a pre-hydrated canon.
+    pub fn with_canon(
+        config: Config,
+        broadcast: broadcast::Sender<StoredEvent>,
+        canon: Canon,
+    ) -> Self {
+        Self {
+            config,
+            projections: Projections::project_with_canon(canon),
+            broadcast,
+        }
+    }
+
     /// The brain name for this project.
     pub fn brain_name(&self) -> &BrainName {
         &self.config.brain

@@ -12,12 +12,33 @@ use crate::*;
 pub struct ServerState {
     config: Config,
     broadcast: broadcast::Sender<StoredEvent>,
+    canons: CanonIndex,
 }
 
 impl ServerState {
     pub fn new(config: Config) -> Self {
         let (broadcast, _) = broadcast::channel(256);
-        Self { config, broadcast }
+        let canons = CanonIndex::new();
+        Self {
+            config,
+            broadcast,
+            canons,
+        }
+    }
+
+    /// The canon index — shared CRDT state for all brains.
+    pub fn canons(&self) -> &CanonIndex {
+        &self.canons
+    }
+
+    /// Hydrate all canons from event logs. Best-effort — skips
+    /// databases that don't exist yet (pre-init).
+    pub fn hydrate(&self) {
+        // System canon
+        let _ = self.canons.hydrate_system(&self.config);
+
+        // Brain canon for the configured brain
+        let _ = self.canons.hydrate_brain(&self.config, &self.config.brain);
     }
 
     /// The server configuration.
@@ -40,9 +61,16 @@ impl ServerState {
         &self.broadcast
     }
 
-    /// Build a project context that shares this server's broadcast channel.
+    /// Build a project context with shared broadcast and canon.
     pub fn project_context(&self, config: Config) -> ProjectContext {
-        ProjectContext::with_broadcast(config, self.broadcast.clone())
+        let canon = self.canons.brain(&config.brain);
+        ProjectContext::with_canon(config, self.broadcast.clone(), canon)
+    }
+
+    /// Build a system context with shared canon.
+    pub fn system_context(&self) -> SystemContext {
+        let canon = self.canons.system().clone();
+        SystemContext::with_canon(self.config.clone(), canon)
     }
 }
 
@@ -53,7 +81,7 @@ impl FromRequestParts<ServerState> for SystemContext {
         _parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(state.config.system())
+        Ok(state.system_context())
     }
 }
 
