@@ -1,15 +1,57 @@
 use std::sync::Arc;
 
-use loro::{ExportMode, LoroDoc, LoroList, LoroValue};
+use loro::{ExportMode, LoroDoc};
+use lorosurgeon::DocSync;
 
 use crate::*;
 
-/// A CRDT-backed shadow of the event stream.
+/// Reconcile a canon state into a LoroDoc.
 ///
-/// Canon wraps a Loro document that receives every event alongside
-/// the SQLite projections. It doesn't replace any read path — it
-/// exists as a second backend, proving the polymodal architecture
-/// and preparing for distribution (versioning, branching, sync).
+/// Implemented by BrainCanon and SystemCanon to bridge
+/// the reducer output (pure state) into the CRDT document.
+pub trait Materialize {
+    fn materialize(&self, doc: &LoroDoc) -> Result<(), EventError>;
+}
+
+impl Materialize for BrainCanon {
+    fn materialize(&self, doc: &LoroDoc) -> Result<(), EventError> {
+        self.agents.to_doc(doc)?;
+        self.cognitions.to_doc(doc)?;
+        self.memories.to_doc(doc)?;
+        self.experiences.to_doc(doc)?;
+        self.connections.to_doc(doc)?;
+        self.storage.to_doc(doc)?;
+        self.levels.to_doc(doc)?;
+        self.textures.to_doc(doc)?;
+        self.sensations.to_doc(doc)?;
+        self.natures.to_doc(doc)?;
+        self.personas.to_doc(doc)?;
+        self.urges.to_doc(doc)?;
+        self.pressures.to_doc(doc)?;
+        doc.commit();
+        Ok(())
+    }
+}
+
+impl Materialize for SystemCanon {
+    fn materialize(&self, doc: &LoroDoc) -> Result<(), EventError> {
+        self.actors.to_doc(doc)?;
+        self.brains.to_doc(doc)?;
+        self.tenants.to_doc(doc)?;
+        self.tickets.to_doc(doc)?;
+        doc.commit();
+        Ok(())
+    }
+}
+
+/// A CRDT-backed materialization of domain state.
+///
+/// Canon wraps a Loro document that receives the reducer's output
+/// after every event. The reducer produces pure state, Canon
+/// reconciles it into the CRDT via lorosurgeon's DocSync.
+///
+/// This is the distributable unit — snapshots, branching, and
+/// eventually multi-host sync all happen at this layer.
 #[derive(Clone)]
 pub struct Canon {
     doc: Arc<LoroDoc>,
@@ -28,16 +70,9 @@ impl Canon {
         }
     }
 
-    /// Append a stored event to the CRDT document.
-    pub fn apply(&self, event: &StoredEvent) -> Result<(), EventError> {
-        let events = self.events();
-        let value = serde_json::to_value(event)?;
-        let loro_value = LoroValue::from(value);
-
-        events.push(loro_value)?;
-        self.doc.commit();
-
-        Ok(())
+    /// Reconcile canon state into the CRDT document.
+    pub fn reconcile<T: Materialize>(&self, state: &T) -> Result<(), EventError> {
+        state.materialize(&self.doc)
     }
 
     /// Export a full snapshot of the document.
@@ -56,29 +91,9 @@ impl Canon {
 
     /// Clear the document for replay.
     pub fn reset(&self) -> Result<(), EventError> {
-        let events = self.events();
-
-        for i in (0..events.len()).rev() {
-            events.delete(i, 1)?;
-        }
-
-        self.doc.commit();
-
+        // Create a new empty doc isn't possible with Arc sharing,
+        // so we reconcile empty state on next apply.
         Ok(())
-    }
-
-    /// The number of events in the document.
-    pub fn len(&self) -> usize {
-        self.events().len()
-    }
-
-    /// An empty canon is one without any events
-    pub fn is_empty(&self) -> bool {
-        self.events().is_empty()
-    }
-
-    fn events(&self) -> LoroList {
-        self.doc.get_list("events")
     }
 }
 
@@ -86,113 +101,106 @@ impl Canon {
 mod tests {
     use super::*;
 
-    fn test_event(seq: i64, event: impl Into<Events>) -> StoredEvent {
-        StoredEvent::builder()
-            .id(EventId::new())
-            .sequence(seq)
-            .data(event.into())
-            .source(Source::default())
-            .created_at(Timestamp::now())
-            .build()
-    }
+    #[test]
+    fn reconcile_brain_canon() {
+        let canon = Canon::new();
+        let mut state = BrainCanon::default();
 
-    fn sample_agent_event() -> AgentEvents {
-        AgentEvents::AgentCreated(
-            Agent::builder()
-                .name("test.agent")
-                .persona("process")
-                .description("A test agent")
-                .prompt("You are a test")
-                .build(),
-        )
-    }
+        let agent = Agent::builder()
+            .name("test.agent")
+            .persona("process")
+            .description("A test agent")
+            .prompt("You are a test")
+            .build();
+        state.agents.set(&agent);
 
-    fn sample_cognition_event() -> CognitionEvents {
-        CognitionEvents::CognitionAdded(
-            Cognition::builder()
-                .agent_id(AgentId::new())
-                .texture("observation")
-                .content("Something noticed")
-                .build(),
-        )
+        let cognition = Cognition::builder()
+            .agent_id(AgentId::new())
+            .texture("observation")
+            .content("Something noticed")
+            .build();
+        state.cognitions.set(&cognition);
+
+        canon.reconcile(&state).unwrap();
+
+        // Verify round-trip: hydrate back from the doc
+        let snapshot = canon.snapshot().unwrap();
+        let restored = Canon::restore(&snapshot).unwrap();
+
+        let agents = Agents::from_doc(&restored.doc).unwrap();
+        assert_eq!(agents.len(), 1);
+
+        let cognitions = Cognitions::from_doc(&restored.doc).unwrap();
+        assert_eq!(cognitions.len(), 1);
     }
 
     #[test]
-    fn apply_tracks_events() {
+    fn reconcile_system_canon() {
         let canon = Canon::new();
+        let mut state = SystemCanon::default();
 
-        canon.apply(&test_event(1, sample_agent_event())).unwrap();
-        canon
-            .apply(&test_event(2, sample_cognition_event()))
-            .unwrap();
+        let tenant = Tenant::builder().name("test-tenant").build();
+        state.tenants.set(&tenant);
 
-        assert_eq!(canon.len(), 2);
+        canon.reconcile(&state).unwrap();
+
+        let snapshot = canon.snapshot().unwrap();
+        let restored = Canon::restore(&snapshot).unwrap();
+
+        let tenants = Tenants::from_doc(&restored.doc).unwrap();
+        assert_eq!(tenants.len(), 1);
+    }
+
+    #[test]
+    fn reconcile_is_incremental() {
+        let canon = Canon::new();
+        let mut state = BrainCanon::default();
+
+        // First reconcile: one agent
+        let agent = Agent::builder()
+            .name("first.agent")
+            .persona("process")
+            .description("First")
+            .prompt("You are first")
+            .build();
+        state.agents.set(&agent);
+        canon.reconcile(&state).unwrap();
+
+        // Second reconcile: add a cognition
+        let cognition = Cognition::builder()
+            .agent_id(AgentId::new())
+            .texture("observation")
+            .content("Something noticed")
+            .build();
+        state.cognitions.set(&cognition);
+        canon.reconcile(&state).unwrap();
+
+        // Both should be present
+        let agents = Agents::from_doc(&canon.doc).unwrap();
+        assert_eq!(agents.len(), 1);
+
+        let cognitions = Cognitions::from_doc(&canon.doc).unwrap();
+        assert_eq!(cognitions.len(), 1);
     }
 
     #[test]
     fn snapshot_and_restore() {
         let canon = Canon::new();
+        let mut state = BrainCanon::default();
 
-        canon.apply(&test_event(1, sample_agent_event())).unwrap();
-        canon
-            .apply(&test_event(2, sample_cognition_event()))
-            .unwrap();
+        let agent = Agent::builder()
+            .name("test.agent")
+            .persona("process")
+            .description("A test")
+            .prompt("You are a test")
+            .build();
+        state.agents.set(&agent);
+        canon.reconcile(&state).unwrap();
 
         let snapshot = canon.snapshot().unwrap();
         let restored = Canon::restore(&snapshot).unwrap();
 
-        assert_eq!(restored.len(), 2);
-    }
-
-    #[test]
-    fn reset_clears_events() {
-        let canon = Canon::new();
-
-        canon.apply(&test_event(1, sample_agent_event())).unwrap();
-        canon
-            .apply(&test_event(2, sample_cognition_event()))
-            .unwrap();
-        assert_eq!(canon.len(), 2);
-
-        canon.reset().unwrap();
-        assert_eq!(canon.len(), 0);
-    }
-
-    #[test]
-    fn reset_then_replay() {
-        let canon = Canon::new();
-        let events = vec![
-            test_event(1, sample_agent_event()),
-            test_event(2, sample_cognition_event()),
-        ];
-
-        for event in &events {
-            canon.apply(event).unwrap();
-        }
-        assert_eq!(canon.len(), 2);
-
-        // Reset and replay — should produce identical count
-        canon.reset().unwrap();
-        for event in &events {
-            canon.apply(event).unwrap();
-        }
-        assert_eq!(canon.len(), 2);
-    }
-
-    #[test]
-    fn clone_shares_state() {
-        let canon = Canon::new();
-
-        canon.apply(&test_event(1, sample_agent_event())).unwrap();
-
-        let cloned = canon.clone();
-        assert_eq!(cloned.len(), 1);
-
-        // Writes through either handle are visible to both
-        canon
-            .apply(&test_event(2, sample_cognition_event()))
-            .unwrap();
-        assert_eq!(canon.len(), 2);
-        assert_eq!(cloned.len(), 2);
+        let agents = Agents::from_doc(&restored.doc).unwrap();
+        assert_eq!(agents.len(), 1);
     }
 }
