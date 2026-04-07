@@ -19,9 +19,31 @@ pub struct Actor {
     pub created_at: Timestamp,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "actors")]
 pub struct Actors(HashMap<String, Actor>);
+
+impl Actors {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: ActorId) -> Option<&Actor> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, actor: &Actor) -> Option<Actor> {
+        self.0.insert(actor.id.to_string(), actor.clone())
+    }
+
+    pub fn remove(&mut self, actor_id: ActorId) -> Option<Actor> {
+        self.0.remove(&actor_id.to_string())
+    }
+}
 
 resource_id!(ActorId);
 resource_name!(ActorName);

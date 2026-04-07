@@ -21,8 +21,34 @@ pub struct Experience {
     pub created_at: Timestamp,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "experiences")]
 pub struct Experiences(HashMap<String, Experience>);
+
+impl Experiences {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: ExperienceId) -> Option<&Experience> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn get_mut(&mut self, id: ExperienceId) -> Option<&mut Experience> {
+        self.0.get_mut(&id.to_string())
+    }
+
+    pub fn set(&mut self, experience: &Experience) -> Option<Experience> {
+        self.0.insert(experience.id.to_string(), experience.clone())
+    }
+
+    pub fn remove(&mut self, experience_id: ExperienceId) -> Option<Experience> {
+        self.0.remove(&experience_id.to_string())
+    }
+}
 
 resource_id!(ExperienceId);

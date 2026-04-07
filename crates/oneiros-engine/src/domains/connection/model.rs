@@ -22,8 +22,30 @@ pub struct Connection {
     pub created_at: Timestamp,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "connections")]
 pub struct Connections(HashMap<String, Connection>);
+
+impl Connections {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: ConnectionId) -> Option<&Connection> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, connection: &Connection) -> Option<Connection> {
+        self.0.insert(connection.id.to_string(), connection.clone())
+    }
+
+    pub fn remove(&mut self, connection_id: ConnectionId) -> Option<Connection> {
+        self.0.remove(&connection_id.to_string())
+    }
+}
 
 resource_id!(ConnectionId);

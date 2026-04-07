@@ -20,8 +20,30 @@ pub struct Ticket {
     pub created_at: Timestamp,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "tickets")]
 pub struct Tickets(HashMap<String, Ticket>);
+
+impl Tickets {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: TicketId) -> Option<&Ticket> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, ticket: &Ticket) -> Option<Ticket> {
+        self.0.insert(ticket.id.to_string(), ticket.clone())
+    }
+
+    pub fn remove(&mut self, ticket_id: TicketId) -> Option<Ticket> {
+        self.0.remove(&ticket_id.to_string())
+    }
+}
 
 resource_id!(TicketId);

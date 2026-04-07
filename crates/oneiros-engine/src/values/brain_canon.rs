@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::*;
 
 /// The full state of a brain database — all domain entities for one project.
@@ -9,17 +7,17 @@ use crate::*;
 /// because they receive the full canon.
 #[derive(Default, Clone)]
 pub struct BrainCanon {
-    pub agents: HashMap<String, Agent>,
-    pub cognitions: HashMap<String, Cognition>,
-    pub memories: HashMap<String, Memory>,
-    pub experiences: HashMap<String, Experience>,
-    pub connections: HashMap<String, Connection>,
-    pub levels: HashMap<String, Level>,
-    pub textures: HashMap<String, Texture>,
-    pub sensations: HashMap<String, Sensation>,
-    pub natures: HashMap<String, Nature>,
-    pub personas: HashMap<String, Persona>,
-    pub urges: HashMap<String, Urge>,
-    pub storage: HashMap<String, StorageEntry>,
-    pub pressures: HashMap<String, Pressure>,
+    pub agents: Agents,
+    pub cognitions: Cognitions,
+    pub memories: Memories,
+    pub experiences: Experiences,
+    pub connections: Connections,
+    pub levels: Levels,
+    pub textures: Textures,
+    pub sensations: Sensations,
+    pub natures: Natures,
+    pub personas: Personas,
+    pub urges: Urges,
+    pub storage: StorageEntries,
+    pub pressures: Pressures,
 }

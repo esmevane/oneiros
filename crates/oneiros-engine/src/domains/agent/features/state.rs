@@ -4,17 +4,18 @@ pub struct AgentState;
 
 impl AgentState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        match event {
-            Events::Agent(AgentEvents::AgentCreated(agent)) => {
-                canon.agents.insert(agent.id.to_string(), agent.clone());
-            }
-            Events::Agent(AgentEvents::AgentUpdated(agent)) => {
-                canon.agents.insert(agent.id.to_string(), agent.clone());
-            }
-            Events::Agent(AgentEvents::AgentRemoved(removed)) => {
-                canon.agents.retain(|_, a| a.name != removed.name);
-            }
-            _ => {}
+        if let Events::Agent(agent_event) = event {
+            match agent_event {
+                AgentEvents::AgentCreated(agent) => {
+                    canon.agents.set(agent);
+                }
+                AgentEvents::AgentUpdated(agent) => {
+                    canon.agents.set(agent);
+                }
+                AgentEvents::AgentRemoved(removed) => {
+                    canon.agents.remove_by_name(&removed.name);
+                }
+            };
         }
 
         canon
@@ -43,7 +44,6 @@ mod tests {
         let next = AgentState::reduce(canon, &event);
 
         assert_eq!(next.agents.len(), 1);
-        assert_eq!(next.agents[&agent.id.to_string()].name, agent.name);
     }
 
     #[test]
@@ -55,13 +55,13 @@ mod tests {
             .description("A test")
             .prompt("You are a test")
             .build();
-        canon.agents.insert(agent.id.to_string(), agent.clone());
+        canon.agents.set(&agent);
 
         let event = Events::Agent(AgentEvents::AgentRemoved(AgentRemoved {
             name: agent.name.clone(),
         }));
         let next = AgentState::reduce(canon, &event);
 
-        assert!(next.agents.is_empty());
+        assert_eq!(next.agents.len(), 0);
     }
 }

@@ -21,8 +21,30 @@ pub struct Cognition {
     pub created_at: Timestamp,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "cognitions")]
 pub struct Cognitions(HashMap<String, Cognition>);
+
+impl Cognitions {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: CognitionId) -> Option<&Cognition> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, cognition: &Cognition) -> Option<Cognition> {
+        self.0.insert(cognition.id.to_string(), cognition.clone())
+    }
+
+    pub fn remove(&mut self, cognition_id: CognitionId) -> Option<Cognition> {
+        self.0.remove(&cognition_id.to_string())
+    }
+}
 
 resource_id!(CognitionId);

@@ -4,14 +4,15 @@ pub struct LevelState;
 
 impl LevelState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        match event {
-            Events::Level(LevelEvents::LevelSet(level)) => {
-                canon.levels.insert(level.name.to_string(), level.clone());
-            }
-            Events::Level(LevelEvents::LevelRemoved(removed)) => {
-                canon.levels.remove(&removed.name.to_string());
-            }
-            _ => {}
+        if let Events::Level(level_event) = event {
+            match level_event {
+                LevelEvents::LevelSet(level) => {
+                    canon.levels.set(level);
+                }
+                LevelEvents::LevelRemoved(removed) => {
+                    canon.levels.remove(&removed.name);
+                }
+            };
         }
 
         canon
@@ -43,6 +44,6 @@ mod tests {
             name: level.name.clone(),
         }));
         let next = LevelState::reduce(next, &event);
-        assert!(next.levels.is_empty());
+        assert_eq!(next.levels.len(), 0);
     }
 }

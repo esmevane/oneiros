@@ -4,16 +4,15 @@ pub struct TextureState;
 
 impl TextureState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        match event {
-            Events::Texture(TextureEvents::TextureSet(texture)) => {
-                canon
-                    .textures
-                    .insert(texture.name.to_string(), texture.clone());
-            }
-            Events::Texture(TextureEvents::TextureRemoved(removed)) => {
-                canon.textures.remove(&removed.name.to_string());
-            }
-            _ => {}
+        if let Events::Texture(texture_event) = event {
+            match texture_event {
+                TextureEvents::TextureSet(texture) => {
+                    canon.textures.set(texture);
+                }
+                TextureEvents::TextureRemoved(removed) => {
+                    canon.textures.remove(&removed.name);
+                }
+            };
         }
 
         canon

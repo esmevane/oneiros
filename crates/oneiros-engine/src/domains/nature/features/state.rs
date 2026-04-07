@@ -4,16 +4,15 @@ pub struct NatureState;
 
 impl NatureState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        match event {
-            Events::Nature(NatureEvents::NatureSet(nature)) => {
-                canon
-                    .natures
-                    .insert(nature.name.to_string(), nature.clone());
-            }
-            Events::Nature(NatureEvents::NatureRemoved(removed)) => {
-                canon.natures.remove(&removed.name.to_string());
-            }
-            _ => {}
+        if let Events::Nature(nature_event) = event {
+            match nature_event {
+                NatureEvents::NatureSet(nature) => {
+                    canon.natures.set(nature);
+                }
+                NatureEvents::NatureRemoved(removed) => {
+                    canon.natures.remove(&removed.name);
+                }
+            };
         }
 
         canon

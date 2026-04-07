@@ -21,8 +21,30 @@ pub struct Level {
     pub prompt: Prompt,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "levels")]
 pub struct Levels(HashMap<String, Level>);
+
+impl Levels {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, name: &LevelName) -> Option<&Level> {
+        self.0.get(&name.to_string())
+    }
+
+    pub fn set(&mut self, level: &Level) -> Option<Level> {
+        self.0.insert(level.name.to_string(), level.clone())
+    }
+
+    pub fn remove(&mut self, name: &LevelName) -> Option<Level> {
+        self.0.remove(&name.to_string())
+    }
+}
 
 resource_name!(LevelName);

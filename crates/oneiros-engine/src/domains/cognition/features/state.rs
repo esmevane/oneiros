@@ -5,9 +5,7 @@ pub struct CognitionState;
 impl CognitionState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Cognition(CognitionEvents::CognitionAdded(cognition)) = event {
-            canon
-                .cognitions
-                .insert(cognition.id.to_string(), cognition.clone());
+            canon.cognitions.set(cognition);
         }
 
         canon

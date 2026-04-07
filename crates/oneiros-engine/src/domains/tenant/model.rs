@@ -18,9 +18,31 @@ pub struct Tenant {
     pub created_at: Timestamp,
 }
 
-#[derive(Hydrate, Reconcile)]
+#[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "tenants")]
 pub struct Tenants(HashMap<String, Tenant>);
+
+impl Tenants {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, id: TenantId) -> Option<&Tenant> {
+        self.0.get(&id.to_string())
+    }
+
+    pub fn set(&mut self, tenant: &Tenant) -> Option<Tenant> {
+        self.0.insert(tenant.id.to_string(), tenant.clone())
+    }
+
+    pub fn remove(&mut self, tenant_id: TenantId) -> Option<Tenant> {
+        self.0.remove(&tenant_id.to_string())
+    }
+}
 
 resource_id!(TenantId);
 resource_name!(TenantName);
