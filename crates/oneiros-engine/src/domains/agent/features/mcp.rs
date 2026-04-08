@@ -39,7 +39,7 @@ mod agent_mcp {
             ToolDef {
                 name: "list_agents",
                 description: "See who's here",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListAgents>,
             },
             ToolDef {
                 name: "update_agent",

@@ -29,7 +29,7 @@ mod storage_mcp {
             ToolDef {
                 name: "list_storage",
                 description: "Browse your archive",
-                input_schema: schema_for::<serde_json::Value>,
+                input_schema: schema_for::<ListStorage>,
             },
             ToolDef {
                 name: "get_storage",
