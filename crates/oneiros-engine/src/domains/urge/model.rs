@@ -34,6 +34,10 @@ impl Urges {
         self.0.len()
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Urge> {
+        self.0.values()
+    }
+
     pub fn get(&self, name: &UrgeName) -> Option<&Urge> {
         self.0.get(&name.to_string())
     }

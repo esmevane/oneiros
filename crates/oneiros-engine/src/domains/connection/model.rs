@@ -35,6 +35,10 @@ impl Connections {
         self.0.len()
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Connection> {
+        self.0.values()
+    }
+
     pub fn get(&self, id: ConnectionId) -> Option<&Connection> {
         self.0.get(&id.to_string())
     }

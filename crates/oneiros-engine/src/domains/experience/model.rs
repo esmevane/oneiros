@@ -38,6 +38,10 @@ impl Experiences {
         self.0.get(&id.to_string())
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Experience> {
+        self.0.values()
+    }
+
     pub fn get_mut(&mut self, id: ExperienceId) -> Option<&mut Experience> {
         self.0.get_mut(&id.to_string())
     }

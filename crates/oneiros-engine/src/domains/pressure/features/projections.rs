@@ -1,6 +1,9 @@
-//! Pressure projections — recompute on every event.
-//! This is the cross-domain projection: it reads from agents, urges,
-//! and cognitions tables to derive pressure state.
+//! Pressure projections — schema lifecycle only.
+//!
+//! Pressure computation moved to the reducer (PressureState).
+//! The projection handles migrate/reset for the SQLite table.
+//! The apply handler is a no-op — pressure data is synced to
+//! SQLite by `Projections::apply` after the reducer runs.
 
 use crate::*;
 
@@ -15,6 +18,6 @@ impl PressureProjections {
 const PROJECTIONS: &[Projection] = &[Projection {
     name: "pressure",
     migrate: |conn| PressureStore::new(conn).migrate(),
-    apply: |conn, event| PressureStore::new(conn).handle(event),
+    apply: |_, _| Ok(()),
     reset: |conn| PressureStore::new(conn).reset(),
 }];

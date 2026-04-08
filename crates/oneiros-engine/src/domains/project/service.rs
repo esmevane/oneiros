@@ -135,43 +135,58 @@ impl ProjectService {
     ) -> Result<ProjectResponse, ProjectError> {
         let file = std::fs::File::open(&request.file)?;
         let reader = std::io::BufReader::new(file);
-        let mut imported = vec![];
+        let mut imported = 0usize;
 
         let db = context.db()?;
         let log = EventLog::new(&db);
 
-        for line in reader.lines() {
-            let line = line?;
+        // Batch all inserts in a single transaction — without this,
+        // each INSERT is an implicit transaction with an fsync.
+        db.execute_batch("BEGIN")?;
 
-            if line.trim().is_empty() {
-                continue;
-            }
+        let result = (|| -> Result<(), ProjectError> {
+            for line in reader.lines() {
+                let line = line?;
 
-            let event: StoredEvent = serde_json::from_str(&line)?;
-
-            if let Events::Ephemeral(ephemeral) = &event.data {
-                match ephemeral {
-                    EphemeralEvents::BlobStored(content) => {
-                        StorageStore::new(&context.db()?).put_blob(content)?;
-                    }
+                if line.trim().is_empty() {
+                    continue;
                 }
-            } else {
-                log.import(&event)?;
-                imported.push(event);
+
+                let event: StoredEvent = serde_json::from_str(&line)?;
+
+                if let Events::Ephemeral(ephemeral) = &event.data {
+                    match ephemeral {
+                        EphemeralEvents::BlobStored(content) => {
+                            StorageStore::new(&db).put_blob(content)?;
+                        }
+                    }
+                } else {
+                    log.import(&event)?;
+                    imported += 1;
+                }
+            }
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => db.execute_batch("COMMIT")?,
+            Err(e) => {
+                let _ = db.execute_batch("ROLLBACK");
+                return Err(e);
             }
         }
 
-        let replayed = context.projections.replay(&db)?;
+        let replayed = context.projections.replay_brain(&db)?;
 
         Ok(ProjectResponse::Imported(ImportResult {
-            imported: EventCount::new(imported.len() as i64),
+            imported: EventCount::new(imported as i64),
             replayed: EventCount::new(replayed as i64),
         }))
     }
 
     /// Replay all events through projections, rebuilding read models.
     pub fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
-        let replayed = context.projections.replay(&context.db()?)?;
+        let replayed = context.projections.replay_brain(&context.db()?)?;
 
         Ok(ProjectResponse::Replayed(ReplayResult {
             replayed: EventCount::new(replayed as i64),

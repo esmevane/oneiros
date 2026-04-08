@@ -203,8 +203,15 @@ impl CanonIndex {
     }
 
     /// Hydrate the system canon from its event log.
+    ///
+    /// Runs migrations first to ensure the schema is current — this
+    /// handles existing installs that predate newer projections (e.g.
+    /// the bookmarks table).
     pub fn hydrate_system(&self, config: &Config) -> Result<(), EventError> {
         let db = config.system_db()?;
+
+        Projections::<SystemCanon>::system().migrate(&db)?;
+
         let events = EventLog::new(&db).load_all()?;
         let pipeline = ReducerPipeline::system();
 
@@ -218,11 +225,16 @@ impl CanonIndex {
     }
 
     /// Hydrate a brain's canon from its event log.
+    ///
+    /// Runs migrations first to ensure the schema is current.
     pub fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
         let mut brain_config = config.clone();
         brain_config.brain = name.clone();
 
         let db = brain_config.brain_db()?;
+
+        Projections::<BrainCanon>::project().migrate(&db)?;
+
         let events = EventLog::new(&db).load_all()?;
 
         let entry = self.brain_entry(name)?;

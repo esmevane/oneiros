@@ -35,6 +35,10 @@ impl Pressures {
         self.0.len()
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Pressure> {
+        self.0.values()
+    }
+
     pub fn get(&self, id: PressureId) -> Option<&Pressure> {
         self.0.get(&id.to_string())
     }
