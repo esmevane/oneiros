@@ -16,11 +16,13 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // ── Package assets (embedded at compile time) ────────────────────
 
-const SKILL_MD: &str = include_str!("../templates/skill/SKILL.md");
-const PLUGIN_JSON: &str = include_str!("../templates/skill/plugin.json");
-const HOOKS_JSON: &str = include_str!("../templates/skill/hooks.json");
-const MARKETPLACE_JSON: &str = include_str!("../templates/skill/marketplace.json");
-const AGENTS_MD: &str = include_str!("../templates/skill/agents-md.md");
+const SKILL_MD: &str = include_str!("../templates/skills/oneiros/SKILL.md");
+const PLUGIN_JSON: &str = include_str!("../templates/skills/oneiros/plugin.json");
+const HOOKS_JSON: &str = include_str!("../templates/skills/oneiros/hooks.json");
+const MARKETPLACE_JSON: &str = include_str!("../templates/skills/oneiros/marketplace.json");
+const AGENTS_MD: &str = include_str!("../templates/skills/oneiros/agents-md.md");
+const MORNING_PAGES_MD: &str = include_str!("../templates/skills/oneiros-morning-pages/SKILL.md");
+const EVENING_PAGES_MD: &str = include_str!("../templates/skills/oneiros-evening-pages/SKILL.md");
 
 /// A file in the skill package — name and content, ready to write.
 pub struct SkillAsset {
@@ -108,6 +110,14 @@ impl SkillPackage {
                 path: "agents-md.md",
                 content: AGENTS_MD.to_string(),
             },
+            SkillAsset {
+                path: "skills/oneiros-morning-pages/SKILL.md",
+                content: Self::stamp(MORNING_PAGES_MD),
+            },
+            SkillAsset {
+                path: "skills/oneiros-evening-pages/SKILL.md",
+                content: Self::stamp(EVENING_PAGES_MD),
+            },
         ];
 
         // Agent definitions
@@ -158,11 +168,11 @@ impl SkillPackage {
         vec![
             (
                 "agents/activity.scribe.md",
-                include_str!("../templates/skill/agents/activity.scribe.md"),
+                include_str!("../templates/skills/oneiros/agents/activity.scribe.md"),
             ),
             (
                 "agents/oneiroi.process.md",
-                include_str!("../templates/skill/agents/oneiroi.process.md"),
+                include_str!("../templates/skills/oneiros/agents/oneiroi.process.md"),
             ),
         ]
     }
@@ -172,11 +182,11 @@ impl SkillPackage {
         vec![
             (
                 "skills/oneiros/resources/cognitive-model.md",
-                include_str!("../templates/skill/resources/cognitive-model.md"),
+                include_str!("../templates/skills/oneiros/resources/cognitive-model.md"),
             ),
             (
                 "skills/oneiros/resources/getting-started.md",
-                include_str!("../templates/skill/resources/getting-started.md"),
+                include_str!("../templates/skills/oneiros/resources/getting-started.md"),
             ),
         ]
     }
