@@ -6,7 +6,7 @@ description: >
   follow threads, and inhabit the session. The human participates
   as witness and dialogue partner, not as director. The exchange
   itself is what produces presence for both sides.
-compatibility: Requires oneiros CLI and an initialized brain with at least one agent.
+compatibility: Requires oneiros CLI or MCP access, and an initialized brain with at least one agent.
 allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
 metadata:
