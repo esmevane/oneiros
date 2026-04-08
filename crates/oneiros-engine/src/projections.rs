@@ -93,13 +93,33 @@ impl<T: Clone + Default + Materialize> Projections<T> {
     }
 
     /// Replay a set of events through all frames (for import/rebuild).
+    ///
+    /// Rebuilds SQLite projections and reducer state but skips canon
+    /// reconciliation — the canon that matters lives in CanonIndex
+    /// and is hydrated separately at service startup.
     pub fn replay(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
         let events = EventLog::new(db).load_all()?;
 
         self.reset(db)?;
 
-        for event in &events {
-            self.apply(db, event)?;
+        // Wrap projection replay in a transaction — without this,
+        // each projection INSERT is an implicit transaction with fsync.
+        db.execute_batch("BEGIN")?;
+
+        let result = (|| -> Result<(), EventError> {
+            for event in &events {
+                self.apply_frames(db, event)?;
+                self.reducers.apply(&event.data)?;
+            }
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => db.execute_batch("COMMIT")?,
+            Err(e) => {
+                let _ = db.execute_batch("ROLLBACK");
+                return Err(e);
+            }
         }
 
         Ok(events.len())
@@ -107,6 +127,42 @@ impl<T: Clone + Default + Materialize> Projections<T> {
 }
 
 impl Projections<BrainCanon> {
+    /// Apply a single event — projections, reducer, then sync
+    /// reducer-computed pressures to SQLite.
+    pub fn apply_brain(
+        &self,
+        db: &rusqlite::Connection,
+        event: &StoredEvent,
+    ) -> Result<(), EventError> {
+        self.apply(db, event)?;
+        self.sync_pressures(db)?;
+        Ok(())
+    }
+
+    /// Write reducer-computed pressure state to the SQLite table.
+    fn sync_pressures(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+        let state = self.reducers.state()?;
+        let store = PressureStore::new(db);
+
+        for pressure in state.pressures.values() {
+            store.upsert(
+                &pressure.agent_id,
+                &pressure.urge,
+                &pressure.data,
+                &pressure.updated_at,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Replay for brain projections — includes pressure sync at the end.
+    pub fn replay_brain(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
+        let count = self.replay(db)?;
+        self.sync_pressures(db)?;
+        Ok(count)
+    }
+
     pub fn project() -> Self {
         Self::project_with_canon(Canon::new())
     }

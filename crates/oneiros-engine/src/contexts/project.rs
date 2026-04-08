@@ -88,7 +88,7 @@ impl ProjectContext {
 
     /// Replay all events through projections, rebuilding read models.
     pub fn replay(&self) -> Result<usize, EventError> {
-        self.projections.replay(&self.db()?)
+        self.projections.replay_brain(&self.db()?)
     }
 
     /// Emit an event to the brain's event log and apply projections.
@@ -97,7 +97,7 @@ impl ProjectContext {
         let new_event = NewEvent::builder().data(event).build();
         let stored = EventLog::new(&db).append(&new_event)?;
 
-        self.projections.apply(&db, &stored)?;
+        self.projections.apply_brain(&db, &stored)?;
 
         // Chronicle the event — record it in the active bookmark's ledger.
         let chronicle_store = ChronicleStore::new(&db);

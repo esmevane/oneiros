@@ -63,6 +63,10 @@ impl Memories {
         self.0.insert(memory.id.to_string(), memory.clone())
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Memory> {
+        self.0.values()
+    }
+
     pub fn remove(&mut self, memory_id: MemoryId) -> Option<Memory> {
         self.0.remove(&memory_id.to_string())
     }
