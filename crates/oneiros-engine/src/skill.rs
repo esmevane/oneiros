@@ -42,6 +42,7 @@ impl SkillInventory {
 
         skills.extend(ActorSkills::all());
         skills.extend(AgentSkills::all());
+        skills.extend(BookmarkSkills::all());
         skills.extend(BrainSkills::all());
         skills.extend(CognitionSkills::all());
         skills.extend(ConnectionSkills::all());

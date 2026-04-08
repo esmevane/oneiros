@@ -6,6 +6,7 @@ use crate::*;
 pub struct ProjectContext {
     pub config: Config,
     pub projections: Projections<BrainCanon>,
+    chronicle: Chronicle,
     broadcast: broadcast::Sender<StoredEvent>,
 }
 
@@ -16,6 +17,7 @@ impl ProjectContext {
         Self {
             config,
             projections: Projections::project(),
+            chronicle: Chronicle::new(),
             broadcast,
         }
     }
@@ -28,19 +30,21 @@ impl ProjectContext {
         Self {
             config,
             projections: Projections::project(),
+            chronicle: Chronicle::new(),
             broadcast,
         }
     }
 
-    /// Create a context with shared broadcast and a pre-hydrated canon.
-    pub fn with_canon(
+    /// Create a context with shared broadcast and a pre-hydrated bookmark entry.
+    pub fn with_entry(
         config: Config,
         broadcast: broadcast::Sender<StoredEvent>,
-        canon: Canon,
+        entry: BookmarkEntry,
     ) -> Self {
         Self {
             config,
-            projections: Projections::project_with_canon(canon),
+            projections: Projections::project_with_entry(entry.canon, entry.pipeline),
+            chronicle: entry.chronicle,
             broadcast,
         }
     }
@@ -77,6 +81,11 @@ impl ProjectContext {
         self.config.system_db()
     }
 
+    /// The canon for this project — the active bookmark's CRDT doc.
+    pub fn canon(&self) -> &Canon {
+        self.projections.canon()
+    }
+
     /// Replay all events through projections, rebuilding read models.
     pub fn replay(&self) -> Result<usize, EventError> {
         self.projections.replay(&self.db()?)
@@ -89,6 +98,15 @@ impl ProjectContext {
         let stored = EventLog::new(&db).append(&new_event)?;
 
         self.projections.apply(&db, &stored)?;
+
+        // Chronicle the event — record it in the active bookmark's ledger.
+        let chronicle_store = ChronicleStore::new(&db);
+        chronicle_store.migrate()?;
+        self.chronicle.record(
+            &stored,
+            &chronicle_store.resolver(),
+            &chronicle_store.writer(),
+        )?;
 
         // We broadcast the new event after projecting it.
         let _ = self.broadcast.send(stored);

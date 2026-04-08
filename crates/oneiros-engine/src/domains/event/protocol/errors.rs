@@ -1,5 +1,5 @@
 use crate::{BlobError, IdParseError, TimestampParseError};
-use lorosurgeon::ReconcileError;
+use lorosurgeon::{HydrateError, ReconcileError};
 
 /// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
@@ -24,6 +24,9 @@ pub enum EventError {
 
     #[error(transparent)]
     Reconcile(#[from] ReconcileError),
+
+    #[error(transparent)]
+    Hydrate(#[from] HydrateError),
 
     #[error("Import error: {0}")]
     Import(String),

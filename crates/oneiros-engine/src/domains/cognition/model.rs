@@ -34,6 +34,10 @@ impl Cognitions {
         self.0.len()
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Cognition> {
+        self.0.values()
+    }
+
     pub fn get(&self, id: CognitionId) -> Option<&Cognition> {
         self.0.get(&id.to_string())
     }

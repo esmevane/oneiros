@@ -52,9 +52,27 @@ impl<T: Clone + Default + Materialize> Projections<T> {
             }
         }
 
-        self.reducers.apply(&event.data);
-        self.canon.reconcile(&self.reducers.state())?;
+        self.reducers.apply(&event.data)?;
+        self.canon.reconcile(&self.reducers.state()?)?;
 
+        Ok(())
+    }
+
+    /// Apply a single event through SQLite frame projections only.
+    /// Skips the reducer and canon — used during bookmark switch
+    /// when the canon is already correct and only SQLite needs rebuilding.
+    pub fn apply_frames(
+        &self,
+        db: &rusqlite::Connection,
+        event: &StoredEvent,
+    ) -> Result<(), EventError> {
+        for frame_set in &self.frames {
+            for frame_item in &frame_set.contents {
+                for projection in &frame_item.projections {
+                    (projection.apply)(db, event)?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -68,7 +86,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
             }
         }
 
-        self.reducers.reset();
+        self.reducers.reset()?;
         self.canon.reset()?;
 
         Ok(())
@@ -94,6 +112,10 @@ impl Projections<BrainCanon> {
     }
 
     pub fn project_with_canon(canon: Canon) -> Self {
+        Self::project_with_entry(canon, ReducerPipeline::brain())
+    }
+
+    pub fn project_with_entry(canon: Canon, pipeline: ReducerPipeline<BrainCanon>) -> Self {
         Self::with_canon(
             &[
                 Frames::new(&[
@@ -117,7 +139,7 @@ impl Projections<BrainCanon> {
                     Frame::new(SearchProjections.all()),
                 ]),
             ],
-            ReducerPipeline::brain(),
+            pipeline,
             canon,
         )
     }
@@ -135,6 +157,7 @@ impl Projections<SystemCanon> {
                 Frame::new(ActorProjections.all()),
                 Frame::new(BrainProjections.all()),
                 Frame::new(TicketProjections.all()),
+                Frame::new(BookmarkProjections.all()),
             ])],
             ReducerPipeline::system(),
             canon,

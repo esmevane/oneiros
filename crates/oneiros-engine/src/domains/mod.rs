@@ -1,6 +1,8 @@
 mod actor;
 mod agent;
+mod bookmark;
 mod brain;
+mod chronicle;
 mod cognition;
 mod connection;
 mod continuity;
@@ -29,7 +31,9 @@ pub mod event;
 
 pub use actor::*;
 pub use agent::*;
+pub use bookmark::*;
 pub use brain::*;
+pub use chronicle::*;
 pub use cognition::*;
 pub use connection::*;
 pub use continuity::*;

@@ -17,8 +17,12 @@ impl<T: Clone + Default> ReducerPipeline<T> {
         }
     }
 
-    pub fn apply(&self, event: &Events) {
-        let mut guard = self.state.lock().unwrap();
+    pub fn apply(&self, event: &Events) -> Result<(), EventError> {
+        let mut guard = self
+            .state
+            .lock()
+            .map_err(|e| EventError::Lock(e.to_string()))?;
+
         let state = std::mem::take(&mut *guard);
         let mut next = state;
 
@@ -27,26 +31,47 @@ impl<T: Clone + Default> ReducerPipeline<T> {
         }
 
         *guard = next;
+        Ok(())
     }
 
-    pub fn reduce(&self, events: &Vec<Events>) {
+    pub fn reduce(&self, events: &[Events]) -> Result<(), EventError> {
         for event in events {
-            self.apply(event);
+            self.apply(event)?;
         }
+        Ok(())
     }
 
-    pub fn reset(&self) {
-        let mut guard = self.state.lock().unwrap();
+    pub fn reset(&self) -> Result<(), EventError> {
+        let mut guard = self
+            .state
+            .lock()
+            .map_err(|e| EventError::Lock(e.to_string()))?;
         *guard = T::default();
+        Ok(())
     }
 
-    pub fn state(&self) -> T {
-        let guard = self.state.lock().unwrap();
-        guard.clone()
+    pub fn state(&self) -> Result<T, EventError> {
+        let guard = self
+            .state
+            .lock()
+            .map_err(|e| EventError::Lock(e.to_string()))?;
+        Ok(guard.clone())
     }
 }
 
 impl ReducerPipeline<BrainCanon> {
+    pub fn brain_with_state(initial: BrainCanon) -> Result<Self, EventError> {
+        let pipeline = Self::brain();
+        {
+            let mut guard = pipeline
+                .state
+                .lock()
+                .map_err(|e| EventError::Lock(e.to_string()))?;
+            *guard = initial;
+        }
+        Ok(pipeline)
+    }
+
     pub fn brain() -> Self {
         Self::new(vec![
             AgentState::reducer(),
@@ -108,9 +133,9 @@ mod tests {
             Events::Level(LevelEvents::LevelSet(level)),
         ];
 
-        reducers.reduce(&events);
+        reducers.reduce(&events).unwrap();
 
-        let state = reducers.state();
+        let state = reducers.state().unwrap();
 
         assert_eq!(state.agents.len(), 1);
         assert_eq!(state.cognitions.len(), 1);
@@ -124,9 +149,9 @@ mod tests {
         let tenant = Tenant::builder().name("test-tenant").build();
         let events = vec![Events::Tenant(TenantEvents::TenantCreated(tenant))];
 
-        reducers.reduce(&events);
+        reducers.reduce(&events).unwrap();
 
-        let state = reducers.state();
+        let state = reducers.state().unwrap();
 
         assert_eq!(state.tenants.len(), 1);
     }

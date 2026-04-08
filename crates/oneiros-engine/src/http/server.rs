@@ -64,7 +64,14 @@ impl Server {
         let mcp_state = state.clone();
         let mcp_service = StreamableHttpService::new(
             move || {
-                let context = mcp_state.project_context(mcp_state.config().clone());
+                let context = mcp_state
+                    .project_context(mcp_state.config().clone())
+                    .unwrap_or_else(|_| {
+                        ProjectContext::with_broadcast(
+                            mcp_state.config().clone(),
+                            mcp_state.broadcast().clone(),
+                        )
+                    });
                 Ok(EngineToolBox::new(context))
             },
             Arc::new(LocalSessionManager::default()),
@@ -94,6 +101,7 @@ impl Server {
             .merge(ActorRouter.routes())
             .merge(TicketRouter.routes())
             .merge(BrainRouter.routes())
+            .merge(BookmarkRouter.routes())
             .with_state(state)
     }
 }

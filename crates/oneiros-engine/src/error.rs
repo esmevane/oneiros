@@ -10,6 +10,8 @@ pub enum Error {
     #[error(transparent)]
     Actor(#[from] ActorError),
     #[error(transparent)]
+    Bookmark(#[from] BookmarkError),
+    #[error(transparent)]
     Brain(#[from] BrainError),
     #[error(transparent)]
     Cognition(#[from] CognitionError),

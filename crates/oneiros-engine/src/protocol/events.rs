@@ -34,6 +34,7 @@ pub enum Events {
     Actor(ActorEvents),
     Brain(BrainEvents),
     Ticket(TicketEvents),
+    Bookmark(BookmarkEvents),
     Ephemeral(EphemeralEvents),
     Unknown(serde_json::Value),
 }
@@ -125,6 +126,12 @@ impl Events {
             },
             Events::Ticket(e) => match e {
                 TicketEvents::TicketIssued(_) => "ticket-issued",
+            },
+            Events::Bookmark(e) => match e {
+                BookmarkEvents::BookmarkCreated(_) => "bookmark-created",
+                BookmarkEvents::BookmarkForked(_) => "bookmark-forked",
+                BookmarkEvents::BookmarkSwitched(_) => "bookmark-switched",
+                BookmarkEvents::BookmarkMerged(_) => "bookmark-merged",
             },
             Events::Ephemeral(e) => match e {
                 EphemeralEvents::BlobStored(_) => "blob-stored",
@@ -235,6 +242,12 @@ impl From<BrainEvents> for Events {
 impl From<TicketEvents> for Events {
     fn from(e: TicketEvents) -> Self {
         Events::Ticket(e)
+    }
+}
+
+impl From<BookmarkEvents> for Events {
+    fn from(e: BookmarkEvents) -> Self {
+        Events::Bookmark(e)
     }
 }
 
