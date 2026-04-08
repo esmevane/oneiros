@@ -1,18 +1,17 @@
-//! Versioning workflow — branch, switch, and merge the working canon.
+//! Versioning workflow — bookmark, switch, and merge the working canon.
 //!
-//! The working canon is the versioned state of a brain. Branching creates
-//! a divergent timeline. Switching changes which timeline queries read from.
-//! Merging combines two timelines into one.
+//! Bookmarks name timelines within a brain's canon. Creating a bookmark
+//! forks the current state. Switching changes which timeline queries read
+//! from. Merging combines two timelines into one.
 //!
 //! This test describes the destination: a brain where the read path is
-//! canon-aware. It will fail until the query layer reads from the canon
-//! instead of (or in addition to) SQLite.
+//! bookmark-aware. It will fail until the query layer reads from the
+//! active bookmark's canon instead of (or in addition to) SQLite.
 
 use crate::tests::harness::TestApp;
 use crate::*;
 
 #[tokio::test]
-#[ignore]
 async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
@@ -47,7 +46,7 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Branch ─────────────────────────────────────────────────
 
-    app.command("canon branch experiment").await?;
+    app.command("bookmark create experiment").await?;
 
     // Add a cognition on the experiment branch
     app.command("cognition add thinker.process observation 'thought on experiment'")
@@ -71,7 +70,7 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Switch back to main ────────────────────────────────────
 
-    app.command("canon switch main").await?;
+    app.command("bookmark switch main").await?;
 
     // Main should still have only the original cognition
     match client
@@ -91,7 +90,7 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Switch back to experiment to confirm ───────────────────
 
-    app.command("canon switch experiment").await?;
+    app.command("bookmark switch experiment").await?;
 
     match client
         .cognition()
@@ -112,8 +111,8 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Merge experiment into main ─────────────────────────────
 
-    app.command("canon switch main").await?;
-    app.command("canon merge experiment").await?;
+    app.command("bookmark switch main").await?;
+    app.command("bookmark merge experiment").await?;
 
     // Main should now have everything from both branches
     match client

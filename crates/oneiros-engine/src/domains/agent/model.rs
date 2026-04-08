@@ -47,6 +47,14 @@ impl Agents {
         self.0.remove(&agent_id.to_string())
     }
 
+    pub fn find_by_name(&self, name: &AgentName) -> Option<&Agent> {
+        self.0.values().find(|a| a.name == *name)
+    }
+
+    pub fn values(&self) -> impl Iterator<Item = &Agent> {
+        self.0.values()
+    }
+
     pub fn remove_by_name(&mut self, name: &AgentName) {
         self.0.retain(|_, a| a.name != *name);
     }

@@ -61,10 +61,14 @@ impl ServerState {
         &self.broadcast
     }
 
-    /// Build a project context with shared broadcast and canon.
-    pub fn project_context(&self, config: Config) -> ProjectContext {
-        let canon = self.canons.brain(&config.brain);
-        ProjectContext::with_canon(config, self.broadcast.clone(), canon)
+    /// Build a project context with shared broadcast, canon, and pipeline.
+    pub fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
+        let entry = self.canons.brain_entry(&config.brain)?;
+        Ok(ProjectContext::with_entry(
+            config,
+            self.broadcast.clone(),
+            entry,
+        ))
     }
 
     /// Build a system context with shared canon.
@@ -127,6 +131,8 @@ impl FromRequestParts<ServerState> for ProjectContext {
         let mut config = state.config.clone();
         config.brain = ticket.brain_name;
 
-        Ok(state.project_context(config))
+        state
+            .project_context(config)
+            .map_err(|_| AuthError::InvalidToken)
     }
 }

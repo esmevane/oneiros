@@ -67,6 +67,10 @@ pub enum Command {
     #[command(subcommand)]
     Ticket(TicketCommands),
 
+    // Bookmark — canon navigation
+    #[command(subcommand)]
+    Bookmark(BookmarkCommands),
+
     // Service management
     #[command(subcommand)]
     Service(ServiceCommands),
@@ -174,6 +178,11 @@ impl Command {
             Command::Seed(seed) => seed.execute(&config.project()).await?,
             Command::Mcp(mcp) => mcp.execute(config)?,
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
+
+            // Bookmark — canon navigation (routes through HTTP)
+            Command::Bookmark(bookmark) => {
+                bookmark.execute(&config.system(), &config.brain).await?
+            }
 
             // System-scoped domains
             Command::Tenant(tenant) => tenant.execute(&config.system()).await?,

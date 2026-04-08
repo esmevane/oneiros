@@ -38,6 +38,7 @@ pub enum Responses {
     Actor(ActorResponse),
     Brain(BrainResponse),
     Ticket(TicketResponse),
+    Bookmark(BookmarkResponse),
     Service(ServiceResponse),
     McpConfig(McpConfigResponse),
     Setup(SetupResponse),
@@ -175,6 +176,11 @@ impl From<SystemResponse> for Responses {
 impl From<McpConfigResponse> for Responses {
     fn from(r: McpConfigResponse) -> Self {
         Responses::McpConfig(r)
+    }
+}
+impl From<BookmarkResponse> for Responses {
+    fn from(r: BookmarkResponse) -> Self {
+        Responses::Bookmark(r)
     }
 }
 impl From<SetupResponse> for Responses {

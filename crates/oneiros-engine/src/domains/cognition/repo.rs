@@ -55,7 +55,6 @@ impl<'a> CognitionRepo<'a> {
     ) -> Result<Listed<Cognition>, EventError> {
         let db = self.context.db()?;
 
-        // Build WHERE clause from filters.
         let mut conditions = Vec::new();
         let mut bind_values: Vec<String> = Vec::new();
 
@@ -74,7 +73,6 @@ impl<'a> CognitionRepo<'a> {
             format!(" WHERE {}", conditions.join(" AND "))
         };
 
-        // Count total matching rows.
         let count_sql = format!("SELECT COUNT(*) FROM cognitions{where_clause}");
         let total = {
             let mut stmt = db.prepare(&count_sql)?;
@@ -85,7 +83,6 @@ impl<'a> CognitionRepo<'a> {
             stmt.query_row(&*params, |row| row.get::<_, usize>(0))?
         };
 
-        // Fetch the bounded window.
         let select_sql = format!(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions{where_clause}

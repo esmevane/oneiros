@@ -94,6 +94,29 @@ impl Canon {
         Ok(Self { doc })
     }
 
+    /// Fork this canon into an independent copy.
+    ///
+    /// The forked doc shares history up to this point but
+    /// diverges from here. This is the branching primitive.
+    pub fn fork(&self) -> Self {
+        Self {
+            doc: Arc::new(self.doc.fork()),
+        }
+    }
+
+    /// Merge another canon's changes into this one.
+    ///
+    /// Exports all updates from the source and imports them
+    /// into this doc. CRDT resolution handles conflicts.
+    pub fn merge_from(&self, source: &Canon) -> Result<(), EventError> {
+        let updates = source
+            .doc
+            .export(ExportMode::all_updates())
+            .map_err(|e| EventError::Import(e.to_string()))?;
+        self.doc.import(&updates)?;
+        Ok(())
+    }
+
     /// Clear the document for replay.
     pub fn reset(&self) -> Result<(), EventError> {
         // Create a new empty doc isn't possible with Arc sharing,
@@ -267,8 +290,8 @@ mod tests {
 
         // Replay: reduce each event, reconcile after each
         for event in &events {
-            pipeline.apply(event);
-            canon.reconcile(&pipeline.state()).unwrap();
+            pipeline.apply(event).unwrap();
+            canon.reconcile(&pipeline.state().unwrap()).unwrap();
         }
 
         // Verify the canon doc
@@ -282,8 +305,8 @@ mod tests {
         assert_eq!(levels.len(), 1);
 
         // Now simulate reset + replay (what Projections::replay does)
-        pipeline.reset();
-        canon.reconcile(&pipeline.state()).unwrap();
+        pipeline.reset().unwrap();
+        canon.reconcile(&pipeline.state().unwrap()).unwrap();
 
         // After reset, doc should be empty
         let agents = Agents::from_doc(&canon.doc).unwrap();
@@ -291,8 +314,8 @@ mod tests {
 
         // Replay again
         for event in &events {
-            pipeline.apply(event);
-            canon.reconcile(&pipeline.state()).unwrap();
+            pipeline.apply(event).unwrap();
+            canon.reconcile(&pipeline.state().unwrap()).unwrap();
         }
 
         // Should have the same data as before
