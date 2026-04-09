@@ -1,5 +1,6 @@
 mod bootstrap;
 mod continuity;
+mod distribution;
 mod errors;
 mod mcp;
 mod portability;
