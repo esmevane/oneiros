@@ -28,6 +28,50 @@ fn extract_sse_json(body: &str) -> serde_json::Value {
     serde_json::from_str(json_str).expect("data: line should be valid JSON")
 }
 
+/// Helper: perform the MCP initialize handshake with a Bearer token, returning the session ID.
+async fn mcp_initialize_with_token(
+    http: &reqwest::Client,
+    url: &str,
+    token: &Token,
+) -> Option<String> {
+    let init_resp = mcp_post(http, url)
+        .header("Authorization", format!("Bearer {token}"))
+        .json(&serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": { "name": "test-auth", "version": "0.1.0" }
+            }
+        }))
+        .send()
+        .await
+        .unwrap();
+
+    assert!(
+        init_resp.status().is_success(),
+        "MCP initialize should succeed"
+    );
+
+    let session_id = init_resp
+        .headers()
+        .get("mcp-session-id")
+        .map(|v| v.to_str().unwrap().to_string());
+
+    let mut notif = mcp_post(http, url).json(&serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+    }));
+    if let Some(ref sid) = session_id {
+        notif = notif.header("mcp-session-id", sid);
+    }
+    notif.send().await.unwrap();
+
+    session_id
+}
+
 /// Helper: perform the MCP initialize handshake, returning the session ID.
 async fn mcp_initialize(http: &reqwest::Client, url: &str) -> Option<String> {
     let init_resp = mcp_post(http, url)
@@ -171,6 +215,92 @@ async fn mcp_session() -> Result<(), Box<dyn core::error::Error>> {
     let cmd_result = app.command("persona show mcp-persona").await?;
     let cmd_json = serde_json::to_value(cmd_result.response())?;
     assert_eq!(cmd_json["data"]["name"], "mcp-persona");
+
+    Ok(())
+}
+
+/// Helper: call an MCP tool and return the result JSON.
+async fn mcp_call_tool(
+    http: &reqwest::Client,
+    url: &str,
+    session_id: &Option<String>,
+    id: u64,
+    tool_name: &str,
+    arguments: serde_json::Value,
+) -> serde_json::Value {
+    let mut req = mcp_post(http, url).json(&serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "method": "tools/call",
+        "params": {
+            "name": tool_name,
+            "arguments": arguments
+        }
+    }));
+    if let Some(sid) = session_id {
+        req = req.header("mcp-session-id", sid);
+    }
+    let resp = req.send().await.unwrap();
+    assert!(resp.status().is_success());
+    let body = resp.text().await.unwrap();
+    extract_sse_json(&body)
+}
+
+#[tokio::test]
+async fn mcp_session_auth() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    let token = app.token().expect("project should have a token");
+    let http = reqwest::Client::new();
+    let url = app.mcp_url();
+
+    // Initialize with Bearer token
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
+
+    // Create a persona through the authenticated session
+    let result = mcp_call_tool(
+        &http,
+        &url,
+        &session_id,
+        3,
+        "set_persona",
+        serde_json::json!({
+            "name": "auth-persona",
+            "description": "Created via authenticated MCP",
+            "prompt": "You were born from a token"
+        }),
+    )
+    .await;
+
+    // Should succeed (not isError)
+    let is_error = result["result"]["isError"].as_bool().unwrap_or(false);
+    assert!(
+        !is_error,
+        "authenticated tool call should succeed, got: {result}"
+    );
+
+    // Data should be visible through the HTTP REST API (same brain)
+    match app
+        .client()
+        .persona()
+        .get(&PersonaName::new("auth-persona"))
+        .await?
+    {
+        PersonaResponse::PersonaDetails(p) => {
+            assert_eq!(
+                p.data.description.to_string(),
+                "Created via authenticated MCP"
+            );
+        }
+        other => panic!("expected PersonaDetails, got {other:?}"),
+    }
 
     Ok(())
 }
