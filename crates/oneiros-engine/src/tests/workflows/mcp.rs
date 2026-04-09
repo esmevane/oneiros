@@ -156,12 +156,12 @@ async fn mcp_session() -> Result<(), Box<dyn core::error::Error>> {
 
     // Spot-check across domains
     let tool_names: Vec<&str> = tools.iter().filter_map(|t| t["name"].as_str()).collect();
-    assert!(tool_names.contains(&"create_agent"));
-    assert!(tool_names.contains(&"dream"));
-    assert!(tool_names.contains(&"search"));
-    assert!(tool_names.contains(&"add_cognition"));
-    assert!(tool_names.contains(&"set_level"));
-    assert!(tool_names.contains(&"list_storage"));
+    assert!(tool_names.contains(&"create-agent"));
+    assert!(tool_names.contains(&"dream-agent"));
+    assert!(tool_names.contains(&"search-query"));
+    assert!(tool_names.contains(&"add-cognition"));
+    assert!(tool_names.contains(&"set-level"));
+    assert!(tool_names.contains(&"list-storage"));
 
     // Every tool should have a name and inputSchema
     for tool in tools {
@@ -184,7 +184,7 @@ async fn mcp_session() -> Result<(), Box<dyn core::error::Error>> {
         "id": 3,
         "method": "tools/call",
         "params": {
-            "name": "set_persona",
+            "name": "set-persona",
             "arguments": {
                 "name": "mcp-persona",
                 "description": "Created via MCP",
@@ -270,7 +270,7 @@ async fn mcp_session_auth() -> Result<(), Box<dyn core::error::Error>> {
         &url,
         &session_id,
         3,
-        "set_persona",
+        "set-persona",
         serde_json::json!({
             "name": "auth-persona",
             "description": "Created via authenticated MCP",
@@ -353,7 +353,7 @@ async fn mcp_error_paths() -> Result<(), Box<dyn core::error::Error>> {
         "id": 11,
         "method": "tools/call",
         "params": {
-            "name": "get_agent",
+            "name": "get-agent",
             "arguments": { "wrong_field": "not a name" }
         }
     }));
@@ -380,7 +380,7 @@ async fn mcp_error_paths() -> Result<(), Box<dyn core::error::Error>> {
         "id": 12,
         "method": "tools/call",
         "params": {
-            "name": "get_agent",
+            "name": "get-agent",
             "arguments": { "name": "ghost.nobody" }
         }
     }));

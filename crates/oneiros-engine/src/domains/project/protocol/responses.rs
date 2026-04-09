@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -59,7 +60,8 @@ pub struct InitResult {
     pub token: Token,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[kinded(kind = ProjectResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ProjectResponse {
     Initialized(InitResult),

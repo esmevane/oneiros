@@ -3,12 +3,8 @@ use crate::*;
 pub struct SensationTools;
 
 impl SensationTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         sensation_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        sensation_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,37 +20,28 @@ impl SensationTools {
 mod sensation_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "set_sensation",
-                description: "Define a quality of connection between thoughts",
-                input_schema: schema_for::<SetSensation>,
-            },
-            ToolDef {
-                name: "get_sensation",
-                description: "Look up an experience category",
-                input_schema: schema_for::<GetSensation>,
-            },
-            ToolDef {
-                name: "list_sensations",
-                description: "See all the ways experiences can feel",
-                input_schema: schema_for::<ListSensations>,
-            },
-            ToolDef {
-                name: "remove_sensation",
-                description: "Remove an experience category",
-                input_schema: schema_for::<RemoveSensation>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "set_sensation",
-            "get_sensation",
-            "list_sensations",
-            "remove_sensation",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<SetSensation>::new(
+                SensationRequestType::SetSensation,
+                "Define a quality of connection between thoughts",
+            )
+            .def(),
+            Tool::<GetSensation>::new(
+                SensationRequestType::GetSensation,
+                "Look up an experience category",
+            )
+            .def(),
+            Tool::<ListSensations>::new(
+                SensationRequestType::ListSensations,
+                "See all the ways experiences can feel",
+            )
+            .def(),
+            Tool::<RemoveSensation>::new(
+                SensationRequestType::RemoveSensation,
+                "Remove an experience category",
+            )
+            .def(),
         ]
     }
 
@@ -63,16 +50,23 @@ mod sensation_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "set_sensation" => SensationService::set(context, &serde_json::from_str(params)?).await,
-            "get_sensation" => SensationService::get(context, &serde_json::from_str(params)?).await,
-            "list_sensations" => {
+        let request_type: SensationRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            SensationRequestType::SetSensation => {
+                SensationService::set(context, &serde_json::from_str(params)?).await
+            }
+            SensationRequestType::GetSensation => {
+                SensationService::get(context, &serde_json::from_str(params)?).await
+            }
+            SensationRequestType::ListSensations => {
                 SensationService::list(context, &serde_json::from_str(params)?).await
             }
-            "remove_sensation" => {
+            SensationRequestType::RemoveSensation => {
                 SensationService::remove(context, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

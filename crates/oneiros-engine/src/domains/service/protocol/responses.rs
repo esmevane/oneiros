@@ -1,5 +1,6 @@
 use std::fmt;
 
+use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
 /// The name under which the service is registered with the OS service manager.
@@ -54,7 +55,8 @@ impl fmt::Display for ServiceReason {
 }
 
 /// All responses the service domain can produce.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[kinded(kind = ServiceResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ServiceResponse {
     ServiceInstalled(ServiceName),

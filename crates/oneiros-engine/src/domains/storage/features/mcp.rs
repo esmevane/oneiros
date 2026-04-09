@@ -3,12 +3,8 @@ use crate::*;
 pub struct StorageTools;
 
 impl StorageTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         storage_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        storage_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,28 +20,17 @@ impl StorageTools {
 mod storage_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "list_storage",
-                description: "Browse your archive",
-                input_schema: schema_for::<ListStorage>,
-            },
-            ToolDef {
-                name: "get_storage",
-                description: "Retrieve a stored artifact",
-                input_schema: schema_for::<GetStorage>,
-            },
-            ToolDef {
-                name: "remove_storage",
-                description: "Remove a stored artifact",
-                input_schema: schema_for::<RemoveStorage>,
-            },
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<ListStorage>::new(StorageRequestType::ListStorage, "Browse your archive").def(),
+            Tool::<GetStorage>::new(StorageRequestType::GetStorage, "Retrieve a stored artifact")
+                .def(),
+            Tool::<RemoveStorage>::new(
+                StorageRequestType::RemoveStorage,
+                "Remove a stored artifact",
+            )
+            .def(),
         ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &["list_storage", "get_storage", "remove_storage"]
     }
 
     pub async fn dispatch(
@@ -53,16 +38,24 @@ mod storage_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "list_storage" => {
+        let request_type: StorageRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            StorageRequestType::ListStorage => {
                 let request: ListStorage = serde_json::from_str(params).unwrap_or_default();
                 StorageService::list(context, &request).await
             }
-            "get_storage" => StorageService::show(context, &serde_json::from_str(params)?).await,
-            "remove_storage" => {
+            StorageRequestType::GetStorage => {
+                StorageService::show(context, &serde_json::from_str(params)?).await
+            }
+            StorageRequestType::RemoveStorage => {
                 StorageService::remove(context, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
+            StorageRequestType::UploadStorage => {
+                return Err(ToolError::UnknownTool(tool_name.to_string()));
+            }
         }
         .map_err(Error::from)?;
 

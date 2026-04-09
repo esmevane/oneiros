@@ -3,12 +3,8 @@ use crate::*;
 pub struct ContinuityTools;
 
 impl ContinuityTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         continuity_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        continuity_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,73 +20,58 @@ impl ContinuityTools {
 mod continuity_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "wake",
-                description: "Wake an agent — restore identity and begin a session",
-                input_schema: schema_for::<WakeAgent>,
-            },
-            ToolDef {
-                name: "dream",
-                description: "Restore an agent's full identity and cognitive context",
-                input_schema: schema_for::<DreamAgent>,
-            },
-            ToolDef {
-                name: "introspect",
-                description: "Look inward before context compacts — consolidate what matters",
-                input_schema: schema_for::<IntrospectAgent>,
-            },
-            ToolDef {
-                name: "reflect",
-                description: "Pause on something significant",
-                input_schema: schema_for::<ReflectAgent>,
-            },
-            ToolDef {
-                name: "sense",
-                description: "Receive and interpret something from outside your cognitive loop",
-                input_schema: schema_for::<SenseContent>,
-            },
-            ToolDef {
-                name: "sleep",
-                description: "End a session — capture continuity before resting",
-                input_schema: schema_for::<SleepAgent>,
-            },
-            ToolDef {
-                name: "guidebook",
-                description: "Read the cognitive guidebook — learn how your tools work",
-                input_schema: schema_for::<GuidebookAgent>,
-            },
-            ToolDef {
-                name: "emerge",
-                description: "Bring a new agent into existence with full ceremony",
-                input_schema: schema_for::<EmergeAgent>,
-            },
-            ToolDef {
-                name: "recede",
-                description: "Retire an agent — honor their contributions and let them go",
-                input_schema: schema_for::<RecedeAgent>,
-            },
-            ToolDef {
-                name: "status",
-                description: "See an agent's full cognitive dashboard",
-                input_schema: schema_for::<StatusAgent>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "wake",
-            "dream",
-            "introspect",
-            "reflect",
-            "sense",
-            "sleep",
-            "guidebook",
-            "emerge",
-            "recede",
-            "status",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<WakeAgent>::new(
+                ContinuityRequestType::WakeAgent,
+                "Wake an agent — restore identity and begin a session",
+            )
+            .def(),
+            Tool::<DreamAgent>::new(
+                ContinuityRequestType::DreamAgent,
+                "Restore an agent's full identity and cognitive context",
+            )
+            .def(),
+            Tool::<IntrospectAgent>::new(
+                ContinuityRequestType::IntrospectAgent,
+                "Look inward before context compacts — consolidate what matters",
+            )
+            .def(),
+            Tool::<ReflectAgent>::new(
+                ContinuityRequestType::ReflectAgent,
+                "Pause on something significant",
+            )
+            .def(),
+            Tool::<SenseContent>::new(
+                ContinuityRequestType::SenseContent,
+                "Receive and interpret something from outside your cognitive loop",
+            )
+            .def(),
+            Tool::<SleepAgent>::new(
+                ContinuityRequestType::SleepAgent,
+                "End a session — capture continuity before resting",
+            )
+            .def(),
+            Tool::<GuidebookAgent>::new(
+                ContinuityRequestType::GuidebookAgent,
+                "Read the cognitive guidebook — learn how your tools work",
+            )
+            .def(),
+            Tool::<EmergeAgent>::new(
+                ContinuityRequestType::EmergeAgent,
+                "Bring a new agent into existence with full ceremony",
+            )
+            .def(),
+            Tool::<RecedeAgent>::new(
+                ContinuityRequestType::RecedeAgent,
+                "Retire an agent — honor their contributions and let them go",
+            )
+            .def(),
+            Tool::<StatusAgent>::new(
+                ContinuityRequestType::StatusAgent,
+                "See an agent's full cognitive dashboard",
+            )
+            .def(),
         ]
     }
 
@@ -106,44 +87,49 @@ mod continuity_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
+        let request_type: ContinuityRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
         let overrides = parse_overrides(params);
 
-        let value = match tool_name {
-            "wake" => {
+        let value = match request_type {
+            ContinuityRequestType::WakeAgent => {
                 ContinuityService::wake(context, &serde_json::from_str(params)?, &overrides).await
             }
-            "dream" => {
+            ContinuityRequestType::DreamAgent => {
                 ContinuityService::dream(context, &serde_json::from_str(params)?, &overrides).await
             }
-            "introspect" => {
+            ContinuityRequestType::IntrospectAgent => {
                 ContinuityService::introspect(context, &serde_json::from_str(params)?, &overrides)
                     .await
             }
-            "reflect" => {
+            ContinuityRequestType::ReflectAgent => {
                 ContinuityService::reflect(context, &serde_json::from_str(params)?, &overrides)
                     .await
             }
-            "sense" => {
+            ContinuityRequestType::SenseContent => {
                 ContinuityService::sense(context, &serde_json::from_str(params)?, &overrides).await
             }
-            "sleep" => {
+            ContinuityRequestType::SleepAgent => {
                 ContinuityService::sleep(context, &serde_json::from_str(params)?, &overrides).await
             }
-            "guidebook" => Ok(ContinuityService::guidebook(
+            ContinuityRequestType::GuidebookAgent => Ok(ContinuityService::guidebook(
                 context,
                 &serde_json::from_str(params)?,
                 &overrides,
             )
             .map_err(Error::from)?),
-            "emerge" => {
+            ContinuityRequestType::EmergeAgent => {
                 ContinuityService::emerge(context, &serde_json::from_str(params)?, &overrides).await
             }
-            "recede" => ContinuityService::recede(context, &serde_json::from_str(params)?).await,
-            "status" => {
+            ContinuityRequestType::RecedeAgent => {
+                ContinuityService::recede(context, &serde_json::from_str(params)?).await
+            }
+            ContinuityRequestType::StatusAgent => {
                 let request: StatusAgent = serde_json::from_str(params).unwrap_or_default();
                 Ok(ContinuityService::status(context, &request).map_err(Error::from)?)
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

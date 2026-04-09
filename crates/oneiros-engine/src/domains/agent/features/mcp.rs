@@ -3,12 +3,8 @@ use crate::*;
 pub struct AgentTools;
 
 impl AgentTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         agent_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        agent_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,43 +20,22 @@ impl AgentTools {
 mod agent_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "create_agent",
-                description: "Bring a new agent into the brain",
-                input_schema: schema_for::<CreateAgent>,
-            },
-            ToolDef {
-                name: "get_agent",
-                description: "Learn about a specific agent",
-                input_schema: schema_for::<GetAgent>,
-            },
-            ToolDef {
-                name: "list_agents",
-                description: "See who's here",
-                input_schema: schema_for::<ListAgents>,
-            },
-            ToolDef {
-                name: "update_agent",
-                description: "Reshape an agent's identity",
-                input_schema: schema_for::<UpdateAgent>,
-            },
-            ToolDef {
-                name: "remove_agent",
-                description: "Remove an agent from the brain",
-                input_schema: schema_for::<RemoveAgent>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "create_agent",
-            "get_agent",
-            "list_agents",
-            "update_agent",
-            "remove_agent",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<CreateAgent>::new(
+                AgentRequestType::CreateAgent,
+                "Bring a new agent into the brain",
+            )
+            .def(),
+            Tool::<GetAgent>::new(AgentRequestType::GetAgent, "Learn about a specific agent").def(),
+            Tool::<ListAgents>::new(AgentRequestType::ListAgents, "See who's here").def(),
+            Tool::<UpdateAgent>::new(AgentRequestType::UpdateAgent, "Reshape an agent's identity")
+                .def(),
+            Tool::<RemoveAgent>::new(
+                AgentRequestType::RemoveAgent,
+                "Remove an agent from the brain",
+            )
+            .def(),
         ]
     }
 
@@ -69,16 +44,27 @@ mod agent_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "create_agent" => AgentService::create(context, &serde_json::from_str(params)?).await,
-            "get_agent" => AgentService::get(context, &serde_json::from_str(params)?).await,
-            "list_agents" => {
+        let request_type: AgentRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            AgentRequestType::CreateAgent => {
+                AgentService::create(context, &serde_json::from_str(params)?).await
+            }
+            AgentRequestType::GetAgent => {
+                AgentService::get(context, &serde_json::from_str(params)?).await
+            }
+            AgentRequestType::ListAgents => {
                 let request: ListAgents = serde_json::from_str(params).unwrap_or_default();
                 AgentService::list(context, &request).await
             }
-            "update_agent" => AgentService::update(context, &serde_json::from_str(params)?).await,
-            "remove_agent" => AgentService::remove(context, &serde_json::from_str(params)?).await,
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
+            AgentRequestType::UpdateAgent => {
+                AgentService::update(context, &serde_json::from_str(params)?).await
+            }
+            AgentRequestType::RemoveAgent => {
+                AgentService::remove(context, &serde_json::from_str(params)?).await
+            }
         }
         .map_err(Error::from)?;
 

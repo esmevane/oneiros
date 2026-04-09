@@ -3,12 +3,8 @@ use crate::*;
 pub struct PersonaTools;
 
 impl PersonaTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         persona_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        persona_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,37 +20,19 @@ impl PersonaTools {
 mod persona_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "set_persona",
-                description: "Define a category of agent",
-                input_schema: schema_for::<SetPersona>,
-            },
-            ToolDef {
-                name: "get_persona",
-                description: "Look up an agent category",
-                input_schema: schema_for::<GetPersona>,
-            },
-            ToolDef {
-                name: "list_personas",
-                description: "See all agent categories",
-                input_schema: schema_for::<ListPersonas>,
-            },
-            ToolDef {
-                name: "remove_persona",
-                description: "Remove an agent category",
-                input_schema: schema_for::<RemovePersona>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "set_persona",
-            "get_persona",
-            "list_personas",
-            "remove_persona",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<SetPersona>::new(PersonaRequestType::SetPersona, "Define a category of agent")
+                .def(),
+            Tool::<GetPersona>::new(PersonaRequestType::GetPersona, "Look up an agent category")
+                .def(),
+            Tool::<ListPersonas>::new(PersonaRequestType::ListPersonas, "See all agent categories")
+                .def(),
+            Tool::<RemovePersona>::new(
+                PersonaRequestType::RemovePersona,
+                "Remove an agent category",
+            )
+            .def(),
         ]
     }
 
@@ -63,14 +41,23 @@ mod persona_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "set_persona" => PersonaService::set(context, &serde_json::from_str(params)?).await,
-            "get_persona" => PersonaService::get(context, &serde_json::from_str(params)?).await,
-            "list_personas" => PersonaService::list(context, &serde_json::from_str(params)?).await,
-            "remove_persona" => {
+        let request_type: PersonaRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            PersonaRequestType::SetPersona => {
+                PersonaService::set(context, &serde_json::from_str(params)?).await
+            }
+            PersonaRequestType::GetPersona => {
+                PersonaService::get(context, &serde_json::from_str(params)?).await
+            }
+            PersonaRequestType::ListPersonas => {
+                PersonaService::list(context, &serde_json::from_str(params)?).await
+            }
+            PersonaRequestType::RemovePersona => {
                 PersonaService::remove(context, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

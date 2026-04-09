@@ -13,10 +13,6 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
         Responses::Continuity(ContinuityResponse::Emerged(ctx)) => {
             assert_eq!(ctx.agent.name, AgentName::new("newborn.process"));
         }
-        // Legacy: inline JSON (will be removed when legacy is retired)
-        Responses::Json(v) => {
-            assert_eq!(v.get("type").and_then(|t| t.as_str()), Some("emerged"));
-        }
         other => panic!("expected Continuity(Emerged) or Json(emerged), got {other:#?}"),
     }
 
@@ -83,10 +79,6 @@ pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
         // Engine: typed continuity response
         Responses::Continuity(ContinuityResponse::Receded(name)) => {
             assert_eq!(*name, AgentName::new("retiring.process"));
-        }
-        // Legacy: inline JSON (will be removed when legacy is retired)
-        Responses::Json(v) => {
-            assert_eq!(v.get("type").and_then(|t| t.as_str()), Some("receded"));
         }
         other => panic!("expected Continuity(Receded) or Json(receded), got {other:#?}"),
     }

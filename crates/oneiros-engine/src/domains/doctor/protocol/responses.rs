@@ -1,3 +1,4 @@
+use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
@@ -37,7 +38,8 @@ impl core::fmt::Display for LogEventCount {
 }
 
 /// A single diagnostic check item emitted during a doctor checkup.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[kinded(kind = DoctorCheckType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorCheck {
     Initialized,
@@ -58,7 +60,8 @@ pub enum DoctorCheck {
 }
 
 /// All responses the doctor domain can produce.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[kinded(kind = DoctorResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorResponse {
     CheckupStatus(Vec<DoctorCheck>),

@@ -3,12 +3,8 @@ use crate::*;
 pub struct MemoryTools;
 
 impl MemoryTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         memory_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        memory_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,28 +20,17 @@ impl MemoryTools {
 mod memory_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "add_memory",
-                description: "Consolidate something you've learned",
-                input_schema: schema_for::<AddMemory>,
-            },
-            ToolDef {
-                name: "get_memory",
-                description: "Revisit a specific memory",
-                input_schema: schema_for::<GetMemory>,
-            },
-            ToolDef {
-                name: "list_memories",
-                description: "Review what you know",
-                input_schema: schema_for::<ListMemories>,
-            },
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<AddMemory>::new(
+                MemoryRequestType::AddMemory,
+                "Consolidate something you've learned",
+            )
+            .def(),
+            Tool::<GetMemory>::new(MemoryRequestType::GetMemory, "Revisit a specific memory").def(),
+            Tool::<ListMemories>::new(MemoryRequestType::ListMemories, "Review what you know")
+                .def(),
         ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &["add_memory", "get_memory", "list_memories"]
     }
 
     pub async fn dispatch(
@@ -53,11 +38,20 @@ mod memory_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "add_memory" => MemoryService::add(context, &serde_json::from_str(params)?).await,
-            "get_memory" => MemoryService::get(context, &serde_json::from_str(params)?).await,
-            "list_memories" => MemoryService::list(context, &serde_json::from_str(params)?).await,
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
+        let request_type: MemoryRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            MemoryRequestType::AddMemory => {
+                MemoryService::add(context, &serde_json::from_str(params)?).await
+            }
+            MemoryRequestType::GetMemory => {
+                MemoryService::get(context, &serde_json::from_str(params)?).await
+            }
+            MemoryRequestType::ListMemories => {
+                MemoryService::list(context, &serde_json::from_str(params)?).await
+            }
         }
         .map_err(Error::from)?;
 

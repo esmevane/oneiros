@@ -3,12 +3,8 @@ use crate::*;
 pub struct ActorTools;
 
 impl ActorTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         actor_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        actor_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,28 +20,21 @@ impl ActorTools {
 mod actor_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "create_actor",
-                description: "Create a new actor in the system",
-                input_schema: schema_for::<CreateActor>,
-            },
-            ToolDef {
-                name: "get_actor",
-                description: "Look up a specific actor by ID",
-                input_schema: schema_for::<GetActor>,
-            },
-            ToolDef {
-                name: "list_actors",
-                description: "List all actors in the system",
-                input_schema: schema_for::<ListActors>,
-            },
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<CreateActor>::new(
+                ActorRequestType::CreateActor,
+                "Create a new actor in the system",
+            )
+            .def(),
+            Tool::<GetActor>::new(ActorRequestType::GetActor, "Look up a specific actor by ID")
+                .def(),
+            Tool::<ListActors>::new(
+                ActorRequestType::ListActors,
+                "List all actors in the system",
+            )
+            .def(),
         ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &["create_actor", "get_actor", "list_actors"]
     }
 
     pub async fn dispatch(
@@ -53,13 +42,22 @@ mod actor_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
+        let request_type: ActorRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
         let system = SystemContext::new(context.config.clone());
 
-        let value = match tool_name {
-            "create_actor" => ActorService::create(&system, &serde_json::from_str(params)?).await,
-            "get_actor" => ActorService::get(&system, &serde_json::from_str(params)?).await,
-            "list_actors" => ActorService::list(&system, &serde_json::from_str(params)?).await,
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
+        let value = match request_type {
+            ActorRequestType::CreateActor => {
+                ActorService::create(&system, &serde_json::from_str(params)?).await
+            }
+            ActorRequestType::GetActor => {
+                ActorService::get(&system, &serde_json::from_str(params)?).await
+            }
+            ActorRequestType::ListActors => {
+                ActorService::list(&system, &serde_json::from_str(params)?).await
+            }
         }
         .map_err(Error::from)?;
 
