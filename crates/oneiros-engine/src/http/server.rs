@@ -58,22 +58,13 @@ impl Server {
             .route("/dashboard/config", routing::get(dashboard_config));
 
         // MCP streamable HTTP transport — each session gets its own EngineToolBox
-        // that shares the server's broadcast channel for event observability.
+        // backed by the shared ServerState for full access to canons, config,
+        // and per-request context resolution.
         let state = ServerState::new(self.config.clone());
         state.hydrate();
         let mcp_state = state.clone();
         let mcp_service = StreamableHttpService::new(
-            move || {
-                let context = mcp_state
-                    .project_context(mcp_state.config().clone())
-                    .unwrap_or_else(|_| {
-                        ProjectContext::with_broadcast(
-                            mcp_state.config().clone(),
-                            mcp_state.broadcast().clone(),
-                        )
-                    });
-                Ok(EngineToolBox::new(context))
-            },
+            move || Ok(EngineToolBox::new(mcp_state.clone())),
             Arc::new(LocalSessionManager::default()),
             Default::default(),
         );
