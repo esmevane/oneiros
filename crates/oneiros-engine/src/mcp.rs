@@ -39,8 +39,8 @@ pub enum ToolError {
 }
 
 /// Collect all tool definitions from every domain's catalog.
-fn all_tools() -> Vec<&'static ToolDef> {
-    let sources: &[&[ToolDef]] = &[
+fn all_tools() -> Vec<ToolDef> {
+    [
         ActorTools.defs(),
         TenantTools.defs(),
         BrainTools.defs(),
@@ -61,9 +61,10 @@ fn all_tools() -> Vec<&'static ToolDef> {
         SearchTools.defs(),
         StorageTools.defs(),
         PressureTools.defs(),
-    ];
-
-    sources.iter().flat_map(|s| s.iter()).collect()
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 /// Domain dispatch table — routes tool names to domain dispatchers.
@@ -77,7 +78,7 @@ async fn dispatch(
     params: &str,
 ) -> Result<serde_json::Value, ToolError> {
     // Bookmark tools — need ServerState for CanonIndex
-    if BookmarkTools.names().contains(&tool_name) {
+    if tool_name.parse::<BookmarkRequestType>().is_ok() {
         return BookmarkTools.dispatch(state, tool_name, params).await;
     }
 
@@ -87,62 +88,62 @@ async fn dispatch(
         .map_err(|e| ToolError::Domain(e.to_string()))?;
 
     // System domains
-    if ActorTools.names().contains(&tool_name) {
+    if tool_name.parse::<ActorRequestType>().is_ok() {
         return ActorTools.dispatch(&context, tool_name, params).await;
     }
-    if TenantTools.names().contains(&tool_name) {
+    if tool_name.parse::<TenantRequestType>().is_ok() {
         return TenantTools.dispatch(&context, tool_name, params).await;
     }
-    if BrainTools.names().contains(&tool_name) {
+    if tool_name.parse::<BrainRequestType>().is_ok() {
         return BrainTools.dispatch(&context, tool_name, params).await;
     }
-    if TicketTools.names().contains(&tool_name) {
+    if tool_name.parse::<TicketRequestType>().is_ok() {
         return TicketTools.dispatch(&context, tool_name, params).await;
     }
     // Project domains
-    if LevelTools.names().contains(&tool_name) {
+    if tool_name.parse::<LevelRequestType>().is_ok() {
         return LevelTools.dispatch(&context, tool_name, params).await;
     }
-    if TextureTools.names().contains(&tool_name) {
+    if tool_name.parse::<TextureRequestType>().is_ok() {
         return TextureTools.dispatch(&context, tool_name, params).await;
     }
-    if SensationTools.names().contains(&tool_name) {
+    if tool_name.parse::<SensationRequestType>().is_ok() {
         return SensationTools.dispatch(&context, tool_name, params).await;
     }
-    if NatureTools.names().contains(&tool_name) {
+    if tool_name.parse::<NatureRequestType>().is_ok() {
         return NatureTools.dispatch(&context, tool_name, params).await;
     }
-    if PersonaTools.names().contains(&tool_name) {
+    if tool_name.parse::<PersonaRequestType>().is_ok() {
         return PersonaTools.dispatch(&context, tool_name, params).await;
     }
-    if UrgeTools.names().contains(&tool_name) {
+    if tool_name.parse::<UrgeRequestType>().is_ok() {
         return UrgeTools.dispatch(&context, tool_name, params).await;
     }
-    if AgentTools.names().contains(&tool_name) {
+    if tool_name.parse::<AgentRequestType>().is_ok() {
         return AgentTools.dispatch(&context, tool_name, params).await;
     }
-    if CognitionTools.names().contains(&tool_name) {
+    if tool_name.parse::<CognitionRequestType>().is_ok() {
         return CognitionTools.dispatch(&context, tool_name, params).await;
     }
-    if MemoryTools.names().contains(&tool_name) {
+    if tool_name.parse::<MemoryRequestType>().is_ok() {
         return MemoryTools.dispatch(&context, tool_name, params).await;
     }
-    if ExperienceTools.names().contains(&tool_name) {
+    if tool_name.parse::<ExperienceRequestType>().is_ok() {
         return ExperienceTools.dispatch(&context, tool_name, params).await;
     }
-    if ConnectionTools.names().contains(&tool_name) {
+    if tool_name.parse::<ConnectionRequestType>().is_ok() {
         return ConnectionTools.dispatch(&context, tool_name, params).await;
     }
-    if ContinuityTools.names().contains(&tool_name) {
+    if tool_name.parse::<ContinuityRequestType>().is_ok() {
         return ContinuityTools.dispatch(&context, tool_name, params).await;
     }
-    if SearchTools.names().contains(&tool_name) {
+    if tool_name.parse::<SearchRequestType>().is_ok() {
         return SearchTools.dispatch(&context, tool_name, params).await;
     }
-    if StorageTools.names().contains(&tool_name) {
+    if tool_name.parse::<StorageRequestType>().is_ok() {
         return StorageTools.dispatch(&context, tool_name, params).await;
     }
-    if PressureTools.names().contains(&tool_name) {
+    if tool_name.parse::<PressureRequestType>().is_ok() {
         return PressureTools.dispatch(&context, tool_name, params).await;
     }
 
@@ -240,10 +241,10 @@ impl ServerHandler for EngineToolBox {
             .into_iter()
             .map(|t| {
                 let mut tool = Tool::default();
-                tool.name = t.name.into();
-                tool.description = Some(t.description.into());
-                tool.input_schema = serde_json::from_value((t.input_schema)())
-                    .expect("schema should be a JSON object");
+                tool.name = t.name.to_string().into();
+                tool.description = Some(t.description.to_string().into());
+                tool.input_schema =
+                    serde_json::from_value(t.input_schema).expect("schema should be a JSON object");
                 tool
             })
             .collect();

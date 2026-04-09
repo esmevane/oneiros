@@ -590,18 +590,18 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
 
     assert!(!events.is_empty(), "SSE stream should have received events");
 
-    let event_types: Vec<&str> = events.iter().map(|e| e.data.event_type()).collect();
+    let event_types: Vec<String> = events.iter().map(|e| e.data.event_type()).collect();
 
     assert!(
-        event_types.contains(&"agent-created"),
+        event_types.iter().any(|t| t == "agent-created"),
         "stream should contain agent-created, got: {event_types:?}"
     );
     assert!(
-        event_types.contains(&"cognition-added"),
+        event_types.iter().any(|t| t == "cognition-added"),
         "stream should contain cognition-added, got: {event_types:?}"
     );
     assert!(
-        event_types.contains(&"memory-added"),
+        event_types.iter().any(|t| t == "memory-added"),
         "stream should contain memory-added, got: {event_types:?}"
     );
 

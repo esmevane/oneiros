@@ -32,100 +32,24 @@ pub enum Requests {
     Ticket(TicketRequest),
 }
 
-// ── From impls ───────────────────────────────────────────────────
-
-impl From<LevelRequest> for Requests {
-    fn from(r: LevelRequest) -> Self {
-        Requests::Level(r)
-    }
-}
-impl From<TextureRequest> for Requests {
-    fn from(r: TextureRequest) -> Self {
-        Requests::Texture(r)
-    }
-}
-impl From<SensationRequest> for Requests {
-    fn from(r: SensationRequest) -> Self {
-        Requests::Sensation(r)
-    }
-}
-impl From<NatureRequest> for Requests {
-    fn from(r: NatureRequest) -> Self {
-        Requests::Nature(r)
-    }
-}
-impl From<PersonaRequest> for Requests {
-    fn from(r: PersonaRequest) -> Self {
-        Requests::Persona(r)
-    }
-}
-impl From<UrgeRequest> for Requests {
-    fn from(r: UrgeRequest) -> Self {
-        Requests::Urge(r)
-    }
-}
-impl From<AgentRequest> for Requests {
-    fn from(r: AgentRequest) -> Self {
-        Requests::Agent(r)
-    }
-}
-impl From<CognitionRequest> for Requests {
-    fn from(r: CognitionRequest) -> Self {
-        Requests::Cognition(r)
-    }
-}
-impl From<MemoryRequest> for Requests {
-    fn from(r: MemoryRequest) -> Self {
-        Requests::Memory(r)
-    }
-}
-impl From<ExperienceRequest> for Requests {
-    fn from(r: ExperienceRequest) -> Self {
-        Requests::Experience(r)
-    }
-}
-impl From<ConnectionRequest> for Requests {
-    fn from(r: ConnectionRequest) -> Self {
-        Requests::Connection(r)
-    }
-}
-impl From<StorageRequest> for Requests {
-    fn from(r: StorageRequest) -> Self {
-        Requests::Storage(r)
-    }
-}
-impl From<ContinuityRequest> for Requests {
-    fn from(r: ContinuityRequest) -> Self {
-        Requests::Continuity(r)
-    }
-}
-impl From<PressureRequest> for Requests {
-    fn from(r: PressureRequest) -> Self {
-        Requests::Pressure(r)
-    }
-}
-impl From<SearchRequest> for Requests {
-    fn from(r: SearchRequest) -> Self {
-        Requests::Search(r)
-    }
-}
-impl From<TenantRequest> for Requests {
-    fn from(r: TenantRequest) -> Self {
-        Requests::Tenant(r)
-    }
-}
-impl From<ActorRequest> for Requests {
-    fn from(r: ActorRequest) -> Self {
-        Requests::Actor(r)
-    }
-}
-impl From<BrainRequest> for Requests {
-    fn from(r: BrainRequest) -> Self {
-        Requests::Brain(r)
-    }
-}
-impl From<TicketRequest> for Requests {
-    fn from(r: TicketRequest) -> Self {
-        Requests::Ticket(r)
-    }
-}
+collects_enum!(
+    Requests::Level => LevelRequest,
+    Requests::Texture => TextureRequest,
+    Requests::Sensation => SensationRequest,
+    Requests::Nature => NatureRequest,
+    Requests::Persona => PersonaRequest,
+    Requests::Urge => UrgeRequest,
+    Requests::Agent => AgentRequest,
+    Requests::Cognition => CognitionRequest,
+    Requests::Memory => MemoryRequest,
+    Requests::Experience => ExperienceRequest,
+    Requests::Connection => ConnectionRequest,
+    Requests::Storage => StorageRequest,
+    Requests::Continuity => ContinuityRequest,
+    Requests::Pressure => PressureRequest,
+    Requests::Search => SearchRequest,
+    Requests::Tenant => TenantRequest,
+    Requests::Actor => ActorRequest,
+    Requests::Brain => BrainRequest,
+    Requests::Ticket => TicketRequest,
+);

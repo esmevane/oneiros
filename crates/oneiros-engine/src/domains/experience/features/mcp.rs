@@ -3,12 +3,8 @@ use crate::*;
 pub struct ExperienceTools;
 
 impl ExperienceTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         experience_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        experience_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,43 +20,33 @@ impl ExperienceTools {
 mod experience_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "create_experience",
-                description: "Mark a meaningful moment",
-                input_schema: schema_for::<CreateExperience>,
-            },
-            ToolDef {
-                name: "get_experience",
-                description: "Revisit a specific experience",
-                input_schema: schema_for::<GetExperience>,
-            },
-            ToolDef {
-                name: "list_experiences",
-                description: "Survey threads of meaning",
-                input_schema: schema_for::<ListExperiences>,
-            },
-            ToolDef {
-                name: "update_experience_description",
-                description: "Refine an experience's description",
-                input_schema: schema_for::<UpdateExperienceDescription>,
-            },
-            ToolDef {
-                name: "update_experience_sensation",
-                description: "Change an experience's sensation",
-                input_schema: schema_for::<UpdateExperienceSensation>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "create_experience",
-            "get_experience",
-            "list_experiences",
-            "update_experience_description",
-            "update_experience_sensation",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<CreateExperience>::new(
+                ExperienceRequestType::CreateExperience,
+                "Mark a meaningful moment",
+            )
+            .def(),
+            Tool::<GetExperience>::new(
+                ExperienceRequestType::GetExperience,
+                "Revisit a specific experience",
+            )
+            .def(),
+            Tool::<ListExperiences>::new(
+                ExperienceRequestType::ListExperiences,
+                "Survey threads of meaning",
+            )
+            .def(),
+            Tool::<UpdateExperienceDescription>::new(
+                ExperienceRequestType::UpdateExperienceDescription,
+                "Refine an experience's description",
+            )
+            .def(),
+            Tool::<UpdateExperienceSensation>::new(
+                ExperienceRequestType::UpdateExperienceSensation,
+                "Change an experience's sensation",
+            )
+            .def(),
         ]
     }
 
@@ -69,23 +55,26 @@ mod experience_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "create_experience" => {
+        let request_type: ExperienceRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            ExperienceRequestType::CreateExperience => {
                 ExperienceService::create(context, &serde_json::from_str(params)?).await
             }
-            "get_experience" => {
+            ExperienceRequestType::GetExperience => {
                 ExperienceService::get(context, &serde_json::from_str(params)?).await
             }
-            "list_experiences" => {
+            ExperienceRequestType::ListExperiences => {
                 ExperienceService::list(context, &serde_json::from_str(params)?).await
             }
-            "update_experience_description" => {
+            ExperienceRequestType::UpdateExperienceDescription => {
                 ExperienceService::update_description(context, &serde_json::from_str(params)?).await
             }
-            "update_experience_sensation" => {
+            ExperienceRequestType::UpdateExperienceSensation => {
                 ExperienceService::update_sensation(context, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

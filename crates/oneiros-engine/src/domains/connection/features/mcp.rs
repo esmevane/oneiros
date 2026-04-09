@@ -3,12 +3,8 @@ use crate::*;
 pub struct ConnectionTools;
 
 impl ConnectionTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         connection_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        connection_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,37 +20,28 @@ impl ConnectionTools {
 mod connection_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "create_connection",
-                description: "Draw a line between two related things",
-                input_schema: schema_for::<CreateConnection>,
-            },
-            ToolDef {
-                name: "get_connection",
-                description: "Examine a specific connection",
-                input_schema: schema_for::<GetConnection>,
-            },
-            ToolDef {
-                name: "list_connections",
-                description: "See how things connect",
-                input_schema: schema_for::<ListConnections>,
-            },
-            ToolDef {
-                name: "remove_connection",
-                description: "Remove a connection",
-                input_schema: schema_for::<RemoveConnection>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "create_connection",
-            "get_connection",
-            "list_connections",
-            "remove_connection",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<CreateConnection>::new(
+                ConnectionRequestType::CreateConnection,
+                "Draw a line between two related things",
+            )
+            .def(),
+            Tool::<GetConnection>::new(
+                ConnectionRequestType::GetConnection,
+                "Examine a specific connection",
+            )
+            .def(),
+            Tool::<ListConnections>::new(
+                ConnectionRequestType::ListConnections,
+                "See how things connect",
+            )
+            .def(),
+            Tool::<RemoveConnection>::new(
+                ConnectionRequestType::RemoveConnection,
+                "Remove a connection",
+            )
+            .def(),
         ]
     }
 
@@ -63,20 +50,23 @@ mod connection_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "create_connection" => {
+        let request_type: ConnectionRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            ConnectionRequestType::CreateConnection => {
                 ConnectionService::create(context, &serde_json::from_str(params)?).await
             }
-            "get_connection" => {
+            ConnectionRequestType::GetConnection => {
                 ConnectionService::get(context, &serde_json::from_str(params)?).await
             }
-            "list_connections" => {
+            ConnectionRequestType::ListConnections => {
                 ConnectionService::list(context, &serde_json::from_str(params)?).await
             }
-            "remove_connection" => {
+            ConnectionRequestType::RemoveConnection => {
                 ConnectionService::remove(context, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

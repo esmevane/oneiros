@@ -1,11 +1,44 @@
-/// A tool definition — name, description, and JSON schema for input parameters.
+use core::fmt;
+use std::marker::PhantomData;
+
+use crate::{Description, ToolName};
+
+/// A type-erased tool definition — name, description, and JSON schema.
 ///
-/// Each domain declares its tools as static slices of ToolDef.
-/// The MCP collector gathers them into the tool catalog.
+/// Produced by `Tool<T>::def()`. The MCP collector gathers these into
+/// the tool catalog.
 pub struct ToolDef {
-    pub name: &'static str,
-    pub description: &'static str,
-    pub input_schema: fn() -> serde_json::Value,
+    pub name: ToolName,
+    pub description: Description,
+    pub input_schema: serde_json::Value,
+}
+
+/// A typed tool — binds a request struct to a name and description.
+///
+/// The type parameter `T` provides the JSON schema via `schemars::JsonSchema`.
+/// The name is derived from the request type's `Display` implementation.
+pub struct Tool<T> {
+    name: ToolName,
+    description: Description,
+    _marker: PhantomData<T>,
+}
+
+impl<T: schemars::JsonSchema> Tool<T> {
+    pub fn new(name: impl fmt::Display, description: impl Into<Description>) -> Self {
+        Self {
+            name: ToolName::new(name),
+            description: description.into(),
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn def(&self) -> ToolDef {
+        ToolDef {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            input_schema: schema_for::<T>(),
+        }
+    }
 }
 
 /// Generate a JSON Schema value for a type.

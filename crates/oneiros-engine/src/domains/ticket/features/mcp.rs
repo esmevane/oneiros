@@ -3,12 +3,8 @@ use crate::*;
 pub struct TicketTools;
 
 impl TicketTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         ticket_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        ticket_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -24,37 +20,24 @@ impl TicketTools {
 mod ticket_mcp {
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "create_ticket",
-                description: "Issue a new ticket for an actor and brain",
-                input_schema: schema_for::<CreateTicket>,
-            },
-            ToolDef {
-                name: "get_ticket",
-                description: "Look up a specific ticket by ID",
-                input_schema: schema_for::<GetTicket>,
-            },
-            ToolDef {
-                name: "list_tickets",
-                description: "List all tickets",
-                input_schema: schema_for::<ListTickets>,
-            },
-            ToolDef {
-                name: "validate_ticket",
-                description: "Validate a ticket token",
-                input_schema: schema_for::<ValidateTicket>,
-            },
-        ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &[
-            "create_ticket",
-            "get_ticket",
-            "list_tickets",
-            "validate_ticket",
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<CreateTicket>::new(
+                TicketRequestType::CreateTicket,
+                "Issue a new ticket for an actor and brain",
+            )
+            .def(),
+            Tool::<GetTicket>::new(
+                TicketRequestType::GetTicket,
+                "Look up a specific ticket by ID",
+            )
+            .def(),
+            Tool::<ListTickets>::new(TicketRequestType::ListTickets, "List all tickets").def(),
+            Tool::<ValidateTicket>::new(
+                TicketRequestType::ValidateTicket,
+                "Validate a ticket token",
+            )
+            .def(),
         ]
     }
 
@@ -63,16 +46,25 @@ mod ticket_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
+        let request_type: TicketRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
         let system = SystemContext::new(context.config.clone());
 
-        let value = match tool_name {
-            "create_ticket" => TicketService::create(&system, &serde_json::from_str(params)?).await,
-            "get_ticket" => TicketService::get(&system, &serde_json::from_str(params)?).await,
-            "list_tickets" => TicketService::list(&system, &serde_json::from_str(params)?).await,
-            "validate_ticket" => {
+        let value = match request_type {
+            TicketRequestType::CreateTicket => {
+                TicketService::create(&system, &serde_json::from_str(params)?).await
+            }
+            TicketRequestType::GetTicket => {
+                TicketService::get(&system, &serde_json::from_str(params)?).await
+            }
+            TicketRequestType::ListTickets => {
+                TicketService::list(&system, &serde_json::from_str(params)?).await
+            }
+            TicketRequestType::ValidateTicket => {
                 TicketService::validate(&system, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

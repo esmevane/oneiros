@@ -3,12 +3,8 @@ use crate::*;
 pub struct CognitionTools;
 
 impl CognitionTools {
-    pub const fn defs(&self) -> &'static [ToolDef] {
+    pub fn defs(&self) -> Vec<ToolDef> {
         cognition_mcp::tool_defs()
-    }
-
-    pub const fn names(&self) -> &'static [&'static str] {
-        cognition_mcp::tool_names()
     }
 
     pub async fn dispatch(
@@ -26,28 +22,20 @@ mod cognition_mcp {
 
     use crate::*;
 
-    pub const fn tool_defs() -> &'static [ToolDef] {
-        &[
-            ToolDef {
-                name: "add_cognition",
-                description: "Record a thought",
-                input_schema: schema_for::<AddCognition>,
-            },
-            ToolDef {
-                name: "get_cognition",
-                description: "Revisit a specific thought",
-                input_schema: schema_for::<GetCognition>,
-            },
-            ToolDef {
-                name: "list_cognitions",
-                description: "Review a stream of thoughts",
-                input_schema: schema_for::<ListCognitions>,
-            },
+    pub fn tool_defs() -> Vec<ToolDef> {
+        vec![
+            Tool::<AddCognition>::new(CognitionRequestType::AddCognition, "Record a thought").def(),
+            Tool::<GetCognition>::new(
+                CognitionRequestType::GetCognition,
+                "Revisit a specific thought",
+            )
+            .def(),
+            Tool::<ListCognitions>::new(
+                CognitionRequestType::ListCognitions,
+                "Review a stream of thoughts",
+            )
+            .def(),
         ]
-    }
-
-    pub const fn tool_names() -> &'static [&'static str] {
-        &["add_cognition", "get_cognition", "list_cognitions"]
     }
 
     pub async fn dispatch(
@@ -55,13 +43,20 @@ mod cognition_mcp {
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        let value = match tool_name {
-            "add_cognition" => CognitionService::add(context, &serde_json::from_str(params)?).await,
-            "get_cognition" => CognitionService::get(context, &serde_json::from_str(params)?).await,
-            "list_cognitions" => {
+        let request_type: CognitionRequestType = tool_name
+            .parse()
+            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
+
+        let value = match request_type {
+            CognitionRequestType::AddCognition => {
+                CognitionService::add(context, &serde_json::from_str(params)?).await
+            }
+            CognitionRequestType::GetCognition => {
+                CognitionService::get(context, &serde_json::from_str(params)?).await
+            }
+            CognitionRequestType::ListCognitions => {
                 CognitionService::list(context, &serde_json::from_str(params)?).await
             }
-            _ => return Err(ToolError::UnknownTool(tool_name.to_string())),
         }
         .map_err(Error::from)?;
 

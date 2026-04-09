@@ -50,6 +50,7 @@ mod timestamp;
 mod token;
 mod token_version;
 mod tool_def;
+mod tool_name;
 mod verbosity;
 
 pub use agent_activity::*;
@@ -102,5 +103,6 @@ pub use system_canon::*;
 pub use table::*;
 pub use timestamp::*;
 pub use token::*;
-pub use tool_def::{ToolDef, schema_for};
+pub use tool_def::*;
+pub use tool_name::*;
 pub use verbosity::*;
