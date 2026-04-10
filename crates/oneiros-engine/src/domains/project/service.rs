@@ -29,6 +29,13 @@ impl ProjectService {
         )
         .await?;
 
+        context
+            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated {
+                brain: brain_name.clone(),
+                name: BookmarkName::main(),
+            }))
+            .await?;
+
         // Ensure brain directory and DB schema exist (mirrors legacy create_brain_db).
         let brain_dir = context.config.data_dir.join(brain_name.as_str());
         std::fs::create_dir_all(&brain_dir)?;
