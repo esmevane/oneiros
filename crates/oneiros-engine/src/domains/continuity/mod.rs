@@ -10,6 +10,7 @@ mod model;
 mod presenter;
 mod protocol;
 mod service;
+mod view;
 
 pub use client::*;
 pub use features::*;
@@ -17,3 +18,4 @@ pub use model::*;
 pub use presenter::*;
 pub use protocol::*;
 pub use service::*;
+pub use view::*;

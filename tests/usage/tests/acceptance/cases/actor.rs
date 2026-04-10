@@ -28,7 +28,7 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 
     assert!(!prompt.is_empty(), "actor list prompt should not be empty");
     assert!(
-        prompt.contains("1 found"),
+        prompt.contains("1 of"),
         "actor list prompt should describe the actor count, got: {prompt}"
     );
 

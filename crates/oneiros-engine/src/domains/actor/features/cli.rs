@@ -24,16 +24,16 @@ impl ActorCommands {
         };
 
         let prompt = match &response {
-            ActorResponse::Created(wrapped) => format!("Actor '{}' created.", wrapped.data.name),
-            ActorResponse::Found(wrapped) => {
-                format!("Actor '{}' ({})", wrapped.data.name, wrapped.data.id)
+            ActorResponse::Created(wrapped) => {
+                ActorView::confirmed("created", &wrapped.data.name).to_string()
             }
+            ActorResponse::Found(wrapped) => ActorView::detail(&wrapped.data).to_string(),
             ActorResponse::Listed(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!("  {}\n\n", wrapped.data.name));
-                }
-                out
+                let table = ActorView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
         };
 

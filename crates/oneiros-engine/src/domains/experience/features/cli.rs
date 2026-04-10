@@ -71,35 +71,19 @@ impl ExperienceCommands {
         };
 
         let prompt = match &response {
-            ExperienceResponse::ExperienceCreated(wrapped) => wrapped
-                .meta()
-                .ref_token()
-                .map(|ref_token| format!("Experience recorded: {ref_token}"))
-                .unwrap_or_default(),
+            ExperienceResponse::ExperienceCreated(wrapped) => ExperienceView::recorded(wrapped),
             ExperienceResponse::ExperienceDetails(wrapped) => {
-                format!("[{}] {}", wrapped.data.sensation, wrapped.data.description)
+                ExperienceView::detail(&wrapped.data).to_string()
             }
             ExperienceResponse::Experiences(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    let ref_token = &wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|ref_token| ref_token.to_string())
-                        .unwrap_or_default();
-                    out.push_str(&format!(
-                        "  [{}] {}\n    {}\n\n",
-                        wrapped.data.sensation, wrapped.data.description, ref_token
-                    ));
-                }
-                out
+                let table = ExperienceView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            ExperienceResponse::NoExperiences => "No experiences.".to_string(),
-            ExperienceResponse::ExperienceUpdated(wrapped) => wrapped
-                .meta()
-                .ref_token()
-                .map(|ref_token| format!("Experience updated: {ref_token}"))
-                .unwrap_or_default(),
+            ExperienceResponse::NoExperiences => format!("{}", "No experiences.".muted()),
+            ExperienceResponse::ExperienceUpdated(wrapped) => ExperienceView::updated(wrapped),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

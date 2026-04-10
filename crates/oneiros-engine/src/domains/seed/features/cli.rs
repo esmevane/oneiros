@@ -19,8 +19,8 @@ impl SeedCommands {
         };
 
         let prompt = match &response {
-            SeedResponse::SeedComplete => "Core seed complete.".to_string(),
-            SeedResponse::AgentsSeedComplete => "Agent seed complete.".to_string(),
+            SeedResponse::SeedComplete => SeedView::core_complete(),
+            SeedResponse::AgentsSeedComplete => SeedView::agents_complete(),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

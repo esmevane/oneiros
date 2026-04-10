@@ -17,6 +17,6 @@ impl PressureCommands {
         let pressure_client = PressureClient::new(&client);
 
         let response = pressure_client.get(&self.request).await?;
-        Ok(PressurePresenter::new(response).render())
+        Ok(PressureView::new(response).render())
     }
 }

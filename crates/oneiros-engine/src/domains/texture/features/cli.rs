@@ -26,25 +26,21 @@ impl TextureCommands {
         };
 
         let prompt = match &response {
-            TextureResponse::TextureSet(name) => format!("Texture '{name}' set."),
+            TextureResponse::TextureSet(name) => TextureView::confirmed("set", name).to_string(),
             TextureResponse::TextureDetails(wrapped) => {
-                format!(
-                    "Texture '{}'\n  Description: {}\n  Prompt: {}",
-                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
-                )
+                TextureView::detail(&wrapped.data).to_string()
             }
             TextureResponse::Textures(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} — {}\n\n",
-                        wrapped.data.name, wrapped.data.description,
-                    ));
-                }
-                out
+                let table = TextureView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            TextureResponse::NoTextures => "No textures configured.".to_string(),
-            TextureResponse::TextureRemoved(name) => format!("Texture '{name}' removed."),
+            TextureResponse::NoTextures => format!("{}", "No textures configured.".muted()),
+            TextureResponse::TextureRemoved(name) => {
+                TextureView::confirmed("removed", name).to_string()
+            }
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

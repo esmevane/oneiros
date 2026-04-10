@@ -24,14 +24,16 @@ impl BrainCommands {
         };
 
         let prompt = match &response {
-            BrainResponse::Created(wrapped) => format!("Brain '{}' created.", wrapped.data.name),
-            BrainResponse::Found(wrapped) => format!("Brain '{}'", wrapped.data.name),
+            BrainResponse::Created(wrapped) => {
+                BrainView::confirmed("created", &wrapped.data.name).to_string()
+            }
+            BrainResponse::Found(wrapped) => BrainView::detail(&wrapped.data).to_string(),
             BrainResponse::Listed(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!("  {}\n\n", wrapped.data.name));
-                }
-                out
+                let table = BrainView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
         };
 

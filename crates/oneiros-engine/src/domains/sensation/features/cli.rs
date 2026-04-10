@@ -26,25 +26,23 @@ impl SensationCommands {
         };
 
         let prompt = match &response {
-            SensationResponse::SensationSet(name) => format!("Sensation '{name}' set."),
+            SensationResponse::SensationSet(name) => {
+                SensationView::confirmed("set", name).to_string()
+            }
             SensationResponse::SensationDetails(wrapped) => {
-                format!(
-                    "Sensation '{}'\n  Description: {}\n  Prompt: {}",
-                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
-                )
+                SensationView::detail(&wrapped.data).to_string()
             }
             SensationResponse::Sensations(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} — {}\n\n",
-                        wrapped.data.name, wrapped.data.description,
-                    ));
-                }
-                out
+                let table = SensationView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            SensationResponse::NoSensations => "No sensations configured.".to_string(),
-            SensationResponse::SensationRemoved(name) => format!("Sensation '{name}' removed."),
+            SensationResponse::NoSensations => format!("{}", "No sensations configured.".muted()),
+            SensationResponse::SensationRemoved(name) => {
+                SensationView::confirmed("removed", name).to_string()
+            }
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

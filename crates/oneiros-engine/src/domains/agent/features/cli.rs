@@ -28,29 +28,18 @@ impl AgentCommands {
         };
 
         let prompt = match &response {
-            AgentResponse::AgentCreated(name) => format!("Agent '{name}' created."),
-            AgentResponse::AgentDetails(wrapped) => {
+            AgentResponse::AgentCreated(name) => AgentView::confirmed("created", name).to_string(),
+            AgentResponse::AgentDetails(wrapped) => AgentView::detail(&wrapped.data).to_string(),
+            AgentResponse::Agents(listed) => {
+                let table = AgentView::table(listed);
                 format!(
-                    "Agent '{}' (persona: {})\n  Description: {}\n  Prompt: {}",
-                    wrapped.data.name,
-                    wrapped.data.persona,
-                    wrapped.data.description,
-                    wrapped.data.prompt
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
                 )
             }
-            AgentResponse::Agents(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} ({})\n    {}\n\n",
-                        wrapped.data.name, wrapped.data.persona, wrapped.data.description
-                    ));
-                }
-                out
-            }
-            AgentResponse::NoAgents => "No agents configured.".to_string(),
-            AgentResponse::AgentUpdated(name) => format!("Agent '{name}' updated."),
-            AgentResponse::AgentRemoved(name) => format!("Agent '{name}' removed."),
+            AgentResponse::NoAgents => format!("{}", "No agents configured.".muted()),
+            AgentResponse::AgentUpdated(name) => AgentView::confirmed("updated", name).to_string(),
+            AgentResponse::AgentRemoved(name) => AgentView::confirmed("removed", name).to_string(),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

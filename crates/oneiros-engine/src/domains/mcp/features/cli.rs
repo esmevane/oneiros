@@ -39,12 +39,8 @@ impl McpCommands {
         };
 
         let prompt = match &response {
-            McpConfigResponse::McpConfigWritten(path) => {
-                format!("MCP config written to {}.", path.display())
-            }
-            McpConfigResponse::McpConfigExists(path) => {
-                format!("MCP config already exists at {}. Skipped.", path.display())
-            }
+            McpConfigResponse::McpConfigWritten(path) => McpView::written(path),
+            McpConfigResponse::McpConfigExists(path) => McpView::exists(path),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

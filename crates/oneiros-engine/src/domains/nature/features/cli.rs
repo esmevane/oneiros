@@ -26,25 +26,19 @@ impl NatureCommands {
         };
 
         let prompt = match &response {
-            NatureResponse::NatureSet(name) => format!("Nature '{name}' set."),
-            NatureResponse::NatureDetails(wrapped) => {
+            NatureResponse::NatureSet(name) => NatureView::confirmed("set", name).to_string(),
+            NatureResponse::NatureDetails(wrapped) => NatureView::detail(&wrapped.data).to_string(),
+            NatureResponse::Natures(listed) => {
+                let table = NatureView::table(listed);
                 format!(
-                    "Nature '{}'\n  Description: {}\n  Prompt: {}",
-                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
                 )
             }
-            NatureResponse::Natures(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} — {}\n\n",
-                        wrapped.data.name, wrapped.data.description,
-                    ));
-                }
-                out
+            NatureResponse::NoNatures => format!("{}", "No natures configured.".muted()),
+            NatureResponse::NatureRemoved(name) => {
+                NatureView::confirmed("removed", name).to_string()
             }
-            NatureResponse::NoNatures => "No natures configured.".to_string(),
-            NatureResponse::NatureRemoved(name) => format!("Nature '{name}' removed."),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

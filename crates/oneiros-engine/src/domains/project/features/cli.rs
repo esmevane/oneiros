@@ -20,20 +20,11 @@ impl ProjectCommands {
         };
 
         let prompt = match &response {
-            ProjectResponse::Initialized(InitResult {
-                brain_name,
-                token: _,
-            }) => format!("Brain '{brain_name}' created."),
-            ProjectResponse::BrainAlreadyExists(name) => format!("Brain '{name}' already exists."),
-            ProjectResponse::WroteExport(path) => {
-                format!("Export written to '{path}'.")
-            }
-            ProjectResponse::Imported(ImportResult { imported, replayed }) => {
-                format!("Imported {imported} events, replayed {replayed}.",)
-            }
-            ProjectResponse::Replayed(ReplayResult { replayed }) => {
-                format!("Replayed {replayed} events.")
-            }
+            ProjectResponse::Initialized(result) => ProjectView::initialized(result),
+            ProjectResponse::BrainAlreadyExists(name) => ProjectView::already_exists(name),
+            ProjectResponse::WroteExport(path) => ProjectView::exported(path),
+            ProjectResponse::Imported(result) => ProjectView::imported(result),
+            ProjectResponse::Replayed(result) => ProjectView::replayed(result),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

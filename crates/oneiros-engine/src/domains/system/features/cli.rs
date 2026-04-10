@@ -17,10 +17,8 @@ impl SystemCommands {
         };
 
         let prompt = match &response {
-            SystemResponse::SystemInitialized(name) => {
-                format!("System initialized for '{name}'.")
-            }
-            SystemResponse::HostAlreadyInitialized => "System already initialized.".to_string(),
+            SystemResponse::SystemInitialized(name) => SystemView::initialized(name),
+            SystemResponse::HostAlreadyInitialized => SystemView::already_initialized(),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

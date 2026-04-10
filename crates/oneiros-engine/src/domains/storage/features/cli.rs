@@ -47,25 +47,23 @@ impl StorageCommands {
         };
 
         let prompt = match &response {
-            StorageResponse::StorageSet(wrapped) => format!("Stored '{}'.", wrapped.data.key),
+            StorageResponse::StorageSet(wrapped) => {
+                StorageView::confirmed("stored", &wrapped.data.key).to_string()
+            }
             StorageResponse::StorageDetails(wrapped) => {
-                format!(
-                    "Key: {}\n  Description: {}\n  Hash: {}",
-                    wrapped.data.key, wrapped.data.description, wrapped.data.hash
-                )
+                StorageView::detail(&wrapped.data).to_string()
             }
             StorageResponse::Entries(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} — {}\n    hash: {}\n\n",
-                        wrapped.data.key, wrapped.data.description, wrapped.data.hash
-                    ));
-                }
-                out
+                let table = StorageView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            StorageResponse::NoEntries => "No storage entries.".to_string(),
-            StorageResponse::StorageRemoved(key) => format!("Storage entry '{key}' removed."),
+            StorageResponse::NoEntries => format!("{}", "No storage entries.".muted()),
+            StorageResponse::StorageRemoved(key) => {
+                StorageView::confirmed("removed", key).to_string()
+            }
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

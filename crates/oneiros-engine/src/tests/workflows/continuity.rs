@@ -219,8 +219,8 @@ async fn listing_cognitions() -> Result<(), Box<dyn core::error::Error>> {
     let prompt = result.prompt();
 
     assert!(
-        prompt.contains("3 found"),
-        "expected '3 found' in prompt, got:\n{prompt}"
+        prompt.contains("3 of"),
+        "expected '3 of' in prompt, got:\n{prompt}"
     );
     assert!(
         prompt.contains("The sky is blue"),
@@ -274,8 +274,8 @@ async fn listing_cognitions_with_limit() -> Result<(), Box<dyn core::error::Erro
     let prompt = result.prompt();
 
     assert!(
-        prompt.contains("2 found"),
-        "expected '2 found' in prompt, got:\n{prompt}"
+        prompt.contains("2 of"),
+        "expected '2 of' in prompt, got:\n{prompt}"
     );
     assert!(
         prompt.contains("of 5"),
@@ -313,8 +313,8 @@ async fn listing_cognitions_with_offset() -> Result<(), Box<dyn core::error::Err
     let prompt = result.prompt();
 
     assert!(
-        prompt.contains("2 found"),
-        "expected '2 found' in prompt, got:\n{prompt}"
+        prompt.contains("2 of"),
+        "expected '2 of' in prompt, got:\n{prompt}"
     );
     assert!(
         prompt.contains("of 5"),
@@ -374,8 +374,8 @@ async fn listing_memories() -> Result<(), Box<dyn core::error::Error>> {
     let prompt = result.prompt();
 
     assert!(
-        prompt.contains("2 found"),
-        "expected '2 found' in prompt, got:\n{prompt}"
+        prompt.contains("2 of"),
+        "expected '2 of' in prompt, got:\n{prompt}"
     );
     assert!(
         prompt.contains("Event sourcing is powerful"),
@@ -416,8 +416,8 @@ async fn listing_experiences() -> Result<(), Box<dyn core::error::Error>> {
     let prompt = result.prompt();
 
     assert!(
-        prompt.contains("1 found"),
-        "expected '1 found' in prompt, got:\n{prompt}"
+        prompt.contains("1 of"),
+        "expected '1 of' in prompt, got:\n{prompt}"
     );
     assert!(
         prompt.contains("These insights rhyme"),
