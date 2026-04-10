@@ -230,4 +230,8 @@ impl TestClient {
     pub fn ticket(&self) -> TicketClient<'_> {
         TicketClient::new(&self.client)
     }
+
+    pub fn bookmark(&self) -> BookmarkClient<'_> {
+        BookmarkClient::new(&self.client)
+    }
 }

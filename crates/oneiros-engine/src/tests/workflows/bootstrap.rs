@@ -82,3 +82,38 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
 
     Ok(())
 }
+
+/// Project init should produce a "main" bookmark in the system DB.
+///
+/// Nothing implicit: if a resource exists, an event brought it into being
+/// and a projection row reflects it. The default bookmark is no exception.
+#[tokio::test]
+async fn project_init_creates_main_bookmark() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    let client = app.client();
+    let brain = BrainName::new("test");
+
+    match client
+        .bookmark()
+        .list(&brain, &ListBookmarks::default())
+        .await?
+    {
+        BookmarkResponse::Bookmarks(bookmarks) => {
+            assert_eq!(bookmarks.len(), 1, "exactly one bookmark after init");
+            assert_eq!(
+                bookmarks.items[0].name,
+                BookmarkName::main(),
+                "the bookmark should be named main"
+            );
+        }
+        other => panic!("expected Bookmarks, got {other:?}"),
+    }
+
+    Ok(())
+}
