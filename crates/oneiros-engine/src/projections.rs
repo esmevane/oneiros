@@ -214,6 +214,8 @@ impl Projections<SystemCanon> {
                 Frame::new(BrainProjections.all()),
                 Frame::new(TicketProjections.all()),
                 Frame::new(BookmarkProjections.all()),
+                Frame::new(PeerProjections.all()),
+                Frame::new(FollowProjections.all()),
             ])],
             ReducerPipeline::system(),
             canon,

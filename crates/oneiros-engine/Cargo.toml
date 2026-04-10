@@ -18,10 +18,12 @@ data-encoding.workspace = true
 etcetera.workspace = true
 flate2.workspace = true
 inquire.workspace = true
+iroh.workspace = true
 kinded.workspace = true
 loro.workspace = true
 lorosurgeon.workspace = true
 postcard.workspace = true
+rand.workspace = true
 reqwest.workspace = true
 rmcp.workspace = true
 rusqlite.workspace = true
@@ -43,3 +45,8 @@ pretty_assertions.workspace = true
 shlex.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
+
+# [lints.clippy]
+# nursery = { level = "deny", priority = -1 }
+# pedantic = { level = "deny", priority = -1 }
+# unwrap_used = "deny"

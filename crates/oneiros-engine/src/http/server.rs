@@ -12,6 +12,8 @@ use crate::*;
 pub enum ServerError {
     #[error(transparent)]
     Listener(#[from] std::io::Error),
+    #[error(transparent)]
+    State(#[from] ServerStateError),
 }
 
 /// The dashboard HTML, embedded at compile time.
@@ -28,9 +30,19 @@ impl Server {
         Self { config }
     }
 
-    /// Serve on a pre-bound TCP listener.
+    /// Serve on a pre-bound TCP listener. Loads/generates the host secret
+    /// key, binds an iroh Bridge, registers the sync protocol handler
+    /// against it, then assembles the router.
     pub async fn serve(self, listener: TcpListener) -> Result<(), ServerError> {
-        let app = self.router();
+        let state = ServerState::bind(self.config.clone()).await?;
+
+        // Register the sync handler on the bridge so incoming
+        // `/oneiros/sync/1` connections from peers can serve events.
+        if let Some(bridge) = state.bridge() {
+            bridge.serve(self.config.clone());
+        }
+
+        let app = Self::router_from_state(state);
 
         axum::serve(listener, app.into_make_service()).await?;
 
@@ -44,7 +56,17 @@ impl Server {
         self.serve(listener).await
     }
 
+    /// Build a router using a bridgeless state. Convenience for tests and
+    /// any caller that doesn't need peer transport. For the async,
+    /// bridge-bound path used at service start, see `serve`.
     pub fn router(&self) -> Router {
+        let state = ServerState::new(self.config.clone());
+        Self::router_from_state(state)
+    }
+
+    /// Build a router from an already-constructed state. Used by `serve`
+    /// once the async bridge binding has completed.
+    pub fn router_from_state(state: ServerState) -> Router {
         /// Returns the dashboard bootstrap config: token + brain name.
         async fn dashboard_config(State(state): State<ServerState>) -> Json<serde_json::Value> {
             let token = state.token().map(|t| t.to_string());
@@ -60,7 +82,6 @@ impl Server {
         // MCP streamable HTTP transport — each session gets its own EngineToolBox
         // backed by the shared ServerState for full access to canons, config,
         // and per-request context resolution.
-        let state = ServerState::new(self.config.clone());
         state.hydrate();
         let mcp_state = state.clone();
         let mcp_service = StreamableHttpService::new(
@@ -93,6 +114,7 @@ impl Server {
             .merge(TicketRouter.routes())
             .merge(BrainRouter.routes())
             .merge(BookmarkRouter.routes())
+            .merge(PeerRouter.routes())
             .with_state(state)
     }
 }

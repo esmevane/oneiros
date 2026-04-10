@@ -58,4 +58,62 @@ impl<'a> BookmarkClient<'a> {
             .get(&format!("/brains/{brain}/bookmarks?{query}"))
             .await
     }
+
+    /// Share a bookmark and receive the minted ticket and composed URI.
+    pub async fn share(
+        &self,
+        brain: &BrainName,
+        request: &ShareBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
+        let body = serde_json::json!({ "actor_id": request.actor_id });
+        self.client
+            .post(
+                &format!("/brains/{brain}/bookmarks/{}/share", request.name),
+                &body,
+            )
+            .await
+    }
+
+    /// Follow a bookmark via a URI. Parses the URI, ensures any
+    /// referenced Peer is known, and creates a local Follow record.
+    pub async fn follow(
+        &self,
+        brain: &BrainName,
+        request: &FollowBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
+        self.client
+            .post(&format!("/brains/{brain}/bookmarks/follow"), request)
+            .await
+    }
+
+    /// Collect events from a followed bookmark's source and apply them
+    /// to the local bookmark. For Peer follows this opens an iroh
+    /// connection and runs the sync protocol.
+    pub async fn collect(
+        &self,
+        brain: &BrainName,
+        request: &CollectBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
+        self.client
+            .post(
+                &format!("/brains/{brain}/bookmarks/{}/collect", request.name),
+                &(),
+            )
+            .await
+    }
+
+    /// Remove a follow from a bookmark. Previously collected events
+    /// remain in place; only the remote binding is severed.
+    pub async fn unfollow(
+        &self,
+        brain: &BrainName,
+        request: &UnfollowBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
+        self.client
+            .post(
+                &format!("/brains/{brain}/bookmarks/{}/unfollow", request.name),
+                &(),
+            )
+            .await
+    }
 }

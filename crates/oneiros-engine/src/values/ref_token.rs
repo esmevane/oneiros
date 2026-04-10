@@ -159,22 +159,27 @@ mod tests {
     }
 
     #[test]
-    fn all_14_resource_types_roundtrip() {
+    fn all_19_resource_types_roundtrip() {
         let refs = [
             Ref::agent(AgentId::new()),
             Ref::actor(ActorId::new()),
+            Ref::bookmark(BookmarkId::new()),
             Ref::brain(BrainId::new()),
             Ref::cognition(CognitionId::new()),
             Ref::connection(ConnectionId::new()),
             Ref::experience(ExperienceId::new()),
+            Ref::follow(FollowId::new()),
             Ref::level(LevelName::new("core")),
             Ref::memory(MemoryId::new()),
             Ref::nature(NatureName::new("context")),
+            Ref::peer(PeerId::new()),
             Ref::persona(PersonaName::new("process")),
             Ref::sensation(SensationName::new("echoes")),
             Ref::storage(StorageKey::new("config.toml")),
             Ref::tenant(TenantId::new()),
             Ref::texture(TextureName::new("observation")),
+            Ref::ticket(TicketId::new()),
+            Ref::urge(UrgeName::new("catharsis")),
         ];
 
         for r in &refs {

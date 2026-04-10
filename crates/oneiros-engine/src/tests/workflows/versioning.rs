@@ -132,3 +132,44 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     Ok(())
 }
+
+/// A fresh brain — one with no forks, no merges, nothing but project init —
+/// should still show its `main` bookmark in `bookmark list`. This locks in
+/// the "nothing implicit" rule: the default main bookmark exists via an
+/// explicit `BookmarkCreated` event emitted at project init, not as an
+/// implicit fallback from `CanonIndex::default`.
+#[tokio::test]
+async fn fresh_brain_lists_main_bookmark() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    let client = app.client();
+
+    let brain = BrainName::new("test");
+
+    match client
+        .bookmark()
+        .list(&brain, &ListBookmarks::default())
+        .await?
+    {
+        BookmarkResponse::Bookmarks(listed) => {
+            assert_eq!(
+                listed.len(),
+                1,
+                "fresh brain should have exactly one bookmark entry"
+            );
+            assert_eq!(
+                listed.items[0].name,
+                BookmarkName::main(),
+                "the sole bookmark should be `main`"
+            );
+        }
+        other => panic!("expected Bookmarks response, got {other:?}"),
+    }
+
+    Ok(())
+}

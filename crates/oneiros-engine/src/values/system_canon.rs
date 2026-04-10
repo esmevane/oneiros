@@ -10,4 +10,6 @@ pub struct SystemCanon {
     pub brains: Brains,
     pub tenants: Tenants,
     pub tickets: Tickets,
+    pub peers: Peers,
+    pub follows: Follows,
 }

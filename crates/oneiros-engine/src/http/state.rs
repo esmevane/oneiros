@@ -13,9 +13,20 @@ pub struct ServerState {
     config: Config,
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
+    bridge: Option<Bridge>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ServerStateError {
+    #[error("failed to read or generate host secret key: {0}")]
+    HostKey(#[from] std::io::Error),
+    #[error("failed to bind iroh bridge: {0}")]
+    Bridge(#[from] BridgeError),
 }
 
 impl ServerState {
+    /// Construct a server state without a bound bridge. Suitable for
+    /// contexts that don't need peer transport (tests, read-only clients).
     pub fn new(config: Config) -> Self {
         let (broadcast, _) = broadcast::channel(256);
         let canons = CanonIndex::new();
@@ -23,7 +34,38 @@ impl ServerState {
             config,
             broadcast,
             canons,
+            bridge: None,
         }
+    }
+
+    /// Construct a server state with a fully-bound iroh bridge. Loads (or
+    /// generates) the host secret key from disk, binds a `Bridge` against
+    /// it, and attaches it to the state. This is the async path used by
+    /// `Server::serve` at runtime.
+    pub async fn bind(config: Config) -> Result<Self, ServerStateError> {
+        let secret = config.ensure_host_secret_key()?;
+        let bridge = Bridge::bind(secret).await?;
+
+        let (broadcast, _) = broadcast::channel(256);
+        let canons = CanonIndex::new();
+        Ok(Self {
+            config,
+            broadcast,
+            canons,
+            bridge: Some(bridge),
+        })
+    }
+
+    /// The bound bridge, if this server state was constructed via `bind`.
+    /// Returns `None` for states constructed via `new` without a bridge.
+    pub fn bridge(&self) -> Option<&Bridge> {
+        self.bridge.as_ref()
+    }
+
+    /// The host's identity (key + address), available when a bridge is
+    /// bound. Returns `None` for bridgeless states.
+    pub fn host_identity(&self) -> Option<HostIdentity> {
+        self.bridge.as_ref().map(Bridge::host_identity)
     }
 
     /// The canon index — shared CRDT state for all brains.

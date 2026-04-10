@@ -8,6 +8,10 @@ pub enum BookmarkCommands {
     Switch(SwitchBookmark),
     Merge(MergeBookmark),
     List(ListBookmarks),
+    Share(ShareBookmark),
+    Follow(FollowBookmark),
+    Collect(CollectBookmark),
+    Unfollow(UnfollowBookmark),
 }
 
 impl BookmarkCommands {
@@ -24,6 +28,12 @@ impl BookmarkCommands {
             BookmarkCommands::Switch(switch) => bookmark_client.switch(brain, switch).await?,
             BookmarkCommands::Merge(merge) => bookmark_client.merge(brain, merge).await?,
             BookmarkCommands::List(list) => bookmark_client.list(brain, list).await?,
+            BookmarkCommands::Share(share) => bookmark_client.share(brain, share).await?,
+            BookmarkCommands::Follow(follow) => bookmark_client.follow(brain, follow).await?,
+            BookmarkCommands::Collect(collect) => bookmark_client.collect(brain, collect).await?,
+            BookmarkCommands::Unfollow(unfollow) => {
+                bookmark_client.unfollow(brain, unfollow).await?
+            }
         };
 
         let prompt = match &response {
@@ -37,6 +47,19 @@ impl BookmarkCommands {
                     "{}\n\n{table}",
                     format_args!("{} of {} total", listed.len(), listed.total).muted(),
                 )
+            }
+            BookmarkResponse::Shared(result) => result.uri.clone(),
+            BookmarkResponse::Followed(follow) => {
+                format!("Following as '{}'", follow.bookmark)
+            }
+            BookmarkResponse::Collected(result) => {
+                format!(
+                    "Collected {} events (sequence {})",
+                    result.events_received, result.checkpoint.sequence
+                )
+            }
+            BookmarkResponse::Unfollowed(unfollowed) => {
+                format!("Unfollowed '{}'", unfollowed.bookmark)
             }
         };
 

@@ -30,6 +30,10 @@ impl Ref {
         Self::V0(Resource::Actor(id))
     }
 
+    pub fn bookmark(id: BookmarkId) -> Self {
+        Self::V0(Resource::Bookmark(id))
+    }
+
     pub fn brain(id: BrainId) -> Self {
         Self::V0(Resource::Brain(id))
     }
@@ -46,6 +50,10 @@ impl Ref {
         Self::V0(Resource::Experience(id))
     }
 
+    pub fn follow(id: FollowId) -> Self {
+        Self::V0(Resource::Follow(id))
+    }
+
     pub fn level(name: LevelName) -> Self {
         Self::V0(Resource::Level(name))
     }
@@ -56,6 +64,10 @@ impl Ref {
 
     pub fn nature(name: NatureName) -> Self {
         Self::V0(Resource::Nature(name))
+    }
+
+    pub fn peer(id: PeerId) -> Self {
+        Self::V0(Resource::Peer(id))
     }
 
     pub fn persona(name: PersonaName) -> Self {
@@ -76,6 +88,14 @@ impl Ref {
 
     pub fn texture(name: TextureName) -> Self {
         Self::V0(Resource::Texture(name))
+    }
+
+    pub fn ticket(id: TicketId) -> Self {
+        Self::V0(Resource::Ticket(id))
+    }
+
+    pub fn urge(name: UrgeName) -> Self {
+        Self::V0(Resource::Urge(name))
     }
 
     /// The resource this ref points to.

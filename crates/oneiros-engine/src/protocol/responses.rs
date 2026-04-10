@@ -8,10 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 /// All known response types across every domain.
-#[expect(
-    clippy::large_enum_variant,
-    reason = "We can reduce the size of the ContinuityResponse later"
-)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Responses {
@@ -39,6 +35,7 @@ pub enum Responses {
     Brain(BrainResponse),
     Ticket(TicketResponse),
     Bookmark(BookmarkResponse),
+    Peer(PeerResponse),
     Service(ServiceResponse),
     McpConfig(McpConfigResponse),
     Setup(SetupResponse),
@@ -71,5 +68,6 @@ collects_enum!(
     Responses::System => SystemResponse,
     Responses::McpConfig => McpConfigResponse,
     Responses::Bookmark => BookmarkResponse,
+    Responses::Peer => PeerResponse,
     Responses::Setup => SetupResponse,
 );

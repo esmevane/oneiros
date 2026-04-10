@@ -158,7 +158,6 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
 /// bookmark. After collecting, the bookmark contains Alice's material.
 /// Bob can switch to the bookmark and dream Alice's agent there.
 #[tokio::test]
-#[ignore = "needs: bookmark share, bookmark follow, bookmark collect"]
 async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     // ── Alice: a brain with content to share ──────────────────
 
@@ -250,7 +249,7 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
 /// observations and reflections. The share only offers observations.
 /// Bob follows, collects, and only sees observations.
 #[tokio::test]
-#[ignore = "needs: bookmark share (scoped), bookmark follow, bookmark collect"]
+#[ignore = "needs: bookmark slice (scoped fork creating a filtered bookmark)"]
 async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
@@ -321,7 +320,6 @@ async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Erro
 /// last collection. Alice adds content over time. Each collect brings
 /// only the delta.
 #[tokio::test]
-#[ignore = "needs: bookmark follow, bookmark collect (incremental)"]
 async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
@@ -413,7 +411,6 @@ async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
 /// timeline. Alice's material becomes part of Bob's continuity.
 /// His dream now incorporates both his own and Alice's content.
 #[tokio::test]
-#[ignore = "needs: bookmark follow, bookmark collect, bookmark merge"]
 async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
@@ -511,7 +508,6 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
 /// Events retain their origin across multiple follows.
 /// Alice → Team → Bob: Bob can trace material back to Alice.
 #[tokio::test]
-#[ignore = "needs: bookmark follow chain with provenance"]
 async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::Error>> {
     // ── Three hosts ───────────────────────────────────────────
 
@@ -558,7 +554,7 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
     team.command("bookmark merge alice").await?;
 
     // Team shares → Bob follows, collects, merges
-    let team_link = team.command("bookmark share").await?;
+    let team_link = team.command("bookmark share main").await?;
     bob.command(&format!(
         "bookmark follow {} --name team",
         team_link.prompt()
@@ -601,7 +597,6 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
 /// The bookmark remains with whatever was last collected, but the
 /// remote connection is severed.
 #[tokio::test]
-#[ignore = "needs: bookmark follow, bookmark collect, bookmark unfollow"]
 async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?

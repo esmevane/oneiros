@@ -156,7 +156,7 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .ticket()
         .validate(
             &ValidateTicket::builder()
-                .token(ticket.token.clone())
+                .token(ticket.link.token.clone())
                 .build(),
         )
         .await?

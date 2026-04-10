@@ -15,7 +15,22 @@ pub struct Ticket {
     pub actor_id: ActorId,
     pub brain_name: BrainName,
     pub brain_id: BrainId,
-    pub token: Token,
+    /// Target + token bundled. The target is a `Ref` pointing at what this
+    /// ticket grants access to; the token is the self-describing bearer
+    /// credential presented during auth. `Link` is serialized as JSON
+    /// inside the Loro CRDT since it contains a `Ref` which doesn't derive
+    /// lorosurgeon traits.
+    #[loro(json)]
+    pub link: Link,
+    /// The actor who issued this ticket. For self-issued tickets (the
+    /// current non-distribution case) this matches `actor_id`.
+    #[builder(into)]
+    pub granted_by: ActorId,
+    pub expires_at: Option<Timestamp>,
+    pub revoked_at: Option<Timestamp>,
+    pub max_uses: Option<u64>,
+    #[builder(default)]
+    pub uses: u64,
     #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
 }

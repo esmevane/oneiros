@@ -29,11 +29,17 @@ impl TicketService {
             .build();
 
         let token = Token::issue(claims);
+        // For non-distribution tickets, the target is the brain itself —
+        // "this ticket grants access to this brain." Distribution tickets
+        // minted by `bookmark share` will use `Ref::bookmark(id)` as the
+        // target via a different code path (Act 3).
+        let link = Link::new(Ref::brain(brain.id), token);
         let ticket = Ticket::builder()
             .actor_id(*actor_id)
             .brain_name(brain_name.clone())
             .brain_id(brain.id)
-            .token(token)
+            .link(link)
+            .granted_by(*actor_id)
             .build();
 
         context
