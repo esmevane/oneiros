@@ -66,6 +66,8 @@ pub enum Command {
     Brain(BrainCommands),
     #[command(subcommand)]
     Ticket(TicketCommands),
+    #[command(subcommand)]
+    Peer(PeerCommands),
 
     // Bookmark — canon navigation
     #[command(subcommand)]
@@ -189,6 +191,7 @@ impl Command {
             Command::Actor(actor) => actor.execute(&config.system()).await?,
             Command::Brain(brain) => brain.execute(&config.system()).await?,
             Command::Ticket(ticket) => ticket.execute(&config.system()).await?,
+            Command::Peer(peer) => peer.execute(&config.system()).await?,
 
             // Project-scoped domains — vocabulary
             Command::Level(level) => level.execute(&config.project()).await?,

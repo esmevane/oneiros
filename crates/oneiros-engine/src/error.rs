@@ -24,6 +24,8 @@ pub enum Error {
     #[error(transparent)]
     Experience(#[from] ExperienceError),
     #[error(transparent)]
+    Follow(#[from] FollowError),
+    #[error(transparent)]
     Level(#[from] LevelError),
     #[error(transparent)]
     Continuity(#[from] ContinuityError),
@@ -33,6 +35,8 @@ pub enum Error {
     Memory(#[from] MemoryError),
     #[error(transparent)]
     Nature(#[from] NatureError),
+    #[error(transparent)]
+    Peer(#[from] PeerError),
     #[error(transparent)]
     Persona(#[from] PersonaError),
     #[error(transparent)]

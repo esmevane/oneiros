@@ -98,6 +98,8 @@ impl ReducerPipeline<SystemCanon> {
             ActorState::reducer(),
             BrainState::reducer(),
             TicketState::reducer(),
+            PeerState::reducer(),
+            FollowState::reducer(),
         ])
     }
 }

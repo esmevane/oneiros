@@ -42,6 +42,11 @@ mod bookmark_mcp {
                 "Merge a bookmark into the active bookmark",
             )
             .def(),
+            Tool::<ShareBookmark>::new(
+                BookmarkRequestType::ShareBookmark,
+                "Mint a distribution ticket for a bookmark and return a shareable oneiros:// URI",
+            )
+            .def(),
         ]
     }
 
@@ -90,6 +95,22 @@ mod bookmark_mcp {
             )
             .await
             .map_err(Error::from)?,
+            BookmarkRequestType::ShareBookmark => {
+                let identity = state
+                    .host_identity()
+                    .ok_or_else(|| ToolError::Domain("server not bound to a bridge".into()))?;
+                BookmarkService::share(&system, identity, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
+            }
+            // Follow/Collect/Unfollow land in subsequent Act 3 slices.
+            BookmarkRequestType::FollowBookmark
+            | BookmarkRequestType::CollectBookmark
+            | BookmarkRequestType::UnfollowBookmark => {
+                return Err(ToolError::UnknownTool(format!(
+                    "{tool_name} is not yet wired"
+                )));
+            }
         };
 
         Ok(serde_json::to_value(value)?)

@@ -30,12 +30,14 @@ etcetera = "0.11.0"
 flate2 = "1"
 futures = "0.3"
 inquire = "0.9.4"
+iroh = "0.97"
 kinded = "0.5.0"
 loro = "1.10"
 lorosurgeon = { version = "0.2.1", features = ["uuid"] }
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.9" }
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"
+rand = "0.9"
 reqwest = { version = "0.13", features = ["json", "stream"] }
 rmcp = { version = "1.1.1", features = [
   "server",

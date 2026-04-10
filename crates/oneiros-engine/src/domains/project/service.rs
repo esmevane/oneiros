@@ -60,7 +60,7 @@ impl ProjectService {
             )
             .await?
             {
-                TicketResponse::Created(ticket) => ticket.token,
+                TicketResponse::Created(ticket) => ticket.link.token,
                 _ => return Err(ProjectError::Missing),
             }
         } else {

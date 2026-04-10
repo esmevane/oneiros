@@ -36,6 +36,7 @@ pub enum Events {
     Brain(BrainEvents),
     Ticket(TicketEvents),
     Bookmark(BookmarkEvents),
+    Peer(PeerEvents),
     Ephemeral(EphemeralEvents),
     Unknown(serde_json::Value),
 }
@@ -78,6 +79,7 @@ impl Events {
             Events::Brain(e) => e.kind().to_string(),
             Events::Ticket(e) => e.kind().to_string(),
             Events::Bookmark(e) => e.kind().to_string(),
+            Events::Peer(e) => e.kind().to_string(),
             Events::Ephemeral(e) => e.kind().to_string(),
             Events::Unknown(_) => "unknown".to_string(),
         }
@@ -103,5 +105,6 @@ collects_enum!(
     Events::Brain => BrainEvents,
     Events::Ticket => TicketEvents,
     Events::Bookmark => BookmarkEvents,
+    Events::Peer => PeerEvents,
     Events::Ephemeral => EphemeralEvents,
 );

@@ -116,6 +116,79 @@ impl Config {
             .map(|s| Token::from(s.trim()))
     }
 
+    /// Path to the host's persistent ed25519 secret key file.
+    ///
+    /// This file holds the host's cryptographic identity — the key from
+    /// which its iroh `EndpointId` and public `PeerKey` are derived. It
+    /// lives at the data dir root (not under a brain) because a single
+    /// key identifies the host across all brains.
+    pub fn host_key_path(&self) -> PathBuf {
+        self.data_dir.join("host.key")
+    }
+
+    /// Load the persisted host secret key, if one exists. Returns `None`
+    /// when the file is missing (first run, not yet generated).
+    pub fn load_host_secret_key(&self) -> std::io::Result<Option<iroh::SecretKey>> {
+        let path = self.host_key_path();
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        let bytes = std::fs::read(&path)?;
+        let arr: [u8; 32] = bytes.try_into().map_err(|v: Vec<u8>| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "host key file has wrong length: expected 32 bytes, got {}",
+                    v.len()
+                ),
+            )
+        })?;
+        Ok(Some(iroh::SecretKey::from_bytes(&arr)))
+    }
+
+    /// Load the persisted host secret key, or generate and persist a fresh
+    /// one if none exists. Idempotent: subsequent calls return the same
+    /// key. Safe to call from either `SystemService::init` or the server's
+    /// start path — whichever runs first creates the key.
+    ///
+    /// On Unix, the key file is written with mode `0o600` (owner-only
+    /// read/write). On other platforms, file permissions are left at the
+    /// OS default.
+    pub fn ensure_host_secret_key(&self) -> std::io::Result<iroh::SecretKey> {
+        if let Some(existing) = self.load_host_secret_key()? {
+            return Ok(existing);
+        }
+
+        let path = self.host_key_path();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let bytes = secret.to_bytes();
+
+        #[cfg(unix)]
+        {
+            use std::io::Write;
+            use std::os::unix::fs::OpenOptionsExt;
+
+            let mut file = std::fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .mode(0o600)
+                .open(&path)?;
+            file.write_all(&bytes)?;
+        }
+
+        #[cfg(not(unix))]
+        {
+            std::fs::write(&path, &bytes)?;
+        }
+
+        Ok(secret)
+    }
+
     /// Load a config file from `{data_dir}/config.toml` and merge
     /// file values under CLI values.
     ///
@@ -389,6 +462,65 @@ experience_size = 25
         let merged = config.with_config_file();
 
         assert_eq!(merged.verbosity, Verbosity::Verbose);
+    }
+
+    #[test]
+    fn ensure_host_secret_key_generates_when_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = config_in(dir.path());
+
+        assert!(!config.host_key_path().exists());
+
+        let secret = config.ensure_host_secret_key().unwrap();
+
+        assert!(config.host_key_path().exists());
+        assert_eq!(
+            config.host_key_path(),
+            dir.path().join("host.key"),
+            "host key should live at data_dir/host.key"
+        );
+        // Generated key matches what's now on disk.
+        let loaded = config.load_host_secret_key().unwrap().unwrap();
+        assert_eq!(secret.to_bytes(), loaded.to_bytes());
+    }
+
+    #[test]
+    fn ensure_host_secret_key_is_idempotent() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = config_in(dir.path());
+
+        let first = config.ensure_host_secret_key().unwrap();
+        let second = config.ensure_host_secret_key().unwrap();
+
+        assert_eq!(
+            first.to_bytes(),
+            second.to_bytes(),
+            "repeated ensure calls should return the same key"
+        );
+    }
+
+    #[test]
+    fn load_host_secret_key_returns_none_when_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = config_in(dir.path());
+
+        let result = config.load_host_secret_key().unwrap();
+        assert!(result.is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn host_key_file_has_restricted_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let config = config_in(dir.path());
+
+        config.ensure_host_secret_key().unwrap();
+
+        let metadata = std::fs::metadata(config.host_key_path()).unwrap();
+        let mode = metadata.permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600, "host key file should be owner-only (0o600)");
     }
 
     #[test]

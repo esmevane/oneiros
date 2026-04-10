@@ -7,18 +7,23 @@ use crate::*;
 pub enum Resource {
     Agent(AgentId),
     Actor(ActorId),
+    Bookmark(BookmarkId),
     Brain(BrainId),
     Cognition(CognitionId),
     Connection(ConnectionId),
     Experience(ExperienceId),
+    Follow(FollowId),
     Level(LevelName),
     Memory(MemoryId),
     Nature(NatureName),
+    Peer(PeerId),
     Persona(PersonaName),
     Sensation(SensationName),
     Storage(StorageKey),
     Tenant(TenantId),
     Texture(TextureName),
+    Ticket(TicketId),
+    Urge(UrgeName),
 }
 
 impl Resource {
@@ -27,18 +32,23 @@ impl Resource {
         match self {
             Self::Agent(id) => Some(id.0),
             Self::Actor(id) => Some(id.0),
+            Self::Bookmark(id) => Some(id.0),
             Self::Brain(id) => Some(id.0),
             Self::Cognition(id) => Some(id.0),
             Self::Connection(id) => Some(id.0),
             Self::Experience(id) => Some(id.0),
+            Self::Follow(id) => Some(id.0),
             Self::Memory(id) => Some(id.0),
+            Self::Peer(id) => Some(id.0),
             Self::Tenant(id) => Some(id.0),
+            Self::Ticket(id) => Some(id.0),
             Self::Level(_)
             | Self::Nature(_)
             | Self::Persona(_)
             | Self::Sensation(_)
             | Self::Storage(_)
-            | Self::Texture(_) => None,
+            | Self::Texture(_)
+            | Self::Urge(_) => None,
         }
     }
 
@@ -47,18 +57,23 @@ impl Resource {
         match self {
             Self::Agent(_) => "agent",
             Self::Actor(_) => "actor",
+            Self::Bookmark(_) => "bookmark",
             Self::Brain(_) => "brain",
             Self::Cognition(_) => "cognition",
             Self::Connection(_) => "connection",
             Self::Experience(_) => "experience",
+            Self::Follow(_) => "follow",
             Self::Level(_) => "level",
             Self::Memory(_) => "memory",
             Self::Nature(_) => "nature",
+            Self::Peer(_) => "peer",
             Self::Persona(_) => "persona",
             Self::Sensation(_) => "sensation",
             Self::Storage(_) => "storage",
             Self::Tenant(_) => "tenant",
             Self::Texture(_) => "texture",
+            Self::Ticket(_) => "ticket",
+            Self::Urge(_) => "urge",
         }
     }
 }
@@ -68,18 +83,23 @@ impl core::fmt::Display for Resource {
         match self {
             Self::Agent(id) => write!(f, "agent:{id}"),
             Self::Actor(id) => write!(f, "actor:{id}"),
+            Self::Bookmark(id) => write!(f, "bookmark:{id}"),
             Self::Brain(id) => write!(f, "brain:{id}"),
             Self::Cognition(id) => write!(f, "cognition:{id}"),
             Self::Connection(id) => write!(f, "connection:{id}"),
             Self::Experience(id) => write!(f, "experience:{id}"),
+            Self::Follow(id) => write!(f, "follow:{id}"),
             Self::Level(name) => write!(f, "level:{name}"),
             Self::Memory(id) => write!(f, "memory:{id}"),
             Self::Nature(name) => write!(f, "nature:{name}"),
+            Self::Peer(id) => write!(f, "peer:{id}"),
             Self::Persona(name) => write!(f, "persona:{name}"),
             Self::Sensation(name) => write!(f, "sensation:{name}"),
             Self::Storage(key) => write!(f, "storage:{key}"),
             Self::Tenant(id) => write!(f, "tenant:{id}"),
             Self::Texture(name) => write!(f, "texture:{name}"),
+            Self::Ticket(id) => write!(f, "ticket:{id}"),
+            Self::Urge(name) => write!(f, "urge:{name}"),
         }
     }
 }
