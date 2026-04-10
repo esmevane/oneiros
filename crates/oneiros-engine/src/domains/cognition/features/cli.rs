@@ -24,31 +24,18 @@ impl CognitionCommands {
         };
 
         let prompt = match &response {
-            CognitionResponse::CognitionAdded(wrapped) => wrapped
-                .meta()
-                .ref_token()
-                .map(|ref_token| format!("Cognition recorded: {ref_token}"))
-                .unwrap_or_default(),
+            CognitionResponse::CognitionAdded(wrapped) => CognitionView::recorded(wrapped),
             CognitionResponse::CognitionDetails(wrapped) => {
-                format!("[{}] {}", wrapped.data.texture, wrapped.data.content)
+                CognitionView::detail(&wrapped.data).to_string()
             }
             CognitionResponse::Cognitions(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|ref_token| ref_token.to_string())
-                        .unwrap_or_default();
-
-                    out.push_str(&format!(
-                        "  [{}] {}\n    {}\n\n",
-                        wrapped.data.texture, wrapped.data.content, ref_token
-                    ));
-                }
-                out
+                let table = CognitionView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            CognitionResponse::NoCognitions => "No cognitions.".to_string(),
+            CognitionResponse::NoCognitions => format!("{}", "No cognitions.".muted()),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

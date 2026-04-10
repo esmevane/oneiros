@@ -26,25 +26,21 @@ impl PersonaCommands {
         };
 
         let prompt = match &response {
-            PersonaResponse::PersonaSet(name) => format!("Persona '{name}' set."),
+            PersonaResponse::PersonaSet(name) => PersonaView::confirmed("set", name).to_string(),
             PersonaResponse::PersonaDetails(wrapped) => {
-                format!(
-                    "Persona '{}'\n  Description: {}\n  Prompt: {}",
-                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
-                )
+                PersonaView::detail(&wrapped.data).to_string()
             }
             PersonaResponse::Personas(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} — {}\n\n",
-                        wrapped.data.name, wrapped.data.description,
-                    ));
-                }
-                out
+                let table = PersonaView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            PersonaResponse::NoPersonas => "No personas configured.".to_string(),
-            PersonaResponse::PersonaRemoved(name) => format!("Persona '{name}' removed."),
+            PersonaResponse::NoPersonas => format!("{}", "No personas configured.".muted()),
+            PersonaResponse::PersonaRemoved(name) => {
+                PersonaView::confirmed("removed", name).to_string()
+            }
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

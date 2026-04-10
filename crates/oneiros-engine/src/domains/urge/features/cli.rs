@@ -26,22 +26,17 @@ impl UrgeCommands {
         };
 
         let prompt = match &response {
-            UrgeResponse::UrgeSet(name) => format!("Urge '{name}' set."),
-            UrgeResponse::UrgeDetails(u) => {
+            UrgeResponse::UrgeSet(name) => UrgeView::confirmed("set", name).to_string(),
+            UrgeResponse::UrgeDetails(urge) => UrgeView::detail(urge).to_string(),
+            UrgeResponse::Urges(listed) => {
+                let table = UrgeView::table(listed);
                 format!(
-                    "Urge '{}'\n  Description: {}\n  Prompt: {}",
-                    u.name, u.description, u.prompt
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
                 )
             }
-            UrgeResponse::Urges(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for urge in &listed.items {
-                    out.push_str(&format!("  {} — {}\n\n", urge.name, urge.description,));
-                }
-                out
-            }
-            UrgeResponse::NoUrges => "No urges configured.".to_string(),
-            UrgeResponse::UrgeRemoved(name) => format!("Urge '{name}' removed."),
+            UrgeResponse::NoUrges => format!("{}", "No urges configured.".muted()),
+            UrgeResponse::UrgeRemoved(name) => UrgeView::confirmed("removed", name).to_string(),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

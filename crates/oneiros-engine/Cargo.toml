@@ -7,6 +7,8 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+anstream.workspace = true
+anstyle.workspace = true
 askama.workspace = true
 axum.workspace = true
 bon.workspace = true

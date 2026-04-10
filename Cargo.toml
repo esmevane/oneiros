@@ -13,17 +13,17 @@ repository = "https://github.com/esmevane/oneiros"
 license = "MIT"
 
 [workspace.dependencies]
-# anstream = "0.6.21"
+anstream = "1.0.0"
+anstyle = "1"
 askama = "0.15"
 axum = "0.8.8"
 bon = "3.8"
 # bytes = "1.11"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
-# clap-verbosity-flag = { version = "3", default-features = false, features = [
-#   "tracing"
+# clap-verbosity-flag = { version = "3.0.4", default-features = false, features = [
+#   "tracing", "serde"
 # ] }
-# colorchoice-clap = "1.0.7"
 data-encoding = "2"
 # directories = "5"
 etcetera = "0.11.0"

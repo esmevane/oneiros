@@ -47,6 +47,14 @@ pub struct Config {
     #[arg(long, short, default_value_t, global = true)]
     #[builder(default)]
     pub output: OutputMode,
+    /// When to use colored output: auto (default), always, or never.
+    #[arg(long, default_value_t, global = true)]
+    #[builder(default)]
+    pub color: ColorChoice,
+    /// How much detail to show: quiet, normal (default), or verbose.
+    #[arg(long, default_value_t, global = true)]
+    #[builder(default)]
+    pub verbosity: Verbosity,
 }
 
 impl Default for Config {
@@ -57,6 +65,8 @@ impl Default for Config {
             service: ServiceConfig::default(),
             dream: DreamConfig::default(),
             output: OutputMode::default(),
+            color: ColorChoice::default(),
+            verbosity: Verbosity::default(),
         }
     }
 }
@@ -145,6 +155,12 @@ impl Config {
         }
         if self.output == defaults.output {
             self.output = file_config.output;
+        }
+        if self.color == defaults.color {
+            self.color = file_config.color;
+        }
+        if self.verbosity == defaults.verbosity {
+            self.verbosity = file_config.verbosity;
         }
 
         // Service
@@ -353,6 +369,26 @@ experience_size = 25
         assert_eq!(merged.dream.experience_size, 25);
         assert_eq!(merged.dream.cognition_size, 20); // default preserved
         assert_eq!(merged.dream.dream_depth, 1); // default preserved
+    }
+
+    #[test]
+    fn file_overrides_color_choice() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(dir.path(), r#"color = "never""#);
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.color, ColorChoice::Never);
+    }
+
+    #[test]
+    fn file_overrides_verbosity() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(dir.path(), r#"verbosity = "verbose""#);
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.verbosity, Verbosity::Verbose);
     }
 
     #[test]

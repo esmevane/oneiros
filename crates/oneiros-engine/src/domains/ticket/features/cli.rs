@@ -24,24 +24,17 @@ impl TicketCommands {
         };
 
         let prompt = match &response {
-            TicketResponse::Created(ticket) => {
-                format!("Ticket issued for brain '{}'.", ticket.brain_name)
-            }
-            TicketResponse::Found(ticket) => {
-                format!("Ticket for brain '{}'.", ticket.brain_name)
-            }
+            TicketResponse::Created(ticket) => TicketView::confirmed("issued", ticket).to_string(),
+            TicketResponse::Found(ticket) => TicketView::detail(ticket).to_string(),
             TicketResponse::Validated(ticket) => {
-                format!("Ticket for brain '{}' is valid.", ticket.brain_name)
+                TicketView::confirmed("validated", ticket).to_string()
             }
             TicketResponse::Listed(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for ticket in &listed.items {
-                    out.push_str(&format!(
-                        "  {} ({})\n\n",
-                        ticket.brain_name, ticket.actor_id,
-                    ));
-                }
-                out
+                let table = TicketView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
         };
 

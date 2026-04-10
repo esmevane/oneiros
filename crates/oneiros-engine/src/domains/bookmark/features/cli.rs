@@ -27,36 +27,16 @@ impl BookmarkCommands {
         };
 
         let prompt = match &response {
-            BookmarkResponse::Created(created) => {
-                format!(
-                    "Bookmark '{}' created for brain '{}'.",
-                    created.name, created.brain
-                )
-            }
-            BookmarkResponse::Forked(forked) => {
-                format!(
-                    "Bookmark '{}' forked from '{}' for brain '{}'.",
-                    forked.name, forked.from, forked.brain
-                )
-            }
-            BookmarkResponse::Switched(switched) => {
-                format!(
-                    "Switched to bookmark '{}' for brain '{}'.",
-                    switched.name, switched.brain
-                )
-            }
-            BookmarkResponse::Merged(merged) => {
-                format!(
-                    "Merged '{}' into '{}' for brain '{}'.",
-                    merged.source, merged.target, merged.brain
-                )
-            }
+            BookmarkResponse::Created(created) => BookmarkView::created(created),
+            BookmarkResponse::Forked(forked) => BookmarkView::forked(forked),
+            BookmarkResponse::Switched(switched) => BookmarkView::switched(switched),
+            BookmarkResponse::Merged(merged) => BookmarkView::merged(merged),
             BookmarkResponse::Bookmarks(listed) => {
-                let mut out = format!("{} bookmarks found.\n\n", listed.len());
-                for bookmark in &listed.items {
-                    out.push_str(&format!("  {}\n", bookmark.name));
-                }
-                out
+                let table = BookmarkView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
         };
 

@@ -17,6 +17,6 @@ impl SearchCommands {
         let search_client = SearchClient::new(&client);
 
         let response = search_client.search(&self.query).await?;
-        Ok(SearchPresenter::new(response).render())
+        Ok(SearchView::new(response).render())
     }
 }

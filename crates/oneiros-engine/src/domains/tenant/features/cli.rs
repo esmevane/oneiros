@@ -25,17 +25,15 @@ impl TenantCommands {
 
         let prompt = match &response {
             TenantResponse::Created(wrapped) => {
-                format!("Tenant '{}' created.", wrapped.data.name)
+                TenantView::confirmed("created", &wrapped.data.name).to_string()
             }
-            TenantResponse::Found(wrapped) => {
-                format!("Tenant '{}' ({})", wrapped.data.name, wrapped.data.id)
-            }
+            TenantResponse::Found(wrapped) => TenantView::detail(&wrapped.data).to_string(),
             TenantResponse::Listed(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!("  {}\n\n", wrapped.data.name));
-                }
-                out
+                let table = TenantView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
         };
 

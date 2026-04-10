@@ -26,25 +26,17 @@ impl LevelCommands {
         };
 
         let prompt = match &response {
-            LevelResponse::LevelSet(name) => format!("Level '{name}' set."),
-            LevelResponse::LevelDetails(wrapped) => {
+            LevelResponse::LevelSet(name) => LevelView::confirmed("set", name).to_string(),
+            LevelResponse::LevelDetails(wrapped) => LevelView::detail(&wrapped.data).to_string(),
+            LevelResponse::Levels(listed) => {
+                let table = LevelView::table(listed);
                 format!(
-                    "Level '{}'\n  Description: {}\n  Prompt: {}",
-                    wrapped.data.name, wrapped.data.description, wrapped.data.prompt
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
                 )
             }
-            LevelResponse::Levels(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    out.push_str(&format!(
-                        "  {} — {}\n\n",
-                        wrapped.data.name, wrapped.data.description,
-                    ));
-                }
-                out
-            }
-            LevelResponse::NoLevels => "No levels configured.".to_string(),
-            LevelResponse::LevelRemoved(name) => format!("Level '{name}' removed."),
+            LevelResponse::NoLevels => format!("{}", "No levels configured.".muted()),
+            LevelResponse::LevelRemoved(name) => LevelView::confirmed("removed", name).to_string(),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

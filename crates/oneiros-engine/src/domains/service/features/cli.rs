@@ -31,7 +31,7 @@ impl ServiceCommands {
 
         Ok(Rendered::new(
             response.clone().into(),
-            response.to_string(),
+            ServiceView::render(&response),
             String::new(),
         ))
     }

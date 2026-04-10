@@ -26,29 +26,19 @@ impl ConnectionCommands {
         };
 
         let prompt = match &response {
-            ConnectionResponse::ConnectionCreated(wrapped) => wrapped
-                .meta()
-                .ref_token()
-                .map(|ref_token| format!("Connection recorded: {ref_token}"))
-                .unwrap_or_default(),
-            ConnectionResponse::ConnectionDetails(wrapped) => format!("{:?}", wrapped.data),
-            ConnectionResponse::Connections(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|ref_token| ref_token.to_string())
-                        .unwrap_or_default();
-                    out.push_str(&format!(
-                        "  [{}] {} -> {}\n    {}\n\n",
-                        wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref, ref_token,
-                    ));
-                }
-                out
+            ConnectionResponse::ConnectionCreated(wrapped) => ConnectionView::recorded(wrapped),
+            ConnectionResponse::ConnectionDetails(wrapped) => {
+                ConnectionView::detail(&wrapped.data).to_string()
             }
-            ConnectionResponse::NoConnections => "No connections.".to_string(),
-            ConnectionResponse::ConnectionRemoved(id) => format!("Connection {id} removed."),
+            ConnectionResponse::Connections(listed) => {
+                let table = ConnectionView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
+            }
+            ConnectionResponse::NoConnections => format!("{}", "No connections.".muted()),
+            ConnectionResponse::ConnectionRemoved(id) => ConnectionView::removed(id).to_string(),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

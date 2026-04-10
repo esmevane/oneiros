@@ -24,30 +24,16 @@ impl MemoryCommands {
         };
 
         let prompt = match &response {
-            MemoryResponse::MemoryAdded(wrapped) => wrapped
-                .meta()
-                .ref_token()
-                .map(|ref_token| format!("Memory recorded: {ref_token}"))
-                .unwrap_or_default(),
-            MemoryResponse::MemoryDetails(wrapped) => {
-                format!("[{}] {}", wrapped.data.level, wrapped.data.content)
-            }
+            MemoryResponse::MemoryAdded(wrapped) => MemoryView::recorded(wrapped),
+            MemoryResponse::MemoryDetails(wrapped) => MemoryView::detail(&wrapped.data).to_string(),
             MemoryResponse::Memories(listed) => {
-                let mut out = format!("{} found of {} total.\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|ref_token| ref_token.to_string())
-                        .unwrap_or_default();
-                    out.push_str(&format!(
-                        "  [{}] {}\n    {}\n\n",
-                        wrapped.data.level, wrapped.data.content, ref_token
-                    ));
-                }
-                out
+                let table = MemoryView::table(listed);
+                format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                )
             }
-            MemoryResponse::NoMemories => "No memories.".to_string(),
+            MemoryResponse::NoMemories => format!("{}", "No memories.".muted()),
         };
 
         Ok(Rendered::new(response.into(), prompt, String::new()))

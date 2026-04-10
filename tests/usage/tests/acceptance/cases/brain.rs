@@ -43,7 +43,7 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 
     assert!(!prompt.is_empty(), "brain list prompt should not be empty");
     assert!(
-        prompt.contains("1 found"),
+        prompt.contains("1 of"),
         "brain list prompt should describe the brain count, got: {prompt}"
     );
 

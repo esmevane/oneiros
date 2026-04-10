@@ -52,6 +52,6 @@ impl ContinuityCommands {
             ContinuityCommands::Status(_) => (continuity_client.status().await?, false),
         };
 
-        Ok(ContinuityPresenter::new(result).with_deep(deep).render())
+        Ok(ContinuityView::new(result).with_deep(deep).render())
     }
 }
