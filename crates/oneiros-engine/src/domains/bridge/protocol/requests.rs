@@ -2,25 +2,30 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-/// A request issued over the oneiros sync protocol. The single variant
-/// `Pull` is the "give me events for this link since this checkpoint"
-/// operation that powers `bookmark collect`.
+/// A request issued over the oneiros sync protocol. The `Confer` variant
+/// is the CRDT-native exchange that powers `bookmark collect` — the
+/// requestor sends their version vector, and the peer responds with
+/// only the canon updates they're missing.
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
-/// Encoded with postcard on the wire.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SyncRequest {
-    /// Pull events matching the link's target, starting after the caller's
-    /// last-known checkpoint. The link's token is validated against the
-    /// server's tickets table before any events are returned.
-    Pull { link: Link, checkpoint: Checkpoint },
+    /// "Here's what I have — send me what I'm missing."
+    ///
+    /// The link's token is validated against the server's tickets table
+    /// before any updates are returned. The version vector is the
+    /// requestor's canon state (encoded `loro::VersionVector`).
+    Confer { link: Link, version_vector: Vec<u8> },
+
+    /// "Give me these specific events by ID."
+    ///
+    /// Issued after a conference, when the requestor has determined
+    /// which events they need from the canon's event set diff.
+    FetchEvents { link: Link, event_ids: Vec<String> },
 }
 
 impl SyncRequest {
-    /// Encode this request to JSON bytes for transport. JSON is used
-    /// over postcard because some types in the sync payload
-    /// (particularly `Timestamp` / chrono) contain patterns postcard
-    /// doesn't support.
+    /// Encode this request to JSON bytes for transport.
     pub fn to_bytes(&self) -> Vec<u8> {
         serde_json::to_vec(self).expect("sync request serialization should not fail")
     }
@@ -36,16 +41,16 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
-    fn sample_pull() -> SyncRequest {
-        SyncRequest::Pull {
+    fn sample_confer() -> SyncRequest {
+        SyncRequest::Confer {
             link: Link::new(Ref::bookmark(BookmarkId::new()), Token::from("testtoken")),
-            checkpoint: Checkpoint::empty(),
+            version_vector: vec![0, 1, 2, 3],
         }
     }
 
     #[test]
     fn sync_request_roundtrip_through_bytes() {
-        let original = sample_pull();
+        let original = sample_confer();
         let bytes = original.to_bytes();
         let decoded = SyncRequest::from_bytes(&bytes).unwrap();
         assert_eq!(original, decoded);
@@ -53,15 +58,15 @@ mod tests {
 
     #[test]
     fn sync_request_roundtrip_through_serde_json() {
-        let original = sample_pull();
+        let original = sample_confer();
         let json = serde_json::to_string(&original).unwrap();
         let decoded: SyncRequest = serde_json::from_str(&json).unwrap();
         assert_eq!(original, decoded);
     }
 
     #[test]
-    fn sync_request_pull_matches() {
-        let req = sample_pull();
-        assert!(matches!(req, SyncRequest::Pull { .. }));
+    fn sync_request_confer_matches() {
+        let req = sample_confer();
+        assert!(matches!(req, SyncRequest::Confer { .. }));
     }
 }

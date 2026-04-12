@@ -16,7 +16,6 @@ use crate::*;
 pub struct AddPeer {
     /// The peer's address — a base64url-encoded PeerAddress, as produced
     /// by `bookmark share` or extracted from an `oneiros://` URI.
-    #[arg(long)]
     pub address: String,
     /// Optional human-readable label. Defaults to a short hex prefix of
     /// the key (e.g. `peer-a3f2b1`).

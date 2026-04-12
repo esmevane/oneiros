@@ -97,13 +97,8 @@ async fn project_init_creates_main_bookmark() -> Result<(), Box<dyn core::error:
         .await?;
 
     let client = app.client();
-    let brain = BrainName::new("test");
 
-    match client
-        .bookmark()
-        .list(&brain, &ListBookmarks::default())
-        .await?
-    {
+    match client.bookmark().list(&ListBookmarks::default()).await? {
         BookmarkResponse::Bookmarks(bookmarks) => {
             assert_eq!(bookmarks.len(), 1, "exactly one bookmark after init");
             assert_eq!(

@@ -5,11 +5,15 @@ use crate::*;
 /// The response to a [`SyncRequest`] over the oneiros sync protocol.
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
-/// Encoded with postcard on the wire.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SyncResponse {
-    /// The server accepted the request and returned these events. Empty vec
-    /// is valid — it means the caller is already up to date.
+    /// Canon updates the requestor is missing (encoded Loro updates).
+    Updates { canon_bytes: Vec<u8> },
+
+    /// The requestor is already up to date — no updates needed.
+    Current,
+
+    /// The requested events, fetched by ID after a conference.
     Events { events: Vec<StoredEvent> },
 
     /// The server rejected the request. The reason is intended for human
@@ -39,21 +43,28 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
-    // StoredEvent doesn't implement PartialEq (its inner `Events` enum is
-    // large and structural), so we round-trip responses through bytes and
-    // compare re-serialized output rather than comparing structs directly.
-
     #[test]
-    fn empty_events_response_roundtrip() {
-        let original = SyncResponse::Events { events: Vec::new() };
+    fn updates_response_roundtrip() {
+        let original = SyncResponse::Updates {
+            canon_bytes: vec![1, 2, 3, 4],
+        };
         let bytes = original.to_bytes();
         let decoded = SyncResponse::from_bytes(&bytes).unwrap();
         assert!(!decoded.is_denied());
         assert_eq!(decoded.to_bytes(), bytes);
         match decoded {
-            SyncResponse::Events { events } => assert!(events.is_empty()),
-            _ => panic!("expected Events variant"),
+            SyncResponse::Updates { canon_bytes } => assert_eq!(canon_bytes, vec![1, 2, 3, 4]),
+            _ => panic!("expected Updates variant"),
         }
+    }
+
+    #[test]
+    fn current_response_roundtrip() {
+        let original = SyncResponse::Current;
+        let bytes = original.to_bytes();
+        let decoded = SyncResponse::from_bytes(&bytes).unwrap();
+        assert!(!decoded.is_denied());
+        assert!(matches!(decoded, SyncResponse::Current));
     }
 
     #[test]
@@ -66,19 +77,6 @@ mod tests {
         assert!(decoded.is_denied());
         match decoded {
             SyncResponse::Denied { reason } => assert_eq!(reason, "ticket expired"),
-            _ => panic!("expected Denied variant"),
-        }
-    }
-
-    #[test]
-    fn denied_response_json_roundtrip() {
-        let original = SyncResponse::Denied {
-            reason: "no such bookmark".into(),
-        };
-        let json = serde_json::to_string(&original).unwrap();
-        let decoded: SyncResponse = serde_json::from_str(&json).unwrap();
-        match decoded {
-            SyncResponse::Denied { reason } => assert_eq!(reason, "no such bookmark"),
             _ => panic!("expected Denied variant"),
         }
     }

@@ -54,6 +54,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
 
         self.reducers.apply(&event.data)?;
         self.canon.reconcile(&self.reducers.state()?)?;
+        self.canon.record_event(&event.id)?;
 
         Ok(())
     }

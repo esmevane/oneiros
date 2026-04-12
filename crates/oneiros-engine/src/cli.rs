@@ -182,9 +182,7 @@ impl Command {
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
 
             // Bookmark — canon navigation (routes through HTTP)
-            Command::Bookmark(bookmark) => {
-                bookmark.execute(&config.system(), &config.brain).await?
-            }
+            Command::Bookmark(bookmark) => bookmark.execute(&config.project()).await?,
 
             // System-scoped domains
             Command::Tenant(tenant) => tenant.execute(&config.system()).await?,

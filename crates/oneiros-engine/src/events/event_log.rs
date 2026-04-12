@@ -96,6 +96,48 @@ impl<'a> EventLog<'a> {
         Ok(events)
     }
 
+    /// Fetch events by ID. Returns all found events in sequence order;
+    /// silently skips IDs that don't exist in the log.
+    pub fn get_batch(&self, ids: &[EventId]) -> Result<Vec<StoredEvent>, EventError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let placeholders: Vec<String> = (1..=ids.len()).map(|i| format!("?{i}")).collect();
+        let query = format!(
+            "SELECT id, rowid, data, source, created_at FROM events WHERE id IN ({}) ORDER BY rowid",
+            placeholders.join(",")
+        );
+
+        let mut stmt = self.conn.prepare(&query)?;
+        let params: Vec<String> = ids.iter().map(|id| id.to_string()).collect();
+        let param_refs: Vec<&dyn rusqlite::ToSql> =
+            params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
+
+        stmt.query_map(param_refs.as_slice(), |row| {
+            let id_str: String = row.get(0)?;
+            let data_str: String = row.get(2)?;
+            let source_str: String = row.get(3)?;
+            let created_at_str: String = row.get(4)?;
+            Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
+        })?
+        .map(|result| {
+            let (id_str, sequence, data_str, source_str, created_at_str) = result?;
+            Ok(StoredEvent::builder()
+                .id(id_str.parse().unwrap_or_default())
+                .sequence(sequence)
+                .data(serde_json::from_str(&data_str).unwrap_or(Events::Unknown(
+                    serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
+                )))
+                .source(serde_json::from_str(&source_str).unwrap_or_default())
+                .created_at(
+                    Timestamp::parse_str(&created_at_str).unwrap_or_else(|_| Timestamp::now()),
+                )
+                .build())
+        })
+        .collect()
+    }
+
     /// Import a single event without running projections. Idempotent.
     pub fn import(&self, event: &StoredEvent) -> Result<(), EventError> {
         let event_type = event.data.event_type();

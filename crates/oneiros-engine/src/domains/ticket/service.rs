@@ -10,42 +10,51 @@ impl TicketService {
             brain_name,
         }: &CreateTicket,
     ) -> Result<TicketResponse, TicketError> {
-        // Look up the brain to get its ID for the token claims
         let brain = BrainRepo::new(context)
             .get(brain_name)
             .await?
             .ok_or_else(|| TicketError::BrainNotFound(brain_name.clone()))?;
 
-        // Look up the actor to get its tenant_id for the token claims
+        let target = Ref::brain(brain.id);
+        let ticket = Self::issue(context, brain_name, &brain, *actor_id, target).await?;
+        Ok(TicketResponse::Created(ticket))
+    }
+
+    /// Issue a ticket scoped to a specific target ref. Used by both
+    /// `create` (brain-scoped) and `bookmark share` (bookmark-scoped).
+    pub async fn issue(
+        context: &SystemContext,
+        brain_name: &BrainName,
+        brain: &Brain,
+        actor_id: ActorId,
+        target: Ref,
+    ) -> Result<Ticket, TicketError> {
         let actor = ActorRepo::new(context)
-            .get(*actor_id)
+            .get(actor_id)
             .await?
-            .ok_or_else(|| TicketError::ActorNotFound(*actor_id))?;
+            .ok_or_else(|| TicketError::ActorNotFound(actor_id))?;
 
         let claims = TokenClaims::builder()
             .brain_id(brain.id)
             .tenant_id(actor.tenant_id)
-            .actor_id(*actor_id)
+            .actor_id(actor_id)
             .build();
 
         let token = Token::issue(claims);
-        // For non-distribution tickets, the target is the brain itself —
-        // "this ticket grants access to this brain." Distribution tickets
-        // minted by `bookmark share` will use `Ref::bookmark(id)` as the
-        // target via a different code path (Act 3).
-        let link = Link::new(Ref::brain(brain.id), token);
+        let link = Link::new(target, token);
         let ticket = Ticket::builder()
-            .actor_id(*actor_id)
+            .actor_id(actor_id)
             .brain_name(brain_name.clone())
             .brain_id(brain.id)
             .link(link)
-            .granted_by(*actor_id)
+            .granted_by(actor_id)
             .build();
 
         context
             .emit(TicketEvents::TicketIssued(ticket.clone()))
             .await?;
-        Ok(TicketResponse::Created(ticket))
+
+        Ok(ticket)
     }
 
     pub async fn get(
