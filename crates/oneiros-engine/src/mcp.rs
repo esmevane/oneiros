@@ -77,15 +77,17 @@ async fn dispatch(
     tool_name: &str,
     params: &str,
 ) -> Result<serde_json::Value, ToolError> {
-    // Bookmark tools — need ServerState for CanonIndex
-    if tool_name.parse::<BookmarkRequestType>().is_ok() {
-        return BookmarkTools.dispatch(state, tool_name, params).await;
-    }
-
-    // All other tools work through ProjectContext
+    // All tools work through ProjectContext for auth/brain scoping
     let context = state
         .project_context(config.clone())
         .map_err(|e| ToolError::Domain(e.to_string()))?;
+
+    // Bookmark tools — also need ServerState for CanonIndex and Bridge
+    if tool_name.parse::<BookmarkRequestType>().is_ok() {
+        return BookmarkTools
+            .dispatch(&context, state, tool_name, params)
+            .await;
+    }
 
     // System domains
     if tool_name.parse::<ActorRequestType>().is_ok() {

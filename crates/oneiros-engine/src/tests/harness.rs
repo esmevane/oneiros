@@ -144,13 +144,6 @@ impl TestApp {
     pub fn token(&self) -> Option<Token> {
         self.engine.config().token()
     }
-
-    /// Shared engine config. Useful for tests that need to construct a
-    /// `SystemContext` or `ProjectContext` directly against the running
-    /// instance (rather than going through an HTTP client).
-    pub fn config(&self) -> &Config {
-        self.engine.config()
-    }
 }
 
 /// A typed HTTP client for test assertions.
@@ -240,9 +233,5 @@ impl TestClient {
 
     pub fn bookmark(&self) -> BookmarkClient<'_> {
         BookmarkClient::new(&self.client)
-    }
-
-    pub fn peer(&self) -> PeerClient<'_> {
-        PeerClient::new(&self.client)
     }
 }

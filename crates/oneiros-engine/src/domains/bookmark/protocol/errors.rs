@@ -20,8 +20,8 @@ pub enum BookmarkError {
     #[error("Actor not found: {0}")]
     ActorNotFound(ActorId),
 
-    #[error("Host identity unavailable — server not bound to a bridge")]
-    NoHostIdentity,
+    #[error("No actor available — provide an actor_id or initialize the system first")]
+    NoActor,
 
     #[error("Invalid URI: {0}")]
     InvalidUri(String),
@@ -63,7 +63,7 @@ impl IntoResponse for BookmarkError {
             | BookmarkError::FollowNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             BookmarkError::AlreadyExists(_) => (StatusCode::CONFLICT, self.to_string()),
             BookmarkError::InvalidUri(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            BookmarkError::NoHostIdentity
+            BookmarkError::NoActor
             | BookmarkError::Database(_)
             | BookmarkError::Event(_)
             | BookmarkError::IdParse(_)

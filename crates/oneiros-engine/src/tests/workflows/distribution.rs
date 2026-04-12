@@ -5,13 +5,16 @@
 //! produces an `oneiros://` link. Bob follows the link, creating a
 //! local bookmark. He collects events into it, and merges when ready.
 //!
-//! These tests layer from foundation to full distribution:
+//! These tests cover the full distribution surface:
 //! 1. Imported material enters the dream (export/import, no network)
-//! 2. Following a local project creates a bookmark from a view
-//! 3. Collecting updates a followed bookmark with new events
-//! 4. Views constrain what's visible to the follower
-//! 5. Merging a followed bookmark integrates into the current timeline
-//! 6. Provenance survives across follow chains
+//! 2. Sharing produces a valid, round-trippable oneiros:// URI
+//! 3. Following creates a bookmark and auto-discovers the peer
+//! 4. Collecting updates a followed bookmark with new events
+//! 5. Views constrain what's visible to the follower
+//! 6. Merging a followed bookmark integrates into the current timeline
+//! 7. Provenance survives across follow chains
+//! 8. Unfollowing severs the connection
+//! 9. Peers can be managed explicitly (add, list, remove)
 
 use crate::tests::harness::TestApp;
 use crate::*;
@@ -178,8 +181,18 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .command(r#"memory add thinker.process core "I notice patterns""#)
         .await?;
 
-    // Alice shares her main bookmark — gets back an oneiros:// link
+    // Alice shares her main bookmark — gets back an oneiros:// link.
+    // The link is a round-trippable oneiros:// URI carrying the ticket.
     let link = alice.command("bookmark share main").await?;
+    let uri: OneirosUri = link.prompt().parse()?;
+    let peer_link = match uri {
+        OneirosUri::Peer(pl) => pl,
+        other => panic!("expected OneirosUri::Peer, got {other:?}"),
+    };
+    assert!(
+        matches!(peer_link.link.target, Ref::V0(Resource::Bookmark(_))),
+        "ticket target should be a bookmark ref"
+    );
 
     // ── Bob: follows Alice's link ─────────────────────────────
 
@@ -194,9 +207,17 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
 
     bob.command("emerge listener process").await?;
 
-    // Follow creates the bookmark — no events move yet
+    // Follow creates the bookmark — no events move yet.
+    // The peer is auto-discovered from the URI.
     bob.command(&format!("bookmark follow {} --name alice", link.prompt()))
         .await?;
+
+    // The peer should have been auto-created from the URI
+    let peers = bob.command("peer list").await?;
+    assert!(
+        !peers.prompt().contains("0 of 0"),
+        "following a peer URI should auto-create the peer"
+    );
 
     // The bookmark exists but is empty before collecting
     let result = bob.command("bookmark list").await?;
@@ -676,6 +697,53 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
         }
         other => panic!("expected Cognitions, got {other:?}"),
     }
+
+    Ok(())
+}
+
+// ── Peers: managing known hosts ──────────────────────────────────
+
+/// Peers are auto-discovered through follow, but the peer list
+/// command shows what the system knows about. A fresh system has
+/// no peers; after following a peer URI, the peer appears.
+#[tokio::test]
+async fn peer_list_reflects_follow() -> Result<(), Box<dyn core::error::Error>> {
+    let alice = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    alice.command("emerge thinker process").await?;
+    let link = alice.command("bookmark share main").await?;
+
+    let bob = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    // No peers before follow
+    let result = bob.command("peer list").await?;
+    assert!(
+        result.prompt().contains("0 of 0"),
+        "fresh system should have no peers"
+    );
+
+    // Follow auto-discovers the peer
+    bob.command(&format!("bookmark follow {} --name alice", link.prompt()))
+        .await?;
+
+    // Peer now appears
+    let result = bob.command("peer list").await?;
+    assert!(
+        !result.prompt().contains("0 of 0"),
+        "peer should be auto-created after follow"
+    );
 
     Ok(())
 }

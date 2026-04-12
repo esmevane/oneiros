@@ -37,10 +37,10 @@ impl Server {
         let state = ServerState::bind(self.config.clone()).await?;
 
         // Register the sync handler on the bridge so incoming
-        // `/oneiros/sync/1` connections from peers can serve events.
-        if let Some(bridge) = state.bridge() {
-            bridge.serve(self.config.clone());
-        }
+        // `/oneiros/sync/1` connections from peers can serve canon updates.
+        state
+            .bridge()
+            .serve(self.config.clone(), state.canons().clone());
 
         let app = Self::router_from_state(state);
 
@@ -54,14 +54,6 @@ impl Server {
         let listener = TcpListener::bind(self.config.service.address).await?;
 
         self.serve(listener).await
-    }
-
-    /// Build a router using a bridgeless state. Convenience for tests and
-    /// any caller that doesn't need peer transport. For the async,
-    /// bridge-bound path used at service start, see `serve`.
-    pub fn router(&self) -> Router {
-        let state = ServerState::new(self.config.clone());
-        Self::router_from_state(state)
     }
 
     /// Build a router from an already-constructed state. Used by `serve`

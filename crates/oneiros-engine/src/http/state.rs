@@ -13,7 +13,7 @@ pub struct ServerState {
     config: Config,
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
-    bridge: Option<Bridge>,
+    bridge: Bridge,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -25,23 +25,8 @@ pub enum ServerStateError {
 }
 
 impl ServerState {
-    /// Construct a server state without a bound bridge. Suitable for
-    /// contexts that don't need peer transport (tests, read-only clients).
-    pub fn new(config: Config) -> Self {
-        let (broadcast, _) = broadcast::channel(256);
-        let canons = CanonIndex::new();
-        Self {
-            config,
-            broadcast,
-            canons,
-            bridge: None,
-        }
-    }
-
-    /// Construct a server state with a fully-bound iroh bridge. Loads (or
-    /// generates) the host secret key from disk, binds a `Bridge` against
-    /// it, and attaches it to the state. This is the async path used by
-    /// `Server::serve` at runtime.
+    /// Construct a server state with a bound iroh bridge. Loads (or
+    /// generates) the host secret key from disk and binds a `Bridge`.
     pub async fn bind(config: Config) -> Result<Self, ServerStateError> {
         let secret = config.ensure_host_secret_key()?;
         let bridge = Bridge::bind(secret).await?;
@@ -52,20 +37,18 @@ impl ServerState {
             config,
             broadcast,
             canons,
-            bridge: Some(bridge),
+            bridge,
         })
     }
 
-    /// The bound bridge, if this server state was constructed via `bind`.
-    /// Returns `None` for states constructed via `new` without a bridge.
-    pub fn bridge(&self) -> Option<&Bridge> {
-        self.bridge.as_ref()
+    /// The bound bridge.
+    pub fn bridge(&self) -> &Bridge {
+        &self.bridge
     }
 
-    /// The host's identity (key + address), available when a bridge is
-    /// bound. Returns `None` for bridgeless states.
-    pub fn host_identity(&self) -> Option<HostIdentity> {
-        self.bridge.as_ref().map(Bridge::host_identity)
+    /// The host's identity (key + address).
+    pub fn host_identity(&self) -> HostIdentity {
+        self.bridge.host_identity()
     }
 
     /// The canon index — shared CRDT state for all brains.

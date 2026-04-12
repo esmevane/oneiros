@@ -149,13 +149,7 @@ async fn fresh_brain_lists_main_bookmark() -> Result<(), Box<dyn core::error::Er
 
     let client = app.client();
 
-    let brain = BrainName::new("test");
-
-    match client
-        .bookmark()
-        .list(&brain, &ListBookmarks::default())
-        .await?
-    {
+    match client.bookmark().list(&ListBookmarks::default()).await? {
         BookmarkResponse::Bookmarks(listed) => {
             assert_eq!(
                 listed.len(),
