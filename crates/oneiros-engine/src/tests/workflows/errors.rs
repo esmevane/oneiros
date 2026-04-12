@@ -7,6 +7,66 @@
 use crate::tests::harness::TestApp;
 use crate::*;
 
+/// Project-scoped routes reject unauthenticated and badly-authenticated
+/// requests. System routes remain open.
+#[tokio::test]
+async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    let base_url = app.base_url();
+
+    // ── No token → rejected ──────────────────────────────────────
+    let no_token = Client::new(base_url.clone());
+    let agent_client = AgentClient::new(&no_token);
+    assert!(
+        agent_client
+            .list(&ListAgents::builder().build())
+            .await
+            .is_err(),
+        "project routes should reject unauthenticated requests"
+    );
+
+    // ── Invalid token → rejected ─────────────────────────────────
+    let bad_token = Client::with_token(base_url.clone(), Token::from("not-a-real-token"));
+    let agent_client = AgentClient::new(&bad_token);
+    assert!(
+        agent_client
+            .list(&ListAgents::builder().build())
+            .await
+            .is_err(),
+        "project routes should reject invalid tokens"
+    );
+
+    // ── Valid token → accepted ───────────────────────────────────
+    let good_client = app.client();
+    assert!(
+        good_client
+            .agent()
+            .list(&ListAgents::builder().build())
+            .await
+            .is_ok(),
+        "project routes should accept valid tokens"
+    );
+
+    // ── System routes don't require auth ─────────────────────────
+    let no_token = Client::new(base_url);
+    let tenant_client = TenantClient::new(&no_token);
+    assert!(
+        tenant_client
+            .list(&ListTenants::builder().build())
+            .await
+            .is_ok(),
+        "system routes should not require auth"
+    );
+
+    Ok(())
+}
+
 #[tokio::test]
 async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()

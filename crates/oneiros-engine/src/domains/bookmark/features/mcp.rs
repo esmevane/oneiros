@@ -9,11 +9,12 @@ impl BookmarkTools {
 
     pub async fn dispatch(
         &self,
+        context: &ProjectContext,
         state: &ServerState,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        bookmark_mcp::dispatch(state, tool_name, params).await
+        bookmark_mcp::dispatch(context, state, tool_name, params).await
     }
 }
 
@@ -47,10 +48,26 @@ mod bookmark_mcp {
                 "Mint a distribution ticket for a bookmark and return a shareable oneiros:// URI",
             )
             .def(),
+            Tool::<FollowBookmark>::new(
+                BookmarkRequestType::FollowBookmark,
+                "Follow a bookmark via a URI",
+            )
+            .def(),
+            Tool::<CollectBookmark>::new(
+                BookmarkRequestType::CollectBookmark,
+                "Collect events from a followed bookmark's source",
+            )
+            .def(),
+            Tool::<UnfollowBookmark>::new(
+                BookmarkRequestType::UnfollowBookmark,
+                "Remove a follow from a bookmark",
+            )
+            .def(),
         ]
     }
 
     pub async fn dispatch(
+        context: &ProjectContext,
         state: &ServerState,
         tool_name: &str,
         params: &str,
@@ -59,57 +76,49 @@ mod bookmark_mcp {
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let system = state.system_context();
-        let brain = &state.config().brain;
+        let brain = context.brain_name();
 
         let value = match request_type {
             BookmarkRequestType::ListBookmarks => {
                 let request: ListBookmarks = serde_json::from_str(params).unwrap_or_default();
-                BookmarkService::list(&system, brain, &request)
+                BookmarkService::list(state, brain, &request)
                     .await
                     .map_err(Error::from)?
             }
-            BookmarkRequestType::CreateBookmark => BookmarkService::create(
-                &system,
-                state.canons(),
-                brain,
-                &serde_json::from_str(params)?,
-            )
-            .await
-            .map_err(Error::from)?,
-            BookmarkRequestType::SwitchBookmark => BookmarkService::switch(
-                &system,
-                state.canons(),
-                state.config(),
-                brain,
-                &serde_json::from_str(params)?,
-            )
-            .await
-            .map_err(Error::from)?,
-            BookmarkRequestType::MergeBookmark => BookmarkService::merge(
-                &system,
-                state.canons(),
-                state.config(),
-                brain,
-                &serde_json::from_str(params)?,
-            )
-            .await
-            .map_err(Error::from)?,
+            BookmarkRequestType::CreateBookmark => {
+                BookmarkService::create(state, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
+            }
+            BookmarkRequestType::SwitchBookmark => {
+                BookmarkService::switch(state, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
+            }
+            BookmarkRequestType::MergeBookmark => {
+                BookmarkService::merge(state, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
+            }
             BookmarkRequestType::ShareBookmark => {
-                let identity = state
-                    .host_identity()
-                    .ok_or_else(|| ToolError::Domain("server not bound to a bridge".into()))?;
-                BookmarkService::share(&system, identity, brain, &serde_json::from_str(params)?)
+                BookmarkService::share(state, brain, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?
             }
-            // Follow/Collect/Unfollow land in subsequent Act 3 slices.
-            BookmarkRequestType::FollowBookmark
-            | BookmarkRequestType::CollectBookmark
-            | BookmarkRequestType::UnfollowBookmark => {
-                return Err(ToolError::UnknownTool(format!(
-                    "{tool_name} is not yet wired"
-                )));
+            BookmarkRequestType::FollowBookmark => {
+                BookmarkService::follow(state, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
+            }
+            BookmarkRequestType::CollectBookmark => {
+                BookmarkService::collect(state, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
+            }
+            BookmarkRequestType::UnfollowBookmark => {
+                BookmarkService::unfollow(state, brain, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?
             }
         };
 

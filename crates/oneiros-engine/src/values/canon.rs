@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use loro::{ExportMode, LoroDoc};
+use loro::{ExportMode, LoroDoc, VersionVector};
 use lorosurgeon::DocSync;
 
 use crate::*;
@@ -115,6 +115,46 @@ impl Canon {
             .map_err(|e| EventError::Import(e.to_string()))?;
         self.doc.import(&updates)?;
         Ok(())
+    }
+
+    /// The document's current version vector — compact representation
+    /// of what this canon knows. Suitable for wire transmission.
+    pub fn version_vector(&self) -> Vec<u8> {
+        self.doc.oplog_vv().encode()
+    }
+
+    /// Export only the updates the other side is missing, given
+    /// their encoded version vector.
+    pub fn export_updates_since(&self, their_vv: &[u8]) -> Result<Vec<u8>, EventError> {
+        let vv = VersionVector::decode(their_vv)?;
+        self.doc
+            .export(ExportMode::updates(&vv))
+            .map_err(|e| EventError::Import(e.to_string()))
+    }
+
+    /// Import updates from a peer — the result of their
+    /// `export_updates_since`. CRDT resolution handles conflicts.
+    pub fn import_updates(&self, bytes: &[u8]) -> Result<(), EventError> {
+        self.doc.import(bytes)?;
+        Ok(())
+    }
+
+    /// Record an event ID in the canon's event set. This is the shallow
+    /// provenance layer — the canon knows which events it has seen,
+    /// enabling conference manifests without a shared HAMT store.
+    pub fn record_event(&self, event_id: &EventId) -> Result<(), EventError> {
+        let events = self.doc.get_map("events");
+        events
+            .insert(&event_id.to_string(), true)
+            .map_err(|e| EventError::Import(e.to_string()))?;
+        self.doc.commit();
+        Ok(())
+    }
+
+    /// The set of event IDs this canon has seen.
+    pub fn event_ids(&self) -> std::collections::HashSet<String> {
+        let events = self.doc.get_map("events");
+        events.keys().map(|k| k.to_string()).collect()
     }
 
     /// Clear the document for replay.

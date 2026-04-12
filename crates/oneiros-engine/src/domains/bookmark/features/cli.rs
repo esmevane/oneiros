@@ -17,30 +17,27 @@ pub enum BookmarkCommands {
 impl BookmarkCommands {
     pub async fn execute(
         &self,
-        context: &SystemContext,
-        brain: &BrainName,
+        context: &ProjectContext,
     ) -> Result<Rendered<Responses>, BookmarkError> {
         let client = context.client();
         let bookmark_client = BookmarkClient::new(&client);
 
         let response = match self {
-            BookmarkCommands::Create(create) => bookmark_client.create(brain, create).await?,
-            BookmarkCommands::Switch(switch) => bookmark_client.switch(brain, switch).await?,
-            BookmarkCommands::Merge(merge) => bookmark_client.merge(brain, merge).await?,
-            BookmarkCommands::List(list) => bookmark_client.list(brain, list).await?,
-            BookmarkCommands::Share(share) => bookmark_client.share(brain, share).await?,
-            BookmarkCommands::Follow(follow) => bookmark_client.follow(brain, follow).await?,
-            BookmarkCommands::Collect(collect) => bookmark_client.collect(brain, collect).await?,
-            BookmarkCommands::Unfollow(unfollow) => {
-                bookmark_client.unfollow(brain, unfollow).await?
-            }
+            BookmarkCommands::Create(create) => bookmark_client.create(create).await?,
+            BookmarkCommands::Switch(switch) => bookmark_client.switch(switch).await?,
+            BookmarkCommands::Merge(merge) => bookmark_client.merge(merge).await?,
+            BookmarkCommands::List(list) => bookmark_client.list(list).await?,
+            BookmarkCommands::Share(share) => bookmark_client.share(share).await?,
+            BookmarkCommands::Follow(follow) => bookmark_client.follow(follow).await?,
+            BookmarkCommands::Collect(collect) => bookmark_client.collect(collect).await?,
+            BookmarkCommands::Unfollow(unfollow) => bookmark_client.unfollow(unfollow).await?,
         };
 
         let prompt = match &response {
-            BookmarkResponse::Created(created) => BookmarkView::created(created),
-            BookmarkResponse::Forked(forked) => BookmarkView::forked(forked),
-            BookmarkResponse::Switched(switched) => BookmarkView::switched(switched),
-            BookmarkResponse::Merged(merged) => BookmarkView::merged(merged),
+            BookmarkResponse::Created(created) => BookmarkView::created(created).to_string(),
+            BookmarkResponse::Forked(forked) => BookmarkView::forked(forked).to_string(),
+            BookmarkResponse::Switched(switched) => BookmarkView::switched(switched).to_string(),
+            BookmarkResponse::Merged(merged) => BookmarkView::merged(merged).to_string(),
             BookmarkResponse::Bookmarks(listed) => {
                 let table = BookmarkView::table(listed);
                 format!(
@@ -48,18 +45,11 @@ impl BookmarkCommands {
                     format_args!("{} of {} total", listed.len(), listed.total).muted(),
                 )
             }
-            BookmarkResponse::Shared(result) => result.uri.clone(),
-            BookmarkResponse::Followed(follow) => {
-                format!("Following as '{}'", follow.bookmark)
-            }
-            BookmarkResponse::Collected(result) => {
-                format!(
-                    "Collected {} events (sequence {})",
-                    result.events_received, result.checkpoint.sequence
-                )
-            }
+            BookmarkResponse::Shared(result) => BookmarkView::shared(result),
+            BookmarkResponse::Followed(follow) => BookmarkView::followed(follow).to_string(),
+            BookmarkResponse::Collected(result) => BookmarkView::collected(result).to_string(),
             BookmarkResponse::Unfollowed(unfollowed) => {
-                format!("Unfollowed '{}'", unfollowed.bookmark)
+                BookmarkView::unfollowed(unfollowed).to_string()
             }
         };
 
