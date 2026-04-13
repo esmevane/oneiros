@@ -19,7 +19,7 @@ use tokio::net::TcpListener;
 use crate::*;
 
 /// The engine — entry point for all consumers.
-pub struct Engine {
+pub(crate) struct Engine {
     config: Config,
 }
 

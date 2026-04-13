@@ -16,8 +16,6 @@ impl<'a> PressureStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     /// Recompute pressure for the agent associated with this event.
     pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         let agents = self.resolve_agents(event)?;
@@ -57,8 +55,6 @@ impl<'a> PressureStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub(crate) fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
         // Look up agent by name to get the ID
@@ -104,8 +100,6 @@ impl<'a> PressureStore<'a> {
         Ok(pressures)
     }
 
-    // ── Write operations ─────────────────────────────────────────
-
     pub(crate) fn upsert(
         &self,
         agent_id: &AgentId,
@@ -130,8 +124,6 @@ impl<'a> PressureStore<'a> {
 
         Ok(())
     }
-
-    // ── Private compute helpers ───────────────────────────────────
 
     /// Resolve which agents should have their pressure recomputed for this event.
     ///

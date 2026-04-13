@@ -41,8 +41,8 @@ pub(crate) struct AgentActivityTable {
     pub(crate) agents: Vec<AgentActivity>,
 }
 
-impl core::fmt::Display for AgentActivityTable {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl AgentActivityTable {
+    fn write(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.agents.is_empty() {
             return write!(f, "No agents found.");
         }
@@ -87,5 +87,11 @@ impl core::fmt::Display for AgentActivityTable {
         }
 
         Ok(())
+    }
+}
+
+impl core::fmt::Display for AgentActivityTable {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.write(f)
     }
 }

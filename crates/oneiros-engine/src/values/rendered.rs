@@ -14,7 +14,7 @@ use crate::*;
 /// produced them. Empty strings indicate no presentation is available
 /// for that mode — the caller falls back to serializing `data`.
 #[derive(Debug)]
-pub struct Rendered<T> {
+pub(crate) struct Rendered<T> {
     data: T,
     prompt: String,
     text: String,

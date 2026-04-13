@@ -22,19 +22,6 @@ impl ProjectContext {
         }
     }
 
-    /// Create a context that shares an existing broadcast channel.
-    ///
-    /// Used by the HTTP server so all per-request contexts and SSE
-    /// subscribers share the same event stream.
-    pub(crate) fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
-        Self {
-            config,
-            projections: Projections::project(),
-            chronicle: Chronicle::new(),
-            broadcast,
-        }
-    }
-
     /// Create a context with shared broadcast and a pre-hydrated bookmark entry.
     pub(crate) fn with_entry(
         config: Config,
@@ -76,17 +63,9 @@ impl ProjectContext {
         self.config.brain_db()
     }
 
-    /// Open the system database.
-    pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        self.config.system_db()
-    }
-
-    /// The canon for this project — the active bookmark's CRDT doc.
-    pub(crate) fn canon(&self) -> &Canon {
-        self.projections.canon()
-    }
-
     /// Replay all events through projections, rebuilding read models.
+    #[cfg(test)]
+    #[deprecated]
     pub(crate) fn replay(&self) -> Result<usize, EventError> {
         self.projections.replay_brain(&self.db()?)
     }

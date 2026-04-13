@@ -10,7 +10,7 @@ use crate::*;
 /// All known response types across every domain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Responses {
+pub(crate) enum Responses {
     Level(LevelResponse),
     Texture(TextureResponse),
     Sensation(SensationResponse),

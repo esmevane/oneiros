@@ -20,10 +20,6 @@ macro_rules! resource_id {
             pub(crate) fn new() -> Self {
                 Self(crate::Id::new())
             }
-
-            pub(crate) fn is_empty(&self) -> bool {
-                self.0.is_empty()
-            }
         }
 
         impl From<crate::Id> for $name {

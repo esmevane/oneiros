@@ -12,8 +12,6 @@ impl<'a> ConnectionStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Connection(connection_event) = &event.data {
             match connection_event {
@@ -41,8 +39,6 @@ impl<'a> ConnectionStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub(crate) fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
         let mut stmt = match entity_ref {
@@ -89,8 +85,6 @@ impl<'a> ConnectionStore<'a> {
 
         Ok(connections)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn insert(&self, connection: &Connection) -> Result<(), EventError> {
         self.conn.execute(

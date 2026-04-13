@@ -124,15 +124,6 @@ impl<'a> AgentStore<'a> {
         }
     }
 
-    pub(crate) fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
-        let count: i64 = self.conn.query_row(
-            "select count(*) from agents where name = ?1",
-            params![name.to_string()],
-            |row| row.get(0),
-        )?;
-        Ok(count > 0)
-    }
-
     // ── Write operations (called by handle) ─────────────────────
 
     fn create_record(&self, agent: &Agent) -> Result<(), EventError> {

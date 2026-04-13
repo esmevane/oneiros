@@ -29,9 +29,6 @@ pub enum ClientError {
 
     #[error("Server error: {status} — {body}")]
     Server { status: u16, body: String },
-
-    #[error("Invalid request: {0}")]
-    InvalidRequest(String),
 }
 
 impl IntoResponse for ClientError {
