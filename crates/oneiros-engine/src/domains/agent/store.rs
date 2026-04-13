@@ -8,13 +8,11 @@ pub struct AgentStore<'a> {
 }
 
 impl<'a> AgentStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Agent(agent_event) = &event.data {
             match agent_event {
                 AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
@@ -25,12 +23,12 @@ impl<'a> AgentStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM agents", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY,
@@ -45,7 +43,7 @@ impl<'a> AgentStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
-    pub fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
+    pub(crate) fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
@@ -75,7 +73,7 @@ impl<'a> AgentStore<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Agent>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Agent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
@@ -112,7 +110,7 @@ impl<'a> AgentStore<'a> {
     ///
     /// Used when only an `AgentId` is available (e.g. from a foreign-key reference
     /// in an event payload) and we need to resolve it to an `AgentName`.
-    pub fn get_name_by_id(&self, id: &AgentId) -> Result<Option<AgentName>, EventError> {
+    pub(crate) fn get_name_by_id(&self, id: &AgentId) -> Result<Option<AgentName>, EventError> {
         let result = self.conn.query_row(
             "SELECT name FROM agents WHERE id = ?1",
             params![id.to_string()],
@@ -126,7 +124,7 @@ impl<'a> AgentStore<'a> {
         }
     }
 
-    pub fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
+    pub(crate) fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
         let count: i64 = self.conn.query_row(
             "select count(*) from agents where name = ?1",
             params![name.to_string()],

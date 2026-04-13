@@ -28,11 +28,6 @@ impl<'a> StorageStore<'a> {
         Ok(())
     }
 
-    pub fn reset_blobs(&self) -> Result<(), EventError> {
-        self.conn.execute_batch("DELETE FROM blob")?;
-        Ok(())
-    }
-
     pub fn reset_storage(&self) -> Result<(), EventError> {
         self.conn.execute_batch("DELETE FROM storage")?;
         Ok(())

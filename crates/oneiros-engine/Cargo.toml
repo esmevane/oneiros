@@ -46,7 +46,9 @@ shlex.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
 
-# [lints.clippy]
+[lints.clippy]
 # nursery = { level = "deny", priority = -1 }
 # pedantic = { level = "deny", priority = -1 }
 # unwrap_used = "deny"
+# wildcard_imports = "allow"
+enum_variant_names = "allow"

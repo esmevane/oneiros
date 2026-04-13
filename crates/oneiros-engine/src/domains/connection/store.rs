@@ -44,37 +44,6 @@ impl<'a> ConnectionStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
-    pub fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, from_ref, to_ref, nature, created_at
-             FROM connections WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
-
-        match result {
-            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(
-                Connection::builder()
-                    .id(id.parse()?)
-                    .from_ref(serde_json::from_str(&from_ref)?)
-                    .to_ref(serde_json::from_str(&to_ref)?)
-                    .nature(nature)
-                    .created_at(Timestamp::parse_str(&created_at)?)
-                    .build(),
-            )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
     pub fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
         let mut stmt = match entity_ref {
             Some(_) => self.conn.prepare(

@@ -63,8 +63,4 @@ impl<'a> ChronicleStore<'a> {
         move |node| self.put(node)
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
-        self.db.execute_batch("DELETE FROM chronicle_objects")?;
-        Ok(())
-    }
 }

@@ -43,37 +43,6 @@ impl<'a> MemoryStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
-    pub fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, agent_id, level, content, created_at
-             FROM memories WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
-
-        match result {
-            Ok((id, agent_id, level, content, created_at)) => Ok(Some(
-                Memory::builder()
-                    .id(id.parse()?)
-                    .agent_id(agent_id.parse()?)
-                    .level(level)
-                    .content(content)
-                    .created_at(Timestamp::parse_str(&created_at)?)
-                    .build(),
-            )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
     pub fn list(&self, agent: Option<&str>) -> Result<Vec<Memory>, EventError> {
         let mut stmt = match agent {
             Some(_) => self.conn.prepare(
