@@ -51,6 +51,7 @@ mod token;
 mod token_version;
 mod tool_def;
 mod tool_name;
+mod toolset;
 mod verbosity;
 
 pub use agent_activity::*;
@@ -105,4 +106,5 @@ pub use timestamp::*;
 pub use token::*;
 pub use tool_def::*;
 pub use tool_name::*;
+pub use toolset::*;
 pub use verbosity::*;
