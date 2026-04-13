@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct SearchSkills;
+pub(crate) struct SearchSkills;
 
 impl SearchSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![Skill::new("search", include_str!("skills/search.md"))]
     }
 }

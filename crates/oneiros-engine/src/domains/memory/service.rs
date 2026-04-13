@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct MemoryService;
+pub(crate) struct MemoryService;
 
 impl MemoryService {
-    pub async fn add(
+    pub(crate) async fn add(
         context: &ProjectContext,
         AddMemory {
             agent,
@@ -31,7 +31,7 @@ impl MemoryService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetMemory,
     ) -> Result<MemoryResponse, MemoryError> {
@@ -45,7 +45,7 @@ impl MemoryService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListMemories { agent, filters }: &ListMemories,
     ) -> Result<MemoryResponse, MemoryError> {

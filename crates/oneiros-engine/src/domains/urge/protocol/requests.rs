@@ -7,41 +7,41 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetUrge {
+pub(crate) struct SetUrge {
     #[builder(into)]
-    pub name: UrgeName,
+    pub(crate) name: UrgeName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetUrge {
+pub(crate) struct GetUrge {
     #[builder(into)]
-    pub name: UrgeName,
+    pub(crate) name: UrgeName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveUrge {
+pub(crate) struct RemoveUrge {
     #[builder(into)]
-    pub name: UrgeName,
+    pub(crate) name: UrgeName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListUrges {
+pub(crate) struct ListUrges {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = UrgeRequestType, display = "kebab-case")]
-pub enum UrgeRequest {
+pub(crate) enum UrgeRequest {
     SetUrge(SetUrge),
     GetUrge(GetUrge),
     ListUrges(ListUrges),

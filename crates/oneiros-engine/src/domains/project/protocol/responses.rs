@@ -8,10 +8,10 @@ use crate::*;
 /// The filesystem path where the export file was written.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct ExportPath(pub PathBuf);
+pub(crate) struct ExportPath(pub(crate) PathBuf);
 
 impl ExportPath {
-    pub fn new(path: impl Into<PathBuf>) -> Self {
+    pub(crate) fn new(path: impl Into<PathBuf>) -> Self {
         Self(path.into())
     }
 }
@@ -38,10 +38,10 @@ impl core::fmt::Display for ExportPath {
 /// A count of events processed (imported or replayed).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct EventCount(pub i64);
+pub(crate) struct EventCount(pub(crate) i64);
 
 impl EventCount {
-    pub fn new(value: impl Into<i64>) -> Self {
+    pub(crate) fn new(value: impl Into<i64>) -> Self {
         Self(value.into())
     }
 }
@@ -55,15 +55,15 @@ impl core::fmt::Display for EventCount {
 /// The result of a successful project initialization — carries the
 /// token needed for all subsequent authenticated requests.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InitResult {
-    pub brain_name: BrainName,
-    pub token: Token,
+pub(crate) struct InitResult {
+    pub(crate) brain_name: BrainName,
+    pub(crate) token: Token,
 }
 
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = ProjectResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ProjectResponse {
+pub(crate) enum ProjectResponse {
     Initialized(InitResult),
     BrainAlreadyExists(BrainName),
     WroteExport(ExportPath),
@@ -72,12 +72,12 @@ pub enum ProjectResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImportResult {
-    pub imported: EventCount,
-    pub replayed: EventCount,
+pub(crate) struct ImportResult {
+    pub(crate) imported: EventCount,
+    pub(crate) replayed: EventCount,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReplayResult {
-    pub replayed: EventCount,
+pub(crate) struct ReplayResult {
+    pub(crate) replayed: EventCount,
 }

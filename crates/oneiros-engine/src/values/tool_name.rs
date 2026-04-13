@@ -2,14 +2,14 @@ use core::fmt;
 
 /// A typed tool name — derived from a request type's `Display` implementation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ToolName(String);
+pub(crate) struct ToolName(String);
 
 impl ToolName {
-    pub fn new(name: impl fmt::Display) -> Self {
+    pub(crate) fn new(name: impl fmt::Display) -> Self {
         Self(name.to_string())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }

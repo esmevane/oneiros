@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct TenantView;
+pub(crate) struct TenantView;
 
 impl TenantView {
     /// Table of tenants with standard columns.
-    pub fn table(tenants: &Listed<Response<Tenant>>) -> Table {
+    pub(crate) fn table(tenants: &Listed<Response<Tenant>>) -> Table {
         let mut table = Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
 
         for wrapped in &tenants.items {
@@ -22,12 +22,12 @@ impl TenantView {
     }
 
     /// Detail view for a single tenant.
-    pub fn detail(tenant: &Tenant) -> Detail {
+    pub(crate) fn detail(tenant: &Tenant) -> Detail {
         Detail::new(tenant.name.to_string()).field("id:", tenant.id.to_string())
     }
 
     /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &TenantName) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, name: &TenantName) -> Confirmation {
         Confirmation::new("Tenant", name.to_string(), verb)
     }
 }

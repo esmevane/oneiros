@@ -9,37 +9,37 @@ use crate::*;
 #[derive(
     Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
 )]
-pub struct Tenant {
+pub(crate) struct Tenant {
     #[builder(default, into)]
-    pub id: TenantId,
+    pub(crate) id: TenantId,
     #[builder(into)]
-    pub name: TenantName,
+    pub(crate) name: TenantName,
     #[builder(default = Timestamp::now(), into)]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
 #[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "tenants")]
-pub struct Tenants(HashMap<String, Tenant>);
+pub(crate) struct Tenants(HashMap<String, Tenant>);
 
 impl Tenants {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn get(&self, id: TenantId) -> Option<&Tenant> {
+    pub(crate) fn get(&self, id: TenantId) -> Option<&Tenant> {
         self.0.get(&id.to_string())
     }
 
-    pub fn set(&mut self, tenant: &Tenant) -> Option<Tenant> {
+    pub(crate) fn set(&mut self, tenant: &Tenant) -> Option<Tenant> {
         self.0.insert(tenant.id.to_string(), tenant.clone())
     }
 
-    pub fn remove(&mut self, tenant_id: TenantId) -> Option<Tenant> {
+    pub(crate) fn remove(&mut self, tenant_id: TenantId) -> Option<Tenant> {
         self.0.remove(&tenant_id.to_string())
     }
 }

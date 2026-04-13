@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct SeedView;
+pub(crate) struct SeedView;
 
 impl SeedView {
     /// Confirmation that core vocabulary has been seeded.
-    pub fn core_complete() -> String {
+    pub(crate) fn core_complete() -> String {
         Confirmation::new("Core", "vocabulary", "seeded").to_string()
     }
 
     /// Confirmation that canonical agents have been seeded.
-    pub fn agents_complete() -> String {
+    pub(crate) fn agents_complete() -> String {
         Confirmation::new("Canonical", "agents", "seeded").to_string()
     }
 }

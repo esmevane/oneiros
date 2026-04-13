@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct BookmarkView;
+pub(crate) struct BookmarkView;
 
 impl BookmarkView {
     /// Table of bookmarks with standard columns.
-    pub fn table(bookmarks: &Listed<Bookmark>) -> Table {
+    pub(crate) fn table(bookmarks: &Listed<Bookmark>) -> Table {
         let mut table = Table::new(vec![Column::key("name", "Name")]);
 
         for bookmark in &bookmarks.items {
@@ -20,11 +20,11 @@ impl BookmarkView {
         table
     }
 
-    pub fn created(created: &BookmarkCreated) -> Confirmation {
+    pub(crate) fn created(created: &BookmarkCreated) -> Confirmation {
         Confirmation::new("Bookmark", created.name.to_string(), "created")
     }
 
-    pub fn forked(forked: &BookmarkForked) -> Confirmation {
+    pub(crate) fn forked(forked: &BookmarkForked) -> Confirmation {
         Confirmation::new(
             "Bookmark",
             forked.name.to_string(),
@@ -32,11 +32,11 @@ impl BookmarkView {
         )
     }
 
-    pub fn switched(switched: &BookmarkSwitched) -> Confirmation {
+    pub(crate) fn switched(switched: &BookmarkSwitched) -> Confirmation {
         Confirmation::new("Bookmark", switched.name.to_string(), "switched to")
     }
 
-    pub fn merged(merged: &BookmarkMerged) -> Confirmation {
+    pub(crate) fn merged(merged: &BookmarkMerged) -> Confirmation {
         Confirmation::new(
             "Bookmark",
             merged.source.to_string(),
@@ -46,15 +46,15 @@ impl BookmarkView {
 
     /// Share returns the URI directly — it's the produced artifact
     /// that callers pipe into follow commands.
-    pub fn shared(result: &BookmarkShareResult) -> String {
+    pub(crate) fn shared(result: &BookmarkShareResult) -> String {
         result.uri.clone()
     }
 
-    pub fn followed(follow: &Follow) -> Confirmation {
+    pub(crate) fn followed(follow: &Follow) -> Confirmation {
         Confirmation::new("Bookmark", follow.bookmark.to_string(), "followed")
     }
 
-    pub fn collected(result: &BookmarkCollectResult) -> Confirmation {
+    pub(crate) fn collected(result: &BookmarkCollectResult) -> Confirmation {
         Confirmation::new(
             "Bookmark",
             format!("{} events", result.events_received),
@@ -62,7 +62,7 @@ impl BookmarkView {
         )
     }
 
-    pub fn unfollowed(unfollowed: &BookmarkUnfollowed) -> Confirmation {
+    pub(crate) fn unfollowed(unfollowed: &BookmarkUnfollowed) -> Confirmation {
         Confirmation::new("Bookmark", unfollowed.bookmark.to_string(), "unfollowed")
     }
 }

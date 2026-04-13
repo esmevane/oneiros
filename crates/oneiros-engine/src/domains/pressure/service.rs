@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct PressureService;
+pub(crate) struct PressureService;
 
 impl PressureService {
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetPressure,
     ) -> Result<PressureResponse, PressureError> {
@@ -14,7 +14,7 @@ impl PressureService {
         }))
     }
 
-    pub async fn list(context: &ProjectContext) -> Result<PressureResponse, PressureError> {
+    pub(crate) async fn list(context: &ProjectContext) -> Result<PressureResponse, PressureError> {
         let pressures = PressureRepo::new(context).list().await?;
         Ok(PressureResponse::AllReadings(ListPressureResult {
             pressures,

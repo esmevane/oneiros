@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum TicketCommands {
+pub(crate) enum TicketCommands {
     Issue(CreateTicket),
     Validate(ValidateTicket),
     List(ListTickets),
 }
 
 impl TicketCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, TicketError> {

@@ -19,22 +19,22 @@ use crate::*;
     lorosurgeon::Hydrate,
     lorosurgeon::Reconcile,
 )]
-pub struct Checkpoint {
+pub(crate) struct Checkpoint {
     /// Number of events applied within this view.
-    pub sequence: u64,
+    pub(crate) sequence: u64,
     /// Rolling content hash over the events that produced this checkpoint.
     /// Two checkpoints with the same hash have seen identical events.
-    pub cumulative_hash: ContentHash,
+    pub(crate) cumulative_hash: ContentHash,
     /// The identifier of the most recent event seen, or `None` when empty.
-    pub head: Option<EventId>,
+    pub(crate) head: Option<EventId>,
     /// When this checkpoint was recorded.
-    pub taken_at: Timestamp,
+    pub(crate) taken_at: Timestamp,
 }
 
 impl Checkpoint {
     /// An empty checkpoint — no events seen. Used at follow creation time
     /// before the first collect.
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self {
             sequence: 0,
             cumulative_hash: ContentHash::default(),
@@ -44,7 +44,7 @@ impl Checkpoint {
     }
 
     /// Whether this checkpoint represents "no events seen."
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.sequence == 0 && self.head.is_none()
     }
 }

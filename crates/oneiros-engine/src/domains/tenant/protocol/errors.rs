@@ -4,21 +4,21 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{TenantId, TimestampParseError};
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TenantError {
     #[error("Tenant not found: {0}")]
     NotFound(TenantId),
 
-    #[error("Invalid ID: {0}")]
-    InvalidId(#[from] crate::IdParseError),
+    #[error(transparent)]
+    InvalidId(#[from] IdParseError),
 
     #[error(transparent)]
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
     TimestampParse(#[from] TimestampParseError),

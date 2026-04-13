@@ -1,12 +1,12 @@
 use crate::*;
 
-pub struct PeerService;
+pub(crate) struct PeerService;
 
 impl PeerService {
     /// Add a peer by its base64url-encoded address. Extracts the key from
     /// the address, generates a default name if none is supplied, and
     /// emits `PeerAdded`.
-    pub async fn add(
+    pub(crate) async fn add(
         context: &SystemContext,
         AddPeer { address, name }: &AddPeer,
     ) -> Result<PeerResponse, PeerError> {
@@ -34,7 +34,7 @@ impl PeerService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &SystemContext,
         selector: &GetPeer,
     ) -> Result<PeerResponse, PeerError> {
@@ -48,7 +48,7 @@ impl PeerService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &SystemContext,
         ListPeers { filters }: &ListPeers,
     ) -> Result<PeerResponse, PeerError> {
@@ -63,7 +63,7 @@ impl PeerService {
     /// return it without emitting an event. Otherwise add it and return
     /// the newly-created record. Used by `bookmark follow` when a remote
     /// URI arrives — the peer gets added transparently if it's new.
-    pub async fn ensure(
+    pub(crate) async fn ensure(
         context: &SystemContext,
         key: PeerKey,
         address: PeerAddress,
@@ -85,7 +85,7 @@ impl PeerService {
         Ok(peer)
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &SystemContext,
         RemovePeer { id }: &RemovePeer,
     ) -> Result<PeerResponse, PeerError> {

@@ -1,10 +1,10 @@
 use crate::*;
 
-pub struct StorageService;
+pub(crate) struct StorageService;
 
 impl StorageService {
     /// Upload content — hash it, store the blob, record the metadata.
-    pub async fn upload(
+    pub(crate) async fn upload(
         context: &ProjectContext,
         UploadStorage {
             key,
@@ -35,7 +35,7 @@ impl StorageService {
     }
 
     /// Show storage metadata by key.
-    pub async fn show(
+    pub(crate) async fn show(
         context: &ProjectContext,
         selector: &GetStorage,
     ) -> Result<StorageResponse, StorageError> {
@@ -50,7 +50,7 @@ impl StorageService {
     }
 
     /// List all storage entries.
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListStorage { filters }: &ListStorage,
     ) -> Result<StorageResponse, StorageError> {
@@ -67,7 +67,7 @@ impl StorageService {
     }
 
     /// Remove storage metadata by key. The blob is NOT deleted (dedup preservation).
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveStorage,
     ) -> Result<StorageResponse, StorageError> {
@@ -87,7 +87,7 @@ impl StorageService {
     }
 
     /// Retrieve the raw binary content for a storage key.
-    pub async fn get_content(
+    pub(crate) async fn get_content(
         context: &ProjectContext,
         key: &StorageKey,
     ) -> Result<Vec<u8>, StorageError> {

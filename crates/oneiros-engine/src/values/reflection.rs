@@ -1,8 +1,8 @@
 use crate::*;
 
 #[derive(Clone, serde::Serialize)]
-pub struct Reflection {
-    pub agent: Agent,
+pub(crate) struct Reflection {
+    pub(crate) agent: Agent,
     #[serde(skip)]
-    pub prompt: String,
+    pub(crate) prompt: String,
 }

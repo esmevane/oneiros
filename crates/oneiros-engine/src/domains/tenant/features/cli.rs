@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum TenantCommands {
+pub(crate) enum TenantCommands {
     Create(CreateTenant),
     Get(GetTenant),
     List(ListTenants),
 }
 
 impl TenantCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, TenantError> {

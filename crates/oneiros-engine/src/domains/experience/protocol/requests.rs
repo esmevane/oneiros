@@ -7,51 +7,51 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateExperience {
+pub(crate) struct CreateExperience {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
     #[builder(into)]
-    pub sensation: SensationName,
+    pub(crate) sensation: SensationName,
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetExperience {
+pub(crate) struct GetExperience {
     #[builder(into)]
-    pub id: ExperienceId,
+    pub(crate) id: ExperienceId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListExperiences {
+pub(crate) struct ListExperiences {
     #[arg(long)]
-    pub agent: Option<AgentName>,
+    pub(crate) agent: Option<AgentName>,
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct UpdateExperienceDescription {
+pub(crate) struct UpdateExperienceDescription {
     #[builder(into)]
-    pub id: ExperienceId,
+    pub(crate) id: ExperienceId,
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct UpdateExperienceSensation {
+pub(crate) struct UpdateExperienceSensation {
     #[builder(into)]
-    pub id: ExperienceId,
+    pub(crate) id: ExperienceId,
     #[builder(into)]
-    pub sensation: SensationName,
+    pub(crate) sensation: SensationName,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ExperienceRequestType, display = "kebab-case")]
-pub enum ExperienceRequest {
+pub(crate) enum ExperienceRequest {
     CreateExperience(CreateExperience),
     GetExperience(GetExperience),
     ListExperiences(ListExperiences),

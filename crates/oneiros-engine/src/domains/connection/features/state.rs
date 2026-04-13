@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ConnectionState;
+pub(crate) struct ConnectionState;
 
 impl ConnectionState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Connection(connection_event) = event {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(connection) => {
@@ -18,7 +18,7 @@ impl ConnectionState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

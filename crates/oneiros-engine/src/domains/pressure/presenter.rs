@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct PressurePresenter {
+pub(crate) struct PressurePresenter {
     response: PressureResponse,
 }
 
 impl PressurePresenter {
-    pub fn new(response: PressureResponse) -> Self {
+    pub(crate) fn new(response: PressureResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<Responses> {
+    pub(crate) fn render(self) -> Rendered<Responses> {
         let prompt = self.render_prompt();
         let text = self.render_text();
         let data = Responses::from(self.response);

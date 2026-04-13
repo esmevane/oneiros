@@ -7,39 +7,39 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateConnection {
+pub(crate) struct CreateConnection {
     #[builder(into)]
-    pub nature: NatureName,
-    pub from_ref: RefToken,
-    pub to_ref: RefToken,
+    pub(crate) nature: NatureName,
+    pub(crate) from_ref: RefToken,
+    pub(crate) to_ref: RefToken,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetConnection {
+pub(crate) struct GetConnection {
     #[builder(into)]
-    pub id: ConnectionId,
+    pub(crate) id: ConnectionId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListConnections {
+pub(crate) struct ListConnections {
     #[arg(long)]
-    pub entity: Option<RefToken>,
+    pub(crate) entity: Option<RefToken>,
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveConnection {
+pub(crate) struct RemoveConnection {
     #[builder(into)]
-    pub id: ConnectionId,
+    pub(crate) id: ConnectionId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ConnectionRequestType, display = "kebab-case")]
-pub enum ConnectionRequest {
+pub(crate) enum ConnectionRequest {
     CreateConnection(CreateConnection),
     GetConnection(GetConnection),
     ListConnections(ListConnections),

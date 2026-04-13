@@ -17,14 +17,14 @@ use tokio::sync::{broadcast, mpsc, oneshot};
 use crate::*;
 
 /// A dispatched event — carries the event and an acknowledgment channel.
-pub struct Dispatch {
-    pub event: StoredEvent,
-    pub ack: oneshot::Sender<()>,
+pub(crate) struct Dispatch {
+    pub(crate) event: StoredEvent,
+    pub(crate) ack: oneshot::Sender<()>,
 }
 
 /// The event bus — append, dispatch, broadcast.
 #[derive(Clone)]
-pub struct EventBus {
+pub(crate) struct EventBus {
     db: Arc<Mutex<rusqlite::Connection>>,
     dispatch: mpsc::UnboundedSender<Dispatch>,
     broadcast: broadcast::Sender<StoredEvent>,
@@ -44,7 +44,7 @@ impl EventBus {
     /// 1. Running EventLog migrations
     /// 2. Running projection migrations (via Frames)
     /// 3. Spawning the Frames task with the returned receiver
-    pub fn new(db: Arc<Mutex<rusqlite::Connection>>) -> (Self, mpsc::UnboundedReceiver<Dispatch>) {
+    pub(crate) fn new(db: Arc<Mutex<rusqlite::Connection>>) -> (Self, mpsc::UnboundedReceiver<Dispatch>) {
         let (dispatch, receiver) = mpsc::unbounded_channel();
         let (broadcast, _) = broadcast::channel(256);
 
@@ -62,7 +62,7 @@ impl EventBus {
     /// Returns after the event has been persisted AND projected.
     /// The dispatch channel carries a oneshot for acknowledgment —
     /// the Frames task signals when projection is complete.
-    pub async fn publish(&self, event: NewEvent) -> Result<StoredEvent, EventError> {
+    pub(crate) async fn publish(&self, event: NewEvent) -> Result<StoredEvent, EventError> {
         // 1. Append — persist to the event log
         let stored = {
             let conn = lock(&self.db)?;
@@ -86,7 +86,7 @@ impl EventBus {
     }
 
     /// Emit an event with a given source: construct + publish.
-    pub async fn emit(
+    pub(crate) async fn emit(
         &self,
         event: impl Into<Events>,
         source: Source,
@@ -99,23 +99,23 @@ impl EventBus {
     }
 
     /// Subscribe to the broadcast channel (for SSE, dashboard, peers).
-    pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
+    pub(crate) fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
         self.broadcast.subscribe()
     }
 
     /// Execute a read operation against the database.
-    pub fn with_db<T>(&self, f: impl FnOnce(&rusqlite::Connection) -> T) -> Result<T, EventError> {
+    pub(crate) fn with_db<T>(&self, f: impl FnOnce(&rusqlite::Connection) -> T) -> Result<T, EventError> {
         let conn = lock(&self.db)?;
         Ok(f(&conn))
     }
 
     /// Access the shared database handle (for Frames construction).
-    pub fn db(&self) -> Arc<Mutex<rusqlite::Connection>> {
+    pub(crate) fn db(&self) -> Arc<Mutex<rusqlite::Connection>> {
         self.db.clone()
     }
 
     /// Load all events from the log (for export, replay source).
-    pub fn load_events(&self) -> Result<Vec<StoredEvent>, EventError> {
+    pub(crate) fn load_events(&self) -> Result<Vec<StoredEvent>, EventError> {
         let conn = lock(&self.db)?;
         EventLog::new(&conn).load_all()
     }
@@ -125,7 +125,7 @@ impl EventBus {
     /// Unlike publish, this does NOT append — the event already exists
     /// in the log. It just sends it through the dispatch and broadcast
     /// channels so Frames and external observers see it.
-    pub async fn redispatch(&self, event: StoredEvent) {
+    pub(crate) async fn redispatch(&self, event: StoredEvent) {
         let (ack_tx, ack_rx) = oneshot::channel();
         let _ = self.dispatch.send(Dispatch {
             event: event.clone(),
@@ -139,7 +139,7 @@ impl EventBus {
     ///
     /// For bulk import. After import, call replay to dispatch all events
     /// through the projection pipeline.
-    pub fn import(&self, event: &crate::StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn import(&self, event: &crate::StoredEvent) -> Result<(), EventError> {
         let conn = lock(&self.db)?;
         EventLog::new(&conn).import(event)
     }

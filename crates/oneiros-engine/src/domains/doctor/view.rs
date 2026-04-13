@@ -2,10 +2,10 @@
 
 use crate::*;
 
-pub struct DoctorView;
+pub(crate) struct DoctorView;
 
 impl DoctorView {
-    pub fn checklist(checks: &[DoctorCheck]) -> String {
+    pub(crate) fn checklist(checks: &[DoctorCheck]) -> String {
         let mut lines = vec![format!("{}", "Oneiros health check:".heading())];
 
         for check in checks {

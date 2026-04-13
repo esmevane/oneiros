@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct BookmarkService;
+pub(crate) struct BookmarkService;
 
 impl BookmarkService {
-    pub async fn create(
+    pub(crate) async fn create(
         state: &ServerState,
         brain: &BrainName,
         CreateBookmark { name }: &CreateBookmark,
@@ -25,7 +25,7 @@ impl BookmarkService {
         Ok(BookmarkResponse::Forked(forked))
     }
 
-    pub async fn switch(
+    pub(crate) async fn switch(
         state: &ServerState,
         brain: &BrainName,
         SwitchBookmark { name }: &SwitchBookmark,
@@ -49,7 +49,7 @@ impl BookmarkService {
         Ok(BookmarkResponse::Switched(switched))
     }
 
-    pub async fn merge(
+    pub(crate) async fn merge(
         state: &ServerState,
         brain: &BrainName,
         MergeBookmark { source }: &MergeBookmark,
@@ -73,7 +73,7 @@ impl BookmarkService {
         Ok(BookmarkResponse::Merged(merged))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         state: &ServerState,
         brain: &BrainName,
         ListBookmarks { filters }: &ListBookmarks,
@@ -87,7 +87,7 @@ impl BookmarkService {
     /// composing an `oneiros://` URI that carries the host's address plus
     /// the ticket's link. Delegates to `TicketService::issue` for the
     /// actual ticket minting.
-    pub async fn share(
+    pub(crate) async fn share(
         state: &ServerState,
         brain: &BrainName,
         ShareBookmark { name, actor_id }: &ShareBookmark,
@@ -147,7 +147,7 @@ impl BookmarkService {
     }
 
     /// Follow a bookmark via an `oneiros://` or `ref:` URI.
-    pub async fn follow(
+    pub(crate) async fn follow(
         state: &ServerState,
         brain: &BrainName,
         FollowBookmark { uri, name }: &FollowBookmark,
@@ -180,7 +180,7 @@ impl BookmarkService {
     }
 
     /// Collect from a follow's source via CRDT conference.
-    pub async fn collect(
+    pub(crate) async fn collect(
         state: &ServerState,
         brain: &BrainName,
         CollectBookmark { name }: &CollectBookmark,
@@ -293,7 +293,7 @@ impl BookmarkService {
     }
 
     /// Remove a follow.
-    pub async fn unfollow(
+    pub(crate) async fn unfollow(
         state: &ServerState,
         brain: &BrainName,
         UnfollowBookmark { name }: &UnfollowBookmark,

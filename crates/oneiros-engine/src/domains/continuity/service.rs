@@ -18,11 +18,11 @@ fn level_priority(name: &LevelName) -> usize {
     }
 }
 
-pub struct ContinuityService;
+pub(crate) struct ContinuityService;
 
 impl ContinuityService {
     /// Emerge — create an agent and immediately activate its continuity.
-    pub async fn emerge(
+    pub(crate) async fn emerge(
         context: &ProjectContext,
         EmergeAgent {
             name,
@@ -60,7 +60,7 @@ impl ContinuityService {
     }
 
     /// Recede — retire an agent, ending its continuity.
-    pub async fn recede(
+    pub(crate) async fn recede(
         context: &ProjectContext,
         selector: &RecedeAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -73,7 +73,7 @@ impl ContinuityService {
     }
 
     /// Status — cross-agent activity overview.
-    pub fn status(
+    pub(crate) fn status(
         context: &ProjectContext,
         _selector: &StatusAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -144,7 +144,7 @@ impl ContinuityService {
     }
 
     /// Wake — restore an agent's full cognitive context (initial session start).
-    pub async fn wake(
+    pub(crate) async fn wake(
         context: &ProjectContext,
         selector: &WakeAgent,
         overrides: &DreamOverrides,
@@ -162,7 +162,7 @@ impl ContinuityService {
     }
 
     /// Dream — restore an agent's full cognitive context.
-    pub async fn dream(
+    pub(crate) async fn dream(
         context: &ProjectContext,
         selector: &DreamAgent,
         overrides: &DreamOverrides,
@@ -180,7 +180,7 @@ impl ContinuityService {
     }
 
     /// Introspect — look inward, consolidate cognitive state.
-    pub async fn introspect(
+    pub(crate) async fn introspect(
         context: &ProjectContext,
         selector: &IntrospectAgent,
         overrides: &DreamOverrides,
@@ -198,7 +198,7 @@ impl ContinuityService {
     }
 
     /// Reflect — pause on something significant.
-    pub async fn reflect(
+    pub(crate) async fn reflect(
         context: &ProjectContext,
         selector: &ReflectAgent,
         overrides: &DreamOverrides,
@@ -216,7 +216,7 @@ impl ContinuityService {
     }
 
     /// Sense — receive and interpret something from outside.
-    pub async fn sense(
+    pub(crate) async fn sense(
         context: &ProjectContext,
         selector: &SenseContent,
         overrides: &DreamOverrides,
@@ -235,7 +235,7 @@ impl ContinuityService {
     }
 
     /// Sleep — end a session, capture continuity.
-    pub async fn sleep(
+    pub(crate) async fn sleep(
         context: &ProjectContext,
         selector: &SleepAgent,
         overrides: &DreamOverrides,
@@ -256,7 +256,7 @@ impl ContinuityService {
     ///
     /// Used to display the agent's full operational context (textures,
     /// sensations, levels, urges) without marking a continuity transition.
-    pub fn guidebook(
+    pub(crate) fn guidebook(
         context: &ProjectContext,
         selector: &GuidebookAgent,
         overrides: &DreamOverrides,
@@ -268,7 +268,7 @@ impl ContinuityService {
     /// Gather the full cognitive context for an agent.
     ///
     /// Uses Store types directly since we hold an owned Connection.
-    pub fn gather_context(
+    pub(crate) fn gather_context(
         context: &ProjectContext,
         agent_name: &AgentName,
         overrides: &DreamOverrides,

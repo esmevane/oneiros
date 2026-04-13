@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct LevelRouter;
+pub(crate) struct LevelRouter;
 
 impl LevelRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/levels",
             Router::new()

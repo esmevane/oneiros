@@ -7,41 +7,41 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetLevel {
+pub(crate) struct SetLevel {
     #[builder(into)]
-    pub name: LevelName,
+    pub(crate) name: LevelName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetLevel {
+pub(crate) struct GetLevel {
     #[builder(into)]
-    pub name: LevelName,
+    pub(crate) name: LevelName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveLevel {
+pub(crate) struct RemoveLevel {
     #[builder(into)]
-    pub name: LevelName,
+    pub(crate) name: LevelName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListLevels {
+pub(crate) struct ListLevels {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = LevelRequestType, display = "kebab-case")]
-pub enum LevelRequest {
+pub(crate) enum LevelRequest {
     SetLevel(SetLevel),
     GetLevel(GetLevel),
     ListLevels(ListLevels),

@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct TicketView;
+pub(crate) struct TicketView;
 
 impl TicketView {
     /// Table of tickets with standard columns.
-    pub fn table(tickets: &Listed<Ticket>) -> Table {
+    pub(crate) fn table(tickets: &Listed<Ticket>) -> Table {
         let mut table = Table::new(vec![
             Column::key("brain_name", "Brain"),
             Column::key("actor_id", "Actor"),
@@ -27,12 +27,12 @@ impl TicketView {
     }
 
     /// Detail view for a single ticket.
-    pub fn detail(ticket: &Ticket) -> Detail {
+    pub(crate) fn detail(ticket: &Ticket) -> Detail {
         Detail::new(ticket.brain_name.to_string()).field("actor_id:", ticket.actor_id.to_string())
     }
 
     /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, ticket: &Ticket) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, ticket: &Ticket) -> Confirmation {
         Confirmation::new("Ticket", ticket.brain_name.to_string(), verb)
     }
 }

@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Agent read model — async queries over the projection read model.
-pub struct AgentRepo<'a> {
+pub(crate) struct AgentRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> AgentRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
+    pub(crate) async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db
             .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
@@ -46,7 +46,7 @@ impl<'a> AgentRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Agent>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Agent>, EventError> {
         let db = self.context.db()?;
 
         let total: usize = db.query_row("SELECT COUNT(*) FROM agents", [], |row| row.get(0))?;
@@ -86,7 +86,7 @@ impl<'a> AgentRepo<'a> {
         Ok(Listed::new(agents, total))
     }
 
-    pub async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
+    pub(crate) async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
         let db = self.context.db()?;
         let count: i64 = db.query_row(
             "select count(*) from agents where name = ?1",

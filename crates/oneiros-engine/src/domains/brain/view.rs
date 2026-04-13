@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct BrainView;
+pub(crate) struct BrainView;
 
 impl BrainView {
     /// Table of brains with standard columns.
-    pub fn table(brains: &Listed<Response<Brain>>) -> Table {
+    pub(crate) fn table(brains: &Listed<Response<Brain>>) -> Table {
         let mut table = Table::new(vec![Column::key("name", "Name")]);
 
         for wrapped in &brains.items {
@@ -22,12 +22,12 @@ impl BrainView {
     }
 
     /// Detail view for a single brain.
-    pub fn detail(brain: &Brain) -> Detail {
+    pub(crate) fn detail(brain: &Brain) -> Detail {
         Detail::new(brain.name.to_string())
     }
 
     /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &BrainName) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, name: &BrainName) -> Confirmation {
         Confirmation::new("Brain", name.to_string(), verb)
     }
 }

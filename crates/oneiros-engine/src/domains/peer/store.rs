@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct PeerStore<'a> {
+pub(crate) struct PeerStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> PeerStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         match &event.data {
             Events::Peer(PeerEvents::PeerAdded(peer)) => {
                 self.create_record(peer)?;
@@ -27,12 +27,12 @@ impl<'a> PeerStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("delete from peers", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists peers (
                 id text primary key,

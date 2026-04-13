@@ -7,41 +7,41 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetTexture {
+pub(crate) struct SetTexture {
     #[builder(into)]
-    pub name: TextureName,
+    pub(crate) name: TextureName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetTexture {
+pub(crate) struct GetTexture {
     #[builder(into)]
-    pub name: TextureName,
+    pub(crate) name: TextureName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveTexture {
+pub(crate) struct RemoveTexture {
     #[builder(into)]
-    pub name: TextureName,
+    pub(crate) name: TextureName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListTextures {
+pub(crate) struct ListTextures {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TextureRequestType, display = "kebab-case")]
-pub enum TextureRequest {
+pub(crate) enum TextureRequest {
     SetTexture(SetTexture),
     GetTexture(GetTexture),
     ListTextures(ListTextures),

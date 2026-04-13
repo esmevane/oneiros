@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = SeedResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SeedResponse {
+pub(crate) enum SeedResponse {
     SeedComplete,
     AgentsSeedComplete,
 }

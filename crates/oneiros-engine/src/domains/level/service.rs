@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct LevelService;
+pub(crate) struct LevelService;
 
 impl LevelService {
-    pub async fn set(
+    pub(crate) async fn set(
         context: &ProjectContext,
         SetLevel {
             name,
@@ -20,7 +20,7 @@ impl LevelService {
         Ok(LevelResponse::LevelSet(name.clone()))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetLevel,
     ) -> Result<LevelResponse, LevelError> {
@@ -34,7 +34,7 @@ impl LevelService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListLevels { filters }: &ListLevels,
     ) -> Result<LevelResponse, LevelError> {
@@ -49,7 +49,7 @@ impl LevelService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveLevel,
     ) -> Result<LevelResponse, LevelError> {

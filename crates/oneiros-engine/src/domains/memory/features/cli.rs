@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum MemoryCommands {
+pub(crate) enum MemoryCommands {
     Add(AddMemory),
     Show(GetMemory),
     List(ListMemories),
 }
 
 impl MemoryCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, MemoryError> {

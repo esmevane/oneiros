@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SensationState;
+pub(crate) struct SensationState;
 
 impl SensationState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Sensation(sensation_event) = event {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => {
@@ -18,7 +18,7 @@ impl SensationState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

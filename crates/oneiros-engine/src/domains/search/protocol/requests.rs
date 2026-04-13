@@ -7,17 +7,17 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SearchQuery {
+pub(crate) struct SearchQuery {
     #[builder(into)]
-    pub query: String,
+    pub(crate) query: String,
     #[arg(long)]
-    pub agent: Option<AgentName>,
+    pub(crate) agent: Option<AgentName>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SearchRequestType, display = "kebab-case")]
-pub enum SearchRequest {
+pub(crate) enum SearchRequest {
     SearchQuery(SearchQuery),
 }
 

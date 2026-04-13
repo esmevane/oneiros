@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct SensationTools;
+pub(crate) struct SensationTools;
 
 impl SensationTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         sensation_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectContext,
         tool_name: &str,
@@ -20,7 +20,7 @@ impl SensationTools {
 mod sensation_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<SetSensation>::new(
                 SensationRequestType::SetSensation,
@@ -45,7 +45,7 @@ mod sensation_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,

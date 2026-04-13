@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct DoctorCli;
+pub(crate) struct DoctorCli;
 
 impl DoctorCli {
-    pub async fn execute(config: &Config) -> Result<Rendered<Responses>, DoctorError> {
+    pub(crate) async fn execute(config: &Config) -> Result<Rendered<Responses>, DoctorError> {
         let response = DoctorService::check(config).await;
 
         let prompt = match &response {

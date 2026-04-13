@@ -1,5 +1,5 @@
 mod platform;
 mod project_detection;
 
-pub use platform::Platform;
-pub use project_detection::{ProjectDetector, ProjectRoot};
+pub(crate) use platform::Platform;
+pub(crate) use project_detection::{ProjectDetector, ProjectRoot};

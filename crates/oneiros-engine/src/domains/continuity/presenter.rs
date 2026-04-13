@@ -6,20 +6,20 @@
 
 use crate::*;
 
-pub struct ContinuityPresenter {
+pub(crate) struct ContinuityPresenter {
     response: ContinuityResponse,
     deep: bool,
 }
 
 impl ContinuityPresenter {
-    pub fn new(response: ContinuityResponse) -> Self {
+    pub(crate) fn new(response: ContinuityResponse) -> Self {
         Self {
             response,
             deep: false,
         }
     }
 
-    pub fn with_deep(mut self, deep: bool) -> Self {
+    pub(crate) fn with_deep(mut self, deep: bool) -> Self {
         self.deep = deep;
         self
     }
@@ -29,7 +29,7 @@ impl ContinuityPresenter {
     /// Lifecycle commands (dream, wake, introspect, sleep, emerge, reflect)
     /// carry the full `DreamContext` — callers can access pressure data
     /// directly from the inner context rather than via response-level meta.
-    pub fn render(self) -> Rendered<Responses> {
+    pub(crate) fn render(self) -> Rendered<Responses> {
         let data = Responses::from(self.response.clone());
         let prompt = self.render_prompt();
         let text = self.render_text();

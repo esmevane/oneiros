@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct StorageView;
+pub(crate) struct StorageView;
 
 impl StorageView {
     /// Table of storage entries with standard columns.
-    pub fn table(items: &Listed<Response<StorageEntry>>) -> Table {
+    pub(crate) fn table(items: &Listed<Response<StorageEntry>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("key", "Key"),
             Column::key("description", "Description").max(40),
@@ -29,14 +29,14 @@ impl StorageView {
     }
 
     /// Detail view for a single storage entry.
-    pub fn detail(entry: &StorageEntry) -> Detail {
+    pub(crate) fn detail(entry: &StorageEntry) -> Detail {
         Detail::new(entry.key.to_string())
             .field("description:", entry.description.to_string())
             .field("hash:", entry.hash.to_string())
     }
 
     /// Confirmation for a storage mutation (e.g. "stored", "removed").
-    pub fn confirmed(verb: &str, key: &StorageKey) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, key: &StorageKey) -> Confirmation {
         Confirmation::new("Storage", key.to_string(), verb)
     }
 }

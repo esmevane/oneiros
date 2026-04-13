@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct PersonaState;
+pub(crate) struct PersonaState;
 
 impl PersonaState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Persona(persona_event) = event {
             match persona_event {
                 PersonaEvents::PersonaSet(persona) => {
@@ -18,7 +18,7 @@ impl PersonaState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

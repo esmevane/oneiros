@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct ContinuityRouter;
+pub(crate) struct ContinuityRouter;
 
 impl ContinuityRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/continuity",
             Router::new()

@@ -2,7 +2,7 @@ use super::claim::TokenClaims as Claim;
 use super::token_version::TokenVersion;
 
 #[derive(Debug, thiserror::Error)]
-pub enum TokenError {
+pub(crate) enum TokenError {
     #[error("Invalid token encoding")]
     Encoding,
 
@@ -21,18 +21,18 @@ pub enum TokenError {
     lorosurgeon::Reconcile,
 )]
 #[serde(transparent)]
-pub struct Token(pub String);
+pub(crate) struct Token(pub(crate) String);
 
 impl Token {
     /// Issue a new token encoding the given claims.
-    pub fn issue(claims: Claim) -> Self {
+    pub(crate) fn issue(claims: Claim) -> Self {
         let versioned = TokenVersion::V0(claims);
         let bytes = postcard::to_allocvec(&versioned).expect("token serialization should not fail");
         Self(data_encoding::BASE32_NOPAD.encode(&bytes).to_lowercase())
     }
 
     /// Decode this token's claims.
-    pub fn decode(&self) -> Result<Claim, TokenError> {
+    pub(crate) fn decode(&self) -> Result<Claim, TokenError> {
         let upper = self.0.to_uppercase();
         let bytes = data_encoding::BASE32_NOPAD
             .decode(upper.as_bytes())
@@ -42,7 +42,7 @@ impl Token {
         Ok(claims)
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }

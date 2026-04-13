@@ -13,40 +13,40 @@ use crate::*;
 /// The service extracts the key from the address and stores the full peer
 /// record.
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct AddPeer {
+pub(crate) struct AddPeer {
     /// The peer's address — a base64url-encoded PeerAddress, as produced
     /// by `bookmark share` or extracted from an `oneiros://` URI.
-    pub address: String,
+    pub(crate) address: String,
     /// Optional human-readable label. Defaults to a short hex prefix of
     /// the key (e.g. `peer-a3f2b1`).
     #[arg(long)]
-    pub name: Option<String>,
+    pub(crate) name: Option<String>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetPeer {
+pub(crate) struct GetPeer {
     #[builder(into)]
-    pub id: PeerId,
+    pub(crate) id: PeerId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemovePeer {
+pub(crate) struct RemovePeer {
     #[builder(into)]
-    pub id: PeerId,
+    pub(crate) id: PeerId,
 }
 
 #[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListPeers {
+pub(crate) struct ListPeers {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PeerRequestType, display = "kebab-case")]
-pub enum PeerRequest {
+pub(crate) enum PeerRequest {
     AddPeer(AddPeer),
     GetPeer(GetPeer),
     RemovePeer(RemovePeer),

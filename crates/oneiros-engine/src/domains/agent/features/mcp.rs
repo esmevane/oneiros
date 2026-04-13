@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct AgentTools;
+pub(crate) struct AgentTools;
 
 impl AgentTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         agent_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectContext,
         tool_name: &str,
@@ -20,7 +20,7 @@ impl AgentTools {
 mod agent_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateAgent>::new(
                 AgentRequestType::CreateAgent,
@@ -39,7 +39,7 @@ mod agent_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,

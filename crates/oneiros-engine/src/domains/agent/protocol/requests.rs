@@ -7,57 +7,57 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateAgent {
+pub(crate) struct CreateAgent {
     #[builder(into)]
-    pub name: AgentName,
+    pub(crate) name: AgentName,
     #[builder(into)]
-    pub persona: PersonaName,
+    pub(crate) persona: PersonaName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetAgent {
+pub(crate) struct GetAgent {
     #[builder(into)]
-    pub name: AgentName,
+    pub(crate) name: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListAgents {
+pub(crate) struct ListAgents {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveAgent {
+pub(crate) struct RemoveAgent {
     #[builder(into)]
-    pub name: AgentName,
+    pub(crate) name: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct UpdateAgent {
+pub(crate) struct UpdateAgent {
     #[builder(into)]
-    pub name: AgentName,
+    pub(crate) name: AgentName,
     #[builder(into)]
-    pub persona: PersonaName,
+    pub(crate) persona: PersonaName,
     #[arg(long, default_value = "")]
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = AgentRequestType, display = "kebab-case")]
-pub enum AgentRequest {
+pub(crate) enum AgentRequest {
     CreateAgent(CreateAgent),
     GetAgent(GetAgent),
     ListAgents(ListAgents),

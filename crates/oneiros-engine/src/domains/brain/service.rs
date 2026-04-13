@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct BrainService;
+pub(crate) struct BrainService;
 
 impl BrainService {
-    pub async fn create(
+    pub(crate) async fn create(
         context: &SystemContext,
         CreateBrain { name }: &CreateBrain,
     ) -> Result<BrainResponse, BrainError> {
@@ -25,7 +25,7 @@ impl BrainService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &SystemContext,
         selector: &GetBrain,
     ) -> Result<BrainResponse, BrainError> {
@@ -39,7 +39,7 @@ impl BrainService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &SystemContext,
         ListBrains { filters }: &ListBrains,
     ) -> Result<BrainResponse, BrainError> {

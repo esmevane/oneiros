@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Memory read model — async queries over the projection read model.
-pub struct MemoryRepo<'a> {
+pub(crate) struct MemoryRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> MemoryRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
+    pub(crate) async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, level, content, created_at
@@ -47,7 +47,7 @@ impl<'a> MemoryRepo<'a> {
         }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         agent: Option<&str>,
         filters: &SearchFilters,

@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum PersonaCommands {
+pub(crate) enum PersonaCommands {
     Set(SetPersona),
     Show(GetPersona),
     List(ListPersonas),
@@ -11,7 +11,7 @@ pub enum PersonaCommands {
 }
 
 impl PersonaCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, PersonaError> {

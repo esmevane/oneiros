@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct UrgeRepo<'a> {
+pub(crate) struct UrgeRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> UrgeRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
-    pub async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
+    pub(crate) async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
@@ -36,7 +36,7 @@ impl<'a> UrgeRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
         let db = self.context.db()?;
 
         let total = {

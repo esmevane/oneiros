@@ -1,14 +1,14 @@
 use crate::*;
 
 #[derive(Clone)]
-pub struct Projections<T> {
+pub(crate) struct Projections<T> {
     frames: Vec<Frames>,
     reducers: ReducerPipeline<T>,
     canon: Canon,
 }
 
 impl<T: Clone + Default + Materialize> Projections<T> {
-    pub fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
+    pub(crate) fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
         Self {
             frames: frames.to_vec(),
             reducers,
@@ -16,7 +16,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
         }
     }
 
-    pub fn with_canon(frames: &[Frames], reducers: ReducerPipeline<T>, canon: Canon) -> Self {
+    pub(crate) fn with_canon(frames: &[Frames], reducers: ReducerPipeline<T>, canon: Canon) -> Self {
         Self {
             frames: frames.to_vec(),
             reducers,
@@ -25,12 +25,12 @@ impl<T: Clone + Default + Materialize> Projections<T> {
     }
 
     /// The underlying CRDT document.
-    pub fn canon(&self) -> &Canon {
+    pub(crate) fn canon(&self) -> &Canon {
         &self.canon
     }
 
     /// Run all projection migrations.
-    pub fn migrate(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
@@ -43,7 +43,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
     }
 
     /// Apply a single event through all frames in order.
-    pub fn apply(&self, db: &rusqlite::Connection, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn apply(&self, db: &rusqlite::Connection, event: &StoredEvent) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
@@ -62,7 +62,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
     /// Apply a single event through SQLite frame projections only.
     /// Skips the reducer and canon — used during bookmark switch
     /// when the canon is already correct and only SQLite needs rebuilding.
-    pub fn apply_frames(
+    pub(crate) fn apply_frames(
         &self,
         db: &rusqlite::Connection,
         event: &StoredEvent,
@@ -78,7 +78,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
     }
 
     /// Reset all projections across all frames.
-    pub fn reset(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    pub(crate) fn reset(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
         for frame_set in self.frames.iter().rev() {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
@@ -98,7 +98,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
     /// Rebuilds SQLite projections and reducer state but skips canon
     /// reconciliation — the canon that matters lives in CanonIndex
     /// and is hydrated separately at service startup.
-    pub fn replay(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
+    pub(crate) fn replay(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
         let events = EventLog::new(db).load_all()?;
 
         self.reset(db)?;
@@ -130,7 +130,7 @@ impl<T: Clone + Default + Materialize> Projections<T> {
 impl Projections<BrainCanon> {
     /// Apply a single event — projections, reducer, then sync
     /// reducer-computed pressures to SQLite.
-    pub fn apply_brain(
+    pub(crate) fn apply_brain(
         &self,
         db: &rusqlite::Connection,
         event: &StoredEvent,
@@ -158,21 +158,21 @@ impl Projections<BrainCanon> {
     }
 
     /// Replay for brain projections — includes pressure sync at the end.
-    pub fn replay_brain(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
+    pub(crate) fn replay_brain(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
         let count = self.replay(db)?;
         self.sync_pressures(db)?;
         Ok(count)
     }
 
-    pub fn project() -> Self {
+    pub(crate) fn project() -> Self {
         Self::project_with_canon(Canon::new())
     }
 
-    pub fn project_with_canon(canon: Canon) -> Self {
+    pub(crate) fn project_with_canon(canon: Canon) -> Self {
         Self::project_with_entry(canon, ReducerPipeline::brain())
     }
 
-    pub fn project_with_entry(canon: Canon, pipeline: ReducerPipeline<BrainCanon>) -> Self {
+    pub(crate) fn project_with_entry(canon: Canon, pipeline: ReducerPipeline<BrainCanon>) -> Self {
         Self::with_canon(
             &[
                 Frames::new(&[
@@ -203,11 +203,11 @@ impl Projections<BrainCanon> {
 }
 
 impl Projections<SystemCanon> {
-    pub fn system() -> Self {
+    pub(crate) fn system() -> Self {
         Self::system_with_canon(Canon::new())
     }
 
-    pub fn system_with_canon(canon: Canon) -> Self {
+    pub(crate) fn system_with_canon(canon: Canon) -> Self {
         Self::with_canon(
             &[Frames::new(&[
                 Frame::new(TenantProjections.all()),

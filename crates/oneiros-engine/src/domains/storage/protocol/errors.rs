@@ -1,20 +1,24 @@
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
     #[error("Storage key not found: {0}")]
-    KeyNotFound(crate::StorageKey),
+    KeyNotFound(StorageKey),
 
     #[error("Invalid storage reference")]
     InvalidRef,
 
     #[error("Blob missing for hash: {0}")]
-    BlobMissing(crate::ContentHash),
+    BlobMissing(ContentHash),
 
     #[error("Blob error: {0}")]
-    BlobError(#[from] crate::BlobError),
+    BlobError(#[from] BlobError),
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -23,10 +27,10 @@ pub enum StorageError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
-    Client(#[from] crate::ClientError),
+    Client(#[from] ClientError),
 }
 
 impl IntoResponse for StorageError {

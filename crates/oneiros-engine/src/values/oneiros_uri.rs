@@ -16,14 +16,14 @@ use crate::*;
 /// Parsing dispatches on the prefix. Display delegates to the variant's
 /// own [`core::fmt::Display`] implementation.
 #[derive(Clone, Debug, PartialEq)]
-pub enum OneirosUri {
+pub(crate) enum OneirosUri {
     Ref(Ref),
     Link(Link),
     Peer(PeerLink),
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum OneirosUriError {
+pub(crate) enum OneirosUriError {
     #[error("unrecognized uri scheme (expected one of: ref:, link:, oneiros://)")]
     UnknownScheme,
     #[error("invalid ref: {0}")]
@@ -36,7 +36,7 @@ pub enum OneirosUriError {
 
 impl OneirosUri {
     /// Returns true if this URI references a resource on another host.
-    pub fn is_external(&self) -> bool {
+    pub(crate) fn is_external(&self) -> bool {
         matches!(self, Self::Peer(_))
     }
 }

@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum BrainCommands {
+pub(crate) enum BrainCommands {
     Create(CreateBrain),
     Get(GetBrain),
     List(ListBrains),
 }
 
 impl BrainCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, BrainError> {

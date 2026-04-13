@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct SensationStore<'a> {
+pub(crate) struct SensationStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> SensationStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Sensation(sensation_event) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
@@ -21,12 +21,12 @@ impl<'a> SensationStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM sensations", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS sensations (
                 name TEXT PRIMARY KEY,
@@ -39,7 +39,7 @@ impl<'a> SensationStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
-    pub fn list(&self) -> Result<Vec<Sensation>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Sensation>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM sensations ORDER BY name")?;

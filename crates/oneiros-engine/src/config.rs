@@ -30,19 +30,19 @@ pub struct Config {
     /// Root directory for brain data (blobs, exports, etc.)
     #[arg(long, short, global = true, default_value_os_t = default_data_dir())]
     #[builder(default = default_data_dir())]
-    pub data_dir: PathBuf,
+    pub(crate) data_dir: PathBuf,
     /// The brain (project) name. Auto-detected from cwd if not specified.
     #[arg(long, short, global = true, default_value_t = detect_brain_name())]
     #[builder(into, default = detect_brain_name())]
-    pub brain: BrainName,
+    pub(crate) brain: BrainName,
     /// Service management configuration.
     #[command(flatten)]
     #[builder(default)]
-    pub service: ServiceConfig,
+    pub(crate) service: ServiceConfig,
     /// Default dream assembly configuration.
     #[command(flatten)]
     #[builder(default)]
-    pub dream: DreamConfig,
+    pub(crate) dream: DreamConfig,
     /// Output format: prompt (default), json, or text.
     #[arg(long, short, default_value_t, global = true)]
     #[builder(default)]
@@ -54,7 +54,7 @@ pub struct Config {
     /// How much detail to show: quiet, normal (default), or verbose.
     #[arg(long, default_value_t, global = true)]
     #[builder(default)]
-    pub verbosity: Verbosity,
+    pub(crate) verbosity: Verbosity,
 }
 
 impl Default for Config {
@@ -73,44 +73,44 @@ impl Default for Config {
 
 impl Config {
     /// The service address (convenience accessor).
-    pub fn service_addr(&self) -> SocketAddr {
+    pub(crate) fn service_addr(&self) -> SocketAddr {
         self.service.address
     }
 
     /// The base URL for HTTP clients to connect to the service.
-    pub fn base_url(&self) -> String {
+    pub(crate) fn base_url(&self) -> String {
         format!("http://{}", self.service.address)
     }
 
     /// Path to the brain's data directory.
-    pub fn brain_dir(&self) -> PathBuf {
+    pub(crate) fn brain_dir(&self) -> PathBuf {
         self.data_dir.join(self.brain.as_str())
     }
 
     /// Path to the config file in the data directory.
-    pub fn config_path(&self) -> PathBuf {
+    pub(crate) fn config_path(&self) -> PathBuf {
         self.data_dir.join("config.toml")
     }
 
     /// Open the system database.
-    pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+    pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         rusqlite::Connection::open(self.data_dir.join("system.db"))
     }
 
     /// Open the brain (project) database.
-    pub fn brain_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+    pub(crate) fn brain_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         rusqlite::Connection::open(self.brain_dir().join("brain.db"))
     }
 
     /// Path to the token file for the current brain.
-    pub fn token_path(&self) -> PathBuf {
+    pub(crate) fn token_path(&self) -> PathBuf {
         self.data_dir
             .join("tickets")
             .join(format!("{}.token", self.brain))
     }
 
     /// Read the token for the current brain, if one exists.
-    pub fn token(&self) -> Option<Token> {
+    pub(crate) fn token(&self) -> Option<Token> {
         std::fs::read_to_string(self.token_path())
             .ok()
             .map(|s| Token::from(s.trim()))
@@ -122,13 +122,13 @@ impl Config {
     /// which its iroh `EndpointId` and public `PeerKey` are derived. It
     /// lives at the data dir root (not under a brain) because a single
     /// key identifies the host across all brains.
-    pub fn host_key_path(&self) -> PathBuf {
+    pub(crate) fn host_key_path(&self) -> PathBuf {
         self.data_dir.join("host.key")
     }
 
     /// Load the persisted host secret key, if one exists. Returns `None`
     /// when the file is missing (first run, not yet generated).
-    pub fn load_host_secret_key(&self) -> std::io::Result<Option<iroh::SecretKey>> {
+    pub(crate) fn load_host_secret_key(&self) -> std::io::Result<Option<iroh::SecretKey>> {
         let path = self.host_key_path();
         if !path.exists() {
             return Ok(None);
@@ -155,7 +155,7 @@ impl Config {
     /// On Unix, the key file is written with mode `0o600` (owner-only
     /// read/write). On other platforms, file permissions are left at the
     /// OS default.
-    pub fn ensure_host_secret_key(&self) -> std::io::Result<iroh::SecretKey> {
+    pub(crate) fn ensure_host_secret_key(&self) -> std::io::Result<iroh::SecretKey> {
         if let Some(existing) = self.load_host_secret_key()? {
             return Ok(existing);
         }
@@ -194,7 +194,7 @@ impl Config {
     ///
     /// File values provide the base; CLI-provided values override them.
     /// If no file exists or is empty, returns self unchanged.
-    pub fn with_config_file(mut self) -> Self {
+    pub(crate) fn with_config_file(mut self) -> Self {
         let path = self.config_path();
 
         let file_config = match std::fs::read_to_string(&path) {
@@ -274,12 +274,12 @@ impl Config {
     }
 
     /// Build a system context from this config.
-    pub fn system(&self) -> SystemContext {
+    pub(crate) fn system(&self) -> SystemContext {
         SystemContext::new(self.clone())
     }
 
     /// Build a project context from this config.
-    pub fn project(&self) -> ProjectContext {
+    pub(crate) fn project(&self) -> ProjectContext {
         ProjectContext::new(self.clone())
     }
 }

@@ -1,8 +1,7 @@
-use std::io::{Read, Write};
-
 use data_encoding::BASE64URL_NOPAD;
 use flate2::{Compression, read::ZlibDecoder, write::ZlibEncoder};
 use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
 
 /// Error type for [`Blob`] decode operations.
 #[derive(Debug, thiserror::Error)]
@@ -31,14 +30,14 @@ pub enum BlobError {
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
-pub struct Blob(String);
+pub(crate) struct Blob(String);
 
 impl Blob {
     /// Encode raw bytes into a [`Blob`].
     ///
     /// Serializes `bytes` with postcard, then base64url-encodes the result.
     /// The encoding is deterministic for the same input.
-    pub fn encode(bytes: &[u8]) -> Self {
+    pub(crate) fn encode(bytes: &[u8]) -> Self {
         let postcard_bytes =
             postcard::to_allocvec(bytes).expect("blob serialization should not fail");
         Self(BASE64URL_NOPAD.encode(&postcard_bytes))
@@ -49,12 +48,12 @@ impl Blob {
     /// Returns [`BlobError::Encoding`] if the inner string is not valid
     /// base64url, or [`BlobError::Format`] if the decoded bytes are not valid
     /// postcard.
-    pub fn decode(&self) -> Result<Vec<u8>, BlobError> {
+    pub(crate) fn decode(&self) -> Result<Vec<u8>, BlobError> {
         let postcard_bytes = BASE64URL_NOPAD.decode(self.0.as_bytes())?;
         Ok(postcard::from_bytes(&postcard_bytes)?)
     }
 
-    pub fn decompressed(&self) -> Result<Vec<u8>, BlobError> {
+    pub(crate) fn decompressed(&self) -> Result<Vec<u8>, BlobError> {
         let compressed_bytes = self.decode()?;
         let mut decoder = ZlibDecoder::new(&compressed_bytes[..]);
         let mut decompressed = Vec::new();
@@ -64,7 +63,7 @@ impl Blob {
         Ok(decompressed)
     }
 
-    pub fn compressed(bytes: &[u8]) -> Result<Self, BlobError> {
+    pub(crate) fn compressed(bytes: &[u8]) -> Result<Self, BlobError> {
         let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
 
         encoder.write_all(bytes)?;

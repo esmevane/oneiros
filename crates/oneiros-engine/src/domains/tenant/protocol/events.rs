@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = TenantEventsType, display = "kebab-case")]
-pub enum TenantEvents {
+pub(crate) enum TenantEvents {
     TenantCreated(Tenant),
 }
 

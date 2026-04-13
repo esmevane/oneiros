@@ -1,25 +1,25 @@
 use crate::*;
 
-pub struct SensationClient<'a> {
+pub(crate) struct SensationClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> SensationClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn set(&self, set: &SetSensation) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn set(&self, set: &SetSensation) -> Result<SensationResponse, ClientError> {
         self.client
             .put(&format!("/sensations/{}", set.name), set)
             .await
     }
 
-    pub async fn get(&self, name: &SensationName) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn get(&self, name: &SensationName) -> Result<SensationResponse, ClientError> {
         self.client.get(&format!("/sensations/{name}")).await
     }
 
-    pub async fn list(&self, request: &ListSensations) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn list(&self, request: &ListSensations) -> Result<SensationResponse, ClientError> {
         let query = format!(
             "limit={}&offset={}",
             request.filters.limit, request.filters.offset,
@@ -27,7 +27,7 @@ impl<'a> SensationClient<'a> {
         self.client.get(&format!("/sensations?{query}")).await
     }
 
-    pub async fn remove(&self, name: &SensationName) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn remove(&self, name: &SensationName) -> Result<SensationResponse, ClientError> {
         self.client.delete(&format!("/sensations/{name}")).await
     }
 }

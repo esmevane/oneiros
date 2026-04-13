@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct PersonaTools;
+pub(crate) struct PersonaTools;
 
 impl PersonaTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         persona_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectContext,
         tool_name: &str,
@@ -20,7 +20,7 @@ impl PersonaTools {
 mod persona_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<SetPersona>::new(PersonaRequestType::SetPersona, "Define a category of agent")
                 .def(),
@@ -36,7 +36,7 @@ mod persona_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,

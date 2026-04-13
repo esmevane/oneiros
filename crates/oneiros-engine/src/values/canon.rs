@@ -9,7 +9,7 @@ use crate::*;
 ///
 /// Implemented by BrainCanon and SystemCanon to bridge
 /// the reducer output (pure state) into the CRDT document.
-pub trait Materialize {
+pub(crate) trait Materialize {
     fn materialize(&self, doc: &LoroDoc) -> Result<(), EventError>;
 }
 
@@ -53,7 +53,7 @@ impl Materialize for SystemCanon {
 /// This is the distributable unit — snapshots, branching, and
 /// eventually multi-host sync all happen at this layer.
 #[derive(Clone)]
-pub struct Canon {
+pub(crate) struct Canon {
     doc: Arc<LoroDoc>,
 }
 
@@ -64,31 +64,31 @@ impl Default for Canon {
 }
 
 impl Canon {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             doc: Arc::new(LoroDoc::new()),
         }
     }
 
     /// The underlying Loro document.
-    pub fn doc(&self) -> &LoroDoc {
+    pub(crate) fn doc(&self) -> &LoroDoc {
         &self.doc
     }
 
     /// Reconcile canon state into the CRDT document.
-    pub fn reconcile<T: Materialize>(&self, state: &T) -> Result<(), EventError> {
+    pub(crate) fn reconcile<T: Materialize>(&self, state: &T) -> Result<(), EventError> {
         state.materialize(&self.doc)
     }
 
     /// Export a full snapshot of the document.
-    pub fn snapshot(&self) -> Result<Vec<u8>, EventError> {
+    pub(crate) fn snapshot(&self) -> Result<Vec<u8>, EventError> {
         self.doc
             .export(ExportMode::Snapshot)
             .map_err(|e| EventError::Import(e.to_string()))
     }
 
     /// Restore a canon from a snapshot.
-    pub fn restore(bytes: &[u8]) -> Result<Self, EventError> {
+    pub(crate) fn restore(bytes: &[u8]) -> Result<Self, EventError> {
         let doc = Arc::new(LoroDoc::new());
         doc.import(bytes)?;
         Ok(Self { doc })
@@ -98,7 +98,7 @@ impl Canon {
     ///
     /// The forked doc shares history up to this point but
     /// diverges from here. This is the branching primitive.
-    pub fn fork(&self) -> Self {
+    pub(crate) fn fork(&self) -> Self {
         Self {
             doc: Arc::new(self.doc.fork()),
         }
@@ -108,7 +108,7 @@ impl Canon {
     ///
     /// Exports all updates from the source and imports them
     /// into this doc. CRDT resolution handles conflicts.
-    pub fn merge_from(&self, source: &Canon) -> Result<(), EventError> {
+    pub(crate) fn merge_from(&self, source: &Canon) -> Result<(), EventError> {
         let updates = source
             .doc
             .export(ExportMode::all_updates())
@@ -119,13 +119,13 @@ impl Canon {
 
     /// The document's current version vector — compact representation
     /// of what this canon knows. Suitable for wire transmission.
-    pub fn version_vector(&self) -> Vec<u8> {
+    pub(crate) fn version_vector(&self) -> Vec<u8> {
         self.doc.oplog_vv().encode()
     }
 
     /// Export only the updates the other side is missing, given
     /// their encoded version vector.
-    pub fn export_updates_since(&self, their_vv: &[u8]) -> Result<Vec<u8>, EventError> {
+    pub(crate) fn export_updates_since(&self, their_vv: &[u8]) -> Result<Vec<u8>, EventError> {
         let vv = VersionVector::decode(their_vv)?;
         self.doc
             .export(ExportMode::updates(&vv))
@@ -134,7 +134,7 @@ impl Canon {
 
     /// Import updates from a peer — the result of their
     /// `export_updates_since`. CRDT resolution handles conflicts.
-    pub fn import_updates(&self, bytes: &[u8]) -> Result<(), EventError> {
+    pub(crate) fn import_updates(&self, bytes: &[u8]) -> Result<(), EventError> {
         self.doc.import(bytes)?;
         Ok(())
     }
@@ -142,7 +142,7 @@ impl Canon {
     /// Record an event ID in the canon's event set. This is the shallow
     /// provenance layer — the canon knows which events it has seen,
     /// enabling conference manifests without a shared HAMT store.
-    pub fn record_event(&self, event_id: &EventId) -> Result<(), EventError> {
+    pub(crate) fn record_event(&self, event_id: &EventId) -> Result<(), EventError> {
         let events = self.doc.get_map("events");
         events
             .insert(&event_id.to_string(), true)
@@ -152,13 +152,13 @@ impl Canon {
     }
 
     /// The set of event IDs this canon has seen.
-    pub fn event_ids(&self) -> std::collections::HashSet<String> {
+    pub(crate) fn event_ids(&self) -> std::collections::HashSet<String> {
         let events = self.doc.get_map("events");
         events.keys().map(|k| k.to_string()).collect()
     }
 
     /// Clear the document for replay.
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         // Create a new empty doc isn't possible with Arc sharing,
         // so we reconcile empty state on next apply.
         Ok(())

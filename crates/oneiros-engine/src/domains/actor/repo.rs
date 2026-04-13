@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Actor read model — queries, projection handling, and lifecycle.
-pub struct ActorRepo<'a> {
+pub(crate) struct ActorRepo<'a> {
     context: &'a SystemContext,
 }
 
 impl<'a> ActorRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
+    pub(crate) fn new(context: &'a SystemContext) -> Self {
         Self { context }
     }
 
-    pub async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
+    pub(crate) async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
         let db = self.context.db()?;
         let mut statement =
             db.prepare("select id, tenant_id, name, created_at from actors where id = ?1")?;
@@ -40,7 +40,7 @@ impl<'a> ActorRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
         let db = self.context.db()?;
 
         let total = {

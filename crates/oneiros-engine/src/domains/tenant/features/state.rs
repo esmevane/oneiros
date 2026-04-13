@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TenantState;
+pub(crate) struct TenantState;
 
 impl TenantState {
-    pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = event {
             canon.tenants.set(tenant);
         }
@@ -11,7 +11,7 @@ impl TenantState {
         canon
     }
 
-    pub fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<SystemCanon> {
         Reducer::new(Self::reduce)
     }
 }

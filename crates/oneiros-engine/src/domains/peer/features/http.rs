@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct PeerRouter;
+pub(crate) struct PeerRouter;
 
 impl PeerRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/peers",
             Router::<ServerState>::new()

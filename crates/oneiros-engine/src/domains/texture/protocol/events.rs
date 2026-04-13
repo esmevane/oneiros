@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = TextureEventsType, display = "kebab-case")]
-pub enum TextureEvents {
+pub(crate) enum TextureEvents {
     TextureSet(Texture),
     TextureRemoved(TextureRemoved),
 }
@@ -28,6 +28,6 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TextureRemoved {
-    pub name: TextureName,
+pub(crate) struct TextureRemoved {
+    pub(crate) name: TextureName,
 }

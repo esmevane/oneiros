@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum LevelCommands {
+pub(crate) enum LevelCommands {
     Set(SetLevel),
     Show(GetLevel),
     List(ListLevels),
@@ -11,7 +11,7 @@ pub enum LevelCommands {
 }
 
 impl LevelCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, LevelError> {

@@ -9,48 +9,48 @@ use crate::*;
 #[derive(
     Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
 )]
-pub struct Experience {
+pub(crate) struct Experience {
     #[builder(default)]
-    pub id: ExperienceId,
-    pub agent_id: AgentId,
+    pub(crate) id: ExperienceId,
+    pub(crate) agent_id: AgentId,
     #[builder(into)]
-    pub sensation: SensationName,
+    pub(crate) sensation: SensationName,
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[builder(default = Timestamp::now())]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
 #[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "experiences")]
-pub struct Experiences(HashMap<String, Experience>);
+pub(crate) struct Experiences(HashMap<String, Experience>);
 
 impl Experiences {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn get(&self, id: ExperienceId) -> Option<&Experience> {
+    pub(crate) fn get(&self, id: ExperienceId) -> Option<&Experience> {
         self.0.get(&id.to_string())
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &Experience> {
+    pub(crate) fn values(&self) -> impl Iterator<Item = &Experience> {
         self.0.values()
     }
 
-    pub fn get_mut(&mut self, id: ExperienceId) -> Option<&mut Experience> {
+    pub(crate) fn get_mut(&mut self, id: ExperienceId) -> Option<&mut Experience> {
         self.0.get_mut(&id.to_string())
     }
 
-    pub fn set(&mut self, experience: &Experience) -> Option<Experience> {
+    pub(crate) fn set(&mut self, experience: &Experience) -> Option<Experience> {
         self.0.insert(experience.id.to_string(), experience.clone())
     }
 
-    pub fn remove(&mut self, experience_id: ExperienceId) -> Option<Experience> {
+    pub(crate) fn remove(&mut self, experience_id: ExperienceId) -> Option<Experience> {
         self.0.remove(&experience_id.to_string())
     }
 }

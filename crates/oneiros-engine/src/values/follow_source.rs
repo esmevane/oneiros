@@ -18,17 +18,17 @@ use crate::*;
 /// The shape parallels [`OneirosUri`] if it's ever needed.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum FollowSource {
+pub(crate) enum FollowSource {
     Local(Ref),
     Peer(PeerLink),
 }
 
 impl FollowSource {
-    pub fn is_local(&self) -> bool {
+    pub(crate) fn is_local(&self) -> bool {
         matches!(self, Self::Local(_))
     }
 
-    pub fn is_peer(&self) -> bool {
+    pub(crate) fn is_peer(&self) -> bool {
         matches!(self, Self::Peer(_))
     }
 }

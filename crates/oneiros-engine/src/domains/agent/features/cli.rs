@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum AgentCommands {
+pub(crate) enum AgentCommands {
     Create(CreateAgent),
     Show(GetAgent),
     List(ListAgents),
@@ -12,7 +12,7 @@ pub enum AgentCommands {
 }
 
 impl AgentCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, AgentError> {

@@ -8,18 +8,18 @@ use crate::*;
 ///
 /// Use [`RefToken::new`] to wrap a `Ref`, and [`RefToken::into_inner`] to unwrap.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct RefToken(Ref);
+pub(crate) struct RefToken(Ref);
 
 impl RefToken {
-    pub fn new(r: Ref) -> Self {
+    pub(crate) fn new(r: Ref) -> Self {
         Self(r)
     }
 
-    pub fn inner(&self) -> &Ref {
+    pub(crate) fn inner(&self) -> &Ref {
         &self.0
     }
 
-    pub fn into_inner(self) -> Ref {
+    pub(crate) fn into_inner(self) -> Ref {
         self.0
     }
 }

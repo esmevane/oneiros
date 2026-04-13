@@ -4,7 +4,7 @@ use crate::*;
 /// against the system DB and exports canon updates for the requested
 /// brain's bookmark, using the CRDT delta mechanism.
 #[derive(Clone)]
-pub struct SyncHandler {
+pub(crate) struct SyncHandler {
     config: Config,
     canons: CanonIndex,
 }
@@ -16,7 +16,7 @@ impl core::fmt::Debug for SyncHandler {
 }
 
 impl SyncHandler {
-    pub fn new(config: Config, canons: CanonIndex) -> Self {
+    pub(crate) fn new(config: Config, canons: CanonIndex) -> Self {
         Self { config, canons }
     }
 

@@ -13,17 +13,17 @@ use crate::*;
 /// Pure persistence: append events, load them back, import from
 /// external sources, delete transient entries. No projections,
 /// no broadcasting — those are the bus's concern.
-pub struct EventLog<'a> {
+pub(crate) struct EventLog<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> EventLog<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
     /// Create the events table.
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "
             create table if not exists events (
@@ -40,7 +40,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// Append a single event. Returns the stored form with sequence.
-    pub fn append(&self, event: &NewEvent) -> Result<StoredEvent, EventError> {
+    pub(crate) fn append(&self, event: &NewEvent) -> Result<StoredEvent, EventError> {
         let id = EventId::new();
         let data_json = serde_json::to_string(&event.data)?;
         let source_json = serde_json::to_string(&event.source)?;
@@ -64,7 +64,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// Load all events in sequence order.
-    pub fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
+    pub(crate) fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, rowid, data, source, created_at FROM events ORDER BY rowid")?;
@@ -98,7 +98,7 @@ impl<'a> EventLog<'a> {
 
     /// Fetch events by ID. Returns all found events in sequence order;
     /// silently skips IDs that don't exist in the log.
-    pub fn get_batch(&self, ids: &[EventId]) -> Result<Vec<StoredEvent>, EventError> {
+    pub(crate) fn get_batch(&self, ids: &[EventId]) -> Result<Vec<StoredEvent>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -139,7 +139,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// Import a single event without running projections. Idempotent.
-    pub fn import(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn import(&self, event: &StoredEvent) -> Result<(), EventError> {
         let event_type = event.data.event_type();
         let data_json = serde_json::to_string(&event.data)?;
         let source_json = serde_json::to_string(&event.source)?;
@@ -162,7 +162,7 @@ impl<'a> EventLog<'a> {
     ///
     /// Rarely needed — the event log is append-only by design.
     /// Exists for administrative operations, not domain logic.
-    pub fn delete(&self, event_id: &str) -> Result<(), EventError> {
+    pub(crate) fn delete(&self, event_id: &str) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM events WHERE id = ?1", params![event_id])?;
         Ok(())

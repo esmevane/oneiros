@@ -10,43 +10,43 @@ use crate::*;
 #[derive(
     Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
 )]
-pub struct Urge {
+pub(crate) struct Urge {
     #[builder(into)]
-    pub name: UrgeName,
-    #[builder(into)]
-    #[arg(long, default_value = "")]
-    pub description: Description,
+    pub(crate) name: UrgeName,
     #[builder(into)]
     #[arg(long, default_value = "")]
-    pub prompt: Prompt,
+    pub(crate) description: Description,
+    #[builder(into)]
+    #[arg(long, default_value = "")]
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "urges")]
-pub struct Urges(HashMap<String, Urge>);
+pub(crate) struct Urges(HashMap<String, Urge>);
 
 impl Urges {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &Urge> {
+    pub(crate) fn values(&self) -> impl Iterator<Item = &Urge> {
         self.0.values()
     }
 
-    pub fn get(&self, name: &UrgeName) -> Option<&Urge> {
+    pub(crate) fn get(&self, name: &UrgeName) -> Option<&Urge> {
         self.0.get(&name.to_string())
     }
 
-    pub fn set(&mut self, urge: &Urge) -> Option<Urge> {
+    pub(crate) fn set(&mut self, urge: &Urge) -> Option<Urge> {
         self.0.insert(urge.name.to_string(), urge.clone())
     }
 
-    pub fn remove(&mut self, name: &UrgeName) -> Option<Urge> {
+    pub(crate) fn remove(&mut self, name: &UrgeName) -> Option<Urge> {
         self.0.remove(&name.to_string())
     }
 }

@@ -3,7 +3,7 @@ use rusqlite::params;
 use crate::*;
 
 /// Ticket read model — async queries against the system context.
-pub struct TicketRepo<'a> {
+pub(crate) struct TicketRepo<'a> {
     context: &'a SystemContext,
 }
 
@@ -93,11 +93,11 @@ fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TicketRow> {
 }
 
 impl<'a> TicketRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
+    pub(crate) fn new(context: &'a SystemContext) -> Self {
         Self { context }
     }
 
-    pub async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
+    pub(crate) async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
         let db = self.context.db()?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE id = ?1");
         let mut stmt = db.prepare(&sql)?;
@@ -111,7 +111,7 @@ impl<'a> TicketRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
         let db = self.context.db()?;
 
         let total = {
@@ -140,7 +140,7 @@ impl<'a> TicketRepo<'a> {
         Ok(Listed::new(tickets, total))
     }
 
-    pub async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
+    pub(crate) async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
         let db = self.context.db()?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE token = ?1");
         let mut stmt = db.prepare(&sql)?;

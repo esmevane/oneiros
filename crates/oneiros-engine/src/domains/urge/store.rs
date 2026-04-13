@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct UrgeStore<'a> {
+pub(crate) struct UrgeStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> UrgeStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Urge(urge_event) = &event.data {
             match urge_event {
                 UrgeEvents::UrgeSet(urge) => self.set(urge)?,
@@ -21,12 +21,12 @@ impl<'a> UrgeStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM urges", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS urges (
                 name TEXT PRIMARY KEY,
@@ -39,7 +39,7 @@ impl<'a> UrgeStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
-    pub fn list(&self) -> Result<Vec<Urge>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Urge>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM urges ORDER BY name")?;

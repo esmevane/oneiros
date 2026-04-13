@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ExperienceService;
+pub(crate) struct ExperienceService;
 
 impl ExperienceService {
-    pub async fn create(
+    pub(crate) async fn create(
         context: &ProjectContext,
         CreateExperience {
             agent,
@@ -31,7 +31,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
@@ -45,7 +45,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListExperiences { agent, filters }: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
@@ -73,7 +73,7 @@ impl ExperienceService {
         })
     }
 
-    pub async fn update_description(
+    pub(crate) async fn update_description(
         context: &ProjectContext,
         UpdateExperienceDescription { id, description }: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ExperienceError> {
@@ -98,7 +98,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn update_sensation(
+    pub(crate) async fn update_sensation(
         context: &ProjectContext,
         UpdateExperienceSensation { id, sensation }: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ExperienceError> {

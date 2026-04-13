@@ -8,21 +8,21 @@ use crate::*;
 /// and indexed for full-text search. Expressions are projection targets:
 /// events produce them, and the FTS5 index makes them queryable.
 #[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Expression {
-    pub resource_ref: Ref,
+pub(crate) struct Expression {
+    pub(crate) resource_ref: Ref,
     #[builder(into)]
-    pub kind: Label,
+    pub(crate) kind: Label,
     #[builder(into)]
-    pub content: Content,
+    pub(crate) content: Content,
 }
 
 /// The raw text submitted as a search query.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
-pub struct QueryText(pub String);
+pub(crate) struct QueryText(pub(crate) String);
 
 impl QueryText {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 }
@@ -35,7 +35,7 @@ impl core::fmt::Display for QueryText {
 
 /// Envelope for search results, pairing the original query with matches.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct SearchResults {
-    pub query: QueryText,
-    pub results: Vec<Expression>,
+pub(crate) struct SearchResults {
+    pub(crate) query: QueryText,
+    pub(crate) results: Vec<Expression>,
 }

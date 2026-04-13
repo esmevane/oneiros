@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct CognitionService;
+pub(crate) struct CognitionService;
 
 impl CognitionService {
-    pub async fn add(
+    pub(crate) async fn add(
         context: &ProjectContext,
         AddCognition {
             agent,
@@ -31,7 +31,7 @@ impl CognitionService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetCognition,
     ) -> Result<CognitionResponse, CognitionError> {
@@ -45,7 +45,7 @@ impl CognitionService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListCognitions {
             agent,

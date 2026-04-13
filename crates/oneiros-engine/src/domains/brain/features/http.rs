@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct BrainRouter;
+pub(crate) struct BrainRouter;
 
 impl BrainRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/brains",
             Router::new()

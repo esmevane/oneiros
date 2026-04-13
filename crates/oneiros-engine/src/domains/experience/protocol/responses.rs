@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = ExperienceResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ExperienceResponse {
+pub(crate) enum ExperienceResponse {
     ExperienceCreated(Response<Experience>),
     ExperienceDetails(Response<Experience>),
     Experiences(Listed<Response<Experience>>),

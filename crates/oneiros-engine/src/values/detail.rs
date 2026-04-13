@@ -5,13 +5,13 @@
 use crate::*;
 
 /// A labeled field in a detail view.
-pub struct Field {
-    pub label: String,
-    pub value: String,
+pub(crate) struct Field {
+    pub(crate) label: String,
+    pub(crate) value: String,
 }
 
 impl Field {
-    pub fn new(label: impl Into<String>, value: impl Into<String>) -> Self {
+    pub(crate) fn new(label: impl Into<String>, value: impl Into<String>) -> Self {
         Self {
             label: label.into(),
             value: value.into(),
@@ -22,13 +22,13 @@ impl Field {
 /// A single-entity detail view.
 ///
 /// Renders as a styled heading followed by indented labeled fields.
-pub struct Detail {
+pub(crate) struct Detail {
     heading: String,
     fields: Vec<Field>,
 }
 
 impl Detail {
-    pub fn new(heading: impl Into<String>) -> Self {
+    pub(crate) fn new(heading: impl Into<String>) -> Self {
         Self {
             heading: heading.into(),
             fields: Vec::new(),
@@ -36,13 +36,13 @@ impl Detail {
     }
 
     /// Add a field (builder style).
-    pub fn field(mut self, label: impl Into<String>, value: impl Into<String>) -> Self {
+    pub(crate) fn field(mut self, label: impl Into<String>, value: impl Into<String>) -> Self {
         self.fields.push(Field::new(label, value));
         self
     }
 
     /// Add a field (mutating).
-    pub fn push_field(&mut self, label: impl Into<String>, value: impl Into<String>) {
+    pub(crate) fn push_field(&mut self, label: impl Into<String>, value: impl Into<String>) {
         self.fields.push(Field::new(label, value));
     }
 }

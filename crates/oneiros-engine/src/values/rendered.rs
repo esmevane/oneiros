@@ -22,7 +22,7 @@ pub struct Rendered<T> {
 
 impl<T> Rendered<T> {
     /// Construct with all representations.
-    pub fn new(data: T, prompt: String, text: String) -> Self {
+    pub(crate) fn new(data: T, prompt: String, text: String) -> Self {
         Self { data, prompt, text }
     }
 
@@ -32,7 +32,7 @@ impl<T> Rendered<T> {
     }
 
     /// Consume into the typed response, discarding presentation.
-    pub fn into_response(self) -> T {
+    pub(crate) fn into_response(self) -> T {
         self.data
     }
 

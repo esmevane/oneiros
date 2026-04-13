@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct CognitionTools;
+pub(crate) struct CognitionTools;
 
 impl CognitionTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         cognition_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectContext,
         tool_name: &str,
@@ -22,7 +22,7 @@ mod cognition_mcp {
 
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<AddCognition>::new(CognitionRequestType::AddCognition, "Record a thought").def(),
             Tool::<GetCognition>::new(
@@ -38,7 +38,7 @@ mod cognition_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,

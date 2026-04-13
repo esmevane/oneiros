@@ -4,18 +4,18 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct PressureRepo<'a> {
+pub(crate) struct PressureRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> PressureRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
+    pub(crate) async fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
         let db = self.context.db()?;
 
         // Look up agent by name to get the ID
@@ -61,7 +61,7 @@ impl<'a> PressureRepo<'a> {
         Ok(pressures)
     }
 
-    pub async fn list(&self) -> Result<Vec<Pressure>, EventError> {
+    pub(crate) async fn list(&self) -> Result<Vec<Pressure>, EventError> {
         let db = self.context.db()?;
 
         let mut stmt = db.prepare(

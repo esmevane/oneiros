@@ -7,29 +7,29 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateBrain {
+pub(crate) struct CreateBrain {
     #[builder(into)]
-    pub name: BrainName,
+    pub(crate) name: BrainName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetBrain {
+pub(crate) struct GetBrain {
     #[builder(into)]
-    pub name: BrainName,
+    pub(crate) name: BrainName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListBrains {
+pub(crate) struct ListBrains {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = BrainRequestType, display = "kebab-case")]
-pub enum BrainRequest {
+pub(crate) enum BrainRequest {
     CreateBrain(CreateBrain),
     GetBrain(GetBrain),
     ListBrains(ListBrains),

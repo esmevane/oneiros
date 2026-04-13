@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = PersonaResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum PersonaResponse {
+pub(crate) enum PersonaResponse {
     PersonaSet(PersonaName),
     PersonaDetails(Response<Persona>),
     Personas(Listed<Response<Persona>>),

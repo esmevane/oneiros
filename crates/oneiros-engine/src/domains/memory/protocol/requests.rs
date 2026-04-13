@@ -7,35 +7,35 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct AddMemory {
+pub(crate) struct AddMemory {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
     #[builder(into)]
-    pub level: LevelName,
+    pub(crate) level: LevelName,
     #[builder(into)]
-    pub content: Content,
+    pub(crate) content: Content,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetMemory {
+pub(crate) struct GetMemory {
     #[builder(into)]
-    pub id: MemoryId,
+    pub(crate) id: MemoryId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListMemories {
+pub(crate) struct ListMemories {
     #[arg(long)]
-    pub agent: Option<AgentName>,
+    pub(crate) agent: Option<AgentName>,
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = MemoryRequestType, display = "kebab-case")]
-pub enum MemoryRequest {
+pub(crate) enum MemoryRequest {
     AddMemory(AddMemory),
     GetMemory(GetMemory),
     ListMemories(ListMemories),

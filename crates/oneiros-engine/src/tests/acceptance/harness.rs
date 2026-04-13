@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::time::{Duration, Instant};
 
-pub type TestResult = Result<(), Box<dyn core::error::Error>>;
+pub(crate) type TestResult = Result<(), Box<dyn core::error::Error>>;
 
 /// The execution contract — how commands get run against a backend.
 ///
@@ -11,7 +11,7 @@ pub type TestResult = Result<(), Box<dyn core::error::Error>>;
 ///
 /// Both backends must produce equivalent results — the engine directly,
 /// the legacy by deserializing HTTP responses into the same types.
-pub trait Backend: Sized {
+pub(crate) trait Backend: Sized {
     /// Create a new backend instance ready to execute commands.
     fn start() -> impl Future<Output = Result<Self, Box<dyn core::error::Error>>>;
 
@@ -32,9 +32,9 @@ pub trait Backend: Sized {
 
 /// Configuration for eventual-consistency retries.
 #[derive(Clone)]
-pub struct RetryPolicy {
-    pub interval: Duration,
-    pub timeout: Duration,
+pub(crate) struct RetryPolicy {
+    pub(crate) interval: Duration,
+    pub(crate) timeout: Duration,
 }
 
 impl Default for RetryPolicy {
@@ -54,7 +54,7 @@ impl Default for RetryPolicy {
 ///
 /// Legacy backends pass on the first try (projections are inline).
 /// Async backends may retry a few times while projections catch up.
-pub struct Eventually<'h, B> {
+pub(crate) struct Eventually<'h, B> {
     harness: &'h Harness<B>,
     command: String,
     policy: RetryPolicy,
@@ -65,7 +65,7 @@ impl<'h, B: Backend> Eventually<'h, B> {
     ///
     /// Both execution errors (e.g., entity not found) and predicate failures
     /// are retried — the entity might not be projected yet.
-    pub async fn assert_json<F>(self, predicate: F) -> TestResult
+    pub(crate) async fn assert_json<F>(self, predicate: F) -> TestResult
     where
         F: Fn(&crate::Responses) -> Result<(), String>,
     {
@@ -97,7 +97,7 @@ impl<'h, B: Backend> Eventually<'h, B> {
     }
 
     /// Assert on the prompt output, retrying until the predicate passes.
-    pub async fn assert_prompt<F>(self, predicate: F) -> TestResult
+    pub(crate) async fn assert_prompt<F>(self, predicate: F) -> TestResult
     where
         F: Fn(&str) -> Result<(), String>,
     {
@@ -178,20 +178,20 @@ pub(crate) use assert_response;
 /// let harness = harness.init_project().await?;
 /// let response = harness.exec_json("level set session ...").await?;
 /// ```
-pub struct Harness<B> {
+pub(crate) struct Harness<B> {
     backend: B,
 }
 
 impl<B: Backend> Harness<B> {
     /// Create a bare harness — no system, no project. System-scope tests start here.
-    pub async fn started() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn started() -> Result<Self, Box<dyn core::error::Error>> {
         let backend = B::start().await?;
         Ok(Self { backend })
     }
 
     /// Initialize the host system. After this, system-scoped commands work
     /// (actor, brain, tenant, ticket).
-    pub async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::started().await?;
         harness
             .backend
@@ -203,14 +203,14 @@ impl<B: Backend> Harness<B> {
     /// Start the backing service explicitly. Most tests don't need this —
     /// `setup_system` starts the service automatically. Use for tests that
     /// need fine-grained control over sequencing.
-    pub async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
         self.backend.start_service().await?;
         Ok(self)
     }
 
     /// Initialize a project brain. After this, brain-scoped commands work
     /// (agents, cognitions, memories, vocabulary, etc.)
-    pub async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::setup_system().await?.start_service().await?;
         harness
             .backend
@@ -221,7 +221,7 @@ impl<B: Backend> Harness<B> {
     }
 
     /// Initialize a project and seed it with core vocabulary.
-    pub async fn seed_project() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn seed_project() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::init_project().await?;
         harness
             .backend
@@ -235,12 +235,12 @@ impl<B: Backend> Harness<B> {
     ///
     /// Use for write operations where you assert on the immediate response,
     /// or for setup commands that don't need eventual-consistency handling.
-    pub async fn exec_json(&self, command: &str) -> Result<crate::Responses, crate::Error> {
+    pub(crate) async fn exec_json(&self, command: &str) -> Result<crate::Responses, crate::Error> {
         self.backend.exec_json(command).await
     }
 
     /// Execute in prompt mode — delegates to the backend.
-    pub async fn exec_prompt(&self, command: &str) -> Result<String, crate::Error> {
+    pub(crate) async fn exec_prompt(&self, command: &str) -> Result<String, crate::Error> {
         self.backend.exec_prompt(command).await
     }
 
@@ -256,7 +256,7 @@ impl<B: Backend> Harness<B> {
     ///     Responses::Agent(AgentResponse::AgentDetails(_))
     /// )).await
     /// ```
-    pub fn query(&self, command: &str) -> Eventually<'_, B> {
+    pub(crate) fn query(&self, command: &str) -> Eventually<'_, B> {
         Eventually {
             harness: self,
             command: command.to_string(),

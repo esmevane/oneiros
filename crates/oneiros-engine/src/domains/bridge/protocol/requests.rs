@@ -9,7 +9,7 @@ use crate::*;
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum BridgeRequest {
+pub(crate) enum BridgeRequest {
     /// "Here's what I have — send me what I'm missing."
     ///
     /// The link's token is validated against the server's tickets table
@@ -26,12 +26,12 @@ pub enum BridgeRequest {
 
 impl BridgeRequest {
     /// Encode this request to JSON bytes for transport.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         serde_json::to_vec(self).expect("sync request serialization should not fail")
     }
 
     /// Decode a request from JSON bytes received over transport.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
         serde_json::from_slice(bytes)
     }
 }

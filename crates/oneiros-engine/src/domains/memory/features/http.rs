@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct MemoryRouter;
+pub(crate) struct MemoryRouter;
 
 impl MemoryRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/memories",
             Router::new()

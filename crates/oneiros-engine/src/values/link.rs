@@ -13,13 +13,13 @@ use crate::*;
 /// Displayed as `link:<base64url>` where the payload is the postcard-encoded
 /// `Link` struct. Matches the `ref:<base64url>` convention of `RefToken`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct Link {
-    pub target: Ref,
-    pub token: Token,
+pub(crate) struct Link {
+    pub(crate) target: Ref,
+    pub(crate) token: Token,
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum LinkError {
+pub(crate) enum LinkError {
     #[error("invalid link encoding: {0}")]
     Encoding(#[from] data_encoding::DecodeError),
     #[error("invalid link format: {0}")]
@@ -27,17 +27,17 @@ pub enum LinkError {
 }
 
 impl Link {
-    pub fn new(target: Ref, token: Token) -> Self {
+    pub(crate) fn new(target: Ref, token: Token) -> Self {
         Self { target, token }
     }
 
     /// Encode this link to postcard bytes.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         postcard::to_allocvec(self).expect("link serialization should not fail")
     }
 
     /// Decode a link from postcard bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, LinkError> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, LinkError> {
         Ok(postcard::from_bytes(bytes)?)
     }
 }

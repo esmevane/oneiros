@@ -9,10 +9,10 @@ use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 
 use crate::*;
 
-pub struct ProjectRouter;
+pub(crate) struct ProjectRouter;
 
 impl ProjectRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new()
             // System-scoped — no auth needed (creating a brain is how you get a token)
             .route("/projects", routing::post(init))

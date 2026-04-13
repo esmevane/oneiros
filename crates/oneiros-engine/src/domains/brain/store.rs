@@ -2,28 +2,28 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct BrainStore<'a> {
+pub(crate) struct BrainStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> BrainStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Brain(BrainEvents::BrainCreated(brain)) = &event.data {
             self.create_record(brain)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM brains", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists brains (
                 id text primary key,

@@ -4,15 +4,15 @@ use crate::*;
 
 #[derive(Template)]
 #[template(path = "continuity/dream.md")]
-pub struct DreamTemplate<'a> {
-    pub context: &'a DreamContext,
-    pub pressures: RelevantPressures,
-    pub readings: &'a [PressureReading],
-    pub deep: bool,
+pub(crate) struct DreamTemplate<'a> {
+    pub(crate) context: &'a DreamContext,
+    pub(crate) pressures: RelevantPressures,
+    pub(crate) readings: &'a [PressureReading],
+    pub(crate) deep: bool,
 }
 
 impl<'a> DreamTemplate<'a> {
-    pub fn new(context: &'a DreamContext) -> Self {
+    pub(crate) fn new(context: &'a DreamContext) -> Self {
         let pressures = RelevantPressures::from_pressures(
             context
                 .pressures
@@ -28,7 +28,7 @@ impl<'a> DreamTemplate<'a> {
         }
     }
 
-    pub fn deep(context: &'a DreamContext) -> Self {
+    pub(crate) fn deep(context: &'a DreamContext) -> Self {
         let pressures = RelevantPressures::from_pressures(
             context
                 .pressures
@@ -44,7 +44,7 @@ impl<'a> DreamTemplate<'a> {
         }
     }
 
-    pub fn texture_names(&self) -> String {
+    pub(crate) fn texture_names(&self) -> String {
         self.context
             .textures
             .iter()
@@ -53,7 +53,7 @@ impl<'a> DreamTemplate<'a> {
             .join(", ")
     }
 
-    pub fn level_names(&self) -> String {
+    pub(crate) fn level_names(&self) -> String {
         self.context
             .levels
             .iter()
@@ -62,7 +62,7 @@ impl<'a> DreamTemplate<'a> {
             .join(", ")
     }
 
-    pub fn sensation_names(&self) -> String {
+    pub(crate) fn sensation_names(&self) -> String {
         self.context
             .sensations
             .iter()
@@ -71,7 +71,7 @@ impl<'a> DreamTemplate<'a> {
             .join(", ")
     }
 
-    pub fn nature_names(&self) -> String {
+    pub(crate) fn nature_names(&self) -> String {
         self.context
             .natures
             .iter()
@@ -80,7 +80,7 @@ impl<'a> DreamTemplate<'a> {
             .join(", ")
     }
 
-    pub fn urge_names(&self) -> String {
+    pub(crate) fn urge_names(&self) -> String {
         self.context
             .urges
             .iter()
@@ -92,40 +92,40 @@ impl<'a> DreamTemplate<'a> {
 
 #[derive(Template)]
 #[template(path = "continuity/introspect.md")]
-pub struct IntrospectTemplate<'a> {
-    pub agent: &'a Agent,
-    pub pressures: RelevantPressures,
+pub(crate) struct IntrospectTemplate<'a> {
+    pub(crate) agent: &'a Agent,
+    pub(crate) pressures: RelevantPressures,
 }
 
 impl<'a> IntrospectTemplate<'a> {
-    pub fn new(agent: &'a Agent, pressures: RelevantPressures) -> Self {
+    pub(crate) fn new(agent: &'a Agent, pressures: RelevantPressures) -> Self {
         Self { agent, pressures }
     }
 }
 
 #[derive(Template)]
 #[template(path = "continuity/reflect.md")]
-pub struct ReflectTemplate<'a> {
-    pub agent: &'a Agent,
-    pub pressures: RelevantPressures,
+pub(crate) struct ReflectTemplate<'a> {
+    pub(crate) agent: &'a Agent,
+    pub(crate) pressures: RelevantPressures,
 }
 
 impl<'a> ReflectTemplate<'a> {
-    pub fn new(agent: &'a Agent, pressures: RelevantPressures) -> Self {
+    pub(crate) fn new(agent: &'a Agent, pressures: RelevantPressures) -> Self {
         Self { agent, pressures }
     }
 }
 
 #[derive(Template)]
 #[template(path = "continuity/sense.md")]
-pub struct SenseTemplate<'a> {
-    pub agent: &'a Agent,
-    pub event_data: &'a str,
-    pub pressures: RelevantPressures,
+pub(crate) struct SenseTemplate<'a> {
+    pub(crate) agent: &'a Agent,
+    pub(crate) event_data: &'a str,
+    pub(crate) pressures: RelevantPressures,
 }
 
 impl<'a> SenseTemplate<'a> {
-    pub fn new(agent: &'a Agent, event_data: &'a str, pressures: RelevantPressures) -> Self {
+    pub(crate) fn new(agent: &'a Agent, event_data: &'a str, pressures: RelevantPressures) -> Self {
         Self {
             agent,
             event_data,
@@ -136,12 +136,12 @@ impl<'a> SenseTemplate<'a> {
 
 #[derive(Template)]
 #[template(path = "continuity/guidebook.md")]
-pub struct GuidebookTemplate<'a> {
-    pub context: &'a DreamContext,
+pub(crate) struct GuidebookTemplate<'a> {
+    pub(crate) context: &'a DreamContext,
 }
 
 impl<'a> GuidebookTemplate<'a> {
-    pub fn new(context: &'a DreamContext) -> Self {
+    pub(crate) fn new(context: &'a DreamContext) -> Self {
         Self { context }
     }
 }

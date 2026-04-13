@@ -5,26 +5,26 @@
 
 use crate::*;
 
-pub struct ProjectView;
+pub(crate) struct ProjectView;
 
 impl ProjectView {
     /// Confirmation that a brain has been created.
-    pub fn initialized(result: &InitResult) -> String {
+    pub(crate) fn initialized(result: &InitResult) -> String {
         Confirmation::new("Brain", result.brain_name.to_string(), "created").to_string()
     }
 
     /// Message when a brain with that name already exists.
-    pub fn already_exists(name: &BrainName) -> String {
+    pub(crate) fn already_exists(name: &BrainName) -> String {
         format!("{}", format!("Brain '{name}' already exists.").muted())
     }
 
     /// Confirmation that an export was written.
-    pub fn exported(path: &ExportPath) -> String {
+    pub(crate) fn exported(path: &ExportPath) -> String {
         format!("{} Export written to '{path}'.", "✓".success())
     }
 
     /// Confirmation that events were imported and replayed.
-    pub fn imported(result: &ImportResult) -> String {
+    pub(crate) fn imported(result: &ImportResult) -> String {
         format!(
             "{} Imported {} events, replayed {}.",
             "✓".success(),
@@ -34,7 +34,7 @@ impl ProjectView {
     }
 
     /// Confirmation that events were replayed.
-    pub fn replayed(result: &ReplayResult) -> String {
+    pub(crate) fn replayed(result: &ReplayResult) -> String {
         format!("{} Replayed {} events.", "✓".success(), result.replayed)
     }
 }

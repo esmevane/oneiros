@@ -2,10 +2,10 @@ use axum::{Json, Router, extract::Path, routing};
 
 use crate::*;
 
-pub struct PressureRouter;
+pub(crate) struct PressureRouter;
 
 impl PressureRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/pressures",
             Router::new()

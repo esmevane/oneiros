@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = BookmarkEventsType, display = "kebab-case")]
-pub enum BookmarkEvents {
+pub(crate) enum BookmarkEvents {
     BookmarkCreated(BookmarkCreated),
     BookmarkForked(BookmarkForked),
     BookmarkSwitched(BookmarkSwitched),
@@ -50,32 +50,32 @@ mod tests {
 
 /// Genesis — a bookmark comes into existence (e.g. "main" at brain init).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkCreated {
-    pub brain: BrainName,
-    pub name: BookmarkName,
+pub(crate) struct BookmarkCreated {
+    pub(crate) brain: BrainName,
+    pub(crate) name: BookmarkName,
 }
 
 /// Derivation — a new bookmark forked from an existing one.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkForked {
-    pub brain: BrainName,
-    pub name: BookmarkName,
-    pub from: BookmarkName,
+pub(crate) struct BookmarkForked {
+    pub(crate) brain: BrainName,
+    pub(crate) name: BookmarkName,
+    pub(crate) from: BookmarkName,
 }
 
 /// Navigation — the active bookmark changed.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkSwitched {
-    pub brain: BrainName,
-    pub name: BookmarkName,
+pub(crate) struct BookmarkSwitched {
+    pub(crate) brain: BrainName,
+    pub(crate) name: BookmarkName,
 }
 
 /// Convergence — one bookmark's changes merged into another.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkMerged {
-    pub brain: BrainName,
-    pub source: BookmarkName,
-    pub target: BookmarkName,
+pub(crate) struct BookmarkMerged {
+    pub(crate) brain: BrainName,
+    pub(crate) source: BookmarkName,
+    pub(crate) target: BookmarkName,
 }
 
 /// Distribution — a bookmark was shared. Records the ticket that was
@@ -83,28 +83,28 @@ pub struct BookmarkMerged {
 /// because that's derivable from the ticket + current host identity and
 /// shouldn't be frozen in the event log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkShared {
-    pub brain: BrainName,
-    pub bookmark: BookmarkName,
-    pub ticket_id: TicketId,
-    pub shared_by: ActorId,
+pub(crate) struct BookmarkShared {
+    pub(crate) brain: BrainName,
+    pub(crate) bookmark: BookmarkName,
+    pub(crate) ticket_id: TicketId,
+    pub(crate) shared_by: ActorId,
 }
 
 /// Distribution — a follow advanced its checkpoint after a collect
 /// operation. The checkpoint is the new position after applying the
 /// received events.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkCollected {
-    pub follow_id: FollowId,
-    pub checkpoint: Checkpoint,
-    pub events_received: u64,
+pub(crate) struct BookmarkCollected {
+    pub(crate) follow_id: FollowId,
+    pub(crate) checkpoint: Checkpoint,
+    pub(crate) events_received: u64,
 }
 
 /// Distribution — a follow was removed. Only the remote binding is
 /// severed; events already collected into the local bookmark stay.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookmarkUnfollowed {
-    pub follow_id: FollowId,
-    pub brain: BrainName,
-    pub bookmark: BookmarkName,
+pub(crate) struct BookmarkUnfollowed {
+    pub(crate) follow_id: FollowId,
+    pub(crate) brain: BrainName,
+    pub(crate) bookmark: BookmarkName,
 }

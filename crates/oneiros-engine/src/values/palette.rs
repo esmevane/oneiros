@@ -10,34 +10,34 @@ use anstyle::{AnsiColor, Color, Style};
 ///
 /// Each style maps to a role in the output, not a specific color.
 /// This lets us evolve the palette without touching every call site.
-pub struct Palette;
+pub(crate) struct Palette;
 
 impl Palette {
     /// Headings and section titles.
-    pub const HEADING: Style = Style::new().bold();
+    pub(crate) const HEADING: Style = Style::new().bold();
 
     /// Emphasis within body text.
-    pub const EMPHASIS: Style = Style::new().bold();
+    pub(crate) const EMPHASIS: Style = Style::new().bold();
 
     /// Success confirmations — "created", "recorded", etc.
-    pub const SUCCESS: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green)));
+    pub(crate) const SUCCESS: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green)));
 
     /// Warnings — degraded state, fallbacks taken.
-    pub const WARNING: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow)));
+    pub(crate) const WARNING: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow)));
 
     /// Errors — something failed.
-    pub const ERROR: Style = Style::new()
+    pub(crate) const ERROR: Style = Style::new()
         .fg_color(Some(Color::Ansi(AnsiColor::Red)))
         .bold();
 
     /// Muted text — secondary info, metadata, ref tokens.
-    pub const MUTED: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
+    pub(crate) const MUTED: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
 
     /// Labels in key-value pairs.
-    pub const LABEL: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Cyan)));
+    pub(crate) const LABEL: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Cyan)));
 
     /// Hints and suggestions — "try running...", "did you mean...?"
-    pub const HINT: Style = Style::new()
+    pub(crate) const HINT: Style = Style::new()
         .fg_color(Some(Color::Ansi(AnsiColor::Blue)))
         .italic();
 }
@@ -46,13 +46,13 @@ impl Palette {
 ///
 /// Renders the style's opening codes, the inner value, then the reset
 /// sequence. `anstream` strips these when color is off.
-pub struct Styled<T> {
+pub(crate) struct Styled<T> {
     style: Style,
     value: T,
 }
 
 impl<T: std::fmt::Display> Styled<T> {
-    pub fn new(style: Style, value: T) -> Self {
+    pub(crate) fn new(style: Style, value: T) -> Self {
         Self { style, value }
     }
 }
@@ -70,7 +70,7 @@ impl<T: std::fmt::Display> std::fmt::Display for Styled<T> {
 }
 
 /// Apply a style to a displayable value — standalone function.
-pub fn painted<T: std::fmt::Display>(value: T, style: Style) -> Styled<T> {
+pub(crate) fn painted<T: std::fmt::Display>(value: T, style: Style) -> Styled<T> {
     Styled::new(style, value)
 }
 
@@ -79,7 +79,7 @@ pub fn painted<T: std::fmt::Display>(value: T, style: Style) -> Styled<T> {
 /// Works on both owned and borrowed values — methods take `&self`
 /// and return `Styled<&Self>`, so you can paint struct fields
 /// without cloning.
-pub trait Paint: std::fmt::Display {
+pub(crate) trait Paint: std::fmt::Display {
     fn paint(&self, style: Style) -> Styled<&Self> {
         Styled::new(style, self)
     }

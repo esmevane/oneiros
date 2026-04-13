@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum ActorCommands {
+pub(crate) enum ActorCommands {
     Create(CreateActor),
     Get(GetActor),
     List(ListActors),
 }
 
 impl ActorCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &SystemContext,
     ) -> Result<Rendered<Responses>, ActorError> {

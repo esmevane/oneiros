@@ -7,39 +7,39 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateTicket {
+pub(crate) struct CreateTicket {
     #[arg(long)]
     #[builder(into)]
-    pub actor_id: ActorId,
+    pub(crate) actor_id: ActorId,
     #[arg(long)]
     #[builder(into)]
-    pub brain_name: BrainName,
+    pub(crate) brain_name: BrainName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetTicket {
+pub(crate) struct GetTicket {
     #[builder(into)]
-    pub id: TicketId,
+    pub(crate) id: TicketId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ValidateTicket {
+pub(crate) struct ValidateTicket {
     #[builder(into)]
-    pub token: Token,
+    pub(crate) token: Token,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListTickets {
+pub(crate) struct ListTickets {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TicketRequestType, display = "kebab-case")]
-pub enum TicketRequest {
+pub(crate) enum TicketRequest {
     CreateTicket(CreateTicket),
     GetTicket(GetTicket),
     ListTickets(ListTickets),

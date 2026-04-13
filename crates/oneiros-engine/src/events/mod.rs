@@ -1,5 +1,5 @@
 mod event_bus;
 mod event_log;
 
-pub use event_bus::EventBus;
-pub use event_log::EventLog;
+pub(crate) use event_bus::EventBus;
+pub(crate) use event_log::EventLog;

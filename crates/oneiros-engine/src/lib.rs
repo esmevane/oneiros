@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 mod cli;
 mod client;
 mod config;

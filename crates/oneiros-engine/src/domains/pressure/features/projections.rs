@@ -7,10 +7,10 @@
 
 use crate::*;
 
-pub struct PressureProjections;
+pub(crate) struct PressureProjections;
 
 impl PressureProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum CognitionCommands {
+pub(crate) enum CognitionCommands {
     Add(AddCognition),
     Show(GetCognition),
     List(ListCognitions),
 }
 
 impl CognitionCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, CognitionError> {

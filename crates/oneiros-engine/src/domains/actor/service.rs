@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ActorService;
+pub(crate) struct ActorService;
 
 impl ActorService {
-    pub async fn create(
+    pub(crate) async fn create(
         context: &SystemContext,
         CreateActor { tenant_id, name }: &CreateActor,
     ) -> Result<ActorResponse, ActorError> {
@@ -21,7 +21,7 @@ impl ActorService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &SystemContext,
         selector: &GetActor,
     ) -> Result<ActorResponse, ActorError> {
@@ -35,7 +35,7 @@ impl ActorService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &SystemContext,
         ListActors { filters }: &ListActors,
     ) -> Result<ActorResponse, ActorError> {

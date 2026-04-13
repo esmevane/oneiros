@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct SearchPresenter {
+pub(crate) struct SearchPresenter {
     response: SearchResponse,
 }
 
 impl SearchPresenter {
-    pub fn new(response: SearchResponse) -> Self {
+    pub(crate) fn new(response: SearchResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<Responses> {
+    pub(crate) fn render(self) -> Rendered<Responses> {
         let prompt = self.render_prompt();
         let text = self.render_text();
         let data = Responses::from(self.response);

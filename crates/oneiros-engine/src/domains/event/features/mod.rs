@@ -3,7 +3,7 @@ mod cli {
 
     /// Event inspection commands.
     #[derive(Debug, Subcommand)]
-    pub enum EventCommands {}
+    pub(crate) enum EventCommands {}
 }
 
-pub use cli::*;
+pub(crate) use cli::*;

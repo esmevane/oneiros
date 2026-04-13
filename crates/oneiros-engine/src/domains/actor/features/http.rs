@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct ActorRouter;
+pub(crate) struct ActorRouter;
 
 impl ActorRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/actors",
             Router::<ServerState>::new()

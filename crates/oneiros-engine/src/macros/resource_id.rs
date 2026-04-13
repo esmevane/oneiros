@@ -14,14 +14,14 @@ macro_rules! resource_id {
             schemars::JsonSchema,
         )]
         #[serde(transparent)]
-        pub struct $name(pub crate::Id);
+        pub struct $name(pub(crate) crate::Id);
 
         impl $name {
-            pub fn new() -> Self {
+            pub(crate) fn new() -> Self {
                 Self(crate::Id::new())
             }
 
-            pub fn is_empty(&self) -> bool {
+            pub(crate) fn is_empty(&self) -> bool {
                 self.0.is_empty()
             }
         }

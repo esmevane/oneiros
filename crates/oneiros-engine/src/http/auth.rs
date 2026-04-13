@@ -6,7 +6,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum AuthError {
+pub(crate) enum AuthError {
     #[error("Missing authorization header")]
     NoAuthHeader,
     #[error("Invalid authorization header")]

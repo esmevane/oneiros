@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum NatureCommands {
+pub(crate) enum NatureCommands {
     Set(SetNature),
     Show(GetNature),
     List(ListNatures),
@@ -11,7 +11,7 @@ pub enum NatureCommands {
 }
 
 impl NatureCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, NatureError> {

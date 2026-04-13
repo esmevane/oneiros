@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SeedService;
+pub(crate) struct SeedService;
 
 impl SeedService {
-    pub async fn core(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
+    pub(crate) async fn core(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
         for (name, description, prompt) in [
             (
                 "working",
@@ -199,7 +199,7 @@ impl SeedService {
         Ok(SeedResponse::SeedComplete)
     }
 
-    pub async fn agents(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
+    pub(crate) async fn agents(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
         // Verify required personas exist — hint at `seed core` if missing.
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),

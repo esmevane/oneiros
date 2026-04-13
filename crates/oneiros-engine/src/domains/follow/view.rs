@@ -2,10 +2,10 @@
 
 use crate::*;
 
-pub struct FollowView;
+pub(crate) struct FollowView;
 
 impl FollowView {
-    pub fn table(follows: &Listed<Response<Follow>>) -> Table {
+    pub(crate) fn table(follows: &Listed<Response<Follow>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("bookmark", "Bookmark"),
             Column::key("brain", "Brain"),
@@ -30,7 +30,7 @@ impl FollowView {
         table
     }
 
-    pub fn detail(follow: &Follow) -> Detail {
+    pub(crate) fn detail(follow: &Follow) -> Detail {
         let source_label = match &follow.source {
             FollowSource::Local(_) => "local",
             FollowSource::Peer(_) => "peer",

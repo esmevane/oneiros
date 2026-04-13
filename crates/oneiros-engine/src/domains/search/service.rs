@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SearchService;
+pub(crate) struct SearchService;
 
 impl SearchService {
-    pub async fn search(
+    pub(crate) async fn search(
         context: &ProjectContext,
         SearchQuery { query, agent }: &SearchQuery,
     ) -> Result<SearchResponse, SearchError> {

@@ -2,11 +2,11 @@
 
 use crate::*;
 
-pub struct PeerView;
+pub(crate) struct PeerView;
 
 impl PeerView {
     /// Table of peers with standard columns.
-    pub fn table(peers: &Listed<Response<Peer>>) -> Table {
+    pub(crate) fn table(peers: &Listed<Response<Peer>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("name", "Name"),
             Column::key("key", "Key"),
@@ -28,7 +28,7 @@ impl PeerView {
     }
 
     /// Detail view for a single peer.
-    pub fn detail(peer: &Peer) -> Detail {
+    pub(crate) fn detail(peer: &Peer) -> Detail {
         Detail::new(peer.name.to_string())
             .field("id:", peer.id.to_string())
             .field("key:", peer.key.to_string())
@@ -37,7 +37,7 @@ impl PeerView {
     }
 
     /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &PeerName) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, name: &PeerName) -> Confirmation {
         Confirmation::new("Peer", name.to_string(), verb)
     }
 }

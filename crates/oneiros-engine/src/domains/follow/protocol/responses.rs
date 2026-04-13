@@ -10,7 +10,7 @@ use crate::*;
     clippy::large_enum_variant,
     reason = "We can reduce the size of the Follow later"
 )]
-pub enum FollowResponse {
+pub(crate) enum FollowResponse {
     Found(Response<Follow>),
     Listed(Listed<Response<Follow>>),
 }

@@ -1,5 +1,5 @@
 mod errors;
 mod responses;
 
-pub use errors::*;
-pub use responses::*;
+pub(crate) use errors::*;
+pub(crate) use responses::*;

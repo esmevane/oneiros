@@ -7,37 +7,37 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct AddCognition {
+pub(crate) struct AddCognition {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
     #[builder(into)]
-    pub texture: TextureName,
+    pub(crate) texture: TextureName,
     #[builder(into)]
-    pub content: Content,
+    pub(crate) content: Content,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetCognition {
+pub(crate) struct GetCognition {
     #[builder(into)]
-    pub id: CognitionId,
+    pub(crate) id: CognitionId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListCognitions {
+pub(crate) struct ListCognitions {
     #[arg(long)]
-    pub agent: Option<AgentName>,
+    pub(crate) agent: Option<AgentName>,
     #[arg(long)]
-    pub texture: Option<TextureName>,
+    pub(crate) texture: Option<TextureName>,
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = CognitionRequestType, display = "kebab-case")]
-pub enum CognitionRequest {
+pub(crate) enum CognitionRequest {
     AddCognition(AddCognition),
     GetCognition(GetCognition),
     ListCognitions(ListCognitions),

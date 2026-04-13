@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct ServiceView;
+pub(crate) struct ServiceView;
 
 impl ServiceView {
     /// Render a service response with appropriate styling.
-    pub fn render(response: &ServiceResponse) -> String {
+    pub(crate) fn render(response: &ServiceResponse) -> String {
         match response {
             ServiceResponse::ServiceInstalled(_) => {
                 format!("{} {response}", "✓".success())

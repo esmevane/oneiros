@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Search projection store — projection lifecycle, write operations, and index management.
-pub struct SearchStore<'a> {
+pub(crate) struct SearchStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> SearchStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create virtual table if not exists search_index
              using fts5(resource_ref, kind, content, agent)",
@@ -22,7 +22,7 @@ impl<'a> SearchStore<'a> {
         Ok(())
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         match &event.data {
             Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
                 self.index(
@@ -71,14 +71,14 @@ impl<'a> SearchStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM search_index", [])?;
         Ok(())
     }
 
     // ── Write operations ─────────────────────────────────────────
 
-    pub fn index(
+    pub(crate) fn index(
         &self,
         resource_ref: Ref,
         kind: &str,
@@ -93,7 +93,7 @@ impl<'a> SearchStore<'a> {
         Ok(())
     }
 
-    pub fn remove_by_ref(&self, resource_ref: &Ref) -> Result<(), EventError> {
+    pub(crate) fn remove_by_ref(&self, resource_ref: &Ref) -> Result<(), EventError> {
         let ref_json = serde_json::to_string(resource_ref)?;
         self.conn.execute(
             "DELETE FROM search_index WHERE resource_ref = ?1",
@@ -102,7 +102,7 @@ impl<'a> SearchStore<'a> {
         Ok(())
     }
 
-    pub fn remove_by_agent(&self, agent: &AgentName) -> Result<(), EventError> {
+    pub(crate) fn remove_by_agent(&self, agent: &AgentName) -> Result<(), EventError> {
         self.conn.execute(
             "DELETE FROM search_index WHERE agent = ?1",
             params![agent.to_string()],

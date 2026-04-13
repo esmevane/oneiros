@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct BookmarkRouter;
+pub(crate) struct BookmarkRouter;
 
 impl BookmarkRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/bookmarks",
             Router::new()

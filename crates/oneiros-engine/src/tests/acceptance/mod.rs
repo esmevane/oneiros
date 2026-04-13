@@ -7,7 +7,7 @@ use clap::Parser;
 use crate::*;
 use harness::*;
 
-pub struct EngineBackend {
+pub(crate) struct EngineBackend {
     engine: Engine,
     _dir: tempfile::TempDir,
     _server: Option<ServerHandle>,

@@ -20,20 +20,20 @@ pub enum ServerError {
 const DASHBOARD_HTML: &str = include_str!("../../templates/dashboard/index.html");
 
 /// An HTTP server backed by a `ServerState`.
-pub struct Server {
+pub(crate) struct Server {
     config: Config,
 }
 
 impl Server {
     /// Create a server from an engine.
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         Self { config }
     }
 
     /// Serve on a pre-bound TCP listener. Loads/generates the host secret
     /// key, binds an iroh Bridge, registers the sync protocol handler
     /// against it, then assembles the router.
-    pub async fn serve(self, listener: TcpListener) -> Result<(), ServerError> {
+    pub(crate) async fn serve(self, listener: TcpListener) -> Result<(), ServerError> {
         let state = ServerState::bind(self.config.clone()).await?;
 
         // Register the sync handler on the bridge so incoming
@@ -50,7 +50,7 @@ impl Server {
     }
 
     /// Start the server
-    pub async fn start(self) -> Result<(), ServerError> {
+    pub(crate) async fn start(self) -> Result<(), ServerError> {
         let listener = TcpListener::bind(self.config.service.address).await?;
 
         self.serve(listener).await
@@ -58,7 +58,7 @@ impl Server {
 
     /// Build a router from an already-constructed state. Used by `serve`
     /// once the async bridge binding has completed.
-    pub fn router_from_state(state: ServerState) -> Router {
+    pub(crate) fn router_from_state(state: ServerState) -> Router {
         /// Returns the dashboard bootstrap config: token + brain name.
         async fn dashboard_config(State(state): State<ServerState>) -> Json<serde_json::Value> {
             let token = state.token().map(|t| t.to_string());

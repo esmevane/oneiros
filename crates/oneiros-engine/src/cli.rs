@@ -16,24 +16,24 @@ use crate::*;
 #[command(name = "oneiros", version)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Command,
+    pub(crate) command: Command,
     #[command(flatten)]
     config: Config,
 }
 
 impl Cli {
     /// Execute the command and return the rendered result.
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
         self.command.execute(config).await
     }
 
     /// The parsed config (from CLI flags).
-    pub fn config(&self) -> &Config {
+    pub(crate) fn config(&self) -> &Config {
         &self.config
     }
 
     /// The selected output mode.
-    pub fn output_mode(&self) -> &OutputMode {
+    pub(crate) fn output_mode(&self) -> &OutputMode {
         &self.config.output
     }
 }
@@ -44,7 +44,7 @@ impl Cli {
 /// an `Engine` that holds both system and project contexts, and the
 /// dispatch routes to the right one.
 #[derive(Debug, Subcommand)]
-pub enum Command {
+pub(crate) enum Command {
     // Workflow domains
     #[command(subcommand)]
     System(SystemCommands),
@@ -169,7 +169,7 @@ impl Command {
     /// - `.response()` for typed data access (tests, programmatic use)
     /// - Match on variant for presentation (Prompt content, Text summary)
     /// - `Rendered::Data` is the default for domains without a presenter
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
             // Service management — operates before/outside HTTP transport
             Command::Service(service) => service.execute(config).await?,

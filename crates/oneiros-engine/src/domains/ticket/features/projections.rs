@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TicketProjections;
+pub(crate) struct TicketProjections;
 
 impl TicketProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

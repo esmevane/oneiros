@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TenantService;
+pub(crate) struct TenantService;
 
 impl TenantService {
-    pub async fn create(
+    pub(crate) async fn create(
         context: &SystemContext,
         CreateTenant { name }: &CreateTenant,
     ) -> Result<TenantResponse, TenantError> {
@@ -18,7 +18,7 @@ impl TenantService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &SystemContext,
         selector: &GetTenant,
     ) -> Result<TenantResponse, TenantError> {
@@ -32,7 +32,7 @@ impl TenantService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &SystemContext,
         ListTenants { filters }: &ListTenants,
     ) -> Result<TenantResponse, TenantError> {

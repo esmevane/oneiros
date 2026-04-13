@@ -6,7 +6,7 @@ use crate::*;
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum BridgeResponse {
+pub(crate) enum BridgeResponse {
     /// Canon updates the requestor is missing (encoded Loro updates).
     Updates { canon_bytes: Vec<u8> },
 
@@ -23,17 +23,17 @@ pub enum BridgeResponse {
 
 impl BridgeResponse {
     /// Encode this response to JSON bytes for transport.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         serde_json::to_vec(self).expect("sync response serialization should not fail")
     }
 
     /// Decode a response from JSON bytes received over transport.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
         serde_json::from_slice(bytes)
     }
 
     /// Whether this response indicates the request was denied.
-    pub fn is_denied(&self) -> bool {
+    pub(crate) fn is_denied(&self) -> bool {
         matches!(self, Self::Denied { .. })
     }
 }

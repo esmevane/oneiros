@@ -18,7 +18,7 @@ use crate::*;
 
 /// Errors that can occur during MCP tool dispatch.
 #[derive(Debug, thiserror::Error)]
-pub enum ToolError {
+pub(crate) enum ToolError {
     #[error("Application error: {0}")]
     App(#[from] Error),
 
@@ -183,7 +183,7 @@ async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Opti
 /// the brain associated with that token. Otherwise it uses the server's
 /// default brain config.
 #[derive(Clone)]
-pub struct EngineToolBox {
+pub(crate) struct EngineToolBox {
     state: ServerState,
     /// Session-resolved config, set during initialize from Bearer token.
     /// Falls back to state.config() if not set.
@@ -191,7 +191,7 @@ pub struct EngineToolBox {
 }
 
 impl EngineToolBox {
-    pub fn new(state: ServerState) -> Self {
+    pub(crate) fn new(state: ServerState) -> Self {
         Self {
             state,
             session_config: OnceLock::new(),

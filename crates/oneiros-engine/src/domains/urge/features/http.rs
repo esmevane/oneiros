@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct UrgeRouter;
+pub(crate) struct UrgeRouter;
 
 impl UrgeRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/urges",
             Router::new()

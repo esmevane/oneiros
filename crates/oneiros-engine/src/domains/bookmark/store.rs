@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct BookmarkStore<'a> {
+pub(crate) struct BookmarkStore<'a> {
     db: &'a rusqlite::Connection,
 }
 
 impl<'a> BookmarkStore<'a> {
-    pub fn new(db: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(db: &'a rusqlite::Connection) -> Self {
         Self { db }
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.db.execute_batch(
             "CREATE TABLE IF NOT EXISTS bookmarks (
                 id TEXT PRIMARY KEY,
@@ -22,7 +22,7 @@ impl<'a> BookmarkStore<'a> {
         Ok(())
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         match &event.data {
             Events::Bookmark(BookmarkEvents::BookmarkCreated(created)) => {
                 self.insert(&created.brain, &created.name, &event.created_at)?;
@@ -55,7 +55,7 @@ impl<'a> BookmarkStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.db.execute_batch("DELETE FROM bookmarks")?;
         Ok(())
     }

@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct CognitionRouter;
+pub(crate) struct CognitionRouter;
 
 impl CognitionRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/cognitions",
             Router::new()

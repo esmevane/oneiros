@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SystemService;
+pub(crate) struct SystemService;
 
 impl SystemService {
-    pub async fn init(
+    pub(crate) async fn init(
         context: &SystemContext,
         request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {

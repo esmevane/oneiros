@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::PeerId;
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PeerError {
@@ -13,16 +13,16 @@ pub enum PeerError {
     InvalidAddress(String),
 
     #[error("Invalid ID: {0}")]
-    InvalidId(#[from] crate::IdParseError),
+    InvalidId(#[from] IdParseError),
 
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
-    Client(#[from] crate::ClientError),
+    Client(#[from] ClientError),
 }
 
 impl IntoResponse for PeerError {

@@ -7,7 +7,7 @@ use crate::*;
 
 /// A configured HTTP client for communicating with the engine service.
 #[derive(Debug, Clone)]
-pub struct Client {
+pub(crate) struct Client {
     http: reqwest::Client,
     base_url: String,
 }
@@ -41,14 +41,14 @@ impl IntoResponse for ClientError {
 }
 
 impl Client {
-    pub fn new(base_url: impl AsRef<str>) -> Self {
+    pub(crate) fn new(base_url: impl AsRef<str>) -> Self {
         Self {
             http: reqwest::Client::new(),
             base_url: base_url.as_ref().into(),
         }
     }
 
-    pub fn with_token(base_url: impl Into<String>, token: Token) -> Self {
+    pub(crate) fn with_token(base_url: impl Into<String>, token: Token) -> Self {
         let http = reqwest::Client::builder()
             .default_headers({
                 let mut headers = reqwest::header::HeaderMap::new();

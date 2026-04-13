@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = NatureEventsType, display = "kebab-case")]
-pub enum NatureEvents {
+pub(crate) enum NatureEvents {
     NatureSet(Nature),
     NatureRemoved(NatureRemoved),
 }
@@ -28,6 +28,6 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NatureRemoved {
-    pub name: NatureName,
+pub(crate) struct NatureRemoved {
+    pub(crate) name: NatureName,
 }

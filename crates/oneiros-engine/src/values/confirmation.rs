@@ -7,14 +7,14 @@ use crate::*;
 /// A confirmation that a mutation succeeded.
 ///
 /// Renders as: ✓ Entity 'name' verbed.
-pub struct Confirmation {
+pub(crate) struct Confirmation {
     entity: String,
     name: String,
     verb: String,
 }
 
 impl Confirmation {
-    pub fn new(
+    pub(crate) fn new(
         entity: impl Into<String>,
         name: impl Into<String>,
         verb: impl Into<String>,

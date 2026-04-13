@@ -8,10 +8,10 @@ use crate::*;
 /// memories, experiences, connections, urges) are already up-to-date
 /// for the current event. Cross-references them to produce pressure
 /// readings without any SQLite queries.
-pub struct PressureState;
+pub(crate) struct PressureState;
 
 impl PressureState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         // Track continuity timestamps before computing pressure
         Self::track_continuity(&mut canon, event);
 
@@ -62,7 +62,7 @@ impl PressureState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 

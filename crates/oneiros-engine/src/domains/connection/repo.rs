@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Connection read model — async queries over the projection read model.
-pub struct ConnectionRepo<'a> {
+pub(crate) struct ConnectionRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> ConnectionRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
+    pub(crate) async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(
             "SELECT id, from_ref, to_ref, nature, created_at
@@ -46,7 +46,7 @@ impl<'a> ConnectionRepo<'a> {
         }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         entity_ref: Option<&str>,
         filters: &SearchFilters,

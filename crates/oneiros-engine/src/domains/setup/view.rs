@@ -2,10 +2,10 @@
 
 use crate::*;
 
-pub struct SetupView;
+pub(crate) struct SetupView;
 
 impl SetupView {
-    pub fn steps(steps: &[SetupStep]) -> String {
+    pub(crate) fn steps(steps: &[SetupStep]) -> String {
         let mut lines = vec![format!("{}", "Setup complete.".heading())];
 
         for step in steps {

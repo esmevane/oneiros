@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SensationService;
+pub(crate) struct SensationService;
 
 impl SensationService {
-    pub async fn set(
+    pub(crate) async fn set(
         context: &ProjectContext,
         SetSensation {
             name,
@@ -22,7 +22,7 @@ impl SensationService {
         Ok(SensationResponse::SensationSet(name.clone()))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetSensation,
     ) -> Result<SensationResponse, SensationError> {
@@ -36,7 +36,7 @@ impl SensationService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListSensations { filters }: &ListSensations,
     ) -> Result<SensationResponse, SensationError> {
@@ -51,7 +51,7 @@ impl SensationService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveSensation,
     ) -> Result<SensationResponse, SensationError> {

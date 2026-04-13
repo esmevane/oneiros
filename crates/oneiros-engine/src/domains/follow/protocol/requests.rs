@@ -7,23 +7,23 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetFollow {
+pub(crate) struct GetFollow {
     #[builder(into)]
-    pub id: FollowId,
+    pub(crate) id: FollowId,
 }
 
 #[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListFollows {
+pub(crate) struct ListFollows {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = FollowRequestType, display = "kebab-case")]
-pub enum FollowRequest {
+pub(crate) enum FollowRequest {
     GetFollow(GetFollow),
     ListFollows(ListFollows),
 }

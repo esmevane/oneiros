@@ -7,39 +7,39 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetStorage {
+pub(crate) struct GetStorage {
     #[builder(into)]
-    pub key: StorageKey,
+    pub(crate) key: StorageKey,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveStorage {
+pub(crate) struct RemoveStorage {
     #[builder(into)]
-    pub key: StorageKey,
+    pub(crate) key: StorageKey,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct UploadStorage {
+pub(crate) struct UploadStorage {
     #[builder(into)]
-    pub key: StorageKey,
+    pub(crate) key: StorageKey,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
-    pub data: Vec<u8>,
+    pub(crate) description: Description,
+    pub(crate) data: Vec<u8>,
 }
 
 #[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListStorage {
+pub(crate) struct ListStorage {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = StorageRequestType, display = "kebab-case")]
-pub enum StorageRequest {
+pub(crate) enum StorageRequest {
     UploadStorage(UploadStorage),
     GetStorage(GetStorage),
     ListStorage(ListStorage),

@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = AgentEventsType, display = "kebab-case")]
-pub enum AgentEvents {
+pub(crate) enum AgentEvents {
     AgentCreated(Agent),
     AgentUpdated(Agent),
     AgentRemoved(AgentRemoved),
@@ -30,6 +30,6 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentRemoved {
-    pub name: AgentName,
+pub(crate) struct AgentRemoved {
+    pub(crate) name: AgentName,
 }

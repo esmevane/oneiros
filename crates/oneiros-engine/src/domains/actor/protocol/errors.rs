@@ -1,25 +1,27 @@
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
-use crate::ActorId;
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ActorError {
     #[error("Actor not found: {0}")]
     NotFound(ActorId),
 
-    #[error("Invalid ID: {0}")]
-    InvalidId(#[from] crate::IdParseError),
+    #[error(transparent)]
+    InvalidId(#[from] IdParseError),
 
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
-    Client(#[from] crate::ClientError),
+    Client(#[from] ClientError),
 }
 
 impl IntoResponse for ActorError {

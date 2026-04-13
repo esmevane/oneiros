@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = ContinuityResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ContinuityResponse {
+pub(crate) enum ContinuityResponse {
     Emerged(DreamContext),
     Waking(DreamContext),
     Dreaming(DreamContext),

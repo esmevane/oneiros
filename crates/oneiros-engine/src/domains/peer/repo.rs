@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Peer read model — async queries against the system context.
-pub struct PeerRepo<'a> {
+pub(crate) struct PeerRepo<'a> {
     context: &'a SystemContext,
 }
 
 impl<'a> PeerRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
+    pub(crate) fn new(context: &'a SystemContext) -> Self {
         Self { context }
     }
 
-    pub async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
+    pub(crate) async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
         let db = self.context.db()?;
         let mut statement =
             db.prepare("select id, key, address, name, created_at from peers where id = ?1")?;
@@ -36,7 +36,7 @@ impl<'a> PeerRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
         let db = self.context.db()?;
 
         let total = {

@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct UrgeService;
+pub(crate) struct UrgeService;
 
 impl UrgeService {
-    pub async fn set(
+    pub(crate) async fn set(
         context: &ProjectContext,
         SetUrge {
             name,
@@ -20,7 +20,7 @@ impl UrgeService {
         Ok(UrgeResponse::UrgeSet(name.clone()))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetUrge,
     ) -> Result<UrgeResponse, UrgeError> {
@@ -31,7 +31,7 @@ impl UrgeService {
         Ok(UrgeResponse::UrgeDetails(urge))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListUrges { filters }: &ListUrges,
     ) -> Result<UrgeResponse, UrgeError> {
@@ -43,7 +43,7 @@ impl UrgeService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveUrge,
     ) -> Result<UrgeResponse, UrgeError> {

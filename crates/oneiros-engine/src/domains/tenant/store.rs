@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct TenantStore<'a> {
+pub(crate) struct TenantStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> TenantStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = &event.data {
             self.conn.execute(
                 "insert or replace into tenants (id, name, created_at) values (?1, ?2, ?3)",
@@ -25,12 +25,12 @@ impl<'a> TenantStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("delete from tenants", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists tenants (
                 id text primary key,

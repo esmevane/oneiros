@@ -7,29 +7,29 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateTenant {
+pub(crate) struct CreateTenant {
     #[builder(into)]
-    pub name: TenantName,
+    pub(crate) name: TenantName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetTenant {
+pub(crate) struct GetTenant {
     #[builder(into)]
-    pub id: TenantId,
+    pub(crate) id: TenantId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListTenants {
+pub(crate) struct ListTenants {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TenantRequestType, display = "kebab-case")]
-pub enum TenantRequest {
+pub(crate) enum TenantRequest {
     CreateTenant(CreateTenant),
     GetTenant(GetTenant),
     ListTenants(ListTenants),

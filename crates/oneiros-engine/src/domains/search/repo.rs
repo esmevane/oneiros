@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Search repo — async read queries over the FTS5 search index.
-pub struct SearchRepo<'a> {
+pub(crate) struct SearchRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> SearchRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn search(
+    pub(crate) async fn search(
         &self,
         query: &str,
         agent: Option<&AgentId>,

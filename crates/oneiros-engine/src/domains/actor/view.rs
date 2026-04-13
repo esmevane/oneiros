@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct ActorView;
+pub(crate) struct ActorView;
 
 impl ActorView {
     /// Table of actors with standard columns.
-    pub fn table(actors: &Listed<Response<Actor>>) -> Table {
+    pub(crate) fn table(actors: &Listed<Response<Actor>>) -> Table {
         let mut table = Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
 
         for wrapped in &actors.items {
@@ -22,14 +22,14 @@ impl ActorView {
     }
 
     /// Detail view for a single actor.
-    pub fn detail(actor: &Actor) -> Detail {
+    pub(crate) fn detail(actor: &Actor) -> Detail {
         Detail::new(actor.name.to_string())
             .field("id:", actor.id.to_string())
             .field("tenant_id:", actor.tenant_id.to_string())
     }
 
     /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &ActorName) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, name: &ActorName) -> Confirmation {
         Confirmation::new("Actor", name.to_string(), verb)
     }
 }

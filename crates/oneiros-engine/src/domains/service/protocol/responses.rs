@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 /// The name under which the service is registered with the OS service manager.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct ServiceName(pub String);
+pub(crate) struct ServiceName(pub(crate) String);
 
 impl ServiceName {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 }
@@ -23,10 +23,10 @@ impl fmt::Display for ServiceName {
 /// The network address at which the service is reachable.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct ServiceAddress(pub String);
+pub(crate) struct ServiceAddress(pub(crate) String);
 
 impl ServiceAddress {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 }
@@ -40,10 +40,10 @@ impl fmt::Display for ServiceAddress {
 /// A human-readable explanation for why the service is not running.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct ServiceReason(pub String);
+pub(crate) struct ServiceReason(pub(crate) String);
 
 impl ServiceReason {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 }
@@ -58,7 +58,7 @@ impl fmt::Display for ServiceReason {
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = ServiceResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ServiceResponse {
+pub(crate) enum ServiceResponse {
     ServiceInstalled(ServiceName),
     ServiceUninstalled,
     ServiceStarted,

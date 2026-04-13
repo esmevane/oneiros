@@ -6,16 +6,16 @@ use crate::*;
 /// lifecycle events that live on `BookmarkEvents`: `BookmarkFollowed`,
 /// `BookmarkCollected`, `BookmarkUnfollowed`. `BookmarkShared` doesn't
 /// touch the follows table — it's only recorded for audit.
-pub struct FollowStore<'a> {
+pub(crate) struct FollowStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> FollowStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         match &event.data {
             Events::Bookmark(BookmarkEvents::BookmarkFollowed(follow)) => {
                 self.create_record(follow)?;
@@ -31,12 +31,12 @@ impl<'a> FollowStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("delete from follows", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists follows (
                 id text primary key,

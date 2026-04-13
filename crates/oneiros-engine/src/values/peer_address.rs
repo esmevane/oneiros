@@ -14,10 +14,10 @@ use serde::{Deserialize, Serialize};
 /// Displayed as a base64url-encoded postcard blob. Composable into
 /// `oneiros://<host>/...` URIs via the host segment.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct PeerAddress(iroh::EndpointAddr);
+pub(crate) struct PeerAddress(iroh::EndpointAddr);
 
 #[derive(Debug, thiserror::Error)]
-pub enum PeerAddressError {
+pub(crate) enum PeerAddressError {
     #[error("invalid peer address encoding: {0}")]
     Encoding(#[from] data_encoding::DecodeError),
     #[error("invalid peer address format: {0}")]
@@ -25,25 +25,25 @@ pub enum PeerAddressError {
 }
 
 impl PeerAddress {
-    pub fn new(inner: iroh::EndpointAddr) -> Self {
+    pub(crate) fn new(inner: iroh::EndpointAddr) -> Self {
         Self(inner)
     }
 
-    pub fn inner(&self) -> &iroh::EndpointAddr {
+    pub(crate) fn inner(&self) -> &iroh::EndpointAddr {
         &self.0
     }
 
-    pub fn into_inner(self) -> iroh::EndpointAddr {
+    pub(crate) fn into_inner(self) -> iroh::EndpointAddr {
         self.0
     }
 
     /// Serialize to postcard bytes. Used when composing URIs.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         postcard::to_allocvec(&self.0).expect("EndpointAddr serialization should not fail")
     }
 
     /// Deserialize from postcard bytes. Used when parsing URIs.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, PeerAddressError> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, PeerAddressError> {
         let inner = postcard::from_bytes(bytes)?;
         Ok(Self(inner))
     }

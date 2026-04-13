@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct LevelState;
+pub(crate) struct LevelState;
 
 impl LevelState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Level(level_event) = event {
             match level_event {
                 LevelEvents::LevelSet(level) => {
@@ -18,7 +18,7 @@ impl LevelState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

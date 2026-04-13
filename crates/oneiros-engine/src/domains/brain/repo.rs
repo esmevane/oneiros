@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Brain read model — async queries against the system context.
-pub struct BrainRepo<'a> {
+pub(crate) struct BrainRepo<'a> {
     context: &'a SystemContext,
 }
 
 impl<'a> BrainRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
+    pub(crate) fn new(context: &'a SystemContext) -> Self {
         Self { context }
     }
 
-    pub async fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
+    pub(crate) async fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare("select id, name, created_at from brains where name = ?1")?;
 
@@ -36,7 +36,7 @@ impl<'a> BrainRepo<'a> {
         }
     }
 
-    pub async fn get_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
+    pub(crate) async fn get_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare("select id, name, created_at from brains where id = ?1")?;
 
@@ -60,7 +60,7 @@ impl<'a> BrainRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Brain>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Brain>, EventError> {
         let db = self.context.db()?;
 
         let total = {
@@ -92,7 +92,7 @@ impl<'a> BrainRepo<'a> {
         Ok(Listed::new(brains, total))
     }
 
-    pub async fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
+    pub(crate) async fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
         let db = self.context.db()?;
         let count: i64 = db.query_row(
             "select count(*) from brains where name = ?1",

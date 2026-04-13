@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct AgentView;
+pub(crate) struct AgentView;
 
 impl AgentView {
     /// Table of agents with standard columns.
-    pub fn table(agents: &Listed<Response<Agent>>) -> Table {
+    pub(crate) fn table(agents: &Listed<Response<Agent>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("name", "Name"),
             Column::key("persona", "Persona"),
@@ -30,7 +30,7 @@ impl AgentView {
     }
 
     /// Detail view for a single agent.
-    pub fn detail(agent: &Agent) -> Detail {
+    pub(crate) fn detail(agent: &Agent) -> Detail {
         Detail::new(agent.name.to_string())
             .field("persona:", agent.persona.to_string())
             .field("description:", agent.description.to_string())
@@ -38,7 +38,7 @@ impl AgentView {
     }
 
     /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &AgentName) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, name: &AgentName) -> Confirmation {
         Confirmation::new("Agent", name.to_string(), verb)
     }
 }

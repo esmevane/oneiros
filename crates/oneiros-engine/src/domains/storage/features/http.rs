@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct StorageRouter;
+pub(crate) struct StorageRouter;
 
 impl StorageRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/storage",
             Router::new()

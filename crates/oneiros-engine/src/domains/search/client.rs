@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct SearchClient<'a> {
+pub(crate) struct SearchClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> SearchClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn search(&self, request: &SearchQuery) -> Result<SearchResponse, ClientError> {
+    pub(crate) async fn search(&self, request: &SearchQuery) -> Result<SearchResponse, ClientError> {
         let path = match &request.agent {
             Some(a) => format!("/search?query={}&agent={a}", request.query),
             None => format!("/search?query={}", request.query),

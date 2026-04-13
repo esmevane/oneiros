@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ConnectionProjections;
+pub(crate) struct ConnectionProjections;
 
 impl ConnectionProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct TextureRouter;
+pub(crate) struct TextureRouter;
 
 impl TextureRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest(
             "/textures",
             Router::new()

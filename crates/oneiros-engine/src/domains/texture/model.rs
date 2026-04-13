@@ -10,39 +10,39 @@ use crate::*;
 #[derive(
     Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
 )]
-pub struct Texture {
+pub(crate) struct Texture {
     #[builder(into)]
-    pub name: TextureName,
-    #[builder(into)]
-    #[arg(long, default_value = "")]
-    pub description: Description,
+    pub(crate) name: TextureName,
     #[builder(into)]
     #[arg(long, default_value = "")]
-    pub prompt: Prompt,
+    pub(crate) description: Description,
+    #[builder(into)]
+    #[arg(long, default_value = "")]
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "textures")]
-pub struct Textures(HashMap<String, Texture>);
+pub(crate) struct Textures(HashMap<String, Texture>);
 
 impl Textures {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn get(&self, name: &TextureName) -> Option<&Texture> {
+    pub(crate) fn get(&self, name: &TextureName) -> Option<&Texture> {
         self.0.get(&name.to_string())
     }
 
-    pub fn set(&mut self, texture: &Texture) -> Option<Texture> {
+    pub(crate) fn set(&mut self, texture: &Texture) -> Option<Texture> {
         self.0.insert(texture.name.to_string(), texture.clone())
     }
 
-    pub fn remove(&mut self, name: &TextureName) -> Option<Texture> {
+    pub(crate) fn remove(&mut self, name: &TextureName) -> Option<Texture> {
         self.0.remove(&name.to_string())
     }
 }

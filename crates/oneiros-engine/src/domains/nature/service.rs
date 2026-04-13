@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct NatureService;
+pub(crate) struct NatureService;
 
 impl NatureService {
-    pub async fn set(
+    pub(crate) async fn set(
         context: &ProjectContext,
         SetNature {
             name,
@@ -20,7 +20,7 @@ impl NatureService {
         Ok(NatureResponse::NatureSet(name.clone()))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
@@ -34,7 +34,7 @@ impl NatureService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListNatures { filters }: &ListNatures,
     ) -> Result<NatureResponse, NatureError> {
@@ -49,7 +49,7 @@ impl NatureService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveNature,
     ) -> Result<NatureResponse, NatureError> {

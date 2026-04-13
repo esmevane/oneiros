@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Follow read model — async queries against the system context.
-pub struct FollowRepo<'a> {
+pub(crate) struct FollowRepo<'a> {
     context: &'a SystemContext,
 }
 
 impl<'a> FollowRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
+    pub(crate) fn new(context: &'a SystemContext) -> Self {
         Self { context }
     }
 
-    pub async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
+    pub(crate) async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(
             "select id, brain, bookmark, source, checkpoint, created_at \
@@ -28,7 +28,7 @@ impl<'a> FollowRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
         let db = self.context.db()?;
 
         let total = {
@@ -53,7 +53,7 @@ impl<'a> FollowRepo<'a> {
         Ok(Listed::new(follows, total))
     }
 
-    pub async fn for_bookmark(
+    pub(crate) async fn for_bookmark(
         &self,
         brain: &BrainName,
         bookmark: &BookmarkName,

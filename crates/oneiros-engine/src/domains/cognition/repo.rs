@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Cognition read model — async queries over the projection read model.
-pub struct CognitionRepo<'a> {
+pub(crate) struct CognitionRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> CognitionRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
+    pub(crate) async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, texture, content, created_at
@@ -47,7 +47,7 @@ impl<'a> CognitionRepo<'a> {
         }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         agent: Option<&AgentId>,
         texture: Option<&TextureName>,
@@ -134,7 +134,7 @@ impl<'a> CognitionRepo<'a> {
     }
 
     /// Most recent cognitions for an agent, ordered newest-first.
-    pub async fn list_recent(
+    pub(crate) async fn list_recent(
         &self,
         agent_id: &AgentId,
         limit: usize,

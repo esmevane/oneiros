@@ -12,7 +12,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 /// How many items to return. Defaults to 20.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, JsonSchema)]
 #[serde(transparent)]
-pub struct Limit(pub usize);
+pub(crate) struct Limit(pub(crate) usize);
 
 impl<'de> Deserialize<'de> for Limit {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -36,7 +36,7 @@ impl<'de> Deserialize<'de> for Limit {
 }
 
 impl Limit {
-    pub fn new(value: usize) -> Self {
+    pub(crate) fn new(value: usize) -> Self {
         Self(value)
     }
 }
@@ -72,7 +72,7 @@ impl ToSql for Limit {
 /// Where to begin in the result set. Defaults to 0.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, JsonSchema)]
 #[serde(transparent)]
-pub struct Offset(pub usize);
+pub(crate) struct Offset(pub(crate) usize);
 
 impl<'de> Deserialize<'de> for Offset {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -96,7 +96,7 @@ impl<'de> Deserialize<'de> for Offset {
 }
 
 impl Offset {
-    pub fn new(value: usize) -> Self {
+    pub(crate) fn new(value: usize) -> Self {
         Self(value)
     }
 }
@@ -125,14 +125,14 @@ impl ToSql for Offset {
 
 /// Bounded index parameters — flattens into any list request.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SearchFilters {
+pub(crate) struct SearchFilters {
     /// Maximum number of items to return
     #[arg(long, default_value = "20")]
     #[serde(default)]
-    pub limit: Limit,
+    pub(crate) limit: Limit,
 
     /// Number of items to skip before returning results
     #[arg(long, default_value = "0")]
     #[serde(default)]
-    pub offset: Offset,
+    pub(crate) offset: Offset,
 }

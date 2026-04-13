@@ -3,15 +3,15 @@ use tokio::sync::broadcast;
 use crate::*;
 
 #[derive(Clone)]
-pub struct ProjectContext {
-    pub config: Config,
-    pub projections: Projections<BrainCanon>,
+pub(crate) struct ProjectContext {
+    pub(crate) config: Config,
+    pub(crate) projections: Projections<BrainCanon>,
     chronicle: Chronicle,
     broadcast: broadcast::Sender<StoredEvent>,
 }
 
 impl ProjectContext {
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         let (broadcast, _) = broadcast::channel(256);
 
         Self {
@@ -26,7 +26,7 @@ impl ProjectContext {
     ///
     /// Used by the HTTP server so all per-request contexts and SSE
     /// subscribers share the same event stream.
-    pub fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
+    pub(crate) fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
         Self {
             config,
             projections: Projections::project(),
@@ -36,7 +36,7 @@ impl ProjectContext {
     }
 
     /// Create a context with shared broadcast and a pre-hydrated bookmark entry.
-    pub fn with_entry(
+    pub(crate) fn with_entry(
         config: Config,
         broadcast: broadcast::Sender<StoredEvent>,
         entry: BookmarkEntry,
@@ -50,7 +50,7 @@ impl ProjectContext {
     }
 
     /// The brain name for this project.
-    pub fn brain_name(&self) -> &BrainName {
+    pub(crate) fn brain_name(&self) -> &BrainName {
         &self.config.brain
     }
 
@@ -59,7 +59,7 @@ impl ProjectContext {
     /// Reads the token from the token file on disk. Returns an
     /// unauthenticated client if no token file exists yet (e.g. before
     /// project init).
-    pub fn client(&self) -> Client {
+    pub(crate) fn client(&self) -> Client {
         match self.config.token() {
             Some(token) => Client::with_token(self.config.base_url(), token),
             None => Client::new(self.config.base_url()),
@@ -67,32 +67,32 @@ impl ProjectContext {
     }
 
     /// Subscribe to the event broadcast stream.
-    pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
+    pub(crate) fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
         self.broadcast.subscribe()
     }
 
     /// Open the brain (project) database.
-    pub fn db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+    pub(crate) fn db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         self.config.brain_db()
     }
 
     /// Open the system database.
-    pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+    pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         self.config.system_db()
     }
 
     /// The canon for this project — the active bookmark's CRDT doc.
-    pub fn canon(&self) -> &Canon {
+    pub(crate) fn canon(&self) -> &Canon {
         self.projections.canon()
     }
 
     /// Replay all events through projections, rebuilding read models.
-    pub fn replay(&self) -> Result<usize, EventError> {
+    pub(crate) fn replay(&self) -> Result<usize, EventError> {
         self.projections.replay_brain(&self.db()?)
     }
 
     /// Emit an event to the brain's event log and apply projections.
-    pub async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
+    pub(crate) async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
         let db = self.db()?;
         let new_event = NewEvent::builder().data(event).build();
         let stored = EventLog::new(&db).append(&new_event)?;

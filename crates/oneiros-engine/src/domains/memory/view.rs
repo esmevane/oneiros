@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct MemoryView;
+pub(crate) struct MemoryView;
 
 impl MemoryView {
     /// Confirmation string for a successful add, using the response ref token.
-    pub fn recorded(wrapped: &Response<Memory>) -> String {
+    pub(crate) fn recorded(wrapped: &Response<Memory>) -> String {
         wrapped
             .meta()
             .ref_token()
@@ -19,7 +19,7 @@ impl MemoryView {
     }
 
     /// Table of memories with standard columns.
-    pub fn table(items: &Listed<Response<Memory>>) -> Table {
+    pub(crate) fn table(items: &Listed<Response<Memory>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("level", "Level"),
             Column::key("content", "Content").max(60),
@@ -43,7 +43,7 @@ impl MemoryView {
     }
 
     /// Detail view for a single memory.
-    pub fn detail(item: &Memory) -> Detail {
+    pub(crate) fn detail(item: &Memory) -> Detail {
         Detail::new(item.level.to_string()).field("content:", item.content.to_string())
     }
 }

@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct AgentService;
+pub(crate) struct AgentService;
 
 impl AgentService {
-    pub async fn create(
+    pub(crate) async fn create(
         context: &ProjectContext,
         CreateAgent {
             name,
@@ -41,7 +41,7 @@ impl AgentService {
         Ok(AgentResponse::AgentCreated(normalized_name))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
@@ -55,7 +55,7 @@ impl AgentService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListAgents { filters }: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
@@ -71,7 +71,7 @@ impl AgentService {
         }
     }
 
-    pub async fn update(
+    pub(crate) async fn update(
         context: &ProjectContext,
         UpdateAgent {
             name,
@@ -98,7 +98,7 @@ impl AgentService {
         Ok(AgentResponse::AgentUpdated(name.clone()))
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveAgent,
     ) -> Result<AgentResponse, AgentError> {

@@ -3,7 +3,7 @@ mod model;
 mod protocol;
 mod repo;
 
-pub use features::*;
-pub use model::*;
-pub use protocol::*;
-pub use repo::*;
+pub(crate) use features::*;
+pub(crate) use model::*;
+pub(crate) use protocol::*;
+pub(crate) use repo::*;

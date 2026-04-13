@@ -7,11 +7,11 @@ resource_id!(EventId);
 
 /// A new event to be persisted.
 #[derive(Builder, Debug, Clone, Serialize, Deserialize)]
-pub struct NewEvent {
+pub(crate) struct NewEvent {
     #[builder(into)]
-    pub data: Events,
+    pub(crate) data: Events,
     #[builder(default)]
-    pub source: Source,
+    pub(crate) source: Source,
 }
 
 /// A persisted event — the single envelope for storage, export, and import.
@@ -19,13 +19,13 @@ pub struct NewEvent {
 /// Serializes `created_at` as `created_at` internally and accepts
 /// `timestamp` on deserialization for wire format compatibility.
 #[derive(Debug, Clone, Builder, Serialize, Deserialize)]
-pub struct StoredEvent {
-    pub id: EventId,
+pub(crate) struct StoredEvent {
+    pub(crate) id: EventId,
     #[serde(default)]
-    pub sequence: i64,
-    pub data: Events,
+    pub(crate) sequence: i64,
+    pub(crate) data: Events,
     #[serde(default)]
-    pub source: Source,
+    pub(crate) source: Source,
     #[serde(alias = "timestamp")]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }

@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct SystemView;
+pub(crate) struct SystemView;
 
 impl SystemView {
     /// Confirmation that the system has been initialized.
-    pub fn initialized(name: &TenantName) -> String {
+    pub(crate) fn initialized(name: &TenantName) -> String {
         Confirmation::new("System", name.to_string(), "initialized").to_string()
     }
 
     /// Message when the system host is already initialized.
-    pub fn already_initialized() -> String {
+    pub(crate) fn already_initialized() -> String {
         format!("{}", "System already initialized.".muted())
     }
 }

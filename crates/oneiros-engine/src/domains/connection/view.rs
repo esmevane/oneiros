@@ -6,11 +6,11 @@
 
 use crate::*;
 
-pub struct ConnectionView;
+pub(crate) struct ConnectionView;
 
 impl ConnectionView {
     /// Confirmation string for a successful create, using the response ref token.
-    pub fn recorded(wrapped: &Response<Connection>) -> String {
+    pub(crate) fn recorded(wrapped: &Response<Connection>) -> String {
         wrapped
             .meta()
             .ref_token()
@@ -25,12 +25,12 @@ impl ConnectionView {
     }
 
     /// Confirmation for a removal by id.
-    pub fn removed(id: &ConnectionId) -> Confirmation {
+    pub(crate) fn removed(id: &ConnectionId) -> Confirmation {
         Confirmation::new("Connection", id.to_string(), "removed")
     }
 
     /// Table of connections with standard columns.
-    pub fn table(items: &Listed<Response<Connection>>) -> Table {
+    pub(crate) fn table(items: &Listed<Response<Connection>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("nature", "Nature"),
             Column::key("from_ref", "From"),
@@ -56,7 +56,7 @@ impl ConnectionView {
     }
 
     /// Detail view for a single connection.
-    pub fn detail(item: &Connection) -> Detail {
+    pub(crate) fn detail(item: &Connection) -> Detail {
         Detail::new(item.nature.to_string())
             .field("from:", item.from_ref.to_string())
             .field("to:", item.to_ref.to_string())

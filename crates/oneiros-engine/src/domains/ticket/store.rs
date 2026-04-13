@@ -2,28 +2,28 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct TicketStore<'a> {
+pub(crate) struct TicketStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> TicketStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Ticket(TicketEvents::TicketIssued(ticket)) = &event.data {
             self.create_record(ticket)?;
         }
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM tickets", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS tickets (
                 id TEXT PRIMARY KEY,

@@ -2,10 +2,10 @@ use axum::{Json, Router, extract::Query, routing};
 
 use crate::*;
 
-pub struct SearchRouter;
+pub(crate) struct SearchRouter;
 
 impl SearchRouter {
-    pub fn routes(&self) -> Router<ServerState> {
+    pub(crate) fn routes(&self) -> Router<ServerState> {
         Router::new().nest("/search", Router::new().route("/", routing::get(search)))
     }
 }

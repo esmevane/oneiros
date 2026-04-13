@@ -5,19 +5,19 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct InitSystem {
+pub(crate) struct InitSystem {
     #[arg(long, short)]
     #[builder(into)]
-    pub name: Option<String>,
+    pub(crate) name: Option<String>,
     #[arg(long, short)]
     #[builder(default)]
-    pub yes: bool,
+    pub(crate) yes: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SystemRequestType, display = "kebab-case")]
-pub enum SystemRequest {
+pub(crate) enum SystemRequest {
     InitSystem(InitSystem),
 }
 

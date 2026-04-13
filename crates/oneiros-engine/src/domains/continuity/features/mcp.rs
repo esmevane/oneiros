@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct ContinuityTools;
+pub(crate) struct ContinuityTools;
 
 impl ContinuityTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         continuity_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectContext,
         tool_name: &str,
@@ -20,7 +20,7 @@ impl ContinuityTools {
 mod continuity_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<WakeAgent>::new(
                 ContinuityRequestType::WakeAgent,
@@ -82,7 +82,7 @@ mod continuity_mcp {
         serde_json::from_str(params).unwrap_or_default()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,

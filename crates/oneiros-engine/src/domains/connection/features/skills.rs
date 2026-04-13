@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct ConnectionSkills;
+pub(crate) struct ConnectionSkills;
 
 impl ConnectionSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("connection-create", include_str!("skills/create.md")),
             Skill::new("connection-show", include_str!("skills/show.md")),

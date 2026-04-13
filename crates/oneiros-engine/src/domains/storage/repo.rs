@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Storage repo — async read queries over the storage and blob projection tables.
-pub struct StorageRepo<'a> {
+pub(crate) struct StorageRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> StorageRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
+    pub(crate) async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
 
@@ -36,7 +36,7 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
-    pub async fn list_storage(
+    pub(crate) async fn list_storage(
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<StorageEntry>, EventError> {
@@ -69,7 +69,7 @@ impl<'a> StorageRepo<'a> {
         Ok(Listed::new(items, total))
     }
 
-    pub async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+    pub(crate) async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
 

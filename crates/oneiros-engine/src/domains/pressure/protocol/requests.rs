@@ -7,15 +7,15 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetPressure {
+pub(crate) struct GetPressure {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PressureRequestType, display = "kebab-case")]
-pub enum PressureRequest {
+pub(crate) enum PressureRequest {
     GetPressure(GetPressure),
     ListPressures,
 }

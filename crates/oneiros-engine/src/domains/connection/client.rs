@@ -1,22 +1,22 @@
 use crate::*;
 
-pub struct ConnectionClient<'a> {
+pub(crate) struct ConnectionClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> ConnectionClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn create(
+    pub(crate) async fn create(
         &self,
         request: &CreateConnection,
     ) -> Result<ConnectionResponse, ClientError> {
         self.client.post("/connections", request).await
     }
 
-    pub async fn list(&self, request: &ListConnections) -> Result<ConnectionResponse, ClientError> {
+    pub(crate) async fn list(&self, request: &ListConnections) -> Result<ConnectionResponse, ClientError> {
         let mut params: Vec<(&str, String)> = Vec::new();
 
         if let Some(entity) = &request.entity {
@@ -35,13 +35,13 @@ impl<'a> ConnectionClient<'a> {
         self.client.get(&format!("/connections?{query}")).await
     }
 
-    pub async fn get(&self, request: &GetConnection) -> Result<ConnectionResponse, ClientError> {
+    pub(crate) async fn get(&self, request: &GetConnection) -> Result<ConnectionResponse, ClientError> {
         self.client
             .get(&format!("/connections/{}", request.id))
             .await
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         &self,
         request: &RemoveConnection,
     ) -> Result<ConnectionResponse, ClientError> {

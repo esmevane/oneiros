@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SearchProjections;
+pub(crate) struct SearchProjections;
 
 impl SearchProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

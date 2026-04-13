@@ -3,7 +3,7 @@ use rusqlite::params;
 use crate::*;
 
 /// Agent projection store — projection lifecycle, write operations, and sync read queries.
-pub struct AgentStore<'a> {
+pub(crate) struct AgentStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 

@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Experience read model — async queries over the projection read model.
-pub struct ExperienceRepo<'a> {
+pub(crate) struct ExperienceRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> ExperienceRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     // ── Read queries ────────────────────────────────────────────
 
-    pub async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
+    pub(crate) async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, sensation, description, created_at
@@ -47,7 +47,7 @@ impl<'a> ExperienceRepo<'a> {
         }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         agent: Option<&str>,
         filters: &SearchFilters,
@@ -129,7 +129,7 @@ impl<'a> ExperienceRepo<'a> {
     }
 
     /// Most recent experiences for an agent, ordered newest-first.
-    pub async fn list_recent(
+    pub(crate) async fn list_recent(
         &self,
         agent_id: &str,
         limit: usize,

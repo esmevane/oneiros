@@ -7,41 +7,41 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetPersona {
+pub(crate) struct SetPersona {
     #[builder(into)]
-    pub name: PersonaName,
+    pub(crate) name: PersonaName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetPersona {
+pub(crate) struct GetPersona {
     #[builder(into)]
-    pub name: PersonaName,
+    pub(crate) name: PersonaName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemovePersona {
+pub(crate) struct RemovePersona {
     #[builder(into)]
-    pub name: PersonaName,
+    pub(crate) name: PersonaName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListPersonas {
+pub(crate) struct ListPersonas {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PersonaRequestType, display = "kebab-case")]
-pub enum PersonaRequest {
+pub(crate) enum PersonaRequest {
     SetPersona(SetPersona),
     GetPersona(GetPersona),
     ListPersonas(ListPersonas),

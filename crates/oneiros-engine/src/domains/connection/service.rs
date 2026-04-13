@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ConnectionService;
+pub(crate) struct ConnectionService;
 
 impl ConnectionService {
-    pub async fn create(
+    pub(crate) async fn create(
         context: &ProjectContext,
         CreateConnection {
             from_ref,
@@ -29,7 +29,7 @@ impl ConnectionService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
@@ -43,7 +43,7 @@ impl ConnectionService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListConnections { entity, filters }: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
@@ -68,7 +68,7 @@ impl ConnectionService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {

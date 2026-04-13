@@ -3,18 +3,18 @@ use rusqlite::params;
 use crate::*;
 
 /// Cognition projection store — projection lifecycle, write operations, and sync read queries.
-pub struct CognitionStore<'a> {
+pub(crate) struct CognitionStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> CognitionStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
     // ── Projection handling ─────────────────────────────────────
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Cognition(cognition_event) = &event.data {
             match cognition_event {
                 CognitionEvents::CognitionAdded(cognition) => self.insert(cognition)?,
@@ -23,12 +23,12 @@ impl<'a> CognitionStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM cognitions", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS cognitions (
                 id TEXT PRIMARY KEY,
@@ -43,7 +43,7 @@ impl<'a> CognitionStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
-    pub fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
+    pub(crate) fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions WHERE id = ?1",
@@ -74,7 +74,7 @@ impl<'a> CognitionStore<'a> {
         }
     }
 
-    pub fn list(
+    pub(crate) fn list(
         &self,
         agent: Option<&AgentId>,
         texture: Option<&TextureName>,
@@ -142,7 +142,7 @@ impl<'a> CognitionStore<'a> {
     }
 
     /// Most recent cognitions for an agent, ordered newest-first.
-    pub fn list_recent(
+    pub(crate) fn list_recent(
         &self,
         agent_id: &AgentId,
         limit: usize,

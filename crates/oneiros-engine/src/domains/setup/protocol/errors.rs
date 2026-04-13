@@ -1,21 +1,23 @@
 use axum::response::{IntoResponse, Response};
 
+use crate::*;
+
 #[derive(Debug, thiserror::Error)]
 pub enum SetupError {
     #[error(transparent)]
-    System(#[from] crate::SystemError),
+    System(#[from] SystemError),
 
     #[error(transparent)]
-    Project(#[from] crate::ProjectError),
+    Project(#[from] ProjectError),
 
     #[error(transparent)]
-    Seed(#[from] crate::SeedError),
+    Seed(#[from] SeedError),
 
     #[error(transparent)]
-    McpConfig(#[from] crate::McpConfigError),
+    McpConfig(#[from] McpConfigError),
 
     #[error(transparent)]
-    Service(#[from] crate::ServiceError),
+    Service(#[from] ServiceError),
 }
 
 impl IntoResponse for SetupError {

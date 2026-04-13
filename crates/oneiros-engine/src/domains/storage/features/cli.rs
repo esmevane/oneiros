@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum StorageCommands {
+pub(crate) enum StorageCommands {
     Set {
         key: String,
         file: PathBuf,
@@ -17,7 +17,7 @@ pub enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, StorageError> {

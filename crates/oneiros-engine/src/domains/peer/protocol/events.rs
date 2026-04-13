@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = PeerEventsType, display = "kebab-case")]
-pub enum PeerEvents {
+pub(crate) enum PeerEvents {
     /// A peer was added to this host's known-peers table.
     PeerAdded(Peer),
     /// A peer's address (or other mutable field) was refreshed.
@@ -16,8 +16,8 @@ pub enum PeerEvents {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PeerRemoved {
-    pub id: PeerId,
+pub(crate) struct PeerRemoved {
+    pub(crate) id: PeerId,
 }
 
 #[cfg(test)]

@@ -17,26 +17,26 @@ pub struct TimestampParseError(#[from] ParseError);
     schemars::JsonSchema,
 )]
 #[serde(transparent)]
-pub struct Timestamp(DateTime<Utc>);
+pub(crate) struct Timestamp(DateTime<Utc>);
 
 impl Timestamp {
-    pub fn parse_str(created_at: impl AsRef<str>) -> Result<Self, TimestampParseError> {
+    pub(crate) fn parse_str(created_at: impl AsRef<str>) -> Result<Self, TimestampParseError> {
         Ok(Self(created_at.as_ref().parse()?))
     }
 
-    pub fn now() -> Self {
+    pub(crate) fn now() -> Self {
         Self(Utc::now())
     }
 
-    pub fn as_string(&self) -> String {
+    pub(crate) fn as_string(&self) -> String {
         self.0.to_rfc3339()
     }
 
-    pub fn as_date_string(&self) -> String {
+    pub(crate) fn as_date_string(&self) -> String {
         self.0.format("%Y-%m-%d").to_string()
     }
 
-    pub fn elapsed(&self) -> String {
+    pub(crate) fn elapsed(&self) -> String {
         let elapsed = Utc::now().signed_duration_since(self.0);
         let secs = elapsed.num_seconds();
 

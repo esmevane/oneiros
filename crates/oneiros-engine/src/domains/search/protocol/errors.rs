@@ -1,6 +1,10 @@
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SearchError {
@@ -8,10 +12,10 @@ pub enum SearchError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
-    Client(#[from] crate::ClientError),
+    Client(#[from] ClientError),
 }
 
 impl IntoResponse for SearchError {

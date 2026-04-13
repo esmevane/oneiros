@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct BookmarkRepo<'a> {
+pub(crate) struct BookmarkRepo<'a> {
     context: &'a SystemContext,
 }
 
 impl<'a> BookmarkRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
+    pub(crate) fn new(context: &'a SystemContext) -> Self {
         Self { context }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         brain: &BrainName,
         filters: &SearchFilters,

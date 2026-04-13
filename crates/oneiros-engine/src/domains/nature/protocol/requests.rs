@@ -7,41 +7,41 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetNature {
+pub(crate) struct SetNature {
     #[builder(into)]
-    pub name: NatureName,
+    pub(crate) name: NatureName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetNature {
+pub(crate) struct GetNature {
     #[builder(into)]
-    pub name: NatureName,
+    pub(crate) name: NatureName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveNature {
+pub(crate) struct RemoveNature {
     #[builder(into)]
-    pub name: NatureName,
+    pub(crate) name: NatureName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListNatures {
+pub(crate) struct ListNatures {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = NatureRequestType, display = "kebab-case")]
-pub enum NatureRequest {
+pub(crate) enum NatureRequest {
     SetNature(SetNature),
     GetNature(GetNature),
     ListNatures(ListNatures),

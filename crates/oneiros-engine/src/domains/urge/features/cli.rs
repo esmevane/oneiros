@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum UrgeCommands {
+pub(crate) enum UrgeCommands {
     Set(SetUrge),
     Show(GetUrge),
     List(ListUrges),
@@ -11,7 +11,7 @@ pub enum UrgeCommands {
 }
 
 impl UrgeCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, UrgeError> {

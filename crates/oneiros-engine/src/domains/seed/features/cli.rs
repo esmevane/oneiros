@@ -3,13 +3,13 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum SeedCommands {
+pub(crate) enum SeedCommands {
     Core,
     Agents,
 }
 
 impl SeedCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, SeedError> {

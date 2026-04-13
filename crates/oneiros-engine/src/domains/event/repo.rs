@@ -12,17 +12,17 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct EventRepo<'a> {
+pub(crate) struct EventRepo<'a> {
     context: &'a ProjectContext,
 }
 
 impl<'a> EventRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
+    pub(crate) fn new(context: &'a ProjectContext) -> Self {
         Self { context }
     }
 
     /// Get a single event by ID.
-    pub async fn get(&self, id: &str) -> Result<Option<StoredEvent>, EventError> {
+    pub(crate) async fn get(&self, id: &str) -> Result<Option<StoredEvent>, EventError> {
         let db = self.context.db()?;
         let mut statement =
             db.prepare("select id, rowid, data, source, created_at from events where id = ?1")?;
@@ -40,7 +40,7 @@ impl<'a> EventRepo<'a> {
     ///
     /// `event_type` is a filter on the DB column — it stays as a query
     /// parameter even though the field is no longer on `StoredEvent`.
-    pub async fn list(&self, event_type: Option<&str>) -> Result<Vec<StoredEvent>, EventError> {
+    pub(crate) async fn list(&self, event_type: Option<&str>) -> Result<Vec<StoredEvent>, EventError> {
         let db = self.context.db()?;
 
         if let Some(event_type) = event_type {

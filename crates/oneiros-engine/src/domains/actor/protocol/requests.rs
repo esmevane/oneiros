@@ -7,32 +7,32 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateActor {
+pub(crate) struct CreateActor {
     #[arg(long)]
     #[builder(into)]
-    pub tenant_id: TenantId,
+    pub(crate) tenant_id: TenantId,
     #[builder(into)]
-    pub name: ActorName,
+    pub(crate) name: ActorName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetActor {
+pub(crate) struct GetActor {
     #[builder(into)]
-    pub id: ActorId,
+    pub(crate) id: ActorId,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListActors {
+pub(crate) struct ListActors {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ActorRequestType, display = "kebab-case")]
-pub enum ActorRequest {
+pub(crate) enum ActorRequest {
     CreateActor(CreateActor),
     GetActor(GetActor),
     ListActors(ListActors),

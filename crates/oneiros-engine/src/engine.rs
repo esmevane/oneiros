@@ -32,11 +32,11 @@ impl Engine {
         let cli = Cli::parse();
         let config = cli.config().clone().with_config_file();
 
-        Ok((Self { config }, cli))
+        Ok((Self::new(config), cli))
     }
 
     /// From explicit config — tests and programmatic consumers.
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         Self { config }
     }
 
@@ -50,7 +50,7 @@ impl Engine {
     /// Binds to the address in config (use `127.0.0.1:0` for ephemeral ports),
     /// updates the config with the resolved address, and returns a handle.
     /// The server runs in a background task and stops when the handle is dropped.
-    pub async fn start(&mut self) -> Result<ServerHandle, ServerError> {
+    pub(crate) async fn start(&mut self) -> Result<ServerHandle, ServerError> {
         let listener = TcpListener::bind(self.config.service.address).await?;
         let address = listener.local_addr()?;
 
@@ -71,7 +71,7 @@ impl Engine {
     /// Static — no config or server needed. Writes all skill assets
     /// (SKILL.md, plugin.json, hooks, agents, commands, resources)
     /// to the target path.
-    pub fn package(target: &Path) -> Result<usize, std::io::Error> {
+    pub(crate) fn package(target: &Path) -> Result<usize, std::io::Error> {
         SkillPackage::install(target)
     }
 
@@ -85,7 +85,7 @@ impl Engine {
 ///
 /// Holds the resolved address and a task handle. The server stops
 /// when the handle is dropped.
-pub struct ServerHandle {
+pub(crate) struct ServerHandle {
     address: SocketAddr,
     handle: tokio::task::JoinHandle<()>,
 }
@@ -94,7 +94,7 @@ impl ServerHandle {
     /// The address the server is actually listening on.
     ///
     /// When configured with port 0, this returns the OS-assigned port.
-    pub fn address(&self) -> SocketAddr {
+    pub(crate) fn address(&self) -> SocketAddr {
         self.address
     }
 }

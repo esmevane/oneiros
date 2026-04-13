@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct ExperienceSkills;
+pub(crate) struct ExperienceSkills;
 
 impl ExperienceSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("experience-create", include_str!("skills/create.md")),
             Skill::new("experience-show", include_str!("skills/show.md")),

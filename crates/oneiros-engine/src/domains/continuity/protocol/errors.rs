@@ -16,10 +16,10 @@ pub enum ContinuityError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
-    Client(#[from] crate::ClientError),
+    Client(#[from] ClientError),
 
     #[error("Unexpected service response: {0}")]
     UnexpectedResponse(String),

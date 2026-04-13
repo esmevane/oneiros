@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum SensationCommands {
+pub(crate) enum SensationCommands {
     Set(SetSensation),
     Show(GetSensation),
     List(ListSensations),
@@ -11,7 +11,7 @@ pub enum SensationCommands {
 }
 
 impl SensationCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, SensationError> {

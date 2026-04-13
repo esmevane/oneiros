@@ -1,27 +1,27 @@
 use crate::*;
 
-pub struct BookmarkClient<'a> {
+pub(crate) struct BookmarkClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> BookmarkClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn create(&self, request: &CreateBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn create(&self, request: &CreateBookmark) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks", request).await
     }
 
-    pub async fn switch(&self, request: &SwitchBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn switch(&self, request: &SwitchBookmark) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/switch", request).await
     }
 
-    pub async fn merge(&self, request: &MergeBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn merge(&self, request: &MergeBookmark) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/merge", request).await
     }
 
-    pub async fn list(&self, request: &ListBookmarks) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn list(&self, request: &ListBookmarks) -> Result<BookmarkResponse, ClientError> {
         let query = format!(
             "limit={}&offset={}",
             request.filters.limit, request.filters.offset,
@@ -29,22 +29,22 @@ impl<'a> BookmarkClient<'a> {
         self.client.get(&format!("/bookmarks?{query}")).await
     }
 
-    pub async fn share(&self, request: &ShareBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn share(&self, request: &ShareBookmark) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/share", request).await
     }
 
-    pub async fn follow(&self, request: &FollowBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn follow(&self, request: &FollowBookmark) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/follow", request).await
     }
 
-    pub async fn collect(
+    pub(crate) async fn collect(
         &self,
         request: &CollectBookmark,
     ) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/collect", request).await
     }
 
-    pub async fn unfollow(
+    pub(crate) async fn unfollow(
         &self,
         request: &UnfollowBookmark,
     ) -> Result<BookmarkResponse, ClientError> {

@@ -9,7 +9,7 @@ use crate::*;
 /// channel for SSE subscribers, and resolves brain context per-request
 /// via Bearer token.
 #[derive(Clone)]
-pub struct ServerState {
+pub(crate) struct ServerState {
     config: Config,
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
@@ -20,14 +20,14 @@ pub struct ServerState {
 pub enum ServerStateError {
     #[error("failed to read or generate host secret key: {0}")]
     HostKey(#[from] std::io::Error),
-    #[error("failed to bind iroh bridge: {0}")]
+    #[error(transparent)]
     Bridge(#[from] BridgeError),
 }
 
 impl ServerState {
     /// Construct a server state with a bound iroh bridge. Loads (or
     /// generates) the host secret key from disk and binds a `Bridge`.
-    pub async fn bind(config: Config) -> Result<Self, ServerStateError> {
+    pub(crate) async fn bind(config: Config) -> Result<Self, ServerStateError> {
         let secret = config.ensure_host_secret_key()?;
         let bridge = Bridge::bind(secret).await?;
 
@@ -42,23 +42,23 @@ impl ServerState {
     }
 
     /// The bound bridge.
-    pub fn bridge(&self) -> &Bridge {
+    pub(crate) fn bridge(&self) -> &Bridge {
         &self.bridge
     }
 
     /// The host's identity (key + address).
-    pub fn host_identity(&self) -> HostIdentity {
+    pub(crate) fn host_identity(&self) -> HostIdentity {
         self.bridge.host_identity()
     }
 
     /// The canon index — shared CRDT state for all brains.
-    pub fn canons(&self) -> &CanonIndex {
+    pub(crate) fn canons(&self) -> &CanonIndex {
         &self.canons
     }
 
     /// Hydrate all canons from event logs. Best-effort — skips
     /// databases that don't exist yet (pre-init).
-    pub fn hydrate(&self) {
+    pub(crate) fn hydrate(&self) {
         // System canon
         let _ = self.canons.hydrate_system(&self.config);
 
@@ -67,27 +67,27 @@ impl ServerState {
     }
 
     /// The server configuration.
-    pub fn config(&self) -> &Config {
+    pub(crate) fn config(&self) -> &Config {
         &self.config
     }
 
     /// The token for the configured brain, if one exists.
-    pub fn token(&self) -> Option<Token> {
+    pub(crate) fn token(&self) -> Option<Token> {
         self.config.token()
     }
 
     /// The brain name from the server config.
-    pub fn brain_name(&self) -> &BrainName {
+    pub(crate) fn brain_name(&self) -> &BrainName {
         &self.config.brain
     }
 
     /// The shared broadcast sender for SSE event streaming.
-    pub fn broadcast(&self) -> &broadcast::Sender<StoredEvent> {
+    pub(crate) fn broadcast(&self) -> &broadcast::Sender<StoredEvent> {
         &self.broadcast
     }
 
     /// Build a project context with shared broadcast, canon, and pipeline.
-    pub fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
+    pub(crate) fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
         let entry = self.canons.brain_entry(&config.brain)?;
         Ok(ProjectContext::with_entry(
             config,
@@ -97,7 +97,7 @@ impl ServerState {
     }
 
     /// Build a system context with shared canon.
-    pub fn system_context(&self) -> SystemContext {
+    pub(crate) fn system_context(&self) -> SystemContext {
         let canon = self.canons.system().clone();
         SystemContext::with_canon(self.config.clone(), canon)
     }

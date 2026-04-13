@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum TextureCommands {
+pub(crate) enum TextureCommands {
     Set(SetTexture),
     Show(GetTexture),
     List(ListTextures),
@@ -11,7 +11,7 @@ pub enum TextureCommands {
 }
 
 impl TextureCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, TextureError> {

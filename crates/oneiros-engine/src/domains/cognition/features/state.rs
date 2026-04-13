@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct CognitionState;
+pub(crate) struct CognitionState;
 
 impl CognitionState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Cognition(CognitionEvents::CognitionAdded(cognition)) = event {
             canon.cognitions.set(cognition);
         }
@@ -11,7 +11,7 @@ impl CognitionState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

@@ -12,19 +12,19 @@
     lorosurgeon::Reconcile,
 )]
 #[serde(transparent)]
-pub struct Id(pub uuid::Uuid);
+pub struct Id(pub(crate) uuid::Uuid);
 
 impl Id {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self(uuid::Uuid::now_v7())
     }
 
     #[deprecated]
-    pub fn parse(s: &str) -> Option<Self> {
+    pub(crate) fn parse(s: &str) -> Option<Self> {
         uuid::Uuid::parse_str(s).ok().map(Self)
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_nil()
     }
 }

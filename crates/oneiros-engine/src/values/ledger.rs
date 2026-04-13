@@ -21,7 +21,7 @@ const MAX_LEAF_ENTRIES: usize = 16;
 /// node whose children are keyed by nibble (4-bit prefix of the event ID
 /// at the current trie depth).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LedgerNode {
+pub(crate) enum LedgerNode {
     Leaf {
         entries: BTreeMap<String, ContentHash>,
     },
@@ -32,7 +32,7 @@ pub enum LedgerNode {
 
 /// The result of diffing two ledger roots.
 #[derive(Debug, Clone)]
-pub enum LedgerChange {
+pub(crate) enum LedgerChange {
     Added(EventId),
     Removed(EventId),
 }
@@ -55,11 +55,11 @@ fn nibble_at(id: &str, depth: usize) -> u8 {
 ///
 /// The `resolve` and `store` closures abstract over the persistence layer,
 /// keeping the ledger algorithm pure.
-pub struct Ledger;
+pub(crate) struct Ledger;
 
 impl Ledger {
     /// Record an event ID in the ledger. Returns the new root hash.
-    pub fn record(
+    pub(crate) fn record(
         root: Option<&ContentHash>,
         event_id: &EventId,
         event_hash: ContentHash,
@@ -144,7 +144,7 @@ impl Ledger {
 
     /// Diff two ledger roots. Produces a minimal set of changes.
     /// Cost is proportional to the number of differences, not tree size.
-    pub fn diff(
+    pub(crate) fn diff(
         a: Option<&ContentHash>,
         b: Option<&ContentHash>,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
@@ -262,7 +262,7 @@ impl Ledger {
     }
 
     /// Collect all event ID strings reachable from a root.
-    pub fn collect_all_ids(
+    pub(crate) fn collect_all_ids(
         root: Option<&ContentHash>,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
     ) -> std::collections::HashSet<String> {
@@ -272,7 +272,7 @@ impl Ledger {
         }
     }
 
-    pub fn collect_all(
+    pub(crate) fn collect_all(
         node_hash: &ContentHash,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
     ) -> BTreeMap<String, ContentHash> {

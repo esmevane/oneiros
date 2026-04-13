@@ -2,10 +2,10 @@ use std::io::BufRead;
 
 use crate::*;
 
-pub struct ProjectService;
+pub(crate) struct ProjectService;
 
 impl ProjectService {
-    pub async fn init(
+    pub(crate) async fn init(
         context: &SystemContext,
         request: &InitProject,
     ) -> Result<ProjectResponse, ProjectError> {
@@ -87,7 +87,7 @@ impl ProjectService {
     /// event is prepended carrying the binary content. This makes the export
     /// portable — the receiving brain materializes the blob at import time
     /// without persisting the ephemeral event to the log.
-    pub fn export(
+    pub(crate) fn export(
         context: &ProjectContext,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
@@ -136,7 +136,7 @@ impl ProjectService {
     /// at the import boundary — they never enter the event log.
     /// Domain events are persisted normally, then all projections
     /// are replayed to rebuild the read models.
-    pub fn import(
+    pub(crate) fn import(
         context: &ProjectContext,
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
@@ -192,7 +192,7 @@ impl ProjectService {
     }
 
     /// Replay all events through projections, rebuilding read models.
-    pub fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
+    pub(crate) fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
         let replayed = context.projections.replay_brain(&context.db()?)?;
 
         Ok(ProjectResponse::Replayed(ReplayResult {

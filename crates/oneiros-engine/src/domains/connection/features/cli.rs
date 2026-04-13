@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum ConnectionCommands {
+pub(crate) enum ConnectionCommands {
     Create(CreateConnection),
     Show(GetConnection),
     List(ListConnections),
@@ -11,7 +11,7 @@ pub enum ConnectionCommands {
 }
 
 impl ConnectionCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, ConnectionError> {

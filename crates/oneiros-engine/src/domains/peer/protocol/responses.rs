@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = PeerResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum PeerResponse {
+pub(crate) enum PeerResponse {
     Added(Response<Peer>),
     Found(Response<Peer>),
     Listed(Listed<Response<Peer>>),

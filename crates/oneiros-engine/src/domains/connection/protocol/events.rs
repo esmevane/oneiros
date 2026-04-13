@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ConnectionEventsType, display = "kebab-case")]
-pub enum ConnectionEvents {
+pub(crate) enum ConnectionEvents {
     ConnectionCreated(Connection),
     ConnectionRemoved(ConnectionRemoved),
 }
@@ -34,6 +34,6 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionRemoved {
-    pub id: ConnectionId,
+pub(crate) struct ConnectionRemoved {
+    pub(crate) id: ConnectionId,
 }

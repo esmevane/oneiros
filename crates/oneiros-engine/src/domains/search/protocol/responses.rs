@@ -6,6 +6,6 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
 #[kinded(kind = SearchResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SearchResponse {
+pub(crate) enum SearchResponse {
     Results(SearchResults),
 }

@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct LevelView;
+pub(crate) struct LevelView;
 
 impl LevelView {
-    pub fn table(items: &Listed<Response<Level>>) -> Table {
+    pub(crate) fn table(items: &Listed<Response<Level>>) -> Table {
         let mut table = Table::new(vec![
             Column::key("name", "Name"),
             Column::key("description", "Description").max(60),
@@ -17,13 +17,13 @@ impl LevelView {
         table
     }
 
-    pub fn detail(item: &Level) -> Detail {
+    pub(crate) fn detail(item: &Level) -> Detail {
         Detail::new(item.name.to_string())
             .field("description:", item.description.to_string())
             .field("prompt:", item.prompt.to_string())
     }
 
-    pub fn confirmed(verb: &str, name: &LevelName) -> Confirmation {
+    pub(crate) fn confirmed(verb: &str, name: &LevelName) -> Confirmation {
         Confirmation::new("Level", name.to_string(), verb)
     }
 }

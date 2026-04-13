@@ -14,7 +14,7 @@ fn manager_err(e: impl std::fmt::Display) -> ServiceError {
 /// Each method takes the configuration it needs — no internal state.
 /// The OS service manager is acquired per-operation because it's not
 /// guaranteed to be reusable across calls.
-pub struct ServiceService;
+pub(crate) struct ServiceService;
 
 impl ServiceService {
     /// Acquire a native service manager set to user level.
@@ -30,7 +30,7 @@ impl ServiceService {
     }
 
     /// Install the service as a managed user service.
-    pub fn install(config: &Config) -> Result<ServiceResponse, ServiceError> {
+    pub(crate) fn install(config: &Config) -> Result<ServiceResponse, ServiceError> {
         let manager = Self::manager()?;
         let label = Self::parse_label(&config.service.label)?;
 
@@ -59,7 +59,7 @@ impl ServiceService {
     }
 
     /// Uninstall the managed service. Best-effort stop before removal.
-    pub fn uninstall(config: &Config) -> Result<ServiceResponse, ServiceError> {
+    pub(crate) fn uninstall(config: &Config) -> Result<ServiceResponse, ServiceError> {
         let manager = Self::manager()?;
         let label = Self::parse_label(&config.service.label)?;
 
@@ -75,7 +75,7 @@ impl ServiceService {
     }
 
     /// Start the managed service, then health check with backoff.
-    pub async fn start(config: &Config) -> Result<ServiceResponse, ServiceError> {
+    pub(crate) async fn start(config: &Config) -> Result<ServiceResponse, ServiceError> {
         let manager = Self::manager()?;
         let label = Self::parse_label(&config.service.label)?;
 
@@ -100,7 +100,7 @@ impl ServiceService {
     }
 
     /// Stop the managed service.
-    pub fn stop(config: &Config) -> Result<ServiceResponse, ServiceError> {
+    pub(crate) fn stop(config: &Config) -> Result<ServiceResponse, ServiceError> {
         let manager = Self::manager()?;
         let label = Self::parse_label(&config.service.label)?;
 
@@ -112,7 +112,7 @@ impl ServiceService {
     }
 
     /// Check if the service is running via health endpoint.
-    pub async fn status(config: &Config) -> ServiceResponse {
+    pub(crate) async fn status(config: &Config) -> ServiceResponse {
         let client = reqwest::Client::new();
         let health_url = format!("http://{}/health", config.service.address);
 
@@ -129,7 +129,7 @@ impl ServiceService {
     }
 
     /// Run the HTTP server directly in the foreground.
-    pub async fn run(config: &Config) -> Result<ServiceResponse, ServiceError> {
+    pub(crate) async fn run(config: &Config) -> Result<ServiceResponse, ServiceError> {
         Server::new(config.clone()).start().await?;
 
         Ok(ServiceResponse::ServiceStopped)

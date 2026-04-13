@@ -7,41 +7,41 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetSensation {
+pub(crate) struct SetSensation {
     #[builder(into)]
-    pub name: SensationName,
+    pub(crate) name: SensationName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetSensation {
+pub(crate) struct GetSensation {
     #[builder(into)]
-    pub name: SensationName,
+    pub(crate) name: SensationName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveSensation {
+pub(crate) struct RemoveSensation {
     #[builder(into)]
-    pub name: SensationName,
+    pub(crate) name: SensationName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListSensations {
+pub(crate) struct ListSensations {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SensationRequestType, display = "kebab-case")]
-pub enum SensationRequest {
+pub(crate) enum SensationRequest {
     SetSensation(SetSensation),
     GetSensation(GetSensation),
     ListSensations(ListSensations),

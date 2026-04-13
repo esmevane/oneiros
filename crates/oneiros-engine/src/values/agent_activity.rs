@@ -11,19 +11,19 @@ use crate::*;
 
 /// Activity summary for a single agent.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct AgentActivity {
-    pub name: AgentName,
-    pub cognition_count: usize,
-    pub cognition_latest: Option<Timestamp>,
-    pub memory_count: usize,
-    pub memory_latest: Option<Timestamp>,
-    pub experience_count: usize,
-    pub experience_latest: Option<Timestamp>,
+pub(crate) struct AgentActivity {
+    pub(crate) name: AgentName,
+    pub(crate) cognition_count: usize,
+    pub(crate) cognition_latest: Option<Timestamp>,
+    pub(crate) memory_count: usize,
+    pub(crate) memory_latest: Option<Timestamp>,
+    pub(crate) experience_count: usize,
+    pub(crate) experience_latest: Option<Timestamp>,
 }
 
 impl AgentActivity {
     /// The most recent activity across all domains.
-    pub fn latest(&self) -> Option<Timestamp> {
+    pub(crate) fn latest(&self) -> Option<Timestamp> {
         [
             self.cognition_latest,
             self.memory_latest,
@@ -37,8 +37,8 @@ impl AgentActivity {
 
 /// Cross-agent activity overview — the pulse of the brain.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct AgentActivityTable {
-    pub agents: Vec<AgentActivity>,
+pub(crate) struct AgentActivityTable {
+    pub(crate) agents: Vec<AgentActivity>,
 }
 
 impl core::fmt::Display for AgentActivityTable {

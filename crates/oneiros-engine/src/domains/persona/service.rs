@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct PersonaService;
+pub(crate) struct PersonaService;
 
 impl PersonaService {
-    pub async fn set(
+    pub(crate) async fn set(
         context: &ProjectContext,
         SetPersona {
             name,
@@ -20,7 +20,7 @@ impl PersonaService {
         Ok(PersonaResponse::PersonaSet(name.clone()))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
@@ -34,7 +34,7 @@ impl PersonaService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListPersonas { filters }: &ListPersonas,
     ) -> Result<PersonaResponse, PersonaError> {
@@ -49,7 +49,7 @@ impl PersonaService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemovePersona,
     ) -> Result<PersonaResponse, PersonaError> {

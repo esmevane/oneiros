@@ -3,13 +3,13 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum McpCommands {
+pub(crate) enum McpCommands {
     /// Write .mcp.json for Claude Code MCP integration.
     Init(InitMcp),
 }
 
 impl McpCommands {
-    pub fn execute(&self, config: &Config) -> Result<Rendered<Responses>, McpConfigError> {
+    pub(crate) fn execute(&self, config: &Config) -> Result<Rendered<Responses>, McpConfigError> {
         let response = match self {
             McpCommands::Init(init) => {
                 let result = McpConfigService::init(config, init)?;

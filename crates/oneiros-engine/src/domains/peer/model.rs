@@ -19,45 +19,45 @@ use crate::*;
 #[derive(
     Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
 )]
-pub struct Peer {
+pub(crate) struct Peer {
     #[builder(default)]
-    pub id: PeerId,
+    pub(crate) id: PeerId,
     #[loro(json)]
-    pub key: PeerKey,
+    pub(crate) key: PeerKey,
     #[loro(json)]
-    pub address: PeerAddress,
+    pub(crate) address: PeerAddress,
     #[builder(into)]
-    pub name: PeerName,
+    pub(crate) name: PeerName,
     #[builder(default = Timestamp::now())]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
 #[derive(Clone, Default, Hydrate, Reconcile)]
 #[loro(root = "peers")]
-pub struct Peers(HashMap<String, Peer>);
+pub(crate) struct Peers(HashMap<String, Peer>);
 
 impl Peers {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &Peer> {
+    pub(crate) fn values(&self) -> impl Iterator<Item = &Peer> {
         self.0.values()
     }
 
-    pub fn get(&self, id: PeerId) -> Option<&Peer> {
+    pub(crate) fn get(&self, id: PeerId) -> Option<&Peer> {
         self.0.get(&id.to_string())
     }
 
-    pub fn set(&mut self, peer: &Peer) -> Option<Peer> {
+    pub(crate) fn set(&mut self, peer: &Peer) -> Option<Peer> {
         self.0.insert(peer.id.to_string(), peer.clone())
     }
 
-    pub fn remove(&mut self, peer_id: PeerId) -> Option<Peer> {
+    pub(crate) fn remove(&mut self, peer_id: PeerId) -> Option<Peer> {
         self.0.remove(&peer_id.to_string())
     }
 }

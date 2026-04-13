@@ -14,11 +14,11 @@
 pub struct Label(String);
 
 impl Label {
-    pub fn new(label: impl AsRef<str>) -> Self {
+    pub(crate) fn new(label: impl AsRef<str>) -> Self {
         Self(label.as_ref().into())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }

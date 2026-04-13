@@ -5,10 +5,10 @@ use crate::*;
 
 /// A bookmark entry — a canon paired with its reducer pipeline and chronicle.
 #[derive(Clone)]
-pub struct BookmarkEntry {
-    pub canon: Canon,
-    pub pipeline: ReducerPipeline<BrainCanon>,
-    pub chronicle: Chronicle,
+pub(crate) struct BookmarkEntry {
+    pub(crate) canon: Canon,
+    pub(crate) pipeline: ReducerPipeline<BrainCanon>,
+    pub(crate) chronicle: Chronicle,
 }
 
 impl Default for BookmarkEntry {
@@ -26,9 +26,9 @@ impl Default for BookmarkEntry {
 /// Tracks which bookmarks exist (each a separate Canon/LoroDoc
 /// with its own reducer pipeline) and which is currently active.
 #[derive(Clone)]
-pub struct Shelf {
-    pub active: BookmarkName,
-    pub branches: HashMap<BookmarkName, BookmarkEntry>,
+pub(crate) struct Shelf {
+    pub(crate) active: BookmarkName,
+    pub(crate) branches: HashMap<BookmarkName, BookmarkEntry>,
 }
 
 impl Default for Shelf {
@@ -45,12 +45,12 @@ impl Default for Shelf {
 
 impl Shelf {
     /// The active bookmark entry for this brain.
-    pub fn active_entry(&self) -> BookmarkEntry {
+    pub(crate) fn active_entry(&self) -> BookmarkEntry {
         self.branches.get(&self.active).cloned().unwrap_or_default()
     }
 
     /// The active canon for this brain.
-    pub fn active_canon(&self) -> Canon {
+    pub(crate) fn active_canon(&self) -> Canon {
         self.active_entry().canon
     }
 }
@@ -61,13 +61,13 @@ impl Shelf {
 /// all request handlers via `ServerState`. Each brain gets a
 /// `Shelf` that tracks bookmarks and the active branch.
 #[derive(Clone, Default)]
-pub struct CanonIndex {
+pub(crate) struct CanonIndex {
     brains: Arc<RwLock<HashMap<BrainName, Shelf>>>,
     system: Canon,
 }
 
 impl CanonIndex {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             brains: Arc::new(RwLock::new(HashMap::new())),
             system: Canon::new(),
@@ -75,12 +75,12 @@ impl CanonIndex {
     }
 
     /// The system-level canon.
-    pub fn system(&self) -> &Canon {
+    pub(crate) fn system(&self) -> &Canon {
         &self.system
     }
 
     /// Get or create the active bookmark entry for a brain.
-    pub fn brain_entry(&self, name: &BrainName) -> Result<BookmarkEntry, EventError> {
+    pub(crate) fn brain_entry(&self, name: &BrainName) -> Result<BookmarkEntry, EventError> {
         {
             let read = self
                 .brains
@@ -101,17 +101,17 @@ impl CanonIndex {
     }
 
     /// Get or create the active canon for a brain.
-    pub fn brain(&self, name: &BrainName) -> Result<Canon, EventError> {
+    pub(crate) fn brain(&self, name: &BrainName) -> Result<Canon, EventError> {
         Ok(self.brain_entry(name)?.canon)
     }
 
     /// Get the active bookmark's chronicle for a brain.
-    pub fn chronicle(&self, brain: &BrainName) -> Result<Chronicle, EventError> {
+    pub(crate) fn chronicle(&self, brain: &BrainName) -> Result<Chronicle, EventError> {
         Ok(self.brain_entry(brain)?.chronicle)
     }
 
     /// Get a specific bookmark's chronicle for a brain.
-    pub fn bookmark_chronicle(
+    pub(crate) fn bookmark_chronicle(
         &self,
         brain: &BrainName,
         bookmark: &BookmarkName,
@@ -129,7 +129,7 @@ impl CanonIndex {
     }
 
     /// Get the active bookmark name for a brain.
-    pub fn active_bookmark(&self, brain: &BrainName) -> Result<BookmarkName, EventError> {
+    pub(crate) fn active_bookmark(&self, brain: &BrainName) -> Result<BookmarkName, EventError> {
         let read = self
             .brains
             .read()
@@ -142,7 +142,7 @@ impl CanonIndex {
     }
 
     /// Fork the active canon for a brain into a new bookmark.
-    pub fn fork_brain(&self, brain: &BrainName, bookmark: &BookmarkName) -> Result<(), EventError> {
+    pub(crate) fn fork_brain(&self, brain: &BrainName, bookmark: &BookmarkName) -> Result<(), EventError> {
         let mut write = self
             .brains
             .write()
@@ -163,7 +163,7 @@ impl CanonIndex {
     }
 
     /// Switch the active bookmark for a brain.
-    pub fn switch_brain(
+    pub(crate) fn switch_brain(
         &self,
         brain: &BrainName,
         bookmark: &BookmarkName,
@@ -181,7 +181,7 @@ impl CanonIndex {
     }
 
     /// Merge source bookmark into target bookmark for a brain.
-    pub fn merge_brain(
+    pub(crate) fn merge_brain(
         &self,
         brain: &BrainName,
         source: &BookmarkName,
@@ -207,7 +207,7 @@ impl CanonIndex {
     /// Runs migrations first to ensure the schema is current — this
     /// handles existing installs that predate newer projections (e.g.
     /// the bookmarks table).
-    pub fn hydrate_system(&self, config: &Config) -> Result<(), EventError> {
+    pub(crate) fn hydrate_system(&self, config: &Config) -> Result<(), EventError> {
         let db = config.system_db()?;
 
         Projections::<SystemCanon>::system().migrate(&db)?;
@@ -227,7 +227,7 @@ impl CanonIndex {
     /// Hydrate a brain's canon from its event log.
     ///
     /// Runs migrations first to ensure the schema is current.
-    pub fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
+    pub(crate) fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
         let mut brain_config = config.clone();
         brain_config.brain = name.clone();
 

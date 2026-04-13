@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TextureService;
+pub(crate) struct TextureService;
 
 impl TextureService {
-    pub async fn set(
+    pub(crate) async fn set(
         context: &ProjectContext,
         SetTexture {
             name,
@@ -20,7 +20,7 @@ impl TextureService {
         Ok(TextureResponse::TextureSet(name.clone()))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         context: &ProjectContext,
         selector: &GetTexture,
     ) -> Result<TextureResponse, TextureError> {
@@ -34,7 +34,7 @@ impl TextureService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         context: &ProjectContext,
         ListTextures { filters }: &ListTextures,
     ) -> Result<TextureResponse, TextureError> {
@@ -49,7 +49,7 @@ impl TextureService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         context: &ProjectContext,
         selector: &RemoveTexture,
     ) -> Result<TextureResponse, TextureError> {

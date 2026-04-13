@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = BrainEventsType, display = "kebab-case")]
-pub enum BrainEvents {
+pub(crate) enum BrainEvents {
     BrainCreated(Brain),
 }
 

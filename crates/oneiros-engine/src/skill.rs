@@ -35,11 +35,11 @@ pub struct SkillAsset {
 // ── SkillInventory ───────────────────────────────────────────────
 
 /// The complete skill inventory across all domains.
-pub struct SkillInventory;
+pub(crate) struct SkillInventory;
 
 impl SkillInventory {
     /// All command skill documents from every domain.
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         let mut skills = Vec::new();
 
         skills.extend(ActorSkills::all());
@@ -81,7 +81,7 @@ pub struct SkillPackage;
 
 impl SkillPackage {
     /// The package version.
-    pub fn version() -> &'static str {
+    pub(crate) fn version() -> &'static str {
         VERSION
     }
 
@@ -148,7 +148,7 @@ impl SkillPackage {
     }
 
     /// Install the complete package to a target directory.
-    pub fn install(target: &Path) -> Result<usize, std::io::Error> {
+    pub(crate) fn install(target: &Path) -> Result<usize, std::io::Error> {
         let assets = Self::assets();
         let count = assets.len();
 

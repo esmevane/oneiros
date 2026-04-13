@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ContinuityEventsType, display = "kebab-case")]
-pub enum ContinuityEvents {
+pub(crate) enum ContinuityEvents {
     Dreamed(ContinuityEvent),
     Introspected(ContinuityEvent),
     Reflected(ContinuityEvent),
@@ -34,14 +34,14 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ContinuityEvent {
-    pub agent: AgentName,
-    pub created_at: Timestamp,
+pub(crate) struct ContinuityEvent {
+    pub(crate) agent: AgentName,
+    pub(crate) created_at: Timestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SensedEvent {
-    pub agent: AgentName,
-    pub content: Content,
-    pub created_at: Timestamp,
+pub(crate) struct SensedEvent {
+    pub(crate) agent: AgentName,
+    pub(crate) content: Content,
+    pub(crate) created_at: Timestamp,
 }

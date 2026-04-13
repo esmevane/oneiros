@@ -7,88 +7,88 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct WakeAgent {
+pub(crate) struct WakeAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
     /// Render the full dream with all vocabulary and memories inline.
     #[arg(long)]
     #[serde(default)]
     #[builder(default)]
-    pub deep: bool,
+    pub(crate) deep: bool,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct DreamAgent {
+pub(crate) struct DreamAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
     /// Render the full dream with all vocabulary and memories inline.
     #[arg(long)]
     #[serde(default)]
     #[builder(default)]
-    pub deep: bool,
+    pub(crate) deep: bool,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct IntrospectAgent {
+pub(crate) struct IntrospectAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ReflectAgent {
+pub(crate) struct ReflectAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SenseContent {
+pub(crate) struct SenseContent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
     #[builder(into)]
-    pub content: Content,
+    pub(crate) content: Content,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SleepAgent {
+pub(crate) struct SleepAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GuidebookAgent {
+pub(crate) struct GuidebookAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct EmergeAgent {
+pub(crate) struct EmergeAgent {
     #[builder(into)]
-    pub name: AgentName,
+    pub(crate) name: AgentName,
     #[builder(into)]
-    pub persona: PersonaName,
+    pub(crate) persona: PersonaName,
     #[arg(long, default_value = "")]
     #[builder(default, into)]
-    pub description: Description,
+    pub(crate) description: Description,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RecedeAgent {
+pub(crate) struct RecedeAgent {
     #[builder(into)]
-    pub agent: AgentName,
+    pub(crate) agent: AgentName,
 }
 
 #[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct StatusAgent {
+pub(crate) struct StatusAgent {
     #[command(flatten)]
     #[serde(flatten)]
     #[builder(default)]
-    pub filters: SearchFilters,
+    pub(crate) filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ContinuityRequestType, display = "kebab-case")]
-pub enum ContinuityRequest {
+pub(crate) enum ContinuityRequest {
     WakeAgent(WakeAgent),
     DreamAgent(DreamAgent),
     IntrospectAgent(IntrospectAgent),

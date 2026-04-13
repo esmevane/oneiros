@@ -14,14 +14,14 @@ const APP: &str = "oneiros";
 ///
 /// Config uses this for its defaults — CLI args, env vars, and
 /// config files can override any of them.
-pub struct Platform {
+pub(crate) struct Platform {
     data_dir: PathBuf,
     config_dir: PathBuf,
     cache_dir: PathBuf,
 }
 
 impl Platform {
-    pub fn resolve() -> Self {
+    pub(crate) fn resolve() -> Self {
         let args = AppStrategyArgs {
             top_level_domain: TLD.into(),
             author: AUTHOR.into(),
@@ -40,22 +40,22 @@ impl Platform {
     /// The application's data directory (e.g., `~/.local/share/oneiros`).
     ///
     /// This is where brain databases, event logs, and tokens live.
-    pub fn data_dir(&self) -> PathBuf {
+    pub(crate) fn data_dir(&self) -> PathBuf {
         self.data_dir.clone()
     }
 
     /// The application's config directory (e.g., `~/.config/oneiros`).
-    pub fn config_dir(&self) -> PathBuf {
+    pub(crate) fn config_dir(&self) -> PathBuf {
         self.config_dir.clone()
     }
 
     /// The application's cache directory (e.g., `~/.cache/oneiros`).
-    pub fn cache_dir(&self) -> PathBuf {
+    pub(crate) fn cache_dir(&self) -> PathBuf {
         self.cache_dir.clone()
     }
 
     /// The service label for OS registration (e.g., `com.esmevane.oneiros`).
-    pub fn service_label(&self) -> String {
+    pub(crate) fn service_label(&self) -> String {
         format!("{TLD}.{AUTHOR}.{APP}")
     }
 }

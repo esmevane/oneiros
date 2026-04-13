@@ -4,8 +4,8 @@ mod protocol;
 mod service;
 mod view;
 
-pub use client::*;
-pub use features::*;
-pub use protocol::*;
-pub use service::*;
-pub use view::*;
+pub(crate) use client::*;
+pub(crate) use features::*;
+pub(crate) use protocol::*;
+pub(crate) use service::*;
+pub(crate) use view::*;

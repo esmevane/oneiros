@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct DoctorSkills;
+pub(crate) struct DoctorSkills;
 
 impl DoctorSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![Skill::new("doctor", include_str!("skills/doctor.md"))]
     }
 }

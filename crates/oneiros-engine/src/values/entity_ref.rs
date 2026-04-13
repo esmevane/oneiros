@@ -5,7 +5,7 @@ use crate::*;
 
 /// An error that can occur when parsing or encoding a [`RefToken`].
 #[derive(Debug, thiserror::Error)]
-pub enum RefError {
+pub(crate) enum RefError {
     #[error("invalid ref encoding: {0}")]
     Encoding(#[from] data_encoding::DecodeError),
     #[error("invalid ref format: {0}")]
@@ -17,100 +17,100 @@ pub enum RefError {
 /// Serializes as structural JSON (e.g. `{"V0": {"Agent": "019c-abcd-..."}}`).
 /// For opaque string encoding (DB columns, CLI args, query params), use [`RefToken`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
-pub enum Ref {
+pub(crate) enum Ref {
     V0(Resource),
 }
 
 impl Ref {
-    pub fn agent(id: AgentId) -> Self {
+    pub(crate) fn agent(id: AgentId) -> Self {
         Self::V0(Resource::Agent(id))
     }
 
-    pub fn actor(id: ActorId) -> Self {
+    pub(crate) fn actor(id: ActorId) -> Self {
         Self::V0(Resource::Actor(id))
     }
 
-    pub fn bookmark(id: BookmarkId) -> Self {
+    pub(crate) fn bookmark(id: BookmarkId) -> Self {
         Self::V0(Resource::Bookmark(id))
     }
 
-    pub fn brain(id: BrainId) -> Self {
+    pub(crate) fn brain(id: BrainId) -> Self {
         Self::V0(Resource::Brain(id))
     }
 
-    pub fn cognition(id: CognitionId) -> Self {
+    pub(crate) fn cognition(id: CognitionId) -> Self {
         Self::V0(Resource::Cognition(id))
     }
 
-    pub fn connection(id: ConnectionId) -> Self {
+    pub(crate) fn connection(id: ConnectionId) -> Self {
         Self::V0(Resource::Connection(id))
     }
 
-    pub fn experience(id: ExperienceId) -> Self {
+    pub(crate) fn experience(id: ExperienceId) -> Self {
         Self::V0(Resource::Experience(id))
     }
 
-    pub fn follow(id: FollowId) -> Self {
+    pub(crate) fn follow(id: FollowId) -> Self {
         Self::V0(Resource::Follow(id))
     }
 
-    pub fn level(name: LevelName) -> Self {
+    pub(crate) fn level(name: LevelName) -> Self {
         Self::V0(Resource::Level(name))
     }
 
-    pub fn memory(id: MemoryId) -> Self {
+    pub(crate) fn memory(id: MemoryId) -> Self {
         Self::V0(Resource::Memory(id))
     }
 
-    pub fn nature(name: NatureName) -> Self {
+    pub(crate) fn nature(name: NatureName) -> Self {
         Self::V0(Resource::Nature(name))
     }
 
-    pub fn peer(id: PeerId) -> Self {
+    pub(crate) fn peer(id: PeerId) -> Self {
         Self::V0(Resource::Peer(id))
     }
 
-    pub fn persona(name: PersonaName) -> Self {
+    pub(crate) fn persona(name: PersonaName) -> Self {
         Self::V0(Resource::Persona(name))
     }
 
-    pub fn sensation(name: SensationName) -> Self {
+    pub(crate) fn sensation(name: SensationName) -> Self {
         Self::V0(Resource::Sensation(name))
     }
 
-    pub fn storage(key: StorageKey) -> Self {
+    pub(crate) fn storage(key: StorageKey) -> Self {
         Self::V0(Resource::Storage(key))
     }
 
-    pub fn tenant(id: TenantId) -> Self {
+    pub(crate) fn tenant(id: TenantId) -> Self {
         Self::V0(Resource::Tenant(id))
     }
 
-    pub fn texture(name: TextureName) -> Self {
+    pub(crate) fn texture(name: TextureName) -> Self {
         Self::V0(Resource::Texture(name))
     }
 
-    pub fn ticket(id: TicketId) -> Self {
+    pub(crate) fn ticket(id: TicketId) -> Self {
         Self::V0(Resource::Ticket(id))
     }
 
-    pub fn urge(name: UrgeName) -> Self {
+    pub(crate) fn urge(name: UrgeName) -> Self {
         Self::V0(Resource::Urge(name))
     }
 
     /// The resource this ref points to.
-    pub fn resource(&self) -> &Resource {
+    pub(crate) fn resource(&self) -> &Resource {
         let Self::V0(resource) = self;
         resource
     }
 
     /// Encode to postcard bytes.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         postcard::to_allocvec(self).expect("ref serialization should not fail")
     }
 
     /// Decode from postcard bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, RefError> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, RefError> {
         Ok(postcard::from_bytes(bytes)?)
     }
 }

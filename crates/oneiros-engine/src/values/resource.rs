@@ -4,7 +4,7 @@ use crate::*;
 
 /// All addressable resource types in the system.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
-pub enum Resource {
+pub(crate) enum Resource {
     Agent(AgentId),
     Actor(ActorId),
     Bookmark(BookmarkId),
@@ -28,7 +28,7 @@ pub enum Resource {
 
 impl Resource {
     /// The underlying UUID for ID-keyed resources, or `None` for name-keyed ones.
-    pub fn id(&self) -> Option<Id> {
+    pub(crate) fn id(&self) -> Option<Id> {
         match self {
             Self::Agent(id) => Some(id.0),
             Self::Actor(id) => Some(id.0),
@@ -53,7 +53,7 @@ impl Resource {
     }
 
     /// A human-readable label for this resource type.
-    pub fn label(&self) -> &str {
+    pub(crate) fn label(&self) -> &str {
         match self {
             Self::Agent(_) => "agent",
             Self::Actor(_) => "actor",

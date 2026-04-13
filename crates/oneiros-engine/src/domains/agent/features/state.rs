@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct AgentState;
+pub(crate) struct AgentState;
 
 impl AgentState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Agent(agent_event) = event {
             match agent_event {
                 AgentEvents::AgentCreated(agent) => {
@@ -21,7 +21,7 @@ impl AgentState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

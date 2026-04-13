@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct UrgeTools;
+pub(crate) struct UrgeTools;
 
 impl UrgeTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         urge_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectContext,
         tool_name: &str,
@@ -20,7 +20,7 @@ impl UrgeTools {
 mod urge_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<SetUrge>::new(UrgeRequestType::SetUrge, "Define a cognitive drive").def(),
             Tool::<GetUrge>::new(UrgeRequestType::GetUrge, "Look up a cognitive drive").def(),
@@ -29,7 +29,7 @@ mod urge_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
