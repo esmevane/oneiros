@@ -12,10 +12,10 @@ pub(crate) enum ActorCommands {
 impl ActorCommands {
     pub(crate) async fn execute(
         &self,
-        context: &SystemContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, ActorError> {
-        let client = context.client();
-        let actor_client = ActorClient::new(&client);
+        
+        let actor_client = ActorClient::new(client);
 
         let response = match self {
             ActorCommands::Create(creation) => actor_client.create(creation).await?,

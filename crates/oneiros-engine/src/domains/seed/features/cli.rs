@@ -11,11 +11,11 @@ pub(crate) enum SeedCommands {
 impl SeedCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, SeedError> {
         let response = match self {
-            SeedCommands::Core => SeedService::core(context).await?,
-            SeedCommands::Agents => SeedService::agents(context).await?,
+            SeedCommands::Core => SeedService::core(client).await?,
+            SeedCommands::Agents => SeedService::agents(client).await?,
         };
 
         let prompt = match &response {

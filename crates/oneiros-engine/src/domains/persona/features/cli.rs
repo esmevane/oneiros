@@ -13,10 +13,10 @@ pub(crate) enum PersonaCommands {
 impl PersonaCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, PersonaError> {
-        let client = context.client();
-        let persona_client = PersonaClient::new(&client);
+        
+        let persona_client = PersonaClient::new(client);
 
         let response = match self {
             PersonaCommands::Set(set) => persona_client.set(set).await?,

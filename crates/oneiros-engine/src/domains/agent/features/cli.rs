@@ -14,10 +14,10 @@ pub(crate) enum AgentCommands {
 impl AgentCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, AgentError> {
-        let client = context.client();
-        let agent_client = AgentClient::new(&client);
+        
+        let agent_client = AgentClient::new(client);
 
         let response = match self {
             Self::Create(creation) => agent_client.create(creation).await?,

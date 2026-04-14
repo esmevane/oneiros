@@ -13,10 +13,10 @@ pub(crate) enum NatureCommands {
 impl NatureCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, NatureError> {
-        let client = context.client();
-        let nature_client = NatureClient::new(&client);
+        
+        let nature_client = NatureClient::new(client);
 
         let response = match self {
             NatureCommands::Set(set) => nature_client.set(set).await?,

@@ -12,10 +12,10 @@ pub(crate) enum TicketCommands {
 impl TicketCommands {
     pub(crate) async fn execute(
         &self,
-        context: &SystemContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, TicketError> {
-        let client = context.client();
-        let ticket_client = TicketClient::new(&client);
+        
+        let ticket_client = TicketClient::new(client);
 
         let response = match self {
             TicketCommands::Issue(create) => ticket_client.issue(create).await?,

@@ -49,10 +49,10 @@ impl SetupService {
             _ => {}
         }
 
-        // 3. Seed core (always, idempotent)
-        let project_ctx = config.project();
+        // 3. Seed core (always, idempotent) — routes through HTTP client
+        let client = config.client();
 
-        match SeedService::core(&project_ctx).await {
+        match SeedService::core(&client).await {
             Ok(_) => steps.push(SetupStep::VocabularySeeded),
             Err(e) => {
                 steps.push(SetupStep::StepFailed {
@@ -63,7 +63,7 @@ impl SetupService {
         }
 
         // 4. Seed agents (always, idempotent)
-        match SeedService::agents(&project_ctx).await {
+        match SeedService::agents(&client).await {
             Ok(_) => steps.push(SetupStep::AgentsSeeded),
             Err(e) => {
                 steps.push(SetupStep::StepFailed {

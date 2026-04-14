@@ -12,10 +12,10 @@ pub(crate) enum CognitionCommands {
 impl CognitionCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, CognitionError> {
-        let client = context.client();
-        let cognition_client = CognitionClient::new(&client);
+        
+        let cognition_client = CognitionClient::new(client);
 
         let response = match self {
             CognitionCommands::Add(addition) => cognition_client.add(addition).await?,

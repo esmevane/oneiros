@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex, OnceLock};
+
 use axum::{extract::FromRequestParts, http::request::Parts};
 use tokio::sync::broadcast;
 
@@ -14,6 +16,7 @@ pub(crate) struct ServerState {
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
     bridge: Bridge,
+    bus: Arc<OnceLock<EventBus>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -33,12 +36,34 @@ impl ServerState {
 
         let (broadcast, _) = broadcast::channel(256);
         let canons = CanonIndex::new();
+
         Ok(Self {
             config,
             broadcast,
             canons,
             bridge,
+            bus: Arc::new(OnceLock::new()),
         })
+    }
+
+    /// Get or create the shared event bus for the configured brain.
+    ///
+    /// Lazily initialized on first use — the brain DB may not exist at
+    /// server startup (it's created by `project init`).
+    fn bus(&self, config: &Config) -> Result<EventBus, EventError> {
+        let bus = self.bus.get_or_init(|| {
+            let db = config.brain_db().expect("brain db");
+            EventLog::new(&db).migrate().expect("event log migration");
+
+            let projections = Projections::project();
+            projections.migrate(&db).expect("projection migration");
+
+            let chronicle = Chronicle::new();
+            let db = Arc::new(Mutex::new(db));
+            EventBus::spawn(db, projections, chronicle)
+        });
+
+        Ok(bus.clone())
     }
 
     /// The bound bridge.
@@ -86,14 +111,10 @@ impl ServerState {
         &self.broadcast
     }
 
-    /// Build a project context with shared broadcast, canon, and pipeline.
+    /// Build a project context with the shared bus.
     pub(crate) fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
-        let entry = self.canons.brain_entry(&config.brain)?;
-        Ok(ProjectContext::with_entry(
-            config,
-            self.broadcast.clone(),
-            entry,
-        ))
+        let bus = self.bus(&config)?;
+        Ok(ProjectContext::with_bus(config, bus))
     }
 
     /// Build a system context with shared canon.
@@ -152,7 +173,7 @@ impl FromRequestParts<ServerState> for ProjectContext {
             _ => return Err(AuthError::InvalidToken),
         }
 
-        // Assemble ProjectContext with shared broadcast channel
+        // Assemble ProjectContext with shared bus
         let mut config = state.config.clone();
         config.brain = ticket.brain_name;
 

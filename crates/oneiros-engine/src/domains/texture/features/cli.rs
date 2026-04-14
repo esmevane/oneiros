@@ -13,10 +13,10 @@ pub(crate) enum TextureCommands {
 impl TextureCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, TextureError> {
-        let client = context.client();
-        let texture_client = TextureClient::new(&client);
+        
+        let texture_client = TextureClient::new(client);
 
         let response = match self {
             TextureCommands::Set(set) => texture_client.set(set).await?,

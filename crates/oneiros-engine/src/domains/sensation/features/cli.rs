@@ -13,10 +13,10 @@ pub(crate) enum SensationCommands {
 impl SensationCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, SensationError> {
-        let client = context.client();
-        let sensation_client = SensationClient::new(&client);
+        
+        let sensation_client = SensationClient::new(client);
 
         let response = match self {
             SensationCommands::Set(set) => sensation_client.set(set).await?,

@@ -11,10 +11,10 @@ pub(crate) struct SearchCommands {
 impl SearchCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, SearchError> {
-        let client = context.client();
-        let search_client = SearchClient::new(&client);
+        
+        let search_client = SearchClient::new(client);
 
         let response = search_client.search(&self.query).await?;
         Ok(SearchView::new(response).render())

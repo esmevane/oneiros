@@ -183,7 +183,8 @@ impl ProjectService {
             }
         }
 
-        let replayed = context.projections.replay_brain(&db)?;
+        let projections = Projections::<BrainCanon>::project();
+        let replayed = projections.replay_brain(&db)?;
 
         Ok(ProjectResponse::Imported(ImportResult {
             imported: EventCount::new(imported as i64),
@@ -193,7 +194,8 @@ impl ProjectService {
 
     /// Replay all events through projections, rebuilding read models.
     pub(crate) fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
-        let replayed = context.projections.replay_brain(&context.db()?)?;
+        let projections = Projections::<BrainCanon>::project();
+        let replayed = projections.replay_brain(&context.db()?)?;
 
         Ok(ProjectResponse::Replayed(ReplayResult {
             replayed: EventCount::new(replayed as i64),

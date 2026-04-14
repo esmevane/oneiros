@@ -12,10 +12,10 @@ pub(crate) enum BrainCommands {
 impl BrainCommands {
     pub(crate) async fn execute(
         &self,
-        context: &SystemContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, BrainError> {
-        let client = context.client();
-        let brain_client = BrainClient::new(&client);
+        
+        let brain_client = BrainClient::new(client);
 
         let response = match self {
             BrainCommands::Create(create) => brain_client.create(create).await?,

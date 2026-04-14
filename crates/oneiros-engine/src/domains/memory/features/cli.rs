@@ -12,10 +12,10 @@ pub(crate) enum MemoryCommands {
 impl MemoryCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, MemoryError> {
-        let client = context.client();
-        let memory_client = MemoryClient::new(&client);
+        
+        let memory_client = MemoryClient::new(client);
 
         let response = match self {
             MemoryCommands::Add(addition) => memory_client.add(addition).await?,

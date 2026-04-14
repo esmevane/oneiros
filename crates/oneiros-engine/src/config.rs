@@ -94,12 +94,16 @@ impl Config {
 
     /// Open the system database.
     pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        rusqlite::Connection::open(self.data_dir.join("system.db"))
+        let conn = rusqlite::Connection::open(self.data_dir.join("system.db"))?;
+        conn.pragma_update(None, "journal_mode", "WAL")?;
+        Ok(conn)
     }
 
     /// Open the brain (project) database.
     pub(crate) fn brain_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        rusqlite::Connection::open(self.brain_dir().join("brain.db"))
+        let conn = rusqlite::Connection::open(self.brain_dir().join("brain.db"))?;
+        conn.pragma_update(None, "journal_mode", "WAL")?;
+        Ok(conn)
     }
 
     /// Path to the token file for the current brain.
@@ -273,14 +277,20 @@ impl Config {
         self
     }
 
+    /// Build an HTTP client for this config.
+    ///
+    /// Authenticated with the brain token if one exists, otherwise
+    /// unauthenticated (e.g. before project init).
+    pub(crate) fn client(&self) -> Client {
+        match self.token() {
+            Some(token) => Client::with_token(self.base_url(), token),
+            None => Client::new(self.base_url()),
+        }
+    }
+
     /// Build a system context from this config.
     pub(crate) fn system(&self) -> SystemContext {
         SystemContext::new(self.clone())
-    }
-
-    /// Build a project context from this config.
-    pub(crate) fn project(&self) -> ProjectContext {
-        ProjectContext::new(self.clone())
     }
 }
 

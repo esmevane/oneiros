@@ -13,10 +13,10 @@ pub(crate) enum UrgeCommands {
 impl UrgeCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, UrgeError> {
-        let client = context.client();
-        let urge_client = UrgeClient::new(&client);
+        
+        let urge_client = UrgeClient::new(client);
 
         let response = match self {
             UrgeCommands::Set(set) => urge_client.set(set).await?,

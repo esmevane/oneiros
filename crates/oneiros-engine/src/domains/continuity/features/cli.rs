@@ -19,10 +19,10 @@ pub(crate) enum ContinuityCommands {
 impl ContinuityCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, ContinuityError> {
-        let client = context.client();
-        let continuity_client = ContinuityClient::new(&client);
+        
+        let continuity_client = ContinuityClient::new(client);
 
         let (result, deep) = match self {
             ContinuityCommands::Wake(wake) => {

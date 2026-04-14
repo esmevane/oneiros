@@ -19,10 +19,10 @@ pub(crate) enum StorageCommands {
 impl StorageCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, StorageError> {
-        let client = context.client();
-        let storage_client = StorageClient::new(&client);
+        
+        let storage_client = StorageClient::new(client);
 
         let response = match self {
             StorageCommands::Set {

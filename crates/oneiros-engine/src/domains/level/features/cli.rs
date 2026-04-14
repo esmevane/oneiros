@@ -13,10 +13,10 @@ pub(crate) enum LevelCommands {
 impl LevelCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, LevelError> {
-        let client = context.client();
-        let level_client = LevelClient::new(&client);
+        
+        let level_client = LevelClient::new(client);
 
         let response = match self {
             LevelCommands::Set(set) => level_client.set(set).await?,

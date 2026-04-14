@@ -11,9 +11,9 @@ pub(crate) enum PeerCommands {
 }
 
 impl PeerCommands {
-    pub(crate) async fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, PeerError> {
-        let client = context.client();
-        let peer_client = PeerClient::new(&client);
+    pub(crate) async fn execute(&self, client: &Client) -> Result<Rendered<Responses>, PeerError> {
+        
+        let peer_client = PeerClient::new(client);
 
         let response = match self {
             PeerCommands::Add(add) => peer_client.add(add).await?,

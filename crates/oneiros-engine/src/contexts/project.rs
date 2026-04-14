@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use tokio::sync::broadcast;
 
 use crate::*;
@@ -5,35 +7,51 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct ProjectContext {
     pub(crate) config: Config,
-    pub(crate) projections: Projections<BrainCanon>,
-    chronicle: Chronicle,
-    broadcast: broadcast::Sender<StoredEvent>,
+    bus: Option<EventBus>,
 }
 
 impl ProjectContext {
+    /// Create a client-only context — can build HTTP clients but cannot emit.
+    ///
+    /// Used by CLI commands that route through HTTP. For contexts that
+    /// need to emit events directly, use `start()` or construct via
+    /// `ServerState::project_context()`.
     pub(crate) fn new(config: Config) -> Self {
-        let (broadcast, _) = broadcast::channel(256);
+        Self { config, bus: None }
+    }
 
+    /// Create a context backed by a running EventBus.
+    ///
+    /// Used by the server to hand each request a context that emits
+    /// through the shared bus.
+    pub(crate) fn with_bus(config: Config, bus: EventBus) -> Self {
         Self {
             config,
-            projections: Projections::project(),
-            chronicle: Chronicle::new(),
-            broadcast,
+            bus: Some(bus),
         }
     }
 
-    /// Create a context with shared broadcast and a pre-hydrated bookmark entry.
-    pub(crate) fn with_entry(
-        config: Config,
-        broadcast: broadcast::Sender<StoredEvent>,
-        entry: BookmarkEntry,
-    ) -> Self {
-        Self {
+    /// Create a self-contained context with its own bus and consumer.
+    ///
+    /// Opens the brain database, runs migrations, and spawns a consumer
+    /// task. Useful for tests and non-server consumers that need to
+    /// emit events without an HTTP server.
+    pub(crate) fn start(config: Config) -> Result<Self, EventError> {
+        let db = config.brain_db()?;
+
+        EventLog::new(&db).migrate()?;
+
+        let projections = Projections::project();
+        projections.migrate(&db)?;
+
+        let chronicle = Chronicle::new();
+        let db = Arc::new(Mutex::new(db));
+        let bus = EventBus::spawn(db, projections, chronicle);
+
+        Ok(Self {
             config,
-            projections: Projections::project_with_entry(entry.canon, entry.pipeline),
-            chronicle: entry.chronicle,
-            broadcast,
-        }
+            bus: Some(bus),
+        })
     }
 
     /// The brain name for this project.
@@ -55,7 +73,10 @@ impl ProjectContext {
 
     /// Subscribe to the event broadcast stream.
     pub(crate) fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
-        self.broadcast.subscribe()
+        self.bus
+            .as_ref()
+            .expect("subscribe requires a running bus")
+            .subscribe()
     }
 
     /// Open the brain (project) database.
@@ -67,29 +88,40 @@ impl ProjectContext {
     #[cfg(test)]
     #[deprecated]
     pub(crate) fn replay(&self) -> Result<usize, EventError> {
-        self.projections.replay_brain(&self.db()?)
+        let projections = Projections::<BrainCanon>::project();
+        projections.replay_brain(&self.db()?)
     }
 
-    /// Emit an event to the brain's event log and apply projections.
+    /// Emit an event through the bus.
+    ///
+    /// The bus appends to the event log, dispatches to the consumer
+    /// for projection and chronicling, and broadcasts to SSE
+    /// subscribers. Returns after projection is complete.
     pub(crate) async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
-        let db = self.db()?;
-        let new_event = NewEvent::builder().data(event).build();
-        let stored = EventLog::new(&db).append(&new_event)?;
+        let bus = self
+            .bus
+            .as_ref()
+            .ok_or_else(|| EventError::Lock("emit requires a running bus".to_string()))?;
 
-        self.projections.apply_brain(&db, &stored)?;
-
-        // Chronicle the event — record it in the active bookmark's ledger.
-        let chronicle_store = ChronicleStore::new(&db);
-        chronicle_store.migrate()?;
-        self.chronicle.record(
-            &stored,
-            &chronicle_store.resolver(),
-            &chronicle_store.writer(),
-        )?;
-
-        // We broadcast the new event after projecting it.
-        let _ = self.broadcast.send(stored);
+        bus.emit(event, Source::default()).await?;
 
         Ok(())
+    }
+
+    /// Execute a read operation against the bus's database.
+    ///
+    /// Uses the bus's shared connection when available, falls back to
+    /// opening a fresh connection for client-only contexts.
+    pub(crate) fn with_db<T>(
+        &self,
+        f: impl FnOnce(&rusqlite::Connection) -> T,
+    ) -> Result<T, EventError> {
+        match &self.bus {
+            Some(bus) => bus.with_db(f),
+            None => {
+                let db = self.db()?;
+                Ok(f(&db))
+            }
+        }
     }
 }

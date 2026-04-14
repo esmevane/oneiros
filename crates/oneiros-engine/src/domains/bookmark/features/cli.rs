@@ -17,10 +17,10 @@ pub(crate) enum BookmarkCommands {
 impl BookmarkCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, BookmarkError> {
-        let client = context.client();
-        let bookmark_client = BookmarkClient::new(&client);
+        
+        let bookmark_client = BookmarkClient::new(client);
 
         let response = match self {
             BookmarkCommands::Create(create) => bookmark_client.create(create).await?,

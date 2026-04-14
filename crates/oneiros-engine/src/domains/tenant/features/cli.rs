@@ -12,10 +12,10 @@ pub(crate) enum TenantCommands {
 impl TenantCommands {
     pub(crate) async fn execute(
         &self,
-        context: &SystemContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, TenantError> {
-        let client = context.client();
-        let tenant_client = TenantClient::new(&client);
+        
+        let tenant_client = TenantClient::new(client);
 
         let response = match self {
             TenantCommands::Create(create) => tenant_client.create(create).await?,

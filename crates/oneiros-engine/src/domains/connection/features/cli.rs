@@ -13,10 +13,10 @@ pub(crate) enum ConnectionCommands {
 impl ConnectionCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, ConnectionError> {
-        let client = context.client();
-        let connection_client = ConnectionClient::new(&client);
+        
+        let connection_client = ConnectionClient::new(client);
 
         let response = match self {
             ConnectionCommands::Create(creation) => connection_client.create(creation).await?,

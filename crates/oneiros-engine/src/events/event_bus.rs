@@ -38,13 +38,79 @@ fn lock(
 }
 
 impl EventBus {
-    /// Create a new bus. Returns the bus and an mpsc receiver for Frames.
+    /// Create a new bus and spawn its consumer task.
     ///
-    /// The caller is responsible for:
-    /// 1. Running EventLog migrations
-    /// 2. Running projection migrations (via Frames)
-    /// 3. Spawning the Frames task with the returned receiver
-    pub(crate) fn new(db: Arc<Mutex<rusqlite::Connection>>) -> (Self, mpsc::UnboundedReceiver<Dispatch>) {
+    /// The consumer owns the projection pipeline: for each dispatched
+    /// event it applies projections, chronicles the event, and
+    /// broadcasts to SSE subscribers. The caller receives an `EventBus`
+    /// handle for publishing events and subscribing to broadcasts.
+    ///
+    /// The caller is responsible for running EventLog and projection
+    /// migrations before publishing any events.
+    pub(crate) fn spawn(
+        db: Arc<Mutex<rusqlite::Connection>>,
+        projections: Projections<BrainCanon>,
+        chronicle: Chronicle,
+    ) -> Self {
+        let (bus, receiver) = Self::channels(db);
+        let consumer_db = bus.db.clone();
+        let broadcast = bus.broadcast.clone();
+
+        tokio::spawn(Self::consumer(
+            receiver,
+            consumer_db,
+            projections,
+            chronicle,
+            broadcast,
+        ));
+
+        bus
+    }
+
+    /// The consumer loop — processes dispatched events sequentially.
+    ///
+    /// Each event is projected, chronicled, and broadcast. The ack
+    /// channel signals the publisher that projection is complete, so
+    /// read-after-write queries see consistent state.
+    async fn consumer(
+        mut receiver: mpsc::UnboundedReceiver<Dispatch>,
+        db: Arc<Mutex<rusqlite::Connection>>,
+        projections: Projections<BrainCanon>,
+        chronicle: Chronicle,
+        broadcast: broadcast::Sender<StoredEvent>,
+    ) {
+        while let Some(Dispatch { event, ack }) = receiver.recv().await {
+            let result = (|| -> Result<(), EventError> {
+                let conn = lock(&db)?;
+
+                projections.apply_brain(&conn, &event)?;
+
+                let chronicle_store = ChronicleStore::new(&conn);
+                chronicle_store.migrate()?;
+                chronicle.record(
+                    &event,
+                    &chronicle_store.resolver(),
+                    &chronicle_store.writer(),
+                )?;
+
+                Ok(())
+            })();
+
+            if let Err(e) = result {
+                eprintln!("projection failed for event {}: {e}", event.id);
+            }
+
+            let _ = broadcast.send(event);
+            let _ = ack.send(());
+        }
+    }
+
+    /// Create a new bus with raw channels. Returns the bus and the
+    /// receiver for manual consumer setup.
+    ///
+    /// Prefer `spawn()` which creates the bus and starts the consumer.
+    /// Use this only when you need custom consumer logic.
+    fn channels(db: Arc<Mutex<rusqlite::Connection>>) -> (Self, mpsc::UnboundedReceiver<Dispatch>) {
         let (dispatch, receiver) = mpsc::unbounded_channel();
         let (broadcast, _) = broadcast::channel(256);
 
@@ -57,32 +123,30 @@ impl EventBus {
         (bus, receiver)
     }
 
-    /// Publish an event: append + dispatch + broadcast.
+    /// Publish an event: append to log, dispatch to consumer, await projection.
     ///
     /// Returns after the event has been persisted AND projected.
-    /// The dispatch channel carries a oneshot for acknowledgment —
-    /// the Frames task signals when projection is complete.
+    /// The consumer handles projection, chronicling, and broadcasting.
     pub(crate) async fn publish(&self, event: NewEvent) -> Result<StoredEvent, EventError> {
-        // 1. Append — persist to the event log
         let stored = {
             let conn = lock(&self.db)?;
             EventLog::new(&conn).append(&event)?
         };
 
-        // 2. Dispatch — send to Frames with ack channel
         let (ack_tx, ack_rx) = oneshot::channel();
         let _ = self.dispatch.send(Dispatch {
             event: stored.clone(),
             ack: ack_tx,
         });
 
-        // 3. Broadcast — send to external observers (lossy ok)
-        let _ = self.broadcast.send(stored.clone());
-
-        // 4. Wait for projection to complete
         let _ = ack_rx.await;
 
         Ok(stored)
+    }
+
+    /// The broadcast sender for SSE subscribers.
+    pub(crate) fn broadcast(&self) -> &broadcast::Sender<StoredEvent> {
+        &self.broadcast
     }
 
     /// Emit an event with a given source: construct + publish.

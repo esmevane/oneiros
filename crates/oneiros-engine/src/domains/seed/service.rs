@@ -3,7 +3,14 @@ use crate::*;
 pub(crate) struct SeedService;
 
 impl SeedService {
-    pub(crate) async fn core(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
+    pub(crate) async fn core(client: &Client) -> Result<SeedResponse, SeedError> {
+        let level = LevelClient::new(client);
+        let texture = TextureClient::new(client);
+        let sensation = SensationClient::new(client);
+        let nature = NatureClient::new(client);
+        let persona = PersonaClient::new(client);
+        let urge = UrgeClient::new(client);
+
         for (name, description, prompt) in [
             (
                 "working",
@@ -31,15 +38,13 @@ impl SeedService {
                 "",
             ),
         ] {
-            LevelService::set(
-                context,
-                &SetLevel::builder()
+            level
+                .set(&SetLevel::builder()
                     .name(LevelName::new(name))
                     .description(Description::from(description))
                     .prompt(Prompt::from(prompt))
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         for (name, description) in [
@@ -69,14 +74,12 @@ impl SeedService {
                 "After a meaningful interaction, capture it as a bond.",
             ),
         ] {
-            TextureService::set(
-                context,
-                &SetTexture::builder()
+            texture
+                .set(&SetTexture::builder()
                     .name(TextureName::new(name))
                     .description(Description::from(description))
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         for (name, description) in [
@@ -102,14 +105,12 @@ impl SeedService {
                 "Undirected. Ideas that pull against each other.",
             ),
         ] {
-            SensationService::set(
-                context,
-                &SetSensation::builder()
+            sensation
+                .set(&SetSensation::builder()
                     .name(name)
                     .description(description)
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         for (name, description) in [
@@ -132,14 +133,12 @@ impl SeedService {
                 "Directed. One entity updates or supersedes another.",
             ),
         ] {
-            NatureService::set(
-                context,
-                &SetNature::builder()
+            nature
+                .set(&SetNature::builder()
                     .name(name)
                     .description(description)
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         for (name, description) in [
@@ -153,14 +152,12 @@ impl SeedService {
             ),
             ("scribe", "Record-keepers — maintain the cognitive record."),
         ] {
-            PersonaService::set(
-                context,
-                &SetPersona::builder()
+            persona
+                .set(&SetPersona::builder()
                     .name(name)
                     .description(description)
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         for (name, description, prompt) in [
@@ -185,28 +182,31 @@ impl SeedService {
                 "Review the trajectory and capture learnings.",
             ),
         ] {
-            UrgeService::set(
-                context,
-                &SetUrge::builder()
+            urge.set(&SetUrge::builder()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         Ok(SeedResponse::SeedComplete)
     }
 
-    pub(crate) async fn agents(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
-        // Verify required personas exist — hint at `seed core` if missing.
-        let all_filters = SearchFilters {
-            limit: Limit(usize::MAX),
-            offset: Offset(0),
+    pub(crate) async fn agents(client: &Client) -> Result<SeedResponse, SeedError> {
+        let persona_client = PersonaClient::new(client);
+        let agent_client = AgentClient::new(client);
+
+        let personas = persona_client
+            .list(&ListPersonas::builder().build())
+            .await?;
+
+        let persona_names: Vec<&str> = match &personas {
+            PersonaResponse::Personas(listed) => {
+                listed.items.iter().map(|p| p.data.name.as_str()).collect()
+            }
+            _ => vec![],
         };
-        let personas = PersonaRepo::new(context).list(&all_filters).await?;
-        let persona_names: Vec<&str> = personas.items.iter().map(|p| p.name.as_str()).collect();
 
         if !persona_names.contains(&"process") || !persona_names.contains(&"scribe") {
             return Err(SeedError::MissingPersonas);
@@ -234,26 +234,26 @@ impl SeedService {
         ];
 
         for (name, persona, description, prompt) in agents {
-            // Skip agents that already exist (idempotent).
             let agent_name = AgentName::new(name);
+            let full_name = agent_name.normalize_with(&PersonaName::new(persona));
 
-            if AgentRepo::new(context)
-                .name_exists(&agent_name.normalize_with(&PersonaName::new(persona)))
-                .await?
-            {
+            let exists = match agent_client.get(&full_name).await {
+                Ok(AgentResponse::AgentDetails(_)) => true,
+                _ => false,
+            };
+
+            if exists {
                 continue;
             }
 
-            AgentService::create(
-                context,
-                &CreateAgent::builder()
+            agent_client
+                .create(&CreateAgent::builder()
                     .name(agent_name)
                     .persona(PersonaName::new(persona))
                     .description(Description::from(description))
                     .prompt(Prompt::from(prompt))
-                    .build(),
-            )
-            .await?;
+                    .build())
+                .await?;
         }
 
         Ok(SeedResponse::AgentsSeedComplete)

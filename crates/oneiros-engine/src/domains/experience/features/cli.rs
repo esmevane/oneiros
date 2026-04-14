@@ -19,10 +19,10 @@ pub(crate) enum ExperienceCommands {
 impl ExperienceCommands {
     pub(crate) async fn execute(
         &self,
-        context: &ProjectContext,
+        client: &Client,
     ) -> Result<Rendered<Responses>, ExperienceError> {
-        let client = context.client();
-        let experience_client = ExperienceClient::new(&client);
+        
+        let experience_client = ExperienceClient::new(client);
 
         let response = match self {
             ExperienceCommands::Create(creation) => experience_client.create(creation).await?,

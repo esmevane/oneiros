@@ -165,59 +165,55 @@ impl Command {
     /// - Match on variant for presentation (Prompt content, Text summary)
     /// - `Rendered::Data` is the default for domains without a presenter
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
+        let client = config.client();
+
         Ok(match self {
             // Service management — operates before/outside HTTP transport
             Command::Service(service) => service.execute(config).await?,
 
-            // Workflow domains — each knows its context
+            // Bootstrap — direct context access, no HTTP
             Command::System(system) => system.execute(config.system()).await?,
             Command::Project(project) => project.execute(config).await?,
-            Command::Seed(seed) => seed.execute(&config.project()).await?,
             Command::Mcp(mcp) => mcp.execute(config)?,
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
 
-            // Bookmark — canon navigation (routes through HTTP)
-            Command::Bookmark(bookmark) => bookmark.execute(&config.project()).await?,
+            // All domain commands route through HTTP client
+            Command::Seed(seed) => seed.execute(&client).await?,
+            Command::Bookmark(bookmark) => bookmark.execute(&client).await?,
 
-            // System-scoped domains
-            Command::Tenant(tenant) => tenant.execute(&config.system()).await?,
-            Command::Actor(actor) => actor.execute(&config.system()).await?,
-            Command::Brain(brain) => brain.execute(&config.system()).await?,
-            Command::Ticket(ticket) => ticket.execute(&config.system()).await?,
-            Command::Peer(peer) => peer.execute(&config.system()).await?,
+            Command::Tenant(tenant) => tenant.execute(&client).await?,
+            Command::Actor(actor) => actor.execute(&client).await?,
+            Command::Brain(brain) => brain.execute(&client).await?,
+            Command::Ticket(ticket) => ticket.execute(&client).await?,
+            Command::Peer(peer) => peer.execute(&client).await?,
 
-            // Project-scoped domains — vocabulary
-            Command::Level(level) => level.execute(&config.project()).await?,
-            Command::Texture(texture) => texture.execute(&config.project()).await?,
-            Command::Sensation(sensation) => sensation.execute(&config.project()).await?,
-            Command::Nature(nature) => nature.execute(&config.project()).await?,
-            Command::Persona(persona) => persona.execute(&config.project()).await?,
-            Command::Urge(urge) => urge.execute(&config.project()).await?,
-            Command::Agent(agent) => agent.execute(&config.project()).await?,
+            Command::Level(level) => level.execute(&client).await?,
+            Command::Texture(texture) => texture.execute(&client).await?,
+            Command::Sensation(sensation) => sensation.execute(&client).await?,
+            Command::Nature(nature) => nature.execute(&client).await?,
+            Command::Persona(persona) => persona.execute(&client).await?,
+            Command::Urge(urge) => urge.execute(&client).await?,
+            Command::Agent(agent) => agent.execute(&client).await?,
 
-            // Entity domains — return Rendered with ref_token prompts on create
-            Command::Cognition(cognition) => cognition.execute(&config.project()).await?,
-            Command::Memory(memory) => memory.execute(&config.project()).await?,
-            Command::Experience(experience) => experience.execute(&config.project()).await?,
-            Command::Connection(connection) => connection.execute(&config.project()).await?,
+            Command::Cognition(cognition) => cognition.execute(&client).await?,
+            Command::Memory(memory) => memory.execute(&client).await?,
+            Command::Experience(experience) => experience.execute(&client).await?,
+            Command::Connection(connection) => connection.execute(&client).await?,
 
-            Command::Storage(storage) => storage.execute(&config.project()).await?,
-            Command::Search(search) => search.execute(&config.project()).await?,
-            Command::Pressure(pressure) => pressure.execute(&config.project()).await?,
+            Command::Storage(storage) => storage.execute(&client).await?,
+            Command::Search(search) => search.execute(&client).await?,
+            Command::Pressure(pressure) => pressure.execute(&client).await?,
 
-            // Doctor — system diagnostics
             Command::Doctor => DoctorCli::execute(config).await?,
 
-            // Continuity — domain subcommands go through the presenter
-            Command::Continuity(continuity) => continuity.execute(&config.project()).await?,
+            Command::Continuity(continuity) => continuity.execute(&client).await?,
 
-            // Flat lifecycle shortcuts — delegate to ContinuityCommands
             Command::Wake { name, deep } => {
                 ContinuityCommands::Wake(WakeAgent {
                     agent: name.clone(),
                     deep: *deep,
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Dream { name, deep } => {
@@ -225,21 +221,21 @@ impl Command {
                     agent: name.clone(),
                     deep: *deep,
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Introspect { name } => {
                 ContinuityCommands::Introspect(IntrospectAgent {
                     agent: name.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Reflect { name } => {
                 ContinuityCommands::Reflect(ReflectAgent {
                     agent: name.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Sense { name, content } => {
@@ -247,25 +243,24 @@ impl Command {
                     agent: name.clone(),
                     content: content.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Sleep { name } => {
                 ContinuityCommands::Sleep(SleepAgent {
                     agent: name.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Guidebook { name } => {
                 ContinuityCommands::Guidebook(GuidebookAgent {
                     agent: name.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
 
-            // Continuity lifecycle — emerge, recede, status
             Command::Emerge {
                 name,
                 persona,
@@ -276,19 +271,19 @@ impl Command {
                     persona: persona.clone(),
                     description: description.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Recede { name } => {
                 ContinuityCommands::Recede(RecedeAgent {
                     agent: name.clone(),
                 })
-                .execute(&config.project())
+                .execute(&client)
                 .await?
             }
             Command::Status => {
                 ContinuityCommands::Status(StatusAgent::default())
-                    .execute(&config.project())
+                    .execute(&client)
                     .await?
             }
         })
