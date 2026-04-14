@@ -1,3 +1,4 @@
+mod acceptance;
 mod dream_context;
 mod harness;
 mod workflows;
