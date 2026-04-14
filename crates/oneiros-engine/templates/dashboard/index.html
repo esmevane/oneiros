@@ -336,9 +336,8 @@ a{color:inherit;text-decoration:none}
     if (!window._sse) {
       var feed = document.getElementById('activity');
       var opts = {};
-      // EventSource doesn't support custom headers, so we skip auth for SSE
-      // (this may need a cookie or query param approach later)
-      window._sse = new EventSource('/activity');
+      var sseUrl = TOKEN ? '/activity?token=' + encodeURIComponent(TOKEN) : '/activity';
+      window._sse = new EventSource(sseUrl);
       window._sse.onmessage = function(e) {
         try {
           var ev = JSON.parse(e.data);

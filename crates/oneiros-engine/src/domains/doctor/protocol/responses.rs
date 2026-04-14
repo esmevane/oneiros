@@ -52,6 +52,8 @@ pub enum DoctorCheck {
     VocabularyMissing,
     AgentsSeeded,
     AgentsMissing,
+    HostKeyOk,
+    HostKeyMissing,
     McpConfigured,
     McpMissing,
     ServiceRunning,

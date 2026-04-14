@@ -6,7 +6,7 @@
 
 use futures::StreamExt;
 
-use crate::tests::harness::TestApp;
+use crate::tests::harness::{Retryable, TestApp};
 use crate::*;
 
 #[tokio::test]
@@ -568,9 +568,6 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
         }
     });
 
-    // Give the SSE connection a moment to establish
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-
     // Perform operations that should emit events
     app.command("agent create thinker process").await?;
     app.command(r#"cognition add thinker.process observation "A thought""#)
@@ -578,32 +575,27 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
     app.command(r#"memory add thinker.process session "A memory""#)
         .await?;
 
-    // Give events time to propagate through SSE
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-    sse_handle.abort();
-
-    // Collect received events
+    let expected = ["agent-created", "cognition-added", "memory-added"];
     let mut events = Vec::new();
-    while let Ok(event) = event_rx.try_recv() {
-        events.push(event);
-    }
 
-    assert!(!events.is_empty(), "SSE stream should have received events");
+    Retryable::default()
+        .wait_for(
+            || {
+                while let Ok(event) = event_rx.try_recv() {
+                    events.push(event);
+                }
+                let types: Vec<String> = events.iter().map(|e| e.data.event_type()).collect();
+                if expected.iter().all(|e| types.iter().any(|t| t == e)) {
+                    Ok(())
+                } else {
+                    Err(format!("got: {types:?}"))
+                }
+            },
+            "all expected SSE event types to arrive",
+        )
+        .await;
 
-    let event_types: Vec<String> = events.iter().map(|e| e.data.event_type()).collect();
-
-    assert!(
-        event_types.iter().any(|t| t == "agent-created"),
-        "stream should contain agent-created, got: {event_types:?}"
-    );
-    assert!(
-        event_types.iter().any(|t| t == "cognition-added"),
-        "stream should contain cognition-added, got: {event_types:?}"
-    );
-    assert!(
-        event_types.iter().any(|t| t == "memory-added"),
-        "stream should contain memory-added, got: {event_types:?}"
-    );
+    sse_handle.abort();
 
     // Events should be in sequence order
     for window in events.windows(2) {
@@ -612,6 +604,99 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
             "events should be in sequence order"
         );
     }
+
+    Ok(())
+}
+
+/// Auth via query param — the path browsers must use for SSE since
+/// EventSource cannot set custom headers.
+#[tokio::test]
+async fn activity_stream_authenticates_via_query_param() -> Result<(), Box<dyn core::error::Error>>
+{
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    let token = app.token().expect("should have a token after init");
+    let sse_url = format!("{}/activity?token={token}", app.base_url());
+
+    let (event_tx, mut event_rx) = tokio::sync::mpsc::channel::<StoredEvent>(64);
+
+    let sse_handle = tokio::spawn(async move {
+        let http = reqwest::Client::new();
+        // No Authorization header — token is in the query string
+        let resp = http
+            .get(&sse_url)
+            .header("Accept", "text/event-stream")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(
+            resp.status().is_success(),
+            "query param auth should succeed"
+        );
+
+        let mut stream = resp.bytes_stream();
+        let mut buffer = String::new();
+
+        while let Some(chunk) = stream.next().await {
+            let bytes = chunk.unwrap();
+            let text = String::from_utf8_lossy(&bytes);
+            buffer.push_str(&text);
+
+            while let Some(pos) = buffer.find("\n\n") {
+                let event_block = buffer[..pos].to_string();
+                buffer = buffer[pos + 2..].to_string();
+
+                let data_line = event_block
+                    .lines()
+                    .find(|l| l.starts_with("data:"))
+                    .and_then(|l| {
+                        let trimmed = l.strip_prefix("data:").unwrap().trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    });
+
+                if let Some(event) =
+                    data_line.and_then(|d| serde_json::from_str::<StoredEvent>(&d).ok())
+                    && event_tx.send(event).await.is_err()
+                {
+                    return;
+                }
+            }
+        }
+    });
+
+    app.command("agent create thinker process").await?;
+
+    let mut events = Vec::<StoredEvent>::new();
+
+    Retryable::default()
+        .wait_for(
+            || {
+                while let Ok(event) = event_rx.try_recv() {
+                    events.push(event);
+                }
+                if events.is_empty() {
+                    Err("no events received yet".into())
+                } else {
+                    Ok(())
+                }
+            },
+            "SSE events to arrive via query param auth",
+        )
+        .await;
+
+    sse_handle.abort();
 
     Ok(())
 }

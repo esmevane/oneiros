@@ -35,6 +35,13 @@ impl DoctorService {
         checks.push(DoctorCheck::Initialized);
         checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("system.db")));
 
+        // Host keypair check — identity for distribution
+        if config.host_key_path().exists() {
+            checks.push(DoctorCheck::HostKeyOk);
+        } else {
+            checks.push(DoctorCheck::HostKeyMissing);
+        }
+
         let event_count = db
             .query_row("select count(*) from events", [], |row| {
                 row.get::<_, i64>(0)

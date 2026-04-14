@@ -57,6 +57,16 @@ impl DoctorView {
                         "—".muted()
                     )
                 }
+                DoctorCheck::HostKeyOk => {
+                    format!("  {} Host keypair present", "✓".success())
+                }
+                DoctorCheck::HostKeyMissing => {
+                    format!(
+                        "  {} Host keypair missing {} run `oneiros system init`",
+                        "!".warning(),
+                        "—".muted()
+                    )
+                }
                 DoctorCheck::McpConfigured => {
                     format!("  {} MCP config present", "✓".success())
                 }
