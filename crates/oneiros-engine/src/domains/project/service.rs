@@ -40,6 +40,7 @@ impl ProjectService {
         let brain_dir = context.config.data_dir.join(brain_name.as_str());
         std::fs::create_dir_all(&brain_dir)?;
         let brain_db = rusqlite::Connection::open(brain_dir.join("brain.db"))?;
+        brain_db.pragma_update(None, "journal_mode", "wal")?;
         EventLog::new(&brain_db).migrate()?;
         Projections::project().migrate(&brain_db)?;
         drop(brain_db);

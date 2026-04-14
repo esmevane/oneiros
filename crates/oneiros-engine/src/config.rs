@@ -94,12 +94,16 @@ impl Config {
 
     /// Open the system database.
     pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        rusqlite::Connection::open(self.data_dir.join("system.db"))
+        let conn = rusqlite::Connection::open(self.data_dir.join("system.db"))?;
+        conn.pragma_update(None, "journal_mode", "wal")?;
+        Ok(conn)
     }
 
     /// Open the brain (project) database.
     pub fn brain_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        rusqlite::Connection::open(self.brain_dir().join("brain.db"))
+        let conn = rusqlite::Connection::open(self.brain_dir().join("brain.db"))?;
+        conn.pragma_update(None, "journal_mode", "wal")?;
+        Ok(conn)
     }
 
     /// Path to the token file for the current brain.
