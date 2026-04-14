@@ -4,15 +4,18 @@
 //! goes through this type. It owns a `Config` and provides entry points
 //! for each use case:
 //!
-//! - `from_cli()` — parse CLI args, merge config file, set up tracing
+//! - `run()` — full CLI lifecycle: parse, configure, execute, render
+//! - `from_cli()` — parse CLI args and merge config file
 //! - `new(config)` — explicit config (tests, programmatic use)
 //! - `execute(cli)` — run a parsed CLI command
 //! - `start()` — bind and serve HTTP/MCP
 //! - `package(target)` — emit skill assets to a directory
 
+use std::io::Write;
 use std::net::SocketAddr;
 use std::path::Path;
 
+use anstream::stdout;
 use clap::Parser;
 use tokio::net::TcpListener;
 
@@ -24,6 +27,40 @@ pub struct Engine {
 }
 
 impl Engine {
+    /// Run the full CLI lifecycle — parse, configure, execute, render.
+    ///
+    /// This is the canonical entrypoint for the binary. It owns
+    /// tracing setup, color configuration, command execution, and
+    /// output rendering. The binary becomes a one-liner.
+    pub async fn run() -> Result<(), Error> {
+        let (engine, cli) = Self::from_cli()?;
+
+        engine.config().color.apply_global();
+
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_writer(std::io::stderr)
+            .init();
+
+        let result: Rendered<Responses> = engine.execute(&cli).await?;
+        let as_json = serde_json::to_string(result.response())?;
+        let mut out = stdout().lock();
+
+        match (
+            &engine.config().output,
+            result.has_prompt(),
+            result.has_text(),
+        ) {
+            (OutputMode::Prompt, true, _) => write!(out, "{}", result.prompt())?,
+            (OutputMode::Text, _, true) => write!(out, "{}", result.text())?,
+            (OutputMode::Json, _, _) | (_, false, _) | (_, _, false) => {
+                writeln!(out, "{as_json}")?;
+            }
+        }
+
+        Ok(())
+    }
+
     /// From CLI args — parses arguments and merges config file.
     ///
     /// Returns the engine and the parsed CLI so the caller can execute
