@@ -34,6 +34,6 @@ impl IntoResponse for ServiceError {
             ServiceError::HealthCheck(_) => (StatusCode::SERVICE_UNAVAILABLE, self.to_string()),
             ServiceError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

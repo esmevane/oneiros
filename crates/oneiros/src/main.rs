@@ -1,6 +1,6 @@
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn core::error::Error>> {
-    oneiros_engine::Engine::run().await?;
+use std::process::ExitCode;
 
-    Ok(())
+#[tokio::main]
+async fn main() -> ExitCode {
+    oneiros_engine::Engine::run().await
 }

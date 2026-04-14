@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::PeerId;
+use crate::{ErrorResponse, PeerId};
 
 #[derive(Debug, thiserror::Error)]
 pub enum PeerError {
@@ -36,6 +36,6 @@ impl IntoResponse for PeerError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

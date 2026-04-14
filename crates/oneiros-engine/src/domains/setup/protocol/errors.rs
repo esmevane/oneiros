@@ -1,4 +1,10 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+
+use crate::ErrorResponse;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SetupError {
@@ -21,8 +27,8 @@ pub enum SetupError {
 impl IntoResponse for SetupError {
     fn into_response(self) -> Response {
         (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            self.to_string(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(self.to_string())),
         )
             .into_response()
     }

@@ -2,6 +2,8 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::ErrorResponse;
+
 #[derive(Debug, thiserror::Error)]
 pub enum DoctorError {
     #[error("Database error: {0}")]
@@ -18,6 +20,6 @@ impl IntoResponse for DoctorError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

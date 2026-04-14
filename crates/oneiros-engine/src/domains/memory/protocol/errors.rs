@@ -2,6 +2,8 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::ErrorResponse;
+
 #[derive(Debug, thiserror::Error)]
 pub enum MemoryError {
     #[error("Agent not found: {0}")]
@@ -34,6 +36,6 @@ impl IntoResponse for MemoryError {
             }
             MemoryError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

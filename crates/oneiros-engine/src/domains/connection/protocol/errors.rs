@@ -36,6 +36,6 @@ impl IntoResponse for ConnectionError {
             }
             ConnectionError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

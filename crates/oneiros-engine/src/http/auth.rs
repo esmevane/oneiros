@@ -36,7 +36,6 @@ impl IntoResponse for AuthError {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
         };
-        let body = serde_json::json!({ "error": self.to_string() });
-        (status, axum::Json(body)).into_response()
+        (status, axum::Json(ErrorResponse::new(self.to_string()))).into_response()
     }
 }
