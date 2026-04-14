@@ -16,7 +16,7 @@ pub(crate) struct ServerState {
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
     bridge: Bridge,
-    bus: Arc<OnceLock<EventBus>>,
+    bus: Arc<OnceLock<(EventBus, ProjectorHandle)>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -46,32 +46,32 @@ impl ServerState {
         })
     }
 
-    /// Get or create the shared event bus for the configured brain.
-    ///
-    /// Lazily initialized on first use — the brain DB may not exist at
-    /// server startup (it's created by `project init`).
-    ///
-    /// Also spawns a brain projector that subscribes to the bus broadcast
-    /// and applies events to read models asynchronously.
-    fn bus(&self, config: &Config) -> Result<EventBus, EventError> {
-        let bus = self.bus.get_or_init(|| {
+    /// Get or create the shared event bus and projector.
+    fn bus_and_projector(&self, config: &Config) -> Result<(EventBus, ProjectorHandle), EventError> {
+        let pair = self.bus.get_or_init(|| {
             let db = config.brain_db().expect("brain db");
             EventLog::new(&db).migrate().expect("event log migration");
 
             let projections = Projections::project();
             projections.migrate(&db).expect("projection migration");
 
-            let chronicle = Chronicle::new();
             let db = Arc::new(Mutex::new(db));
             let bus = EventBus::new(db.clone());
 
-            Projector::spawn_brain(db, projections, chronicle, bus.broadcast());
+            let handle = Projector::spawn_brain(
+                db,
+                projections,
+                self.canons.clone(),
+                config.brain.clone(),
+                bus.broadcast(),
+            );
 
-            bus
+            (bus, handle)
         });
 
-        Ok(bus.clone())
+        Ok(pair.clone())
     }
+
 
     /// The bound bridge.
     pub(crate) fn bridge(&self) -> &Bridge {
@@ -118,9 +118,15 @@ impl ServerState {
         &self.broadcast
     }
 
+    /// The projector handle for the configured brain.
+    pub(crate) fn projector(&self, config: &Config) -> Result<ProjectorHandle, EventError> {
+        let (_, handle) = self.bus_and_projector(config)?;
+        Ok(handle)
+    }
+
     /// Build a project context with the shared bus.
     pub(crate) fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
-        let bus = self.bus(&config)?;
+        let (bus, _) = self.bus_and_projector(&config)?;
         Ok(ProjectContext::with_bus(config, bus))
     }
 

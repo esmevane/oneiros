@@ -30,11 +30,11 @@ impl BookmarkService {
         brain: &BrainName,
         SwitchBookmark { name }: &SwitchBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
-        let old_chronicle = state.canons().chronicle(brain)?;
         state.canons().switch_brain(brain, name)?;
-        let new_chronicle = state.canons().chronicle(brain)?;
 
-        Self::rebuild_projections(state.config(), brain, &old_chronicle, &new_chronicle)?;
+        let mut config = state.config().clone();
+        config.brain = brain.clone();
+        state.projector(&config)?.rebuild();
 
         let switched = BookmarkSwitched {
             brain: brain.clone(),
@@ -57,7 +57,9 @@ impl BookmarkService {
         let target = state.canons().active_bookmark(brain)?;
         state.canons().merge_brain(brain, source, &target)?;
 
-        Self::replay_brain_projections(state.config(), brain)?;
+        let mut brain_config = state.config().clone();
+        brain_config.brain = brain.clone();
+        state.projector(&brain_config)?.rebuild();
 
         let merged = BookmarkMerged {
             brain: brain.clone(),
@@ -273,8 +275,10 @@ impl BookmarkService {
             }
         }
 
-        // Phase 4: Replay projections from the updated event log.
-        Self::replay_brain_projections(state.config(), brain)?;
+        // Phase 4: Rebuild projections from the updated event log.
+        let mut brain_config = state.config().clone();
+        brain_config.brain = brain.clone();
+        state.projector(&brain_config)?.rebuild();
 
         let checkpoint = Checkpoint {
             sequence: follow.checkpoint.sequence + events_received,
@@ -313,48 +317,4 @@ impl BookmarkService {
         }))
     }
 
-    fn replay_brain_projections(config: &Config, brain: &BrainName) -> Result<(), BookmarkError> {
-        let mut brain_config = config.clone();
-        brain_config.brain = brain.clone();
-        let db = brain_config.brain_db()?;
-        Projections::<BrainCanon>::project().replay_brain(&db)?;
-        Ok(())
-    }
-
-    fn rebuild_projections(
-        config: &Config,
-        brain: &BrainName,
-        old_chronicle: &Chronicle,
-        new_chronicle: &Chronicle,
-    ) -> Result<(), BookmarkError> {
-        let mut brain_config = config.clone();
-        brain_config.brain = brain.clone();
-        let db = brain_config.brain_db()?;
-
-        let chronicle_store = ChronicleStore::new(&db);
-        chronicle_store.migrate()?;
-
-        let changes = old_chronicle.diff(new_chronicle, &chronicle_store.resolver())?;
-        if changes.is_empty() {
-            return Ok(());
-        }
-
-        let new_root = new_chronicle.root()?;
-        let new_event_ids: std::collections::HashSet<String> =
-            Ledger::collect_all_ids(new_root.as_ref(), &chronicle_store.resolver());
-
-        let projections = Projections::<BrainCanon>::project();
-        let all_events = EventLog::new(&db).load_all()?;
-
-        projections.migrate(&db)?;
-        projections.reset(&db)?;
-
-        for event in &all_events {
-            if new_event_ids.contains(&event.id.to_string()) {
-                projections.apply_frames(&db, event)?;
-            }
-        }
-
-        Ok(())
-    }
 }

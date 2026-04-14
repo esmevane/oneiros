@@ -173,13 +173,17 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
+    eprintln!(">> emerge");
     alice.command("emerge thinker process").await?;
+    eprintln!(">> cognition add");
     alice
         .command(r#"cognition add thinker.process observation "The sky is vast""#)
         .await?;
+    eprintln!(">> memory add");
     alice
         .command(r#"memory add thinker.process core "I notice patterns""#)
         .await?;
+    eprintln!(">> bookmark share");
 
     // Alice shares her main bookmark — gets back an oneiros:// link.
     // The link is a round-trippable oneiros:// URI carrying the ticket.
@@ -205,14 +209,17 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
+    eprintln!(">> bob emerge");
     bob.command("emerge listener process").await?;
 
     // Follow creates the bookmark — no events move yet.
     // The peer is auto-discovered from the URI.
+    eprintln!(">> bob follow");
     bob.command(&format!("bookmark follow {} --name alice", link.prompt()))
         .await?;
 
     // The peer should have been auto-created from the URI
+    eprintln!(">> bob peer list");
     let peers = bob.command("peer list").await?;
     assert!(
         !peers.prompt().contains("0 of 0"),
@@ -225,11 +232,14 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     assert!(listing.contains("alice"), "bookmark should appear in list");
 
     // Collect — events flow into the bookmark
+    eprintln!(">> bob collect");
     bob.command("bookmark collect alice").await?;
 
     // Switch to Alice's bookmark and verify her material is there
+    eprintln!(">> bob switch");
     bob.command("bookmark switch alice").await?;
 
+    eprintln!(">> bob agent get");
     match bob
         .client()
         .agent()
