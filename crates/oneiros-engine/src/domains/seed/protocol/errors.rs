@@ -28,6 +28,9 @@ pub enum SeedError {
     #[error(transparent)]
     Event(#[from] EventError),
 
+    #[error(transparent)]
+    Client(#[from] ClientError),
+
     #[error("Required personas (process, scribe) not found. Run `oneiros seed core` first.")]
     MissingPersonas,
 }
@@ -47,6 +50,7 @@ impl IntoResponse for SeedError {
                 self.to_string(),
             )
                 .into_response(),
+            SeedError::Client(client) => client.into_response(),
             SeedError::MissingPersonas => (
                 axum::http::StatusCode::PRECONDITION_FAILED,
                 self.to_string(),

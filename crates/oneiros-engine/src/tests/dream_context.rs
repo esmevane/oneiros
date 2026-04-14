@@ -1,29 +1,24 @@
 use std::collections::HashSet;
 
+use crate::tests::harness::TestApp;
 use crate::*;
 
-async fn seeded_context() -> (ProjectContext, tempfile::TempDir) {
-    let dir = tempfile::tempdir().expect("create tempdir");
-    let config = Config::builder()
-        .data_dir(dir.path().to_path_buf())
-        .brain(BrainName::new("test"))
-        .build();
-
-    let system = config.system();
-    SystemService::init(&system, &InitSystem::builder().name("test").build())
+async fn seeded_context() -> (ProjectContext, TestApp) {
+    let app = TestApp::new()
         .await
-        .unwrap();
+        .expect("boot test app")
+        .init_system()
+        .await
+        .expect("init system")
+        .init_project()
+        .await
+        .expect("init project")
+        .seed_core()
+        .await
+        .expect("seed core");
 
-    ProjectService::init(
-        &system,
-        &InitProject::builder().name(BrainName::new("test")).build(),
-    )
-    .await
-    .unwrap();
-
-    let context = config.project();
-    SeedService::core(&context).await.expect("seed core");
-    (context, dir)
+    let context = app.config().project();
+    (context, app)
 }
 
 async fn seed_agent(context: &ProjectContext) -> AgentName {
@@ -144,7 +139,7 @@ async fn dream_with(
 
 #[tokio::test]
 async fn dream_includes_all_vocabulary() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let context = dream(&context, &agent).await;
@@ -158,7 +153,7 @@ async fn dream_includes_all_vocabulary() {
 
 #[tokio::test]
 async fn dream_includes_persona() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let context = dream(&context, &agent).await;
@@ -171,7 +166,7 @@ async fn dream_includes_persona() {
 
 #[tokio::test]
 async fn core_memories_always_included() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "identity fundament").await;
@@ -196,7 +191,7 @@ async fn core_memories_always_included() {
 
 #[tokio::test]
 async fn level_threshold_filters_lower_priority() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "core memory").await;
@@ -220,7 +215,7 @@ async fn level_threshold_filters_lower_priority() {
 
 #[tokio::test]
 async fn level_threshold_override_changes_filter() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "core memory").await;
@@ -246,7 +241,7 @@ async fn level_threshold_override_changes_filter() {
 
 #[tokio::test]
 async fn recollection_size_caps_non_core_memories() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..5 {
@@ -279,7 +274,7 @@ async fn recollection_size_caps_non_core_memories() {
 
 #[tokio::test]
 async fn sparse_graph_includes_all_cognitions() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..5 {
@@ -296,7 +291,7 @@ async fn sparse_graph_includes_all_cognitions() {
 
 #[tokio::test]
 async fn cognition_size_cap_keeps_most_recent() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..10 {
@@ -333,7 +328,7 @@ async fn cognition_size_cap_keeps_most_recent() {
 
 #[tokio::test]
 async fn bfs_discovers_connected_cognitions() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let mem_id = add_memory(&context, &agent, "project", "seed memory").await;
@@ -363,7 +358,7 @@ async fn bfs_discovers_connected_cognitions() {
 
 #[tokio::test]
 async fn bfs_discovers_connected_experiences() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let mem_id = add_memory(&context, &agent, "project", "seed memory").await;
@@ -394,7 +389,7 @@ async fn bfs_discovers_connected_experiences() {
 
 #[tokio::test]
 async fn experience_size_cap_keeps_most_recent() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..8 {
@@ -414,7 +409,7 @@ async fn experience_size_cap_keeps_most_recent() {
 
 #[tokio::test]
 async fn connections_pruned_to_included_endpoints() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let mem_id = add_memory(&context, &agent, "project", "seed memory").await;
@@ -459,7 +454,7 @@ async fn connections_pruned_to_included_endpoints() {
 
 #[tokio::test]
 async fn pressures_paired_with_urge_ctas() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..10 {
@@ -486,7 +481,7 @@ async fn pressures_paired_with_urge_ctas() {
 
 #[tokio::test]
 async fn dream_overrides_change_output() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..10 {
@@ -520,7 +515,7 @@ async fn dream_overrides_change_output() {
 
 #[tokio::test]
 async fn memories_sorted_by_created_at() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "first core").await;
@@ -540,7 +535,7 @@ async fn memories_sorted_by_created_at() {
 
 #[tokio::test]
 async fn cognitions_sorted_by_created_at() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     for i in 0..5 {
@@ -561,7 +556,7 @@ async fn cognitions_sorted_by_created_at() {
 
 #[tokio::test]
 async fn compact_dream_vocabulary_shows_names_only() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     // Set a texture with a rich prompt so we can verify it's NOT shown in compact mode
@@ -598,7 +593,7 @@ async fn compact_dream_vocabulary_shows_names_only() {
 
 #[tokio::test]
 async fn compact_dream_core_memories_inline() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "I am fundamentally a thinker").await;
@@ -614,7 +609,7 @@ async fn compact_dream_core_memories_inline() {
 
 #[tokio::test]
 async fn compact_dream_non_core_memories_as_summary() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "core identity").await;
@@ -650,7 +645,7 @@ async fn compact_dream_non_core_memories_as_summary() {
 
 #[tokio::test]
 async fn deep_dream_vocabulary_shows_full_prompts() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     // Set a texture with a rich prompt so we can verify it IS shown in deep mode
@@ -681,7 +676,7 @@ async fn deep_dream_vocabulary_shows_full_prompts() {
 
 #[tokio::test]
 async fn deep_dream_all_memories_inline() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "core identity").await;
@@ -711,7 +706,7 @@ async fn deep_dream_all_memories_inline() {
 
 #[tokio::test]
 async fn dream_template_renders_agent_identity() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     add_memory(&context, &agent, "core", "I am a thinker").await;
@@ -744,7 +739,7 @@ async fn dream_template_renders_agent_identity() {
 
 #[tokio::test]
 async fn dream_template_omits_empty_sections() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let context = dream(&context, &agent).await;
@@ -769,7 +764,7 @@ async fn dream_template_omits_empty_sections() {
 
 #[tokio::test]
 async fn introspect_template_renders() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
     let context = dream(&context, &agent).await;
 
@@ -788,7 +783,7 @@ async fn introspect_template_renders() {
 
 #[tokio::test]
 async fn guidebook_template_renders_vocabulary() {
-    let (context, _dir) = seeded_context().await;
+    let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
     let context = dream(&context, &agent).await;
 
