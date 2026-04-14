@@ -2,6 +2,8 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use crate::ErrorResponse;
+
 #[derive(Debug, thiserror::Error)]
 pub enum PressureError {
     #[error("Database error: {0}")]
@@ -22,6 +24,6 @@ impl IntoResponse for PressureError {
             }
             PressureError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

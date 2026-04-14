@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{TenantId, TimestampParseError};
+use crate::{ErrorResponse, TenantId, TimestampParseError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TenantError {
@@ -37,6 +37,6 @@ impl IntoResponse for TenantError {
             | TenantError::Database(_)
             | TenantError::Client(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
-        (status, Json(serde_json::json!({ "error": message }))).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

@@ -1,4 +1,10 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+
+use crate::ErrorResponse;
 
 #[derive(Debug, thiserror::Error)]
 pub enum McpConfigError {
@@ -14,13 +20,13 @@ pub enum McpConfigError {
 
 impl IntoResponse for McpConfigError {
     fn into_response(self) -> Response {
-        let status = match &self {
-            McpConfigError::NoToken => axum::http::StatusCode::PRECONDITION_FAILED,
+        let (status, message) = match &self {
+            McpConfigError::NoToken => (StatusCode::PRECONDITION_FAILED, self.to_string()),
             McpConfigError::Io(_) | McpConfigError::Json(_) => {
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };
 
-        (status, self.to_string()).into_response()
+        (status, Json(ErrorResponse::new(message))).into_response()
     }
 }

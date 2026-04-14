@@ -1,4 +1,8 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
 use crate::*;
 
@@ -43,13 +47,13 @@ impl IntoResponse for SeedError {
             SeedError::Level(level) => level.into_response(),
             SeedError::Agent(agent) => agent.into_response(),
             SeedError::Event(_) => (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                self.to_string(),
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new(self.to_string())),
             )
                 .into_response(),
             SeedError::MissingPersonas => (
-                axum::http::StatusCode::PRECONDITION_FAILED,
-                self.to_string(),
+                StatusCode::PRECONDITION_FAILED,
+                Json(ErrorResponse::new(self.to_string())),
             )
                 .into_response(),
         }

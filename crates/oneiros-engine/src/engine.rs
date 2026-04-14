@@ -14,8 +14,9 @@
 use std::io::Write;
 use std::net::SocketAddr;
 use std::path::Path;
+use std::process::ExitCode;
 
-use anstream::stdout;
+use anstream::{stderr, stdout};
 use clap::Parser;
 use tokio::net::TcpListener;
 
@@ -31,9 +32,16 @@ impl Engine {
     ///
     /// This is the canonical entrypoint for the binary. It owns
     /// tracing setup, color configuration, command execution, and
-    /// output rendering. The binary becomes a one-liner.
-    pub async fn run() -> Result<(), Error> {
-        let (engine, cli) = Self::from_cli()?;
+    /// output rendering. Errors are rendered through `ErrorView`
+    /// to stderr with styled formatting and proper exit codes.
+    pub async fn run() -> ExitCode {
+        let (engine, cli) = match Self::from_cli() {
+            Ok(pair) => pair,
+            Err(error) => {
+                let _ = writeln!(stderr().lock(), "{}", ErrorView::new(error));
+                return ExitCode::FAILURE;
+            }
+        };
 
         engine.config().color.apply_global();
 
@@ -42,23 +50,42 @@ impl Engine {
             .with_writer(std::io::stderr)
             .init();
 
-        let result: Rendered<Responses> = engine.execute(&cli).await?;
-        let as_json = serde_json::to_string(result.response())?;
+        let result: Rendered<Responses> = match engine.execute(&cli).await {
+            Ok(rendered) => rendered,
+            Err(error) => {
+                let _ = writeln!(stderr().lock(), "{}", ErrorView::new(error));
+                return ExitCode::FAILURE;
+            }
+        };
+
+        let as_json = match serde_json::to_string(result.response()) {
+            Ok(json) => json,
+            Err(error) => {
+                let _ = writeln!(stderr().lock(), "{}", ErrorView::new(error.into()));
+                return ExitCode::FAILURE;
+            }
+        };
+
         let mut out = stdout().lock();
 
-        match (
+        let write_result = match (
             &engine.config().output,
             result.has_prompt(),
             result.has_text(),
         ) {
-            (OutputMode::Prompt, true, _) => write!(out, "{}", result.prompt())?,
-            (OutputMode::Text, _, true) => write!(out, "{}", result.text())?,
+            (OutputMode::Prompt, true, _) => write!(out, "{}", result.prompt()),
+            (OutputMode::Text, _, true) => write!(out, "{}", result.text()),
             (OutputMode::Json, _, _) | (_, false, _) | (_, _, false) => {
-                writeln!(out, "{as_json}")?;
+                writeln!(out, "{as_json}")
             }
+        };
+
+        if let Err(error) = write_result {
+            let _ = writeln!(stderr().lock(), "{}", ErrorView::new(error.into()));
+            return ExitCode::FAILURE;
         }
 
-        Ok(())
+        ExitCode::SUCCESS
     }
 
     /// From CLI args — parses arguments and merges config file.
