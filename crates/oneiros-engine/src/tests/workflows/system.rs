@@ -186,3 +186,36 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
 
     Ok(())
 }
+
+/// System init must generate the host keypair so that the host
+/// identity exists before the server is ever started.
+#[tokio::test]
+async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let config = Config::builder()
+        .data_dir(dir.path().to_path_buf())
+        .brain(BrainName::new("test"))
+        .build();
+
+    let context = SystemContext::new(config.clone());
+
+    // Before init, no host key exists
+    assert!(
+        !config.host_key_path().exists(),
+        "host key should not exist before system init"
+    );
+
+    SystemService::init(&context, &InitSystem::builder().build()).await?;
+
+    // After init, the host key should exist
+    assert!(
+        config.host_key_path().exists(),
+        "system init should create the host keypair"
+    );
+
+    // The key should be loadable
+    let secret = config.load_host_secret_key()?;
+    assert!(secret.is_some(), "host key should be loadable after init");
+
+    Ok(())
+}

@@ -239,17 +239,18 @@ impl ServerHandler for EngineToolBox {
         _request: Option<rmcp::model::PaginatedRequestParams>,
         _context: rmcp::service::RequestContext<rmcp::RoleServer>,
     ) -> Result<rmcp::model::ListToolsResult, ErrorData> {
-        let tools = all_tools()
+        let tools: Vec<Tool> = all_tools()
             .into_iter()
             .map(|t| {
                 let mut tool = Tool::default();
                 tool.name = t.name.to_string().into();
                 tool.description = Some(t.description.to_string().into());
-                tool.input_schema =
-                    serde_json::from_value(t.input_schema).expect("schema should be a JSON object");
-                tool
+                tool.input_schema = serde_json::from_value(t.input_schema).map_err(|err| {
+                    ErrorData::internal_error(format!("invalid schema for {}: {err}", t.name), None)
+                })?;
+                Ok(tool)
             })
-            .collect();
+            .collect::<Result<_, ErrorData>>()?;
 
         Ok(rmcp::model::ListToolsResult {
             tools,

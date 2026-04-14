@@ -34,6 +34,10 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
                     .any(|r| matches!(r, DoctorCheck::EventLogReady(_))),
                 "expected EventLogReady check in {checks:?}"
             );
+            assert!(
+                checks.iter().any(|r| matches!(r, DoctorCheck::HostKeyOk)),
+                "expected HostKeyOk check in {checks:?}"
+            );
         }
         other => panic!("expected Doctor(CheckupStatus(..)), got {other:#?}"),
     }

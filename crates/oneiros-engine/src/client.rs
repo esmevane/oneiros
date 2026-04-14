@@ -48,23 +48,21 @@ impl Client {
         }
     }
 
-    pub fn with_token(base_url: impl Into<String>, token: Token) -> Self {
-        let http = reqwest::Client::builder()
-            .default_headers({
-                let mut headers = reqwest::header::HeaderMap::new();
-                headers.insert(
-                    reqwest::header::AUTHORIZATION,
-                    format!("Bearer {token}").parse().expect("valid header"),
-                );
-                headers
-            })
-            .build()
-            .expect("build client");
+    pub fn with_token(base_url: impl Into<String>, token: Token) -> Result<Self, ClientError> {
+        let mut headers = reqwest::header::HeaderMap::new();
+        let value = format!("Bearer {token}").parse().map_err(|_| {
+            ClientError::InvalidRequest("token contains invalid header characters".into())
+        })?;
+        headers.insert(reqwest::header::AUTHORIZATION, value);
 
-        Self {
+        let http = reqwest::Client::builder()
+            .default_headers(headers)
+            .build()?;
+
+        Ok(Self {
             http,
             base_url: base_url.into(),
-        }
+        })
     }
 
     pub(crate) fn url(&self, path: &str) -> String {

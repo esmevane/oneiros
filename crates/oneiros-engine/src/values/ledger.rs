@@ -106,13 +106,12 @@ impl Ledger {
             LedgerNode::Interior { mut children } => {
                 let nibble = nibble_at(key, depth);
                 let child = children.get(&nibble).cloned();
-                let new_child = Self::record(
-                    child.as_ref(),
-                    &key.parse().unwrap_or_default(),
-                    value,
-                    resolve,
-                    store,
-                );
+                let new_child = match child {
+                    Some(ref hash) => Self::record_at(hash, key, value, depth + 1, resolve, store),
+                    None => store(&LedgerNode::Leaf {
+                        entries: BTreeMap::from([(key.to_string(), value)]),
+                    }),
+                };
                 children.insert(nibble, new_child);
                 store(&LedgerNode::Interior { children })
             }

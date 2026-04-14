@@ -61,7 +61,8 @@ impl ProjectContext {
     /// project init).
     pub fn client(&self) -> Client {
         match self.config.token() {
-            Some(token) => Client::with_token(self.config.base_url(), token),
+            Some(token) => Client::with_token(self.config.base_url(), token)
+                .unwrap_or_else(|_| Client::new(self.config.base_url())),
             None => Client::new(self.config.base_url()),
         }
     }

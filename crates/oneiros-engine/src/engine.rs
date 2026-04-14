@@ -60,7 +60,9 @@ impl Engine {
 
         let server = Server::new(self.config.clone());
         let handle = tokio::spawn(async move {
-            server.serve(listener).await.expect("server failed");
+            if let Err(err) = server.serve(listener).await {
+                eprintln!("server exited with error: {err}");
+            }
         });
 
         Ok(ServerHandle { address, handle })

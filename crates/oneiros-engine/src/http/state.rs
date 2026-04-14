@@ -121,14 +121,21 @@ impl FromRequestParts<ServerState> for ProjectContext {
         parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        // Extract Bearer token
+        // Extract Bearer token from header, falling back to ?token= query
+        // param. The query fallback exists because browser EventSource
+        // (SSE) cannot set custom headers.
         let token_str = parts
             .headers
             .get("authorization")
             .and_then(|value| value.to_str().ok())
-            .ok_or(AuthError::NoAuthHeader)?
-            .strip_prefix("Bearer ")
-            .ok_or(AuthError::InvalidAuthHeader)?;
+            .and_then(|value| value.strip_prefix("Bearer "))
+            .or_else(|| {
+                parts
+                    .uri
+                    .query()
+                    .and_then(|q| q.split('&').find_map(|pair| pair.strip_prefix("token=")))
+            })
+            .ok_or(AuthError::NoAuthHeader)?;
 
         // Decode claims from the self-describing token
         let token = Token::from(token_str)

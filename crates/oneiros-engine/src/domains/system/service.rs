@@ -7,8 +7,11 @@ impl SystemService {
         context: &SystemContext,
         request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {
-        // system init is the bootstrapper — ensure data dir and schema exist.
+        // system init is the bootstrapper — ensure data dir, schema, and
+        // host keypair all exist. The keypair establishes host identity
+        // before the server ever starts.
         std::fs::create_dir_all(&context.config.data_dir)?;
+        context.config.ensure_host_secret_key()?;
         let db = context.db()?;
         EventLog::new(&db).migrate()?;
         context.projections.migrate(&db)?;

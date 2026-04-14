@@ -32,7 +32,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
     );
 
     // ── Invalid token → rejected ─────────────────────────────────
-    let bad_token = Client::with_token(base_url.clone(), Token::from("not-a-real-token"));
+    let bad_token = Client::with_token(base_url.clone(), Token::from("not-a-real-token"))?;
     let agent_client = AgentClient::new(&bad_token);
     assert!(
         agent_client
