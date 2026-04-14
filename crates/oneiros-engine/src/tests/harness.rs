@@ -130,6 +130,12 @@ impl TestApp {
         TestClient { client }
     }
 
+    /// The engine config — useful for tests that need the underlying
+    /// ProjectContext alongside the HTTP stack.
+    pub fn config(&self) -> &Config {
+        self.engine.config()
+    }
+
     /// The base URL of the running server (e.g. `http://127.0.0.1:PORT`).
     pub fn base_url(&self) -> String {
         self.engine.config().base_url()

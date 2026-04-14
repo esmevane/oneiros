@@ -13,9 +13,11 @@ impl SeedCommands {
         &self,
         context: &ProjectContext,
     ) -> Result<Rendered<Responses>, SeedError> {
+        let client = context.client();
+        let seed = SeedClient::new(&client);
         let response = match self {
-            SeedCommands::Core => SeedService::core(context).await?,
-            SeedCommands::Agents => SeedService::agents(context).await?,
+            SeedCommands::Core => seed.core().await?,
+            SeedCommands::Agents => seed.agents().await?,
         };
 
         let prompt = match &response {

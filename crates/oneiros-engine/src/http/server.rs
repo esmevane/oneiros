@@ -101,6 +101,7 @@ impl Server {
             .merge(ContinuityRouter.routes())
             .merge(SearchRouter.routes())
             .merge(ProjectRouter.routes())
+            .merge(SeedRouter.routes())
             .merge(TenantRouter.routes())
             .merge(ActorRouter.routes())
             .merge(TicketRouter.routes())
