@@ -3178,11 +3178,8 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 name = "oneiros"
 version = "0.0.9"
 dependencies = [
- "anstream",
  "oneiros-engine",
- "serde_json",
  "tokio",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -3223,6 +3220,7 @@ dependencies = [
  "tokio-stream",
  "toml",
  "tower",
+ "tracing-subscriber",
  "uuid",
 ]
 

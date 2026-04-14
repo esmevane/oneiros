@@ -65,4 +65,9 @@ pub enum Error {
     Ticket(#[from] TicketError),
     #[error(transparent)]
     Urge(#[from] UrgeError),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
