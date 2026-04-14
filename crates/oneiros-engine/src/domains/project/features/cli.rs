@@ -14,18 +14,9 @@ impl ProjectCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ProjectError> {
         let response: ProjectResponse = match self {
             ProjectCommands::Init(init) => ProjectService::init(&config.system(), init).await?,
-            ProjectCommands::Export(export) => {
-                let context = ProjectContext::start(config.clone())?;
-                ProjectService::export(&context, export)?
-            }
-            ProjectCommands::Import(import) => {
-                let context = ProjectContext::start(config.clone())?;
-                ProjectService::import(&context, import)?
-            }
-            ProjectCommands::Replay => {
-                let context = ProjectContext::start(config.clone())?;
-                ProjectService::replay(&context)?
-            }
+            ProjectCommands::Export(export) => ProjectService::export(config, export)?,
+            ProjectCommands::Import(import) => ProjectService::import(config, import)?,
+            ProjectCommands::Replay => ProjectService::replay(config)?,
         };
 
         let prompt = match &response {

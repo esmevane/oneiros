@@ -88,13 +88,13 @@ impl ProjectService {
     /// portable — the receiving brain materializes the blob at import time
     /// without persisting the ephemeral event to the log.
     pub(crate) fn export(
-        context: &ProjectContext,
+        config: &Config,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let target_dir = &request.target;
-        let project_name = context.brain_name();
-        let events = EventLog::new(&context.db()?).load_all()?;
-        let db = context.db()?;
+        let project_name = &config.brain;
+        let db = config.brain_db()?;
+        let events = EventLog::new(&db).load_all()?;
         let storage = StorageStore::new(&db);
 
         let mut buffer = String::new();
@@ -137,14 +137,14 @@ impl ProjectService {
     /// Domain events are persisted normally, then all projections
     /// are replayed to rebuild the read models.
     pub(crate) fn import(
-        context: &ProjectContext,
+        config: &Config,
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let file = std::fs::File::open(&request.file)?;
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
-        let db = context.db()?;
+        let db = config.brain_db()?;
         let log = EventLog::new(&db);
 
         // Batch all inserts in a single transaction — without this,
@@ -193,9 +193,9 @@ impl ProjectService {
     }
 
     /// Replay all events through projections, rebuilding read models.
-    pub(crate) fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
+    pub(crate) fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
         let projections = Projections::<BrainCanon>::project();
-        let replayed = projections.replay_brain(&context.db()?)?;
+        let replayed = projections.replay_brain(&config.brain_db()?)?;
 
         Ok(ProjectResponse::Replayed(ReplayResult {
             replayed: EventCount::new(replayed as i64),

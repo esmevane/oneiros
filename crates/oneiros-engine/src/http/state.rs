@@ -50,6 +50,9 @@ impl ServerState {
     ///
     /// Lazily initialized on first use — the brain DB may not exist at
     /// server startup (it's created by `project init`).
+    ///
+    /// Also spawns a brain projector that subscribes to the bus broadcast
+    /// and applies events to read models asynchronously.
     fn bus(&self, config: &Config) -> Result<EventBus, EventError> {
         let bus = self.bus.get_or_init(|| {
             let db = config.brain_db().expect("brain db");
@@ -60,7 +63,11 @@ impl ServerState {
 
             let chronicle = Chronicle::new();
             let db = Arc::new(Mutex::new(db));
-            EventBus::spawn(db, projections, chronicle)
+            let bus = EventBus::new(db.clone());
+
+            Projector::spawn_brain(db, projections, chronicle, bus.broadcast());
+
+            bus
         });
 
         Ok(bus.clone())

@@ -48,6 +48,19 @@ impl ContinuityService {
             }
         };
 
+        // Wait for the agent projection to catch up before continuing.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        loop {
+            let db = context.db()?;
+            if AgentStore::new(&db).get(&agent_name)?.is_some() {
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(ContinuityError::AgentNotFound(agent_name));
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(16)).await;
+        }
+
         // Wake activates continuity; then gather the full context for the response.
         Self::wake(
             context,
