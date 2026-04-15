@@ -12,8 +12,33 @@ impl StorageTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         storage_mcp::dispatch(context, tool_name, params).await
+    }
+
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![ResourceDef::new(
+            "oneiros-mcp://storage",
+            "storage",
+            "Stored artifacts",
+        )]
+    }
+
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![]
+    }
+
+    pub async fn read_resource(
+        &self,
+        _context: &ProjectContext,
+        path: &str,
+    ) -> Option<Result<String, ToolError>> {
+        match path {
+            "storage" => Some(Ok(
+                "# Storage\n\nUse `list-storage` to browse artifacts.\n".to_string()
+            )),
+            _ => None,
+        }
     }
 }
 
@@ -22,14 +47,12 @@ mod storage_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<ListStorage>::new(StorageRequestType::ListStorage, "Browse your archive").def(),
-            Tool::<GetStorage>::new(StorageRequestType::GetStorage, "Retrieve a stored artifact")
-                .def(),
-            Tool::<RemoveStorage>::new(
+            Tool::<ListStorage>::def(StorageRequestType::ListStorage, "Browse your archive"),
+            Tool::<GetStorage>::def(StorageRequestType::GetStorage, "Retrieve a stored artifact"),
+            Tool::<RemoveStorage>::def(
                 StorageRequestType::RemoveStorage,
                 "Remove a stored artifact",
-            )
-            .def(),
+            ),
         ]
     }
 
@@ -37,28 +60,56 @@ mod storage_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: StorageRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             StorageRequestType::ListStorage => {
                 let request: ListStorage = serde_json::from_str(params).unwrap_or_default();
-                StorageService::list(context, &request).await
+                let resp = StorageService::list(context, &request)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    StorageResponse::Entries(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for wrapped in &listed.items {
+                            let e = &wrapped.data;
+                            body.push_str(&format!("- **{}**\n", e.key));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    StorageResponse::NoEntries => Ok(McpResponse::new("No stored artifacts.")),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             StorageRequestType::GetStorage => {
-                StorageService::show(context, &serde_json::from_str(params)?).await
+                let resp = StorageService::show(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    StorageResponse::StorageDetails(wrapped) => {
+                        let e = &wrapped.data;
+                        let body = format!("**key:** {}\n", e.key);
+                        Ok(McpResponse::new(body))
+                    }
+                    StorageResponse::NoEntries => Ok(McpResponse::new("Artifact not found.")),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             StorageRequestType::RemoveStorage => {
-                StorageService::remove(context, &serde_json::from_str(params)?).await
+                let resp = StorageService::remove(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    StorageResponse::StorageRemoved(key) => {
+                        Ok(McpResponse::new(format!("Artifact removed: {key}")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
-            StorageRequestType::UploadStorage => {
-                return Err(ToolError::UnknownTool(tool_name.to_string()));
-            }
+            StorageRequestType::UploadStorage => Err(ToolError::UnknownTool(tool_name.to_string())),
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

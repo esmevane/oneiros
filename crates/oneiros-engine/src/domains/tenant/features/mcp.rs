@@ -12,7 +12,7 @@ impl TenantTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         tenant_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -22,13 +22,12 @@ mod tenant_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<CreateTenant>::new(TenantRequestType::CreateTenant, "Create a new tenant").def(),
-            Tool::<GetTenant>::new(
+            Tool::<CreateTenant>::def(TenantRequestType::CreateTenant, "Create a new tenant"),
+            Tool::<GetTenant>::def(
                 TenantRequestType::GetTenant,
                 "Look up a specific tenant by ID",
-            )
-            .def(),
-            Tool::<ListTenants>::new(TenantRequestType::ListTenants, "List all tenants").def(),
+            ),
+            Tool::<ListTenants>::def(TenantRequestType::ListTenants, "List all tenants"),
         ]
     }
 
@@ -36,26 +35,52 @@ mod tenant_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: TenantRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         let system = SystemContext::new(context.config.clone());
 
-        let value = match request_type {
+        match request_type {
             TenantRequestType::CreateTenant => {
-                TenantService::create(&system, &serde_json::from_str(params)?).await
+                let resp = TenantService::create(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TenantResponse::Created(wrapped) => Ok(McpResponse::new(format!(
+                        "Tenant created: {}",
+                        wrapped.data.name
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             TenantRequestType::GetTenant => {
-                TenantService::get(&system, &serde_json::from_str(params)?).await
+                let resp = TenantService::get(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TenantResponse::Found(wrapped) => {
+                        Ok(McpResponse::new(format!("**name:** {}", wrapped.data.name)))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             TenantRequestType::ListTenants => {
-                TenantService::list(&system, &serde_json::from_str(params)?).await
+                let resp = TenantService::list(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TenantResponse::Listed(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for wrapped in &listed.items {
+                            body.push_str(&format!("- {}\n", wrapped.data.name));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

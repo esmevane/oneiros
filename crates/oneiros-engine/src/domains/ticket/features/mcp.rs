@@ -12,7 +12,7 @@ impl TicketTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         ticket_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -22,22 +22,19 @@ mod ticket_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<CreateTicket>::new(
+            Tool::<CreateTicket>::def(
                 TicketRequestType::CreateTicket,
                 "Issue a new ticket for an actor and brain",
-            )
-            .def(),
-            Tool::<GetTicket>::new(
+            ),
+            Tool::<GetTicket>::def(
                 TicketRequestType::GetTicket,
                 "Look up a specific ticket by ID",
-            )
-            .def(),
-            Tool::<ListTickets>::new(TicketRequestType::ListTickets, "List all tickets").def(),
-            Tool::<ValidateTicket>::new(
+            ),
+            Tool::<ListTickets>::def(TicketRequestType::ListTickets, "List all tickets"),
+            Tool::<ValidateTicket>::def(
                 TicketRequestType::ValidateTicket,
                 "Validate a ticket token",
-            )
-            .def(),
+            ),
         ]
     }
 
@@ -45,29 +42,68 @@ mod ticket_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: TicketRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         let system = SystemContext::new(context.config.clone());
 
-        let value = match request_type {
+        match request_type {
             TicketRequestType::CreateTicket => {
-                TicketService::create(&system, &serde_json::from_str(params)?).await
+                let resp = TicketService::create(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TicketResponse::Created(ticket) => Ok(McpResponse::new(format!(
+                        "Ticket issued: {} for brain {}",
+                        ticket.id, ticket.brain_name
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             TicketRequestType::GetTicket => {
-                TicketService::get(&system, &serde_json::from_str(params)?).await
+                let resp = TicketService::get(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TicketResponse::Found(ticket) => Ok(McpResponse::new(format!(
+                        "**id:** {}\n**brain:** {}\n",
+                        ticket.id, ticket.brain_name
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             TicketRequestType::ListTickets => {
-                TicketService::list(&system, &serde_json::from_str(params)?).await
+                let resp = TicketService::list(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TicketResponse::Listed(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for ticket in &listed.items {
+                            body.push_str(&format!(
+                                "- {} (brain: {})\n",
+                                ticket.id, ticket.brain_name
+                            ));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             TicketRequestType::ValidateTicket => {
-                TicketService::validate(&system, &serde_json::from_str(params)?).await
+                let resp = TicketService::validate(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    TicketResponse::Validated(ticket) => Ok(McpResponse::new(format!(
+                        "Ticket valid: {} for brain {}",
+                        ticket.id, ticket.brain_name
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

@@ -24,15 +24,16 @@ pub struct Tool<T> {
 }
 
 impl<T: schemars::JsonSchema> Tool<T> {
-    pub fn new(name: impl fmt::Display, description: impl Into<Description>) -> Self {
+    pub fn def(name: impl fmt::Display, description: impl Into<Description>) -> ToolDef {
         Self {
             name: ToolName::new(name),
             description: description.into(),
             _marker: PhantomData,
         }
+        .to_def()
     }
 
-    pub fn def(&self) -> ToolDef {
+    pub fn to_def(&self) -> ToolDef {
         ToolDef {
             name: self.name.clone(),
             description: self.description.clone(),

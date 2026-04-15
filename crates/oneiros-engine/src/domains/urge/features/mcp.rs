@@ -12,7 +12,7 @@ impl UrgeTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         urge_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -22,10 +22,10 @@ mod urge_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<SetUrge>::new(UrgeRequestType::SetUrge, "Define a cognitive drive").def(),
-            Tool::<GetUrge>::new(UrgeRequestType::GetUrge, "Look up a cognitive drive").def(),
-            Tool::<ListUrges>::new(UrgeRequestType::ListUrges, "See all cognitive drives").def(),
-            Tool::<RemoveUrge>::new(UrgeRequestType::RemoveUrge, "Remove a cognitive drive").def(),
+            Tool::<SetUrge>::def(UrgeRequestType::SetUrge, "Define a cognitive drive"),
+            Tool::<GetUrge>::def(UrgeRequestType::GetUrge, "Look up a cognitive drive"),
+            Tool::<ListUrges>::def(UrgeRequestType::ListUrges, "See all cognitive drives"),
+            Tool::<RemoveUrge>::def(UrgeRequestType::RemoveUrge, "Remove a cognitive drive"),
         ]
     }
 
@@ -33,27 +33,63 @@ mod urge_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: UrgeRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             UrgeRequestType::SetUrge => {
-                UrgeService::set(context, &serde_json::from_str(params)?).await
+                let resp = UrgeService::set(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    UrgeResponse::UrgeSet(name) => {
+                        Ok(McpResponse::new(format!("Urge set: {name}")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             UrgeRequestType::GetUrge => {
-                UrgeService::get(context, &serde_json::from_str(params)?).await
+                let resp = UrgeService::get(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    UrgeResponse::UrgeDetails(urge) => Ok(McpResponse::new(format!(
+                        "**name:** {}\n**description:** {}\n",
+                        urge.name, urge.description
+                    ))),
+                    UrgeResponse::NoUrges => Ok(McpResponse::new("Urge not found.")),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             UrgeRequestType::ListUrges => {
-                UrgeService::list(context, &serde_json::from_str(params)?).await
+                let resp = UrgeService::list(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    UrgeResponse::Urges(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for urge in &listed.items {
+                            body.push_str(&format!("- {}\n", urge.name));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    UrgeResponse::NoUrges => Ok(McpResponse::new("No urges.")),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             UrgeRequestType::RemoveUrge => {
-                UrgeService::remove(context, &serde_json::from_str(params)?).await
+                let resp = UrgeService::remove(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    UrgeResponse::UrgeRemoved(name) => {
+                        Ok(McpResponse::new(format!("Urge removed: {name}")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

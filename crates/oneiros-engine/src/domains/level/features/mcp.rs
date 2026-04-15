@@ -12,7 +12,7 @@ impl LevelTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         level_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -22,26 +22,22 @@ mod level_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<SetLevel>::new(
+            Tool::<SetLevel>::def(
                 LevelRequestType::SetLevel,
                 "Define how long a kind of memory should be kept",
-            )
-            .def(),
-            Tool::<GetLevel>::new(
+            ),
+            Tool::<GetLevel>::def(
                 LevelRequestType::GetLevel,
                 "Look up a memory retention tier",
-            )
-            .def(),
-            Tool::<ListLevels>::new(
+            ),
+            Tool::<ListLevels>::def(
                 LevelRequestType::ListLevels,
                 "See all memory retention tiers",
-            )
-            .def(),
-            Tool::<RemoveLevel>::new(
+            ),
+            Tool::<RemoveLevel>::def(
                 LevelRequestType::RemoveLevel,
                 "Remove a memory retention tier",
-            )
-            .def(),
+            ),
         ]
     }
 
@@ -49,27 +45,66 @@ mod level_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: LevelRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             LevelRequestType::SetLevel => {
-                LevelService::set(context, &serde_json::from_str(params)?).await
+                let resp = LevelService::set(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    LevelResponse::LevelSet(name) => {
+                        Ok(McpResponse::new(format!("Level set: {name}")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             LevelRequestType::GetLevel => {
-                LevelService::get(context, &serde_json::from_str(params)?).await
+                let resp = LevelService::get(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    LevelResponse::LevelDetails(wrapped) => {
+                        let l = &wrapped.data;
+                        Ok(McpResponse::new(format!(
+                            "**name:** {}\n**description:** {}\n",
+                            l.name, l.description
+                        )))
+                    }
+                    LevelResponse::NoLevels => Ok(McpResponse::new("Level not found.")),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             LevelRequestType::ListLevels => {
-                LevelService::list(context, &serde_json::from_str(params)?).await
+                let resp = LevelService::list(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    LevelResponse::Levels(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for wrapped in &listed.items {
+                            body.push_str(&format!("- {}\n", wrapped.data.name));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    LevelResponse::NoLevels => Ok(McpResponse::new("No levels.")),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             LevelRequestType::RemoveLevel => {
-                LevelService::remove(context, &serde_json::from_str(params)?).await
+                let resp = LevelService::remove(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    LevelResponse::LevelRemoved(name) => {
+                        Ok(McpResponse::new(format!("Level removed: {name}")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

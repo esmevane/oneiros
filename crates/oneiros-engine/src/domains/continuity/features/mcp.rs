@@ -12,66 +12,157 @@ impl ContinuityTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         continuity_mcp::dispatch(context, tool_name, params).await
+    }
+
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![]
+    }
+
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![
+            ResourceTemplateDef::new(
+                "oneiros-mcp://agent/{name}/status",
+                "agent-status",
+                "Dashboard for a specific agent",
+            ),
+            ResourceTemplateDef::new(
+                "oneiros-mcp://agent/{name}/dream",
+                "agent-dream",
+                "Full assembled identity and cognitive context",
+            ),
+            ResourceTemplateDef::new(
+                "oneiros-mcp://agent/{name}/guidebook",
+                "agent-guidebook",
+                "Cognitive reference for an agent",
+            ),
+        ]
+    }
+
+    pub async fn read_resource(
+        &self,
+        context: &ProjectContext,
+        path: &str,
+    ) -> Option<Result<String, ToolError>> {
+        if let Some(rest) = path.strip_prefix("agent/") {
+            let parts: Vec<&str> = rest.splitn(2, '/').collect();
+            if parts.len() == 2 {
+                let agent_name = parts[0];
+                return match parts[1] {
+                    "status" => Some(continuity_mcp::read_status(context, agent_name).await),
+                    "dream" => Some(continuity_mcp::read_dream(context, agent_name).await),
+                    "guidebook" => Some(continuity_mcp::read_guidebook(context, agent_name).await),
+                    _ => None,
+                };
+            }
+        }
+        None
     }
 }
 
 mod continuity_mcp {
     use crate::*;
 
+    pub async fn read_status(
+        context: &ProjectContext,
+        agent_name: &str,
+    ) -> Result<String, ToolError> {
+        let response =
+            ContinuityService::status(context, &StatusAgent::default()).map_err(Error::from)?;
+
+        let md = match response {
+            ContinuityResponse::Status(table) => {
+                format!("# Status — {agent_name}\n\n```\n{table}\n```\n")
+            }
+            _ => format!("# Status — {agent_name}\n\nNo data.\n"),
+        };
+        Ok(md)
+    }
+
+    pub async fn read_dream(
+        context: &ProjectContext,
+        agent_name: &str,
+    ) -> Result<String, ToolError> {
+        let response = ContinuityService::dream(
+            context,
+            &DreamAgent::builder()
+                .agent(AgentName::new(agent_name))
+                .build(),
+            &DreamOverrides::default(),
+        )
+        .await
+        .map_err(Error::from)?;
+
+        let md = match response {
+            ContinuityResponse::Dreaming(ctx) => DreamTemplate::new(&ctx).to_string(),
+            _ => format!("# Dream — {agent_name}\n\nNo context.\n"),
+        };
+        Ok(md)
+    }
+
+    pub async fn read_guidebook(
+        context: &ProjectContext,
+        agent_name: &str,
+    ) -> Result<String, ToolError> {
+        let response = ContinuityService::guidebook(
+            context,
+            &GuidebookAgent::builder()
+                .agent(AgentName::new(agent_name))
+                .build(),
+            &DreamOverrides::default(),
+        )
+        .map_err(Error::from)?;
+
+        let md = match response {
+            ContinuityResponse::Guidebook(ctx) => GuidebookTemplate::new(&ctx).to_string(),
+            _ => format!("# Guidebook — {agent_name}\n\nNo context.\n"),
+        };
+        Ok(md)
+    }
+
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<WakeAgent>::new(
+            Tool::<WakeAgent>::def(
                 ContinuityRequestType::WakeAgent,
                 "Wake an agent — restore identity and begin a session",
-            )
-            .def(),
-            Tool::<DreamAgent>::new(
+            ),
+            Tool::<DreamAgent>::def(
                 ContinuityRequestType::DreamAgent,
                 "Restore an agent's full identity and cognitive context",
-            )
-            .def(),
-            Tool::<IntrospectAgent>::new(
+            ),
+            Tool::<IntrospectAgent>::def(
                 ContinuityRequestType::IntrospectAgent,
                 "Look inward before context compacts — consolidate what matters",
-            )
-            .def(),
-            Tool::<ReflectAgent>::new(
+            ),
+            Tool::<ReflectAgent>::def(
                 ContinuityRequestType::ReflectAgent,
                 "Pause on something significant",
-            )
-            .def(),
-            Tool::<SenseContent>::new(
+            ),
+            Tool::<SenseContent>::def(
                 ContinuityRequestType::SenseContent,
                 "Receive and interpret something from outside your cognitive loop",
-            )
-            .def(),
-            Tool::<SleepAgent>::new(
+            ),
+            Tool::<SleepAgent>::def(
                 ContinuityRequestType::SleepAgent,
                 "End a session — capture continuity before resting",
-            )
-            .def(),
-            Tool::<GuidebookAgent>::new(
+            ),
+            Tool::<GuidebookAgent>::def(
                 ContinuityRequestType::GuidebookAgent,
                 "Read the cognitive guidebook — learn how your tools work",
-            )
-            .def(),
-            Tool::<EmergeAgent>::new(
+            ),
+            Tool::<EmergeAgent>::def(
                 ContinuityRequestType::EmergeAgent,
                 "Bring a new agent into existence with full ceremony",
-            )
-            .def(),
-            Tool::<RecedeAgent>::new(
+            ),
+            Tool::<RecedeAgent>::def(
                 ContinuityRequestType::RecedeAgent,
                 "Retire an agent — honor their contributions and let them go",
-            )
-            .def(),
-            Tool::<StatusAgent>::new(
+            ),
+            Tool::<StatusAgent>::def(
                 ContinuityRequestType::StatusAgent,
                 "See an agent's full cognitive dashboard",
-            )
-            .def(),
+            ),
         ]
     }
 
@@ -86,53 +177,183 @@ mod continuity_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: ContinuityRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         let overrides = parse_overrides(params);
 
-        let value = match request_type {
+        match request_type {
             ContinuityRequestType::WakeAgent => {
-                ContinuityService::wake(context, &serde_json::from_str(params)?, &overrides).await
+                let resp =
+                    ContinuityService::wake(context, &serde_json::from_str(params)?, &overrides)
+                        .await
+                        .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Waking(ctx) => {
+                        let body = DreamTemplate::new(&ctx).to_string();
+                        let response = McpResponse::new(body)
+                            .hint(Hint::follow_up(
+                                "add-cognition",
+                                "Record your first impression",
+                            ))
+                            .hint(Hint::inspect(
+                                "oneiros-mcp://agent/{name}/pressure",
+                                "Check cognitive pressure levels",
+                            ));
+                        Ok(response)
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::DreamAgent => {
-                ContinuityService::dream(context, &serde_json::from_str(params)?, &overrides).await
+                let resp =
+                    ContinuityService::dream(context, &serde_json::from_str(params)?, &overrides)
+                        .await
+                        .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Dreaming(ctx) => {
+                        let body = DreamTemplate::new(&ctx).to_string();
+                        let response = McpResponse::new(body)
+                            .hint(Hint::follow_up(
+                                "add-cognition",
+                                "Record your first impression",
+                            ))
+                            .hint(Hint::inspect(
+                                "oneiros-mcp://agent/{name}/pressure",
+                                "Check cognitive pressure levels",
+                            ));
+                        Ok(response)
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::IntrospectAgent => {
-                ContinuityService::introspect(context, &serde_json::from_str(params)?, &overrides)
-                    .await
+                let resp = ContinuityService::introspect(
+                    context,
+                    &serde_json::from_str(params)?,
+                    &overrides,
+                )
+                .await
+                .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Introspecting(ctx) => {
+                        let pressures = RelevantPressures::from_pressures(
+                            ctx.pressures.iter().map(|r| r.pressure.clone()).collect(),
+                        );
+                        let body = IntrospectTemplate::new(&ctx.agent, pressures).to_string();
+                        let response = McpResponse::new(body)
+                            .hint(Hint::suggest("add-memory", "Consolidate what matters"));
+                        Ok(response)
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::ReflectAgent => {
-                ContinuityService::reflect(context, &serde_json::from_str(params)?, &overrides)
-                    .await
+                let resp =
+                    ContinuityService::reflect(context, &serde_json::from_str(params)?, &overrides)
+                        .await
+                        .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Reflecting(ctx) => {
+                        let pressures = RelevantPressures::from_pressures(
+                            ctx.pressures.iter().map(|r| r.pressure.clone()).collect(),
+                        );
+                        let body = ReflectTemplate::new(&ctx.agent, pressures).to_string();
+                        let response = McpResponse::new(body)
+                            .hint(Hint::suggest("add-cognition", "Capture what surfaced"));
+                        Ok(response)
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::SenseContent => {
-                ContinuityService::sense(context, &serde_json::from_str(params)?, &overrides).await
+                let resp =
+                    ContinuityService::sense(context, &serde_json::from_str(params)?, &overrides)
+                        .await
+                        .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Sleeping(ctx) => {
+                        let pressures = RelevantPressures::from_pressures(
+                            ctx.pressures.iter().map(|r| r.pressure.clone()).collect(),
+                        );
+                        let body = SenseTemplate::new(&ctx.agent, "", pressures).to_string();
+                        Ok(McpResponse::new(body))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::SleepAgent => {
-                ContinuityService::sleep(context, &serde_json::from_str(params)?, &overrides).await
+                let resp =
+                    ContinuityService::sleep(context, &serde_json::from_str(params)?, &overrides)
+                        .await
+                        .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Sleeping(ctx) => Ok(McpResponse::new(format!(
+                        "Session ended for **{}**. Rest well.",
+                        ctx.agent.name
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
-            ContinuityRequestType::GuidebookAgent => Ok(ContinuityService::guidebook(
-                context,
-                &serde_json::from_str(params)?,
-                &overrides,
-            )
-            .map_err(Error::from)?),
+            ContinuityRequestType::GuidebookAgent => {
+                let resp = ContinuityService::guidebook(
+                    context,
+                    &serde_json::from_str(params)?,
+                    &overrides,
+                )
+                .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Guidebook(ctx) => {
+                        Ok(McpResponse::new(GuidebookTemplate::new(&ctx).to_string()))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
+            }
             ContinuityRequestType::EmergeAgent => {
-                ContinuityService::emerge(context, &serde_json::from_str(params)?, &overrides).await
+                let resp =
+                    ContinuityService::emerge(context, &serde_json::from_str(params)?, &overrides)
+                        .await
+                        .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Emerged(ctx) => {
+                        let body = DreamTemplate::new(&ctx).to_string();
+                        let response = McpResponse::new(body)
+                            .hint(Hint::follow_up(
+                                "add-cognition",
+                                "Record your first impression",
+                            ))
+                            .hint(Hint::suggest(
+                                "wake-agent",
+                                "Begin a session for this agent",
+                            ));
+                        Ok(response)
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::RecedeAgent => {
-                ContinuityService::recede(context, &serde_json::from_str(params)?).await
+                let resp = ContinuityService::recede(context, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Receded(name) => {
+                        Ok(McpResponse::new(format!("Agent retired: {name}")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ContinuityRequestType::StatusAgent => {
                 let request: StatusAgent = serde_json::from_str(params).unwrap_or_default();
-                Ok(ContinuityService::status(context, &request).map_err(Error::from)?)
+                let resp = ContinuityService::status(context, &request).map_err(Error::from)?;
+                match resp {
+                    ContinuityResponse::Status(table) => {
+                        Ok(McpResponse::new(format!("```\n{table}\n```")))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

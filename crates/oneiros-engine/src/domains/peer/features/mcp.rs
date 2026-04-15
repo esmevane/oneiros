@@ -22,14 +22,13 @@ mod peer_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<AddPeer>::new(
+            Tool::<AddPeer>::def(
                 PeerRequestType::AddPeer,
                 "Add a known peer by supplying its base64url-encoded address",
-            )
-            .def(),
-            Tool::<GetPeer>::new(PeerRequestType::GetPeer, "Look up a specific peer by ID").def(),
-            Tool::<ListPeers>::new(PeerRequestType::ListPeers, "List all known peers").def(),
-            Tool::<RemovePeer>::new(PeerRequestType::RemovePeer, "Forget a known peer").def(),
+            ),
+            Tool::<GetPeer>::def(PeerRequestType::GetPeer, "Look up a specific peer by ID"),
+            Tool::<ListPeers>::def(PeerRequestType::ListPeers, "List all known peers"),
+            Tool::<RemovePeer>::def(PeerRequestType::RemovePeer, "Forget a known peer"),
         ]
     }
 

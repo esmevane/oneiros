@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use bon::Builder;
 use clap::Args;
+use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -20,4 +21,23 @@ pub struct InitMcp {
     #[arg(long, short)]
     #[builder(default)]
     pub yes: bool,
+}
+
+/// Request to load a named toolset into the current MCP session.
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ActivateToolsetRequest {
+    /// The toolset to activate: lifecycle, continuity, vocabulary, administer, or manage
+    pub name: String,
+}
+
+/// Request to unload the active toolset from the current MCP session.
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct DeactivateToolsetRequest {}
+
+/// Toolset management request variants.
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[kinded(kind = ToolsetRequestType, display = "kebab-case")]
+pub enum ToolsetRequest {
+    ActivateToolset(ActivateToolsetRequest),
+    DeactivateToolset(DeactivateToolsetRequest),
 }

@@ -12,7 +12,7 @@ impl BrainTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         brain_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -22,13 +22,12 @@ mod brain_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<CreateBrain>::new(BrainRequestType::CreateBrain, "Create a new brain").def(),
-            Tool::<GetBrain>::new(
+            Tool::<CreateBrain>::def(BrainRequestType::CreateBrain, "Create a new brain"),
+            Tool::<GetBrain>::def(
                 BrainRequestType::GetBrain,
                 "Look up a specific brain by name",
-            )
-            .def(),
-            Tool::<ListBrains>::new(BrainRequestType::ListBrains, "List all brains").def(),
+            ),
+            Tool::<ListBrains>::def(BrainRequestType::ListBrains, "List all brains"),
         ]
     }
 
@@ -36,26 +35,52 @@ mod brain_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: BrainRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         let system = SystemContext::new(context.config.clone());
 
-        let value = match request_type {
+        match request_type {
             BrainRequestType::CreateBrain => {
-                BrainService::create(&system, &serde_json::from_str(params)?).await
+                let resp = BrainService::create(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    BrainResponse::Created(wrapped) => Ok(McpResponse::new(format!(
+                        "Brain created: {}",
+                        wrapped.data.name
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             BrainRequestType::GetBrain => {
-                BrainService::get(&system, &serde_json::from_str(params)?).await
+                let resp = BrainService::get(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    BrainResponse::Found(wrapped) => {
+                        Ok(McpResponse::new(format!("**name:** {}", wrapped.data.name)))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             BrainRequestType::ListBrains => {
-                BrainService::list(&system, &serde_json::from_str(params)?).await
+                let resp = BrainService::list(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    BrainResponse::Listed(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for wrapped in &listed.items {
+                            body.push_str(&format!("- {}\n", wrapped.data.name));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

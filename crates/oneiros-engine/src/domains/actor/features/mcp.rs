@@ -12,7 +12,7 @@ impl ActorTools {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         actor_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -22,18 +22,15 @@ mod actor_mcp {
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
-            Tool::<CreateActor>::new(
+            Tool::<CreateActor>::def(
                 ActorRequestType::CreateActor,
                 "Create a new actor in the system",
-            )
-            .def(),
-            Tool::<GetActor>::new(ActorRequestType::GetActor, "Look up a specific actor by ID")
-                .def(),
-            Tool::<ListActors>::new(
+            ),
+            Tool::<GetActor>::def(ActorRequestType::GetActor, "Look up a specific actor by ID"),
+            Tool::<ListActors>::def(
                 ActorRequestType::ListActors,
                 "List all actors in the system",
-            )
-            .def(),
+            ),
         ]
     }
 
@@ -41,26 +38,52 @@ mod actor_mcp {
         context: &ProjectContext,
         tool_name: &str,
         params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+    ) -> Result<McpResponse, ToolError> {
         let request_type: ActorRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         let system = SystemContext::new(context.config.clone());
 
-        let value = match request_type {
+        match request_type {
             ActorRequestType::CreateActor => {
-                ActorService::create(&system, &serde_json::from_str(params)?).await
+                let resp = ActorService::create(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    ActorResponse::Created(wrapped) => Ok(McpResponse::new(format!(
+                        "Actor created: {}",
+                        wrapped.data.id
+                    ))),
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ActorRequestType::GetActor => {
-                ActorService::get(&system, &serde_json::from_str(params)?).await
+                let resp = ActorService::get(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    ActorResponse::Found(wrapped) => {
+                        Ok(McpResponse::new(format!("**id:** {}", wrapped.data.id)))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
             ActorRequestType::ListActors => {
-                ActorService::list(&system, &serde_json::from_str(params)?).await
+                let resp = ActorService::list(&system, &serde_json::from_str(params)?)
+                    .await
+                    .map_err(Error::from)?;
+                match resp {
+                    ActorResponse::Listed(listed) => {
+                        let mut body = format!("{} of {} total\n\n", listed.len(), listed.total);
+                        for wrapped in &listed.items {
+                            body.push_str(&format!("- {}\n", wrapped.data.id));
+                        }
+                        Ok(McpResponse::new(body))
+                    }
+                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                }
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }
