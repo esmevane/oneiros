@@ -19,14 +19,6 @@ impl ProjectCommands {
             ProjectCommands::Replay => ProjectService::replay(&config.project())?,
         };
 
-        let prompt = match &response {
-            ProjectResponse::Initialized(result) => ProjectView::initialized(result),
-            ProjectResponse::BrainAlreadyExists(name) => ProjectView::already_exists(name),
-            ProjectResponse::WroteExport(path) => ProjectView::exported(path),
-            ProjectResponse::Imported(result) => ProjectView::imported(result),
-            ProjectResponse::Replayed(result) => ProjectView::replayed(result),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(ProjectView::new(response).render().map(Into::into))
     }
 }

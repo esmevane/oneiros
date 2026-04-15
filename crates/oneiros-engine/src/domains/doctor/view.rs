@@ -2,10 +2,25 @@
 
 use crate::*;
 
-pub struct DoctorView;
+pub struct DoctorView {
+    response: DoctorResponse,
+}
 
 impl DoctorView {
-    pub fn checklist(checks: &[DoctorCheck]) -> String {
+    pub fn new(response: DoctorResponse) -> Self {
+        Self { response }
+    }
+
+    pub fn render(self) -> Rendered<DoctorResponse> {
+        match self.response {
+            DoctorResponse::CheckupStatus(checks) => {
+                let prompt = Self::checklist(&checks);
+                Rendered::new(DoctorResponse::CheckupStatus(checks), prompt, String::new())
+            }
+        }
+    }
+
+    fn checklist(checks: &[DoctorCheck]) -> String {
         let mut lines = vec![format!("{}", "Oneiros health check:".heading())];
 
         for check in checks {

@@ -25,22 +25,6 @@ impl NatureCommands {
             NatureCommands::Remove(removal) => nature_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            NatureResponse::NatureSet(name) => NatureView::confirmed("set", name).to_string(),
-            NatureResponse::NatureDetails(wrapped) => NatureView::detail(&wrapped.data).to_string(),
-            NatureResponse::Natures(listed) => {
-                let table = NatureView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            NatureResponse::NoNatures => format!("{}", "No natures configured.".muted()),
-            NatureResponse::NatureRemoved(name) => {
-                NatureView::confirmed("removed", name).to_string()
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(NatureView::new(response).render().map(Into::into))
     }
 }

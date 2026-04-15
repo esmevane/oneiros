@@ -23,21 +23,6 @@ impl CognitionCommands {
             CognitionCommands::List(listing) => cognition_client.list(listing).await?,
         };
 
-        let prompt = match &response {
-            CognitionResponse::CognitionAdded(wrapped) => CognitionView::recorded(wrapped),
-            CognitionResponse::CognitionDetails(wrapped) => {
-                CognitionView::detail(&wrapped.data).to_string()
-            }
-            CognitionResponse::Cognitions(listed) => {
-                let table = CognitionView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            CognitionResponse::NoCognitions => format!("{}", "No cognitions.".muted()),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(CognitionView::new(response, self).render().map(Into::into))
     }
 }

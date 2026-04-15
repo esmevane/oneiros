@@ -46,26 +46,6 @@ impl StorageCommands {
             StorageCommands::Remove(remove) => storage_client.remove(remove).await?,
         };
 
-        let prompt = match &response {
-            StorageResponse::StorageSet(wrapped) => {
-                StorageView::confirmed("stored", &wrapped.data.key).to_string()
-            }
-            StorageResponse::StorageDetails(wrapped) => {
-                StorageView::detail(&wrapped.data).to_string()
-            }
-            StorageResponse::Entries(listed) => {
-                let table = StorageView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            StorageResponse::NoEntries => format!("{}", "No storage entries.".muted()),
-            StorageResponse::StorageRemoved(key) => {
-                StorageView::confirmed("removed", key).to_string()
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(StorageView::new(response).render().map(Into::into))
     }
 }

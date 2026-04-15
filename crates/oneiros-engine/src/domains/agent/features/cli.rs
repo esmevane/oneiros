@@ -27,21 +27,6 @@ impl AgentCommands {
             Self::Remove(removal) => agent_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            AgentResponse::AgentCreated(name) => AgentView::confirmed("created", name).to_string(),
-            AgentResponse::AgentDetails(wrapped) => AgentView::detail(&wrapped.data).to_string(),
-            AgentResponse::Agents(listed) => {
-                let table = AgentView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            AgentResponse::NoAgents => format!("{}", "No agents configured.".muted()),
-            AgentResponse::AgentUpdated(name) => AgentView::confirmed("updated", name).to_string(),
-            AgentResponse::AgentRemoved(name) => AgentView::confirmed("removed", name).to_string(),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(AgentView::new(response).render().map(Into::into))
     }
 }

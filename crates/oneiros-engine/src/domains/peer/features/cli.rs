@@ -22,21 +22,6 @@ impl PeerCommands {
             PeerCommands::Remove(remove) => peer_client.remove(&remove.id).await?,
         };
 
-        let prompt = match &response {
-            PeerResponse::Added(wrapped) => {
-                PeerView::confirmed("added", &wrapped.data.name).to_string()
-            }
-            PeerResponse::Found(wrapped) => PeerView::detail(&wrapped.data).to_string(),
-            PeerResponse::Listed(listed) => {
-                let table = PeerView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            PeerResponse::Removed(id) => format!("Removed peer {id}"),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(PeerView::new(response).render().map(Into::into))
     }
 }

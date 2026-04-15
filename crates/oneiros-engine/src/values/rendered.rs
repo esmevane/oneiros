@@ -55,6 +55,28 @@ impl<T> Rendered<T> {
     pub fn has_text(&self) -> bool {
         !self.text.is_empty()
     }
+
+    /// Transform the data while preserving prompt and text.
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Rendered<U> {
+        Rendered {
+            data: f(self.data),
+            prompt: self.prompt,
+            text: self.text,
+        }
+    }
+
+    /// Append a rendered hint section to the prompt.
+    ///
+    /// The `HintSet` is rendered via the `HintTemplate` and appended
+    /// to the existing prompt. No-op if the hint set produces no hints.
+    pub fn with_hints(mut self, hint_set: HintSet) -> Self {
+        let hints = hint_set.hints();
+        if !hints.is_empty() {
+            let section = HintTemplate { hints: &hints }.to_string();
+            self.prompt.push_str(&section);
+        }
+        self
+    }
 }
 
 /// Default rendering — data only, no presentation.

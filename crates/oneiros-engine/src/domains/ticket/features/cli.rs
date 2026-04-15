@@ -23,21 +23,6 @@ impl TicketCommands {
             TicketCommands::List(list) => ticket_client.list(list).await?,
         };
 
-        let prompt = match &response {
-            TicketResponse::Created(ticket) => TicketView::confirmed("issued", ticket).to_string(),
-            TicketResponse::Found(ticket) => TicketView::detail(ticket).to_string(),
-            TicketResponse::Validated(ticket) => {
-                TicketView::confirmed("validated", ticket).to_string()
-            }
-            TicketResponse::Listed(listed) => {
-                let table = TicketView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(TicketView::new(response).render().map(Into::into))
     }
 }

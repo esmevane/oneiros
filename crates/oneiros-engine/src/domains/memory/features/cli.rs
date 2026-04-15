@@ -23,19 +23,6 @@ impl MemoryCommands {
             MemoryCommands::List(listing) => memory_client.list(listing).await?,
         };
 
-        let prompt = match &response {
-            MemoryResponse::MemoryAdded(wrapped) => MemoryView::recorded(wrapped),
-            MemoryResponse::MemoryDetails(wrapped) => MemoryView::detail(&wrapped.data).to_string(),
-            MemoryResponse::Memories(listed) => {
-                let table = MemoryView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            MemoryResponse::NoMemories => format!("{}", "No memories.".muted()),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(MemoryView::new(response, self).render().map(Into::into))
     }
 }

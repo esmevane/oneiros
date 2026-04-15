@@ -1,68 +1,84 @@
-//! Bookmark view — presentation authority for the bookmark domain.
-//!
-//! Maps bookmark responses into shared view primitives (Table, Detail,
-//! Confirmation). The domain knows its own shape; the rendering
-//! layer decides how to display it.
-
 use crate::*;
 
-pub struct BookmarkView;
+pub struct BookmarkView {
+    response: BookmarkResponse,
+}
 
 impl BookmarkView {
-    /// Table of bookmarks with standard columns.
-    pub fn table(bookmarks: &Listed<Bookmark>) -> Table {
-        let mut table = Table::new(vec![Column::key("name", "Name")]);
+    pub fn new(response: BookmarkResponse) -> Self {
+        Self { response }
+    }
 
-        for bookmark in &bookmarks.items {
-            table.push_row(vec![bookmark.name.to_string()]);
+    pub fn render(self) -> Rendered<BookmarkResponse> {
+        match self.response {
+            BookmarkResponse::Created(created) => {
+                let prompt =
+                    Confirmation::new("Bookmark", created.name.to_string(), "created").to_string();
+                Rendered::new(BookmarkResponse::Created(created), prompt, String::new())
+            }
+            BookmarkResponse::Forked(forked) => {
+                let prompt = Confirmation::new(
+                    "Bookmark",
+                    forked.name.to_string(),
+                    format!("forked from '{}'", forked.from),
+                )
+                .to_string();
+                Rendered::new(BookmarkResponse::Forked(forked), prompt, String::new())
+            }
+            BookmarkResponse::Switched(switched) => {
+                let prompt =
+                    Confirmation::new("Bookmark", switched.name.to_string(), "switched to")
+                        .to_string();
+                Rendered::new(BookmarkResponse::Switched(switched), prompt, String::new())
+            }
+            BookmarkResponse::Merged(merged) => {
+                let prompt = Confirmation::new(
+                    "Bookmark",
+                    merged.source.to_string(),
+                    format!("merged into '{}'", merged.target),
+                )
+                .to_string();
+                Rendered::new(BookmarkResponse::Merged(merged), prompt, String::new())
+            }
+            BookmarkResponse::Bookmarks(listed) => {
+                let mut table = Table::new(vec![Column::key("name", "Name")]);
+                for bookmark in &listed.items {
+                    table.push_row(vec![bookmark.name.to_string()]);
+                }
+                let prompt = format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                );
+                Rendered::new(BookmarkResponse::Bookmarks(listed), prompt, String::new())
+            }
+            BookmarkResponse::Shared(result) => {
+                let prompt = result.uri.clone();
+                Rendered::new(BookmarkResponse::Shared(result), prompt, String::new())
+            }
+            BookmarkResponse::Followed(follow) => {
+                let prompt = Confirmation::new("Bookmark", follow.bookmark.to_string(), "followed")
+                    .to_string();
+                Rendered::new(BookmarkResponse::Followed(follow), prompt, String::new())
+            }
+            BookmarkResponse::Collected(result) => {
+                let prompt = Confirmation::new(
+                    "Bookmark",
+                    format!("{} events", result.events_received),
+                    format!("collected (sequence {})", result.checkpoint.sequence),
+                )
+                .to_string();
+                Rendered::new(BookmarkResponse::Collected(result), prompt, String::new())
+            }
+            BookmarkResponse::Unfollowed(unfollowed) => {
+                let prompt =
+                    Confirmation::new("Bookmark", unfollowed.bookmark.to_string(), "unfollowed")
+                        .to_string();
+                Rendered::new(
+                    BookmarkResponse::Unfollowed(unfollowed),
+                    prompt,
+                    String::new(),
+                )
+            }
         }
-
-        table
-    }
-
-    pub fn created(created: &BookmarkCreated) -> Confirmation {
-        Confirmation::new("Bookmark", created.name.to_string(), "created")
-    }
-
-    pub fn forked(forked: &BookmarkForked) -> Confirmation {
-        Confirmation::new(
-            "Bookmark",
-            forked.name.to_string(),
-            format!("forked from '{}'", forked.from),
-        )
-    }
-
-    pub fn switched(switched: &BookmarkSwitched) -> Confirmation {
-        Confirmation::new("Bookmark", switched.name.to_string(), "switched to")
-    }
-
-    pub fn merged(merged: &BookmarkMerged) -> Confirmation {
-        Confirmation::new(
-            "Bookmark",
-            merged.source.to_string(),
-            format!("merged into '{}'", merged.target),
-        )
-    }
-
-    /// Share returns the URI directly — it's the produced artifact
-    /// that callers pipe into follow commands.
-    pub fn shared(result: &BookmarkShareResult) -> String {
-        result.uri.clone()
-    }
-
-    pub fn followed(follow: &Follow) -> Confirmation {
-        Confirmation::new("Bookmark", follow.bookmark.to_string(), "followed")
-    }
-
-    pub fn collected(result: &BookmarkCollectResult) -> Confirmation {
-        Confirmation::new(
-            "Bookmark",
-            format!("{} events", result.events_received),
-            format!("collected (sequence {})", result.checkpoint.sequence),
-        )
-    }
-
-    pub fn unfollowed(unfollowed: &BookmarkUnfollowed) -> Confirmation {
-        Confirmation::new("Bookmark", unfollowed.bookmark.to_string(), "unfollowed")
     }
 }

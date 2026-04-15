@@ -6,32 +6,68 @@
 
 use crate::*;
 
-pub struct ServiceView;
+pub struct ServiceView {
+    response: ServiceResponse,
+}
 
 impl ServiceView {
-    /// Render a service response with appropriate styling.
-    pub fn render(response: &ServiceResponse) -> String {
-        match response {
-            ServiceResponse::ServiceInstalled(_) => {
-                format!("{} {response}", "✓".success())
+    pub fn new(response: ServiceResponse) -> Self {
+        Self { response }
+    }
+
+    pub fn render(self) -> Rendered<ServiceResponse> {
+        match self.response {
+            ServiceResponse::ServiceInstalled(name) => {
+                let prompt = format!(
+                    "{} {}",
+                    "✓".success(),
+                    ServiceResponse::ServiceInstalled(name.clone())
+                );
+                Rendered::new(
+                    ServiceResponse::ServiceInstalled(name),
+                    prompt,
+                    String::new(),
+                )
             }
             ServiceResponse::ServiceUninstalled => {
-                format!("{} {response}", "✓".success())
+                let prompt = format!("{} {}", "✓".success(), ServiceResponse::ServiceUninstalled);
+                Rendered::new(ServiceResponse::ServiceUninstalled, prompt, String::new())
             }
             ServiceResponse::ServiceStarted => {
-                format!("{} {response}", "✓".success())
+                let prompt = format!("{} {}", "✓".success(), ServiceResponse::ServiceStarted);
+                Rendered::new(ServiceResponse::ServiceStarted, prompt, String::new())
             }
-            ServiceResponse::ServiceHealthy(_) => {
-                format!("{} {response}", "✓".success())
+            ServiceResponse::ServiceHealthy(addr) => {
+                let prompt = format!(
+                    "{} {}",
+                    "✓".success(),
+                    ServiceResponse::ServiceHealthy(addr.clone())
+                );
+                Rendered::new(ServiceResponse::ServiceHealthy(addr), prompt, String::new())
             }
             ServiceResponse::ServiceStopped => {
-                format!("{} {response}", "✓".success())
+                let prompt = format!("{} {}", "✓".success(), ServiceResponse::ServiceStopped);
+                Rendered::new(ServiceResponse::ServiceStopped, prompt, String::new())
             }
-            ServiceResponse::ServiceRunning(_) => {
-                format!("{} {response}", "✓".success())
+            ServiceResponse::ServiceRunning(addr) => {
+                let prompt = format!(
+                    "{} {}",
+                    "✓".success(),
+                    ServiceResponse::ServiceRunning(addr.clone())
+                );
+                Rendered::new(ServiceResponse::ServiceRunning(addr), prompt, String::new())
             }
-            ServiceResponse::ServiceNotRunning(_) => {
-                format!("{} {response}", "!".warning())
+            ServiceResponse::ServiceNotRunning(reason) => {
+                let prompt = format!(
+                    "{} {}",
+                    "!".warning(),
+                    ServiceResponse::ServiceNotRunning(reason.clone())
+                );
+                Rendered::new(
+                    ServiceResponse::ServiceNotRunning(reason),
+                    prompt,
+                    String::new(),
+                )
             }
         }
     }

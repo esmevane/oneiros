@@ -38,11 +38,6 @@ impl McpCommands {
             }
         };
 
-        let prompt = match &response {
-            McpConfigResponse::McpConfigWritten(path) => McpView::written(path),
-            McpConfigResponse::McpConfigExists(path) => McpView::exists(path),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(McpView::new(response).render().map(Into::into))
     }
 }

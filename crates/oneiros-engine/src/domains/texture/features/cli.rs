@@ -25,24 +25,6 @@ impl TextureCommands {
             TextureCommands::Remove(removal) => texture_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            TextureResponse::TextureSet(name) => TextureView::confirmed("set", name).to_string(),
-            TextureResponse::TextureDetails(wrapped) => {
-                TextureView::detail(&wrapped.data).to_string()
-            }
-            TextureResponse::Textures(listed) => {
-                let table = TextureView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            TextureResponse::NoTextures => format!("{}", "No textures configured.".muted()),
-            TextureResponse::TextureRemoved(name) => {
-                TextureView::confirmed("removed", name).to_string()
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(TextureView::new(response).render().map(Into::into))
     }
 }

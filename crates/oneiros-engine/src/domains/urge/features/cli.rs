@@ -25,20 +25,6 @@ impl UrgeCommands {
             UrgeCommands::Remove(removal) => urge_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            UrgeResponse::UrgeSet(name) => UrgeView::confirmed("set", name).to_string(),
-            UrgeResponse::UrgeDetails(urge) => UrgeView::detail(urge).to_string(),
-            UrgeResponse::Urges(listed) => {
-                let table = UrgeView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            UrgeResponse::NoUrges => format!("{}", "No urges configured.".muted()),
-            UrgeResponse::UrgeRemoved(name) => UrgeView::confirmed("removed", name).to_string(),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(UrgeView::new(response).render().map(Into::into))
     }
 }

@@ -25,74 +25,98 @@ impl ContinuityPresenter {
     }
 
     /// Render this continuity response into all available forms.
-    ///
-    /// Lifecycle commands (dream, wake, introspect, sleep, emerge, reflect)
-    /// carry the full `DreamContext` — callers can access pressure data
-    /// directly from the inner context rather than via response-level meta.
-    pub fn render(self) -> Rendered<Responses> {
-        let data = Responses::from(self.response.clone());
-        let prompt = self.render_prompt();
-        let text = self.render_text();
-
-        Rendered::new(data, prompt, text)
-    }
-
-    fn render_prompt(&self) -> String {
-        match &self.response {
-            ContinuityResponse::Dreaming(context)
-            | ContinuityResponse::Waking(context)
-            | ContinuityResponse::Emerged(context) => {
-                if self.deep {
+    pub fn render(self) -> Rendered<ContinuityResponse> {
+        let (prompt, text, hints) = match &self.response {
+            ContinuityResponse::Dreaming(context) | ContinuityResponse::Emerged(context) => {
+                let template = if self.deep {
                     DreamTemplate::deep(context).to_string()
                 } else {
                     DreamTemplate::new(context).to_string()
-                }
+                };
+                let text = match &self.response {
+                    ContinuityResponse::Dreaming(_) => {
+                        format!("Dreaming as {}...", context.agent.name)
+                    }
+                    ContinuityResponse::Emerged(_) => {
+                        format!("Emerged as {}.", context.agent.name)
+                    }
+                    _ => unreachable!(),
+                };
+                (template, text, HintSet::None)
             }
-            ContinuityResponse::Status(table) => table.to_string(),
-            ContinuityResponse::Introspecting(context) => {
-                let pressures = Self::relevant_pressures(context);
-                IntrospectTemplate::new(&context.agent, pressures).to_string()
+            ContinuityResponse::Waking(context) => {
+                let template = if self.deep {
+                    DreamTemplate::deep(context).to_string()
+                } else {
+                    DreamTemplate::new(context).to_string()
+                };
+                let pressures = context
+                    .pressures
+                    .iter()
+                    .map(|r| PressureSummary::from(&r.pressure))
+                    .collect();
+                let hints = HintSet::wake(
+                    WakeHints::builder()
+                        .agent(context.agent.name.clone())
+                        .pressures(pressures)
+                        .build(),
+                );
+                (
+                    template,
+                    format!("Waking as {}...", context.agent.name),
+                    hints,
+                )
             }
-            ContinuityResponse::Reflecting(context) => {
-                let pressures = Self::relevant_pressures(context);
-                ReflectTemplate::new(&context.agent, pressures).to_string()
-            }
-            ContinuityResponse::Sleeping(context) => {
-                let pressures = Self::relevant_pressures(context);
-                IntrospectTemplate::new(&context.agent, pressures).to_string()
-            }
-            ContinuityResponse::Guidebook(context) => GuidebookTemplate::new(context).to_string(),
-            ContinuityResponse::Receded(name) => format!(
-                "Agent '{}' has receded. Their cognitions, memories, and experiences remain in the record, but they will no longer participate in active sessions.",
-                name
+            ContinuityResponse::Status(table) => (
+                table.to_string(),
+                format!("{} agents.", table.agents.len()),
+                HintSet::None,
             ),
-        }
-    }
-
-    fn render_text(&self) -> String {
-        match &self.response {
-            ContinuityResponse::Waking(context) => format!("Waking as {}...", context.agent.name),
-            ContinuityResponse::Dreaming(context) => {
-                format!("Dreaming as {}...", context.agent.name)
-            }
-            ContinuityResponse::Emerged(context) => format!("Emerged as {}.", context.agent.name),
             ContinuityResponse::Introspecting(context) => {
-                format!("Introspecting as {}...", context.agent.name)
+                let pressures = Self::relevant_pressures(context);
+                (
+                    IntrospectTemplate::new(&context.agent, pressures).to_string(),
+                    format!("Introspecting as {}...", context.agent.name),
+                    HintSet::None,
+                )
             }
             ContinuityResponse::Reflecting(context) => {
-                format!("Reflecting as {}...", context.agent.name)
+                let pressures = Self::relevant_pressures(context);
+                let hints = HintSet::reflect(
+                    ReflectHints::builder()
+                        .agent(context.agent.name.clone())
+                        .build(),
+                );
+                (
+                    ReflectTemplate::new(&context.agent, pressures).to_string(),
+                    format!("Reflecting as {}...", context.agent.name),
+                    hints,
+                )
             }
             ContinuityResponse::Sleeping(context) => {
-                format!("Sleeping as {}...", context.agent.name)
+                let pressures = Self::relevant_pressures(context);
+                (
+                    IntrospectTemplate::new(&context.agent, pressures).to_string(),
+                    format!("Sleeping as {}...", context.agent.name),
+                    HintSet::None,
+                )
             }
-            ContinuityResponse::Guidebook(context) => {
-                format!("Guidebook for {}.", context.agent.name)
-            }
-            ContinuityResponse::Receded(name) => format!("Agent {} has receded.", name),
-            ContinuityResponse::Status(table) => {
-                format!("{} agents.", table.agents.len())
-            }
-        }
+            ContinuityResponse::Guidebook(context) => (
+                GuidebookTemplate::new(context).to_string(),
+                format!("Guidebook for {}.", context.agent.name),
+                HintSet::None,
+            ),
+            ContinuityResponse::Receded(name) => (
+                format!(
+                    "Agent '{}' has receded. Their cognitions, memories, and experiences remain in the record, but they will no longer participate in active sessions.",
+                    name
+                ),
+                format!("Agent {} has receded.", name),
+                HintSet::None,
+            ),
+        };
+
+        Rendered::new(self.response, prompt, text).with_hints(hints)
     }
 
     fn relevant_pressures(context: &DreamContext) -> RelevantPressures {

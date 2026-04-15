@@ -25,26 +25,6 @@ impl SensationCommands {
             SensationCommands::Remove(removal) => sensation_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            SensationResponse::SensationSet(name) => {
-                SensationView::confirmed("set", name).to_string()
-            }
-            SensationResponse::SensationDetails(wrapped) => {
-                SensationView::detail(&wrapped.data).to_string()
-            }
-            SensationResponse::Sensations(listed) => {
-                let table = SensationView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            SensationResponse::NoSensations => format!("{}", "No sensations configured.".muted()),
-            SensationResponse::SensationRemoved(name) => {
-                SensationView::confirmed("removed", name).to_string()
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(SensationView::new(response).render().map(Into::into))
     }
 }

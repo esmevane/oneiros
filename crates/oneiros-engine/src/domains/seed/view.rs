@@ -5,16 +5,25 @@
 
 use crate::*;
 
-pub struct SeedView;
+pub struct SeedView {
+    response: SeedResponse,
+}
 
 impl SeedView {
-    /// Confirmation that core vocabulary has been seeded.
-    pub fn core_complete() -> String {
-        Confirmation::new("Core", "vocabulary", "seeded").to_string()
+    pub fn new(response: SeedResponse) -> Self {
+        Self { response }
     }
 
-    /// Confirmation that canonical agents have been seeded.
-    pub fn agents_complete() -> String {
-        Confirmation::new("Canonical", "agents", "seeded").to_string()
+    pub fn render(self) -> Rendered<SeedResponse> {
+        match self.response {
+            SeedResponse::SeedComplete => {
+                let prompt = Confirmation::new("Core", "vocabulary", "seeded").to_string();
+                Rendered::new(SeedResponse::SeedComplete, prompt, String::new())
+            }
+            SeedResponse::AgentsSeedComplete => {
+                let prompt = Confirmation::new("Canonical", "agents", "seeded").to_string();
+                Rendered::new(SeedResponse::AgentsSeedComplete, prompt, String::new())
+            }
+        }
     }
 }

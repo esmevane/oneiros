@@ -16,11 +16,6 @@ impl SystemCommands {
             SystemCommands::Init(init) => SystemService::init(&context, init).await?,
         };
 
-        let prompt = match &response {
-            SystemResponse::SystemInitialized(name) => SystemView::initialized(name),
-            SystemResponse::HostAlreadyInitialized => SystemView::already_initialized(),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(SystemView::new(response).render().map(Into::into))
     }
 }

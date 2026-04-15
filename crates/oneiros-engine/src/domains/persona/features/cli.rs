@@ -25,24 +25,6 @@ impl PersonaCommands {
             PersonaCommands::Remove(removal) => persona_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            PersonaResponse::PersonaSet(name) => PersonaView::confirmed("set", name).to_string(),
-            PersonaResponse::PersonaDetails(wrapped) => {
-                PersonaView::detail(&wrapped.data).to_string()
-            }
-            PersonaResponse::Personas(listed) => {
-                let table = PersonaView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            PersonaResponse::NoPersonas => format!("{}", "No personas configured.".muted()),
-            PersonaResponse::PersonaRemoved(name) => {
-                PersonaView::confirmed("removed", name).to_string()
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(PersonaView::new(response).render().map(Into::into))
     }
 }

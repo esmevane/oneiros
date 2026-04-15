@@ -20,11 +20,6 @@ impl SeedCommands {
             SeedCommands::Agents => seed.agents().await?,
         };
 
-        let prompt = match &response {
-            SeedResponse::SeedComplete => SeedView::core_complete(),
-            SeedResponse::AgentsSeedComplete => SeedView::agents_complete(),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(SeedView::new(response).render().map(Into::into))
     }
 }
