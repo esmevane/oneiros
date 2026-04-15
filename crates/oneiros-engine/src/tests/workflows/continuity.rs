@@ -520,8 +520,12 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
     let token = app.token().expect("should have a token after init");
     let sse_url = format!("{}/activity", app.base_url());
 
-    // Subscribe to the SSE activity stream in a background task
+    // Subscribe to the SSE activity stream in a background task.
+    // Use a oneshot to ensure the connection is established before
+    // firing commands — otherwise events can be broadcast before the
+    // server-side receiver exists, causing a heisenfail.
     let (event_tx, mut event_rx) = tokio::sync::mpsc::channel::<StoredEvent>(64);
+    let (connected_tx, connected_rx) = tokio::sync::oneshot::channel::<Result<(), String>>();
 
     let sse_handle = tokio::spawn(async move {
         let http = reqwest::Client::new();
@@ -533,6 +537,14 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
             .await
             .unwrap();
 
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            let _ = connected_tx.send(Err(format!("header auth failed: {status}\n{body}")));
+            return;
+        }
+
+        let _ = connected_tx.send(Ok(()));
         let mut stream = resp.bytes_stream();
         let mut buffer = String::new();
 
@@ -567,6 +579,13 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
             }
         }
     });
+
+    // Wait for the SSE connection to be established before emitting events
+    match connected_rx.await {
+        Ok(Ok(())) => {}
+        Ok(Err(msg)) => panic!("{}", msg),
+        Err(_) => panic!("SSE task should signal connection"),
+    }
 
     // Perform operations that should emit events
     app.command("agent create thinker process").await?;
@@ -626,6 +645,7 @@ async fn activity_stream_authenticates_via_query_param() -> Result<(), Box<dyn c
     let sse_url = format!("{}/activity?token={token}", app.base_url());
 
     let (event_tx, mut event_rx) = tokio::sync::mpsc::channel::<StoredEvent>(64);
+    let (connected_tx, connected_rx) = tokio::sync::oneshot::channel::<Result<(), String>>();
 
     let sse_handle = tokio::spawn(async move {
         let http = reqwest::Client::new();
@@ -637,11 +657,16 @@ async fn activity_stream_authenticates_via_query_param() -> Result<(), Box<dyn c
             .await
             .unwrap();
 
-        assert!(
-            resp.status().is_success(),
-            "query param auth should succeed"
-        );
+        // Check status and signal result to main thread
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            let error_msg = format!("query param auth failed: {status}\n{body}");
+            let _ = connected_tx.send(Err(error_msg));
+            return;
+        }
 
+        let _ = connected_tx.send(Ok(()));
         let mut stream = resp.bytes_stream();
         let mut buffer = String::new();
 
@@ -675,6 +700,13 @@ async fn activity_stream_authenticates_via_query_param() -> Result<(), Box<dyn c
             }
         }
     });
+
+    // Wait for the SSE connection to be established before emitting events
+    match connected_rx.await {
+        Ok(Ok(())) => {}                                       // Success
+        Ok(Err(msg)) => panic!("{}", msg),                     // Auth failed with details
+        Err(_) => panic!("SSE task should signal connection"), // Task crashed
+    }
 
     app.command("agent create thinker process").await?;
 
