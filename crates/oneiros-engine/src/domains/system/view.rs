@@ -5,16 +5,34 @@
 
 use crate::*;
 
-pub struct SystemView;
+pub struct SystemView {
+    response: SystemResponse,
+}
 
 impl SystemView {
-    /// Confirmation that the system has been initialized.
-    pub fn initialized(name: &TenantName) -> String {
-        Confirmation::new("System", name.to_string(), "initialized").to_string()
+    pub fn new(response: SystemResponse) -> Self {
+        Self { response }
     }
 
-    /// Message when the system host is already initialized.
-    pub fn already_initialized() -> String {
-        format!("{}", "System already initialized.".muted())
+    pub fn render(self) -> Rendered<SystemResponse> {
+        match self.response {
+            SystemResponse::SystemInitialized(name) => {
+                let prompt =
+                    Confirmation::new("System", name.to_string(), "initialized").to_string();
+                Rendered::new(
+                    SystemResponse::SystemInitialized(name),
+                    prompt,
+                    String::new(),
+                )
+            }
+            SystemResponse::HostAlreadyInitialized => {
+                let prompt = format!("{}", "System already initialized.".muted());
+                Rendered::new(
+                    SystemResponse::HostAlreadyInitialized,
+                    prompt,
+                    String::new(),
+                )
+            }
+        }
     }
 }

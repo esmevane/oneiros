@@ -23,20 +23,6 @@ impl ActorCommands {
             ActorCommands::List(list) => actor_client.list(list).await?,
         };
 
-        let prompt = match &response {
-            ActorResponse::Created(wrapped) => {
-                ActorView::confirmed("created", &wrapped.data.name).to_string()
-            }
-            ActorResponse::Found(wrapped) => ActorView::detail(&wrapped.data).to_string(),
-            ActorResponse::Listed(listed) => {
-                let table = ActorView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(ActorView::new(response).render().map(Into::into))
     }
 }

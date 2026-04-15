@@ -1,33 +1,40 @@
-//! Tenant view — presentation authority for the tenant domain.
-//!
-//! Maps tenant responses into shared view primitives (Table, Detail,
-//! Confirmation). The domain knows its own shape; the rendering
-//! layer decides how to display it.
-
 use crate::*;
 
-pub struct TenantView;
+pub struct TenantView {
+    response: TenantResponse,
+}
 
 impl TenantView {
-    /// Table of tenants with standard columns.
-    pub fn table(tenants: &Listed<Response<Tenant>>) -> Table {
-        let mut table = Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
+    pub fn new(response: TenantResponse) -> Self {
+        Self { response }
+    }
 
-        for wrapped in &tenants.items {
-            let tenant = &wrapped.data;
-            table.push_row(vec![tenant.name.to_string(), tenant.id.to_string()]);
+    pub fn render(self) -> Rendered<TenantResponse> {
+        match self.response {
+            TenantResponse::Created(wrapped) => {
+                let prompt = Confirmation::new("Tenant", wrapped.data.name.to_string(), "created")
+                    .to_string();
+                Rendered::new(TenantResponse::Created(wrapped), prompt, String::new())
+            }
+            TenantResponse::Found(wrapped) => {
+                let prompt = Detail::new(wrapped.data.name.to_string())
+                    .field("id:", wrapped.data.id.to_string())
+                    .to_string();
+                Rendered::new(TenantResponse::Found(wrapped), prompt, String::new())
+            }
+            TenantResponse::Listed(listed) => {
+                let mut table =
+                    Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
+                for wrapped in &listed.items {
+                    let tenant = &wrapped.data;
+                    table.push_row(vec![tenant.name.to_string(), tenant.id.to_string()]);
+                }
+                let prompt = format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                );
+                Rendered::new(TenantResponse::Listed(listed), prompt, String::new())
+            }
         }
-
-        table
-    }
-
-    /// Detail view for a single tenant.
-    pub fn detail(tenant: &Tenant) -> Detail {
-        Detail::new(tenant.name.to_string()).field("id:", tenant.id.to_string())
-    }
-
-    /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &TenantName) -> Confirmation {
-        Confirmation::new("Tenant", name.to_string(), verb)
     }
 }

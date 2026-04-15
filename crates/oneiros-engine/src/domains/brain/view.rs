@@ -1,33 +1,36 @@
-//! Brain view — presentation authority for the brain domain.
-//!
-//! Maps brain responses into shared view primitives (Table, Detail,
-//! Confirmation). The domain knows its own shape; the rendering
-//! layer decides how to display it.
-
 use crate::*;
 
-pub struct BrainView;
+pub struct BrainView {
+    response: BrainResponse,
+}
 
 impl BrainView {
-    /// Table of brains with standard columns.
-    pub fn table(brains: &Listed<Response<Brain>>) -> Table {
-        let mut table = Table::new(vec![Column::key("name", "Name")]);
+    pub fn new(response: BrainResponse) -> Self {
+        Self { response }
+    }
 
-        for wrapped in &brains.items {
-            let brain = &wrapped.data;
-            table.push_row(vec![brain.name.to_string()]);
+    pub fn render(self) -> Rendered<BrainResponse> {
+        match self.response {
+            BrainResponse::Created(wrapped) => {
+                let prompt = Confirmation::new("Brain", wrapped.data.name.to_string(), "created")
+                    .to_string();
+                Rendered::new(BrainResponse::Created(wrapped), prompt, String::new())
+            }
+            BrainResponse::Found(wrapped) => {
+                let prompt = Detail::new(wrapped.data.name.to_string()).to_string();
+                Rendered::new(BrainResponse::Found(wrapped), prompt, String::new())
+            }
+            BrainResponse::Listed(listed) => {
+                let mut table = Table::new(vec![Column::key("name", "Name")]);
+                for wrapped in &listed.items {
+                    table.push_row(vec![wrapped.data.name.to_string()]);
+                }
+                let prompt = format!(
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                );
+                Rendered::new(BrainResponse::Listed(listed), prompt, String::new())
+            }
         }
-
-        table
-    }
-
-    /// Detail view for a single brain.
-    pub fn detail(brain: &Brain) -> Detail {
-        Detail::new(brain.name.to_string())
-    }
-
-    /// Confirmation for a mutation.
-    pub fn confirmed(verb: &str, name: &BrainName) -> Confirmation {
-        Confirmation::new("Brain", name.to_string(), verb)
     }
 }

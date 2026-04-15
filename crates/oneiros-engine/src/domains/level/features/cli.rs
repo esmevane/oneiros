@@ -25,20 +25,6 @@ impl LevelCommands {
             LevelCommands::Remove(removal) => level_client.remove(&removal.name).await?,
         };
 
-        let prompt = match &response {
-            LevelResponse::LevelSet(name) => LevelView::confirmed("set", name).to_string(),
-            LevelResponse::LevelDetails(wrapped) => LevelView::detail(&wrapped.data).to_string(),
-            LevelResponse::Levels(listed) => {
-                let table = LevelView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            LevelResponse::NoLevels => format!("{}", "No levels configured.".muted()),
-            LevelResponse::LevelRemoved(name) => LevelView::confirmed("removed", name).to_string(),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(LevelView::new(response).render().map(Into::into))
     }
 }

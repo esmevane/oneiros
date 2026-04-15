@@ -33,26 +33,6 @@ impl BookmarkCommands {
             BookmarkCommands::Unfollow(unfollow) => bookmark_client.unfollow(unfollow).await?,
         };
 
-        let prompt = match &response {
-            BookmarkResponse::Created(created) => BookmarkView::created(created).to_string(),
-            BookmarkResponse::Forked(forked) => BookmarkView::forked(forked).to_string(),
-            BookmarkResponse::Switched(switched) => BookmarkView::switched(switched).to_string(),
-            BookmarkResponse::Merged(merged) => BookmarkView::merged(merged).to_string(),
-            BookmarkResponse::Bookmarks(listed) => {
-                let table = BookmarkView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            BookmarkResponse::Shared(result) => BookmarkView::shared(result),
-            BookmarkResponse::Followed(follow) => BookmarkView::followed(follow).to_string(),
-            BookmarkResponse::Collected(result) => BookmarkView::collected(result).to_string(),
-            BookmarkResponse::Unfollowed(unfollowed) => {
-                BookmarkView::unfollowed(unfollowed).to_string()
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(BookmarkView::new(response).render().map(Into::into))
     }
 }

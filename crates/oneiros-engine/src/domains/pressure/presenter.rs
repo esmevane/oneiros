@@ -9,12 +9,11 @@ impl PressurePresenter {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<Responses> {
+    pub fn render(self) -> Rendered<PressureResponse> {
         let prompt = self.render_prompt();
         let text = self.render_text();
-        let data = Responses::from(self.response);
 
-        Rendered::new(data, prompt, text)
+        Rendered::new(self.response, prompt, text)
     }
 
     fn render_prompt(&self) -> String {

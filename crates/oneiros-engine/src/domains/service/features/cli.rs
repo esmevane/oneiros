@@ -29,10 +29,6 @@ impl ServiceCommands {
             ServiceCommands::Run => ServiceService::run(config).await?,
         };
 
-        Ok(Rendered::new(
-            response.clone().into(),
-            ServiceView::render(&response),
-            String::new(),
-        ))
+        Ok(ServiceView::new(response).render().map(Into::into))
     }
 }

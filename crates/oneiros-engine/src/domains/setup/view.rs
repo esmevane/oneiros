@@ -2,10 +2,25 @@
 
 use crate::*;
 
-pub struct SetupView;
+pub struct SetupView {
+    response: SetupResponse,
+}
 
 impl SetupView {
-    pub fn steps(steps: &[SetupStep]) -> String {
+    pub fn new(response: SetupResponse) -> Self {
+        Self { response }
+    }
+
+    pub fn render(self) -> Rendered<SetupResponse> {
+        match self.response {
+            SetupResponse::SetupComplete(steps) => {
+                let prompt = Self::steps(&steps);
+                Rendered::new(SetupResponse::SetupComplete(steps), prompt, String::new())
+            }
+        }
+    }
+
+    fn steps(steps: &[SetupStep]) -> String {
         let mut lines = vec![format!("{}", "Setup complete.".heading())];
 
         for step in steps {

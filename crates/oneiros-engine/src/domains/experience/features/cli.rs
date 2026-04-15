@@ -70,22 +70,6 @@ impl ExperienceCommands {
             }
         };
 
-        let prompt = match &response {
-            ExperienceResponse::ExperienceCreated(wrapped) => ExperienceView::recorded(wrapped),
-            ExperienceResponse::ExperienceDetails(wrapped) => {
-                ExperienceView::detail(&wrapped.data).to_string()
-            }
-            ExperienceResponse::Experiences(listed) => {
-                let table = ExperienceView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-            ExperienceResponse::NoExperiences => format!("{}", "No experiences.".muted()),
-            ExperienceResponse::ExperienceUpdated(wrapped) => ExperienceView::updated(wrapped),
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(ExperienceView::new(response).render().map(Into::into))
     }
 }

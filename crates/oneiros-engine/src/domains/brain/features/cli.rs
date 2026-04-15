@@ -23,20 +23,6 @@ impl BrainCommands {
             BrainCommands::List(list) => brain_client.list(list).await?,
         };
 
-        let prompt = match &response {
-            BrainResponse::Created(wrapped) => {
-                BrainView::confirmed("created", &wrapped.data.name).to_string()
-            }
-            BrainResponse::Found(wrapped) => BrainView::detail(&wrapped.data).to_string(),
-            BrainResponse::Listed(listed) => {
-                let table = BrainView::table(listed);
-                format!(
-                    "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
-                )
-            }
-        };
-
-        Ok(Rendered::new(response.into(), prompt, String::new()))
+        Ok(BrainView::new(response).render().map(Into::into))
     }
 }
