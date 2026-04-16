@@ -39,6 +39,8 @@ pub enum SeedError {
     MissingPersonas,
 }
 
+resource_op_error!(SeedError);
+
 impl IntoResponse for SeedError {
     fn into_response(self) -> Response {
         match self {

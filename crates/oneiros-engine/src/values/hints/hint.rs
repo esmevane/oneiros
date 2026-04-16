@@ -4,7 +4,7 @@ use crate::*;
 
 /// A navigational breadcrumb — tells a consuming agent what it can do
 /// next from where it is.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct Hint {
     pub level: HintLevel,
     pub action: String,

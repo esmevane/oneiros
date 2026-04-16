@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 /// A single step in the setup flow.
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = SetupStepType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SetupStep {
@@ -23,7 +23,7 @@ pub enum SetupStep {
 }
 
 /// The result of running setup.
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = SetupResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum SetupResponse {

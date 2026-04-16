@@ -1,12 +1,21 @@
-use axum::{Json, Router, extract::Query, routing};
+use aide::axum::{ApiRouter, routing};
+use axum::{Json, extract::Query};
 
 use crate::*;
 
 pub struct SearchRouter;
 
 impl SearchRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest("/search", Router::new().route("/", routing::get(search)))
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
+            "/search",
+            ApiRouter::new().api_route(
+                "/",
+                routing::get_with(search, |op| {
+                    resource_op!(op, SearchDocs::Search).security_requirement("BearerToken")
+                }),
+            ),
+        )
     }
 }
 

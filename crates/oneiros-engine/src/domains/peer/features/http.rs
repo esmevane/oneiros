@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,22 @@ use crate::*;
 pub struct PeerRouter;
 
 impl PeerRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/peers",
-            Router::<ServerState>::new()
-                .route("/", routing::get(list).post(add))
-                .route("/{id}", routing::get(show).delete(remove)),
+            ApiRouter::<ServerState>::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| resource_op!(op, PeerDocs::List))
+                        .post_with(add, |op| {
+                            resource_op!(op, PeerDocs::Add).response::<201, Json<PeerResponse>>()
+                        }),
+                )
+                .api_route(
+                    "/{id}",
+                    routing::get_with(show, |op| resource_op!(op, PeerDocs::Show))
+                        .delete_with(remove, |op| resource_op!(op, PeerDocs::Remove)),
+                ),
         )
     }
 }

@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,13 +10,28 @@ use crate::*;
 pub struct TicketRouter;
 
 impl TicketRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/tickets",
-            Router::new()
-                .route("/", routing::get(list).post(create))
-                .route("/{id}", routing::get(show))
-                .route("/validate", routing::post(validate)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| resource_op!(op, TicketDocs::List)).post_with(
+                        create,
+                        |op| {
+                            resource_op!(op, TicketDocs::Create)
+                                .response::<201, Json<TicketResponse>>()
+                        },
+                    ),
+                )
+                .api_route(
+                    "/{id}",
+                    routing::get_with(show, |op| resource_op!(op, TicketDocs::Show)),
+                )
+                .api_route(
+                    "/validate",
+                    routing::post_with(validate, |op| resource_op!(op, TicketDocs::Validate)),
+                ),
         )
     }
 }

@@ -21,6 +21,8 @@ pub enum PersonaError {
     Event(#[from] EventError),
 }
 
+resource_op_error!(PersonaError);
+
 impl IntoResponse for PersonaError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

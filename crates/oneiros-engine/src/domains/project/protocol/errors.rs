@@ -33,6 +33,8 @@ pub enum ProjectError {
     Client(#[from] ClientError),
 }
 
+resource_op_error!(ProjectError);
+
 impl IntoResponse for ProjectError {
     fn into_response(self) -> Response {
         let (status, message) = match self {

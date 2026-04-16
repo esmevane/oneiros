@@ -49,14 +49,14 @@ mod tests {
 }
 
 /// Genesis — a bookmark comes into existence (e.g. "main" at brain init).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkCreated {
     pub brain: BrainName,
     pub name: BookmarkName,
 }
 
 /// Derivation — a new bookmark forked from an existing one.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkForked {
     pub brain: BrainName,
     pub name: BookmarkName,
@@ -64,14 +64,14 @@ pub struct BookmarkForked {
 }
 
 /// Navigation — the active bookmark changed.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkSwitched {
     pub brain: BrainName,
     pub name: BookmarkName,
 }
 
 /// Convergence — one bookmark's changes merged into another.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkMerged {
     pub brain: BrainName,
     pub source: BookmarkName,
@@ -102,7 +102,7 @@ pub struct BookmarkCollected {
 
 /// Distribution — a follow was removed. Only the remote binding is
 /// severed; events already collected into the local bookmark stay.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkUnfollowed {
     pub follow_id: FollowId,
     pub brain: BrainName,

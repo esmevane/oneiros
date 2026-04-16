@@ -1,16 +1,27 @@
-use axum::{Json, Router, extract::Path, routing};
+use aide::axum::{ApiRouter, routing};
+use axum::{Json, extract::Path};
 
 use crate::*;
 
 pub struct PressureRouter;
 
 impl PressureRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/pressures",
-            Router::new()
-                .route("/", routing::get(list))
-                .route("/{agent}", routing::get(get)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, PressureDocs::List).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}",
+                    routing::get_with(get, |op| {
+                        resource_op!(op, PressureDocs::Get).security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }

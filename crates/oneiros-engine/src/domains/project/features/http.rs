@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     http::{HeaderMap, StatusCode},
     response::sse::{Event as SseEvent, KeepAlive, Sse},
-    routing,
 };
 use std::convert::Infallible;
 use tokio_stream::{StreamExt, wrappers::BroadcastStream};
@@ -12,13 +12,19 @@ use crate::*;
 pub struct ProjectRouter;
 
 impl ProjectRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new()
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new()
             // System-scoped — no auth needed (creating a brain is how you get a token)
-            .route("/projects", routing::post(init))
-            // Brain-scoped — requires auth via ProjectContext extractor
-            .route("/summary", routing::get(summary))
-            .route("/activity", routing::get(activity))
+            .api_route(
+                "/projects",
+                routing::post_with(init, |op| {
+                    resource_op!(op, ProjectDocs::Init).response::<201, Json<ProjectResponse>>()
+                }),
+            )
+            // Brain-scoped — BrainSummary lacks OperationOutput, use plain route()
+            .route("/summary", axum::routing::get(summary))
+            // SSE streaming — kept as route() since SSE doesn't map to OpenAPI
+            .route("/activity", axum::routing::get(activity))
     }
 }
 
@@ -44,7 +50,7 @@ async fn summary(context: ProjectContext) -> Result<Json<BrainSummary>, ProjectE
     // Get recent cognitions (last 30, newest first)
     let recent_cognitions = {
         let mut recent = cognitions;
-        recent.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        recent.sort_by_key(|b| std::cmp::Reverse(b.created_at));
         recent.truncate(30);
         recent
     };

@@ -1,6 +1,11 @@
 use std::sync::Arc;
 
-use axum::{Json, Router, extract::State, response::Html, routing};
+use aide::{
+    axum::{ApiRouter, routing as api_routing},
+    openapi::OpenApi,
+    scalar::Scalar,
+};
+use axum::{Extension, Json, Router, extract::State, response::Html, routing};
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
@@ -66,6 +71,11 @@ impl Server {
             Json(serde_json::json!({ "token": token, "brain": brain }))
         }
 
+        /// Serves the OpenAPI spec as JSON.
+        async fn serve_api(Extension(api): Extension<OpenApi>) -> Json<OpenApi> {
+            Json(api)
+        }
+
         let root = Router::new()
             .route("/", routing::get(async || Html(DASHBOARD_HTML)))
             .route("/health", routing::get(async || "ok"))
@@ -82,32 +92,64 @@ impl Server {
             Default::default(),
         );
 
-        Router::new()
+        let mut api = OpenApi::default();
+        let app_docs = AppDocs;
+
+        ApiRouter::new()
             .merge(root)
-            .nest("/mcp", Router::new().route_service("/", mcp_service))
-            .merge(LevelRouter.routes())
-            .merge(TextureRouter.routes())
-            .merge(SensationRouter.routes())
-            .merge(NatureRouter.routes())
-            .merge(PersonaRouter.routes())
-            .merge(UrgeRouter.routes())
-            .merge(AgentRouter.routes())
-            .merge(CognitionRouter.routes())
-            .merge(MemoryRouter.routes())
-            .merge(ExperienceRouter.routes())
-            .merge(ConnectionRouter.routes())
-            .merge(StorageRouter.routes())
-            .merge(PressureRouter.routes())
-            .merge(ContinuityRouter.routes())
-            .merge(SearchRouter.routes())
-            .merge(ProjectRouter.routes())
-            .merge(SeedRouter.routes())
-            .merge(TenantRouter.routes())
+            .nest_service("/mcp", Router::new().route_service("/", mcp_service))
             .merge(ActorRouter.routes())
-            .merge(TicketRouter.routes())
-            .merge(BrainRouter.routes())
+            .merge(AgentRouter.routes())
             .merge(BookmarkRouter.routes())
+            .merge(BrainRouter.routes())
+            .merge(CognitionRouter.routes())
+            .merge(ConnectionRouter.routes())
+            .merge(ContinuityRouter.routes())
+            .merge(ExperienceRouter.routes())
+            .merge(LevelRouter.routes())
+            .merge(MemoryRouter.routes())
+            .merge(NatureRouter.routes())
             .merge(PeerRouter.routes())
+            .merge(PersonaRouter.routes())
+            .merge(PressureRouter.routes())
+            .merge(ProjectRouter.routes())
+            .merge(SearchRouter.routes())
+            .merge(SeedRouter.routes())
+            .merge(SensationRouter.routes())
+            .merge(StorageRouter.routes())
+            .merge(TenantRouter.routes())
+            .merge(TextureRouter.routes())
+            .merge(TicketRouter.routes())
+            .merge(UrgeRouter.routes())
+            // OpenAPI spec and docs
+            .route("/api.json", api_routing::get(serve_api))
+            .route("/docs", Scalar::new("/api.json").axum_route())
+            .finish_api_with(&mut api, |mut api| {
+                api = api
+                    .title(app_docs.title().as_str())
+                    .version(app_docs.version().as_str())
+                    .description(app_docs.description().as_str())
+                    .security_scheme(
+                        app_docs.security_scheme_name().as_str(),
+                        aide::openapi::SecurityScheme::Http {
+                            scheme: "bearer".into(),
+                            bearer_format: None,
+                            description: Some(app_docs.security_scheme_description().to_string()),
+                            extensions: Default::default(),
+                        },
+                    );
+
+                for tag in app_docs.tags() {
+                    api = api.tag(aide::openapi::Tag {
+                        name: tag.name.to_string(),
+                        description: Some(tag.description.to_string()),
+                        ..Default::default()
+                    });
+                }
+
+                api
+            })
+            .layer(Extension(api))
             .with_state(state)
     }
 }

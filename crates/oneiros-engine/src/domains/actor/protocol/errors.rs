@@ -1,8 +1,10 @@
-use axum::Json;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
-use crate::{ActorId, ErrorResponse};
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ActorError {
@@ -21,6 +23,8 @@ pub enum ActorError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 }
+
+resource_op_error!(ActorError);
 
 impl IntoResponse for ActorError {
     fn into_response(self) -> Response {

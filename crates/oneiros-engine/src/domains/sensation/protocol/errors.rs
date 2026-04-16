@@ -21,6 +21,8 @@ pub enum SensationError {
     Event(#[from] EventError),
 }
 
+resource_op_error!(SensationError);
+
 impl IntoResponse for SensationError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

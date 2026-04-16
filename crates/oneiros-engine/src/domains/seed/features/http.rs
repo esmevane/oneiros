@@ -1,16 +1,31 @@
-use axum::{Json, Router, http::StatusCode, routing};
+use aide::axum::{ApiRouter, routing};
+use axum::{Json, http::StatusCode};
 
 use crate::*;
 
 pub struct SeedRouter;
 
 impl SeedRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/seed",
-            Router::new()
-                .route("/core", routing::post(seed_core))
-                .route("/agents", routing::post(seed_agents)),
+            ApiRouter::new()
+                .api_route(
+                    "/core",
+                    routing::post_with(seed_core, |op| {
+                        resource_op!(op, SeedDocs::SeedCore)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<SeedResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/agents",
+                    routing::post_with(seed_agents, |op| {
+                        resource_op!(op, SeedDocs::SeedAgents)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<SeedResponse>>()
+                    }),
+                ),
         )
     }
 }

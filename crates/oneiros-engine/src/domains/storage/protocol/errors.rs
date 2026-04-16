@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::ErrorResponse;
+use crate::{ErrorResponse, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
@@ -30,6 +30,8 @@ pub enum StorageError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 }
+
+resource_op_error!(StorageError);
 
 impl IntoResponse for StorageError {
     fn into_response(self) -> Response {

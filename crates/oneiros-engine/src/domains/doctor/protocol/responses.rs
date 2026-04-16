@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 /// The filename or path label identifying which database was checked.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct DatabaseLabel(pub String);
 
@@ -21,7 +21,7 @@ impl core::fmt::Display for DatabaseLabel {
 }
 
 /// The number of events present in the event log.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct LogEventCount(pub i64);
 
@@ -38,7 +38,7 @@ impl core::fmt::Display for LogEventCount {
 }
 
 /// A single diagnostic check item emitted during a doctor checkup.
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = DoctorCheckType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorCheck {
@@ -62,7 +62,7 @@ pub enum DoctorCheck {
 }
 
 /// All responses the doctor domain can produce.
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = DoctorResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorResponse {

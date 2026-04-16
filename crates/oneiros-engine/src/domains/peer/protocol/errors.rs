@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{ErrorResponse, PeerId};
+use crate::{ErrorResponse, PeerId, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum PeerError {
@@ -24,6 +24,8 @@ pub enum PeerError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 }
+
+resource_op_error!(PeerError);
 
 impl IntoResponse for PeerError {
     fn into_response(self) -> Response {

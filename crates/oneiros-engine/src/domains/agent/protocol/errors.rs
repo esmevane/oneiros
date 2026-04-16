@@ -1,10 +1,9 @@
+use crate::*;
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-
-use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AgentError {
@@ -26,6 +25,8 @@ pub enum AgentError {
     #[error(transparent)]
     Client(#[from] ClientError),
 }
+
+resource_op_error!(AgentError);
 
 impl IntoResponse for AgentError {
     fn into_response(self) -> Response {

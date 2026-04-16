@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,30 @@ use crate::*;
 pub struct StorageRouter;
 
 impl StorageRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/storage",
-            Router::new()
-                .route("/", routing::get(list).post(upload))
-                .route("/{ref_key}", routing::get(show).delete(remove)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, StorageDocs::List).security_requirement("BearerToken")
+                    })
+                    .post_with(upload, |op| {
+                        resource_op!(op, StorageDocs::Upload)
+                            .security_requirement("BearerToken")
+                            .response::<201, Json<StorageResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/{ref_key}",
+                    routing::get_with(show, |op| {
+                        resource_op!(op, StorageDocs::Show).security_requirement("BearerToken")
+                    })
+                    .delete_with(remove, |op| {
+                        resource_op!(op, StorageDocs::Remove).security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }

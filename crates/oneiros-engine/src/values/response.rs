@@ -3,12 +3,13 @@
 //! Handlers can attach pressure summaries, reference tokens, or
 //! navigational hints to any response without changing domain types.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
 /// A response envelope that wraps domain data with optional metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Response<T> {
     #[serde(flatten)]
     pub data: T,
@@ -53,7 +54,7 @@ impl<T> From<T> for Response<T> {
 }
 
 /// Metadata attached to responses — pressure summaries, hints, etc.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct ResponseMeta {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub pressures: Vec<PressureSummary>,

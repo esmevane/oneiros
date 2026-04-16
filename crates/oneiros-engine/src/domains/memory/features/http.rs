@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,27 @@ use crate::*;
 pub struct MemoryRouter;
 
 impl MemoryRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/memories",
-            Router::new()
-                .route("/", routing::get(list).post(add))
-                .route("/{id}", routing::get(show)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, MemoryDocs::List).security_requirement("BearerToken")
+                    })
+                    .post_with(add, |op| {
+                        resource_op!(op, MemoryDocs::Add)
+                            .security_requirement("BearerToken")
+                            .response::<201, Json<MemoryResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/{id}",
+                    routing::get_with(show, |op| {
+                        resource_op!(op, MemoryDocs::Show).security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }

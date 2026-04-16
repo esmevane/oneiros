@@ -21,6 +21,8 @@ pub enum NatureError {
     Event(#[from] EventError),
 }
 
+resource_op_error!(NatureError);
+
 impl IntoResponse for NatureError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{ErrorResponse, TenantId, TimestampParseError};
+use crate::{ErrorResponse, TenantId, TimestampParseError, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TenantError {
@@ -26,6 +26,8 @@ pub enum TenantError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 }
+
+resource_op_error!(TenantError);
 
 impl IntoResponse for TenantError {
     fn into_response(self) -> Response {

@@ -301,7 +301,7 @@ impl ContinuityService {
         let filtered_rest = Self::filter_memories(&config, rest_memories);
         let mut memories: Vec<Memory> = core_memories;
         memories.extend(filtered_rest);
-        memories.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        memories.sort_by_key(|a| a.created_at);
 
         // Recent experiences provide orientation
         let recent_experiences =
@@ -377,7 +377,7 @@ impl ContinuityService {
 
         // Apply cognition_size cap — keep the most recent.
         if cognitions.len() > config.cognition_size {
-            cognitions.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+            cognitions.sort_by_key(|a| a.created_at);
             cognitions = cognitions.split_off(cognitions.len() - config.cognition_size);
         }
 
@@ -387,7 +387,7 @@ impl ContinuityService {
 
         // Apply experience_size cap — keep the most recent.
         if experiences.len() > config.experience_size {
-            experiences.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+            experiences.sort_by_key(|a| a.created_at);
             experiences = experiences.split_off(experiences.len() - config.experience_size);
         }
 
@@ -432,7 +432,7 @@ impl ContinuityService {
         memories.retain(|m| level_priority(&m.level) >= min_priority);
 
         // Sort by created_at descending for recency-based capping
-        memories.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        memories.sort_by_key(|b| std::cmp::Reverse(b.created_at));
 
         // Cap at recollection_size
         memories.truncate(config.recollection_size);
@@ -470,7 +470,7 @@ impl ContinuityService {
             }
         }
 
-        cognitions.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        cognitions.sort_by_key(|a| a.created_at);
         Ok(cognitions)
     }
 
@@ -499,7 +499,7 @@ impl ContinuityService {
             }
         }
 
-        experiences.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        experiences.sort_by_key(|a| a.created_at);
         Ok(experiences)
     }
 }

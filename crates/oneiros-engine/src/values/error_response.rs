@@ -1,13 +1,14 @@
 //! Formal error response type — replaces ad-hoc `json!({ "error": ... })`
 //! across all HTTP error boundaries.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// A structured error response for HTTP boundaries.
 ///
 /// Every `IntoResponse` impl for domain errors produces this type,
 /// giving clients a stable contract they can parse and extend.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ErrorResponse {
     pub error: String,
 
@@ -35,6 +36,27 @@ impl ErrorResponse {
     pub fn with_detail(mut self, detail: impl Into<String>) -> Self {
         self.detail = Some(detail.into());
         self
+    }
+
+    pub fn openapi_schema(context: &mut aide::generate::GenContext) -> aide::openapi::Response {
+        let json_schema = context.schema.subschema_for::<ErrorResponse>();
+        aide::openapi::Response {
+            description: "Error response".into(),
+            content: [(
+                "application/json".into(),
+                aide::openapi::MediaType {
+                    schema: Some(aide::openapi::SchemaObject {
+                        json_schema,
+                        example: None,
+                        external_docs: None,
+                    }),
+                    ..Default::default()
+                },
+            )]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        }
     }
 }
 
