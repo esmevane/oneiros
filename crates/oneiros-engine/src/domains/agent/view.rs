@@ -14,6 +14,59 @@ impl AgentView {
         Self { response }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        let response = &self.response;
+        match response {
+            AgentResponse::AgentCreated(name) => McpResponse::new(format!("Agent created: {name}"))
+                .hint_set(HintSet::agent_created(
+                    AgentCreatedHints::builder().agent(name.clone()).build(),
+                )),
+            AgentResponse::AgentDetails(wrapped) => McpResponse::new(format!(
+                "# {}\n\n**persona:** {}\n**description:** {}\n\n{}\n",
+                wrapped.data.name,
+                wrapped.data.persona,
+                wrapped.data.description,
+                wrapped.data.prompt
+            ))
+            .hint(Hint::inspect(
+                ResourcePath::AgentCognitions(wrapped.data.name.clone()).uri(),
+                "Browse cognitions",
+            ))
+            .hint(Hint::inspect(
+                ResourcePath::AgentPressure(wrapped.data.name.clone()).uri(),
+                "Check pressure",
+            )),
+            AgentResponse::Agents(listed) => {
+                let mut md = format!("# Agents\n\n{} of {} total\n\n", listed.len(), listed.total);
+                md.push_str("| Name | Persona | Description |\n");
+                md.push_str("|------|---------|-------------|\n");
+                for wrapped in &listed.items {
+                    md.push_str(&format!(
+                        "| {} | {} | {} |\n",
+                        wrapped.data.name, wrapped.data.persona, wrapped.data.description
+                    ));
+                }
+                McpResponse::new(md).hint(Hint::suggest(
+                    "create-agent",
+                    "Bring a new agent into the brain",
+                ))
+            }
+            AgentResponse::NoAgents => McpResponse::new("# Agents\n\nNo agents configured.").hint(
+                Hint::suggest("create-agent", "Bring a new agent into the brain"),
+            ),
+            AgentResponse::AgentUpdated(name) => McpResponse::new(format!("Agent updated: {name}"))
+                .hint(Hint::inspect(
+                    ResourcePath::Agent(name.clone()).uri(),
+                    "View agent details",
+                )),
+            AgentResponse::AgentRemoved(name) => McpResponse::new(format!("Agent removed: {name}"))
+                .hint(Hint::inspect(
+                    ResourcePath::Agents.uri(),
+                    "See remaining agents",
+                )),
+        }
+    }
+
     pub fn render(self) -> Rendered<AgentResponse> {
         match self.response {
             AgentResponse::AgentCreated(name) => {

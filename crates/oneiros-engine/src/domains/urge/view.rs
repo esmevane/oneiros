@@ -9,6 +9,40 @@ impl UrgeView {
         Self { response }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            UrgeResponse::Urges(listed) => {
+                let items: Vec<_> = listed
+                    .items
+                    .iter()
+                    .map(|u| (u.name.to_string(), u.description.to_string()))
+                    .collect();
+                Self::vocabulary_table("Urges", &items)
+            }
+            UrgeResponse::UrgeDetails(urge) => {
+                let items = vec![(urge.name.to_string(), urge.description.to_string())];
+                Self::vocabulary_table("Urge", &items)
+            }
+            UrgeResponse::NoUrges => Self::vocabulary_table("Urges", &[]),
+            UrgeResponse::UrgeSet(name) => McpResponse::new(format!("Urge set: {name}")),
+            UrgeResponse::UrgeRemoved(name) => McpResponse::new(format!("Urge removed: {name}")),
+        }
+    }
+
+    fn vocabulary_table(title: &str, items: &[(String, String)]) -> McpResponse {
+        let mut md = format!("# {title}\n\n");
+        if items.is_empty() {
+            md.push_str(&format!("No {title} configured.\n"));
+        } else {
+            md.push_str("| Name | Description |\n");
+            md.push_str("|------|-------------|\n");
+            for (name, desc) in items {
+                md.push_str(&format!("| {name} | {desc} |\n"));
+            }
+        }
+        McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+    }
+
     pub fn render(self) -> Rendered<UrgeResponse> {
         match self.response {
             UrgeResponse::UrgeSet(name) => {

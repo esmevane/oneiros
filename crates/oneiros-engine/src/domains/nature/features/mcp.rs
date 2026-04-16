@@ -1,75 +1,48 @@
 use crate::*;
 
-pub struct NatureTools;
+pub struct NatureMcp;
 
-impl NatureTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
-        nature_mcp::tool_defs()
+impl NatureMcp {
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![ResourcePathKind::Natures.resource_def("Connection natures")]
     }
 
-    pub async fn dispatch(
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![]
+    }
+
+    pub async fn resource(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        nature_mcp::dispatch(context, tool_name, params).await
+        request: &NatureRequest,
+    ) -> Result<McpResponse, ToolError> {
+        nature_mcp::resource(context, request).await
     }
 }
 
 mod nature_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
-        vec![
-            Tool::<SetNature>::new(
-                NatureRequestType::SetNature,
-                "Define a kind of relationship between things",
-            )
-            .def(),
-            Tool::<GetNature>::new(
-                NatureRequestType::GetNature,
-                "Look up a relationship category",
-            )
-            .def(),
-            Tool::<ListNatures>::new(
-                NatureRequestType::ListNatures,
-                "See all the kinds of relationships",
-            )
-            .def(),
-            Tool::<RemoveNature>::new(
-                NatureRequestType::RemoveNature,
-                "Remove a relationship category",
-            )
-            .def(),
-        ]
-    }
-
-    pub async fn dispatch(
+    pub async fn resource(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        let request_type: NatureRequestType = tool_name
-            .parse()
-            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
-
-        let value = match request_type {
-            NatureRequestType::SetNature => {
-                NatureService::set(context, &serde_json::from_str(params)?).await
+        request: &NatureRequest,
+    ) -> Result<McpResponse, ToolError> {
+        match request {
+            NatureRequest::ListNatures(list) => {
+                let response = NatureService::list(context, list)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(NatureView::new(response).mcp())
             }
-            NatureRequestType::GetNature => {
-                NatureService::get(context, &serde_json::from_str(params)?).await
+            NatureRequest::GetNature(get) => {
+                let response = NatureService::get(context, get)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(NatureView::new(response).mcp())
             }
-            NatureRequestType::ListNatures => {
-                NatureService::list(context, &serde_json::from_str(params)?).await
-            }
-            NatureRequestType::RemoveNature => {
-                NatureService::remove(context, &serde_json::from_str(params)?).await
-            }
+            NatureRequest::SetNature(_) | NatureRequest::RemoveNature(_) => Err(
+                ToolError::NotAResource("Mutations are tools, not resources".to_string()),
+            ),
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

@@ -1,12 +1,47 @@
 use crate::*;
 
-pub struct PressurePresenter {
+pub struct PressurePresenter<'a> {
     response: PressureResponse,
+    request: &'a PressureRequest,
 }
 
-impl PressurePresenter {
-    pub fn new(response: PressureResponse) -> Self {
-        Self { response }
+impl<'a> PressurePresenter<'a> {
+    pub fn new(response: PressureResponse, request: &'a PressureRequest) -> Self {
+        Self { response, request }
+    }
+
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            PressureResponse::Readings(result) => {
+                let title = match self.request {
+                    PressureRequest::GetPressure(get) => {
+                        format!("# Pressure — {}\n\n", get.agent)
+                    }
+                    _ => "# Pressure\n\n".to_string(),
+                };
+                let mut md = title;
+                for pressure in &result.pressures {
+                    md.push_str(&format!("## {}\n\n", pressure.urge));
+                    md.push_str(&format!(
+                        "**urgency:** {:.0}%\n\n",
+                        pressure.urgency() * 100.0
+                    ));
+                }
+                McpResponse::new(md)
+            }
+            PressureResponse::AllReadings(result) => {
+                let mut md = String::from("# Pressure — All Agents\n\n");
+                for pressure in &result.pressures {
+                    md.push_str(&format!(
+                        "- **{}** ({}): {:.0}%\n",
+                        pressure.urge,
+                        pressure.agent_id,
+                        pressure.urgency() * 100.0
+                    ));
+                }
+                McpResponse::new(md)
+            }
+        }
     }
 
     pub fn render(self) -> Rendered<PressureResponse> {

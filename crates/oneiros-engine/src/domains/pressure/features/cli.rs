@@ -16,7 +16,10 @@ impl PressureCommands {
         let client = context.client();
         let pressure_client = PressureClient::new(&client);
 
+        let request = PressureRequest::GetPressure(self.request.clone());
         let response = pressure_client.get(&self.request).await?;
-        Ok(PressureView::new(response).render().map(Into::into))
+        Ok(PressureView::new(response, &request)
+            .render()
+            .map(Into::into))
     }
 }

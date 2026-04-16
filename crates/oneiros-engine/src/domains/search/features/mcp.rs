@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct SearchTools;
+pub struct SearchMcp;
 
-impl SearchTools {
+impl SearchMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         search_mcp::tool_defs()
     }
@@ -10,9 +10,9 @@ impl SearchTools {
     pub async fn dispatch(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         search_mcp::dispatch(context, tool_name, params).await
     }
 }
@@ -32,20 +32,22 @@ mod search_mcp {
 
     pub async fn dispatch(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         let request_type: SearchRequestType = tool_name
+            .as_str()
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             SearchRequestType::SearchQuery => {
-                SearchService::search(context, &serde_json::from_str(params)?).await
+                let query: SearchQuery = serde_json::from_value(params.clone())?;
+                let response = SearchService::search(context, &query)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(SearchView::new(response).mcp())
             }
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

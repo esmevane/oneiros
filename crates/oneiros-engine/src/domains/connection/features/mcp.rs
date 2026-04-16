@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct ConnectionTools;
+pub struct ConnectionMcp;
 
-impl ConnectionTools {
+impl ConnectionMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         connection_mcp::tool_defs()
     }
@@ -10,10 +10,26 @@ impl ConnectionTools {
     pub async fn dispatch(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         connection_mcp::dispatch(context, tool_name, params).await
+    }
+
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![]
+    }
+
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![ResourcePathKind::Connection.into_template("A specific connection")]
+    }
+
+    pub async fn resource(
+        &self,
+        context: &ProjectContext,
+        request: &ConnectionRequest,
+    ) -> Result<McpResponse, ToolError> {
+        connection_mcp::resource(context, request).await
     }
 }
 
@@ -27,49 +43,61 @@ mod connection_mcp {
                 "Draw a line between two related things",
             )
             .def(),
-            Tool::<GetConnection>::new(
-                ConnectionRequestType::GetConnection,
-                "Examine a specific connection",
-            )
-            .def(),
-            Tool::<ListConnections>::new(
-                ConnectionRequestType::ListConnections,
-                "See how things connect",
-            )
-            .def(),
-            Tool::<RemoveConnection>::new(
-                ConnectionRequestType::RemoveConnection,
-                "Remove a connection",
-            )
-            .def(),
         ]
     }
 
     pub async fn dispatch(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         let request_type: ConnectionRequestType = tool_name
+            .as_str()
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             ConnectionRequestType::CreateConnection => {
-                ConnectionService::create(context, &serde_json::from_str(params)?).await
+                let creation: CreateConnection = serde_json::from_value(params.clone())?;
+                let request = ConnectionRequest::CreateConnection(creation.clone());
+                let response = ConnectionService::create(context, &creation)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(ConnectionView::new(response, &request).mcp())
             }
-            ConnectionRequestType::GetConnection => {
-                ConnectionService::get(context, &serde_json::from_str(params)?).await
-            }
-            ConnectionRequestType::ListConnections => {
-                ConnectionService::list(context, &serde_json::from_str(params)?).await
-            }
-            ConnectionRequestType::RemoveConnection => {
-                ConnectionService::remove(context, &serde_json::from_str(params)?).await
+            ConnectionRequestType::GetConnection
+            | ConnectionRequestType::ListConnections
+            | ConnectionRequestType::RemoveConnection => {
+                Err(ToolError::UnknownTool(tool_name.to_string()))
             }
         }
-        .map_err(Error::from)?;
+    }
 
-        Ok(serde_json::to_value(value)?)
+    pub async fn resource(
+        context: &ProjectContext,
+        request: &ConnectionRequest,
+    ) -> Result<McpResponse, ToolError> {
+        let response = match request {
+            ConnectionRequest::GetConnection(get) => ConnectionService::get(context, get)
+                .await
+                .map_err(Error::from)?,
+            ConnectionRequest::ListConnections(listing) => {
+                ConnectionService::list(context, listing)
+                    .await
+                    .map_err(Error::from)?
+            }
+            ConnectionRequest::CreateConnection(_) | ConnectionRequest::RemoveConnection(_) => {
+                return Err(ToolError::NotAResource(
+                    "Mutations are tools, not resources".to_string(),
+                ));
+            }
+        };
+
+        match &response {
+            ConnectionResponse::NoConnections => {
+                Err(ToolError::NotFound("Connection not found".to_string()))
+            }
+            _ => Ok(ConnectionView::new(response, request).mcp()),
+        }
     }
 }

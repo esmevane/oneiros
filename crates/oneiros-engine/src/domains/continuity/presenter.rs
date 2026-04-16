@@ -19,6 +19,29 @@ impl ContinuityPresenter {
         }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            ContinuityResponse::Status(table) => {
+                let mut md = String::from("# Agent Status\n\n");
+                md.push_str("| Agent | Cognitions | Memories | Experiences |\n");
+                md.push_str("|-------|------------|----------|-------------|\n");
+                for row in &table.agents {
+                    md.push_str(&format!(
+                        "| {} | {} | {} | {} |\n",
+                        row.name, row.cognition_count, row.memory_count, row.experience_count,
+                    ));
+                }
+                McpResponse::new(md)
+                    .hint(Hint::inspect(
+                        ResourcePath::Pressure.uri(),
+                        "Check pressure across agents",
+                    ))
+                    .hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+            }
+            _ => McpResponse::new(String::new()),
+        }
+    }
+
     pub fn with_deep(mut self, deep: bool) -> Self {
         self.deep = deep;
         self

@@ -24,42 +24,55 @@ impl ExperienceCommands {
         let client = context.client();
         let experience_client = ExperienceClient::new(&client);
 
-        let response = match self {
-            ExperienceCommands::Create(creation) => experience_client.create(creation).await?,
-            ExperienceCommands::Show(get) => experience_client.get(get).await?,
-            ExperienceCommands::List(listing) => experience_client.list(listing).await?,
+        let (response, request) = match self {
+            ExperienceCommands::Create(creation) => {
+                let response = experience_client.create(creation).await?;
+                (
+                    response,
+                    ExperienceRequest::CreateExperience(creation.clone()),
+                )
+            }
+            ExperienceCommands::Show(get) => {
+                let response = experience_client.get(get).await?;
+                (response, ExperienceRequest::GetExperience(get.clone()))
+            }
+            ExperienceCommands::List(listing) => {
+                let response = experience_client.list(listing).await?;
+                (
+                    response,
+                    ExperienceRequest::ListExperiences(listing.clone()),
+                )
+            }
             ExperienceCommands::Update {
                 id,
                 description,
                 sensation,
             } => {
                 let id: ExperienceId = id.parse()?;
-                let mut result: Option<ExperienceResponse> = None;
+                let mut result: Option<(ExperienceResponse, ExperienceRequest)> = None;
 
                 if let Some(desc) = description {
-                    result = Some(
-                        experience_client
-                            .update_description(
-                                &UpdateExperienceDescription::builder()
-                                    .id(id)
-                                    .description(Description::new(desc))
-                                    .build(),
-                            )
-                            .await?,
-                    );
+                    let update = UpdateExperienceDescription::builder()
+                        .id(id)
+                        .description(Description::new(desc))
+                        .build();
+                    let response = experience_client.update_description(&update).await?;
+                    result = Some((
+                        response,
+                        ExperienceRequest::UpdateExperienceDescription(update),
+                    ));
                 }
 
                 if let Some(sens) = sensation {
-                    result = Some(
-                        experience_client
-                            .update_sensation(
-                                &UpdateExperienceSensation::builder()
-                                    .id(id)
-                                    .sensation(SensationName::new(sens))
-                                    .build(),
-                            )
-                            .await?,
-                    );
+                    let update = UpdateExperienceSensation::builder()
+                        .id(id)
+                        .sensation(SensationName::new(sens))
+                        .build();
+                    let response = experience_client.update_sensation(&update).await?;
+                    result = Some((
+                        response,
+                        ExperienceRequest::UpdateExperienceSensation(update),
+                    ));
                 }
 
                 result.ok_or_else(|| {
@@ -70,6 +83,8 @@ impl ExperienceCommands {
             }
         };
 
-        Ok(ExperienceView::new(response).render().map(Into::into))
+        Ok(ExperienceView::new(response, &request)
+            .render()
+            .map(Into::into))
     }
 }

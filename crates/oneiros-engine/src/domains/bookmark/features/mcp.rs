@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct BookmarkTools;
+pub struct BookmarkMcp;
 
-impl BookmarkTools {
+impl BookmarkMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         bookmark_mcp::tool_defs()
     }

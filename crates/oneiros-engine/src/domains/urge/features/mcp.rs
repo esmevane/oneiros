@@ -1,59 +1,46 @@
 use crate::*;
 
-pub struct UrgeTools;
+pub struct UrgeMcp;
 
-impl UrgeTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
-        urge_mcp::tool_defs()
+impl UrgeMcp {
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![ResourcePathKind::Urges.resource_def("Cognitive drives")]
     }
 
-    pub async fn dispatch(
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![]
+    }
+
+    pub async fn resource(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        urge_mcp::dispatch(context, tool_name, params).await
+        request: &UrgeRequest,
+    ) -> Result<McpResponse, ToolError> {
+        urge_mcp::resource(context, request).await
     }
 }
 
 mod urge_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
-        vec![
-            Tool::<SetUrge>::new(UrgeRequestType::SetUrge, "Define a cognitive drive").def(),
-            Tool::<GetUrge>::new(UrgeRequestType::GetUrge, "Look up a cognitive drive").def(),
-            Tool::<ListUrges>::new(UrgeRequestType::ListUrges, "See all cognitive drives").def(),
-            Tool::<RemoveUrge>::new(UrgeRequestType::RemoveUrge, "Remove a cognitive drive").def(),
-        ]
-    }
-
-    pub async fn dispatch(
+    pub async fn resource(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        let request_type: UrgeRequestType = tool_name
-            .parse()
-            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
-
-        let value = match request_type {
-            UrgeRequestType::SetUrge => {
-                UrgeService::set(context, &serde_json::from_str(params)?).await
+        request: &UrgeRequest,
+    ) -> Result<McpResponse, ToolError> {
+        match request {
+            UrgeRequest::ListUrges(list) => {
+                let response = UrgeService::list(context, list)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(UrgeView::new(response).mcp())
             }
-            UrgeRequestType::GetUrge => {
-                UrgeService::get(context, &serde_json::from_str(params)?).await
+            UrgeRequest::GetUrge(get) => {
+                let response = UrgeService::get(context, get).await.map_err(Error::from)?;
+                Ok(UrgeView::new(response).mcp())
             }
-            UrgeRequestType::ListUrges => {
-                UrgeService::list(context, &serde_json::from_str(params)?).await
-            }
-            UrgeRequestType::RemoveUrge => {
-                UrgeService::remove(context, &serde_json::from_str(params)?).await
-            }
+            UrgeRequest::SetUrge(_) | UrgeRequest::RemoveUrge(_) => Err(ToolError::NotAResource(
+                "Mutations are tools, not resources".to_string(),
+            )),
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

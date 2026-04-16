@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct TenantTools;
+pub struct TenantMcp;
 
-impl TenantTools {
+impl TenantMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         tenant_mcp::tool_defs()
     }

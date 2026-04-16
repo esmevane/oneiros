@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct CognitionTools;
+pub struct CognitionMcp;
 
-impl CognitionTools {
+impl CognitionMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         cognition_mcp::tool_defs()
     }
@@ -10,56 +10,86 @@ impl CognitionTools {
     pub async fn dispatch(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         cognition_mcp::dispatch(context, tool_name, params).await
+    }
+
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![]
+    }
+
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![ResourcePathKind::Cognition.into_template("A specific cognition")]
+    }
+
+    pub async fn resource(
+        &self,
+        context: &ProjectContext,
+        request: &CognitionRequest,
+    ) -> Result<McpResponse, ToolError> {
+        cognition_mcp::resource(context, request).await
     }
 }
 
 mod cognition_mcp {
-    //! Cognition MCP driving adapter — translates tool calls into domain service calls.
-
     use crate::*;
 
     pub fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<AddCognition>::new(CognitionRequestType::AddCognition, "Record a thought").def(),
-            Tool::<GetCognition>::new(
-                CognitionRequestType::GetCognition,
-                "Revisit a specific thought",
-            )
-            .def(),
-            Tool::<ListCognitions>::new(
-                CognitionRequestType::ListCognitions,
-                "Review a stream of thoughts",
-            )
-            .def(),
         ]
     }
 
     pub async fn dispatch(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         let request_type: CognitionRequestType = tool_name
+            .as_str()
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             CognitionRequestType::AddCognition => {
-                CognitionService::add(context, &serde_json::from_str(params)?).await
+                let addition: AddCognition = serde_json::from_value(params.clone())?;
+                let request = CognitionRequest::AddCognition(addition.clone());
+                let response = CognitionService::add(context, &addition)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(CognitionView::new(response, &request).mcp())
             }
-            CognitionRequestType::GetCognition => {
-                CognitionService::get(context, &serde_json::from_str(params)?).await
-            }
-            CognitionRequestType::ListCognitions => {
-                CognitionService::list(context, &serde_json::from_str(params)?).await
+            CognitionRequestType::GetCognition | CognitionRequestType::ListCognitions => {
+                Err(ToolError::UnknownTool(tool_name.to_string()))
             }
         }
-        .map_err(Error::from)?;
+    }
 
-        Ok(serde_json::to_value(value)?)
+    pub async fn resource(
+        context: &ProjectContext,
+        request: &CognitionRequest,
+    ) -> Result<McpResponse, ToolError> {
+        let response = match request {
+            CognitionRequest::GetCognition(get) => CognitionService::get(context, get)
+                .await
+                .map_err(Error::from)?,
+            CognitionRequest::ListCognitions(listing) => CognitionService::list(context, listing)
+                .await
+                .map_err(Error::from)?,
+            CognitionRequest::AddCognition(_) => {
+                return Err(ToolError::NotAResource(
+                    "Add is a tool, not a resource".to_string(),
+                ));
+            }
+        };
+
+        match &response {
+            CognitionResponse::NoCognitions => {
+                Err(ToolError::NotFound("Cognition not found".to_string()))
+            }
+            _ => Ok(CognitionView::new(response, request).mcp()),
+        }
     }
 }

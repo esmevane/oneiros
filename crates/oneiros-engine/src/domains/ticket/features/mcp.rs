@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct TicketTools;
+pub struct TicketMcp;
 
-impl TicketTools {
+impl TicketMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         ticket_mcp::tool_defs()
     }

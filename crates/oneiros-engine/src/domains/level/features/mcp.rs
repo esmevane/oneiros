@@ -1,75 +1,46 @@
 use crate::*;
 
-pub struct LevelTools;
+pub struct LevelMcp;
 
-impl LevelTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
-        level_mcp::tool_defs()
+impl LevelMcp {
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![ResourcePathKind::Levels.resource_def("Memory retention tiers")]
     }
 
-    pub async fn dispatch(
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![]
+    }
+
+    pub async fn resource(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        level_mcp::dispatch(context, tool_name, params).await
+        request: &LevelRequest,
+    ) -> Result<McpResponse, ToolError> {
+        level_mcp::resource(context, request).await
     }
 }
 
 mod level_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
-        vec![
-            Tool::<SetLevel>::new(
-                LevelRequestType::SetLevel,
-                "Define how long a kind of memory should be kept",
-            )
-            .def(),
-            Tool::<GetLevel>::new(
-                LevelRequestType::GetLevel,
-                "Look up a memory retention tier",
-            )
-            .def(),
-            Tool::<ListLevels>::new(
-                LevelRequestType::ListLevels,
-                "See all memory retention tiers",
-            )
-            .def(),
-            Tool::<RemoveLevel>::new(
-                LevelRequestType::RemoveLevel,
-                "Remove a memory retention tier",
-            )
-            .def(),
-        ]
-    }
-
-    pub async fn dispatch(
+    pub async fn resource(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        let request_type: LevelRequestType = tool_name
-            .parse()
-            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
-
-        let value = match request_type {
-            LevelRequestType::SetLevel => {
-                LevelService::set(context, &serde_json::from_str(params)?).await
+        request: &LevelRequest,
+    ) -> Result<McpResponse, ToolError> {
+        match request {
+            LevelRequest::ListLevels(list) => {
+                let response = LevelService::list(context, list)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(LevelView::new(response).mcp())
             }
-            LevelRequestType::GetLevel => {
-                LevelService::get(context, &serde_json::from_str(params)?).await
+            LevelRequest::GetLevel(get) => {
+                let response = LevelService::get(context, get).await.map_err(Error::from)?;
+                Ok(LevelView::new(response).mcp())
             }
-            LevelRequestType::ListLevels => {
-                LevelService::list(context, &serde_json::from_str(params)?).await
-            }
-            LevelRequestType::RemoveLevel => {
-                LevelService::remove(context, &serde_json::from_str(params)?).await
-            }
+            LevelRequest::SetLevel(_) | LevelRequest::RemoveLevel(_) => Err(
+                ToolError::NotAResource("Mutations are tools, not resources".to_string()),
+            ),
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

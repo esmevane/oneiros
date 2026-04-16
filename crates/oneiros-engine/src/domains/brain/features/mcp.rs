@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct BrainTools;
+pub struct BrainMcp;
 
-impl BrainTools {
+impl BrainMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         brain_mcp::tool_defs()
     }

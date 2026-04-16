@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct ExperienceTools;
+pub struct ExperienceMcp;
 
-impl ExperienceTools {
+impl ExperienceMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         experience_mcp::tool_defs()
     }
@@ -10,10 +10,26 @@ impl ExperienceTools {
     pub async fn dispatch(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         experience_mcp::dispatch(context, tool_name, params).await
+    }
+
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![]
+    }
+
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![ResourcePathKind::Experience.into_template("A specific experience")]
+    }
+
+    pub async fn resource(
+        &self,
+        context: &ProjectContext,
+        request: &ExperienceRequest,
+    ) -> Result<McpResponse, ToolError> {
+        experience_mcp::resource(context, request).await
     }
 }
 
@@ -27,57 +43,64 @@ mod experience_mcp {
                 "Mark a meaningful moment",
             )
             .def(),
-            Tool::<GetExperience>::new(
-                ExperienceRequestType::GetExperience,
-                "Revisit a specific experience",
-            )
-            .def(),
-            Tool::<ListExperiences>::new(
-                ExperienceRequestType::ListExperiences,
-                "Survey threads of meaning",
-            )
-            .def(),
-            Tool::<UpdateExperienceDescription>::new(
-                ExperienceRequestType::UpdateExperienceDescription,
-                "Refine an experience's description",
-            )
-            .def(),
-            Tool::<UpdateExperienceSensation>::new(
-                ExperienceRequestType::UpdateExperienceSensation,
-                "Change an experience's sensation",
-            )
-            .def(),
         ]
     }
 
     pub async fn dispatch(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
+        tool_name: &ToolName,
+        params: &serde_json::Value,
+    ) -> Result<McpResponse, ToolError> {
         let request_type: ExperienceRequestType = tool_name
+            .as_str()
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let value = match request_type {
+        match request_type {
             ExperienceRequestType::CreateExperience => {
-                ExperienceService::create(context, &serde_json::from_str(params)?).await
+                let creation: CreateExperience = serde_json::from_value(params.clone())?;
+                let request = ExperienceRequest::CreateExperience(creation.clone());
+                let response = ExperienceService::create(context, &creation)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(ExperienceView::new(response, &request).mcp())
             }
-            ExperienceRequestType::GetExperience => {
-                ExperienceService::get(context, &serde_json::from_str(params)?).await
-            }
-            ExperienceRequestType::ListExperiences => {
-                ExperienceService::list(context, &serde_json::from_str(params)?).await
-            }
-            ExperienceRequestType::UpdateExperienceDescription => {
-                ExperienceService::update_description(context, &serde_json::from_str(params)?).await
-            }
-            ExperienceRequestType::UpdateExperienceSensation => {
-                ExperienceService::update_sensation(context, &serde_json::from_str(params)?).await
+            ExperienceRequestType::GetExperience
+            | ExperienceRequestType::ListExperiences
+            | ExperienceRequestType::UpdateExperienceDescription
+            | ExperienceRequestType::UpdateExperienceSensation => {
+                Err(ToolError::UnknownTool(tool_name.to_string()))
             }
         }
-        .map_err(Error::from)?;
+    }
 
-        Ok(serde_json::to_value(value)?)
+    pub async fn resource(
+        context: &ProjectContext,
+        request: &ExperienceRequest,
+    ) -> Result<McpResponse, ToolError> {
+        let response = match request {
+            ExperienceRequest::GetExperience(get) => ExperienceService::get(context, get)
+                .await
+                .map_err(Error::from)?,
+            ExperienceRequest::ListExperiences(listing) => {
+                ExperienceService::list(context, listing)
+                    .await
+                    .map_err(Error::from)?
+            }
+            ExperienceRequest::CreateExperience(_)
+            | ExperienceRequest::UpdateExperienceDescription(_)
+            | ExperienceRequest::UpdateExperienceSensation(_) => {
+                return Err(ToolError::NotAResource(
+                    "Mutations are tools, not resources".to_string(),
+                ));
+            }
+        };
+
+        match &response {
+            ExperienceResponse::NoExperiences => {
+                Err(ToolError::NotFound("Experience not found".to_string()))
+            }
+            _ => Ok(ExperienceView::new(response, request).mcp()),
+        }
     }
 }

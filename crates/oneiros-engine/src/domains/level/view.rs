@@ -9,6 +9,43 @@ impl LevelView {
         Self { response }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            LevelResponse::Levels(listed) => {
+                let items: Vec<_> = listed
+                    .items
+                    .iter()
+                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .collect();
+                Self::vocabulary_table("Levels", &items)
+            }
+            LevelResponse::LevelDetails(wrapped) => {
+                let items = vec![(
+                    wrapped.data.name.to_string(),
+                    wrapped.data.description.to_string(),
+                )];
+                Self::vocabulary_table("Level", &items)
+            }
+            LevelResponse::NoLevels => Self::vocabulary_table("Levels", &[]),
+            LevelResponse::LevelSet(name) => McpResponse::new(format!("Level set: {name}")),
+            LevelResponse::LevelRemoved(name) => McpResponse::new(format!("Level removed: {name}")),
+        }
+    }
+
+    fn vocabulary_table(title: &str, items: &[(String, String)]) -> McpResponse {
+        let mut md = format!("# {title}\n\n");
+        if items.is_empty() {
+            md.push_str(&format!("No {title} configured.\n"));
+        } else {
+            md.push_str("| Name | Description |\n");
+            md.push_str("|------|-------------|\n");
+            for (name, desc) in items {
+                md.push_str(&format!("| {name} | {desc} |\n"));
+            }
+        }
+        McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+    }
+
     pub fn render(self) -> Rendered<LevelResponse> {
         match self.response {
             LevelResponse::LevelSet(name) => {

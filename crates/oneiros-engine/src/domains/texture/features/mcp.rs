@@ -1,72 +1,48 @@
 use crate::*;
 
-pub struct TextureTools;
+pub struct TextureMcp;
 
-impl TextureTools {
-    pub fn defs(&self) -> Vec<ToolDef> {
-        texture_mcp::tool_defs()
+impl TextureMcp {
+    pub fn resources(&self) -> Vec<ResourceDef> {
+        vec![ResourcePathKind::Textures.resource_def("Thought textures")]
     }
 
-    pub async fn dispatch(
+    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![]
+    }
+
+    pub async fn resource(
         &self,
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        texture_mcp::dispatch(context, tool_name, params).await
+        request: &TextureRequest,
+    ) -> Result<McpResponse, ToolError> {
+        texture_mcp::resource(context, request).await
     }
 }
 
 mod texture_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
-        vec![
-            Tool::<SetTexture>::new(
-                TextureRequestType::SetTexture,
-                "Define a quality of thought",
-            )
-            .def(),
-            Tool::<GetTexture>::new(TextureRequestType::GetTexture, "Look up a thought category")
-                .def(),
-            Tool::<ListTextures>::new(
-                TextureRequestType::ListTextures,
-                "See all the ways thoughts can be textured",
-            )
-            .def(),
-            Tool::<RemoveTexture>::new(
-                TextureRequestType::RemoveTexture,
-                "Remove a thought category",
-            )
-            .def(),
-        ]
-    }
-
-    pub async fn dispatch(
+    pub async fn resource(
         context: &ProjectContext,
-        tool_name: &str,
-        params: &str,
-    ) -> Result<serde_json::Value, ToolError> {
-        let request_type: TextureRequestType = tool_name
-            .parse()
-            .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
-
-        let value = match request_type {
-            TextureRequestType::SetTexture => {
-                TextureService::set(context, &serde_json::from_str(params)?).await
+        request: &TextureRequest,
+    ) -> Result<McpResponse, ToolError> {
+        match request {
+            TextureRequest::ListTextures(list) => {
+                let response = TextureService::list(context, list)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(TextureView::new(response).mcp())
             }
-            TextureRequestType::GetTexture => {
-                TextureService::get(context, &serde_json::from_str(params)?).await
+            TextureRequest::GetTexture(get) => {
+                let response = TextureService::get(context, get)
+                    .await
+                    .map_err(Error::from)?;
+                Ok(TextureView::new(response).mcp())
             }
-            TextureRequestType::ListTextures => {
-                TextureService::list(context, &serde_json::from_str(params)?).await
-            }
-            TextureRequestType::RemoveTexture => {
-                TextureService::remove(context, &serde_json::from_str(params)?).await
-            }
+            TextureRequest::SetTexture(_) | TextureRequest::RemoveTexture(_) => Err(
+                ToolError::NotAResource("Mutations are tools, not resources".to_string()),
+            ),
         }
-        .map_err(Error::from)?;
-
-        Ok(serde_json::to_value(value)?)
     }
 }

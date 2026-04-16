@@ -9,6 +9,47 @@ impl SensationView {
         Self { response }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            SensationResponse::Sensations(listed) => {
+                let items: Vec<_> = listed
+                    .items
+                    .iter()
+                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .collect();
+                Self::vocabulary_table("Sensations", &items)
+            }
+            SensationResponse::SensationDetails(wrapped) => {
+                let items = vec![(
+                    wrapped.data.name.to_string(),
+                    wrapped.data.description.to_string(),
+                )];
+                Self::vocabulary_table("Sensation", &items)
+            }
+            SensationResponse::NoSensations => Self::vocabulary_table("Sensations", &[]),
+            SensationResponse::SensationSet(name) => {
+                McpResponse::new(format!("Sensation set: {name}"))
+            }
+            SensationResponse::SensationRemoved(name) => {
+                McpResponse::new(format!("Sensation removed: {name}"))
+            }
+        }
+    }
+
+    fn vocabulary_table(title: &str, items: &[(String, String)]) -> McpResponse {
+        let mut md = format!("# {title}\n\n");
+        if items.is_empty() {
+            md.push_str(&format!("No {title} configured.\n"));
+        } else {
+            md.push_str("| Name | Description |\n");
+            md.push_str("|------|-------------|\n");
+            for (name, desc) in items {
+                md.push_str(&format!("| {name} | {desc} |\n"));
+            }
+        }
+        McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+    }
+
     pub fn render(self) -> Rendered<SensationResponse> {
         match self.response {
             SensationResponse::SensationSet(name) => {
