@@ -9,11 +9,12 @@ impl SensationTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        sensation_mcp::dispatch(context, tool_name, params).await
+        sensation_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -42,28 +43,33 @@ mod sensation_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: SensationRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             SensationRequestType::SetSensation => {
-                let resp = SensationService::set(context, &serde_json::from_str(params)?)
+                let resp = SensationService::set(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     SensationResponse::SensationSet(name) => {
                         Ok(McpResponse::new(format!("Sensation set: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             SensationRequestType::GetSensation => {
-                let resp = SensationService::get(context, &serde_json::from_str(params)?)
+                let resp = SensationService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -75,11 +81,11 @@ mod sensation_mcp {
                         )))
                     }
                     SensationResponse::NoSensations => Ok(McpResponse::new("Sensation not found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             SensationRequestType::ListSensations => {
-                let resp = SensationService::list(context, &serde_json::from_str(params)?)
+                let resp = SensationService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -91,18 +97,18 @@ mod sensation_mcp {
                         Ok(McpResponse::new(body))
                     }
                     SensationResponse::NoSensations => Ok(McpResponse::new("No sensations.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             SensationRequestType::RemoveSensation => {
-                let resp = SensationService::remove(context, &serde_json::from_str(params)?)
+                let resp = SensationService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     SensationResponse::SensationRemoved(name) => {
                         Ok(McpResponse::new(format!("Sensation removed: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

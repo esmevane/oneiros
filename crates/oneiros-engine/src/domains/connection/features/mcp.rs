@@ -9,11 +9,12 @@ impl ConnectionTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        connection_mcp::dispatch(context, tool_name, params).await
+        connection_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -95,17 +96,22 @@ mod connection_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: ConnectionRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             ConnectionRequestType::CreateConnection => {
-                let resp = ConnectionService::create(context, &serde_json::from_str(params)?)
+                let resp = ConnectionService::create(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -116,11 +122,11 @@ mod connection_mcp {
                             c.nature, c.from_ref, c.to_ref
                         )))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ConnectionRequestType::GetConnection => {
-                let resp = ConnectionService::get(context, &serde_json::from_str(params)?)
+                let resp = ConnectionService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -135,11 +141,11 @@ mod connection_mcp {
                     ConnectionResponse::NoConnections => {
                         Ok(McpResponse::new("Connection not found."))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ConnectionRequestType::ListConnections => {
-                let resp = ConnectionService::list(context, &serde_json::from_str(params)?)
+                let resp = ConnectionService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -155,18 +161,18 @@ mod connection_mcp {
                         Ok(McpResponse::new(body))
                     }
                     ConnectionResponse::NoConnections => Ok(McpResponse::new("No connections.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ConnectionRequestType::RemoveConnection => {
-                let resp = ConnectionService::remove(context, &serde_json::from_str(params)?)
+                let resp = ConnectionService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     ConnectionResponse::ConnectionRemoved(id) => {
                         Ok(McpResponse::new(format!("Connection removed: {id:?}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

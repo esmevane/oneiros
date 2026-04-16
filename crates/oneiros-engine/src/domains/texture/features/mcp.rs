@@ -9,11 +9,12 @@ impl TextureTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        texture_mcp::dispatch(context, tool_name, params).await
+        texture_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -39,28 +40,33 @@ mod texture_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: TextureRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             TextureRequestType::SetTexture => {
-                let resp = TextureService::set(context, &serde_json::from_str(params)?)
+                let resp = TextureService::set(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     TextureResponse::TextureSet(name) => {
                         Ok(McpResponse::new(format!("Texture set: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             TextureRequestType::GetTexture => {
-                let resp = TextureService::get(context, &serde_json::from_str(params)?)
+                let resp = TextureService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -72,11 +78,11 @@ mod texture_mcp {
                         )))
                     }
                     TextureResponse::NoTextures => Ok(McpResponse::new("Texture not found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             TextureRequestType::ListTextures => {
-                let resp = TextureService::list(context, &serde_json::from_str(params)?)
+                let resp = TextureService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -88,18 +94,18 @@ mod texture_mcp {
                         Ok(McpResponse::new(body))
                     }
                     TextureResponse::NoTextures => Ok(McpResponse::new("No textures.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             TextureRequestType::RemoveTexture => {
-                let resp = TextureService::remove(context, &serde_json::from_str(params)?)
+                let resp = TextureService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     TextureResponse::TextureRemoved(name) => {
                         Ok(McpResponse::new(format!("Texture removed: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

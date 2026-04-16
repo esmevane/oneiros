@@ -9,11 +9,12 @@ impl ExperienceTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        experience_mcp::dispatch(context, tool_name, params).await
+        experience_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -101,17 +102,22 @@ mod experience_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: ExperienceRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             ExperienceRequestType::CreateExperience => {
-                let resp = ExperienceService::create(context, &serde_json::from_str(params)?)
+                let resp = ExperienceService::create(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -130,11 +136,11 @@ mod experience_mcp {
                         }
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ExperienceRequestType::GetExperience => {
-                let resp = ExperienceService::get(context, &serde_json::from_str(params)?)
+                let resp = ExperienceService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -149,11 +155,11 @@ mod experience_mcp {
                     ExperienceResponse::NoExperiences => {
                         Ok(McpResponse::new("Experience not found."))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ExperienceRequestType::ListExperiences => {
-                let resp = ExperienceService::list(context, &serde_json::from_str(params)?)
+                let resp = ExperienceService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -166,12 +172,12 @@ mod experience_mcp {
                         Ok(McpResponse::new(body))
                     }
                     ExperienceResponse::NoExperiences => Ok(McpResponse::new("No experiences.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ExperienceRequestType::UpdateExperienceDescription => {
                 let resp =
-                    ExperienceService::update_description(context, &serde_json::from_str(params)?)
+                    ExperienceService::update_description(&context, &serde_json::from_str(params)?)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -182,12 +188,12 @@ mod experience_mcp {
                             e.sensation, e.description
                         )))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ExperienceRequestType::UpdateExperienceSensation => {
                 let resp =
-                    ExperienceService::update_sensation(context, &serde_json::from_str(params)?)
+                    ExperienceService::update_sensation(&context, &serde_json::from_str(params)?)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -198,7 +204,7 @@ mod experience_mcp {
                             e.sensation, e.description
                         )))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

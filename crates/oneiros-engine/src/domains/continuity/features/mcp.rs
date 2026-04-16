@@ -9,11 +9,12 @@ impl ContinuityTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        continuity_mcp::dispatch(context, tool_name, params).await
+        continuity_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -174,10 +175,15 @@ mod continuity_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: ContinuityRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
@@ -187,7 +193,7 @@ mod continuity_mcp {
         match request_type {
             ContinuityRequestType::WakeAgent => {
                 let resp =
-                    ContinuityService::wake(context, &serde_json::from_str(params)?, &overrides)
+                    ContinuityService::wake(&context, &serde_json::from_str(params)?, &overrides)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -204,12 +210,12 @@ mod continuity_mcp {
                             ));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::DreamAgent => {
                 let resp =
-                    ContinuityService::dream(context, &serde_json::from_str(params)?, &overrides)
+                    ContinuityService::dream(&context, &serde_json::from_str(params)?, &overrides)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -226,12 +232,12 @@ mod continuity_mcp {
                             ));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::IntrospectAgent => {
                 let resp = ContinuityService::introspect(
-                    context,
+                    &context,
                     &serde_json::from_str(params)?,
                     &overrides,
                 )
@@ -247,12 +253,12 @@ mod continuity_mcp {
                             .hint(Hint::suggest("add-memory", "Consolidate what matters"));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::ReflectAgent => {
                 let resp =
-                    ContinuityService::reflect(context, &serde_json::from_str(params)?, &overrides)
+                    ContinuityService::reflect(&context, &serde_json::from_str(params)?, &overrides)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -265,12 +271,12 @@ mod continuity_mcp {
                             .hint(Hint::suggest("add-cognition", "Capture what surfaced"));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::SenseContent => {
                 let resp =
-                    ContinuityService::sense(context, &serde_json::from_str(params)?, &overrides)
+                    ContinuityService::sense(&context, &serde_json::from_str(params)?, &overrides)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -281,12 +287,12 @@ mod continuity_mcp {
                         let body = SenseTemplate::new(&ctx.agent, "", pressures).to_string();
                         Ok(McpResponse::new(body))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::SleepAgent => {
                 let resp =
-                    ContinuityService::sleep(context, &serde_json::from_str(params)?, &overrides)
+                    ContinuityService::sleep(&context, &serde_json::from_str(params)?, &overrides)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -294,12 +300,12 @@ mod continuity_mcp {
                         "Session ended for **{}**. Rest well.",
                         ctx.agent.name
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::GuidebookAgent => {
                 let resp = ContinuityService::guidebook(
-                    context,
+                    &context,
                     &serde_json::from_str(params)?,
                     &overrides,
                 )
@@ -308,12 +314,12 @@ mod continuity_mcp {
                     ContinuityResponse::Guidebook(ctx) => {
                         Ok(McpResponse::new(GuidebookTemplate::new(&ctx).to_string()))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::EmergeAgent => {
                 let resp =
-                    ContinuityService::emerge(context, &serde_json::from_str(params)?, &overrides)
+                    ContinuityService::emerge(&context, &serde_json::from_str(params)?, &overrides)
                         .await
                         .map_err(Error::from)?;
                 match resp {
@@ -330,28 +336,28 @@ mod continuity_mcp {
                             ));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::RecedeAgent => {
-                let resp = ContinuityService::recede(context, &serde_json::from_str(params)?)
+                let resp = ContinuityService::recede(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     ContinuityResponse::Receded(name) => {
                         Ok(McpResponse::new(format!("Agent retired: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ContinuityRequestType::StatusAgent => {
                 let request: StatusAgent = serde_json::from_str(params).unwrap_or_default();
-                let resp = ContinuityService::status(context, &request).map_err(Error::from)?;
+                let resp = ContinuityService::status(&context, &request).map_err(Error::from)?;
                 match resp {
                     ContinuityResponse::Status(table) => {
                         Ok(McpResponse::new(format!("```\n{table}\n```")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

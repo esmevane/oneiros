@@ -9,11 +9,12 @@ impl AgentTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        agent_mcp::dispatch(context, tool_name, params).await
+        agent_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -86,17 +87,22 @@ mod agent_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: AgentRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             AgentRequestType::CreateAgent => {
-                let resp = AgentService::create(context, &serde_json::from_str(params)?)
+                let resp = AgentService::create(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -109,11 +115,11 @@ mod agent_mcp {
                             .hint(Hint::inspect("oneiros-mcp://agents", "See all agents"));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             AgentRequestType::GetAgent => {
-                let resp = AgentService::get(context, &serde_json::from_str(params)?)
+                let resp = AgentService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -126,12 +132,12 @@ mod agent_mcp {
                         Ok(McpResponse::new(body))
                     }
                     AgentResponse::NoAgents => Ok(McpResponse::new("Agent not found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             AgentRequestType::ListAgents => {
                 let request: ListAgents = serde_json::from_str(params).unwrap_or_default();
-                let resp = AgentService::list(context, &request)
+                let resp = AgentService::list(&context, &request)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -147,29 +153,29 @@ mod agent_mcp {
                         Ok(McpResponse::new(body))
                     }
                     AgentResponse::NoAgents => Ok(McpResponse::new("No agents configured.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             AgentRequestType::UpdateAgent => {
-                let resp = AgentService::update(context, &serde_json::from_str(params)?)
+                let resp = AgentService::update(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     AgentResponse::AgentUpdated(name) => {
                         Ok(McpResponse::new(format!("Agent updated: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             AgentRequestType::RemoveAgent => {
-                let resp = AgentService::remove(context, &serde_json::from_str(params)?)
+                let resp = AgentService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     AgentResponse::AgentRemoved(name) => {
                         Ok(McpResponse::new(format!("Agent removed: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

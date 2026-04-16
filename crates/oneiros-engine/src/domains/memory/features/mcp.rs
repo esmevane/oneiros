@@ -9,11 +9,12 @@ impl MemoryTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        memory_mcp::dispatch(context, tool_name, params).await
+        memory_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -87,17 +88,22 @@ mod memory_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: MemoryRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             MemoryRequestType::AddMemory => {
-                let resp = MemoryService::add(context, &serde_json::from_str(params)?)
+                let resp = MemoryService::add(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -117,11 +123,11 @@ mod memory_mcp {
                             response.hint(Hint::inspect("search-query", "Find related entities"));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             MemoryRequestType::GetMemory => {
-                let resp = MemoryService::get(context, &serde_json::from_str(params)?)
+                let resp = MemoryService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -131,11 +137,11 @@ mod memory_mcp {
                         Ok(McpResponse::new(body))
                     }
                     MemoryResponse::NoMemories => Ok(McpResponse::new("No memory found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             MemoryRequestType::ListMemories => {
-                let resp = MemoryService::list(context, &serde_json::from_str(params)?)
+                let resp = MemoryService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -148,7 +154,7 @@ mod memory_mcp {
                         Ok(McpResponse::new(body))
                     }
                     MemoryResponse::NoMemories => Ok(McpResponse::new("No memories.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

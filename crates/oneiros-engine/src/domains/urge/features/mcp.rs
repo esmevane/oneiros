@@ -9,11 +9,12 @@ impl UrgeTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        urge_mcp::dispatch(context, tool_name, params).await
+        urge_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -30,28 +31,33 @@ mod urge_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: UrgeRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             UrgeRequestType::SetUrge => {
-                let resp = UrgeService::set(context, &serde_json::from_str(params)?)
+                let resp = UrgeService::set(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     UrgeResponse::UrgeSet(name) => {
                         Ok(McpResponse::new(format!("Urge set: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             UrgeRequestType::GetUrge => {
-                let resp = UrgeService::get(context, &serde_json::from_str(params)?)
+                let resp = UrgeService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -60,11 +66,11 @@ mod urge_mcp {
                         urge.name, urge.description
                     ))),
                     UrgeResponse::NoUrges => Ok(McpResponse::new("Urge not found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             UrgeRequestType::ListUrges => {
-                let resp = UrgeService::list(context, &serde_json::from_str(params)?)
+                let resp = UrgeService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -76,18 +82,18 @@ mod urge_mcp {
                         Ok(McpResponse::new(body))
                     }
                     UrgeResponse::NoUrges => Ok(McpResponse::new("No urges.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             UrgeRequestType::RemoveUrge => {
-                let resp = UrgeService::remove(context, &serde_json::from_str(params)?)
+                let resp = UrgeService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     UrgeResponse::UrgeRemoved(name) => {
                         Ok(McpResponse::new(format!("Urge removed: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

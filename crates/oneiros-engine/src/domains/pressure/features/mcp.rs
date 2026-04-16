@@ -9,11 +9,12 @@ impl PressureTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        pressure_mcp::dispatch(context, tool_name, params).await
+        pressure_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -92,17 +93,22 @@ mod pressure_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: PressureRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             PressureRequestType::GetPressure => {
-                let resp = PressureService::get(context, &serde_json::from_str(params)?)
+                let resp = PressureService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -119,11 +125,11 @@ mod pressure_mcp {
                         }
                         Ok(McpResponse::new(body))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             PressureRequestType::ListPressures => {
-                let resp = PressureService::list(context).await.map_err(Error::from)?;
+                let resp = PressureService::list(&context).await.map_err(Error::from)?;
                 match resp {
                     PressureResponse::AllReadings(result) => {
                         let mut body = String::from("# All Pressure Readings\n\n");
@@ -138,7 +144,7 @@ mod pressure_mcp {
                         }
                         Ok(McpResponse::new(body))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

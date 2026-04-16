@@ -9,11 +9,12 @@ impl TicketTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        ticket_mcp::dispatch(context, tool_name, params).await
+        ticket_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -39,10 +40,15 @@ mod ticket_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: TicketRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
@@ -59,7 +65,7 @@ mod ticket_mcp {
                         "Ticket issued: {} for brain {}",
                         ticket.id, ticket.brain_name
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             TicketRequestType::GetTicket => {
@@ -71,7 +77,7 @@ mod ticket_mcp {
                         "**id:** {}\n**brain:** {}\n",
                         ticket.id, ticket.brain_name
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             TicketRequestType::ListTickets => {
@@ -89,7 +95,7 @@ mod ticket_mcp {
                         }
                         Ok(McpResponse::new(body))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             TicketRequestType::ValidateTicket => {
@@ -101,7 +107,7 @@ mod ticket_mcp {
                         "Ticket valid: {} for brain {}",
                         ticket.id, ticket.brain_name
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

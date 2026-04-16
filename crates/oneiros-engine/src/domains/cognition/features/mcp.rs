@@ -9,11 +9,12 @@ impl CognitionTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        cognition_mcp::dispatch(context, tool_name, params).await
+        cognition_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -94,17 +95,22 @@ mod cognition_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: CognitionRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             CognitionRequestType::AddCognition => {
-                let resp = CognitionService::add(context, &serde_json::from_str(params)?)
+                let resp = CognitionService::add(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -131,11 +137,11 @@ mod cognition_mcp {
                             ));
                         Ok(response)
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             CognitionRequestType::GetCognition => {
-                let resp = CognitionService::get(context, &serde_json::from_str(params)?)
+                let resp = CognitionService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -146,11 +152,11 @@ mod cognition_mcp {
                         Ok(McpResponse::new(body))
                     }
                     CognitionResponse::NoCognitions => Ok(McpResponse::new("No cognition found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             CognitionRequestType::ListCognitions => {
-                let resp = CognitionService::list(context, &serde_json::from_str(params)?)
+                let resp = CognitionService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -164,7 +170,7 @@ mod cognition_mcp {
                             .hint(Hint::suggest("add-cognition", "Record a new thought")))
                     }
                     CognitionResponse::NoCognitions => Ok(McpResponse::new("No cognitions.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

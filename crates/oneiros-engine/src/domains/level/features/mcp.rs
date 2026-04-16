@@ -9,11 +9,12 @@ impl LevelTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        level_mcp::dispatch(context, tool_name, params).await
+        level_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -42,28 +43,33 @@ mod level_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: LevelRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             LevelRequestType::SetLevel => {
-                let resp = LevelService::set(context, &serde_json::from_str(params)?)
+                let resp = LevelService::set(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     LevelResponse::LevelSet(name) => {
                         Ok(McpResponse::new(format!("Level set: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             LevelRequestType::GetLevel => {
-                let resp = LevelService::get(context, &serde_json::from_str(params)?)
+                let resp = LevelService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -75,11 +81,11 @@ mod level_mcp {
                         )))
                     }
                     LevelResponse::NoLevels => Ok(McpResponse::new("Level not found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             LevelRequestType::ListLevels => {
-                let resp = LevelService::list(context, &serde_json::from_str(params)?)
+                let resp = LevelService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -91,18 +97,18 @@ mod level_mcp {
                         Ok(McpResponse::new(body))
                     }
                     LevelResponse::NoLevels => Ok(McpResponse::new("No levels.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             LevelRequestType::RemoveLevel => {
-                let resp = LevelService::remove(context, &serde_json::from_str(params)?)
+                let resp = LevelService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     LevelResponse::LevelRemoved(name) => {
                         Ok(McpResponse::new(format!("Level removed: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

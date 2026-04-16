@@ -9,11 +9,12 @@ impl ActorTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        actor_mcp::dispatch(context, tool_name, params).await
+        actor_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -35,10 +36,15 @@ mod actor_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: ActorRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
@@ -55,7 +61,7 @@ mod actor_mcp {
                         "Actor created: {}",
                         wrapped.data.id
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ActorRequestType::GetActor => {
@@ -66,7 +72,7 @@ mod actor_mcp {
                     ActorResponse::Found(wrapped) => {
                         Ok(McpResponse::new(format!("**id:** {}", wrapped.data.id)))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             ActorRequestType::ListActors => {
@@ -81,7 +87,7 @@ mod actor_mcp {
                         }
                         Ok(McpResponse::new(body))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

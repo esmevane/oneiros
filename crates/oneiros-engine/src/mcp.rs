@@ -97,21 +97,226 @@ async fn read_resource(
 
     // Cross-domain: vocabulary is a view across all vocabulary domains
     if path == "vocabulary" {
-        let mut md = String::from("# Vocabulary\n\n");
-        for kind in &[
-            "levels",
-            "textures",
-            "sensations",
-            "natures",
-            "personas",
-            "urges",
-        ] {
-            md.push_str(&format!("## {kind}\n\n"));
-        }
-        return Ok(md);
+        return read_vocabulary_all(&context).await;
+    }
+
+    // Cross-domain: vocabulary/{kind}
+    if let Some(kind) = path.strip_prefix("vocabulary/") {
+        return read_vocabulary_kind(&context, kind).await;
     }
 
     Err(ToolError::Parameter(format!("unknown resource: {uri}")))
+}
+
+/// Render all vocabulary kinds into a single markdown document.
+async fn read_vocabulary_all(context: &ProjectContext) -> Result<String, ToolError> {
+    let mut md = String::from("# Vocabulary\n\n");
+
+    md.push_str("## levels\n\n");
+    md.push_str(&vocabulary_section_levels(context).await?);
+
+    md.push_str("## textures\n\n");
+    md.push_str(&vocabulary_section_textures(context).await?);
+
+    md.push_str("## sensations\n\n");
+    md.push_str(&vocabulary_section_sensations(context).await?);
+
+    md.push_str("## natures\n\n");
+    md.push_str(&vocabulary_section_natures(context).await?);
+
+    md.push_str("## personas\n\n");
+    md.push_str(&vocabulary_section_personas(context).await?);
+
+    md.push_str("## urges\n\n");
+    md.push_str(&vocabulary_section_urges(context).await?);
+
+    Ok(md)
+}
+
+/// Render a single vocabulary kind into markdown.
+async fn read_vocabulary_kind(context: &ProjectContext, kind: &str) -> Result<String, ToolError> {
+    let (heading, body) = match kind {
+        "levels" => ("levels", vocabulary_section_levels(context).await?),
+        "textures" => ("textures", vocabulary_section_textures(context).await?),
+        "sensations" => ("sensations", vocabulary_section_sensations(context).await?),
+        "natures" => ("natures", vocabulary_section_natures(context).await?),
+        "personas" => ("personas", vocabulary_section_personas(context).await?),
+        "urges" => ("urges", vocabulary_section_urges(context).await?),
+        other => {
+            return Err(ToolError::Parameter(format!(
+                "unknown vocabulary kind: {other}"
+            )))
+        }
+    };
+
+    Ok(format!("# Vocabulary — {heading}\n\n{body}"))
+}
+
+async fn vocabulary_section_levels(context: &ProjectContext) -> Result<String, ToolError> {
+    let resp = LevelService::list(
+        context,
+        &ListLevels {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let mut out = String::new();
+    match resp {
+        LevelResponse::Levels(listed) => {
+            for wrapped in &listed.items {
+                let l = &wrapped.data;
+                out.push_str(&format!("- **{}** — {}\n", l.name, l.description));
+            }
+            if listed.items.is_empty() {
+                out.push_str("No levels defined.\n");
+            }
+        }
+        LevelResponse::NoLevels => out.push_str("No levels defined.\n"),
+        _ => {}
+    }
+    out.push('\n');
+    Ok(out)
+}
+
+async fn vocabulary_section_textures(context: &ProjectContext) -> Result<String, ToolError> {
+    let resp = TextureService::list(
+        context,
+        &ListTextures {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let mut out = String::new();
+    match resp {
+        TextureResponse::Textures(listed) => {
+            for wrapped in &listed.items {
+                let t = &wrapped.data;
+                out.push_str(&format!("- **{}** — {}\n", t.name, t.description));
+            }
+            if listed.items.is_empty() {
+                out.push_str("No textures defined.\n");
+            }
+        }
+        TextureResponse::NoTextures => out.push_str("No textures defined.\n"),
+        _ => {}
+    }
+    out.push('\n');
+    Ok(out)
+}
+
+async fn vocabulary_section_sensations(context: &ProjectContext) -> Result<String, ToolError> {
+    let resp = SensationService::list(
+        context,
+        &ListSensations {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let mut out = String::new();
+    match resp {
+        SensationResponse::Sensations(listed) => {
+            for wrapped in &listed.items {
+                let s = &wrapped.data;
+                out.push_str(&format!("- **{}** — {}\n", s.name, s.description));
+            }
+            if listed.items.is_empty() {
+                out.push_str("No sensations defined.\n");
+            }
+        }
+        SensationResponse::NoSensations => out.push_str("No sensations defined.\n"),
+        _ => {}
+    }
+    out.push('\n');
+    Ok(out)
+}
+
+async fn vocabulary_section_natures(context: &ProjectContext) -> Result<String, ToolError> {
+    let resp = NatureService::list(
+        context,
+        &ListNatures {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let mut out = String::new();
+    match resp {
+        NatureResponse::Natures(listed) => {
+            for wrapped in &listed.items {
+                let n = &wrapped.data;
+                out.push_str(&format!("- **{}** — {}\n", n.name, n.description));
+            }
+            if listed.items.is_empty() {
+                out.push_str("No natures defined.\n");
+            }
+        }
+        NatureResponse::NoNatures => out.push_str("No natures defined.\n"),
+        _ => {}
+    }
+    out.push('\n');
+    Ok(out)
+}
+
+async fn vocabulary_section_personas(context: &ProjectContext) -> Result<String, ToolError> {
+    let resp = PersonaService::list(
+        context,
+        &ListPersonas {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let mut out = String::new();
+    match resp {
+        PersonaResponse::Personas(listed) => {
+            for wrapped in &listed.items {
+                let p = &wrapped.data;
+                out.push_str(&format!("- **{}** — {}\n", p.name, p.description));
+            }
+            if listed.items.is_empty() {
+                out.push_str("No personas defined.\n");
+            }
+        }
+        PersonaResponse::NoPersonas => out.push_str("No personas defined.\n"),
+        _ => {}
+    }
+    out.push('\n');
+    Ok(out)
+}
+
+async fn vocabulary_section_urges(context: &ProjectContext) -> Result<String, ToolError> {
+    let resp = UrgeService::list(
+        context,
+        &ListUrges {
+            filters: SearchFilters::default(),
+        },
+    )
+    .await
+    .map_err(Error::from)?;
+
+    let mut out = String::new();
+    match resp {
+        UrgeResponse::Urges(listed) => {
+            for urge in &listed.items {
+                out.push_str(&format!("- **{}** — {}\n", urge.name, urge.description));
+            }
+            if listed.items.is_empty() {
+                out.push_str("No urges defined.\n");
+            }
+        }
+        UrgeResponse::NoUrges => out.push_str("No urges defined.\n"),
+        _ => {}
+    }
+    out.push('\n');
+    Ok(out)
 }
 
 // ── Domain dispatch ────────────────────────────────────────────
@@ -123,76 +328,72 @@ async fn dispatch(
     tool_name: &str,
     params: &str,
 ) -> Result<McpResponse, ToolError> {
-    let context = state
-        .project_context(config.clone())
-        .map_err(|e| ToolError::Domain(e.to_string()))?;
-
     // Bookmark tools — also need ServerState for CanonIndex and Bridge
     if tool_name.parse::<BookmarkRequestType>().is_ok() {
         return BookmarkTools
-            .dispatch(&context, state, tool_name, params)
+            .dispatch(state, config, tool_name, params)
             .await;
     }
 
     // System domains
     if tool_name.parse::<ActorRequestType>().is_ok() {
-        return ActorTools.dispatch(&context, tool_name, params).await;
+        return ActorTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<TenantRequestType>().is_ok() {
-        return TenantTools.dispatch(&context, tool_name, params).await;
+        return TenantTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<BrainRequestType>().is_ok() {
-        return BrainTools.dispatch(&context, tool_name, params).await;
+        return BrainTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<TicketRequestType>().is_ok() {
-        return TicketTools.dispatch(&context, tool_name, params).await;
+        return TicketTools.dispatch(state, config, tool_name, params).await;
     }
     // Project domains
     if tool_name.parse::<AgentRequestType>().is_ok() {
-        return AgentTools.dispatch(&context, tool_name, params).await;
+        return AgentTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<CognitionRequestType>().is_ok() {
-        return CognitionTools.dispatch(&context, tool_name, params).await;
+        return CognitionTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<MemoryRequestType>().is_ok() {
-        return MemoryTools.dispatch(&context, tool_name, params).await;
+        return MemoryTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<ExperienceRequestType>().is_ok() {
-        return ExperienceTools.dispatch(&context, tool_name, params).await;
+        return ExperienceTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<ConnectionRequestType>().is_ok() {
-        return ConnectionTools.dispatch(&context, tool_name, params).await;
+        return ConnectionTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<ContinuityRequestType>().is_ok() {
-        return ContinuityTools.dispatch(&context, tool_name, params).await;
+        return ContinuityTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<SearchRequestType>().is_ok() {
-        return SearchTools.dispatch(&context, tool_name, params).await;
+        return SearchTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<StorageRequestType>().is_ok() {
-        return StorageTools.dispatch(&context, tool_name, params).await;
+        return StorageTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<PressureRequestType>().is_ok() {
-        return PressureTools.dispatch(&context, tool_name, params).await;
+        return PressureTools.dispatch(state, config, tool_name, params).await;
     }
     // Vocabulary domains
     if tool_name.parse::<LevelRequestType>().is_ok() {
-        return LevelTools.dispatch(&context, tool_name, params).await;
+        return LevelTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<TextureRequestType>().is_ok() {
-        return TextureTools.dispatch(&context, tool_name, params).await;
+        return TextureTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<SensationRequestType>().is_ok() {
-        return SensationTools.dispatch(&context, tool_name, params).await;
+        return SensationTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<NatureRequestType>().is_ok() {
-        return NatureTools.dispatch(&context, tool_name, params).await;
+        return NatureTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<PersonaRequestType>().is_ok() {
-        return PersonaTools.dispatch(&context, tool_name, params).await;
+        return PersonaTools.dispatch(state, config, tool_name, params).await;
     }
     if tool_name.parse::<UrgeRequestType>().is_ok() {
-        return UrgeTools.dispatch(&context, tool_name, params).await;
+        return UrgeTools.dispatch(state, config, tool_name, params).await;
     }
 
     Err(ToolError::UnknownTool(tool_name.to_string()))

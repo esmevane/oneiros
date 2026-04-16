@@ -9,12 +9,12 @@ impl BookmarkTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
         state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        bookmark_mcp::dispatch(context, state, tool_name, params).await
+        bookmark_mcp::dispatch(state, config, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -106,11 +106,15 @@ mod bookmark_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
         state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: BookmarkRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
@@ -131,7 +135,7 @@ mod bookmark_mcp {
                         }
                         Ok(McpResponse::new(body))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::CreateBookmark => {
@@ -143,7 +147,7 @@ mod bookmark_mcp {
                         "Bookmark created: {}",
                         created.name
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::SwitchBookmark => {
@@ -155,7 +159,7 @@ mod bookmark_mcp {
                         "Switched to bookmark: {}",
                         switched.name
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::MergeBookmark => {
@@ -167,7 +171,7 @@ mod bookmark_mcp {
                         "Merged **{}** into **{}**",
                         merged.source, merged.target
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::ShareBookmark => {
@@ -179,7 +183,7 @@ mod bookmark_mcp {
                         "Bookmark shared.\n\n**URI:** {}\n**ticket:** {}",
                         result.uri, result.ticket.id
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::FollowBookmark => {
@@ -191,7 +195,7 @@ mod bookmark_mcp {
                         "Now following bookmark **{}** (follow id: {})",
                         follow.bookmark, follow.id
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::CollectBookmark => {
@@ -203,7 +207,7 @@ mod bookmark_mcp {
                         "Collected {} event(s) from follow {}.",
                         result.events_received, result.follow_id
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             BookmarkRequestType::UnfollowBookmark => {
@@ -215,7 +219,7 @@ mod bookmark_mcp {
                         "Unfollowed bookmark **{}** (follow id: {})",
                         unfollowed.bookmark, unfollowed.follow_id
                     ))),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }

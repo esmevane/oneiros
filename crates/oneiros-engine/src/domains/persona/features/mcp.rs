@@ -9,11 +9,12 @@ impl PersonaTools {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
-        persona_mcp::dispatch(context, tool_name, params).await
+        persona_mcp::dispatch(state, config, tool_name, params).await
     }
 }
 
@@ -33,28 +34,33 @@ mod persona_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        state: &ServerState,
+        config: &Config,
         tool_name: &str,
         params: &str,
     ) -> Result<McpResponse, ToolError> {
+        let context = state
+            .project_context(config.clone())
+            .map_err(|e| ToolError::Domain(e.to_string()))?;
+
         let request_type: PersonaRequestType = tool_name
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
         match request_type {
             PersonaRequestType::SetPersona => {
-                let resp = PersonaService::set(context, &serde_json::from_str(params)?)
+                let resp = PersonaService::set(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     PersonaResponse::PersonaSet(name) => {
                         Ok(McpResponse::new(format!("Persona set: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             PersonaRequestType::GetPersona => {
-                let resp = PersonaService::get(context, &serde_json::from_str(params)?)
+                let resp = PersonaService::get(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -66,11 +72,11 @@ mod persona_mcp {
                         )))
                     }
                     PersonaResponse::NoPersonas => Ok(McpResponse::new("Persona not found.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             PersonaRequestType::ListPersonas => {
-                let resp = PersonaService::list(context, &serde_json::from_str(params)?)
+                let resp = PersonaService::list(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
@@ -82,18 +88,18 @@ mod persona_mcp {
                         Ok(McpResponse::new(body))
                     }
                     PersonaResponse::NoPersonas => Ok(McpResponse::new("No personas.")),
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
             PersonaRequestType::RemovePersona => {
-                let resp = PersonaService::remove(context, &serde_json::from_str(params)?)
+                let resp = PersonaService::remove(&context, &serde_json::from_str(params)?)
                     .await
                     .map_err(Error::from)?;
                 match resp {
                     PersonaResponse::PersonaRemoved(name) => {
                         Ok(McpResponse::new(format!("Persona removed: {name}")))
                     }
-                    other => Ok(McpResponse::new(format!("{other:?}"))),
+                    _ => Ok(McpResponse::new("Operation completed.")),
                 }
             }
         }
