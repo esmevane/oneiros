@@ -16,11 +16,11 @@ impl CognitionAddedHints {
         vec![
             Hint::suggest(format!("reflect {agent}"), "Pause on something significant"),
             Hint::inspect(
-                format!("cognition list {agent}"),
+                format!("cognition list --agent {agent}"),
                 "Browse your full thought stream",
             ),
             Hint::suggest(
-                format!("connection create {ref_token} <target>"),
+                format!("connection create <nature> {ref_token} <target>"),
                 "Draw a line between related things",
             ),
         ]

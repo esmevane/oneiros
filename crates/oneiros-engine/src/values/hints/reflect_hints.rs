@@ -17,11 +17,11 @@ impl ReflectHints {
                 "Consolidate this reflection into memory",
             ),
             Hint::suggest(
-                format!("experience create {agent} \"...\""),
+                format!("experience create {agent} <sensation> \"...\""),
                 "Mark this as a meaningful moment",
             ),
             Hint::inspect(
-                format!("cognition list {agent}"),
+                format!("cognition list --agent {agent}"),
                 "Review the thought stream that led here",
             ),
         ]
