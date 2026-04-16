@@ -13,7 +13,7 @@ impl MutationHints {
         let ref_token = &self.ref_token;
         vec![
             Hint::suggest(
-                format!("connection create {ref_token} <target>"),
+                format!("connection create <nature> {ref_token} <target>"),
                 "Draw a line between related things",
             ),
             Hint::suggest(format!("search {ref_token}"), "Find related entities"),

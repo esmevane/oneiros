@@ -20,7 +20,7 @@ impl ListingHints {
 
         if self.has_more {
             hints.push(Hint::inspect(
-                format!("cognition list {agent}"),
+                format!("cognition list --agent {agent}"),
                 "There are more items to explore",
             ));
         }
