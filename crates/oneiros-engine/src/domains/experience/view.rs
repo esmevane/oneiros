@@ -2,13 +2,84 @@
 
 use crate::*;
 
-pub struct ExperienceView {
+pub struct ExperienceView<'a> {
     response: ExperienceResponse,
+    request: &'a ExperienceRequest,
 }
 
-impl ExperienceView {
-    pub fn new(response: ExperienceResponse) -> Self {
-        Self { response }
+impl<'a> ExperienceView<'a> {
+    pub fn new(response: ExperienceResponse, request: &'a ExperienceRequest) -> Self {
+        Self { response, request }
+    }
+
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            ExperienceResponse::ExperienceCreated(wrapped) => {
+                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+                McpResponse::new(format!(
+                    "Experience created ({}).\n\n**sensation:** {}\n**ref:** {}",
+                    wrapped.data.sensation, wrapped.data.sensation, ref_token
+                ))
+                .hint_set(HintSet::mutation(
+                    MutationHints::builder().ref_token(ref_token).build(),
+                ))
+            }
+            ExperienceResponse::ExperienceDetails(wrapped) => {
+                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+                McpResponse::new(format!(
+                    "# Experience\n\n**sensation:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
+                    wrapped.data.sensation,
+                    wrapped.data.agent_id,
+                    wrapped.data.created_at,
+                    wrapped.data.description
+                ))
+                .hint(Hint::suggest(
+                    format!("create-connection <nature> {ref_token} <target>"),
+                    "Connect to something related",
+                ))
+                .hint(Hint::suggest("search-query", "Search for related entities"))
+            }
+            ExperienceResponse::Experiences(listed) => {
+                let title = match self.request {
+                    ExperienceRequest::ListExperiences(listing) => match &listing.agent {
+                        Some(agent) => format!("# Experiences — {agent}\n\n"),
+                        None => "# Experiences\n\n".to_string(),
+                    },
+                    _ => "# Experiences\n\n".to_string(),
+                };
+                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
+                for wrapped in &listed.items {
+                    md.push_str(&format!(
+                        "### {} — {}\n{}\n\n",
+                        wrapped.data.sensation, wrapped.data.created_at, wrapped.data.description
+                    ));
+                }
+                let mut response = McpResponse::new(md).hint(Hint::suggest(
+                    "create-experience",
+                    "Mark a meaningful moment",
+                ));
+                if let ExperienceRequest::ListExperiences(listing) = self.request
+                    && let Some(agent) = &listing.agent
+                {
+                    response = response.hint(Hint::inspect(
+                        ResourcePath::AgentConnections(agent.clone()).uri(),
+                        "Browse connections",
+                    ));
+                }
+                response
+            }
+            ExperienceResponse::NoExperiences => McpResponse::new("No experiences yet."),
+            ExperienceResponse::ExperienceUpdated(wrapped) => {
+                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+                McpResponse::new(format!(
+                    "Experience updated ({}).\n\n**sensation:** {}\n**ref:** {}",
+                    wrapped.data.sensation, wrapped.data.sensation, ref_token
+                ))
+                .hint_set(HintSet::mutation(
+                    MutationHints::builder().ref_token(ref_token).build(),
+                ))
+            }
+        }
     }
 
     pub fn render(self) -> Rendered<ExperienceResponse> {

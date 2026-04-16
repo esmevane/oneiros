@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct StorageTools;
+pub struct StorageMcp;
 
-impl StorageTools {
+impl StorageMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         storage_mcp::tool_defs()
     }

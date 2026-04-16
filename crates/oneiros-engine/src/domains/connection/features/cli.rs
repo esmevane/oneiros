@@ -18,13 +18,33 @@ impl ConnectionCommands {
         let client = context.client();
         let connection_client = ConnectionClient::new(&client);
 
-        let response = match self {
-            ConnectionCommands::Create(creation) => connection_client.create(creation).await?,
-            ConnectionCommands::Show(get) => connection_client.get(get).await?,
-            ConnectionCommands::List(list) => connection_client.list(list).await?,
-            ConnectionCommands::Remove(remove) => connection_client.remove(remove).await?,
+        let (response, request) = match self {
+            ConnectionCommands::Create(creation) => {
+                let response = connection_client.create(creation).await?;
+                (
+                    response,
+                    ConnectionRequest::CreateConnection(creation.clone()),
+                )
+            }
+            ConnectionCommands::Show(get) => {
+                let response = connection_client.get(get).await?;
+                (response, ConnectionRequest::GetConnection(get.clone()))
+            }
+            ConnectionCommands::List(list) => {
+                let response = connection_client.list(list).await?;
+                (response, ConnectionRequest::ListConnections(list.clone()))
+            }
+            ConnectionCommands::Remove(remove) => {
+                let response = connection_client.remove(remove).await?;
+                (
+                    response,
+                    ConnectionRequest::RemoveConnection(remove.clone()),
+                )
+            }
         };
 
-        Ok(ConnectionView::new(response).render().map(Into::into))
+        Ok(ConnectionView::new(response, &request)
+            .render()
+            .map(Into::into))
     }
 }

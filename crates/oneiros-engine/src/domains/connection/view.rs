@@ -2,13 +2,61 @@
 
 use crate::*;
 
-pub struct ConnectionView {
+pub struct ConnectionView<'a> {
     response: ConnectionResponse,
+    request: &'a ConnectionRequest,
 }
 
-impl ConnectionView {
-    pub fn new(response: ConnectionResponse) -> Self {
-        Self { response }
+impl<'a> ConnectionView<'a> {
+    pub fn new(response: ConnectionResponse, request: &'a ConnectionRequest) -> Self {
+        Self { response, request }
+    }
+
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            ConnectionResponse::ConnectionCreated(wrapped) => {
+                let ref_token = RefToken::from(Ref::connection(wrapped.data.id));
+                McpResponse::new(format!(
+                    "Connection created.\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**ref:** {}",
+                    wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref, ref_token
+                ))
+                .hint(Hint::suggest("search-query", "Search for related entities"))
+            }
+            ConnectionResponse::ConnectionDetails(wrapped) => McpResponse::new(format!(
+                "# Connection\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**created:** {}\n",
+                wrapped.data.nature,
+                wrapped.data.from_ref,
+                wrapped.data.to_ref,
+                wrapped.data.created_at
+            ))
+            .hint(Hint::suggest("search-query", "Search for related entities")),
+            ConnectionResponse::Connections(listed) => {
+                let title = match self.request {
+                    ConnectionRequest::ListConnections(listing) => match &listing.entity {
+                        Some(entity) => format!("# Connections — {entity}\n\n"),
+                        None => "# Connections\n\n".to_string(),
+                    },
+                    _ => "# Connections\n\n".to_string(),
+                };
+                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
+                for wrapped in &listed.items {
+                    md.push_str(&format!(
+                        "- **{}** {} → {}\n",
+                        wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref
+                    ));
+                }
+                McpResponse::new(md)
+                    .hint(Hint::suggest(
+                        "create-connection",
+                        "Draw a line between related things",
+                    ))
+                    .hint(Hint::suggest("search-query", "Search for related entities"))
+            }
+            ConnectionResponse::NoConnections => McpResponse::new("No connections yet."),
+            ConnectionResponse::ConnectionRemoved(id) => {
+                McpResponse::new(format!("Connection removed: {id}"))
+            }
+        }
     }
 
     pub fn render(self) -> Rendered<ConnectionResponse> {

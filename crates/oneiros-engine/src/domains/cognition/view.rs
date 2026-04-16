@@ -1,23 +1,83 @@
-//! Cognition view — presentation authority for the cognition domain.
-//!
-//! Owns the response and produces `Rendered<CognitionResponse>` with
-//! navigational hints.
-
 use crate::*;
 
 pub struct CognitionView<'a> {
     response: CognitionResponse,
-    command: &'a CognitionCommands,
+    request: &'a CognitionRequest,
 }
 
 impl<'a> CognitionView<'a> {
-    pub fn new(response: CognitionResponse, command: &'a CognitionCommands) -> Self {
-        Self { response, command }
+    pub fn new(response: CognitionResponse, request: &'a CognitionRequest) -> Self {
+        Self { response, request }
+    }
+
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            CognitionResponse::CognitionAdded(wrapped) => {
+                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id));
+                McpResponse::new(format!(
+                    "Thought recorded ({}).\n\n**texture:** {}\n**ref:** {}",
+                    wrapped.data.texture, wrapped.data.texture, ref_token
+                ))
+                .hint_set(HintSet::cognition_added(
+                    CognitionAddedHints::builder()
+                        .agent(AgentName::new(wrapped.data.agent_id.to_string()))
+                        .ref_token(ref_token)
+                        .build(),
+                ))
+            }
+            CognitionResponse::CognitionDetails(wrapped) => {
+                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id));
+                McpResponse::new(format!(
+                    "# Cognition\n\n**texture:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
+                    wrapped.data.texture,
+                    wrapped.data.agent_id,
+                    wrapped.data.created_at,
+                    wrapped.data.content
+                ))
+                .hint(Hint::suggest(
+                    format!("create-connection <nature> {ref_token} <target>"),
+                    "Connect to something related",
+                ))
+                .hint(Hint::suggest("search-query", "Search for related entities"))
+            }
+            CognitionResponse::Cognitions(listed) => {
+                let title = match self.request {
+                    CognitionRequest::ListCognitions(listing) => match &listing.agent {
+                        Some(agent) => format!("# Cognitions — {agent}\n\n"),
+                        None => "# Cognitions\n\n".to_string(),
+                    },
+                    _ => "# Cognitions\n\n".to_string(),
+                };
+                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
+                for wrapped in &listed.items {
+                    md.push_str(&format!(
+                        "### {} — {}\n{}\n\n",
+                        wrapped.data.texture, wrapped.data.created_at, wrapped.data.content
+                    ));
+                }
+                let mut response =
+                    McpResponse::new(md).hint(Hint::suggest("add-cognition", "Record a thought"));
+                if let CognitionRequest::ListCognitions(listing) = self.request
+                    && let Some(agent) = &listing.agent
+                {
+                    response = response.hint(Hint::inspect(
+                        ResourcePath::AgentMemories(agent.clone()).uri(),
+                        "Browse memories",
+                    ));
+                }
+                response
+            }
+            CognitionResponse::NoCognitions => McpResponse::new("No cognitions yet.")
+                .hint(Hint::suggest("add-cognition", "Record a thought")),
+        }
     }
 
     pub fn render(self) -> Rendered<CognitionResponse> {
-        match (self.response, self.command) {
-            (CognitionResponse::CognitionAdded(wrapped), CognitionCommands::Add(addition)) => {
+        match (self.response, self.request) {
+            (
+                CognitionResponse::CognitionAdded(wrapped),
+                CognitionRequest::AddCognition(addition),
+            ) => {
                 let subject = wrapped
                     .meta()
                     .ref_token()
@@ -98,7 +158,6 @@ impl<'a> CognitionView<'a> {
                 format!("{}", "No cognitions.".muted()),
                 String::new(),
             ),
-            // unreachable: CognitionAdded only comes from Add
             (response, _) => Rendered::new(response, String::new(), String::new()),
         }
     }

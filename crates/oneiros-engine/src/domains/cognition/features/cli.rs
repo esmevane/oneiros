@@ -17,12 +17,23 @@ impl CognitionCommands {
         let client = context.client();
         let cognition_client = CognitionClient::new(&client);
 
-        let response = match self {
-            CognitionCommands::Add(addition) => cognition_client.add(addition).await?,
-            CognitionCommands::Show(get) => cognition_client.get(get).await?,
-            CognitionCommands::List(listing) => cognition_client.list(listing).await?,
+        let (response, request) = match self {
+            CognitionCommands::Add(addition) => {
+                let response = cognition_client.add(addition).await?;
+                (response, CognitionRequest::AddCognition(addition.clone()))
+            }
+            CognitionCommands::Show(get) => {
+                let response = cognition_client.get(get).await?;
+                (response, CognitionRequest::GetCognition(get.clone()))
+            }
+            CognitionCommands::List(listing) => {
+                let response = cognition_client.list(listing).await?;
+                (response, CognitionRequest::ListCognitions(listing.clone()))
+            }
         };
 
-        Ok(CognitionView::new(response, self).render().map(Into::into))
+        Ok(CognitionView::new(response, &request)
+            .render()
+            .map(Into::into))
     }
 }

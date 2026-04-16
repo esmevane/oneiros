@@ -9,6 +9,45 @@ impl NatureView {
         Self { response }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            NatureResponse::Natures(listed) => {
+                let items: Vec<_> = listed
+                    .items
+                    .iter()
+                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .collect();
+                Self::vocabulary_table("Natures", &items)
+            }
+            NatureResponse::NatureDetails(wrapped) => {
+                let items = vec![(
+                    wrapped.data.name.to_string(),
+                    wrapped.data.description.to_string(),
+                )];
+                Self::vocabulary_table("Nature", &items)
+            }
+            NatureResponse::NoNatures => Self::vocabulary_table("Natures", &[]),
+            NatureResponse::NatureSet(name) => McpResponse::new(format!("Nature set: {name}")),
+            NatureResponse::NatureRemoved(name) => {
+                McpResponse::new(format!("Nature removed: {name}"))
+            }
+        }
+    }
+
+    fn vocabulary_table(title: &str, items: &[(String, String)]) -> McpResponse {
+        let mut md = format!("# {title}\n\n");
+        if items.is_empty() {
+            md.push_str(&format!("No {title} configured.\n"));
+        } else {
+            md.push_str("| Name | Description |\n");
+            md.push_str("|------|-------------|\n");
+            for (name, desc) in items {
+                md.push_str(&format!("| {name} | {desc} |\n"));
+            }
+        }
+        McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+    }
+
     pub fn render(self) -> Rendered<NatureResponse> {
         match self.response {
             NatureResponse::NatureSet(name) => {

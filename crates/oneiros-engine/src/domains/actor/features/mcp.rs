@@ -1,8 +1,8 @@
 use crate::*;
 
-pub struct ActorTools;
+pub struct ActorMcp;
 
-impl ActorTools {
+impl ActorMcp {
     pub fn defs(&self) -> Vec<ToolDef> {
         actor_mcp::tool_defs()
     }

@@ -9,6 +9,45 @@ impl PersonaView {
         Self { response }
     }
 
+    pub fn mcp(&self) -> McpResponse {
+        match &self.response {
+            PersonaResponse::Personas(listed) => {
+                let items: Vec<_> = listed
+                    .items
+                    .iter()
+                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .collect();
+                Self::vocabulary_table("Personas", &items)
+            }
+            PersonaResponse::PersonaDetails(wrapped) => {
+                let items = vec![(
+                    wrapped.data.name.to_string(),
+                    wrapped.data.description.to_string(),
+                )];
+                Self::vocabulary_table("Persona", &items)
+            }
+            PersonaResponse::NoPersonas => Self::vocabulary_table("Personas", &[]),
+            PersonaResponse::PersonaSet(name) => McpResponse::new(format!("Persona set: {name}")),
+            PersonaResponse::PersonaRemoved(name) => {
+                McpResponse::new(format!("Persona removed: {name}"))
+            }
+        }
+    }
+
+    fn vocabulary_table(title: &str, items: &[(String, String)]) -> McpResponse {
+        let mut md = format!("# {title}\n\n");
+        if items.is_empty() {
+            md.push_str(&format!("No {title} configured.\n"));
+        } else {
+            md.push_str("| Name | Description |\n");
+            md.push_str("|------|-------------|\n");
+            for (name, desc) in items {
+                md.push_str(&format!("| {name} | {desc} |\n"));
+            }
+        }
+        McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+    }
+
     pub fn render(self) -> Rendered<PersonaResponse> {
         match self.response {
             PersonaResponse::PersonaSet(name) => {
