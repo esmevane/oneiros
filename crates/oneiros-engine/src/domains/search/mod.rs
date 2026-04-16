@@ -1,4 +1,5 @@
 mod client;
+mod docs;
 mod features;
 mod presenter;
 mod protocol;
@@ -8,6 +9,7 @@ mod store;
 mod view;
 
 pub use client::*;
+pub use docs::*;
 pub use features::*;
 pub use presenter::*;
 pub use protocol::*;

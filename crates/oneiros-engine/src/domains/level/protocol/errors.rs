@@ -21,6 +21,8 @@ pub enum LevelError {
     Event(#[from] EventError),
 }
 
+resource_op_error!(LevelError);
+
 impl IntoResponse for LevelError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

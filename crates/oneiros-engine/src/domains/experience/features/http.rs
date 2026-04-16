@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 use serde::Deserialize;
 
@@ -11,14 +11,31 @@ use crate::*;
 pub struct ExperienceRouter;
 
 impl ExperienceRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/experiences",
-            Router::new()
-                .route("/", routing::get(list).post(create))
-                .route("/{id}", routing::get(show))
-                .route("/{id}/description", routing::put(update_description))
-                .route("/{id}/sensation", routing::put(update_sensation)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, ExperienceDocs::List).security_requirement("BearerToken")
+                    })
+                    .post_with(create, |op| {
+                        resource_op!(op, ExperienceDocs::Create)
+                            .security_requirement("BearerToken")
+                            .response::<201, Json<ExperienceResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/{id}",
+                    routing::get_with(show, |op| {
+                        resource_op!(op, ExperienceDocs::Show).security_requirement("BearerToken")
+                    }),
+                )
+                // Local body structs (UpdateDescriptionBody, UpdateSensationBody) don't
+                // implement OperationInput — use plain route() to skip schema generation.
+                .route("/{id}/description", axum::routing::put(update_description))
+                .route("/{id}/sensation", axum::routing::put(update_sensation)),
         )
     }
 }

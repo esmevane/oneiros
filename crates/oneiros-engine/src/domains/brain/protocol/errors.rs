@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{BrainName, ErrorResponse};
+use crate::{BrainName, ErrorResponse, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum BrainError {
@@ -21,6 +21,8 @@ pub enum BrainError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 }
+
+resource_op_error!(BrainError);
 
 impl IntoResponse for BrainError {
     fn into_response(self) -> Response {

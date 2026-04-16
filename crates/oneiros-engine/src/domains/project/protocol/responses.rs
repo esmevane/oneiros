@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 /// The filesystem path where the export file was written.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct ExportPath(pub PathBuf);
 
@@ -36,7 +36,7 @@ impl core::fmt::Display for ExportPath {
 }
 
 /// A count of events processed (imported or replayed).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct EventCount(pub i64);
 
@@ -54,13 +54,13 @@ impl core::fmt::Display for EventCount {
 
 /// The result of a successful project initialization — carries the
 /// token needed for all subsequent authenticated requests.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct InitResult {
     pub brain_name: BrainName,
     pub token: Token,
 }
 
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = ProjectResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ProjectResponse {
@@ -71,13 +71,13 @@ pub enum ProjectResponse {
     Replayed(ReplayResult),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ImportResult {
     pub imported: EventCount,
     pub replayed: EventCount,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ReplayResult {
     pub replayed: EventCount,
 }

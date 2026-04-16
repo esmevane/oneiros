@@ -21,6 +21,8 @@ pub enum TextureError {
     Event(#[from] EventError),
 }
 
+resource_op_error!(TextureError);
+
 impl IntoResponse for TextureError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

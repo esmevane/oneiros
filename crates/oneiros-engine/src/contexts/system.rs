@@ -1,5 +1,7 @@
 use crate::*;
 
+impl aide::operation::OperationInput for SystemContext {}
+
 #[derive(Clone)]
 pub struct SystemContext {
     pub config: Config,

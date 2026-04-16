@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = BookmarkResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum BookmarkResponse {
@@ -22,7 +22,7 @@ pub enum BookmarkResponse {
 /// the composed URI. The URI is derivable from the ticket plus current
 /// host identity, but it's convenient to return it alongside so callers
 /// don't need to reconstruct it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkShareResult {
     pub ticket: Ticket,
     pub uri: String,
@@ -30,7 +30,7 @@ pub struct BookmarkShareResult {
 
 /// The outcome of a successful `bookmark collect` — how many events were
 /// received and the new checkpoint after applying them.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct BookmarkCollectResult {
     pub follow_id: FollowId,
     pub events_received: u64,

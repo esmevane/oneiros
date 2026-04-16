@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,24 @@ use crate::*;
 pub struct TenantRouter;
 
 impl TenantRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/tenants",
-            Router::new()
-                .route("/", routing::get(list).post(create))
-                .route("/{id}", routing::get(show)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| resource_op!(op, TenantDocs::List)).post_with(
+                        create,
+                        |op| {
+                            resource_op!(op, TenantDocs::Create)
+                                .response::<201, Json<TenantResponse>>()
+                        },
+                    ),
+                )
+                .api_route(
+                    "/{id}",
+                    routing::get_with(show, |op| resource_op!(op, TenantDocs::Show)),
+                ),
         )
     }
 }

@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,30 @@ use crate::*;
 pub struct UrgeRouter;
 
 impl UrgeRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/urges",
-            Router::new()
-                .route("/", routing::get(list))
-                .route("/{name}", routing::put(set).get(show).delete(remove)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, UrgeDocs::List).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{name}",
+                    routing::put_with(set, |op| {
+                        resource_op!(op, UrgeDocs::Set)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<UrgeResponse>>()
+                    })
+                    .get_with(show, |op| {
+                        resource_op!(op, UrgeDocs::Show).security_requirement("BearerToken")
+                    })
+                    .delete_with(remove, |op| {
+                        resource_op!(op, UrgeDocs::Remove).security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }

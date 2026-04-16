@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,19 +10,72 @@ use crate::*;
 pub struct ContinuityRouter;
 
 impl ContinuityRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/continuity",
-            Router::new()
-                .route("/", routing::get(status).post(emerge))
-                .route("/{agent}", routing::delete(recede))
-                .route("/{agent}/wake", routing::post(wake))
-                .route("/{agent}/dream", routing::post(dream))
-                .route("/{agent}/introspect", routing::post(introspect))
-                .route("/{agent}/reflect", routing::post(reflect))
-                .route("/{agent}/sense", routing::post(sense))
-                .route("/{agent}/sleep", routing::post(sleep))
-                .route("/{agent}/guidebook", routing::get(guidebook)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(status, |op| {
+                        resource_op!(op, ContinuityDocs::Status).security_requirement("BearerToken")
+                    })
+                    .post_with(emerge, |op| {
+                        resource_op!(op, ContinuityDocs::Emerge)
+                            .security_requirement("BearerToken")
+                            .response::<201, Json<ContinuityResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/{agent}",
+                    routing::delete_with(recede, |op| {
+                        resource_op!(op, ContinuityDocs::Recede).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/wake",
+                    routing::post_with(wake, |op| {
+                        resource_op!(op, ContinuityDocs::Wake).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/dream",
+                    routing::post_with(dream, |op| {
+                        resource_op!(op, ContinuityDocs::Dream).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/introspect",
+                    routing::post_with(introspect, |op| {
+                        resource_op!(op, ContinuityDocs::Introspect)
+                            .security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/reflect",
+                    routing::post_with(reflect, |op| {
+                        resource_op!(op, ContinuityDocs::Reflect)
+                            .security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/sense",
+                    routing::post_with(sense, |op| {
+                        resource_op!(op, ContinuityDocs::Sense).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/sleep",
+                    routing::post_with(sleep, |op| {
+                        resource_op!(op, ContinuityDocs::Sleep).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/{agent}/guidebook",
+                    routing::get_with(guidebook, |op| {
+                        resource_op!(op, ContinuityDocs::Guidebook)
+                            .security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }

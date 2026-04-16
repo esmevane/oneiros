@@ -15,6 +15,7 @@ license = "MIT"
 anstream = "1.0.0"
 anstyle = "1"
 askama = "0.15"
+aide = { version = "0.16.0-alpha.4", features = ["axum", "axum-json", "axum-query", "macros", "scalar"] }
 axum = "0.8.8"
 bon = "3.8"
 # bytes = "1.11"

@@ -25,6 +25,8 @@ pub enum ConnectionError {
     Client(#[from] crate::ClientError),
 }
 
+resource_op_error!(ConnectionError);
+
 impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::ErrorResponse;
+use crate::{ErrorResponse, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ExperienceError {
@@ -27,6 +27,8 @@ pub enum ExperienceError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 }
+
+resource_op_error!(ExperienceError);
 
 impl IntoResponse for ExperienceError {
     fn into_response(self) -> Response {

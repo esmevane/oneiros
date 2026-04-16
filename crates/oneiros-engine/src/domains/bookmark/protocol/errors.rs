@@ -54,6 +54,8 @@ pub enum BookmarkError {
     TimestampParse(#[from] TimestampParseError),
 }
 
+resource_op_error!(BookmarkError);
+
 impl IntoResponse for BookmarkError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

@@ -21,6 +21,8 @@ pub enum UrgeError {
     Event(#[from] EventError),
 }
 
+resource_op_error!(UrgeError);
+
 impl IntoResponse for UrgeError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

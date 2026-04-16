@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,24 @@ use crate::*;
 pub struct BrainRouter;
 
 impl BrainRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/brains",
-            Router::new()
-                .route("/", routing::get(list).post(create))
-                .route("/{name}", routing::get(show)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| resource_op!(op, BrainDocs::List)).post_with(
+                        create,
+                        |op| {
+                            resource_op!(op, BrainDocs::Create)
+                                .response::<201, Json<BrainResponse>>()
+                        },
+                    ),
+                )
+                .api_route(
+                    "/{name}",
+                    routing::get_with(show, |op| resource_op!(op, BrainDocs::Show)),
+                ),
         )
     }
 }

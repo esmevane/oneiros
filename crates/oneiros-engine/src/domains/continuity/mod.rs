@@ -5,6 +5,7 @@
 //! Each produces continuity events and returns composed results.
 
 mod client;
+mod docs;
 mod features;
 mod model;
 mod presenter;
@@ -13,6 +14,7 @@ mod service;
 mod view;
 
 pub use client::*;
+pub use docs::*;
 pub use features::*;
 pub use model::*;
 pub use presenter::*;

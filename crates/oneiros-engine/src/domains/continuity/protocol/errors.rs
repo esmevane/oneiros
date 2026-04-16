@@ -25,6 +25,8 @@ pub enum ContinuityError {
     UnexpectedResponse(String),
 }
 
+resource_op_error!(ContinuityError);
+
 impl IntoResponse for ContinuityError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

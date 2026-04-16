@@ -1,9 +1,10 @@
 use kinded::Kinded;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = AgentResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum AgentResponse {

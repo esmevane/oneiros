@@ -4,7 +4,7 @@ use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
 /// The name under which the service is registered with the OS service manager.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct ServiceName(pub String);
 
@@ -21,7 +21,7 @@ impl fmt::Display for ServiceName {
 }
 
 /// The network address at which the service is reachable.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct ServiceAddress(pub String);
 
@@ -38,7 +38,7 @@ impl fmt::Display for ServiceAddress {
 }
 
 /// A human-readable explanation for why the service is not running.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
 pub struct ServiceReason(pub String);
 
@@ -55,7 +55,7 @@ impl fmt::Display for ServiceReason {
 }
 
 /// All responses the service domain can produce.
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = ServiceResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ServiceResponse {

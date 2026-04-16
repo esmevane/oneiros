@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Path, Query},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,12 +10,30 @@ use crate::*;
 pub struct ConnectionRouter;
 
 impl ConnectionRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/connections",
-            Router::new()
-                .route("/", routing::get(list).post(create))
-                .route("/{id}", routing::get(show).delete(remove)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, ConnectionDocs::List).security_requirement("BearerToken")
+                    })
+                    .post_with(create, |op| {
+                        resource_op!(op, ConnectionDocs::Create)
+                            .security_requirement("BearerToken")
+                            .response::<201, Json<ConnectionResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/{id}",
+                    routing::get_with(show, |op| {
+                        resource_op!(op, ConnectionDocs::Show).security_requirement("BearerToken")
+                    })
+                    .delete_with(remove, |op| {
+                        resource_op!(op, ConnectionDocs::Remove).security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }

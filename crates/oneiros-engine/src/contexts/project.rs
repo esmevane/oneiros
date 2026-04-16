@@ -2,6 +2,8 @@ use tokio::sync::broadcast;
 
 use crate::*;
 
+impl aide::operation::OperationInput for ProjectContext {}
+
 #[derive(Clone)]
 pub struct ProjectContext {
     pub config: Config,

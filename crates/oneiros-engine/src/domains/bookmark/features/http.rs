@@ -1,8 +1,8 @@
+use aide::axum::{ApiRouter, routing};
 use axum::{
-    Json, Router,
+    Json,
     extract::{Query, State},
     http::StatusCode,
-    routing,
 };
 
 use crate::*;
@@ -10,17 +10,57 @@ use crate::*;
 pub struct BookmarkRouter;
 
 impl BookmarkRouter {
-    pub fn routes(&self) -> Router<ServerState> {
-        Router::new().nest(
+    pub fn routes(&self) -> ApiRouter<ServerState> {
+        ApiRouter::new().nest(
             "/bookmarks",
-            Router::new()
-                .route("/", routing::get(list).post(create))
-                .route("/switch", routing::post(switch))
-                .route("/merge", routing::post(merge))
-                .route("/share", routing::post(share))
-                .route("/follow", routing::post(follow))
-                .route("/collect", routing::post(collect))
-                .route("/unfollow", routing::post(unfollow)),
+            ApiRouter::new()
+                .api_route(
+                    "/",
+                    routing::get_with(list, |op| {
+                        resource_op!(op, BookmarkDocs::List).security_requirement("BearerToken")
+                    })
+                    .post_with(create, |op| {
+                        resource_op!(op, BookmarkDocs::Create)
+                            .security_requirement("BearerToken")
+                            .response::<201, Json<BookmarkResponse>>()
+                    }),
+                )
+                .api_route(
+                    "/switch",
+                    routing::post_with(switch, |op| {
+                        resource_op!(op, BookmarkDocs::Switch).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/merge",
+                    routing::post_with(merge, |op| {
+                        resource_op!(op, BookmarkDocs::Merge).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/share",
+                    routing::post_with(share, |op| {
+                        resource_op!(op, BookmarkDocs::Share).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/follow",
+                    routing::post_with(follow, |op| {
+                        resource_op!(op, BookmarkDocs::Follow).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/collect",
+                    routing::post_with(collect, |op| {
+                        resource_op!(op, BookmarkDocs::Collect).security_requirement("BearerToken")
+                    }),
+                )
+                .api_route(
+                    "/unfollow",
+                    routing::post_with(unfollow, |op| {
+                        resource_op!(op, BookmarkDocs::Unfollow).security_requirement("BearerToken")
+                    }),
+                ),
         )
     }
 }
