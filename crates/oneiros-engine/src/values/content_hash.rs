@@ -4,12 +4,12 @@ use sha2::{Digest, Sha256};
     Clone,
     Debug,
     Default,
+    Eq,
+    Hash,
     PartialEq,
     serde::Serialize,
     serde::Deserialize,
     schemars::JsonSchema,
-    lorosurgeon::Hydrate,
-    lorosurgeon::Reconcile,
 )]
 #[serde(transparent)]
 pub struct ContentHash(pub String);

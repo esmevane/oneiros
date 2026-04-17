@@ -4,29 +4,14 @@ use crate::*;
 pub struct Projections<T> {
     frames: Vec<Frames>,
     reducers: ReducerPipeline<T>,
-    canon: Canon,
 }
 
-impl<T: Clone + Default + Materialize> Projections<T> {
+impl<T: Clone + Default> Projections<T> {
     pub fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
         Self {
             frames: frames.to_vec(),
             reducers,
-            canon: Canon::new(),
         }
-    }
-
-    pub fn with_canon(frames: &[Frames], reducers: ReducerPipeline<T>, canon: Canon) -> Self {
-        Self {
-            frames: frames.to_vec(),
-            reducers,
-            canon,
-        }
-    }
-
-    /// The underlying CRDT document.
-    pub fn canon(&self) -> &Canon {
-        &self.canon
     }
 
     /// Run all projection migrations.
@@ -53,15 +38,13 @@ impl<T: Clone + Default + Materialize> Projections<T> {
         }
 
         self.reducers.apply(&event.data)?;
-        self.canon.reconcile(&self.reducers.state()?)?;
-        self.canon.record_event(&event.id)?;
 
         Ok(())
     }
 
     /// Apply a single event through SQLite frame projections only.
-    /// Skips the reducer and canon — used during bookmark switch
-    /// when the canon is already correct and only SQLite needs rebuilding.
+    /// Skips the reducer — used during bookmark switch when only
+    /// SQLite needs rebuilding.
     pub fn apply_frames(
         &self,
         db: &rusqlite::Connection,
@@ -88,23 +71,16 @@ impl<T: Clone + Default + Materialize> Projections<T> {
         }
 
         self.reducers.reset()?;
-        self.canon.reset()?;
 
         Ok(())
     }
 
-    /// Replay a set of events through all frames (for import/rebuild).
-    ///
-    /// Rebuilds SQLite projections and reducer state but skips canon
-    /// reconciliation — the canon that matters lives in CanonIndex
-    /// and is hydrated separately at service startup.
+    /// Replay all events through frames and reducers.
     pub fn replay(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
         let events = EventLog::new(db).load_all()?;
 
         self.reset(db)?;
 
-        // Wrap projection replay in a transaction — without this,
-        // each projection INSERT is an implicit transaction with fsync.
         db.execute_batch("BEGIN")?;
 
         let result = (|| -> Result<(), EventError> {
@@ -165,15 +141,11 @@ impl Projections<BrainCanon> {
     }
 
     pub fn project() -> Self {
-        Self::project_with_canon(Canon::new())
+        Self::project_with_pipeline(ReducerPipeline::brain())
     }
 
-    pub fn project_with_canon(canon: Canon) -> Self {
-        Self::project_with_entry(canon, ReducerPipeline::brain())
-    }
-
-    pub fn project_with_entry(canon: Canon, pipeline: ReducerPipeline<BrainCanon>) -> Self {
-        Self::with_canon(
+    pub fn project_with_pipeline(pipeline: ReducerPipeline<BrainCanon>) -> Self {
+        Self::new(
             &[
                 Frames::new(&[
                     Frame::new(LevelProjections.all()),
@@ -197,18 +169,13 @@ impl Projections<BrainCanon> {
                 ]),
             ],
             pipeline,
-            canon,
         )
     }
 }
 
 impl Projections<SystemCanon> {
     pub fn system() -> Self {
-        Self::system_with_canon(Canon::new())
-    }
-
-    pub fn system_with_canon(canon: Canon) -> Self {
-        Self::with_canon(
+        Self::new(
             &[Frames::new(&[
                 Frame::new(TenantProjections.all()),
                 Frame::new(ActorProjections.all()),
@@ -219,7 +186,6 @@ impl Projections<SystemCanon> {
                 Frame::new(FollowProjections.all()),
             ])],
             ReducerPipeline::system(),
-            canon,
         )
     }
 }

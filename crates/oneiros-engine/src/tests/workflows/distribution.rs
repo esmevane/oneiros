@@ -701,6 +701,180 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
     Ok(())
 }
 
+// ── Sync: already in sync ──────────────────────────────────────
+
+/// Collecting when nothing has changed is a no-op. The Merkle diff
+/// compares chronicle root hashes — if they match, no tree walk
+/// happens and zero events are fetched. This validates that:
+/// 1. Collected events are recorded in the bookmark's chronicle
+/// 2. The chronicle root hash converges with the server's
+/// 3. The diff short-circuits on matching roots
+#[tokio::test]
+async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error>> {
+    let alice = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    alice.command("emerge thinker process").await?;
+    alice
+        .command(r#"cognition add thinker.process observation "Only thought""#)
+        .await?;
+
+    let link = alice.command("bookmark share main").await?;
+
+    let bob = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    bob.command(&format!("bookmark follow {} --name alice", link.prompt()))
+        .await?;
+
+    // First collect — all events arrive
+    bob.command("bookmark collect alice").await?;
+    bob.command("bookmark switch alice").await?;
+
+    match bob
+        .client()
+        .cognition()
+        .list(&ListCognitions {
+            agent: Some(AgentName::new("thinker.process")),
+            texture: None,
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
+        CognitionResponse::Cognitions(cogs) => {
+            assert_eq!(cogs.len(), 1, "first collect should bring the cognition");
+        }
+        other => panic!("expected Cognitions, got {other:?}"),
+    }
+
+    // Second collect — nothing changed on Alice's side.
+    // The Merkle diff should short-circuit: matching roots → zero events.
+    bob.command("bookmark collect alice").await?;
+
+    // Still exactly 1 cognition — no duplicates, no errors
+    match bob
+        .client()
+        .cognition()
+        .list(&ListCognitions {
+            agent: Some(AgentName::new("thinker.process")),
+            texture: None,
+            filters: SearchFilters::default(),
+        })
+        .await?
+    {
+        CognitionResponse::Cognitions(cogs) => {
+            assert_eq!(
+                cogs.len(),
+                1,
+                "second collect with no changes should not duplicate"
+            );
+        }
+        other => panic!("expected Cognitions, got {other:?}"),
+    }
+
+    Ok(())
+}
+
+// ── Sync: deep tree walk ───────────────────────────────────────
+
+/// With enough events, the chronicle HAMT splits into multiple
+/// levels. Collecting into an empty bookmark forces the Merkle diff
+/// to walk interior nodes and issue Resolve requests for subtrees
+/// the client doesn't have. This validates that:
+/// 1. The multi-round Resolve loop terminates
+/// 2. Interior node children are correctly compared
+/// 3. All leaf-level events are discovered and fetched
+#[tokio::test]
+async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
+    let alice = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    alice.command("emerge thinker process").await?;
+
+    // Add enough events to force HAMT splits. The HAMT splits leaves
+    // at 16 entries, so 30+ cognitions on top of seed events should
+    // push the tree to at least 2 levels of interior nodes.
+    for i in 0..30 {
+        alice
+            .command(&format!(
+                r#"cognition add thinker.process observation "Deep thought {i}""#
+            ))
+            .await?;
+    }
+
+    let link = alice.command("bookmark share main").await?;
+
+    let bob = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?
+        .seed_core()
+        .await?;
+
+    bob.command(&format!("bookmark follow {} --name alice", link.prompt()))
+        .await?;
+
+    // Collect — the diff must walk a multi-level HAMT
+    bob.command("bookmark collect alice").await?;
+    bob.command("bookmark switch alice").await?;
+
+    let all = SearchFilters {
+        limit: Limit(100),
+        offset: Offset(0),
+    };
+
+    match bob
+        .client()
+        .cognition()
+        .list(&ListCognitions {
+            agent: Some(AgentName::new("thinker.process")),
+            texture: None,
+            filters: all,
+        })
+        .await?
+    {
+        CognitionResponse::Cognitions(cogs) => {
+            assert_eq!(cogs.len(), 30, "all 30 cognitions should arrive");
+        }
+        other => panic!("expected Cognitions, got {other:?}"),
+    }
+
+    // Verify Alice's agent also came through
+    match bob
+        .client()
+        .agent()
+        .get(&AgentName::new("thinker.process"))
+        .await?
+    {
+        AgentResponse::AgentDetails(a) => {
+            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+        }
+        other => panic!("expected AgentDetails, got {other:?}"),
+    }
+
+    Ok(())
+}
+
 // ── Peers: managing known hosts ──────────────────────────────────
 
 /// Peers are auto-discovered through follow, but the peer list

@@ -1,15 +1,12 @@
 use bon::Builder;
 use clap::Args;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(
-    Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Texture {
     #[builder(into)]
     pub name: TextureName,
@@ -21,8 +18,7 @@ pub struct Texture {
     pub prompt: Prompt,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "textures")]
+#[derive(Clone, Default)]
 pub struct Textures(HashMap<String, Texture>);
 
 impl Textures {

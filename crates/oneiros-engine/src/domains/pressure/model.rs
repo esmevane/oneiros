@@ -1,4 +1,3 @@
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,18 +11,16 @@ resource_id!(PressureId);
 /// Each pressure pairs an agent with an urge and stores the full gauge
 /// data (inputs, calculation, config) as a self-describing audit trail.
 /// Urgency is computed at read time from the stored gauge.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Hydrate, Reconcile)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Pressure {
     pub id: PressureId,
     pub agent_id: AgentId,
     pub urge: UrgeName,
-    #[loro(json)]
     pub data: Gauge,
     pub updated_at: Timestamp,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "pressures")]
+#[derive(Clone, Default)]
 pub struct Pressures(HashMap<String, Pressure>);
 
 impl Pressures {

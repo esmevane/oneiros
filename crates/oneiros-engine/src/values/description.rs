@@ -1,13 +1,5 @@
 #[derive(
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    serde::Serialize,
-    serde::Deserialize,
-    schemars::JsonSchema,
-    lorosurgeon::Hydrate,
-    lorosurgeon::Reconcile,
+    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(transparent)]
 pub struct Description(pub String);

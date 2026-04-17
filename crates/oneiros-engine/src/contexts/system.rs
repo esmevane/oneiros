@@ -16,13 +16,6 @@ impl SystemContext {
         }
     }
 
-    pub fn with_canon(config: Config, canon: Canon) -> Self {
-        Self {
-            config,
-            projections: Projections::system_with_canon(canon),
-        }
-    }
-
     /// Build an HTTP client for system operations.
     pub fn client(&self) -> Client {
         Client::new(self.config.base_url())

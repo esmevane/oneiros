@@ -1,8 +1,8 @@
 use crate::*;
 
 /// Server-side handler for incoming sync requests. Validates tickets
-/// against the system DB and exports canon updates for the requested
-/// brain's bookmark, using the CRDT delta mechanism.
+/// against the system DB and serves chronicle nodes for the Merkle
+/// diff protocol.
 #[derive(Clone)]
 pub struct SyncHandler {
     config: Config,
@@ -36,43 +36,75 @@ impl SyncHandler {
         Ok(ticket)
     }
 
-    async fn handle_confer(
-        &self,
-        link: &Link,
-        version_vector: &[u8],
-    ) -> Result<BridgeResponse, BridgeError> {
-        let ticket = self.validate_ticket(link).await?;
+    fn brain_db(&self, brain: &BrainName) -> Result<rusqlite::Connection, BridgeError> {
+        let mut brain_config = self.config.clone();
+        brain_config.brain = brain.clone();
+        Ok(brain_config.brain_db()?)
+    }
 
-        let canon = self.canons.brain(&ticket.brain_name)?;
+    async fn handle_diff(&self, diff: &BridgeDiff) -> Result<BridgeResponse, BridgeError> {
+        let ticket = self.validate_ticket(&diff.link).await?;
+        let chronicle = self.canons.chronicle(&ticket.brain_name)?;
+        let server_root = chronicle.root()?;
 
-        let canon_bytes = canon.export_updates_since(version_vector)?;
-
-        if canon_bytes.is_empty() {
-            Ok(BridgeResponse::Current)
-        } else {
-            Ok(BridgeResponse::Updates { canon_bytes })
+        // Roots match — no diff needed.
+        if diff.root_hash == server_root {
+            return Ok(BridgeResponse::BridgeCurrent);
         }
+
+        // Server has no events — nothing to send.
+        let Some(root_hash) = server_root else {
+            return Ok(BridgeResponse::BridgeCurrent);
+        };
+
+        let db = self.brain_db(&ticket.brain_name)?;
+        let store = ChronicleStore::new(&db);
+        let resolve = store.resolver();
+
+        let node = resolve(&root_hash).ok_or_else(|| {
+            BridgeError::Protocol("chronicle root node not found in store".into())
+        })?;
+
+        Ok(BridgeResponse::BridgeRootNode(BridgeRootNode {
+            root_hash,
+            node,
+        }))
+    }
+
+    async fn handle_resolve(
+        &self,
+        resolve_req: &BridgeResolve,
+    ) -> Result<BridgeResponse, BridgeError> {
+        let ticket = self.validate_ticket(&resolve_req.link).await?;
+        let db = self.brain_db(&ticket.brain_name)?;
+        let store = ChronicleStore::new(&db);
+        let resolve = store.resolver();
+
+        let nodes: Vec<(ContentHash, LedgerNode)> = resolve_req
+            .hashes
+            .iter()
+            .filter_map(|hash| resolve(hash).map(|node| (hash.clone(), node)))
+            .collect();
+
+        Ok(BridgeResponse::BridgeNodes(BridgeNodes { nodes }))
     }
 
     async fn handle_fetch_events(
         &self,
-        link: &Link,
-        event_ids: &[String],
+        fetch: &BridgeFetchEvents,
     ) -> Result<BridgeResponse, BridgeError> {
-        let ticket = self.validate_ticket(link).await?;
+        let ticket = self.validate_ticket(&fetch.link).await?;
+        let db = self.brain_db(&ticket.brain_name)?;
 
-        let mut brain_config = self.config.clone();
-        brain_config.brain = ticket.brain_name.clone();
-        let db = brain_config.brain_db()?;
-
-        let ids: Vec<EventId> = event_ids
+        let ids: Vec<EventId> = fetch
+            .event_ids
             .iter()
             .map(|s| s.parse())
             .collect::<Result<Vec<_>, _>>()?;
 
         let events = EventLog::new(&db).get_batch(&ids)?;
 
-        Ok(BridgeResponse::Events { events })
+        Ok(BridgeResponse::BridgeEvents(BridgeEvents { events }))
     }
 }
 
@@ -93,9 +125,9 @@ impl iroh::protocol::ProtocolHandler for SyncHandler {
             .map_err(iroh::protocol::AcceptError::from_err)?;
         let len = u32::from_be_bytes(len_buf) as usize;
         if len > MAX_MESSAGE_SIZE {
-            let response = BridgeResponse::Denied {
+            let response = BridgeResponse::BridgeDenied(BridgeDenied {
                 reason: format!("request too large: {len} bytes"),
-            };
+            });
             write_response(&mut send, &response).await.ok();
             connection.closed().await;
             return Ok(());
@@ -106,24 +138,30 @@ impl iroh::protocol::ProtocolHandler for SyncHandler {
             .map_err(iroh::protocol::AcceptError::from_err)?;
 
         let response = match BridgeRequest::from_bytes(&buf) {
-            Ok(BridgeRequest::Confer {
-                link,
-                version_vector,
-            }) => self
-                .handle_confer(&link, &version_vector)
-                .await
-                .unwrap_or_else(|e| BridgeResponse::Denied {
-                    reason: e.to_string(),
-                }),
-            Ok(BridgeRequest::FetchEvents { link, event_ids }) => self
-                .handle_fetch_events(&link, &event_ids)
-                .await
-                .unwrap_or_else(|e| BridgeResponse::Denied {
-                    reason: e.to_string(),
-                }),
-            Err(e) => BridgeResponse::Denied {
+            Ok(BridgeRequest::BridgeDiff(diff)) => {
+                self.handle_diff(&diff).await.unwrap_or_else(|e| {
+                    BridgeResponse::BridgeDenied(BridgeDenied {
+                        reason: e.to_string(),
+                    })
+                })
+            }
+            Ok(BridgeRequest::BridgeResolve(resolve)) => {
+                self.handle_resolve(&resolve).await.unwrap_or_else(|e| {
+                    BridgeResponse::BridgeDenied(BridgeDenied {
+                        reason: e.to_string(),
+                    })
+                })
+            }
+            Ok(BridgeRequest::BridgeFetchEvents(fetch)) => {
+                self.handle_fetch_events(&fetch).await.unwrap_or_else(|e| {
+                    BridgeResponse::BridgeDenied(BridgeDenied {
+                        reason: e.to_string(),
+                    })
+                })
+            }
+            Err(e) => BridgeResponse::BridgeDenied(BridgeDenied {
                 reason: format!("invalid request: {e}"),
-            },
+            }),
         };
 
         if let Err(e) = write_response(&mut send, &response).await {

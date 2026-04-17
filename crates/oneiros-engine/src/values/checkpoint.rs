@@ -9,16 +9,7 @@ use crate::*;
 ///
 /// Used by follows to track "where we left off" during collect, and by the
 /// sync protocol to negotiate what to transfer.
-#[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    Serialize,
-    Deserialize,
-    schemars::JsonSchema,
-    lorosurgeon::Hydrate,
-    lorosurgeon::Reconcile,
-)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct Checkpoint {
     /// Number of events applied within this view.
     pub sequence: u64,

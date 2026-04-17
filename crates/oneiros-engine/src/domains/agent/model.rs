@@ -1,14 +1,11 @@
 use bon::Builder;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(
-    Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Agent {
     #[builder(default)]
     pub id: AgentId,
@@ -22,8 +19,7 @@ pub struct Agent {
     pub prompt: Prompt,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "agents")]
+#[derive(Clone, Default)]
 pub struct Agents(HashMap<String, Agent>);
 
 impl Agents {

@@ -1,5 +1,4 @@
 use bon::Builder;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -16,15 +15,11 @@ use crate::*;
 /// as the peer's network environment shifts). `name` is the human-readable
 /// label for display, defaulting to a short hex prefix of the key when no
 /// explicit name is provided.
-#[derive(
-    Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Peer {
     #[builder(default)]
     pub id: PeerId,
-    #[loro(json)]
     pub key: PeerKey,
-    #[loro(json)]
     pub address: PeerAddress,
     #[builder(into)]
     pub name: PeerName,
@@ -32,8 +27,7 @@ pub struct Peer {
     pub created_at: Timestamp,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "peers")]
+#[derive(Clone, Default)]
 pub struct Peers(HashMap<String, Peer>);
 
 impl Peers {
