@@ -175,12 +175,13 @@ impl CanonIndex {
             && let (Some(source_entry), Some(target_entry)) =
                 (shelf.branches.get(source), shelf.branches.get(target))
         {
-            let brain_config = Config {
+            // Chronicle objects live in the system DB.
+            let config = Config {
                 brain: brain.clone(),
                 ..Default::default()
             };
 
-            if let Ok(db) = brain_config.brain_db() {
+            if let Ok(db) = config.system_db() {
                 let store = ChronicleStore::new(&db);
                 let _ = store.migrate();
                 let _ = target_entry.chronicle.merge(
@@ -194,18 +195,28 @@ impl CanonIndex {
         Ok(())
     }
 
-    /// Hydrate a brain's reducer pipeline from its event log.
+    /// Hydrate a brain's reducer pipeline and chronicle from its event log.
     ///
-    /// Runs migrations first to ensure the schema is current.
+    /// Opens events.db standalone for the event log, then the bookmark
+    /// connection for projection migrations.
     pub fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
         let mut brain_config = config.clone();
         brain_config.brain = name.clone();
 
-        let db = brain_config.brain_db()?;
+        // Events DB — standalone (no ATTACH).
+        let events_path = brain_config.events_db_path();
+        if !events_path.exists() {
+            return Ok(());
+        }
+        let events_db = rusqlite::Connection::open(&events_path)?;
+        events_db.pragma_update(None, "journal_mode", "wal")?;
+        let log = EventLog::new(&events_db);
 
-        Projections::<BrainCanon>::project().migrate(&db)?;
+        // Ensure projection schema exists in the bookmark DB.
+        let bookmark_db = brain_config.bookmark_conn()?;
+        Projections::<BrainCanon>::project().migrate(&bookmark_db)?;
 
-        let events = EventLog::new(&db).load_all()?;
+        let events = log.load_all()?;
 
         let entry = self.brain_entry(name)?;
 
@@ -213,8 +224,9 @@ impl CanonIndex {
             entry.pipeline.apply(&event.data)?;
         }
 
-        // Rebuild the chronicle from the event log.
-        let store = ChronicleStore::new(&db);
+        // Rebuild the chronicle in the system DB.
+        let system_db = config.system_db()?;
+        let store = ChronicleStore::new(&system_db);
         store.migrate()?;
         for event in &events {
             entry

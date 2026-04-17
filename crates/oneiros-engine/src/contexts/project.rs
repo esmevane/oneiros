@@ -74,9 +74,13 @@ impl ProjectContext {
         self.broadcast.subscribe()
     }
 
-    /// Open the brain (project) database.
+    /// Open the bookmark DB with the events DB ATTACHed.
+    ///
+    /// Unqualified table names resolve to the bookmark DB (projections).
+    /// Event log operations use the `events` schema qualifier via
+    /// `EventLog::attached`.
     pub fn db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        self.config.brain_db()
+        self.config.bookmark_conn()
     }
 
     /// Open the system database.
@@ -86,19 +90,22 @@ impl ProjectContext {
 
     /// Replay all events through projections, rebuilding read models.
     pub fn replay(&self) -> Result<usize, EventError> {
-        self.projections.replay_brain(&self.db()?)
+        let db = self.db()?;
+        let log = EventLog::attached(&db);
+        self.projections.replay_brain(&db, &log)
     }
 
     /// Emit an event to the brain's event log and apply projections.
     pub async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
         let db = self.db()?;
         let new_event = NewEvent::builder().data(event).build();
-        let stored = EventLog::new(&db).append(&new_event)?;
+        let stored = EventLog::attached(&db).append(&new_event)?;
 
         self.projections.apply_brain(&db, &stored)?;
 
-        // Chronicle the event — record it in the active bookmark's ledger.
-        let chronicle_store = ChronicleStore::new(&db);
+        // Chronicle the event in the system DB (shared across bookmarks).
+        let system_db = self.system_db()?;
+        let chronicle_store = ChronicleStore::new(&system_db);
         chronicle_store.migrate()?;
         self.chronicle.record(
             &stored,

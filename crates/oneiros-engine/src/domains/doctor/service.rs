@@ -53,17 +53,17 @@ impl DoctorService {
         // Brain check
         let brain_name = config.brain.clone();
 
-        match config.brain_db() {
+        match config.bookmark_conn() {
             Ok(brain_db) => {
                 let brain_events = brain_db
-                    .query_row("select count(*) from events", [], |row| {
+                    .query_row("select count(*) from events.events", [], |row| {
                         row.get::<_, i64>(0)
                     })
                     .unwrap_or(-1);
 
                 if brain_events >= 0 {
                     checks.push(DoctorCheck::BrainExists(brain_name.clone()));
-                    checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("brain.db")));
+                    checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("events.db")));
 
                     // Vocabulary check — look for any levels
                     let has_levels = brain_db

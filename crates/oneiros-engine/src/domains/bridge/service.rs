@@ -36,10 +36,13 @@ impl SyncHandler {
         Ok(ticket)
     }
 
-    fn brain_db(&self, brain: &BrainName) -> Result<rusqlite::Connection, BridgeError> {
-        let mut brain_config = self.config.clone();
-        brain_config.brain = brain.clone();
-        Ok(brain_config.brain_db()?)
+    fn events_db(&self, brain: &BrainName) -> Result<rusqlite::Connection, BridgeError> {
+        let mut config = self.config.clone();
+        config.brain = brain.clone();
+        let path = config.events_db_path();
+        let conn = rusqlite::Connection::open(path)?;
+        conn.pragma_update(None, "journal_mode", "wal")?;
+        Ok(conn)
     }
 
     async fn handle_diff(&self, diff: &BridgeDiff) -> Result<BridgeResponse, BridgeError> {
@@ -57,8 +60,9 @@ impl SyncHandler {
             return Ok(BridgeResponse::BridgeCurrent);
         };
 
-        let db = self.brain_db(&ticket.brain_name)?;
-        let store = ChronicleStore::new(&db);
+        // Chronicle objects live in the system DB.
+        let system_db = self.config.system_db()?;
+        let store = ChronicleStore::new(&system_db);
         let resolve = store.resolver();
 
         let node = resolve(&root_hash).ok_or_else(|| {
@@ -75,9 +79,11 @@ impl SyncHandler {
         &self,
         resolve_req: &BridgeResolve,
     ) -> Result<BridgeResponse, BridgeError> {
-        let ticket = self.validate_ticket(&resolve_req.link).await?;
-        let db = self.brain_db(&ticket.brain_name)?;
-        let store = ChronicleStore::new(&db);
+        let _ticket = self.validate_ticket(&resolve_req.link).await?;
+
+        // Chronicle objects live in the system DB.
+        let system_db = self.config.system_db()?;
+        let store = ChronicleStore::new(&system_db);
         let resolve = store.resolver();
 
         let nodes: Vec<(ContentHash, LedgerNode)> = resolve_req
@@ -94,7 +100,9 @@ impl SyncHandler {
         fetch: &BridgeFetchEvents,
     ) -> Result<BridgeResponse, BridgeError> {
         let ticket = self.validate_ticket(&fetch.link).await?;
-        let db = self.brain_db(&ticket.brain_name)?;
+
+        // Event log lives in events.db (standalone, no ATTACH).
+        let db = self.events_db(&ticket.brain_name)?;
 
         let ids: Vec<EventId> = fetch
             .event_ids

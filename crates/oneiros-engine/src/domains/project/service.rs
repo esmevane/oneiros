@@ -36,14 +36,24 @@ impl ProjectService {
             }))
             .await?;
 
-        // Ensure brain directory and DB schema exist (mirrors legacy create_brain_db).
+        // Create the brain's database layout:
+        //   {brain_dir}/events.db         — event log (append-only)
+        //   {brain_dir}/bookmarks/main.db — projection tables for the default bookmark
         let brain_dir = context.config.data_dir.join(brain_name.as_str());
-        std::fs::create_dir_all(&brain_dir)?;
-        let brain_db = rusqlite::Connection::open(brain_dir.join("brain.db"))?;
-        brain_db.pragma_update(None, "journal_mode", "wal")?;
-        EventLog::new(&brain_db).migrate()?;
-        Projections::project().migrate(&brain_db)?;
-        drop(brain_db);
+        let bookmarks_dir = brain_dir.join("bookmarks");
+        std::fs::create_dir_all(&bookmarks_dir)?;
+
+        // Event log — standalone, no ATTACH needed during init.
+        let events_db = rusqlite::Connection::open(brain_dir.join("events.db"))?;
+        events_db.pragma_update(None, "journal_mode", "wal")?;
+        EventLog::new(&events_db).migrate()?;
+        drop(events_db);
+
+        // Default bookmark projections — standalone during init.
+        let bookmark_db = rusqlite::Connection::open(bookmarks_dir.join("main.db"))?;
+        bookmark_db.pragma_update(None, "journal_mode", "wal")?;
+        Projections::project().migrate(&bookmark_db)?;
+        drop(bookmark_db);
 
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
@@ -94,8 +104,8 @@ impl ProjectService {
     ) -> Result<ProjectResponse, ProjectError> {
         let target_dir = &request.target;
         let project_name = context.brain_name();
-        let events = EventLog::new(&context.db()?).load_all()?;
         let db = context.db()?;
+        let events = EventLog::attached(&db).load_all()?;
         let storage = StorageStore::new(&db);
 
         let mut buffer = String::new();
@@ -146,7 +156,7 @@ impl ProjectService {
         let mut imported = 0usize;
 
         let db = context.db()?;
-        let log = EventLog::new(&db);
+        let log = EventLog::attached(&db);
 
         // Batch all inserts in a single transaction — without this,
         // each INSERT is an implicit transaction with an fsync.
@@ -184,7 +194,8 @@ impl ProjectService {
             }
         }
 
-        let replayed = context.projections.replay_brain(&db)?;
+        let log = EventLog::attached(&db);
+        let replayed = context.projections.replay_brain(&db, &log)?;
 
         Ok(ProjectResponse::Imported(ImportResult {
             imported: EventCount::new(imported as i64),
@@ -194,7 +205,9 @@ impl ProjectService {
 
     /// Replay all events through projections, rebuilding read models.
     pub fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
-        let replayed = context.projections.replay_brain(&context.db()?)?;
+        let db = context.db()?;
+        let log = EventLog::attached(&db);
+        let replayed = context.projections.replay_brain(&db, &log)?;
 
         Ok(ProjectResponse::Replayed(ReplayResult {
             replayed: EventCount::new(replayed as i64),
