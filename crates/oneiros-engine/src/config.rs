@@ -35,6 +35,10 @@ pub struct Config {
     #[arg(long, short, global = true, default_value_t = detect_brain_name())]
     #[builder(into, default = detect_brain_name())]
     pub brain: BrainName,
+    /// The bookmark (lens) to operate through. Defaults to main.
+    #[arg(long, global = true, default_value_t = BookmarkName::main())]
+    #[builder(into, default = BookmarkName::main())]
+    pub bookmark: BookmarkName,
     /// Service management configuration.
     #[command(flatten)]
     #[builder(default)]
@@ -62,6 +66,7 @@ impl Default for Config {
         Self {
             data_dir: default_data_dir(),
             brain: detect_brain_name(),
+            bookmark: BookmarkName::main(),
             service: ServiceConfig::default(),
             dream: DreamConfig::default(),
             output: OutputMode::default(),
@@ -99,10 +104,44 @@ impl Config {
         Ok(conn)
     }
 
-    /// Open the brain (project) database.
-    pub fn brain_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let conn = rusqlite::Connection::open(self.brain_dir().join("brain.db"))?;
+    /// Path to the brain's event log database.
+    pub fn events_db_path(&self) -> PathBuf {
+        self.brain_dir().join("events.db")
+    }
+
+    /// Path to the bookmark's projection database.
+    pub fn bookmark_db_path(&self) -> PathBuf {
+        self.brain_dir()
+            .join("bookmarks")
+            .join(format!("{}.db", self.bookmark))
+    }
+
+    /// Directory containing all bookmark databases for this brain.
+    pub fn bookmarks_dir(&self) -> PathBuf {
+        self.brain_dir().join("bookmarks")
+    }
+
+    /// Open the bookmark DB as base with the events DB ATTACHed.
+    ///
+    /// Unqualified table names resolve to the bookmark DB (projections).
+    /// Event log operations use the `events` schema qualifier.
+    /// Both share one connection and transaction for atomicity.
+    pub fn bookmark_conn(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+        let bookmark_path = self.bookmark_db_path();
+        if let Some(parent) = bookmark_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+
+        let conn = rusqlite::Connection::open(&bookmark_path)?;
         conn.pragma_update(None, "journal_mode", "wal")?;
+        conn.pragma_update(None, "limit_attached", "125")?;
+
+        let events_path = self.events_db_path();
+        conn.execute_batch(&format!(
+            "ATTACH DATABASE '{}' AS events",
+            events_path.display(),
+        ))?;
+
         Ok(conn)
     }
 
@@ -229,6 +268,9 @@ impl Config {
         }
         if self.brain == defaults.brain {
             self.brain = file_config.brain;
+        }
+        if self.bookmark == defaults.bookmark {
+            self.bookmark = file_config.bookmark;
         }
         if self.output == defaults.output {
             self.output = file_config.output;

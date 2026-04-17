@@ -97,7 +97,10 @@ impl ServerState {
         &self.broadcast
     }
 
-    /// Build a project context with shared broadcast, canon, and pipeline.
+    /// Build a project context with shared broadcast and pipeline.
+    ///
+    /// Resolves the active bookmark for the brain unless the config
+    /// already has an explicit bookmark override.
     pub fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
         let entry = self.canons.brain_entry(&config.brain)?;
         Ok(ProjectContext::with_entry(
@@ -171,7 +174,28 @@ impl FromRequestParts<ServerState> for ProjectContext {
 
         // Assemble ProjectContext with shared broadcast channel
         let mut config = state.config.clone();
-        config.brain = ticket.brain_name;
+        config.brain = ticket.brain_name.clone();
+
+        // Default to the active bookmark for this brain.
+        config.bookmark = state
+            .canons()
+            .active_bookmark(&ticket.brain_name)
+            .unwrap_or_else(|_| BookmarkName::main());
+
+        // Override with explicit X-Bookmark header or ?bookmark= query param.
+        if let Some(bookmark) = parts
+            .headers
+            .get("x-bookmark")
+            .and_then(|v| v.to_str().ok())
+            .or_else(|| {
+                parts
+                    .uri
+                    .query()
+                    .and_then(|q| q.split('&').find_map(|pair| pair.strip_prefix("bookmark=")))
+            })
+        {
+            config.bookmark = BookmarkName::new(bookmark);
+        }
 
         state
             .project_context(config)

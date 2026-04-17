@@ -11,6 +11,9 @@ impl BookmarkService {
         let from = state.canons().active_bookmark(brain)?;
         state.canons().fork_brain(brain, name)?;
 
+        // Create the new bookmark's DB and replay the source events into it.
+        Self::create_bookmark_db(state.config(), brain, name)?;
+
         let forked = BookmarkForked {
             brain: brain.clone(),
             name: name.clone(),
@@ -30,11 +33,9 @@ impl BookmarkService {
         brain: &BrainName,
         SwitchBookmark { name }: &SwitchBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
-        let old_chronicle = state.canons().chronicle(brain)?;
+        // With per-bookmark DBs, switch just updates the default.
+        // Both bookmark DBs already exist with current projections.
         state.canons().switch_brain(brain, name)?;
-        let new_chronicle = state.canons().chronicle(brain)?;
-
-        Self::rebuild_projections(state.config(), brain, &old_chronicle, &new_chronicle)?;
 
         let switched = BookmarkSwitched {
             brain: brain.clone(),
@@ -57,7 +58,7 @@ impl BookmarkService {
         let target = state.canons().active_bookmark(brain)?;
         state.canons().merge_brain(brain, source, &target)?;
 
-        Self::replay_brain_projections(state.config(), brain)?;
+        Self::replay_bookmark(state.config(), brain, &target)?;
 
         let merged = BookmarkMerged {
             brain: brain.clone(),
@@ -175,6 +176,9 @@ impl BookmarkService {
             .await?;
         state.canons().fork_brain(brain, name)?;
 
+        // Create the new bookmark's DB (empty — collect will populate it).
+        Self::create_bookmark_db(state.config(), brain, name)?;
+
         let follow = FollowService::create(&system, brain.clone(), name.clone(), source).await?;
         Ok(BookmarkResponse::Followed(follow))
     }
@@ -220,19 +224,19 @@ impl BookmarkService {
         let chronicle = state.canons().bookmark_chronicle(brain, &follow.bookmark)?;
         let local_root = chronicle.root()?;
 
-        // Build a local resolver from the brain's ChronicleStore.
+        // Build a local resolver from the system DB's ChronicleStore.
         // Opens its own connection per resolve call — Send-safe across
         // the async diff, and fast with WAL mode (~20 resolves per tree walk).
         let mut brain_config = state.config().clone();
         brain_config.brain = brain.clone();
         {
-            let db = brain_config.brain_db()?;
+            let db = state.config().system_db()?;
             ChronicleStore::new(&db).migrate()?;
         }
         let local_resolve = {
-            let config = brain_config.clone();
+            let config = state.config().clone();
             move |hash: &ContentHash| -> Option<LedgerNode> {
-                let db = config.brain_db().ok()?;
+                let db = config.system_db().ok()?;
                 ChronicleStore::new(&db).get(hash)
             }
         };
@@ -269,9 +273,15 @@ impl BookmarkService {
                 .await
                 .map_err(|e: BridgeError| BookmarkError::InvalidUri(e.to_string()))?;
 
-            let db = brain_config.brain_db()?;
-            let log = EventLog::new(&db);
-            let chronicle_store = ChronicleStore::new(&db);
+            // Import events to the event log (standalone events.db).
+            let events_path = brain_config.events_db_path();
+            let events_db = rusqlite::Connection::open(&events_path)?;
+            events_db.pragma_update(None, "journal_mode", "wal")?;
+            let log = EventLog::new(&events_db);
+
+            // Chronicle objects live in the system DB.
+            let system_db = state.config().system_db()?;
+            let chronicle_store = ChronicleStore::new(&system_db);
             chronicle_store.migrate()?;
 
             for event in &events {
@@ -286,8 +296,8 @@ impl BookmarkService {
             }
         }
 
-        // Phase 3: Replay projections from the updated event log.
-        Self::replay_brain_projections(state.config(), brain)?;
+        // Phase 3: Replay projections into the follow's bookmark DB.
+        Self::replay_bookmark(state.config(), brain, &follow.bookmark)?;
 
         // Store the server's root hash in the checkpoint so we can
         // detect "already up to date" on the next collect.
@@ -328,47 +338,44 @@ impl BookmarkService {
         }))
     }
 
-    fn replay_brain_projections(config: &Config, brain: &BrainName) -> Result<(), BookmarkError> {
-        let mut brain_config = config.clone();
-        brain_config.brain = brain.clone();
-        let db = brain_config.brain_db()?;
-        Projections::<BrainCanon>::project().replay_brain(&db)?;
-        Ok(())
-    }
-
-    fn rebuild_projections(
+    /// Replay the event log into a specific bookmark's projection DB.
+    fn replay_bookmark(
         config: &Config,
         brain: &BrainName,
-        old_chronicle: &Chronicle,
-        new_chronicle: &Chronicle,
+        bookmark: &BookmarkName,
     ) -> Result<(), BookmarkError> {
         let mut brain_config = config.clone();
         brain_config.brain = brain.clone();
-        let db = brain_config.brain_db()?;
+        brain_config.bookmark = bookmark.clone();
+        let db = brain_config.bookmark_conn()?;
+        let log = EventLog::attached(&db);
+        Projections::<BrainCanon>::project().replay_brain(&db, &log)?;
+        Ok(())
+    }
 
-        let chronicle_store = ChronicleStore::new(&db);
-        chronicle_store.migrate()?;
+    /// Create a new bookmark DB and replay events into it.
+    ///
+    /// Migrates the schema, then replays the event log through
+    /// projections so the new bookmark starts with the source's state.
+    fn create_bookmark_db(
+        config: &Config,
+        brain: &BrainName,
+        bookmark: &BookmarkName,
+    ) -> Result<(), BookmarkError> {
+        let mut brain_config = config.clone();
+        brain_config.brain = brain.clone();
+        brain_config.bookmark = bookmark.clone();
 
-        let changes = old_chronicle.diff(new_chronicle, &chronicle_store.resolver())?;
-        if changes.is_empty() {
-            return Ok(());
-        }
+        let bookmarks_dir = brain_config.bookmarks_dir();
+        std::fs::create_dir_all(&bookmarks_dir)
+            .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
 
-        let new_root = new_chronicle.root()?;
-        let new_event_ids: std::collections::HashSet<String> =
-            Ledger::collect_all_ids(new_root.as_ref(), &chronicle_store.resolver());
-
+        // Open the new bookmark DB with events ATTACHed and replay.
+        let db = brain_config.bookmark_conn()?;
         let projections = Projections::<BrainCanon>::project();
-        let all_events = EventLog::new(&db).load_all()?;
-
         projections.migrate(&db)?;
-        projections.reset(&db)?;
-
-        for event in &all_events {
-            if new_event_ids.contains(&event.id.to_string()) {
-                projections.apply_frames(&db, event)?;
-            }
-        }
+        let log = EventLog::attached(&db);
+        projections.replay_brain(&db, &log)?;
 
         Ok(())
     }

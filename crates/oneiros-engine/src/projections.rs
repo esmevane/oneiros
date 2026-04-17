@@ -76,8 +76,8 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Replay all events through frames and reducers.
-    pub fn replay(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
-        let events = EventLog::new(db).load_all()?;
+    pub fn replay(&self, db: &rusqlite::Connection, log: &EventLog) -> Result<usize, EventError> {
+        let events = log.load_all()?;
 
         self.reset(db)?;
 
@@ -134,8 +134,12 @@ impl Projections<BrainCanon> {
     }
 
     /// Replay for brain projections — includes pressure sync at the end.
-    pub fn replay_brain(&self, db: &rusqlite::Connection) -> Result<usize, EventError> {
-        let count = self.replay(db)?;
+    pub fn replay_brain(
+        &self,
+        db: &rusqlite::Connection,
+        log: &EventLog,
+    ) -> Result<usize, EventError> {
+        let count = self.replay(db, log)?;
         self.sync_pressures(db)?;
         Ok(count)
     }

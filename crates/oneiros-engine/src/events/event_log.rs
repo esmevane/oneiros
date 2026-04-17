@@ -13,28 +13,47 @@ use crate::*;
 /// Pure persistence: append events, load them back, import from
 /// external sources, delete transient entries. No projections,
 /// no broadcasting — those are the bus's concern.
+///
+/// Two construction modes:
+/// - `new(conn)` — standalone, events DB is the base connection.
+///   Table references are unqualified (`events`).
+/// - `attached(conn)` — the bookmark DB is the base connection and
+///   the events DB is ATTACHed as `events`. Table references use
+///   the `events.` schema qualifier.
 pub struct EventLog<'a> {
     conn: &'a rusqlite::Connection,
+    table: &'static str,
 }
 
 impl<'a> EventLog<'a> {
+    /// Standalone mode — events DB is the base connection.
     pub fn new(conn: &'a rusqlite::Connection) -> Self {
-        Self { conn }
+        Self {
+            conn,
+            table: "events",
+        }
+    }
+
+    /// ATTACH mode — bookmark DB is the base, events DB ATTACHed as `events`.
+    pub fn attached(conn: &'a rusqlite::Connection) -> Self {
+        Self {
+            conn,
+            table: "events.events",
+        }
     }
 
     /// Create the events table.
     pub fn migrate(&self) -> Result<(), EventError> {
-        self.conn.execute_batch(
-            "
-            create table if not exists events (
-                id text primary key,
-                event_type text not null,
-                data text not null,
-                source text not null default '',
-                created_at text not null
-            );
-            ",
-        )?;
+        self.conn.execute_batch(&format!(
+            "CREATE TABLE IF NOT EXISTS {} (
+                id TEXT PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                data TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL
+            )",
+            self.table,
+        ))?;
 
         Ok(())
     }
@@ -48,7 +67,10 @@ impl<'a> EventLog<'a> {
         let now = Timestamp::now();
 
         self.conn.execute(
-            "INSERT INTO events (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            &format!(
+                "INSERT INTO {} (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                self.table,
+            ),
             params![id.to_string(), event_type, data_json, source_json, now.as_string()],
         )?;
 
@@ -65,9 +87,10 @@ impl<'a> EventLog<'a> {
 
     /// Load all events in sequence order.
     pub fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, rowid, data, source, created_at FROM events ORDER BY rowid")?;
+        let mut stmt = self.conn.prepare(&format!(
+            "SELECT id, rowid, data, source, created_at FROM {} ORDER BY rowid",
+            self.table,
+        ))?;
 
         let events = stmt
             .query_map([], |row| {
@@ -105,8 +128,9 @@ impl<'a> EventLog<'a> {
 
         let placeholders: Vec<String> = (1..=ids.len()).map(|i| format!("?{i}")).collect();
         let query = format!(
-            "SELECT id, rowid, data, source, created_at FROM events WHERE id IN ({}) ORDER BY rowid",
-            placeholders.join(",")
+            "SELECT id, rowid, data, source, created_at FROM {} WHERE id IN ({}) ORDER BY rowid",
+            self.table,
+            placeholders.join(","),
         );
 
         let mut stmt = self.conn.prepare(&query)?;
@@ -145,7 +169,10 @@ impl<'a> EventLog<'a> {
         let source_json = serde_json::to_string(&event.source)?;
 
         self.conn.execute(
-            "INSERT OR IGNORE INTO events (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            &format!(
+                "INSERT OR IGNORE INTO {} (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                self.table,
+            ),
             params![
                 event.id.to_string(),
                 event_type,
@@ -163,8 +190,10 @@ impl<'a> EventLog<'a> {
     /// Rarely needed — the event log is append-only by design.
     /// Exists for administrative operations, not domain logic.
     pub fn delete(&self, event_id: &str) -> Result<(), EventError> {
-        self.conn
-            .execute("DELETE FROM events WHERE id = ?1", params![event_id])?;
+        self.conn.execute(
+            &format!("DELETE FROM {} WHERE id = ?1", self.table),
+            params![event_id],
+        )?;
         Ok(())
     }
 }
