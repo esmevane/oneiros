@@ -1,14 +1,11 @@
 use bon::Builder;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(
-    Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Actor {
     #[builder(default)]
     pub id: ActorId,
@@ -19,8 +16,7 @@ pub struct Actor {
     pub created_at: Timestamp,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "actors")]
+#[derive(Clone, Default)]
 pub struct Actors(HashMap<String, Actor>);
 
 impl Actors {

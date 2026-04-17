@@ -1,14 +1,11 @@
 use bon::Builder;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(
-    Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Ticket {
     #[builder(default, into)]
     pub id: TicketId,
@@ -17,10 +14,7 @@ pub struct Ticket {
     pub brain_id: BrainId,
     /// Target + token bundled. The target is a `Ref` pointing at what this
     /// ticket grants access to; the token is the self-describing bearer
-    /// credential presented during auth. `Link` is serialized as JSON
-    /// inside the Loro CRDT since it contains a `Ref` which doesn't derive
-    /// lorosurgeon traits.
-    #[loro(json)]
+    /// credential presented during auth.
     pub link: Link,
     /// The actor who issued this ticket. For self-issued tickets (the
     /// current non-distribution case) this matches `actor_id`.
@@ -35,8 +29,7 @@ pub struct Ticket {
     pub created_at: Timestamp,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "tickets")]
+#[derive(Clone, Default)]
 pub struct Tickets(HashMap<String, Ticket>);
 
 impl Tickets {

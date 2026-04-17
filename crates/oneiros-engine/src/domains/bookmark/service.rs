@@ -179,7 +179,7 @@ impl BookmarkService {
         Ok(BookmarkResponse::Followed(follow))
     }
 
-    /// Collect from a follow's source via CRDT conference.
+    /// Collect from a follow's source.
     pub async fn collect(
         state: &ServerState,
         brain: &BrainName,
@@ -206,7 +206,7 @@ impl BookmarkService {
         }
     }
 
-    /// Collect from a peer via CRDT conference.
+    /// Collect from a peer via Merkle diff on the chronicle HAMT.
     async fn collect_from_peer(
         state: &ServerState,
         brain: &BrainName,
@@ -215,51 +215,54 @@ impl BookmarkService {
     ) -> Result<BookmarkResponse, BookmarkError> {
         let system = state.system_context();
         let bridge = state.bridge();
-        let canon = state.canons().brain(brain)?;
 
-        // Phase 1: Confer — CRDT delta exchange.
-        let version_vector = canon.version_vector();
-        let confer_request = BridgeRequest::Confer {
-            link: peer_link.link.clone(),
-            version_vector,
+        // Get the bookmark's chronicle — this tracks what we've collected.
+        let chronicle = state.canons().bookmark_chronicle(brain, &follow.bookmark)?;
+        let local_root = chronicle.root()?;
+
+        // Build a local resolver from the brain's ChronicleStore.
+        // Opens its own connection per resolve call — Send-safe across
+        // the async diff, and fast with WAL mode (~20 resolves per tree walk).
+        let mut brain_config = state.config().clone();
+        brain_config.brain = brain.clone();
+        {
+            let db = brain_config.brain_db()?;
+            ChronicleStore::new(&db).migrate()?;
+        }
+        let local_resolve = {
+            let config = brain_config.clone();
+            move |hash: &ContentHash| -> Option<LedgerNode> {
+                let db = config.brain_db().ok()?;
+                ChronicleStore::new(&db).get(hash)
+            }
         };
 
-        let updates = bridge
-            .confer(&peer_link.host, &confer_request)
+        // Phase 1: Merkle diff — walk the peer's chronicle tree,
+        // comparing against our local chronicle to find missing events.
+        let diff_result = bridge
+            .diff(
+                &peer_link.host,
+                &peer_link.link,
+                local_root.as_ref(),
+                &local_resolve,
+            )
             .await
             .map_err(|e: BridgeError| BookmarkError::InvalidUri(e.to_string()))?;
 
-        if let Some(bytes) = &updates {
-            canon.import_updates(bytes)?;
-        }
+        let events_received = diff_result.missing.len() as u64;
 
-        // Phase 2: Derive manifest — which events does the canon have
-        // that the local event log doesn't?
-        let canon_event_ids = canon.event_ids();
-        let mut brain_config = state.config().clone();
-        brain_config.brain = brain.clone();
-        let local_event_ids: std::collections::HashSet<String> = {
-            let db = brain_config.brain_db()?;
-            EventLog::new(&db)
-                .load_all()?
-                .into_iter()
-                .map(|e| e.id.to_string())
-                .collect()
-        };
+        // Phase 2: Fetch missing events and import them.
+        if !diff_result.missing.is_empty() {
+            let event_ids: Vec<String> = diff_result
+                .missing
+                .iter()
+                .map(|id| id.to_string())
+                .collect();
 
-        let missing: Vec<String> = canon_event_ids
-            .difference(&local_event_ids)
-            .cloned()
-            .collect();
-
-        let events_received = missing.len() as u64;
-
-        // Phase 3: Fetch missing events from the peer and import them.
-        if !missing.is_empty() {
-            let fetch_request = BridgeRequest::FetchEvents {
+            let fetch_request = BridgeRequest::BridgeFetchEvents(BridgeFetchEvents {
                 link: peer_link.link.clone(),
-                event_ids: missing,
-            };
+                event_ids,
+            });
 
             let events = bridge
                 .fetch_events(&peer_link.host, &fetch_request)
@@ -268,17 +271,29 @@ impl BookmarkService {
 
             let db = brain_config.brain_db()?;
             let log = EventLog::new(&db);
+            let chronicle_store = ChronicleStore::new(&db);
+            chronicle_store.migrate()?;
+
             for event in &events {
                 let _ = log.import(event);
+                // Record each collected event in the bookmark's chronicle
+                // so the next diff can short-circuit on matching roots.
+                chronicle.record(
+                    event,
+                    &chronicle_store.resolver(),
+                    &chronicle_store.writer(),
+                )?;
             }
         }
 
-        // Phase 4: Replay projections from the updated event log.
+        // Phase 3: Replay projections from the updated event log.
         Self::replay_brain_projections(state.config(), brain)?;
 
+        // Store the server's root hash in the checkpoint so we can
+        // detect "already up to date" on the next collect.
         let checkpoint = Checkpoint {
             sequence: follow.checkpoint.sequence + events_received,
-            cumulative_hash: ContentHash::default(),
+            cumulative_hash: diff_result.server_root.unwrap_or_default(),
             head: None,
             taken_at: Timestamp::now(),
         };

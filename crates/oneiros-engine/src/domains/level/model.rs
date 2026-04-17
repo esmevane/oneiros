@@ -1,15 +1,12 @@
 use bon::Builder;
 use clap::Args;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(
-    Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Level {
     #[builder(into)]
     pub name: LevelName,
@@ -21,8 +18,7 @@ pub struct Level {
     pub prompt: Prompt,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "levels")]
+#[derive(Clone, Default)]
 pub struct Levels(HashMap<String, Level>);
 
 impl Levels {

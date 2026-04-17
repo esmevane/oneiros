@@ -1,15 +1,12 @@
 use bon::Builder;
 use clap::Args;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(
-    Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Nature {
     #[builder(into)]
     pub name: NatureName,
@@ -21,8 +18,7 @@ pub struct Nature {
     pub prompt: Prompt,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "natures")]
+#[derive(Clone, Default)]
 pub struct Natures(HashMap<String, Nature>);
 
 impl Natures {

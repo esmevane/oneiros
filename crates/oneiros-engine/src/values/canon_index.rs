@@ -3,10 +3,9 @@ use std::sync::{Arc, RwLock};
 
 use crate::*;
 
-/// A bookmark entry — a canon paired with its reducer pipeline and chronicle.
+/// A bookmark entry — a reducer pipeline paired with its chronicle.
 #[derive(Clone)]
 pub struct BookmarkEntry {
-    pub canon: Canon,
     pub pipeline: ReducerPipeline<BrainCanon>,
     pub chronicle: Chronicle,
 }
@@ -14,7 +13,6 @@ pub struct BookmarkEntry {
 impl Default for BookmarkEntry {
     fn default() -> Self {
         Self {
-            canon: Canon::new(),
             pipeline: ReducerPipeline::brain(),
             chronicle: Chronicle::new(),
         }
@@ -23,8 +21,8 @@ impl Default for BookmarkEntry {
 
 /// The runtime branching state for a single brain.
 ///
-/// Tracks which bookmarks exist (each a separate Canon/LoroDoc
-/// with its own reducer pipeline) and which is currently active.
+/// Tracks which bookmarks exist (each with its own reducer pipeline
+/// and chronicle) and which is currently active.
 #[derive(Clone)]
 pub struct Shelf {
     pub active: BookmarkName,
@@ -48,35 +46,22 @@ impl Shelf {
     pub fn active_entry(&self) -> BookmarkEntry {
         self.branches.get(&self.active).cloned().unwrap_or_default()
     }
-
-    /// The active canon for this brain.
-    pub fn active_canon(&self) -> Canon {
-        self.active_entry().canon
-    }
 }
 
-/// A shared index of CRDT canons, keyed by brain name.
+/// A shared index of bookmark state, keyed by brain name.
 ///
-/// Hydrated at server startup from event logs. Shared across
-/// all request handlers via `ServerState`. Each brain gets a
-/// `Shelf` that tracks bookmarks and the active branch.
+/// Shared across all request handlers via `ServerState`. Each brain
+/// gets a `Shelf` that tracks bookmarks and the active branch.
 #[derive(Clone, Default)]
 pub struct CanonIndex {
     brains: Arc<RwLock<HashMap<BrainName, Shelf>>>,
-    system: Canon,
 }
 
 impl CanonIndex {
     pub fn new() -> Self {
         Self {
             brains: Arc::new(RwLock::new(HashMap::new())),
-            system: Canon::new(),
         }
-    }
-
-    /// The system-level canon.
-    pub fn system(&self) -> &Canon {
-        &self.system
     }
 
     /// Get or create the active bookmark entry for a brain.
@@ -98,11 +83,6 @@ impl CanonIndex {
             .map_err(|e| EventError::Lock(e.to_string()))?;
 
         Ok(write.entry(name.clone()).or_default().active_entry())
-    }
-
-    /// Get or create the active canon for a brain.
-    pub fn brain(&self, name: &BrainName) -> Result<Canon, EventError> {
-        Ok(self.brain_entry(name)?.canon)
     }
 
     /// Get the active bookmark's chronicle for a brain.
@@ -141,7 +121,7 @@ impl CanonIndex {
             .unwrap_or_else(BookmarkName::main))
     }
 
-    /// Fork the active canon for a brain into a new bookmark.
+    /// Fork the active bookmark into a new bookmark.
     pub fn fork_brain(&self, brain: &BrainName, bookmark: &BookmarkName) -> Result<(), EventError> {
         let mut write = self
             .brains
@@ -152,7 +132,6 @@ impl CanonIndex {
         let active = shelf.active_entry();
 
         let forked = BookmarkEntry {
-            canon: active.canon.fork(),
             pipeline: ReducerPipeline::brain_with_state(active.pipeline.state()?)?,
             chronicle: active.chronicle.fork()?,
         };
@@ -180,7 +159,7 @@ impl CanonIndex {
         Ok(())
     }
 
-    /// Merge source bookmark into target bookmark for a brain.
+    /// Merge source bookmark's chronicle into target bookmark.
     pub fn merge_brain(
         &self,
         brain: &BrainName,
@@ -196,35 +175,26 @@ impl CanonIndex {
             && let (Some(source_entry), Some(target_entry)) =
                 (shelf.branches.get(source), shelf.branches.get(target))
         {
-            target_entry.canon.merge_from(&source_entry.canon)?;
+            let brain_config = Config {
+                brain: brain.clone(),
+                ..Default::default()
+            };
+
+            if let Ok(db) = brain_config.brain_db() {
+                let store = ChronicleStore::new(&db);
+                let _ = store.migrate();
+                let _ = target_entry.chronicle.merge(
+                    &source_entry.chronicle,
+                    &store.resolver(),
+                    &store.writer(),
+                );
+            }
         }
 
         Ok(())
     }
 
-    /// Hydrate the system canon from its event log.
-    ///
-    /// Runs migrations first to ensure the schema is current — this
-    /// handles existing installs that predate newer projections (e.g.
-    /// the bookmarks table).
-    pub fn hydrate_system(&self, config: &Config) -> Result<(), EventError> {
-        let db = config.system_db()?;
-
-        Projections::<SystemCanon>::system().migrate(&db)?;
-
-        let events = EventLog::new(&db).load_all()?;
-        let pipeline = ReducerPipeline::system();
-
-        for event in &events {
-            pipeline.apply(&event.data)?;
-        }
-
-        self.system.reconcile(&pipeline.state()?)?;
-
-        Ok(())
-    }
-
-    /// Hydrate a brain's canon from its event log.
+    /// Hydrate a brain's reducer pipeline from its event log.
     ///
     /// Runs migrations first to ensure the schema is current.
     pub fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
@@ -243,7 +213,14 @@ impl CanonIndex {
             entry.pipeline.apply(&event.data)?;
         }
 
-        entry.canon.reconcile(&entry.pipeline.state()?)?;
+        // Rebuild the chronicle from the event log.
+        let store = ChronicleStore::new(&db);
+        store.migrate()?;
+        for event in &events {
+            entry
+                .chronicle
+                .record(event, &store.resolver(), &store.writer())?;
+        }
 
         Ok(())
     }

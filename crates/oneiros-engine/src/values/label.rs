@@ -1,15 +1,4 @@
-#[derive(
-    Clone,
-    Default,
-    Debug,
-    PartialEq,
-    Eq,
-    Hash,
-    serde::Serialize,
-    serde::Deserialize,
-    lorosurgeon::Hydrate,
-    lorosurgeon::Reconcile,
-)]
+#[derive(Clone, Default, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 pub struct Label(String);
 

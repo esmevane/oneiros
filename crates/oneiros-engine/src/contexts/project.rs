@@ -45,7 +45,7 @@ impl ProjectContext {
     ) -> Self {
         Self {
             config,
-            projections: Projections::project_with_entry(entry.canon, entry.pipeline),
+            projections: Projections::project_with_pipeline(entry.pipeline),
             chronicle: entry.chronicle,
             broadcast,
         }
@@ -82,11 +82,6 @@ impl ProjectContext {
     /// Open the system database.
     pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         self.config.system_db()
-    }
-
-    /// The canon for this project — the active bookmark's CRDT doc.
-    pub fn canon(&self) -> &Canon {
-        self.projections.canon()
     }
 
     /// Replay all events through projections, rebuilding read models.

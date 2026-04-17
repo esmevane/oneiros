@@ -1,4 +1,3 @@
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -6,15 +5,14 @@ use std::collections::HashMap;
 use crate::*;
 
 /// Storage metadata entry — maps a human-readable key to a content-addressed blob.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct StorageEntry {
     pub key: StorageKey,
     pub description: Description,
     pub hash: ContentHash,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "storage")]
+#[derive(Clone, Default)]
 pub struct StorageEntries(HashMap<String, StorageEntry>);
 
 impl StorageEntries {

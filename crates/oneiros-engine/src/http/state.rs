@@ -51,18 +51,14 @@ impl ServerState {
         self.bridge.host_identity()
     }
 
-    /// The canon index — shared CRDT state for all brains.
+    /// The bookmark registry — shared state for all brains.
     pub fn canons(&self) -> &CanonIndex {
         &self.canons
     }
 
-    /// Hydrate all canons from event logs. Best-effort — skips
-    /// databases that don't exist yet (pre-init).
+    /// Hydrate reducer pipelines and chronicles from event logs.
+    /// Best-effort — skips databases that don't exist yet (pre-init).
     pub fn hydrate(&self) {
-        // System canon
-        let _ = self.canons.hydrate_system(&self.config);
-
-        // Brain canon for the configured brain
         let _ = self.canons.hydrate_brain(&self.config, &self.config.brain);
     }
 
@@ -96,10 +92,9 @@ impl ServerState {
         ))
     }
 
-    /// Build a system context with shared canon.
+    /// Build a system context.
     pub fn system_context(&self) -> SystemContext {
-        let canon = self.canons.system().clone();
-        SystemContext::with_canon(self.config.clone(), canon)
+        SystemContext::new(self.config.clone())
     }
 }
 

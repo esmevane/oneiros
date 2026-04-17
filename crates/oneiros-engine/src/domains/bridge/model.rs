@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 
 use crate::*;
@@ -9,6 +10,13 @@ pub const SYNC_ALPN: &[u8] = b"/oneiros/sync/1";
 /// Maximum message size on the sync wire, in bytes. Guards against
 /// absurdly large payloads.
 pub(crate) const MAX_MESSAGE_SIZE: usize = 64 * 1024 * 1024;
+
+/// The result of a Merkle diff — the server's chronicle root hash
+/// and the event IDs the client is missing.
+pub struct DiffResult {
+    pub server_root: Option<ContentHash>,
+    pub missing: Vec<EventId>,
+}
 
 /// The bridge to other oneiros hosts — the runtime value that owns the bound
 /// `iroh::Endpoint` and acts as our wrapper around the transport layer.
@@ -57,28 +65,98 @@ impl Bridge {
         let _ = self.router.set(router);
     }
 
-    /// Open a connection to a peer and confer — exchange version vectors,
-    /// receive canon updates. Returns the raw Loro update bytes for the
-    /// caller to import into their canon, or `None` if already current.
-    pub async fn confer(
+    /// Run the Merkle diff protocol against a peer. Walks the peer's
+    /// chronicle tree level by level, comparing against the local
+    /// chronicle to identify missing event IDs.
+    ///
+    /// Returns the server's root hash (for checkpoint storage) and
+    /// the event IDs the local side is missing.
+    pub async fn diff(
         &self,
         address: &PeerAddress,
-        request: &BridgeRequest,
-    ) -> Result<Option<Vec<u8>>, BridgeError> {
-        let response = self.send(address, request).await?;
+        link: &Link,
+        local_root: Option<&ContentHash>,
+        local_resolve: &(impl Fn(&ContentHash) -> Option<LedgerNode> + Send + Sync),
+    ) -> Result<DiffResult, BridgeError> {
+        // Round 1: send our root hash, get server's root node.
+        let diff_request = BridgeRequest::BridgeDiff(BridgeDiff {
+            link: link.clone(),
+            root_hash: local_root.cloned(),
+        });
+        let response = self.send(address, &diff_request).await?;
 
         match response {
-            BridgeResponse::Updates { canon_bytes } => Ok(Some(canon_bytes)),
-            BridgeResponse::Current => Ok(None),
-            BridgeResponse::Events { .. } => Err(BridgeError::Protocol(
-                "expected Updates or Current response for Confer request".into(),
+            BridgeResponse::BridgeCurrent => Ok(DiffResult {
+                server_root: local_root.cloned(),
+                missing: vec![],
+            }),
+            BridgeResponse::BridgeRootNode(root_node) => {
+                let server_root = root_node.root_hash;
+
+                // Cache of resolved remote nodes.
+                let mut remote: HashMap<ContentHash, LedgerNode> = HashMap::new();
+                remote.insert(server_root.clone(), root_node.node);
+
+                // Walk the tree, requesting unresolved nodes in batches.
+                loop {
+                    let needed =
+                        collect_unresolved(local_root, &server_root, local_resolve, &remote);
+
+                    if needed.is_empty() {
+                        break;
+                    }
+
+                    let resolve_request = BridgeRequest::BridgeResolve(BridgeResolve {
+                        link: link.clone(),
+                        hashes: needed,
+                    });
+                    let response = self.send(address, &resolve_request).await?;
+
+                    match response {
+                        BridgeResponse::BridgeNodes(bn) => {
+                            for (hash, node) in bn.nodes {
+                                remote.insert(hash, node);
+                            }
+                        }
+                        BridgeResponse::BridgeDenied(d) => {
+                            return Err(BridgeError::Denied(d.reason));
+                        }
+                        _ => {
+                            return Err(BridgeError::Protocol(
+                                "expected bridge-nodes response for resolve request".into(),
+                            ));
+                        }
+                    }
+                }
+
+                // All server nodes are cached. Run the full diff locally.
+                let combined_resolve =
+                    |hash: &ContentHash| remote.get(hash).cloned().or_else(|| local_resolve(hash));
+
+                let changes = Ledger::diff(local_root, Some(&server_root), &combined_resolve);
+
+                let missing: Vec<EventId> = changes
+                    .into_iter()
+                    .filter_map(|c| match c {
+                        LedgerChange::Added(id) => Some(id),
+                        LedgerChange::Removed(_) => None,
+                    })
+                    .collect();
+
+                Ok(DiffResult {
+                    server_root: Some(server_root),
+                    missing,
+                })
+            }
+            BridgeResponse::BridgeDenied(d) => Err(BridgeError::Denied(d.reason)),
+            _ => Err(BridgeError::Protocol(
+                "expected bridge-current or bridge-root-node response for diff request".into(),
             )),
-            BridgeResponse::Denied { reason } => Err(BridgeError::Denied(reason)),
         }
     }
 
-    /// Fetch specific events by ID from a peer. Issued after a conference
-    /// when the local side has determined which events it needs.
+    /// Fetch specific events by ID from a peer. Issued after the Merkle
+    /// diff has identified which events the local side is missing.
     pub async fn fetch_events(
         &self,
         address: &PeerAddress,
@@ -87,12 +165,12 @@ impl Bridge {
         let response = self.send(address, request).await?;
 
         match response {
-            BridgeResponse::Events { events } => Ok(events),
-            BridgeResponse::Current => Ok(Vec::new()),
-            BridgeResponse::Updates { .. } => Err(BridgeError::Protocol(
-                "expected Events response for FetchEvents request".into(),
+            BridgeResponse::BridgeEvents(be) => Ok(be.events),
+            BridgeResponse::BridgeCurrent => Ok(Vec::new()),
+            BridgeResponse::BridgeDenied(d) => Err(BridgeError::Denied(d.reason)),
+            _ => Err(BridgeError::Protocol(
+                "expected bridge-events response for fetch-events request".into(),
             )),
-            BridgeResponse::Denied { reason } => Err(BridgeError::Denied(reason)),
         }
     }
 
@@ -174,6 +252,66 @@ impl Bridge {
     }
 }
 
+/// Walk the server's HAMT tree as far as cached, collecting hashes of
+/// server nodes we haven't resolved yet and that differ from our local tree.
+///
+/// Returns an empty vec when all reachable server nodes are cached,
+/// meaning the diff can be computed locally.
+fn collect_unresolved(
+    local_root: Option<&ContentHash>,
+    server_root: &ContentHash,
+    local_resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
+    remote: &HashMap<ContentHash, LedgerNode>,
+) -> Vec<ContentHash> {
+    let mut needed = Vec::new();
+
+    // Stack: (local_hash, server_hash)
+    let mut stack: Vec<(Option<ContentHash>, ContentHash)> =
+        vec![(local_root.cloned(), server_root.clone())];
+
+    while let Some((local_hash, server_hash)) = stack.pop() {
+        // Same hash → same subtree → no diff in this branch.
+        if local_hash.as_ref() == Some(&server_hash) {
+            continue;
+        }
+
+        // Try to get the server node from cache.
+        let Some(server_node) = remote.get(&server_hash) else {
+            needed.push(server_hash);
+            continue;
+        };
+
+        match server_node {
+            LedgerNode::Leaf { .. } => {
+                // Leaf is cached — Ledger::diff will handle the entry-level comparison.
+            }
+            LedgerNode::Interior {
+                children: server_children,
+            } => {
+                // Resolve the local node to compare children.
+                let local_children = local_hash.as_ref().and_then(|h| {
+                    local_resolve(h).and_then(|n| match n {
+                        LedgerNode::Interior { children } => Some(children),
+                        _ => None,
+                    })
+                });
+
+                for (nibble, server_child_hash) in server_children {
+                    let local_child = local_children.as_ref().and_then(|c| c.get(nibble)).cloned();
+
+                    if local_child.as_ref() == Some(server_child_hash) {
+                        continue;
+                    }
+
+                    stack.push((local_child, server_child_hash.clone()));
+                }
+            }
+        }
+    }
+
+    needed
+}
+
 impl core::fmt::Debug for Bridge {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Bridge")
@@ -221,5 +359,81 @@ mod tests {
 
         a.shutdown().await;
         b.shutdown().await;
+    }
+
+    #[test]
+    fn collect_unresolved_with_matching_roots() {
+        let root = ContentHash::new("same_root");
+        let needed = collect_unresolved(Some(&root), &root, &|_| None, &HashMap::new());
+        assert!(needed.is_empty(), "matching roots should need nothing");
+    }
+
+    #[test]
+    fn collect_unresolved_with_uncached_root() {
+        let local = ContentHash::new("local_root");
+        let server = ContentHash::new("server_root");
+        let needed = collect_unresolved(Some(&local), &server, &|_| None, &HashMap::new());
+        assert_eq!(needed.len(), 1);
+        assert_eq!(needed[0], server);
+    }
+
+    #[test]
+    fn collect_unresolved_with_cached_leaf() {
+        use std::collections::BTreeMap;
+
+        let local = ContentHash::new("local_root");
+        let server = ContentHash::new("server_root");
+
+        let mut remote = HashMap::new();
+        remote.insert(
+            server.clone(),
+            LedgerNode::Leaf {
+                entries: BTreeMap::from([("evt1".into(), ContentHash::new("h1"))]),
+            },
+        );
+
+        let needed = collect_unresolved(Some(&local), &server, &|_| None, &remote);
+        assert!(
+            needed.is_empty(),
+            "cached leaf should not need further resolution"
+        );
+    }
+
+    #[test]
+    fn collect_unresolved_with_interior_skips_matching_children() {
+        use std::collections::BTreeMap;
+
+        let shared_child = ContentHash::new("shared");
+        let server_only = ContentHash::new("server_only");
+
+        let local_root = ContentHash::new("local_root");
+        let server_root = ContentHash::new("server_root");
+
+        let local_interior = LedgerNode::Interior {
+            children: BTreeMap::from([(0, shared_child.clone()), (1, ContentHash::new("local_1"))]),
+        };
+
+        let server_interior = LedgerNode::Interior {
+            children: BTreeMap::from([(0, shared_child.clone()), (1, server_only.clone())]),
+        };
+
+        let mut remote = HashMap::new();
+        remote.insert(server_root.clone(), server_interior);
+
+        let local_resolve = {
+            let local_root = local_root.clone();
+            let local_interior = local_interior.clone();
+            move |hash: &ContentHash| {
+                if *hash == local_root {
+                    Some(local_interior.clone())
+                } else {
+                    None
+                }
+            }
+        };
+
+        let needed = collect_unresolved(Some(&local_root), &server_root, &local_resolve, &remote);
+        assert_eq!(needed.len(), 1, "only the differing child should be needed");
+        assert_eq!(needed[0], server_only);
     }
 }

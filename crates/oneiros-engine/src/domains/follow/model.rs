@@ -1,5 +1,4 @@
 use bon::Builder;
-use lorosurgeon::{Hydrate, Reconcile};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -16,9 +15,7 @@ use crate::*;
 /// sources, `FollowSource::Peer(PeerLink)` for cross-host sources). The
 /// ticket (when authorization is needed) lives inside the
 /// `PeerLink.link` for the Peer variant.
-#[derive(
-    Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Hydrate, Reconcile,
-)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct Follow {
     #[builder(default)]
     pub id: FollowId,
@@ -26,17 +23,14 @@ pub struct Follow {
     pub brain: BrainName,
     #[builder(into)]
     pub bookmark: BookmarkName,
-    #[loro(json)]
     pub source: FollowSource,
-    #[loro(json)]
     #[builder(default = Checkpoint::empty())]
     pub checkpoint: Checkpoint,
     #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
 }
 
-#[derive(Clone, Default, Hydrate, Reconcile)]
-#[loro(root = "follows")]
+#[derive(Clone, Default)]
 pub struct Follows(HashMap<String, Follow>);
 
 impl Follows {
