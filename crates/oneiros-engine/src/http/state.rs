@@ -1,3 +1,6 @@
+use std::sync::{Arc, OnceLock};
+
+use aide::openapi::OpenApi;
 use axum::{extract::FromRequestParts, http::request::Parts};
 use tokio::sync::broadcast;
 
@@ -14,6 +17,7 @@ pub struct ServerState {
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
     bridge: Bridge,
+    api: Arc<OnceLock<OpenApi>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -38,7 +42,18 @@ impl ServerState {
             broadcast,
             canons,
             bridge,
+            api: Arc::new(OnceLock::new()),
         })
+    }
+
+    /// Install the OpenAPI spec. Called once after the router is assembled.
+    pub fn set_api(&self, api: OpenApi) {
+        let _ = self.api.set(api);
+    }
+
+    /// The installed OpenAPI spec, if set.
+    pub fn api(&self) -> Option<&OpenApi> {
+        self.api.get()
     }
 
     /// The bound bridge.

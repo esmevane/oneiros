@@ -5,7 +5,7 @@ use aide::{
     openapi::OpenApi,
     scalar::Scalar,
 };
-use axum::{Extension, Json, Router, extract::State, response::Html, routing};
+use axum::{Json, Router, extract::State, response::Html, routing};
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
@@ -71,9 +71,11 @@ impl Server {
             Json(serde_json::json!({ "token": token, "brain": brain }))
         }
 
-        /// Serves the OpenAPI spec as JSON.
-        async fn serve_api(Extension(api): Extension<OpenApi>) -> Json<OpenApi> {
-            Json(api)
+        /// Serves the OpenAPI spec as JSON. Pulled from state — populated
+        /// once after router assembly to avoid a global `.layer(Extension)`
+        /// walk over every route on each server build.
+        async fn serve_api(State(state): State<ServerState>) -> Json<OpenApi> {
+            Json(state.api().cloned().unwrap_or_default())
         }
 
         let root = Router::new()
@@ -95,7 +97,7 @@ impl Server {
         let mut api = OpenApi::default();
         let app_docs = AppDocs;
 
-        ApiRouter::new()
+        let router = ApiRouter::new()
             .merge(root)
             .nest_service("/mcp", Router::new().route_service("/", mcp_service))
             .merge(ActorRouter.routes())
@@ -148,8 +150,9 @@ impl Server {
                 }
 
                 api
-            })
-            .layer(Extension(api))
-            .with_state(state)
+            });
+
+        state.set_api(api);
+        router.with_state(state)
     }
 }
