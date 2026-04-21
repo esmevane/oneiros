@@ -61,6 +61,7 @@ fn all_tools() -> Vec<ToolDef> {
     .collect()
 }
 
+#[tracing::instrument(skip_all, fields(tool = %tool_name), err(Display))]
 async fn dispatch(
     state: &ServerState,
     config: &Config,

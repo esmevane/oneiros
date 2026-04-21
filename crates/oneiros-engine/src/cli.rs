@@ -169,6 +169,7 @@ impl Command {
     /// - `.response()` for typed data access (tests, programmatic use)
     /// - Match on variant for presentation (Prompt content, Text summary)
     /// - `Rendered::Data` is the default for domains without a presenter
+    #[tracing::instrument(skip_all, err(Display))]
     pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
         Ok(match self {
             // Service management — operates before/outside HTTP transport

@@ -14,9 +14,10 @@ pub enum ColorChoice {
 }
 
 impl ColorChoice {
-    /// Apply this choice globally to `anstream`.
+    /// Apply this choice globally, using `anstream`.
     ///
-    /// Call once, early — before any colored output is written.
+    /// Good to call once, and early — before any colored output is written.
+    ///
     pub fn apply_global(&self) {
         let choice = match self {
             Self::Auto => anstream::ColorChoice::Auto,

@@ -11,13 +11,9 @@
 //! - `start()` — bind and serve HTTP/MCP
 //! - `package(target)` — emit skill assets to a directory
 
-use std::io::Write;
-use std::net::SocketAddr;
-use std::path::Path;
-use std::process::ExitCode;
-
 use anstream::{stderr, stdout};
 use clap::Parser;
+use std::{io::Write, net::SocketAddr, path::Path, process::ExitCode};
 use tokio::net::TcpListener;
 
 use crate::*;
@@ -45,10 +41,13 @@ impl Engine {
 
         engine.config().color.apply_global();
 
-        tracing_subscriber::fmt()
-            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-            .with_writer(std::io::stderr)
-            .init();
+        let _logging_guard = match Logging.install(engine.config()) {
+            Ok(guard) => guard,
+            Err(error) => {
+                let _ = writeln!(stderr().lock(), "{}", ErrorView::new(error.into()));
+                return ExitCode::FAILURE;
+            }
+        };
 
         let result: Rendered<Responses> = match engine.execute(&cli).await {
             Ok(rendered) => rendered,

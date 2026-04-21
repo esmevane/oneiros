@@ -28,6 +28,7 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Apply a single event through all frames in order.
+    #[tracing::instrument(skip_all, fields(event_type = event.data.event_type(), sequence = event.sequence), err(Display))]
     pub fn apply(&self, db: &rusqlite::Connection, event: &StoredEvent) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
@@ -76,6 +77,7 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Replay all events through frames and reducers.
+    #[tracing::instrument(skip_all, err(Display))]
     pub fn replay(&self, db: &rusqlite::Connection, log: &EventLog) -> Result<usize, EventError> {
         let events = log.load_all()?;
 
@@ -99,6 +101,7 @@ impl<T: Clone + Default> Projections<T> {
             }
         }
 
+        tracing::info!(replayed = events.len(), "projections replay complete");
         Ok(events.len())
     }
 }

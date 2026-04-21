@@ -56,6 +56,7 @@ impl<'a> StorageStore<'a> {
 
     // ── Blob write operations (content-addressed) ────────────────
 
+    #[tracing::instrument(skip_all, fields(hash = %content.hash, size = content.size.as_i64()), err(Display))]
     pub fn put_blob(&self, content: &BlobContent) -> Result<(), EventError> {
         let bytes = content.data.decode()?;
         self.conn.execute(
@@ -67,6 +68,7 @@ impl<'a> StorageStore<'a> {
 
     // ── Sync read queries (for callers holding an open Connection) ──
 
+    #[tracing::instrument(skip_all, fields(hash = %hash), err(Display))]
     pub fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
         let mut stmt = self
             .conn

@@ -10,6 +10,8 @@ use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
 use tokio::net::TcpListener;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 
 use crate::*;
 
@@ -153,6 +155,14 @@ impl Server {
             });
 
         state.set_api(api);
-        router.with_state(state)
+        router.with_state(state).layer(
+            TraceLayer::new_for_http()
+                .make_span_with(
+                    DefaultMakeSpan::new()
+                        .level(Level::INFO)
+                        .include_headers(false),
+                )
+                .on_response(DefaultOnResponse::new().level(Level::INFO)),
+        )
     }
 }
