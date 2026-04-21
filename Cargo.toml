@@ -59,9 +59,10 @@ tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 toml = "0.8"
 tower = { version = "0.5.3", features = ["util"] }
-# tower-http = { version = "0.6", features = ["trace"] }
+tower-http = { version = "0.6", features = ["trace"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # trybuild = "1"
 # urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }

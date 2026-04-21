@@ -59,6 +59,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// Append a single event. Returns the stored form with sequence.
+    #[tracing::instrument(skip_all, fields(event_type = event.data.event_type()), err(Display))]
     pub fn append(&self, event: &NewEvent) -> Result<StoredEvent, EventError> {
         let id = EventId::new();
         let data_json = serde_json::to_string(&event.data)?;

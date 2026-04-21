@@ -70,6 +70,7 @@ impl Client {
     }
 
     /// Send a GET and deserialize the response.
+    #[tracing::instrument(skip(self), fields(path = %path))]
     pub(crate) async fn get<T: serde::de::DeserializeOwned>(
         &self,
         path: &str,
@@ -79,6 +80,7 @@ impl Client {
     }
 
     /// Send a POST with JSON body and deserialize the response.
+    #[tracing::instrument(skip(self, body), fields(path = %path))]
     pub(crate) async fn post<B: serde::Serialize, T: serde::de::DeserializeOwned>(
         &self,
         path: &str,
@@ -89,6 +91,7 @@ impl Client {
     }
 
     /// Send a PUT with JSON body and deserialize the response.
+    #[tracing::instrument(skip(self, body), fields(path = %path))]
     pub(crate) async fn put<B: serde::Serialize, T: serde::de::DeserializeOwned>(
         &self,
         path: &str,
@@ -99,6 +102,7 @@ impl Client {
     }
 
     /// Send a DELETE and deserialize the response.
+    #[tracing::instrument(skip(self), fields(path = %path))]
     pub(crate) async fn delete<T: serde::de::DeserializeOwned>(
         &self,
         path: &str,
