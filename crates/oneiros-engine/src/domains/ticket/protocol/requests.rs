@@ -19,7 +19,7 @@ pub struct CreateTicket {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetTicket {
     #[builder(into)]
-    pub id: TicketId,
+    pub key: ResourceKey<TicketId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

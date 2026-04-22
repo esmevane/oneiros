@@ -15,7 +15,7 @@ pub struct CreateTenant {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetTenant {
     #[builder(into)]
-    pub id: TenantId,
+    pub key: ResourceKey<TenantId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

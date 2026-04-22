@@ -13,8 +13,8 @@ impl<'a> LevelClient<'a> {
         self.client.put(&format!("/levels/{}", set.name), set).await
     }
 
-    pub async fn get(&self, name: &LevelName) -> Result<LevelResponse, ClientError> {
-        self.client.get(&format!("/levels/{name}")).await
+    pub async fn get(&self, request: &GetLevel) -> Result<LevelResponse, ClientError> {
+        self.client.get(&format!("/levels/{}", request.key)).await
     }
 
     pub async fn list(&self, request: &ListLevels) -> Result<LevelResponse, ClientError> {

@@ -38,10 +38,11 @@ impl PeerService {
         context: &SystemContext,
         selector: &GetPeer,
     ) -> Result<PeerResponse, PeerError> {
+        let id = selector.key.resolve()?;
         let peer = PeerRepo::new(context)
-            .get(selector.id)
+            .get(id)
             .await?
-            .ok_or(PeerError::NotFound(selector.id))?;
+            .ok_or(PeerError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::peer(peer.id));
         Ok(PeerResponse::Found(
             Response::new(peer).with_ref_token(ref_token),

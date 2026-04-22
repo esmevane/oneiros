@@ -47,10 +47,10 @@ async fn list(
 
 async fn show(
     context: SystemContext,
-    Path(id): Path<PeerId>,
+    Path(key): Path<ResourceKey<PeerId>>,
 ) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
-        PeerService::get(&context, &GetPeer::builder().id(id).build()).await?,
+        PeerService::get(&context, &GetPeer::builder().key(key).build()).await?,
     ))
 }
 

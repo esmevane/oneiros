@@ -57,8 +57,12 @@ async fn show(
     context: ProjectContext,
     Path(ref_key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    let storage_ref = StorageRef(ref_key);
-    let key = storage_ref.decode().map_err(|_| StorageError::InvalidRef)?;
+    let key = if ref_key.starts_with("ref:") {
+        ResourceKey::Ref(ref_key.parse().map_err(|_| StorageError::InvalidRef)?)
+    } else {
+        let storage_ref = StorageRef(ref_key);
+        ResourceKey::Key(storage_ref.decode().map_err(|_| StorageError::InvalidRef)?)
+    };
     Ok(Json(
         StorageService::show(&context, &GetStorage::builder().key(key).build()).await?,
     ))

@@ -15,8 +15,8 @@ impl<'a> PersonaClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &PersonaName) -> Result<PersonaResponse, ClientError> {
-        self.client.get(&format!("/personas/{name}")).await
+    pub async fn get(&self, request: &GetPersona) -> Result<PersonaResponse, ClientError> {
+        self.client.get(&format!("/personas/{}", request.key)).await
     }
 
     pub async fn list(&self, request: &ListPersonas) -> Result<PersonaResponse, ClientError> {

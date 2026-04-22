@@ -21,7 +21,7 @@ pub struct SetTexture {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetTexture {
     #[builder(into)]
-    pub name: TextureName,
+    pub key: ResourceKey<TextureName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

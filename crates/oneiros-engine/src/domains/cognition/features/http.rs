@@ -52,9 +52,9 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(id): Path<CognitionId>,
+    Path(key): Path<ResourceKey<CognitionId>>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
     Ok(Json(
-        CognitionService::get(&context, &GetCognition::builder().id(id).build()).await?,
+        CognitionService::get(&context, &GetCognition::builder().key(key).build()).await?,
     ))
 }

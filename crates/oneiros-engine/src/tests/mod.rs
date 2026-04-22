@@ -137,7 +137,9 @@ async fn replay_reconstructs_read_models() {
     }
     match AgentService::get(
         &context,
-        &GetAgent::builder().name("gov.test-persona").build(),
+        &GetAgent::builder()
+            .key(AgentName::new("gov.test-persona"))
+            .build(),
     )
     .await
     .unwrap()
@@ -193,9 +195,14 @@ async fn storage_content_round_trips() {
     assert_eq!(retrieved, content);
 
     // Hash should be stable
-    match StorageService::show(&context, &GetStorage::builder().key("test.txt").build())
-        .await
-        .unwrap()
+    match StorageService::show(
+        &context,
+        &GetStorage::builder()
+            .key(StorageKey::new("test.txt"))
+            .build(),
+    )
+    .await
+    .unwrap()
     {
         StorageResponse::StorageDetails(shown) => {
             assert_eq!(shown.data.hash, entry.data.hash);

@@ -37,7 +37,7 @@ impl<'a> ExperienceClient<'a> {
 
     pub async fn get(&self, request: &GetExperience) -> Result<ExperienceResponse, ClientError> {
         self.client
-            .get(&format!("/experiences/{}", request.id))
+            .get(&format!("/experiences/{}", request.key))
             .await
     }
 

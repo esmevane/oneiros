@@ -61,10 +61,11 @@ impl TicketService {
         context: &SystemContext,
         selector: &GetTicket,
     ) -> Result<TicketResponse, TicketError> {
+        let id = selector.key.resolve()?;
         let ticket = TicketRepo::new(context)
-            .get(&selector.id)
+            .get(&id)
             .await?
-            .ok_or_else(|| TicketError::NotFound(selector.id))?;
+            .ok_or(TicketError::NotFound(id))?;
         Ok(TicketResponse::Found(ticket))
     }
 

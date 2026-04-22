@@ -53,7 +53,7 @@ impl Resource {
     }
 
     /// A human-readable label for this resource type.
-    pub fn label(&self) -> &str {
+    pub fn label(&self) -> &'static str {
         match self {
             Self::Agent(_) => "agent",
             Self::Actor(_) => "actor",

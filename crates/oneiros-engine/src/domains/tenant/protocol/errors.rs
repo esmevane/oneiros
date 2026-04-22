@@ -15,6 +15,9 @@ pub enum TenantError {
     InvalidId(#[from] crate::IdParseError),
 
     #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
+    #[error(transparent)]
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
@@ -34,6 +37,7 @@ impl IntoResponse for TenantError {
         let (status, message) = match &self {
             TenantError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TenantError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            TenantError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             TenantError::TimestampParse(_)
             | TenantError::Event(_)
             | TenantError::Database(_)

@@ -49,9 +49,9 @@ async fn list(
 
 async fn show(
     context: SystemContext,
-    Path(name): Path<String>,
+    Path(key): Path<ResourceKey<BrainName>>,
 ) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(
-        BrainService::get(&context, &GetBrain::builder().name(name).build()).await?,
+        BrainService::get(&context, &GetBrain::builder().key(key).build()).await?,
     ))
 }

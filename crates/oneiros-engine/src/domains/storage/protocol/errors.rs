@@ -12,6 +12,9 @@ pub enum StorageError {
     #[error("Invalid storage reference")]
     InvalidRef,
 
+    #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
     #[error("Blob missing for hash: {0}")]
     BlobMissing(crate::ContentHash),
 
@@ -38,6 +41,7 @@ impl IntoResponse for StorageError {
         let (status, message) = match &self {
             StorageError::KeyNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             StorageError::InvalidRef => (StatusCode::BAD_REQUEST, self.to_string()),
+            StorageError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             StorageError::BlobMissing(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::BlobError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),

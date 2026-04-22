@@ -17,9 +17,9 @@ impl<'a> BrainClient<'a> {
         self.client.post("/brains", creation).await
     }
 
-    /// Retrieve a single brain by name.
-    pub async fn get(&self, name: &BrainName) -> Result<BrainResponse, ClientError> {
-        self.client.get(&format!("/brains/{}", name)).await
+    /// Retrieve a single brain by key (name or ref).
+    pub async fn get(&self, request: &GetBrain) -> Result<BrainResponse, ClientError> {
+        self.client.get(&format!("/brains/{}", request.key)).await
     }
 
     /// List all brains.

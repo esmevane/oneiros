@@ -59,10 +59,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<LevelName>,
+    Path(key): Path<ResourceKey<LevelName>>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(
-        LevelService::get(&context, &GetLevel::builder().name(name).build()).await?,
+        LevelService::get(&context, &GetLevel::builder().key(key).build()).await?,
     ))
 }
 

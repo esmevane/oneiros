@@ -59,10 +59,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<TextureName>,
+    Path(key): Path<ResourceKey<TextureName>>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(
-        TextureService::get(&context, &GetTexture::builder().name(name).build()).await?,
+        TextureService::get(&context, &GetTexture::builder().key(key).build()).await?,
     ))
 }
 

@@ -19,7 +19,7 @@ pub struct AddMemory {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetMemory {
     #[builder(into)]
-    pub id: MemoryId,
+    pub key: ResourceKey<MemoryId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

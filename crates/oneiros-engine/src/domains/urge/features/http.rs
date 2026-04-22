@@ -59,10 +59,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<UrgeName>,
+    Path(key): Path<ResourceKey<UrgeName>>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(
-        UrgeService::get(&context, &GetUrge::builder().name(name).build()).await?,
+        UrgeService::get(&context, &GetUrge::builder().key(key).build()).await?,
     ))
 }
 

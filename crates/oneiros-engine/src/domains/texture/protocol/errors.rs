@@ -12,6 +12,9 @@ pub enum TextureError {
     NotFound(TextureName),
 
     #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
+    #[error(transparent)]
     Client(#[from] ClientError),
 
     #[error("Database error: {0}")]
@@ -27,6 +30,7 @@ impl IntoResponse for TextureError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             TextureError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            TextureError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             TextureError::Database(_) | TextureError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

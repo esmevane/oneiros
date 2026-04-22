@@ -97,6 +97,70 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    let create_response = harness
+        .exec_json("experience create observer.process caused 'Show me by ref'")
+        .await?;
+
+    let ref_token = match create_response {
+        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => experience
+            .meta()
+            .ref_token()
+            .expect("ExperienceCreated carries a ref token"),
+        other => panic!("expected ExperienceCreated, got {other:#?}"),
+    };
+
+    let show_response = harness
+        .exec_json(&format!("experience show {ref_token}"))
+        .await?;
+
+    match show_response {
+        Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
+            assert_eq!(experience.data.description.as_str(), "Show me by ref");
+        }
+        other => panic!("expected ExperienceDetails, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
+pub(crate) async fn show_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
+    let harness = with_agent_and_sensation::<B>().await?;
+
+    // Create a cognition so we have a cognition ref to misuse.
+    harness
+        .exec_json("texture set observation --description 'An observation'")
+        .await?;
+    let cognition_response = harness
+        .exec_json("cognition add observer.process observation 'A noticed thing'")
+        .await?;
+
+    let cognition_ref = match cognition_response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(cognition)) => cognition
+            .meta()
+            .ref_token()
+            .expect("CognitionAdded carries a ref token"),
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
+
+    let result = harness
+        .exec_json(&format!("experience show {cognition_ref}"))
+        .await;
+
+    let Err(err) = result else {
+        panic!("expected error for wrong-kind ref, got Ok");
+    };
+    let message = err.to_string();
+    assert!(
+        message.contains("experience") && message.contains("cognition"),
+        "expected wrong-kind error naming both kinds, got: {message}"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn update_description<B: Backend>() -> TestResult {
     let harness = with_agent_and_sensation::<B>().await?;
 

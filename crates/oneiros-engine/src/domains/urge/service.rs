@@ -24,10 +24,11 @@ impl UrgeService {
         context: &ProjectContext,
         selector: &GetUrge,
     ) -> Result<UrgeResponse, UrgeError> {
+        let name = selector.key.resolve()?;
         let urge = UrgeRepo::new(context)
-            .get(&selector.name)
+            .get(&name)
             .await?
-            .ok_or_else(|| UrgeError::NotFound(selector.name.clone()))?;
+            .ok_or(UrgeError::NotFound(name))?;
         Ok(UrgeResponse::UrgeDetails(urge))
     }
 

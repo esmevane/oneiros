@@ -21,7 +21,7 @@ pub struct SetPersona {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetPersona {
     #[builder(into)]
-    pub name: PersonaName,
+    pub key: ResourceKey<PersonaName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

@@ -49,9 +49,9 @@ async fn list(
 
 async fn show(
     context: SystemContext,
-    Path(id): Path<TenantId>,
+    Path(key): Path<ResourceKey<TenantId>>,
 ) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(
-        TenantService::get(&context, &GetTenant::builder().id(id).build()).await?,
+        TenantService::get(&context, &GetTenant::builder().key(key).build()).await?,
     ))
 }

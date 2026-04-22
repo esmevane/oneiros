@@ -33,10 +33,11 @@ impl ConnectionService {
         context: &ProjectContext,
         selector: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
+        let id = selector.key.resolve()?;
         let connection = ConnectionRepo::new(context)
-            .get(&selector.id)
+            .get(&id)
             .await?
-            .ok_or_else(|| ConnectionError::NotFound(selector.id))?;
+            .ok_or(ConnectionError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::connection(connection.id));
         Ok(ConnectionResponse::ConnectionDetails(
             Response::new(connection).with_ref_token(ref_token),

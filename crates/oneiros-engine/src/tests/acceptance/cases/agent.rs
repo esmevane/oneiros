@@ -47,6 +47,74 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
         .await
 }
 
+pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
+    let harness = with_persona::<B>().await?;
+
+    let create_response = harness
+        .exec_json("agent create viewer process --description 'Views things'")
+        .await?;
+
+    let ref_token = match create_response {
+        Responses::Agent(AgentResponse::AgentCreated(_)) => {
+            // AgentCreated returns a name, not a ref envelope — grab the ref via show.
+            let show = harness.exec_json("agent show viewer.process").await?;
+            match show {
+                Responses::Agent(AgentResponse::AgentDetails(agent)) => agent
+                    .meta()
+                    .ref_token()
+                    .expect("AgentDetails carries a ref token"),
+                other => panic!("expected AgentDetails, got {other:#?}"),
+            }
+        }
+        other => panic!("expected AgentCreated, got {other:#?}"),
+    };
+
+    harness
+        .query(&format!("agent show {ref_token}"))
+        .assert_json(expect!(
+            Responses::Agent(AgentResponse::AgentDetails(agent))
+                if agent.data.name.as_str() == "viewer.process"
+        ))
+        .await
+}
+
+pub(crate) async fn show_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
+    let harness = with_persona::<B>().await?;
+
+    harness
+        .exec_json("texture set observation --description 'An observation'")
+        .await?;
+    harness
+        .exec_json("agent create scribe process --description 'A scribe'")
+        .await?;
+    let cognition_response = harness
+        .exec_json("cognition add scribe.process observation 'A noticed thing'")
+        .await?;
+
+    let cognition_ref = match cognition_response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(cognition)) => cognition
+            .meta()
+            .ref_token()
+            .expect("CognitionAdded carries a ref token"),
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
+
+    let result = harness
+        .exec_json(&format!("agent show {cognition_ref}"))
+        .await;
+
+    let Err(err) = result else {
+        panic!("expected error for wrong-kind ref, got Ok");
+    };
+    let message = err.to_string();
+    assert!(
+        message.contains("agent") && message.contains("cognition"),
+        "expected wrong-kind error naming both kinds, got: {message}"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let harness = Harness::<B>::init_project().await?;
 

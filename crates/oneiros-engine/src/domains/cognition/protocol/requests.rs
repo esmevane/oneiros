@@ -19,7 +19,7 @@ pub struct AddCognition {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetCognition {
     #[builder(into)]
-    pub id: CognitionId,
+    pub key: ResourceKey<CognitionId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

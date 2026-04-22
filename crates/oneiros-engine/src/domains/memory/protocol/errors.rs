@@ -15,6 +15,9 @@ pub enum MemoryError {
     #[error("Invalid ID: {0}")]
     InvalidId(#[from] crate::IdParseError),
 
+    #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -33,6 +36,7 @@ impl IntoResponse for MemoryError {
             MemoryError::AgentNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             MemoryError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             MemoryError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            MemoryError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             MemoryError::Database(_) | MemoryError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

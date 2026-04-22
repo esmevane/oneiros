@@ -59,10 +59,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<PersonaName>,
+    Path(key): Path<ResourceKey<PersonaName>>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(
-        PersonaService::get(&context, &GetPersona::builder().name(name).build()).await?,
+        PersonaService::get(&context, &GetPersona::builder().key(key).build()).await?,
     ))
 }
 

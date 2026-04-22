@@ -19,7 +19,7 @@ impl TenantCommands {
 
         let response = match self {
             TenantCommands::Create(create) => tenant_client.create(create).await?,
-            TenantCommands::Get(get) => tenant_client.get(&get.id).await?,
+            TenantCommands::Get(get) => tenant_client.get(get).await?,
             TenantCommands::List(list) => tenant_client.list(list).await?,
         };
 

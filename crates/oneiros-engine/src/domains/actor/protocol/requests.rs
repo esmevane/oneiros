@@ -18,7 +18,7 @@ pub struct CreateActor {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetActor {
     #[builder(into)]
-    pub id: ActorId,
+    pub key: ResourceKey<ActorId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

@@ -17,7 +17,7 @@ pub struct CreateConnection {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetConnection {
     #[builder(into)]
-    pub id: ConnectionId,
+    pub key: ResourceKey<ConnectionId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

@@ -106,7 +106,11 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .agent()
-        .get(&AgentName::new("thinker.process"))
+        .get(
+            &GetAgent::builder()
+                .key(AgentName::new("thinker.process"))
+                .build(),
+        )
         .await?
     {
         AgentResponse::AgentDetails(a) => {
@@ -233,7 +237,11 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .agent()
-        .get(&AgentName::new("thinker.process"))
+        .get(
+            &GetAgent::builder()
+                .key(AgentName::new("thinker.process"))
+                .build(),
+        )
         .await?
     {
         AgentResponse::AgentDetails(a) => {
@@ -476,7 +484,11 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
     match bob
         .client()
         .agent()
-        .get(&AgentName::new("thinker.process"))
+        .get(
+            &GetAgent::builder()
+                .key(AgentName::new("thinker.process"))
+                .build(),
+        )
         .await?
     {
         AgentResponse::AgentDetails(a) => {
@@ -863,7 +875,11 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .agent()
-        .get(&AgentName::new("thinker.process"))
+        .get(
+            &GetAgent::builder()
+                .key(AgentName::new("thinker.process"))
+                .build(),
+        )
         .await?
     {
         AgentResponse::AgentDetails(a) => {

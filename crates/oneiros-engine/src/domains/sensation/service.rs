@@ -26,10 +26,11 @@ impl SensationService {
         context: &ProjectContext,
         selector: &GetSensation,
     ) -> Result<SensationResponse, SensationError> {
+        let name = selector.key.resolve()?;
         let sensation = SensationRepo::new(context)
-            .get(&selector.name)
+            .get(&name)
             .await?
-            .ok_or_else(|| SensationError::NotFound(selector.name.clone()))?;
+            .ok_or(SensationError::NotFound(name))?;
         let ref_token = RefToken::new(Ref::sensation(sensation.name.clone()));
         Ok(SensationResponse::SensationDetails(
             Response::new(sensation).with_ref_token(ref_token),

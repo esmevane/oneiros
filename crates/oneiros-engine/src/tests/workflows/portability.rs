@@ -126,7 +126,11 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .await?;
 
     // Before import, the agent shouldn't exist
-    let result = app_b.client().agent().get(&agent).await;
+    let result = app_b
+        .client()
+        .agent()
+        .get(&GetAgent::builder().key(agent.clone()).build())
+        .await;
     assert!(result.is_err(), "agent should not exist before import");
 
     // ── Import into instance B ──────────────────────────────────
@@ -140,7 +144,11 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     // ── Verify continuity survived ──────────────────────────────
 
     // The agent exists
-    match client_b.agent().get(&agent).await? {
+    match client_b
+        .agent()
+        .get(&GetAgent::builder().key(agent.clone()).build())
+        .await?
+    {
         AgentResponse::AgentDetails(a) => {
             assert_eq!(a.data.name, agent);
             assert_eq!(a.data.persona, PersonaName::new("process"));
@@ -210,7 +218,11 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     // Storage survived (including blob content)
     match client_b
         .storage()
-        .show(&GetStorage::builder().key("notes.md").build())
+        .show(
+            &GetStorage::builder()
+                .key(StorageKey::new("notes.md"))
+                .build(),
+        )
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
@@ -221,7 +233,15 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     }
 
     // The vocabulary survived
-    match client_b.persona().get(&PersonaName::new("process")).await? {
+    match client_b
+        .persona()
+        .get(
+            &GetPersona::builder()
+                .key(PersonaName::new("process"))
+                .build(),
+        )
+        .await?
+    {
         PersonaResponse::PersonaDetails(p) => {
             assert_eq!(p.data.name, PersonaName::new("process"));
         }

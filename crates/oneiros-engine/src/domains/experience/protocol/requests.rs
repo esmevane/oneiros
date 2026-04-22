@@ -19,7 +19,7 @@ pub struct CreateExperience {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetExperience {
     #[builder(into)]
-    pub id: ExperienceId,
+    pub key: ResourceKey<ExperienceId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

@@ -20,7 +20,7 @@ impl SensationCommands {
 
         let response = match self {
             SensationCommands::Set(set) => sensation_client.set(set).await?,
-            SensationCommands::Show(get) => sensation_client.get(&get.name).await?,
+            SensationCommands::Show(get) => sensation_client.get(get).await?,
             SensationCommands::List(list) => sensation_client.list(list).await?,
             SensationCommands::Remove(removal) => sensation_client.remove(&removal.name).await?,
         };

@@ -20,7 +20,7 @@ impl PersonaCommands {
 
         let response = match self {
             PersonaCommands::Set(set) => persona_client.set(set).await?,
-            PersonaCommands::Show(get) => persona_client.get(&get.name).await?,
+            PersonaCommands::Show(get) => persona_client.get(get).await?,
             PersonaCommands::List(list) => persona_client.list(list).await?,
             PersonaCommands::Remove(removal) => persona_client.remove(&removal.name).await?,
         };

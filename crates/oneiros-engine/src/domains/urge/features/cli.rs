@@ -20,7 +20,7 @@ impl UrgeCommands {
 
         let response = match self {
             UrgeCommands::Set(set) => urge_client.set(set).await?,
-            UrgeCommands::Show(get) => urge_client.get(&get.name).await?,
+            UrgeCommands::Show(get) => urge_client.get(get).await?,
             UrgeCommands::List(list) => urge_client.list(list).await?,
             UrgeCommands::Remove(removal) => urge_client.remove(&removal.name).await?,
         };

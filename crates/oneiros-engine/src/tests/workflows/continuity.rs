@@ -453,7 +453,11 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     let agent = AgentName::new("gov.custom");
 
     // Verify via client
-    match client.agent().get(&agent).await? {
+    match client
+        .agent()
+        .get(&GetAgent::builder().key(agent.clone()).build())
+        .await?
+    {
         AgentResponse::AgentDetails(a) => {
             assert_eq!(a.data.persona, PersonaName::new("custom"));
         }
@@ -500,7 +504,10 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     client.continuity().recede(&agent).await?;
 
     // Agent should be gone
-    let result = client.agent().get(&agent).await;
+    let result = client
+        .agent()
+        .get(&GetAgent::builder().key(agent.clone()).build())
+        .await;
     assert!(result.is_err(), "receded agent should not be found");
 
     Ok(())

@@ -67,10 +67,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(id): Path<ExperienceId>,
+    Path(key): Path<ResourceKey<ExperienceId>>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
-        ExperienceService::get(&context, &GetExperience::builder().id(id).build()).await?,
+        ExperienceService::get(&context, &GetExperience::builder().key(key).build()).await?,
     ))
 }
 

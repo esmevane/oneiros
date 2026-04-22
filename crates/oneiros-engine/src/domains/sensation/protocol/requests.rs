@@ -21,7 +21,7 @@ pub struct SetSensation {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetSensation {
     #[builder(into)]
-    pub name: SensationName,
+    pub key: ResourceKey<SensationName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

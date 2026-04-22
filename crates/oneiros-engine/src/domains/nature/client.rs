@@ -15,8 +15,8 @@ impl<'a> NatureClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &NatureName) -> Result<NatureResponse, ClientError> {
-        self.client.get(&format!("/natures/{name}")).await
+    pub async fn get(&self, request: &GetNature) -> Result<NatureResponse, ClientError> {
+        self.client.get(&format!("/natures/{}", request.key)).await
     }
 
     pub async fn list(&self, request: &ListNatures) -> Result<NatureResponse, ClientError> {

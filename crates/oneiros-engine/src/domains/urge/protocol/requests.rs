@@ -21,7 +21,7 @@ pub struct SetUrge {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetUrge {
     #[builder(into)]
-    pub name: UrgeName,
+    pub key: ResourceKey<UrgeName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

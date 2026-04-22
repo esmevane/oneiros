@@ -33,7 +33,11 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     // Show — metadata is there
     match client
         .storage()
-        .show(&GetStorage::builder().key("notes/design.md").build())
+        .show(
+            &GetStorage::builder()
+                .key(StorageKey::new("notes/design.md"))
+                .build(),
+        )
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
@@ -58,7 +62,11 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .storage()
-            .show(&GetStorage::builder().key("notes/design.md").build())
+            .show(
+                &GetStorage::builder()
+                    .key(StorageKey::new("notes/design.md"))
+                    .build()
+            )
             .await
             .is_err()
     );
@@ -93,7 +101,11 @@ async fn storage_via_cli() -> Result<(), Box<dyn core::error::Error>> {
     match app
         .client()
         .storage()
-        .show(&GetStorage::builder().key("test.txt").build())
+        .show(
+            &GetStorage::builder()
+                .key(StorageKey::new("test.txt"))
+                .build(),
+        )
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
@@ -133,7 +145,11 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
     let original_hash = match app_a
         .client()
         .storage()
-        .show(&GetStorage::builder().key("integrity-test.txt").build())
+        .show(
+            &GetStorage::builder()
+                .key(StorageKey::new("integrity-test.txt"))
+                .build(),
+        )
         .await?
     {
         StorageResponse::StorageDetails(entry) => entry.data.hash,
@@ -170,7 +186,11 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
     match app_b
         .client()
         .storage()
-        .show(&GetStorage::builder().key("integrity-test.txt").build())
+        .show(
+            &GetStorage::builder()
+                .key(StorageKey::new("integrity-test.txt"))
+                .build(),
+        )
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
@@ -213,7 +233,7 @@ async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
         .storage()
         .show(
             &GetStorage::builder()
-                .key("notes/design/architecture.md")
+                .key(StorageKey::new("notes/design/architecture.md"))
                 .build(),
         )
         .await?
@@ -240,7 +260,7 @@ async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
         .storage()
         .show(
             &GetStorage::builder()
-                .key("/usr/local/share/config.toml")
+                .key(StorageKey::new("/usr/local/share/config.toml"))
                 .build(),
         )
         .await?

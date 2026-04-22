@@ -35,10 +35,11 @@ impl MemoryService {
         context: &ProjectContext,
         selector: &GetMemory,
     ) -> Result<MemoryResponse, MemoryError> {
+        let id = selector.key.resolve()?;
         let memory = MemoryRepo::new(context)
-            .get(&selector.id)
+            .get(&id)
             .await?
-            .ok_or_else(|| MemoryError::NotFound(selector.id))?;
+            .ok_or(MemoryError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::memory(memory.id));
         Ok(MemoryResponse::MemoryDetails(
             Response::new(memory).with_ref_token(ref_token),

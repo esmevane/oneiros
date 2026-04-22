@@ -9,7 +9,7 @@ use crate::*;
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetStorage {
     #[builder(into)]
-    pub key: StorageKey,
+    pub key: ResourceKey<StorageKey>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

@@ -29,10 +29,28 @@ impl BrainService {
         context: &SystemContext,
         selector: &GetBrain,
     ) -> Result<BrainResponse, BrainError> {
-        let brain = BrainRepo::new(context)
-            .get(&selector.name)
-            .await?
-            .ok_or_else(|| BrainError::NotFound(selector.name.clone()))?;
+        let repo = BrainRepo::new(context);
+        let brain = match &selector.key {
+            ResourceKey::Key(name) => repo
+                .get(name)
+                .await?
+                .ok_or_else(|| BrainError::NotFound(name.clone()))?,
+            ResourceKey::Ref(token) => {
+                let Ref::V0(resource) = token.inner().clone();
+                match resource {
+                    Resource::Brain(id) => repo
+                        .get_by_id(&id)
+                        .await?
+                        .ok_or(BrainError::NotFoundById(id))?,
+                    other => {
+                        return Err(BrainError::Resolve(ResolveError::WrongKind {
+                            expected: "brain",
+                            got: other.label(),
+                        }));
+                    }
+                }
+            }
+        };
         let ref_token = RefToken::new(Ref::brain(brain.id));
         Ok(BrainResponse::Found(
             Response::new(brain).with_ref_token(ref_token),

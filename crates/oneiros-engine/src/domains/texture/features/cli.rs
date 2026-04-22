@@ -20,7 +20,7 @@ impl TextureCommands {
 
         let response = match self {
             TextureCommands::Set(set) => texture_client.set(set).await?,
-            TextureCommands::Show(get) => texture_client.get(&get.name).await?,
+            TextureCommands::Show(get) => texture_client.get(get).await?,
             TextureCommands::List(list) => texture_client.list(list).await?,
             TextureCommands::Remove(removal) => texture_client.remove(&removal.name).await?,
         };

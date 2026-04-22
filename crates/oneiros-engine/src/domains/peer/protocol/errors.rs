@@ -15,6 +15,9 @@ pub enum PeerError {
     #[error("Invalid ID: {0}")]
     InvalidId(#[from] crate::IdParseError),
 
+    #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -31,7 +34,7 @@ impl IntoResponse for PeerError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             PeerError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
-            PeerError::InvalidAddress(_) | PeerError::InvalidId(_) => {
+            PeerError::InvalidAddress(_) | PeerError::InvalidId(_) | PeerError::Resolve(_) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
             PeerError::Database(_) | PeerError::Event(_) | PeerError::Client(_) => {

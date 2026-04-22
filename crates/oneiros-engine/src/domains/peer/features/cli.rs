@@ -17,7 +17,7 @@ impl PeerCommands {
 
         let response = match self {
             PeerCommands::Add(add) => peer_client.add(add).await?,
-            PeerCommands::Get(get) => peer_client.get(&get.id).await?,
+            PeerCommands::Get(get) => peer_client.get(get).await?,
             PeerCommands::List(list) => peer_client.list(list).await?,
             PeerCommands::Remove(remove) => peer_client.remove(&remove.id).await?,
         };

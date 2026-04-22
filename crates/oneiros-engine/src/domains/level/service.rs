@@ -24,10 +24,11 @@ impl LevelService {
         context: &ProjectContext,
         selector: &GetLevel,
     ) -> Result<LevelResponse, LevelError> {
+        let name = selector.key.resolve()?;
         let level = LevelRepo::new(context)
-            .get(&selector.name)
+            .get(&name)
             .await?
-            .ok_or_else(|| LevelError::NotFound(selector.name.clone()))?;
+            .ok_or(LevelError::NotFound(name))?;
         let ref_token = RefToken::new(Ref::level(level.name.clone()));
         Ok(LevelResponse::LevelDetails(
             Response::new(level).with_ref_token(ref_token),

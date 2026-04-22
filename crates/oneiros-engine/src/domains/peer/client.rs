@@ -15,8 +15,8 @@ impl<'a> PeerClient<'a> {
         self.client.post("/peers", add).await
     }
 
-    pub async fn get(&self, id: &PeerId) -> Result<PeerResponse, ClientError> {
-        self.client.get(&format!("/peers/{}", id)).await
+    pub async fn get(&self, request: &GetPeer) -> Result<PeerResponse, ClientError> {
+        self.client.get(&format!("/peers/{}", request.key)).await
     }
 
     pub async fn list(&self, request: &ListPeers) -> Result<PeerResponse, ClientError> {

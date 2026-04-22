@@ -15,6 +15,9 @@ pub enum CognitionError {
     #[error("Invalid ID: {0}")]
     InvalidId(#[from] crate::IdParseError),
 
+    #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -33,6 +36,7 @@ impl IntoResponse for CognitionError {
             CognitionError::AgentNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             CognitionError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             CognitionError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            CognitionError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             CognitionError::Database(_) | CognitionError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

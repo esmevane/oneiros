@@ -39,10 +39,11 @@ impl StorageService {
         context: &ProjectContext,
         selector: &GetStorage,
     ) -> Result<StorageResponse, StorageError> {
+        let key = selector.key.resolve()?;
         let entry = StorageRepo::new(context)
-            .get_storage(&selector.key)
+            .get_storage(&key)
             .await?
-            .ok_or_else(|| StorageError::KeyNotFound(selector.key.clone()))?;
+            .ok_or(StorageError::KeyNotFound(key))?;
         let ref_token = RefToken::new(Ref::storage(entry.key.clone()));
         Ok(StorageResponse::StorageDetails(
             Response::new(entry).with_ref_token(ref_token),

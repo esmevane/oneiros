@@ -43,6 +43,14 @@ macro_rules! resource_name {
                 Self::new(given_str.as_ref())
             }
         }
+
+        impl core::str::FromStr for $name {
+            type Err = core::convert::Infallible;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Ok(Self::new(s))
+            }
+        }
     };
 }
 

@@ -14,6 +14,9 @@ pub enum ActorError {
     #[error("Invalid ID: {0}")]
     InvalidId(#[from] crate::IdParseError),
 
+    #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -31,6 +34,7 @@ impl IntoResponse for ActorError {
         let (status, message) = match &self {
             ActorError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ActorError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            ActorError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ActorError::Database(_) | ActorError::Event(_) | ActorError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

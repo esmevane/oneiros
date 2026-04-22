@@ -15,8 +15,10 @@ impl<'a> SensationClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &SensationName) -> Result<SensationResponse, ClientError> {
-        self.client.get(&format!("/sensations/{name}")).await
+    pub async fn get(&self, request: &GetSensation) -> Result<SensationResponse, ClientError> {
+        self.client
+            .get(&format!("/sensations/{}", request.key))
+            .await
     }
 
     pub async fn list(&self, request: &ListSensations) -> Result<SensationResponse, ClientError> {

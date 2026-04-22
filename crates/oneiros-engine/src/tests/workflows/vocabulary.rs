@@ -36,7 +36,11 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected Levels, got {other:?}"),
     }
 
-    match client.level().get(&LevelName::new("working")).await? {
+    match client
+        .level()
+        .get(&GetLevel::builder().key(LevelName::new("working")).build())
+        .await?
+    {
         LevelResponse::LevelDetails(l) => {
             assert_eq!(l.data.description.to_string(), "Active processing");
         }
@@ -48,7 +52,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .level()
-            .get(&LevelName::new("session"))
+            .get(&GetLevel::builder().key(LevelName::new("session")).build())
             .await
             .is_err()
     );
@@ -71,7 +75,11 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .texture()
-        .get(&TextureName::new("observation"))
+        .get(
+            &GetTexture::builder()
+                .key(TextureName::new("observation"))
+                .build(),
+        )
         .await?
     {
         TextureResponse::TextureDetails(t) => {
@@ -87,7 +95,11 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .sensation()
-        .get(&SensationName::new("echoes"))
+        .get(
+            &GetSensation::builder()
+                .key(SensationName::new("echoes"))
+                .build(),
+        )
         .await?
     {
         SensationResponse::SensationDetails(s) => {
@@ -101,7 +113,15 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     app.command(r#"nature set reference --description "Related" --prompt "Cross-reference""#)
         .await?;
 
-    match client.nature().get(&NatureName::new("reference")).await? {
+    match client
+        .nature()
+        .get(
+            &GetNature::builder()
+                .key(NatureName::new("reference"))
+                .build(),
+        )
+        .await?
+    {
         NatureResponse::NatureDetails(n) => {
             assert_eq!(n.data.name, NatureName::new("reference"));
         }
@@ -119,7 +139,15 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     let cmd_result = app.command("persona show process").await?;
     let cmd_json = serde_json::to_value(cmd_result.response())?;
 
-    match client.persona().get(&PersonaName::new("process")).await? {
+    match client
+        .persona()
+        .get(
+            &GetPersona::builder()
+                .key(PersonaName::new("process"))
+                .build(),
+        )
+        .await?
+    {
         PersonaResponse::PersonaDetails(p) => {
             assert_eq!(cmd_json["data"]["name"], p.data.name.to_string());
         }
@@ -131,7 +159,11 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     app.command(r#"urge set introspect --description "Look inward" --prompt "Pause and reflect""#)
         .await?;
 
-    match client.urge().get(&UrgeName::new("introspect")).await? {
+    match client
+        .urge()
+        .get(&GetUrge::builder().key(UrgeName::new("introspect")).build())
+        .await?
+    {
         UrgeResponse::UrgeDetails(u) => {
             assert_eq!(u.name, UrgeName::new("introspect"));
         }
@@ -144,7 +176,11 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     app.command(r#"level set working --description "Updated description" --prompt """#)
         .await?;
 
-    match client.level().get(&LevelName::new("working")).await? {
+    match client
+        .level()
+        .get(&GetLevel::builder().key(LevelName::new("working")).build())
+        .await?
+    {
         LevelResponse::LevelDetails(l) => {
             assert_eq!(l.data.description.to_string(), "Updated description");
         }
