@@ -55,10 +55,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(id): Path<ConnectionId>,
+    Path(key): Path<ResourceKey<ConnectionId>>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(
-        ConnectionService::get(&context, &GetConnection::builder().id(id).build()).await?,
+        ConnectionService::get(&context, &GetConnection::builder().key(key).build()).await?,
     ))
 }
 

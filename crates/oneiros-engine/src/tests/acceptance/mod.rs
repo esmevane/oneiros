@@ -497,6 +497,14 @@ async fn agent_show_returns_details() -> TestResult {
     cases::agent::show_returns_details::<EngineBackend>().await
 }
 #[tokio::test]
+async fn agent_show_by_ref() -> TestResult {
+    cases::agent::show_by_ref::<EngineBackend>().await
+}
+#[tokio::test]
+async fn agent_show_by_wrong_kind_ref_errors() -> TestResult {
+    cases::agent::show_by_wrong_kind_ref_errors::<EngineBackend>().await
+}
+#[tokio::test]
 async fn agent_list_empty() -> TestResult {
     cases::agent::list_empty::<EngineBackend>().await
 }
@@ -667,6 +675,14 @@ async fn experience_list_populated() -> TestResult {
 #[tokio::test]
 async fn experience_show_by_id() -> TestResult {
     cases::experience::show_by_id::<EngineBackend>().await
+}
+#[tokio::test]
+async fn experience_show_by_ref() -> TestResult {
+    cases::experience::show_by_ref::<EngineBackend>().await
+}
+#[tokio::test]
+async fn experience_show_by_wrong_kind_ref_errors() -> TestResult {
+    cases::experience::show_by_wrong_kind_ref_errors::<EngineBackend>().await
 }
 #[tokio::test]
 async fn experience_update_description() -> TestResult {

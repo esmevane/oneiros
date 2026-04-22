@@ -33,6 +33,6 @@ impl<'a> MemoryClient<'a> {
     }
 
     pub async fn get(&self, request: &GetMemory) -> Result<MemoryResponse, ClientError> {
-        self.client.get(&format!("/memories/{}", request.id)).await
+        self.client.get(&format!("/memories/{}", request.key)).await
     }
 }

@@ -24,10 +24,11 @@ impl NatureService {
         context: &ProjectContext,
         selector: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
+        let name = selector.key.resolve()?;
         let nature = NatureRepo::new(context)
-            .get(&selector.name)
+            .get(&name)
             .await?
-            .ok_or_else(|| NatureError::NotFound(selector.name.clone()))?;
+            .ok_or(NatureError::NotFound(name))?;
         let ref_token = RefToken::new(Ref::nature(nature.name.clone()));
         Ok(NatureResponse::NatureDetails(
             Response::new(nature).with_ref_token(ref_token),

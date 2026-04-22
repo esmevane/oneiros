@@ -15,7 +15,7 @@ pub struct CreateBrain {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetBrain {
     #[builder(into)]
-    pub name: BrainName,
+    pub key: ResourceKey<BrainName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

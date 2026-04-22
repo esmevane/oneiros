@@ -74,7 +74,11 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     };
 
     // Actor is retrievable
-    match client.actor().get(&actor.data.id).await? {
+    match client
+        .actor()
+        .get(&GetActor::builder().key(actor.data.id).build())
+        .await?
+    {
         ActorResponse::Found(a) => {
             assert_eq!(a.data.name, ActorName::new("alice"));
         }
@@ -116,7 +120,11 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     assert!(result.is_err(), "duplicate brain name should conflict");
 
     // Brain is retrievable
-    match client.brain().get(&brain_name).await? {
+    match client
+        .brain()
+        .get(&GetBrain::builder().key(brain_name.clone()).build())
+        .await?
+    {
         BrainResponse::Found(b) => {
             assert_eq!(b.data.name, brain_name);
         }

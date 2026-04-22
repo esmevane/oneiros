@@ -22,10 +22,11 @@ impl TenantService {
         context: &SystemContext,
         selector: &GetTenant,
     ) -> Result<TenantResponse, TenantError> {
+        let id = selector.key.resolve()?;
         let tenant = TenantRepo::new(context)
-            .get(&selector.id)
+            .get(&id)
             .await?
-            .ok_or_else(|| TenantError::NotFound(selector.id))?;
+            .ok_or(TenantError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::tenant(tenant.id));
         Ok(TenantResponse::Found(
             Response::new(tenant).with_ref_token(ref_token),

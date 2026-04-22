@@ -23,7 +23,7 @@ pub struct CreateAgent {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetAgent {
     #[builder(into)]
-    pub name: AgentName,
+    pub key: ResourceKey<AgentName>,
 }
 
 #[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]

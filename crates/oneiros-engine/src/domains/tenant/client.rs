@@ -17,9 +17,9 @@ impl<'a> TenantClient<'a> {
         self.client.post("/tenants", creation).await
     }
 
-    /// Retrieve a single tenant by ID.
-    pub async fn get(&self, id: &TenantId) -> Result<TenantResponse, ClientError> {
-        self.client.get(&format!("/tenants/{}", id)).await
+    /// Retrieve a single tenant by key (id or ref).
+    pub async fn get(&self, request: &GetTenant) -> Result<TenantResponse, ClientError> {
+        self.client.get(&format!("/tenants/{}", request.key)).await
     }
 
     /// List all tenants.

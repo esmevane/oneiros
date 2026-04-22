@@ -12,6 +12,9 @@ pub enum PersonaError {
     NotFound(PersonaName),
 
     #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
+    #[error(transparent)]
     Client(#[from] ClientError),
 
     #[error("Database error: {0}")]
@@ -27,6 +30,7 @@ impl IntoResponse for PersonaError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             PersonaError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            PersonaError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             PersonaError::Database(_) | PersonaError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

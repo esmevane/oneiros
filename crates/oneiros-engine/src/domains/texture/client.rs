@@ -15,8 +15,8 @@ impl<'a> TextureClient<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &TextureName) -> Result<TextureResponse, ClientError> {
-        self.client.get(&format!("/textures/{name}")).await
+    pub async fn get(&self, request: &GetTexture) -> Result<TextureResponse, ClientError> {
+        self.client.get(&format!("/textures/{}", request.key)).await
     }
 
     pub async fn list(&self, request: &ListTextures) -> Result<TextureResponse, ClientError> {

@@ -16,7 +16,7 @@ impl ProjectService {
 
         if let Ok(BrainResponse::Found(_)) = BrainService::get(
             context,
-            &GetBrain::builder().name(brain_name.clone()).build(),
+            &GetBrain::builder().key(brain_name.clone()).build(),
         )
         .await
         {

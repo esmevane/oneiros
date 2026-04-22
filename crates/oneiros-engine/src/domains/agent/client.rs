@@ -21,8 +21,8 @@ impl<'a> AgentClient<'a> {
         self.client.get(&format!("/agents?{query}")).await
     }
 
-    pub async fn get(&self, name: &AgentName) -> Result<AgentResponse, ClientError> {
-        self.client.get(&format!("/agents/{name}")).await
+    pub async fn get(&self, request: &GetAgent) -> Result<AgentResponse, ClientError> {
+        self.client.get(&format!("/agents/{}", request.key)).await
     }
 
     pub async fn update(&self, changes: &UpdateAgent) -> Result<AgentResponse, ClientError> {

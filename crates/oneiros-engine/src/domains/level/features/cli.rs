@@ -20,7 +20,7 @@ impl LevelCommands {
 
         let response = match self {
             LevelCommands::Set(set) => level_client.set(set).await?,
-            LevelCommands::Show(get) => level_client.get(&get.name).await?,
+            LevelCommands::Show(get) => level_client.get(get).await?,
             LevelCommands::List(list) => level_client.list(list).await?,
             LevelCommands::Remove(removal) => level_client.remove(&removal.name).await?,
         };

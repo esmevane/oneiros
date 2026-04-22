@@ -21,7 +21,7 @@ pub struct SetLevel {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetLevel {
     #[builder(into)]
-    pub name: LevelName,
+    pub key: ResourceKey<LevelName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

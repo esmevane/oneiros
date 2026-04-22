@@ -45,10 +45,28 @@ impl AgentService {
         context: &ProjectContext,
         selector: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
-        let agent = AgentRepo::new(context)
-            .get(&selector.name)
-            .await?
-            .ok_or_else(|| AgentError::NotFound(selector.name.clone()))?;
+        let repo = AgentRepo::new(context);
+        let agent = match &selector.key {
+            ResourceKey::Key(name) => repo
+                .get(name)
+                .await?
+                .ok_or_else(|| AgentError::NotFound(name.clone()))?,
+            ResourceKey::Ref(token) => {
+                let Ref::V0(resource) = token.inner().clone();
+                match resource {
+                    Resource::Agent(id) => repo
+                        .get_by_id(id)
+                        .await?
+                        .ok_or(AgentError::NotFoundById(id))?,
+                    other => {
+                        return Err(AgentError::Resolve(ResolveError::WrongKind {
+                            expected: "agent",
+                            got: other.label(),
+                        }));
+                    }
+                }
+            }
+        };
         let ref_token = RefToken::new(Ref::agent(agent.id));
         Ok(AgentResponse::AgentDetails(
             Response::new(agent).with_ref_token(ref_token),

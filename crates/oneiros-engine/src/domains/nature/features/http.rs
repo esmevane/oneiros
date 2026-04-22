@@ -59,10 +59,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<NatureName>,
+    Path(key): Path<ResourceKey<NatureName>>,
 ) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(
-        NatureService::get(&context, &GetNature::builder().name(name).build()).await?,
+        NatureService::get(&context, &GetNature::builder().key(key).build()).await?,
     ))
 }
 

@@ -25,10 +25,11 @@ impl ActorService {
         context: &SystemContext,
         selector: &GetActor,
     ) -> Result<ActorResponse, ActorError> {
+        let id = selector.key.resolve()?;
         let actor = ActorRepo::new(context)
-            .get(selector.id)
+            .get(id)
             .await?
-            .ok_or_else(|| ActorError::NotFound(selector.id))?;
+            .ok_or(ActorError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::actor(actor.id));
         Ok(ActorResponse::Found(
             Response::new(actor).with_ref_token(ref_token),

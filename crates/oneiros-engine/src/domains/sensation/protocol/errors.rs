@@ -12,6 +12,9 @@ pub enum SensationError {
     NotFound(SensationName),
 
     #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
+    #[error(transparent)]
     Client(#[from] ClientError),
 
     #[error("Database error: {0}")]
@@ -27,6 +30,7 @@ impl IntoResponse for SensationError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             SensationError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            SensationError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             SensationError::Database(_) | SensationError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

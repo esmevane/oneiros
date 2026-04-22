@@ -19,7 +19,7 @@ impl ActorCommands {
 
         let response = match self {
             ActorCommands::Create(creation) => actor_client.create(creation).await?,
-            ActorCommands::Get(get) => actor_client.get(&get.id).await?,
+            ActorCommands::Get(get) => actor_client.get(get).await?,
             ActorCommands::List(list) => actor_client.list(list).await?,
         };
 

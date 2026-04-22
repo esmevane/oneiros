@@ -35,10 +35,11 @@ impl CognitionService {
         context: &ProjectContext,
         selector: &GetCognition,
     ) -> Result<CognitionResponse, CognitionError> {
+        let id = selector.key.resolve()?;
         let cognition = CognitionRepo::new(context)
-            .get(&selector.id)
+            .get(&id)
             .await?
-            .ok_or_else(|| CognitionError::NotFound(selector.id))?;
+            .ok_or(CognitionError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::cognition(cognition.id));
         Ok(CognitionResponse::CognitionDetails(
             Response::new(cognition).with_ref_token(ref_token),

@@ -19,7 +19,7 @@ impl BrainCommands {
 
         let response = match self {
             BrainCommands::Create(create) => brain_client.create(create).await?,
-            BrainCommands::Get(get) => brain_client.get(&get.name).await?,
+            BrainCommands::Get(get) => brain_client.get(get).await?,
             BrainCommands::List(list) => brain_client.list(list).await?,
         };
 

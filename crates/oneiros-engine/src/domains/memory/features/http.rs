@@ -52,9 +52,9 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(id): Path<MemoryId>,
+    Path(key): Path<ResourceKey<MemoryId>>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
     Ok(Json(
-        MemoryService::get(&context, &GetMemory::builder().id(id).build()).await?,
+        MemoryService::get(&context, &GetMemory::builder().key(key).build()).await?,
     ))
 }

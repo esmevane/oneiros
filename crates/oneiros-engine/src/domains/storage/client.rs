@@ -22,8 +22,11 @@ impl<'a> StorageClient<'a> {
     }
 
     pub async fn show(&self, request: &GetStorage) -> Result<StorageResponse, ClientError> {
-        let ref_key = StorageRef::encode(&request.key);
-        self.client.get(&format!("/storage/{ref_key}")).await
+        let path = match &request.key {
+            ResourceKey::Key(key) => StorageRef::encode(key).to_string(),
+            ResourceKey::Ref(token) => token.to_string(),
+        };
+        self.client.get(&format!("/storage/{path}")).await
     }
 
     pub async fn remove(&self, request: &RemoveStorage) -> Result<StorageResponse, ClientError> {

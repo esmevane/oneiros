@@ -24,10 +24,11 @@ impl TextureService {
         context: &ProjectContext,
         selector: &GetTexture,
     ) -> Result<TextureResponse, TextureError> {
+        let name = selector.key.resolve()?;
         let texture = TextureRepo::new(context)
-            .get(&selector.name)
+            .get(&name)
             .await?
-            .ok_or_else(|| TextureError::NotFound(selector.name.clone()))?;
+            .ok_or(TextureError::NotFound(name))?;
         let ref_token = RefToken::new(Ref::texture(texture.name.clone()));
         Ok(TextureResponse::TextureDetails(
             Response::new(texture).with_ref_token(ref_token),

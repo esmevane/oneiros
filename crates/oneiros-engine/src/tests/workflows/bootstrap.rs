@@ -56,7 +56,11 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
     // The agent exists
     match client
         .agent()
-        .get(&AgentName::new("thinker.process"))
+        .get(
+            &GetAgent::builder()
+                .key(AgentName::new("thinker.process"))
+                .build(),
+        )
         .await?
     {
         AgentResponse::AgentDetails(agent) => {

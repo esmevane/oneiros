@@ -17,9 +17,9 @@ impl<'a> ActorClient<'a> {
         self.client.post("/actors", creation).await
     }
 
-    /// Retrieve a single actor by ID.
-    pub async fn get(&self, id: &ActorId) -> Result<ActorResponse, ClientError> {
-        self.client.get(&format!("/actors/{}", id)).await
+    /// Retrieve a single actor by key (id or ref).
+    pub async fn get(&self, request: &GetActor) -> Result<ActorResponse, ClientError> {
+        self.client.get(&format!("/actors/{}", request.key)).await
     }
 
     /// List all actors.

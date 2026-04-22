@@ -83,7 +83,10 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Nonexistent agent ───────────────────────────────────────
 
-    let result = client.agent().get(&ghost).await;
+    let result = client
+        .agent()
+        .get(&GetAgent::builder().key(ghost.clone()).build())
+        .await;
     assert!(result.is_err(), "nonexistent agent should 404 via client");
 
     let result = app.command("agent show ghost.nobody").await;
@@ -91,7 +94,10 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Nonexistent persona ─────────────────────────────────────
 
-    let result = client.persona().get(&PersonaName::new("nope")).await;
+    let result = client
+        .persona()
+        .get(&GetPersona::builder().key(PersonaName::new("nope")).build())
+        .await;
     assert!(result.is_err(), "nonexistent persona should 404 via client");
 
     let result = app.command("persona show nope").await;
@@ -102,30 +108,52 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     // ── Nonexistent vocabulary ──────────────────────────────────
 
-    assert!(client.level().get(&LevelName::new("nope")).await.is_err());
+    assert!(
+        client
+            .level()
+            .get(&GetLevel::builder().key(LevelName::new("nope")).build())
+            .await
+            .is_err()
+    );
     assert!(
         client
             .texture()
-            .get(&TextureName::new("nope"))
+            .get(&GetTexture::builder().key(TextureName::new("nope")).build())
             .await
             .is_err()
     );
-    assert!(client.nature().get(&NatureName::new("nope")).await.is_err());
+    assert!(
+        client
+            .nature()
+            .get(&GetNature::builder().key(NatureName::new("nope")).build())
+            .await
+            .is_err()
+    );
     assert!(
         client
             .sensation()
-            .get(&SensationName::new("nope"))
+            .get(
+                &GetSensation::builder()
+                    .key(SensationName::new("nope"))
+                    .build()
+            )
             .await
             .is_err()
     );
-    assert!(client.urge().get(&UrgeName::new("nope")).await.is_err());
+    assert!(
+        client
+            .urge()
+            .get(&GetUrge::builder().key(UrgeName::new("nope")).build())
+            .await
+            .is_err()
+    );
 
     // ── Nonexistent storage key ─────────────────────────────────
 
     assert!(
         client
             .storage()
-            .show(&GetStorage::builder().key("nope").build())
+            .show(&GetStorage::builder().key(StorageKey::new("nope")).build())
             .await
             .is_err()
     );
@@ -136,7 +164,7 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .memory()
-            .get(&GetMemory::builder().id(MemoryId::from(fake_id)).build())
+            .get(&GetMemory::builder().key(MemoryId::from(fake_id)).build())
             .await
             .is_err(),
         "nonexistent memory should 404"
@@ -149,7 +177,7 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
             .experience()
             .get(
                 &GetExperience::builder()
-                    .id(ExperienceId::from(fake_id))
+                    .key(ExperienceId::from(fake_id))
                     .build()
             )
             .await
@@ -164,7 +192,7 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
             .connection()
             .get(
                 &GetConnection::builder()
-                    .id(ConnectionId::from(fake_id))
+                    .key(ConnectionId::from(fake_id))
                     .build()
             )
             .await
@@ -391,7 +419,15 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
     app.command(r#"persona set custom --description "Second" --prompt """#)
         .await?;
 
-    match client.persona().get(&PersonaName::new("custom")).await? {
+    match client
+        .persona()
+        .get(
+            &GetPersona::builder()
+                .key(PersonaName::new("custom"))
+                .build(),
+        )
+        .await?
+    {
         PersonaResponse::PersonaDetails(p) => {
             assert_eq!(
                 p.data.description.to_string(),
@@ -442,7 +478,11 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
     app.command(r#"level set working --description "Still works" --prompt """#)
         .await?;
 
-    match client.level().get(&LevelName::new("working")).await? {
+    match client
+        .level()
+        .get(&GetLevel::builder().key(LevelName::new("working")).build())
+        .await?
+    {
         LevelResponse::LevelDetails(l) => {
             assert_eq!(l.data.description.to_string(), "Still works");
         }

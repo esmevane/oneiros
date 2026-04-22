@@ -37,7 +37,7 @@ impl<'a> ConnectionClient<'a> {
 
     pub async fn get(&self, request: &GetConnection) -> Result<ConnectionResponse, ClientError> {
         self.client
-            .get(&format!("/connections/{}", request.id))
+            .get(&format!("/connections/{}", request.key))
             .await
     }
 

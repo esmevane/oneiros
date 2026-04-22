@@ -150,9 +150,14 @@ mod agent_mcp {
         context: &ProjectContext,
         name: &AgentName,
     ) -> Result<McpResponse, ToolError> {
-        let agent = AgentService::get(context, &GetAgent { name: name.clone() })
-            .await
-            .map_err(Error::from)?;
+        let agent = AgentService::get(
+            context,
+            &GetAgent {
+                key: ResourceKey::Key(name.clone()),
+            },
+        )
+        .await
+        .map_err(Error::from)?;
 
         let agent_ref = match agent {
             AgentResponse::AgentDetails(wrapped) => RefToken::from(Ref::agent(wrapped.data.id)),

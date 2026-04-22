@@ -15,6 +15,9 @@ pub enum ExperienceError {
     #[error("Invalid ID: {0}")]
     InvalidId(#[from] crate::IdParseError),
 
+    #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -36,6 +39,7 @@ impl IntoResponse for ExperienceError {
             ExperienceError::AgentNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ExperienceError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ExperienceError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            ExperienceError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ExperienceError::Database(_) | ExperienceError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

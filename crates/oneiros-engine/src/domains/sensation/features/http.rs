@@ -59,10 +59,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<SensationName>,
+    Path(key): Path<ResourceKey<SensationName>>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(
-        SensationService::get(&context, &GetSensation::builder().name(name).build()).await?,
+        SensationService::get(&context, &GetSensation::builder().key(key).build()).await?,
     ))
 }
 

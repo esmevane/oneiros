@@ -38,7 +38,7 @@ impl<'a> CognitionClient<'a> {
 
     pub async fn get(&self, request: &GetCognition) -> Result<CognitionResponse, ClientError> {
         self.client
-            .get(&format!("/cognitions/{}", request.id))
+            .get(&format!("/cognitions/{}", request.key))
             .await
     }
 }

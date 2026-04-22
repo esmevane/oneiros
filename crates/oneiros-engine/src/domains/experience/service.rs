@@ -35,10 +35,11 @@ impl ExperienceService {
         context: &ProjectContext,
         selector: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
+        let id = selector.key.resolve()?;
         let experience = ExperienceRepo::new(context)
-            .get(&selector.id)
+            .get(&id)
             .await?
-            .ok_or_else(|| ExperienceError::NotFound(selector.id))?;
+            .ok_or(ExperienceError::NotFound(id))?;
         let ref_token = RefToken::new(Ref::experience(experience.id));
         Ok(ExperienceResponse::ExperienceDetails(
             Response::new(experience).with_ref_token(ref_token),

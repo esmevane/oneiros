@@ -49,9 +49,9 @@ async fn list(
 
 async fn show(
     context: SystemContext,
-    Path(id): Path<ActorId>,
+    Path(key): Path<ResourceKey<ActorId>>,
 ) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(
-        ActorService::get(&context, &GetActor::builder().id(id).build()).await?,
+        ActorService::get(&context, &GetActor::builder().key(key).build()).await?,
     ))
 }

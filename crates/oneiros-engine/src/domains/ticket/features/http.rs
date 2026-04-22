@@ -53,10 +53,10 @@ async fn list(
 
 async fn show(
     context: SystemContext,
-    Path(id): Path<TicketId>,
+    Path(key): Path<ResourceKey<TicketId>>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(
-        TicketService::get(&context, &GetTicket::builder().id(id).build()).await?,
+        TicketService::get(&context, &GetTicket::builder().key(key).build()).await?,
     ))
 }
 

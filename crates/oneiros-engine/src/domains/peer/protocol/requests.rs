@@ -26,7 +26,7 @@ pub struct AddPeer {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetPeer {
     #[builder(into)]
-    pub id: PeerId,
+    pub key: ResourceKey<PeerId>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

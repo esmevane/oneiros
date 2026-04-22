@@ -20,7 +20,7 @@ impl NatureCommands {
 
         let response = match self {
             NatureCommands::Set(set) => nature_client.set(set).await?,
-            NatureCommands::Show(get) => nature_client.get(&get.name).await?,
+            NatureCommands::Show(get) => nature_client.get(get).await?,
             NatureCommands::List(list) => nature_client.list(list).await?,
             NatureCommands::Remove(removal) => nature_client.remove(&removal.name).await?,
         };

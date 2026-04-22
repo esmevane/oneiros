@@ -12,6 +12,9 @@ pub enum LevelError {
     NotFound(LevelName),
 
     #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
+    #[error(transparent)]
     Client(#[from] ClientError),
 
     #[error("Database error: {0}")]
@@ -27,6 +30,7 @@ impl IntoResponse for LevelError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             LevelError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            LevelError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             LevelError::Database(_) | LevelError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

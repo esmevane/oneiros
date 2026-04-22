@@ -12,6 +12,9 @@ pub enum NatureError {
     NotFound(NatureName),
 
     #[error(transparent)]
+    Resolve(#[from] crate::ResolveError),
+
+    #[error(transparent)]
     Client(#[from] ClientError),
 
     #[error("Database error: {0}")]
@@ -27,6 +30,7 @@ impl IntoResponse for NatureError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             NatureError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            NatureError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             NatureError::Database(_) | NatureError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

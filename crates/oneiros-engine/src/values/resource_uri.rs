@@ -154,7 +154,7 @@ impl ResourcePath {
             ))),
             ResourcePath::Agent(name) => {
                 Some(ResourceRequest::Agent(AgentRequest::GetAgent(GetAgent {
-                    name: name.clone(),
+                    key: ResourceKey::Key(name.clone()),
                 })))
             }
             ResourcePath::AgentCognitions(name) => Some(ResourceRequest::Cognition(
@@ -183,16 +183,24 @@ impl ResourcePath {
                 }),
             )),
             ResourcePath::Cognition(id) => Some(ResourceRequest::Cognition(
-                CognitionRequest::GetCognition(GetCognition { id: *id }),
+                CognitionRequest::GetCognition(GetCognition {
+                    key: ResourceKey::Key(*id),
+                }),
             )),
             ResourcePath::Memory(id) => Some(ResourceRequest::Memory(MemoryRequest::GetMemory(
-                GetMemory { id: *id },
+                GetMemory {
+                    key: ResourceKey::Key(*id),
+                },
             ))),
             ResourcePath::Experience(id) => Some(ResourceRequest::Experience(
-                ExperienceRequest::GetExperience(GetExperience { id: *id }),
+                ExperienceRequest::GetExperience(GetExperience {
+                    key: ResourceKey::Key(*id),
+                }),
             )),
             ResourcePath::Connection(id) => Some(ResourceRequest::Connection(
-                ConnectionRequest::GetConnection(GetConnection { id: *id }),
+                ConnectionRequest::GetConnection(GetConnection {
+                    key: ResourceKey::Key(*id),
+                }),
             )),
             ResourcePath::Levels => Some(ResourceRequest::Level(LevelRequest::ListLevels(
                 ListLevels::builder().build(),

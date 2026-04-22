@@ -58,10 +58,10 @@ async fn list(
 
 async fn show(
     context: ProjectContext,
-    Path(name): Path<AgentName>,
+    Path(key): Path<ResourceKey<AgentName>>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
-        AgentService::get(&context, &GetAgent::builder().name(name).build()).await?,
+        AgentService::get(&context, &GetAgent::builder().key(key).build()).await?,
     ))
 }
 

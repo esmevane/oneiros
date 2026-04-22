@@ -21,7 +21,7 @@ pub struct SetNature {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct GetNature {
     #[builder(into)]
-    pub name: NatureName,
+    pub key: ResourceKey<NatureName>,
 }
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]

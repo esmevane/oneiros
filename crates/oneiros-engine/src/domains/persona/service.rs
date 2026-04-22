@@ -24,10 +24,11 @@ impl PersonaService {
         context: &ProjectContext,
         selector: &GetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
+        let name = selector.key.resolve()?;
         let persona = PersonaRepo::new(context)
-            .get(&selector.name)
+            .get(&name)
             .await?
-            .ok_or_else(|| PersonaError::NotFound(selector.name.clone()))?;
+            .ok_or(PersonaError::NotFound(name))?;
         let ref_token = RefToken::new(Ref::persona(persona.name.clone()));
         Ok(PersonaResponse::PersonaDetails(
             Response::new(persona).with_ref_token(ref_token),
