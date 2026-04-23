@@ -14,6 +14,7 @@ mod projections;
 mod protocol;
 mod reducers;
 mod skill;
+mod streams;
 mod support;
 #[cfg(test)]
 mod tests;
@@ -34,6 +35,7 @@ pub use projections::*;
 pub use protocol::*;
 pub use reducers::*;
 pub use skill::*;
+pub use streams::*;
 pub use support::*;
 pub use values::*;
 
