@@ -224,12 +224,15 @@ a{color:inherit;text-decoration:none}
   var TOKEN = null;
   var BRAIN = null;
 
-  // Bootstrap: fetch token and brain name, then load the page
+  // Bootstrap: host-shaped config. Pick the server's current brain
+  // as the landing context and look up its ticket for the token.
+  // Slice 2 replaces this with a proper host landing page.
   fetch('/dashboard/config')
     .then(function(r) { return r.json(); })
     .then(function(cfg) {
-      TOKEN = cfg.token;
-      BRAIN = cfg.brain;
+      BRAIN = cfg.current_brain;
+      var ticket = (cfg.tickets || []).find(function(t) { return t.brain_name === BRAIN; });
+      TOKEN = ticket ? ticket.link.token : null;
       document.getElementById('sb-brain').textContent = BRAIN || 'continuous cognition';
       var hash = location.hash.replace('#', '') || 'project';
       go(hash);
