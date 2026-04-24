@@ -162,39 +162,93 @@ a{color:inherit;text-decoration:none}
 <div class="identity-strip"></div>
 <div class="shell">
   <div class="sidebar">
-    <div class="sb-brand" onclick="go('project')">oneiros</div>
-    <div class="sb-tagline" id="sb-brain">continuous cognition</div>
-    <div class="sb-heading">BRAIN</div>
-    <a class="sb-link" data-page="project" onclick="go('project')">Overview</a>
-    <a class="sb-link" data-page="search" onclick="go('search')">Search</a>
-    <div class="sb-heading" id="sb-agents-heading" style="display:none">AGENTS</div>
-    <div id="sb-agents"></div>
+    <div class="sb-brand" onclick="go('host')">oneiros</div>
+    <div class="sb-tagline" id="sb-host-id">continuous cognition</div>
+    <div class="sb-heading">HOST</div>
+    <a class="sb-link" data-page="host" onclick="go('host')">Overview</a>
+    <a class="sb-link" data-page="tenants" onclick="go('tenants')">Tenants</a>
+    <div id="sb-brain-section" style="display:none">
+      <div class="sb-heading">BRAIN &middot; <span id="sb-brain-name"></span></div>
+      <a class="sb-link" data-page="brain" id="sb-brain-overview">Overview</a>
+      <a class="sb-link" data-page="search" onclick="go('search')">Search</a>
+      <div class="sb-heading" id="sb-agents-heading" style="display:none">AGENTS</div>
+      <div id="sb-agents"></div>
+    </div>
     <div class="sb-spacer"></div>
-    <div class="sb-footer">oneiros &middot; engine</div>
+    <div class="sb-footer" id="sb-footer">oneiros &middot; engine</div>
   </div>
   <div class="content">
 
-    <!-- PROJECT -->
-    <div class="page" id="page-project">
-      <div class="eyebrow">project</div>
+    <!-- HOST -->
+    <div class="page" id="page-host">
+      <div class="eyebrow">host</div>
+      <h1 class="title" id="host-title">loading&hellip;</h1>
+      <p class="subtitle" id="host-subtitle"></p>
+      <div class="section">
+        <div class="section-head"><span class="section-num">01</span><h2>Identity</h2></div>
+        <div class="stats" id="host-identity-cards"></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-num">02</span><h2>Brains</h2></div>
+        <div class="agent-grid" id="host-brain-grid"><div class="loading">loading&hellip;</div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-num">03</span><h2>Tenants</h2></div>
+        <div class="agent-grid" id="host-tenant-grid"><div class="loading">loading&hellip;</div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-num">04</span><h2>Peers</h2></div>
+        <div class="agent-grid" id="host-peer-grid"><div class="loading">loading&hellip;</div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-num">05</span><h2>Activity</h2></div>
+        <div class="card feed" id="activity"><div class="loading">listening&hellip;</div></div>
+      </div>
+    </div>
+
+    <!-- BRAIN -->
+    <div class="page" id="page-brain">
+      <div class="eyebrow">brain</div>
       <h1 class="title" id="proj-title">loading&hellip;</h1>
       <p class="subtitle" id="proj-subtitle"></p>
       <div class="stats" id="proj-stats"></div>
-      <div class="section" id="pressure-section" style="display:none">
-        <div class="section-head"><span class="section-num">01</span><h2>Pressure</h2></div>
-        <div class="pressure-grid" id="pressure-grid"></div>
-      </div>
       <div class="section" id="agents-section" style="display:none">
-        <div class="section-head"><span class="section-num">02</span><h2>Agents</h2></div>
+        <div class="section-head"><span class="section-num">01</span><h2>Agents</h2></div>
         <div class="agent-grid" id="agent-grid"></div>
       </div>
       <div class="section">
-        <div class="section-head"><span class="section-num">03</span><h2>Recent Cognitions</h2></div>
+        <div class="section-head"><span class="section-num">02</span><h2>Recent Cognitions</h2></div>
         <div class="cog-stream" id="cog-stream"><div class="loading">loading&hellip;</div></div>
       </div>
+    </div>
+
+    <!-- TENANTS LIST -->
+    <div class="page" id="page-tenants">
+      <div class="eyebrow">tenants</div>
+      <h1 class="title">Tenants</h1>
+      <p class="subtitle" id="tenants-subtitle"></p>
+      <div class="agent-grid" id="tenants-grid"><div class="loading">loading&hellip;</div></div>
+    </div>
+
+    <!-- TENANT DETAIL -->
+    <div class="page" id="page-tenant">
+      <div class="eyebrow">tenant</div>
+      <h1 class="title" id="tenant-title">loading&hellip;</h1>
+      <p class="subtitle" id="tenant-subtitle"></p>
       <div class="section">
-        <div class="section-head"><span class="section-num">04</span><h2>Activity</h2></div>
-        <div class="card feed" id="activity"><div class="loading">listening&hellip;</div></div>
+        <div class="section-head"><span class="section-num">01</span><h2>Actors</h2></div>
+        <div class="agent-grid" id="tenant-actors-grid"><div class="loading">loading&hellip;</div></div>
+      </div>
+    </div>
+
+    <!-- ACTOR DETAIL -->
+    <div class="page" id="page-actor">
+      <div class="eyebrow">actor</div>
+      <h1 class="title" id="actor-title">loading&hellip;</h1>
+      <p class="subtitle" id="actor-subtitle"></p>
+      <div class="section">
+        <div class="section-head"><span class="section-num">01</span><h2>Tickets</h2></div>
+        <div class="agent-grid" id="actor-tickets-grid"><div class="loading">loading&hellip;</div></div>
       </div>
     </div>
 
@@ -221,22 +275,30 @@ a{color:inherit;text-decoration:none}
 
 <script>
 (function() {
-  var TOKEN = null;
-  var BRAIN = null;
+  var BOOTSTRAP = null;  // full /dashboard/config response
+  var TOKEN = null;      // current brain's token (set on brain entry)
+  var BRAIN = null;      // current brain's name (set on brain entry)
 
-  // Bootstrap: fetch token and brain name, then load the page
+  // Bootstrap: host-shaped config. Defaults to the host landing page.
   fetch('/dashboard/config')
     .then(function(r) { return r.json(); })
     .then(function(cfg) {
-      TOKEN = cfg.token;
-      BRAIN = cfg.brain;
-      document.getElementById('sb-brain').textContent = BRAIN || 'continuous cognition';
-      var hash = location.hash.replace('#', '') || 'project';
-      go(hash);
+      BOOTSTRAP = cfg;
+      // Host short-id in sidebar tagline (first 12 chars of the key).
+      var shortId = cfg.host && cfg.host.key ? String(cfg.host.key).slice(0, 12) : '';
+      document.getElementById('sb-host-id').textContent = shortId || 'continuous cognition';
+      var parts = location.hash.replace('#', '').split('/');
+      go(parts[0] || 'host', parts[1]);
     })
-    .catch(function() { go('project'); });
+    .catch(function() { go('host'); });
 
-  // Authenticated fetch helper
+  // Ticket lookup for a given brain name.
+  function ticketFor(brainName) {
+    if (!BOOTSTRAP || !BOOTSTRAP.tickets) return null;
+    return BOOTSTRAP.tickets.find(function(t) { return t.brain_name === brainName; }) || null;
+  }
+
+  // Authenticated fetch helper — uses the current brain's token.
   function api(path) {
     var opts = {};
     if (TOKEN) opts.headers = { 'Authorization': 'Bearer ' + TOKEN };
@@ -244,6 +306,81 @@ a{color:inherit;text-decoration:none}
       if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
       return r.json();
     });
+  }
+
+  // Domain responses are tagged { type, data } enums. Strip the envelope.
+  function unwrap(r) {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return r;
+    if ('type' in r && 'data' in r) return r.data;
+    return r;
+  }
+
+  // Extract a list from a domain response. Handles both Listed<T>
+  // ({ items, total }) and pressure-shaped payloads ({ pressures }).
+  function unwrapList(r) {
+    var d = unwrap(r);
+    if (Array.isArray(d)) return d;
+    if (d && Array.isArray(d.items)) return d.items;
+    if (d && Array.isArray(d.pressures)) return d.pressures;
+    return [];
+  }
+
+  // Urgency from a Gauge — mirrors Rust's Gauge::urgency(). Explicit
+  // per-variant because factor names don't uniformly match weight names.
+  function gaugeUrgency(gauge) {
+    if (!gauge || !gauge.type || !gauge.data) return 0;
+    var c = gauge.data.calculation || {};
+    var cfg = gauge.data.config || {};
+    switch (gauge.type) {
+      case 'introspect':
+        return (c.time_factor||0)       * (cfg.time_weight||0)
+             + (c.working_factor||0)    * (cfg.working_weight||0)
+             + (c.promotion_factor||0)  * (cfg.promotion_weight||0)
+             + (c.session_factor||0)    * (cfg.session_weight||0);
+      case 'catharsis':
+        return (c.tensions_factor||0)            * (cfg.tensions_weight||0)
+             + (c.stale_working_factor||0)       * (cfg.stale_working_weight||0)
+             + (c.time_since_reflect_factor||0)  * (cfg.reflect_time_weight||0)
+             + (c.orphaned_cognition_factor||0)  * (cfg.orphaned_weight||0);
+      case 'recollect':
+        return (c.session_memory_factor||0)          * (cfg.session_memory_weight||0)
+             + (c.unconnected_experience_factor||0)  * (cfg.unconnected_experience_weight||0)
+             + (c.time_since_memory_factor||0)       * (cfg.memory_time_weight||0)
+             + (c.working_memory_factor||0)          * (cfg.working_memory_weight||0);
+      case 'retrospect':
+        return (c.time_since_archival_factor||0)       * (cfg.archival_time_weight||0)
+             + (c.project_staleness_factor||0)         * (cfg.project_staleness_weight||0)
+             + (c.sessions_since_factor||0)            * (cfg.sessions_weight||0)
+             + (c.experience_accumulation_factor||0)   * (cfg.experience_weight||0);
+    }
+    return 0;
+  }
+
+  // Pressure → percent (0-100), matching PressureSummary::from(&p).
+  function pressurePercent(pressure) {
+    var raw = Math.round(gaugeUrgency(pressure && pressure.data) * 100);
+    if (raw < 0) return 0;
+    if (raw > 100) return 100;
+    return raw;
+  }
+
+  // Enter a brain context: set the current brain + its token, reveal
+  // the BRAIN sidebar section. Called by `go('brain', name)`.
+  function enterBrain(name) {
+    var ticket = ticketFor(name);
+    BRAIN = name;
+    TOKEN = ticket ? ticket.link.token : null;
+    document.getElementById('sb-brain-section').style.display = '';
+    document.getElementById('sb-brain-name').textContent = name;
+    var overviewLink = document.getElementById('sb-brain-overview');
+    overviewLink.onclick = function() { go('brain', name); };
+  }
+
+  // Clear brain context — called when returning to the host page.
+  function leaveBrain() {
+    BRAIN = null;
+    TOKEN = null;
+    document.getElementById('sb-brain-section').style.display = 'none';
   }
 
   // Navigation
@@ -257,23 +394,152 @@ a{color:inherit;text-decoration:none}
     location.hash = detail ? page + '/' + detail : page;
     window.scrollTo(0, 0);
 
-    if (page === 'project') loadProject();
+    if (page === 'host') { leaveBrain(); loadHost(); }
+    if (page === 'brain' && detail) { enterBrain(detail); loadBrain(detail); }
+    if (page === 'tenants') { leaveBrain(); loadTenants(); }
+    if (page === 'tenant' && detail) { leaveBrain(); loadTenant(detail); }
+    if (page === 'actor' && detail) { leaveBrain(); loadActor(detail); }
     if (page === 'search') document.getElementById('search-input').focus();
     if (page === 'agent' && detail) loadAgent(detail);
   };
 
   window.addEventListener('hashchange', function() {
     var parts = location.hash.replace('#', '').split('/');
-    go(parts[0] || 'project', parts[1]);
+    go(parts[0] || 'host', parts[1]);
   });
 
-  // ── Project Page ──
-  var projectLoaded = false;
-  function loadProject() {
-    if (projectLoaded) return;
+  // ── Host Page ──
+  var hostLoaded = false;
+  function loadHost() {
+    if (hostLoaded) return;
+    hostLoaded = true;
+    if (!BOOTSTRAP) return;
+
+    var cfg = BOOTSTRAP;
+    var shortId = cfg.host && cfg.host.key ? String(cfg.host.key).slice(0, 12) : 'host';
+    document.getElementById('host-title').textContent = shortId;
+    var brainCount = (cfg.brains || []).length;
+    var tenantCount = (cfg.tenants || []).length;
+    var ticketCount = (cfg.tickets || []).length;
+    document.getElementById('host-subtitle').textContent =
+      'A host with ' + brainCount + ' brain' + (brainCount === 1 ? '' : 's') +
+      ', ' + tenantCount + ' tenant' + (tenantCount === 1 ? '' : 's') +
+      ', and ' + ticketCount + ' ticket' + (ticketCount === 1 ? '' : 's') + '.';
+
+    // Identity cards
+    var idCards = document.getElementById('host-identity-cards');
+    idCards.innerHTML = '';
+    [
+      [cfg.host && cfg.host.key ? String(cfg.host.key).slice(0, 16) + '…' : '—', 'Key'],
+      [cfg.host && cfg.host.address ? String(cfg.host.address).slice(0, 16) + '…' : '—', 'Address'],
+      [cfg.version || '—', 'Version']
+    ].forEach(function(s) {
+      var card = document.createElement('div');
+      card.className = 'card stat';
+      card.innerHTML = '<div class="stat-val" style="font-size:var(--font-size-lg);font-family:var(--font-family-mono)">' +
+        esc(s[0]) + '</div><div class="stat-lbl">' + s[1] + '</div>';
+      idCards.appendChild(card);
+    });
+
+    // Brain cards — live link if ticket exists, dim otherwise
+    var brainGrid = document.getElementById('host-brain-grid');
+    brainGrid.innerHTML = '';
+    if (!cfg.brains || !cfg.brains.length) {
+      brainGrid.innerHTML = '<div class="loading">no brains on this host</div>';
+    } else {
+      cfg.brains.forEach(function(b) {
+        var ticket = ticketFor(b.name);
+        var card = document.createElement('div');
+        card.className = 'card a-card' + (ticket ? ' card-click' : '');
+        if (ticket) card.onclick = function() { go('brain', b.name); };
+        var persona = ticket ? 'ticket held &middot; enter' : 'no ticket';
+        if (!ticket) card.style.opacity = '0.55';
+        card.innerHTML = '<div class="a-name">' + esc(b.name) + '</div>' +
+          '<div class="a-persona">' + persona + '</div>' +
+          '<div class="a-desc">id: ' + esc(String(b.id || '').slice(0, 12)) + '&hellip;</div>';
+        brainGrid.appendChild(card);
+      });
+    }
+
+    // Tenant cards — clickable into tenant detail
+    var tenantGrid = document.getElementById('host-tenant-grid');
+    tenantGrid.innerHTML = '';
+    if (!cfg.tenants || !cfg.tenants.length) {
+      tenantGrid.innerHTML = '<div class="loading">no tenants on this host</div>';
+    } else {
+      cfg.tenants.forEach(function(t) { tenantGrid.appendChild(tenantCard(t)); });
+    }
+
+    // Peer cards — other hosts this one knows. Not a liveness signal.
+    var peerGrid = document.getElementById('host-peer-grid');
+    peerGrid.innerHTML = '';
+    if (!cfg.peers || !cfg.peers.length) {
+      peerGrid.innerHTML = '<div class="loading">no peers known</div>';
+    } else {
+      cfg.peers.forEach(function(p) {
+        var card = document.createElement('div');
+        card.className = 'card a-card';
+        var keyShort = p.key ? String(p.key).slice(0, 12) + '…' : '—';
+        card.innerHTML = '<div class="a-name">' + esc(p.name || keyShort) + '</div>' +
+          '<div class="a-persona">peer &middot; ' + esc(keyShort) + '</div>' +
+          '<div class="a-desc">' + esc(p.address && p.address.id ? String(p.address.id).slice(0, 16) + '…' : '—') + '</div>';
+        peerGrid.appendChild(card);
+      });
+    }
+
+    // SSE activity stream — host-wide, unauthenticated. Events are
+    // not brain-labeled on the wire; brain attribution is a separate
+    // revision of the feed.
+    if (!window._sse) {
+      var feed = document.getElementById('activity');
+      window._sse = new EventSource('/activity');
+      window._sse.onmessage = function(e) {
+        try {
+          var ev = JSON.parse(e.data);
+          var type = ev.event_type || ev.events && Object.keys(ev.events)[0] || 'event';
+          if (feed.querySelector('.loading')) feed.innerHTML = '';
+          var row = document.createElement('div');
+          row.className = 'feed-row';
+          row.innerHTML = '<span class="feed-type">' + esc(type) + '</span>' +
+            '<span class="feed-detail">' + esc(JSON.stringify(ev).substring(0, 120)) + '</span>' +
+            '<span class="feed-time">' + new Date().toLocaleTimeString() + '</span>';
+          feed.prepend(row);
+          while (feed.children.length > 100) feed.removeChild(feed.lastChild);
+        } catch(err) {}
+      };
+      window._sse.onerror = function() {
+        var row = document.createElement('div');
+        row.className = 'feed-row';
+        row.innerHTML = '<span class="feed-detail">reconnecting&hellip;</span>';
+        feed.prepend(row);
+      };
+    }
+  }
+
+  // ── Brain Page ──
+  // Keyed by brain name — re-renders when switching between brains.
+  var loadedBrain = null;
+  function loadBrain(name) {
+    if (loadedBrain === name) return;
+    loadedBrain = name;
+
+    // Reset per-brain UI
+    document.getElementById('proj-title').textContent = name;
+    document.getElementById('proj-subtitle').textContent = 'loading…';
+    document.getElementById('proj-stats').innerHTML = '';
+    document.getElementById('agents-section').style.display = 'none';
+    document.getElementById('sb-agents-heading').style.display = 'none';
+    document.getElementById('sb-agents').innerHTML = '';
+    document.getElementById('cog-stream').innerHTML = '<div class="loading">loading…</div>';
+
+    if (!TOKEN) {
+      document.getElementById('proj-subtitle').textContent =
+        'No ticket held for this brain — cannot load details.';
+      return;
+    }
+
     api('/summary').then(function(d) {
-      projectLoaded = true;
-      document.getElementById('proj-title').textContent = BRAIN || 'oneiros';
+      document.getElementById('proj-title').textContent = name;
       document.getElementById('proj-subtitle').textContent =
         'A brain with ' + d.agent_count + ' agents, ' +
         d.cognition_count.toLocaleString() + ' thoughts, and ' +
@@ -324,41 +590,108 @@ a{color:inherit;text-decoration:none}
       (d.recent_cognitions || []).slice(0, 20).forEach(function(c) {
         stream.appendChild(cogCard(c));
       });
-
-      // Load pressures
-      loadPressures();
     }).catch(function(e) {
-      document.getElementById('proj-title').textContent = 'oneiros';
       document.getElementById('proj-subtitle').textContent = 'Could not load summary: ' + e.message;
     });
+  }
 
-    // SSE activity stream
-    if (!window._sse) {
-      var feed = document.getElementById('activity');
-      var opts = {};
-      var sseUrl = TOKEN ? '/activity?token=' + encodeURIComponent(TOKEN) : '/activity';
-      window._sse = new EventSource(sseUrl);
-      window._sse.onmessage = function(e) {
-        try {
-          var ev = JSON.parse(e.data);
-          var type = ev.event_type || ev.events && Object.keys(ev.events)[0] || 'event';
-          if (feed.querySelector('.loading')) feed.innerHTML = '';
-          var row = document.createElement('div');
-          row.className = 'feed-row';
-          row.innerHTML = '<span class="feed-type">' + esc(type) + '</span>' +
-            '<span class="feed-detail">' + esc(JSON.stringify(ev).substring(0, 120)) + '</span>' +
-            '<span class="feed-time">' + new Date().toLocaleTimeString() + '</span>';
-          feed.prepend(row);
-          while (feed.children.length > 100) feed.removeChild(feed.lastChild);
-        } catch(err) {}
-      };
-      window._sse.onerror = function() {
-        var row = document.createElement('div');
-        row.className = 'feed-row';
-        row.innerHTML = '<span class="feed-detail">reconnecting&hellip;</span>';
-        feed.prepend(row);
-      };
+  // ── Tenants / Actors / Tickets ──
+  // All three are pure views over the bootstrap payload — no live
+  // fetches. When the graph is large enough to want pagination, this
+  // moves to dedicated endpoints.
+
+  function tenantCard(t) {
+    var card = document.createElement('div');
+    card.className = 'card a-card card-click';
+    card.onclick = function() { go('tenant', t.id); };
+    card.innerHTML = '<div class="a-name">' + esc(t.name) + '</div>' +
+      '<div class="a-desc">id: ' + esc(String(t.id || '').slice(0, 12)) + '&hellip;</div>';
+    return card;
+  }
+
+  function actorCard(a) {
+    var card = document.createElement('div');
+    card.className = 'card a-card card-click';
+    card.onclick = function() { go('actor', a.id); };
+    card.innerHTML = '<div class="a-name">' + esc(a.name) + '</div>' +
+      '<div class="a-desc">id: ' + esc(String(a.id || '').slice(0, 12)) + '&hellip;</div>';
+    return card;
+  }
+
+  function ticketCard(t) {
+    var card = document.createElement('div');
+    card.className = 'card a-card';
+    var tokenShort = t.link && t.link.token ? String(t.link.token).slice(0, 16) + '…' : '—';
+    card.innerHTML = '<div class="a-name">' + esc(t.brain_name) + '</div>' +
+      '<div class="a-persona">brain ticket</div>' +
+      '<div class="a-desc">token: ' + esc(tokenShort) + '</div>';
+    return card;
+  }
+
+  function loadTenants() {
+    if (!BOOTSTRAP) return;
+    var tenants = BOOTSTRAP.tenants || [];
+    document.getElementById('tenants-subtitle').textContent =
+      tenants.length + ' tenant' + (tenants.length === 1 ? '' : 's') + ' on this host.';
+
+    var grid = document.getElementById('tenants-grid');
+    grid.innerHTML = '';
+    if (!tenants.length) {
+      grid.innerHTML = '<div class="loading">no tenants</div>';
+      return;
     }
+    tenants.forEach(function(t) { grid.appendChild(tenantCard(t)); });
+  }
+
+  function loadTenant(id) {
+    if (!BOOTSTRAP) return;
+    var tenant = (BOOTSTRAP.tenants || []).find(function(t) { return t.id === id; });
+    if (!tenant) {
+      document.getElementById('tenant-title').textContent = 'Unknown tenant';
+      document.getElementById('tenant-subtitle').textContent = 'id: ' + id;
+      document.getElementById('tenant-actors-grid').innerHTML = '';
+      return;
+    }
+    var actors = (BOOTSTRAP.actors || []).filter(function(a) { return a.tenant_id === id; });
+
+    document.getElementById('tenant-title').textContent = tenant.name;
+    document.getElementById('tenant-subtitle').textContent =
+      actors.length + ' actor' + (actors.length === 1 ? '' : 's') +
+      ' · id ' + String(id).slice(0, 12) + '…';
+
+    var grid = document.getElementById('tenant-actors-grid');
+    grid.innerHTML = '';
+    if (!actors.length) {
+      grid.innerHTML = '<div class="loading">no actors in this tenant</div>';
+      return;
+    }
+    actors.forEach(function(a) { grid.appendChild(actorCard(a)); });
+  }
+
+  function loadActor(id) {
+    if (!BOOTSTRAP) return;
+    var actor = (BOOTSTRAP.actors || []).find(function(a) { return a.id === id; });
+    if (!actor) {
+      document.getElementById('actor-title').textContent = 'Unknown actor';
+      document.getElementById('actor-subtitle').textContent = 'id: ' + id;
+      document.getElementById('actor-tickets-grid').innerHTML = '';
+      return;
+    }
+    var tenant = (BOOTSTRAP.tenants || []).find(function(t) { return t.id === actor.tenant_id; });
+    var tickets = (BOOTSTRAP.tickets || []).filter(function(t) { return t.actor_id === id; });
+
+    document.getElementById('actor-title').textContent = actor.name;
+    document.getElementById('actor-subtitle').textContent =
+      (tenant ? tenant.name + ' · ' : '') +
+      tickets.length + ' ticket' + (tickets.length === 1 ? '' : 's');
+
+    var grid = document.getElementById('actor-tickets-grid');
+    grid.innerHTML = '';
+    if (!tickets.length) {
+      grid.innerHTML = '<div class="loading">no tickets held</div>';
+      return;
+    }
+    tickets.forEach(function(t) { grid.appendChild(ticketCard(t)); });
   }
 
   function loadPressures() {
@@ -435,17 +768,14 @@ a{color:inherit;text-decoration:none}
     Promise.all([
       api('/agents/' + encodeURIComponent(name)),
       api('/pressures/' + encodeURIComponent(name)).catch(function() { return null; }),
-      api('/cognitions?agent=' + encodeURIComponent(name)).catch(function() { return []; }),
-      api('/memories?agent=' + encodeURIComponent(name)).catch(function() { return []; })
+      api('/cognitions?agent=' + encodeURIComponent(name)).catch(function() { return null; }),
+      api('/memories?agent=' + encodeURIComponent(name)).catch(function() { return null; })
     ]).then(function(results) {
-      var agent = results[0];
-      var pressures = results[1];
-      var cognitions = Array.isArray(results[2]) ? results[2] : (results[2].data || results[2].cognitions || []);
-      var memories = Array.isArray(results[3]) ? results[3] : (results[3].data || results[3].memories || []);
-
-      // Handle wrapped agent response
-      var a = agent.agent || agent;
-      if (Array.isArray(a)) a = a[0];
+      var a = unwrap(results[0]) || {};
+      var pressureData = unwrap(results[1]) || {};
+      var pressures = Array.isArray(pressureData.pressures) ? pressureData.pressures : [];
+      var cognitions = unwrapList(results[2]);
+      var memories = unwrapList(results[3]);
 
       var html = '';
       // Identity card
@@ -457,26 +787,23 @@ a{color:inherit;text-decoration:none}
       html += '<p style="font-family:var(--font-family-serif);font-size:var(--font-size-sm);color:var(--color-text-secondary);line-height:var(--line-height-lg);max-width:560px">' + esc(a.description || '') + '</p>';
       html += '</div></div>';
 
-      // Pressures
-      if (pressures) {
-        var pList = Array.isArray(pressures) ? pressures : (pressures.readings || [pressures]);
-        if (pList.length) {
-          html += '<div class="section"><div class="section-head"><span class="section-num">01</span><h2>Pressure</h2></div>';
-          html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-sm)">';
-          pList.forEach(function(p) {
-            var pct = p.percent || 0;
-            var urge = p.urge || 'unknown';
-            var intensity = pct >= 75 ? 'crit' : pct >= 65 ? 'high' : pct >= 50 ? 'med' : 'low';
-            html += '<div class="card" style="padding:var(--space-md) var(--space-lg);position:relative;overflow:hidden">';
-            html += '<div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gradient-' +
-              (intensity === 'crit' ? 'ember' : intensity === 'high' ? 'heat' : intensity === 'med' ? 'ocean' : 'frost') + ')"></div>';
-            html += '<div class="mono-lbl" style="color:var(--color-text-muted);margin-bottom:var(--space-xxs)">' + esc(urge) + '</div>';
-            html += '<div style="font-family:var(--font-family-sans);font-size:var(--font-size-xl);font-weight:700;color:var(--colors-' +
-              (intensity === 'crit' ? 'error' : intensity === 'high' ? 'warn' : intensity === 'med' ? 'primary' : 'success') + '-300)">' + pct + '%</div>';
-            html += '</div>';
-          });
-          html += '</div></div>';
-        }
+      // Pressures — compute percent client-side from each Gauge.
+      if (pressures.length) {
+        html += '<div class="section"><div class="section-head"><span class="section-num">01</span><h2>Pressure</h2></div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-sm)">';
+        pressures.forEach(function(p) {
+          var pct = pressurePercent(p);
+          var urge = p.urge || (p.data && p.data.type) || 'unknown';
+          var intensity = pct >= 75 ? 'crit' : pct >= 65 ? 'high' : pct >= 50 ? 'med' : 'low';
+          html += '<div class="card" style="padding:var(--space-md) var(--space-lg);position:relative;overflow:hidden">';
+          html += '<div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gradient-' +
+            (intensity === 'crit' ? 'ember' : intensity === 'high' ? 'heat' : intensity === 'med' ? 'ocean' : 'frost') + ')"></div>';
+          html += '<div class="mono-lbl" style="color:var(--color-text-muted);margin-bottom:var(--space-xxs)">' + esc(urge) + '</div>';
+          html += '<div style="font-family:var(--font-family-sans);font-size:var(--font-size-xl);font-weight:700;color:var(--colors-' +
+            (intensity === 'crit' ? 'error' : intensity === 'high' ? 'warn' : intensity === 'med' ? 'primary' : 'success') + '-300)">' + pct + '%</div>';
+          html += '</div>';
+        });
+        html += '</div></div>';
       }
 
       // Cognitions

@@ -66,13 +66,6 @@ impl Server {
     /// Build a router from an already-constructed state. Used by `serve`
     /// once the async bridge binding has completed.
     pub fn router_from_state(state: ServerState) -> Router {
-        /// Returns the dashboard bootstrap config: token + brain name.
-        async fn dashboard_config(State(state): State<ServerState>) -> Json<serde_json::Value> {
-            let token = state.token().map(|t| t.to_string());
-            let brain = state.brain_name().to_string();
-            Json(serde_json::json!({ "token": token, "brain": brain }))
-        }
-
         /// Serves the OpenAPI spec as JSON. Pulled from state — populated
         /// once after router assembly to avoid a global `.layer(Extension)`
         /// walk over every route on each server build.

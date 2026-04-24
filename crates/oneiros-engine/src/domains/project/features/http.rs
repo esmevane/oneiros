@@ -1,6 +1,7 @@
 use aide::axum::{ApiRouter, routing};
 use axum::{
     Json,
+    extract::State,
     http::{HeaderMap, StatusCode},
     response::sse::{Event as SseEvent, KeepAlive, Sse},
 };
@@ -85,9 +86,13 @@ async fn summary(context: ProjectContext) -> Result<Json<BrainSummary>, ProjectE
     Ok(Json(summary))
 }
 
-/// SSE activity stream — live events from the broadcast channel.
+/// SSE activity stream — live events from the host-wide broadcast
+/// channel. Unauthenticated (`ServerState` rather than `ProjectContext`)
+/// because the channel is already shared across every brain on the
+/// host and events are not brain-labeled on the wire. Brain attribution
+/// on the feed is a separate revision.
 async fn activity(
-    context: ProjectContext,
+    State(state): State<ServerState>,
     headers: HeaderMap,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<SseEvent, Infallible>>> {
     let last_event_id: Option<i64> = headers
@@ -95,7 +100,7 @@ async fn activity(
         .and_then(|header| header.to_str().ok())
         .and_then(|given_value| given_value.parse().ok());
 
-    let rx = context.subscribe();
+    let rx = state.broadcast().subscribe();
     let mut last_sent = last_event_id.unwrap_or(0);
 
     let stream = BroadcastStream::new(rx).filter_map(move |result| match result {
