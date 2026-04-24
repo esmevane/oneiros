@@ -17,7 +17,8 @@ impl<'a> CognitionStore<'a> {
             match cognition_event {
                 CognitionEvents::CognitionAdded(added) => {
                     let cognition = added.current()?.cognition;
-                    self.write_cognition(&cognition)?
+                    self.write_cognition(&cognition)?;
+                    SearchStore::new(self.conn).index_entry(&IndexEntry::cognition(&cognition))?;
                 }
             }
         }

@@ -221,6 +221,40 @@ pub(crate) async fn list_json_items_include_refs<B: Backend>() -> TestResult {
     Ok(())
 }
 
+/// `cognition list --query "<text>"` narrows the listing by FTS5 match
+/// on cognition content. Same query semantics as `search`, scoped to the
+/// cognition kind. Lists ARE searches.
+pub(crate) async fn list_filters_by_query<B: Backend>() -> TestResult {
+    let harness = with_agent::<B>().await?;
+
+    harness
+        .exec_json("cognition add thinker.process observation 'The garden is growing'")
+        .await?;
+    harness
+        .exec_json("cognition add thinker.process observation 'Unrelated content here'")
+        .await?;
+
+    let response = harness.exec_json("cognition list --query garden").await?;
+
+    match response {
+        Responses::Cognition(CognitionResponse::Cognitions(CognitionsResponse::V1(listed))) => {
+            assert_eq!(
+                listed.items.len(),
+                1,
+                "expected 1 cognition matching 'garden'"
+            );
+            assert_eq!(listed.total, 1);
+            assert!(
+                listed.items[0].content.as_str().contains("garden"),
+                "expected matching cognition's content to contain the query"
+            );
+        }
+        other => panic!("expected Cognitions, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn add_prompt_confirms_creation<B: Backend>() -> TestResult {
     let harness = with_agent::<B>().await?;
 

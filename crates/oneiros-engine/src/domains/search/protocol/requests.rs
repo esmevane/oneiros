@@ -9,9 +9,35 @@ versioned! {
     pub enum SearchQuery {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub query: String,
-            #[arg(long)]
-            pub agent: Option<AgentName>,
+            /// Full-text query. When absent, the search browses by filters alone,
+            /// ordered by creation time.
+            #[builder(into)] pub query: Option<String>,
+            #[arg(long)] pub agent: Option<AgentName>,
+            #[arg(long)] pub kind: Option<SearchKind>,
+            #[arg(long)] pub texture: Option<TextureName>,
+            #[arg(long)] pub level: Option<LevelName>,
+            #[arg(long)] pub sensation: Option<SensationName>,
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+            /// Whether to compute facet aggregations alongside hits. Internal —
+            /// flipped on by [`SearchService`] for explicit search; left off by
+            /// list endpoints that don't render the palace map.
+            #[arg(skip)]
+            #[serde(skip)]
+            #[builder(default)]
+            pub with_facets: bool,
+        }
+    }
+}
+
+impl SearchQueryV1 {
+    /// Return a clone of this query with facet aggregations enabled.
+    pub fn with_facets(&self) -> Self {
+        Self {
+            with_facets: true,
+            ..self.clone()
         }
     }
 }

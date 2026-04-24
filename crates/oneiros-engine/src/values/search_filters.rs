@@ -9,7 +9,9 @@ use rusqlite::types::{ToSql, ToSqlOutput};
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 
-/// How many items to return. Defaults to 20.
+/// How many items to return. Defaults to 10 — small enough not to flood
+/// CLI output or MCP context; agents who want more drill in with
+/// progressive commands.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, JsonSchema)]
 #[serde(transparent)]
 pub struct Limit(pub usize);
@@ -43,7 +45,7 @@ impl Limit {
 
 impl Default for Limit {
     fn default() -> Self {
-        Self(20)
+        Self(10)
     }
 }
 
@@ -127,7 +129,7 @@ impl ToSql for Offset {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Args)]
 pub struct SearchFilters {
     /// Maximum number of items to return
-    #[arg(long, default_value = "20")]
+    #[arg(long, default_value = "10")]
     #[serde(default)]
     pub limit: Limit,
 

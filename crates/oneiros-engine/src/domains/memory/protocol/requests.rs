@@ -33,6 +33,13 @@ versioned! {
         V1 => {
             #[arg(long)]
             pub agent: Option<AgentName>,
+            #[arg(long)]
+            pub level: Option<LevelName>,
+            /// Full-text query against memory content. When present, hits
+            /// are FTS5-ranked; absent, the listing browses by filters alone.
+            #[arg(long)]
+            #[builder(into)]
+            pub query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]

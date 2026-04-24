@@ -609,6 +609,14 @@ async fn cognition_list_filters_by_agent() -> TestResult {
     cases::cognition::list_filters_by_agent::<EngineBackend>().await
 }
 #[tokio::test]
+async fn cognition_list_filters_by_query() -> TestResult {
+    cases::cognition::list_filters_by_query::<EngineBackend>().await
+}
+#[tokio::test]
+async fn memory_list_filters_by_query() -> TestResult {
+    cases::memory::list_filters_by_query::<EngineBackend>().await
+}
+#[tokio::test]
 async fn cognition_show_by_id() -> TestResult {
     cases::cognition::show_by_id::<EngineBackend>().await
 }
@@ -805,6 +813,36 @@ async fn search_finds_updated_agent_description() -> TestResult {
 #[tokio::test]
 async fn search_finds_updated_experience_description() -> TestResult {
     cases::search::finds_updated_experience_description::<EngineBackend>().await
+}
+
+// Facets
+#[tokio::test]
+async fn search_returns_faceted_results() -> TestResult {
+    cases::search::returns_faceted_results::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_narrows_by_kind_filter() -> TestResult {
+    cases::search::narrows_by_kind_filter::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_hits_carry_typed_metadata() -> TestResult {
+    cases::search::hits_carry_typed_metadata::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_hits_are_hydrated_typed_objects() -> TestResult {
+    cases::search::hits_are_hydrated_typed_objects::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_default_limit_caps_at_ten() -> TestResult {
+    cases::search::default_limit_caps_at_ten::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_prompt_renders_flat_with_kind_column() -> TestResult {
+    cases::search::prompt_renders_flat_with_kind_column::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_every_content_kind_indexes() -> TestResult {
+    cases::search::every_content_kind_indexes::<EngineBackend>().await
 }
 
 // Import/Export depth

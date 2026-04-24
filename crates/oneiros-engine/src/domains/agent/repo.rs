@@ -1,4 +1,6 @@
-use rusqlite::params;
+use std::collections::HashMap;
+
+use rusqlite::{params, params_from_iter};
 
 use crate::*;
 
@@ -76,44 +78,47 @@ impl<'a> AgentRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Agent>, EventError> {
+    /// Hydrate many agents by id, preserving the input order. Used by list
+    /// endpoints to bulk-fetch search hits in a single round trip.
+    pub async fn get_many(&self, ids: &[AgentId]) -> Result<Vec<Agent>, EventError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
         let db = self.context.db()?;
-
-        let total: usize = db.query_row("SELECT COUNT(*) FROM agents", [], |row| row.get(0))?;
-
-        let mut stmt = db.prepare(
-            "SELECT id, name, persona, description, prompt
-             FROM agents ORDER BY name
-             LIMIT ?1 OFFSET ?2",
-        )?;
-
-        let raw: Vec<(String, String, String, String, String)> = stmt
-            .query_map(params![filters.limit, filters.offset], |row| {
+        let placeholders = (1..=ids.len())
+            .map(|i| format!("?{i}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let sql = format!(
+            "select id, name, persona, description, prompt
+             from agents where id in ({placeholders})"
+        );
+        let id_strs: Vec<String> = ids.iter().map(ToString::to_string).collect();
+        let mut stmt = db.prepare(&sql)?;
+        let rows = stmt
+            .query_map(params_from_iter(id_strs.iter()), |row| {
                 Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
                 ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
-        let mut agents = vec![];
-
-        for (id, name, persona, description, prompt) in raw {
-            agents.push(
-                Agent::builder()
-                    .id(id.parse()?)
-                    .name(name)
-                    .persona(persona)
-                    .description(description)
-                    .prompt(prompt)
-                    .build(),
-            );
+        let mut by_id: HashMap<AgentId, Agent> = HashMap::with_capacity(rows.len());
+        for (id, name, persona, description, prompt) in rows {
+            let agent = Agent::builder()
+                .id(id.parse()?)
+                .name(name)
+                .persona(persona)
+                .description(description)
+                .prompt(prompt)
+                .build();
+            by_id.insert(agent.id, agent);
         }
-
-        Ok(Listed::new(agents, total))
+        Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
     }
 
     pub async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {

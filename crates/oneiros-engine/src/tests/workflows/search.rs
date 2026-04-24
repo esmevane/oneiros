@@ -40,7 +40,7 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         )
         .await?
     {
-        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.hits.len(), 1),
     }
 
     // Search finds agent descriptions
@@ -49,7 +49,7 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         .search(&SearchQuery::builder_v1().query("Governor").build().into())
         .await?
     {
-        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.hits.len(), 1),
     }
 
     // Search with agent filter narrows results
@@ -64,7 +64,7 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         )
         .await?
     {
-        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.hits.len(), 1),
     }
 
     // Search for something that doesn't exist
@@ -78,7 +78,7 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         )
         .await?
     {
-        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 0),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.hits.len(), 0),
     }
 
     Ok(())

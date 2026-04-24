@@ -36,6 +36,12 @@ versioned! {
     pub enum ListAgents {
         #[derive(clap::Args)]
         V1 => {
+            /// Full-text query against agent name + description. When present,
+            /// hits are FTS5-ranked; absent, the listing browses by filters
+            /// alone.
+            #[arg(long)]
+            #[builder(into)]
+            pub query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
