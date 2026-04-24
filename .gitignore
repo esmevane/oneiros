@@ -9,8 +9,3 @@ exports
 
 # MCP config (contains auth tokens)
 .mcp.json
-
-# Deciduous database (local)
-.deciduous/
-graph.json
-/narratives.md
