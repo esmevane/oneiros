@@ -131,6 +131,63 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     Ok(())
 }
 
+/// Import should be self-bootstrapping: a brain that has seen `system init`
+/// but never `project init` should still accept an import and materialize
+/// the data. This is the correctness-gate property the versioning design
+/// leans on — "snapshot imported through new code produces same projection
+/// state" presumes import can hydrate a fresh brain without relying on init
+/// to have pre-migrated the on-disk schema.
+pub(crate) async fn import_bootstraps_fresh_brain<B: Backend>() -> TestResult {
+    let source = Harness::<B>::init_project().await?;
+    source
+        .exec_json("persona set process --description 'Process agents'")
+        .await?;
+    source
+        .exec_json("texture set observation --description 'Observations'")
+        .await?;
+    source
+        .exec_json("agent create thinker process --description 'A thinking agent'")
+        .await?;
+    source
+        .exec_json("cognition add thinker.process observation 'Remember this thought'")
+        .await?;
+
+    let export_dir = tempfile::TempDir::new()?;
+    let export_cmd = format!("project export --target {}", export_dir.path().display());
+    let export_response = source.exec_json(&export_cmd).await?;
+
+    let export_path = match export_response {
+        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        other => panic!("expected WroteExport, got {other:#?}"),
+    };
+
+    // Destination has system init but no project init — import must
+    // bootstrap the brain's schema itself.
+    let destination = Harness::<B>::setup_system().await?.start_service().await?;
+
+    let import_response = destination
+        .exec_json(&format!("project import {}", export_path.display()))
+        .await?;
+
+    match import_response {
+        Responses::Project(ProjectResponse::Imported(result)) => {
+            assert!(
+                result.imported.0 > 0,
+                "expected at least one event imported, got {}",
+                result.imported.0,
+            );
+            assert!(
+                result.replayed.0 > 0,
+                "expected at least one event replayed, got {}",
+                result.replayed.0,
+            );
+        }
+        other => panic!("expected Imported, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn replay_rebuilds_projections<B: Backend>() -> TestResult {
     let harness = Harness::<B>::init_project().await?;
     harness

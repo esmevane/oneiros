@@ -158,6 +158,14 @@ impl ProjectService {
         let db = context.db()?;
         let log = EventLog::attached(&db);
 
+        // Import is self-bootstrapping: a destination brain may have seen
+        // `system init` without `project init`, leaving the events DB and
+        // bookmark DB unmigrated. Running the migrations here is idempotent
+        // (CREATE TABLE IF NOT EXISTS) and makes import the correctness
+        // gate the versioning story relies on.
+        log.migrate()?;
+        context.projections.migrate(&db)?;
+
         // Batch all inserts in a single transaction — without this,
         // each INSERT is an implicit transaction with an fsync.
         db.execute_batch("BEGIN")?;
