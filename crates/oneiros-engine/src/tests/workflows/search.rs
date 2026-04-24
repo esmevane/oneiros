@@ -35,7 +35,7 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         .search(&SearchQuery::builder().query("architecture").build())
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.hits.len(), 1),
     }
 
     // Search finds agent descriptions
@@ -44,19 +44,21 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         .search(&SearchQuery::builder().query("Governor").build())
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.hits.len(), 1),
     }
 
     // Search with agent filter narrows results
     match client
         .search()
-        .search(&SearchQuery {
-            query: "typed".to_string(),
-            agent: Some(AgentName::new("gov.process")),
-        })
+        .search(
+            &SearchQuery::builder()
+                .query("typed")
+                .agent(AgentName::new("gov.process"))
+                .build(),
+        )
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(r) => assert_eq!(r.hits.len(), 1),
     }
 
     // Search for something that doesn't exist
@@ -65,7 +67,7 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
         .search(&SearchQuery::builder().query("xyznonexistent").build())
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 0),
+        SearchResponse::Results(r) => assert_eq!(r.hits.len(), 0),
     }
 
     Ok(())

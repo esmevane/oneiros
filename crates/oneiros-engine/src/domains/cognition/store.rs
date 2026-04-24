@@ -17,7 +17,19 @@ impl<'a> CognitionStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Cognition(cognition_event) = &event.data {
             match cognition_event {
-                CognitionEvents::CognitionAdded(cognition) => self.insert(cognition)?,
+                CognitionEvents::CognitionAdded(cognition) => {
+                    self.insert(cognition)?;
+                    SearchStore::new(self.conn).index_expression(
+                        &Expression::builder()
+                            .resource_ref(Ref::cognition(cognition.id))
+                            .kind(SearchKind::Cognition.as_str())
+                            .content(cognition.content.clone())
+                            .agent(cognition.agent_id)
+                            .texture(cognition.texture.clone())
+                            .created_at(cognition.created_at)
+                            .build(),
+                    )?;
+                }
             }
         }
         Ok(())

@@ -8,10 +8,30 @@ use crate::*;
 
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
 pub struct SearchQuery {
+    /// Full-text query. When absent, the search browses by filters alone,
+    /// ordered by creation time.
     #[builder(into)]
-    pub query: String,
+    pub query: Option<String>,
+
     #[arg(long)]
     pub agent: Option<AgentName>,
+
+    #[arg(long)]
+    pub kind: Option<SearchKind>,
+
+    #[arg(long)]
+    pub texture: Option<TextureName>,
+
+    #[arg(long)]
+    pub level: Option<LevelName>,
+
+    #[arg(long)]
+    pub sensation: Option<SensationName>,
+
+    #[command(flatten)]
+    #[serde(flatten, default)]
+    #[builder(default)]
+    pub filters: SearchFilters,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

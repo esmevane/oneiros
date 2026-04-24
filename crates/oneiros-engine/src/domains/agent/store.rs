@@ -17,9 +17,22 @@ impl<'a> AgentStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Agent(agent_event) = &event.data {
             match agent_event {
-                AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
-                AgentEvents::AgentUpdated(agent) => self.update(agent)?,
-                AgentEvents::AgentRemoved(removed) => self.remove(&removed.name)?,
+                AgentEvents::AgentCreated(agent) => {
+                    self.create_record(agent)?;
+                    SearchStore::new(self.conn).index_expression(&agent_expression(agent))?;
+                }
+                AgentEvents::AgentUpdated(agent) => {
+                    self.update(agent)?;
+                    let search = SearchStore::new(self.conn);
+                    search.remove_by_ref(&Ref::agent(agent.id))?;
+                    search.index_expression(&agent_expression(agent))?;
+                }
+                AgentEvents::AgentRemoved(removed) => {
+                    if let Some(agent) = self.get(&removed.name)? {
+                        SearchStore::new(self.conn).remove_by_ref(&Ref::agent(agent.id))?;
+                    }
+                    self.remove(&removed.name)?;
+                }
             }
         }
         Ok(())
@@ -174,4 +187,15 @@ impl<'a> AgentStore<'a> {
         )?;
         Ok(())
     }
+}
+
+fn agent_expression(agent: &Agent) -> Expression {
+    let content = format!("{} {}", agent.name, agent.description);
+    Expression::builder()
+        .resource_ref(Ref::agent(agent.id))
+        .kind(SearchKind::Agent.as_str())
+        .content(content)
+        .agent(agent.id)
+        .persona(agent.persona.clone())
+        .build()
 }

@@ -65,16 +65,36 @@ impl CognitionService {
             None => None,
         };
 
-        let listed = CognitionRepo::new(context)
-            .list(agent_id.as_ref(), texture.as_ref(), filters)
+        let search_query = SearchQuery::builder()
+            .kind(SearchKind::Cognition)
+            .maybe_texture(texture.clone())
+            .filters(*filters)
+            .build();
+
+        let results = SearchRepo::new(context)
+            .search(&search_query, agent_id.as_ref())
             .await?;
-        Ok(if listed.total == 0 {
-            CognitionResponse::NoCognitions
-        } else {
-            CognitionResponse::Cognitions(listed.map(|c| {
+
+        if results.total == 0 {
+            return Ok(CognitionResponse::NoCognitions);
+        }
+
+        let repo = CognitionRepo::new(context);
+        let mut items = Vec::with_capacity(results.hits.len());
+        for hit in &results.hits {
+            let Ref::V0(Resource::Cognition(id)) = &hit.resource_ref else {
+                continue;
+            };
+            if let Some(cognition) = repo.get(id).await? {
+                items.push(cognition);
+            }
+        }
+
+        Ok(CognitionResponse::Cognitions(
+            Listed::new(items, results.total).map(|c| {
                 let ref_token = RefToken::new(Ref::cognition(c.id));
                 Response::new(c).with_ref_token(ref_token)
-            }))
-        })
+            }),
+        ))
     }
 }

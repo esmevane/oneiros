@@ -71,7 +71,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     match search_response {
         Responses::Search(SearchResponse::Results(results)) => {
             assert!(
-                !results.results.is_empty(),
+                !results.hits.is_empty(),
                 "expected to find the cognition after import"
             );
         }

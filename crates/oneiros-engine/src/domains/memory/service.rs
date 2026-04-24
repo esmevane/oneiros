@@ -56,21 +56,40 @@ impl MemoryService {
                     .get(name)
                     .await?
                     .ok_or_else(|| MemoryError::AgentNotFound(name.clone()))?;
-                Some(record.id.to_string())
+                Some(record.id)
             }
             None => None,
         };
 
-        let listed = MemoryRepo::new(context)
-            .list(agent_id.as_deref(), filters)
+        let search_query = SearchQuery::builder()
+            .kind(SearchKind::Memory)
+            .filters(*filters)
+            .build();
+
+        let results = SearchRepo::new(context)
+            .search(&search_query, agent_id.as_ref())
             .await?;
-        Ok(if listed.total == 0 {
-            MemoryResponse::NoMemories
-        } else {
-            MemoryResponse::Memories(listed.map(|m| {
+
+        if results.total == 0 {
+            return Ok(MemoryResponse::NoMemories);
+        }
+
+        let repo = MemoryRepo::new(context);
+        let mut items = Vec::with_capacity(results.hits.len());
+        for hit in &results.hits {
+            let Ref::V0(Resource::Memory(id)) = &hit.resource_ref else {
+                continue;
+            };
+            if let Some(memory) = repo.get(id).await? {
+                items.push(memory);
+            }
+        }
+
+        Ok(MemoryResponse::Memories(
+            Listed::new(items, results.total).map(|m| {
                 let ref_token = RefToken::new(Ref::memory(m.id));
                 Response::new(m).with_ref_token(ref_token)
-            }))
-        })
+            }),
+        ))
     }
 }
