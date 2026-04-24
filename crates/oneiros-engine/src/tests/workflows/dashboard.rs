@@ -49,6 +49,11 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
     );
 
     assert!(
+        !bootstrap.actors.is_empty(),
+        "init_system should create the default actor"
+    );
+
+    assert!(
         bootstrap.brains.iter().any(|b| b.name == brain_name),
         "init_project should create the 'test' brain"
     );
@@ -56,6 +61,58 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
     assert!(
         bootstrap.tickets.iter().any(|t| t.brain_name == brain_name),
         "init_project should issue a ticket for the default brain"
+    );
+
+    // Peers is always a valid vec, even if empty on a fresh host.
+    let _ = bootstrap.peers;
+
+    Ok(())
+}
+
+/// The HTML page served at `/` is host-shaped — it contains the host
+/// landing page and the brain page, with the host as the default.
+/// This is a coarse smoke test, not a UX test: it catches accidental
+/// deletion or rewrites that would break the host-first layout.
+#[tokio::test]
+async fn dashboard_html_has_host_and_brain_pages() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new().await?.init_system().await?;
+
+    let http = reqwest::Client::new();
+    let body = http
+        .get(app.base_url())
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+
+    assert!(
+        body.contains(r#"id="page-host""#),
+        "host landing page should be present"
+    );
+    assert!(
+        body.contains(r#"id="page-brain""#),
+        "brain page should be present"
+    );
+    assert!(
+        body.contains(r#"id="sb-brain-section""#),
+        "sidebar should have a conditionally-visible BRAIN section"
+    );
+    assert!(
+        body.contains("go('host')"),
+        "brand click should route to the host page"
+    );
+    assert!(
+        body.contains(r#"id="page-tenants""#),
+        "tenants list page should be present"
+    );
+    assert!(
+        body.contains(r#"id="page-tenant""#),
+        "tenant detail page should be present"
+    );
+    assert!(
+        body.contains(r#"id="page-actor""#),
+        "actor detail page should be present"
     );
 
     Ok(())

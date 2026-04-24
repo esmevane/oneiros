@@ -21,9 +21,15 @@ pub struct DashboardBootstrap {
     pub current_brain: BrainName,
     /// Every tenant on this host.
     pub tenants: Vec<Tenant>,
+    /// Every actor on this host. The dashboard filters by `tenant_id`
+    /// to render tenant-detail pages.
+    pub actors: Vec<Actor>,
     /// Every brain on this host, whether or not the host holds a ticket.
     pub brains: Vec<Brain>,
     /// Every ticket the host knows about. The token lives at
     /// `ticket.link.token`; the dashboard uses it to auth per-brain.
     pub tickets: Vec<Ticket>,
+    /// Every peer this host knows — other hosts it has been told about
+    /// for distribution. Does not imply live reachability.
+    pub peers: Vec<Peer>,
 }

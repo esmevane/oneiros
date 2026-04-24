@@ -24,6 +24,12 @@ pub async fn dashboard_config(State(state): State<ServerState>) -> Json<Dashboar
         .map(|listed| listed.items)
         .unwrap_or_default();
 
+    let actors = ActorRepo::new(&system)
+        .list(&SearchFilters::default())
+        .await
+        .map(|listed| listed.items)
+        .unwrap_or_default();
+
     let brains = BrainRepo::new(&system)
         .list(&SearchFilters::default())
         .await
@@ -36,12 +42,20 @@ pub async fn dashboard_config(State(state): State<ServerState>) -> Json<Dashboar
         .map(|listed| listed.items)
         .unwrap_or_default();
 
+    let peers = PeerRepo::new(&system)
+        .list(&SearchFilters::default())
+        .await
+        .map(|listed| listed.items)
+        .unwrap_or_default();
+
     Json(DashboardBootstrap {
         host: state.host_identity(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         current_brain: state.brain_name().clone(),
         tenants,
+        actors,
         brains,
         tickets,
+        peers,
     })
 }
