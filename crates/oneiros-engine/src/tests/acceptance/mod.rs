@@ -824,6 +824,10 @@ async fn replay_rebuilds_projections() -> TestResult {
 async fn export_import_preserves_storage() -> TestResult {
     cases::import_export::export_import_preserves_storage::<EngineBackend>().await
 }
+#[tokio::test]
+async fn import_bootstraps_fresh_brain() -> TestResult {
+    cases::import_export::import_bootstraps_fresh_brain::<EngineBackend>().await
+}
 
 // Pressure
 #[tokio::test]
