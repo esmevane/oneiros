@@ -16,17 +16,23 @@ impl<'a> FollowStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        match &event.data {
-            Events::Bookmark(BookmarkEvents::BookmarkFollowed(follow)) => {
-                self.create_record(follow)?;
+        if let Events::Bookmark(bookmark_event) = &event.data {
+            match bookmark_event {
+                BookmarkEvents::BookmarkFollowed(follow) => {
+                    self.create_record(follow)?;
+                }
+                BookmarkEvents::BookmarkCollected(collected) => {
+                    self.advance_checkpoint(collected)?;
+                }
+                BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
+                    self.delete_record(unfollowed.follow_id)?;
+                }
+                BookmarkEvents::BookmarkCreated(_)
+                | BookmarkEvents::BookmarkForked(_)
+                | BookmarkEvents::BookmarkSwitched(_)
+                | BookmarkEvents::BookmarkMerged(_)
+                | BookmarkEvents::BookmarkShared(_) => {}
             }
-            Events::Bookmark(BookmarkEvents::BookmarkCollected(collected)) => {
-                self.advance_checkpoint(collected)?;
-            }
-            Events::Bookmark(BookmarkEvents::BookmarkUnfollowed(unfollowed)) => {
-                self.delete_record(unfollowed.follow_id)?;
-            }
-            _ => {}
         }
         Ok(())
     }

@@ -12,7 +12,12 @@ impl FollowState {
                 BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
                     canon.follows.remove(unfollowed.follow_id);
                 }
-                _ => {}
+                BookmarkEvents::BookmarkCreated(_)
+                | BookmarkEvents::BookmarkForked(_)
+                | BookmarkEvents::BookmarkSwitched(_)
+                | BookmarkEvents::BookmarkMerged(_)
+                | BookmarkEvents::BookmarkShared(_)
+                | BookmarkEvents::BookmarkCollected(_) => {}
             }
         }
         canon

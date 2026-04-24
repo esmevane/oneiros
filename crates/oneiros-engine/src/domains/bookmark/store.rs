@@ -23,14 +23,21 @@ impl<'a> BookmarkStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        match &event.data {
-            Events::Bookmark(BookmarkEvents::BookmarkCreated(created)) => {
-                self.insert(&created.brain, &created.name, &event.created_at)?;
+        if let Events::Bookmark(bookmark_event) = &event.data {
+            match bookmark_event {
+                BookmarkEvents::BookmarkCreated(created) => {
+                    self.insert(&created.brain, &created.name, &event.created_at)?;
+                }
+                BookmarkEvents::BookmarkForked(forked) => {
+                    self.insert(&forked.brain, &forked.name, &event.created_at)?;
+                }
+                BookmarkEvents::BookmarkSwitched(_)
+                | BookmarkEvents::BookmarkMerged(_)
+                | BookmarkEvents::BookmarkShared(_)
+                | BookmarkEvents::BookmarkFollowed(_)
+                | BookmarkEvents::BookmarkCollected(_)
+                | BookmarkEvents::BookmarkUnfollowed(_) => {}
             }
-            Events::Bookmark(BookmarkEvents::BookmarkForked(forked)) => {
-                self.insert(&forked.brain, &forked.name, &event.created_at)?;
-            }
-            _ => {}
         }
         Ok(())
     }

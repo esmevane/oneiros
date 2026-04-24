@@ -12,17 +12,18 @@ impl<'a> PeerStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        match &event.data {
-            Events::Peer(PeerEvents::PeerAdded(peer)) => {
-                self.create_record(peer)?;
+        if let Events::Peer(peer_event) = &event.data {
+            match peer_event {
+                PeerEvents::PeerAdded(peer) => {
+                    self.create_record(peer)?;
+                }
+                PeerEvents::PeerUpdated(peer) => {
+                    self.create_record(peer)?;
+                }
+                PeerEvents::PeerRemoved(removed) => {
+                    self.delete_record(removed.id)?;
+                }
             }
-            Events::Peer(PeerEvents::PeerUpdated(peer)) => {
-                self.create_record(peer)?;
-            }
-            Events::Peer(PeerEvents::PeerRemoved(removed)) => {
-                self.delete_record(removed.id)?;
-            }
-            _ => {}
         }
         Ok(())
     }
