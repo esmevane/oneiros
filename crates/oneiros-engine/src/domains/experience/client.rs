@@ -24,6 +24,14 @@ impl<'a> ExperienceClient<'a> {
             params.push(("agent", agent_name.to_string()));
         }
 
+        if let Some(sensation_name) = &listing.sensation {
+            params.push(("sensation", sensation_name.to_string()));
+        }
+
+        if let Some(query) = &listing.query {
+            params.push(("query", query.clone()));
+        }
+
         params.push(("limit", listing.filters.limit.to_string()));
         params.push(("offset", listing.filters.offset.to_string()));
 

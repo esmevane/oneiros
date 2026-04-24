@@ -65,24 +65,42 @@ impl MemoryService {
                     .get(name)
                     .await?
                     .ok_or_else(|| MemoryError::AgentNotFound(name.clone()))?;
-                Some(record.id.to_string())
+                Some(record.id)
             }
             None => None,
         };
 
-        let listed = MemoryRepo::new(context)
-            .list(agent_id.as_deref(), &listing.filters)
+        let search_query = SearchQuery::builder_v1()
+            .kind(SearchKind::Memory)
+            .maybe_level(listing.level.clone())
+            .maybe_query(listing.query.clone())
+            .filters(listing.filters)
+            .build();
+
+        let results = SearchRepo::new(context)
+            .search(&search_query, agent_id.as_ref())
             .await?;
-        Ok(if listed.total == 0 {
-            MemoryResponse::NoMemories
-        } else {
-            MemoryResponse::Memories(
-                MemoriesResponse::builder_v1()
-                    .items(listed.items)
-                    .total(listed.total)
-                    .build()
-                    .into(),
-            )
-        })
+
+        if results.total == 0 {
+            return Ok(MemoryResponse::NoMemories);
+        }
+
+        let ids: Vec<MemoryId> = results
+            .hits
+            .iter()
+            .filter_map(|hit| match &hit.resource_ref {
+                Ref::V0(Resource::Memory(id)) => Some(*id),
+                _ => None,
+            })
+            .collect();
+        let items = MemoryRepo::new(context).get_many(&ids).await?;
+
+        Ok(MemoryResponse::Memories(
+            MemoriesResponse::builder_v1()
+                .items(items)
+                .total(results.total)
+                .build()
+                .into(),
+        ))
     }
 }

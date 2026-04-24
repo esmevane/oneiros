@@ -17,7 +17,8 @@ impl<'a> MemoryStore<'a> {
             match memory_event {
                 MemoryEvents::MemoryAdded(added) => {
                     let memory = added.current()?.memory;
-                    self.write_memory(&memory)?
+                    self.write_memory(&memory)?;
+                    SearchStore::new(self.conn).index_entry(&IndexEntry::memory(&memory))?;
                 }
             }
         }

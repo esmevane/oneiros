@@ -2,7 +2,12 @@ use rusqlite::params;
 
 use crate::*;
 
-/// Search projection store — projection lifecycle, write operations, and index management.
+/// Search projection store — owns the FTS5 index lifecycle and write primitives.
+///
+/// Content-bearing domains (cognition, memory, experience, agent) call
+/// [`SearchStore::index_entry`] and [`SearchStore::remove_by_ref`] from
+/// their own event handlers. The search projection's `apply` is a no-op —
+/// search owns the substrate, domains own the meaning of their events.
 pub struct SearchStore<'a> {
     conn: &'a rusqlite::Connection,
 }
@@ -15,102 +20,68 @@ impl<'a> SearchStore<'a> {
     pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create virtual table if not exists search_index
-             using fts5(resource_ref, kind, content, agent)",
+             using fts5(
+                 resource_ref unindexed,
+                 kind unindexed,
+                 content,
+                 agent_id unindexed,
+                 texture unindexed,
+                 level unindexed,
+                 sensation unindexed,
+                 persona unindexed,
+                 created_at unindexed
+             )",
         )?;
         Ok(())
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        match &event.data {
-            Event::Known(Events::Cognition(CognitionEvents::CognitionAdded(
-                CognitionAdded::V1(addition),
-            ))) => {
-                let cognition = &addition.cognition;
-                self.index(
-                    Ref::cognition(cognition.id),
-                    "cognition-content",
-                    &cognition.content,
-                    cognition.agent_id,
-                )?;
-            }
-            Event::Known(Events::Memory(MemoryEvents::MemoryAdded(MemoryAdded::V1(addition)))) => {
-                let memory = &addition.memory;
-                self.index(
-                    Ref::memory(memory.id),
-                    "memory-content",
-                    &memory.content,
-                    memory.agent_id,
-                )?;
-            }
-            Event::Known(Events::Agent(AgentEvents::AgentCreated(AgentCreated::V1(creation)))) => {
-                let agent = &creation.agent;
-                let content = format!("{} {}", agent.name, agent.description);
-                self.index(
-                    Ref::agent(agent.id),
-                    "agent-description",
-                    &content,
-                    &agent.name,
-                )?;
-            }
-            Event::Known(Events::Agent(AgentEvents::AgentUpdated(AgentUpdated::V1(update)))) => {
-                let agent = &update.agent;
-                self.remove_by_ref(&Ref::agent(agent.id))?;
-                let content = format!("{} {}", agent.name, agent.description);
-                self.index(
-                    Ref::agent(agent.id),
-                    "agent-description",
-                    &content,
-                    &agent.name,
-                )?;
-            }
-            Event::Known(Events::Agent(AgentEvents::AgentRemoved(AgentRemoved::V1(v)))) => {
-                self.remove_by_agent(&v.name)?;
-            }
-            Event::Known(Events::Experience(ExperienceEvents::ExperienceCreated(
-                ExperienceCreated::V1(creation),
-            ))) => {
-                let experience = &creation.experience;
-                self.index(
-                    Ref::experience(experience.id),
-                    "experience-description",
-                    &experience.description,
-                    experience.agent_id,
-                )?;
-            }
-            Event::Known(Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(
-                ExperienceDescriptionUpdated::V1(update),
-            ))) => {
-                self.remove_by_ref(&Ref::experience(update.id))?;
-                if let Ok(Some(exp)) = ExperienceStore::new(self.conn).get(&update.id) {
-                    self.index(
-                        Ref::experience(update.id),
-                        "experience-description",
-                        &update.description,
-                        exp.agent_id,
-                    )?;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     pub fn reset(&self) -> Result<(), EventError> {
-        self.conn.execute("DELETE FROM search_index", [])?;
+        self.conn.execute("delete from search_index", [])?;
         Ok(())
     }
 
-    pub fn index(
-        &self,
-        resource_ref: Ref,
-        kind: &str,
-        content: impl std::fmt::Display,
-        agent: impl std::fmt::Display,
-    ) -> Result<(), EventError> {
-        let ref_json = serde_json::to_string(&resource_ref)?;
+    /// Insert an index row. Called by content-bearing domains from their
+    /// own event handlers — search owns the substrate, domains own the
+    /// meaning of their events.
+    pub(crate) fn index_entry(&self, entry: &IndexEntry) -> Result<(), EventError> {
+        let resource_ref = serde_json::to_string(&entry.resource_ref)?;
+        let texture = entry
+            .texture
+            .as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_default();
+        let level = entry
+            .level
+            .as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_default();
+        let sensation = entry
+            .sensation
+            .as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_default();
+        let persona = entry
+            .persona
+            .as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_default();
+        let created_at = entry.created_at.map(|t| t.as_string()).unwrap_or_default();
         self.conn.execute(
-            "INSERT INTO search_index (resource_ref, kind, content, agent) VALUES (?1, ?2, ?3, ?4)",
-            params![ref_json, kind, content.to_string(), agent.to_string()],
+            "insert into search_index (
+                 resource_ref, kind, content,
+                 agent_id, texture, level, sensation, persona, created_at
+             ) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![
+                resource_ref,
+                entry.kind.as_str(),
+                entry.content.to_string(),
+                entry.agent_id.to_string(),
+                texture,
+                level,
+                sensation,
+                persona,
+                created_at,
+            ],
         )?;
         Ok(())
     }
@@ -118,16 +89,16 @@ impl<'a> SearchStore<'a> {
     pub fn remove_by_ref(&self, resource_ref: &Ref) -> Result<(), EventError> {
         let ref_json = serde_json::to_string(resource_ref)?;
         self.conn.execute(
-            "DELETE FROM search_index WHERE resource_ref = ?1",
+            "delete from search_index where resource_ref = ?1",
             params![ref_json],
         )?;
         Ok(())
     }
 
-    pub fn remove_by_agent(&self, agent: &AgentName) -> Result<(), EventError> {
+    pub fn remove_by_agent_id(&self, agent_id: &AgentId) -> Result<(), EventError> {
         self.conn.execute(
-            "DELETE FROM search_index WHERE agent = ?1",
-            params![agent.to_string()],
+            "delete from search_index where agent_id = ?1 and kind = 'agent'",
+            params![agent_id.to_string()],
         )?;
         Ok(())
     }

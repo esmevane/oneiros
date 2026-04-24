@@ -93,6 +93,31 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
     Ok(())
 }
 
+/// `memory list --query "<text>"` narrows by FTS5 match on memory
+/// content. Same query semantics as `search`, scoped to the memory kind.
+pub(crate) async fn list_filters_by_query<B: Backend>() -> TestResult {
+    let harness = with_agent_and_level::<B>().await?;
+
+    harness
+        .exec_json("memory add learner.process session 'The compaction strategy worked'")
+        .await?;
+    harness
+        .exec_json("memory add learner.process session 'Unrelated note'")
+        .await?;
+
+    let response = harness.exec_json("memory list --query compaction").await?;
+
+    match response {
+        Responses::Memory(MemoryResponse::Memories(MemoriesResponse::V1(memories))) => {
+            assert_eq!(memories.items.len(), 1);
+            assert!(memories.items[0].content.as_str().contains("compaction"));
+        }
+        other => panic!("expected Memories, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     let harness = with_agent_and_level::<B>().await?;
 

@@ -15,9 +15,28 @@ impl<'a> AgentStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Agent(agent_event)) = &event.data {
             match agent_event {
-                AgentEvents::AgentCreated(agent_created) => self.create(agent_created)?,
-                AgentEvents::AgentUpdated(agent_updated) => self.update(agent_updated)?,
-                AgentEvents::AgentRemoved(agent_removed) => self.remove(agent_removed)?,
+                AgentEvents::AgentCreated(created) => {
+                    let agent = created.current()?.agent;
+                    self.write_agent(&agent)?;
+                    SearchStore::new(self.conn).index_entry(&IndexEntry::agent(&agent))?;
+                }
+                AgentEvents::AgentUpdated(updated) => {
+                    let agent = updated.current()?.agent;
+                    self.write_agent(&agent)?;
+                    let search = SearchStore::new(self.conn);
+                    search.remove_by_ref(&Ref::agent(agent.id))?;
+                    search.index_entry(&IndexEntry::agent(&agent))?;
+                }
+                AgentEvents::AgentRemoved(removal) => {
+                    let name = removal.current()?.name;
+                    if let Some(agent) = self.get(&name)? {
+                        SearchStore::new(self.conn).remove_by_ref(&Ref::agent(agent.id))?;
+                    }
+                    self.conn.execute(
+                        "delete from agents where name = ?1",
+                        params![name.to_string()],
+                    )?;
+                }
             }
         }
 
@@ -130,25 +149,6 @@ impl<'a> AgentStore<'a> {
             |row| row.get(0),
         )?;
         Ok(count > 0)
-    }
-
-    fn create(&self, creation: &AgentCreated) -> Result<(), EventError> {
-        let agent = creation.current()?.agent;
-        self.write_agent(&agent)
-    }
-
-    fn update(&self, update: &AgentUpdated) -> Result<(), EventError> {
-        let agent = update.current()?.agent;
-        self.write_agent(&agent)
-    }
-
-    fn remove(&self, removal: &AgentRemoved) -> Result<(), EventError> {
-        let name = removal.current()?.name;
-        self.conn.execute(
-            "delete from agents where name = ?1",
-            params![name.to_string()],
-        )?;
-        Ok(())
     }
 
     fn write_agent(&self, agent: &Agent) -> Result<(), EventError> {

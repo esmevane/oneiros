@@ -14,9 +14,6 @@ pub enum SearchResponse {
 versioned! {
     #[derive(JsonSchema)]
     pub enum ResultsResponse {
-        V1 => {
-            pub query: QueryText,
-            pub results: Vec<Expression>,
-        }
+        V1 => SearchResults,
     }
 }

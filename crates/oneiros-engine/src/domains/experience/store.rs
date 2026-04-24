@@ -17,15 +17,27 @@ impl<'a> ExperienceStore<'a> {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(created) => {
                     let experience = created.current()?.experience;
-                    self.write_experience(&experience)?
+                    self.write_experience(&experience)?;
+                    SearchStore::new(self.conn)
+                        .index_entry(&IndexEntry::experience(&experience))?;
                 }
                 ExperienceEvents::ExperienceDescriptionUpdated(updated) => {
                     let current = updated.current()?;
-                    self.update_description(&current.id, &current.description)?
+                    self.update_description(&current.id, &current.description)?;
+                    if let Some(exp) = self.get(&current.id)? {
+                        let search = SearchStore::new(self.conn);
+                        search.remove_by_ref(&Ref::experience(exp.id))?;
+                        search.index_entry(&IndexEntry::experience(&exp))?;
+                    }
                 }
                 ExperienceEvents::ExperienceSensationUpdated(updated) => {
                     let current = updated.current()?;
-                    self.update_sensation(&current.id, &current.sensation)?
+                    self.update_sensation(&current.id, &current.sensation)?;
+                    if let Some(exp) = self.get(&current.id)? {
+                        let search = SearchStore::new(self.conn);
+                        search.remove_by_ref(&Ref::experience(exp.id))?;
+                        search.index_entry(&IndexEntry::experience(&exp))?;
+                    }
                 }
             }
         }

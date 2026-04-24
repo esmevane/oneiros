@@ -93,19 +93,35 @@ impl AgentService {
         request: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
         let ListAgents::V1(listing) = request;
-        let listed = AgentRepo::new(context).list(&listing.filters).await?;
+        let search_query = SearchQuery::builder_v1()
+            .kind(SearchKind::Agent)
+            .maybe_query(listing.query.clone())
+            .filters(listing.filters)
+            .build();
 
-        if listed.total == 0 {
-            Ok(AgentResponse::NoAgents)
-        } else {
-            Ok(AgentResponse::Agents(
-                AgentsResponse::builder_v1()
-                    .items(listed.items)
-                    .total(listed.total)
-                    .build()
-                    .into(),
-            ))
+        let results = SearchRepo::new(context).search(&search_query, None).await?;
+
+        if results.total == 0 {
+            return Ok(AgentResponse::NoAgents);
         }
+
+        let mut ids: Vec<AgentId> = vec![];
+
+        for hit in results.hits {
+            if let Ref::V0(Resource::Agent(id)) = hit.resource_ref {
+                ids.push(id);
+            }
+        }
+
+        let items = AgentRepo::new(context).get_many(&ids).await?;
+
+        Ok(AgentResponse::Agents(
+            AgentsResponse::builder_v1()
+                .items(items)
+                .total(results.total)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn update(

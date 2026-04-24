@@ -70,23 +70,37 @@ impl CognitionService {
             None => None,
         };
 
-        let listed = CognitionRepo::new(context)
-            .list(
-                agent_id.as_ref(),
-                listing.texture.as_ref(),
-                &listing.filters,
-            )
+        let search_query = SearchQuery::builder_v1()
+            .kind(SearchKind::Cognition)
+            .maybe_texture(listing.texture.clone())
+            .maybe_query(listing.query.clone())
+            .filters(listing.filters)
+            .build();
+
+        let results = SearchRepo::new(context)
+            .search(&search_query, agent_id.as_ref())
             .await?;
-        Ok(if listed.total == 0 {
-            CognitionResponse::NoCognitions
-        } else {
-            CognitionResponse::Cognitions(
-                CognitionsResponse::builder_v1()
-                    .items(listed.items)
-                    .total(listed.total)
-                    .build()
-                    .into(),
-            )
-        })
+
+        if results.total == 0 {
+            return Ok(CognitionResponse::NoCognitions);
+        }
+
+        let ids: Vec<CognitionId> = results
+            .hits
+            .iter()
+            .filter_map(|hit| match &hit.resource_ref {
+                Ref::V0(Resource::Cognition(id)) => Some(*id),
+                _ => None,
+            })
+            .collect();
+        let items = CognitionRepo::new(context).get_many(&ids).await?;
+
+        Ok(CognitionResponse::Cognitions(
+            CognitionsResponse::builder_v1()
+                .items(items)
+                .total(results.total)
+                .build()
+                .into(),
+        ))
     }
 }

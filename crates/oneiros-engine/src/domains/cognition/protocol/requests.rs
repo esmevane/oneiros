@@ -35,6 +35,11 @@ versioned! {
             pub agent: Option<AgentName>,
             #[arg(long)]
             pub texture: Option<TextureName>,
+            /// Full-text query against cognition content. When present, hits
+            /// are FTS5-ranked; absent, the listing browses by filters alone.
+            #[arg(long)]
+            #[builder(into)]
+            pub query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
