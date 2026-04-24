@@ -56,22 +56,41 @@ impl ExperienceService {
                     .get(name)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
-                Some(record.id.to_string())
+                Some(record.id)
             }
             None => None,
         };
 
-        let listed = ExperienceRepo::new(context)
-            .list(agent_id.as_deref(), filters)
+        let search_query = SearchQuery::builder()
+            .kind(SearchKind::Experience)
+            .filters(*filters)
+            .build();
+
+        let results = SearchRepo::new(context)
+            .search(&search_query, agent_id.as_ref())
             .await?;
-        Ok(if listed.total == 0 {
-            ExperienceResponse::NoExperiences
-        } else {
-            ExperienceResponse::Experiences(listed.map(|e| {
+
+        if results.total == 0 {
+            return Ok(ExperienceResponse::NoExperiences);
+        }
+
+        let repo = ExperienceRepo::new(context);
+        let mut items = Vec::with_capacity(results.hits.len());
+        for hit in &results.hits {
+            let Ref::V0(Resource::Experience(id)) = &hit.resource_ref else {
+                continue;
+            };
+            if let Some(experience) = repo.get(id).await? {
+                items.push(experience);
+            }
+        }
+
+        Ok(ExperienceResponse::Experiences(
+            Listed::new(items, results.total).map(|e| {
                 let ref_token = RefToken::new(Ref::experience(e.id));
                 Response::new(e).with_ref_token(ref_token)
-            }))
-        })
+            }),
+        ))
     }
 
     pub async fn update_description(

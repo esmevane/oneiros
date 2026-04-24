@@ -807,6 +807,20 @@ async fn search_finds_updated_experience_description() -> TestResult {
     cases::search::finds_updated_experience_description::<EngineBackend>().await
 }
 
+// Facets
+#[tokio::test]
+async fn search_returns_faceted_results() -> TestResult {
+    cases::search::returns_faceted_results::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_narrows_by_kind_filter() -> TestResult {
+    cases::search::narrows_by_kind_filter::<EngineBackend>().await
+}
+#[tokio::test]
+async fn search_hits_carry_typed_metadata() -> TestResult {
+    cases::search::hits_carry_typed_metadata::<EngineBackend>().await
+}
+
 // Import/Export depth
 #[tokio::test]
 async fn export_produces_file() -> TestResult {

@@ -17,12 +17,26 @@ impl<'a> ExperienceStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Events::Experience(experience_event) = &event.data {
             match experience_event {
-                ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
+                ExperienceEvents::ExperienceCreated(experience) => {
+                    self.insert(experience)?;
+                    SearchStore::new(self.conn)
+                        .index_expression(&experience_expression(experience))?;
+                }
                 ExperienceEvents::ExperienceDescriptionUpdated(update) => {
-                    self.update_description(&update.id, &update.description)?
+                    self.update_description(&update.id, &update.description)?;
+                    if let Some(exp) = self.get(&update.id)? {
+                        let search = SearchStore::new(self.conn);
+                        search.remove_by_ref(&Ref::experience(exp.id))?;
+                        search.index_expression(&experience_expression(&exp))?;
+                    }
                 }
                 ExperienceEvents::ExperienceSensationUpdated(update) => {
-                    self.update_sensation(&update.id, &update.sensation)?
+                    self.update_sensation(&update.id, &update.sensation)?;
+                    if let Some(exp) = self.get(&update.id)? {
+                        let search = SearchStore::new(self.conn);
+                        search.remove_by_ref(&Ref::experience(exp.id))?;
+                        search.index_expression(&experience_expression(&exp))?;
+                    }
                 }
             }
         }
@@ -204,4 +218,15 @@ impl<'a> ExperienceStore<'a> {
         )?;
         Ok(())
     }
+}
+
+fn experience_expression(experience: &Experience) -> Expression {
+    Expression::builder()
+        .resource_ref(Ref::experience(experience.id))
+        .kind(SearchKind::Experience.as_str())
+        .content(experience.description.to_string())
+        .agent(experience.agent_id)
+        .sensation(experience.sensation.clone())
+        .created_at(experience.created_at)
+        .build()
 }

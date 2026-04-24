@@ -77,16 +77,34 @@ impl AgentService {
         context: &ProjectContext,
         ListAgents { filters }: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
-        let listed = AgentRepo::new(context).list(filters).await?;
+        let search_query = SearchQuery::builder()
+            .kind(SearchKind::Agent)
+            .filters(*filters)
+            .build();
 
-        if listed.total == 0 {
-            Ok(AgentResponse::NoAgents)
-        } else {
-            Ok(AgentResponse::Agents(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::agent(e.id));
-                Response::new(e).with_ref_token(ref_token)
-            })))
+        let results = SearchRepo::new(context).search(&search_query, None).await?;
+
+        if results.total == 0 {
+            return Ok(AgentResponse::NoAgents);
         }
+
+        let repo = AgentRepo::new(context);
+        let mut items = Vec::with_capacity(results.hits.len());
+        for hit in &results.hits {
+            let Ref::V0(Resource::Agent(id)) = &hit.resource_ref else {
+                continue;
+            };
+            if let Some(agent) = repo.get_by_id(*id).await? {
+                items.push(agent);
+            }
+        }
+
+        Ok(AgentResponse::Agents(
+            Listed::new(items, results.total).map(|a| {
+                let ref_token = RefToken::new(Ref::agent(a.id));
+                Response::new(a).with_ref_token(ref_token)
+            }),
+        ))
     }
 
     pub async fn update(

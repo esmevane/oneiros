@@ -63,7 +63,14 @@ async fn with_searchable<B: Backend>() -> Result<Harness<B>, Box<dyn core::error
 /// Helper: extract the results vec from a search response.
 fn extract_results(response: Responses) -> Vec<Expression> {
     match response {
-        Responses::Search(SearchResponse::Results(search_results)) => search_results.results,
+        Responses::Search(SearchResponse::Results(search_results)) => search_results.hits,
+        other => panic!("expected Search(Results), got {other:#?}"),
+    }
+}
+
+fn extract_full(response: Responses) -> SearchResults {
+    match response {
+        Responses::Search(SearchResponse::Results(search_results)) => search_results,
         other => panic!("expected Search(Results), got {other:#?}"),
     }
 }
@@ -203,6 +210,126 @@ pub(crate) async fn finds_updated_agent_description<B: Backend>() -> TestResult 
         1,
         "expected 1 result for updated agent description"
     );
+
+    Ok(())
+}
+
+/// Search response carries faceted aggregations across kind, texture, level,
+/// and sensation — the palace map of what's out there.
+pub(crate) async fn returns_faceted_results<B: Backend>() -> TestResult {
+    let harness = with_searchable::<B>().await?;
+
+    harness
+        .exec_json("cognition add thinker.process observation 'Indexable observation one'")
+        .await?;
+    harness
+        .exec_json("cognition add thinker.process observation 'Indexable observation two'")
+        .await?;
+    harness
+        .exec_json("memory add thinker.process session 'Indexable memory session'")
+        .await?;
+    harness
+        .exec_json("experience create thinker.process caused 'Indexable experience caused'")
+        .await?;
+
+    let response = harness.exec_json("search Indexable").await?;
+    let results = extract_full(response);
+
+    assert_eq!(results.hits.len(), 4, "expected 4 hits across kinds");
+    assert_eq!(results.total, 4);
+
+    let kind_group = results
+        .facets
+        .find(FacetName::Kind)
+        .expect("kind facet present");
+    assert_eq!(kind_group.buckets.len(), 3, "cognition, memory, experience");
+
+    let texture_group = results
+        .facets
+        .find(FacetName::Texture)
+        .expect("texture facet present");
+    assert_eq!(
+        texture_group.buckets.len(),
+        1,
+        "one texture (observation) appears"
+    );
+    assert_eq!(texture_group.buckets[0].value, "observation");
+    assert_eq!(texture_group.buckets[0].count, 2);
+
+    let level_group = results
+        .facets
+        .find(FacetName::Level)
+        .expect("level facet present");
+    assert_eq!(level_group.buckets.len(), 1);
+    assert_eq!(level_group.buckets[0].value, "session");
+
+    let sensation_group = results
+        .facets
+        .find(FacetName::Sensation)
+        .expect("sensation facet present");
+    assert_eq!(sensation_group.buckets.len(), 1);
+    assert_eq!(sensation_group.buckets[0].value, "caused");
+
+    Ok(())
+}
+
+/// Filtering by `--kind` narrows both hits and every facet group to only
+/// rows of that kind.
+pub(crate) async fn narrows_by_kind_filter<B: Backend>() -> TestResult {
+    let harness = with_searchable::<B>().await?;
+
+    harness
+        .exec_json("cognition add thinker.process observation 'Narrowable content here'")
+        .await?;
+    harness
+        .exec_json("memory add thinker.process session 'Narrowable memory content'")
+        .await?;
+
+    let response = harness
+        .exec_json("search Narrowable --kind cognition")
+        .await?;
+    let results = extract_full(response);
+
+    assert_eq!(results.hits.len(), 1);
+    assert_eq!(results.total, 1);
+
+    let kind_group = results
+        .facets
+        .find(FacetName::Kind)
+        .expect("kind facet present");
+    assert_eq!(kind_group.buckets.len(), 1);
+    assert_eq!(kind_group.buckets[0].value, "cognition");
+
+    assert!(
+        results.facets.find(FacetName::Level).is_none(),
+        "level facet should not appear when no memory hits remain"
+    );
+
+    Ok(())
+}
+
+/// Hits carry typed per-kind metadata — the caller can see texture/level/
+/// sensation on each match without a second query.
+pub(crate) async fn hits_carry_typed_metadata<B: Backend>() -> TestResult {
+    let harness = with_searchable::<B>().await?;
+
+    harness
+        .exec_json("cognition add thinker.process observation 'Distinctive cognition text'")
+        .await?;
+
+    let response = harness.exec_json("search Distinctive").await?;
+    let results = extract_full(response);
+
+    let hit = results
+        .hits
+        .first()
+        .expect("one hit for distinctive content");
+    assert_eq!(
+        hit.texture.as_ref().map(|t| t.to_string()),
+        Some("observation".to_string())
+    );
+    assert!(hit.agent.is_some(), "agent id populated on hit");
+    assert!(hit.created_at.is_some(), "created_at populated on hit");
 
     Ok(())
 }
