@@ -19,13 +19,13 @@ impl<'a> AgentStore<'a> {
             match agent_event {
                 AgentEvents::AgentCreated(agent) => {
                     self.create_record(agent)?;
-                    SearchStore::new(self.conn).index_expression(&agent_expression(agent))?;
+                    SearchStore::new(self.conn).index_expression(&Expression::agent(agent))?;
                 }
                 AgentEvents::AgentUpdated(agent) => {
                     self.update(agent)?;
                     let search = SearchStore::new(self.conn);
                     search.remove_by_ref(&Ref::agent(agent.id))?;
-                    search.index_expression(&agent_expression(agent))?;
+                    search.index_expression(&Expression::agent(agent))?;
                 }
                 AgentEvents::AgentRemoved(removed) => {
                     if let Some(agent) = self.get(&removed.name)? {
@@ -187,15 +187,4 @@ impl<'a> AgentStore<'a> {
         )?;
         Ok(())
     }
-}
-
-fn agent_expression(agent: &Agent) -> Expression {
-    let content = format!("{} {}", agent.name, agent.description);
-    Expression::builder()
-        .resource_ref(Ref::agent(agent.id))
-        .kind(SearchKind::Agent.as_str())
-        .content(content)
-        .agent(agent.id)
-        .persona(agent.persona.clone())
-        .build()
 }

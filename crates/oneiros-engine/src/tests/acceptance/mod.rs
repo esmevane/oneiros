@@ -820,6 +820,10 @@ async fn search_narrows_by_kind_filter() -> TestResult {
 async fn search_hits_carry_typed_metadata() -> TestResult {
     cases::search::hits_carry_typed_metadata::<EngineBackend>().await
 }
+#[tokio::test]
+async fn search_every_content_kind_indexes() -> TestResult {
+    cases::search::every_content_kind_indexes::<EngineBackend>().await
+}
 
 // Import/Export depth
 #[tokio::test]

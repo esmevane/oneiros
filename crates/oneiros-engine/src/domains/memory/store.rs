@@ -19,16 +19,7 @@ impl<'a> MemoryStore<'a> {
             match memory_event {
                 MemoryEvents::MemoryAdded(memory) => {
                     self.insert(memory)?;
-                    SearchStore::new(self.conn).index_expression(
-                        &Expression::builder()
-                            .resource_ref(Ref::memory(memory.id))
-                            .kind(SearchKind::Memory.as_str())
-                            .content(memory.content.clone())
-                            .agent(memory.agent_id)
-                            .level(memory.level.clone())
-                            .created_at(memory.created_at)
-                            .build(),
-                    )?;
+                    SearchStore::new(self.conn).index_expression(&Expression::memory(memory))?;
                 }
             }
         }

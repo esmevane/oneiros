@@ -74,16 +74,15 @@ impl ExperienceService {
             return Ok(ExperienceResponse::NoExperiences);
         }
 
-        let repo = ExperienceRepo::new(context);
-        let mut items = Vec::with_capacity(results.hits.len());
-        for hit in &results.hits {
-            let Ref::V0(Resource::Experience(id)) = &hit.resource_ref else {
-                continue;
-            };
-            if let Some(experience) = repo.get(id).await? {
-                items.push(experience);
-            }
-        }
+        let ids: Vec<ExperienceId> = results
+            .hits
+            .iter()
+            .filter_map(|hit| match hit.resource_ref() {
+                Ref::V0(Resource::Experience(id)) => Some(*id),
+                _ => None,
+            })
+            .collect();
+        let items = ExperienceRepo::new(context).get_many(&ids).await?;
 
         Ok(ExperienceResponse::Experiences(
             Listed::new(items, results.total).map(|e| {

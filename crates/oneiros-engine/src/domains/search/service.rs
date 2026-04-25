@@ -12,8 +12,9 @@ impl SearchService {
             None => None,
         };
 
+        let query = query.with_facets();
         let results = SearchRepo::new(context)
-            .search(query, agent_id.as_ref())
+            .search(&query, agent_id.as_ref())
             .await?;
         Ok(SearchResponse::Results(results))
     }

@@ -74,16 +74,15 @@ impl MemoryService {
             return Ok(MemoryResponse::NoMemories);
         }
 
-        let repo = MemoryRepo::new(context);
-        let mut items = Vec::with_capacity(results.hits.len());
-        for hit in &results.hits {
-            let Ref::V0(Resource::Memory(id)) = &hit.resource_ref else {
-                continue;
-            };
-            if let Some(memory) = repo.get(id).await? {
-                items.push(memory);
-            }
-        }
+        let ids: Vec<MemoryId> = results
+            .hits
+            .iter()
+            .filter_map(|hit| match hit.resource_ref() {
+                Ref::V0(Resource::Memory(id)) => Some(*id),
+                _ => None,
+            })
+            .collect();
+        let items = MemoryRepo::new(context).get_many(&ids).await?;
 
         Ok(MemoryResponse::Memories(
             Listed::new(items, results.total).map(|m| {

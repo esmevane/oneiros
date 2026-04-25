@@ -20,14 +20,14 @@ impl<'a> ExperienceStore<'a> {
                 ExperienceEvents::ExperienceCreated(experience) => {
                     self.insert(experience)?;
                     SearchStore::new(self.conn)
-                        .index_expression(&experience_expression(experience))?;
+                        .index_expression(&Expression::experience(experience))?;
                 }
                 ExperienceEvents::ExperienceDescriptionUpdated(update) => {
                     self.update_description(&update.id, &update.description)?;
                     if let Some(exp) = self.get(&update.id)? {
                         let search = SearchStore::new(self.conn);
                         search.remove_by_ref(&Ref::experience(exp.id))?;
-                        search.index_expression(&experience_expression(&exp))?;
+                        search.index_expression(&Expression::experience(&exp))?;
                     }
                 }
                 ExperienceEvents::ExperienceSensationUpdated(update) => {
@@ -35,7 +35,7 @@ impl<'a> ExperienceStore<'a> {
                     if let Some(exp) = self.get(&update.id)? {
                         let search = SearchStore::new(self.conn);
                         search.remove_by_ref(&Ref::experience(exp.id))?;
-                        search.index_expression(&experience_expression(&exp))?;
+                        search.index_expression(&Expression::experience(&exp))?;
                     }
                 }
             }
@@ -218,15 +218,4 @@ impl<'a> ExperienceStore<'a> {
         )?;
         Ok(())
     }
-}
-
-fn experience_expression(experience: &Experience) -> Expression {
-    Expression::builder()
-        .resource_ref(Ref::experience(experience.id))
-        .kind(SearchKind::Experience.as_str())
-        .content(experience.description.to_string())
-        .agent(experience.agent_id)
-        .sensation(experience.sensation.clone())
-        .created_at(experience.created_at)
-        .build()
 }

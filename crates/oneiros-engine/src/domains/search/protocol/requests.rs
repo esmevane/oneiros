@@ -32,6 +32,24 @@ pub struct SearchQuery {
     #[serde(flatten, default)]
     #[builder(default)]
     pub filters: SearchFilters,
+
+    /// Whether to compute facet aggregations alongside hits. Internal —
+    /// flipped on by [`SearchService`] for explicit search; left off by
+    /// list endpoints that don't render the palace map.
+    #[arg(skip)]
+    #[serde(skip)]
+    #[builder(default)]
+    pub with_facets: bool,
+}
+
+impl SearchQuery {
+    /// Return a clone of this query with facet aggregations enabled.
+    pub fn with_facets(&self) -> Self {
+        Self {
+            with_facets: true,
+            ..self.clone()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

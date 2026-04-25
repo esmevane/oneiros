@@ -324,12 +324,52 @@ pub(crate) async fn hits_carry_typed_metadata<B: Backend>() -> TestResult {
         .hits
         .first()
         .expect("one hit for distinctive content");
+    assert!(matches!(hit, Expression::Cognition { .. }));
     assert_eq!(
-        hit.texture.as_ref().map(|t| t.to_string()),
+        hit.texture().map(|t| t.to_string()),
         Some("observation".to_string())
     );
-    assert!(hit.agent.is_some(), "agent id populated on hit");
-    assert!(hit.created_at.is_some(), "created_at populated on hit");
+    assert!(hit.created_at().is_some(), "created_at populated on hit");
+
+    Ok(())
+}
+
+/// Every content-bearing kind reports into the search index — adding a new
+/// kind without wiring `SearchStore::index_expression` will fail this test.
+pub(crate) async fn every_content_kind_indexes<B: Backend>() -> TestResult {
+    let harness = with_searchable::<B>().await?;
+
+    harness
+        .exec_json("agent create gardener process --description 'Probe gardener tends'")
+        .await?;
+    harness
+        .exec_json("cognition add gardener.process observation 'Probe cognition seeded'")
+        .await?;
+    harness
+        .exec_json("memory add gardener.process session 'Probe memory consolidated'")
+        .await?;
+    harness
+        .exec_json("experience create gardener.process caused 'Probe experience marked'")
+        .await?;
+
+    let response = harness.exec_json("search Probe").await?;
+    let results = extract_full(response);
+
+    let kinds: Vec<&str> = results
+        .facets
+        .find(FacetName::Kind)
+        .expect("kind facet present")
+        .buckets
+        .iter()
+        .map(|b| b.value.as_str())
+        .collect();
+
+    for expected in ["cognition", "memory", "experience", "agent"] {
+        assert!(
+            kinds.contains(&expected),
+            "{expected} kind missing from index — wire SearchStore::index_expression in the {expected} domain"
+        );
+    }
 
     Ok(())
 }

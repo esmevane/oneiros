@@ -79,16 +79,15 @@ impl CognitionService {
             return Ok(CognitionResponse::NoCognitions);
         }
 
-        let repo = CognitionRepo::new(context);
-        let mut items = Vec::with_capacity(results.hits.len());
-        for hit in &results.hits {
-            let Ref::V0(Resource::Cognition(id)) = &hit.resource_ref else {
-                continue;
-            };
-            if let Some(cognition) = repo.get(id).await? {
-                items.push(cognition);
-            }
-        }
+        let ids: Vec<CognitionId> = results
+            .hits
+            .iter()
+            .filter_map(|hit| match hit.resource_ref() {
+                Ref::V0(Resource::Cognition(id)) => Some(*id),
+                _ => None,
+            })
+            .collect();
+        let items = CognitionRepo::new(context).get_many(&ids).await?;
 
         Ok(CognitionResponse::Cognitions(
             Listed::new(items, results.total).map(|c| {

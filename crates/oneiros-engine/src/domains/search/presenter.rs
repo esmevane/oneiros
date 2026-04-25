@@ -21,7 +21,9 @@ impl SearchPresenter {
                 for hit in &results.hits {
                     md.push_str(&format!(
                         "- **{}** ({}): {}\n",
-                        hit.kind, hit.resource_ref, hit.content
+                        hit.kind(),
+                        hit.resource_ref(),
+                        hit.content()
                     ));
                 }
                 if !results.facets.is_empty() {
@@ -63,7 +65,7 @@ impl SearchPresenter {
 
                 let mut out = format!("{heading}:\n\n");
                 for hit in &results.hits {
-                    let content = hit.content.as_str();
+                    let content = hit.content().as_str();
                     let truncated = if content.len() > 80 {
                         let end = content.floor_char_boundary(80);
                         format!("{}...", &content[..end])
@@ -72,9 +74,9 @@ impl SearchPresenter {
                     };
                     out.push_str(&format!(
                         "  [{}] {}\n    {}\n\n",
-                        hit.kind,
+                        hit.kind(),
                         truncated,
-                        RefToken::new(hit.resource_ref.clone())
+                        RefToken::new(hit.resource_ref().clone())
                     ));
                 }
                 out

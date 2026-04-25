@@ -1,4 +1,6 @@
-use rusqlite::params;
+use std::collections::HashMap;
+
+use rusqlite::{params, params_from_iter};
 
 use crate::*;
 
@@ -45,6 +47,49 @@ impl<'a> CognitionRepo<'a> {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
+    }
+
+    /// Hydrate many cognitions by id, preserving the input order. Used by
+    /// list endpoints to bulk-fetch search hits in a single round trip.
+    pub async fn get_many(&self, ids: &[CognitionId]) -> Result<Vec<Cognition>, EventError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let db = self.context.db()?;
+        let placeholders = (1..=ids.len())
+            .map(|i| format!("?{i}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let sql = format!(
+            "SELECT id, agent_id, texture, content, created_at
+             FROM cognitions WHERE id IN ({placeholders})"
+        );
+        let id_strs: Vec<String> = ids.iter().map(ToString::to_string).collect();
+        let mut stmt = db.prepare(&sql)?;
+        let rows = stmt
+            .query_map(params_from_iter(id_strs.iter()), |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut by_id: HashMap<CognitionId, Cognition> = HashMap::with_capacity(rows.len());
+        for (id, agent_id, texture, content, created_at) in rows {
+            let cognition = Cognition::builder()
+                .id(id.parse()?)
+                .agent_id(agent_id.parse()?)
+                .texture(texture)
+                .content(content)
+                .created_at(Timestamp::parse_str(&created_at)?)
+                .build();
+            by_id.insert(cognition.id, cognition);
+        }
+        Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
     }
 
     /// Most recent cognitions for an agent, ordered newest-first.

@@ -88,21 +88,20 @@ impl AgentService {
             return Ok(AgentResponse::NoAgents);
         }
 
-        let repo = AgentRepo::new(context);
-        let mut items = Vec::with_capacity(results.hits.len());
-        for hit in &results.hits {
-            let Ref::V0(Resource::Agent(id)) = &hit.resource_ref else {
-                continue;
-            };
-            if let Some(agent) = repo.get_by_id(*id).await? {
-                items.push(agent);
+        let mut ids: Vec<AgentId> = vec![];
+
+        for hit in results.hits {
+            if let Ref::V0(Resource::Agent(id)) = hit.resource_ref() {
+                ids.push(*id);
             }
         }
 
+        let items = AgentRepo::new(context).get_many(&ids).await?;
+
         Ok(AgentResponse::Agents(
-            Listed::new(items, results.total).map(|a| {
-                let ref_token = RefToken::new(Ref::agent(a.id));
-                Response::new(a).with_ref_token(ref_token)
+            Listed::new(items, results.total).map(|agent| {
+                let ref_token = RefToken::new(Ref::agent(agent.id));
+                Response::new(agent).with_ref_token(ref_token)
             }),
         ))
     }

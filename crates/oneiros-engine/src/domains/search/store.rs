@@ -37,10 +37,6 @@ impl<'a> SearchStore<'a> {
         Ok(())
     }
 
-    pub fn handle(&self, _event: &StoredEvent) -> Result<(), EventError> {
-        Ok(())
-    }
-
     pub fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("delete from search_index", [])?;
         Ok(())
@@ -51,46 +47,22 @@ impl<'a> SearchStore<'a> {
     /// Index an expression row. Called by content-bearing domains from their
     /// own event handlers.
     pub fn index_expression(&self, expression: &Expression) -> Result<(), EventError> {
-        let ref_json = serde_json::to_string(&expression.resource_ref)?;
+        let cols = expression.columns();
         self.conn.execute(
             "insert into search_index (
                  resource_ref, kind, content,
                  agent_id, texture, level, sensation, persona, created_at
              ) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![
-                ref_json,
-                expression.kind.as_str(),
-                expression.content.as_str(),
-                expression
-                    .agent
-                    .as_ref()
-                    .map(|a| a.to_string())
-                    .unwrap_or_default(),
-                expression
-                    .texture
-                    .as_ref()
-                    .map(|t| t.to_string())
-                    .unwrap_or_default(),
-                expression
-                    .level
-                    .as_ref()
-                    .map(|l| l.to_string())
-                    .unwrap_or_default(),
-                expression
-                    .sensation
-                    .as_ref()
-                    .map(|s| s.to_string())
-                    .unwrap_or_default(),
-                expression
-                    .persona
-                    .as_ref()
-                    .map(|p| p.to_string())
-                    .unwrap_or_default(),
-                expression
-                    .created_at
-                    .as_ref()
-                    .map(|t| t.as_string())
-                    .unwrap_or_default(),
+                cols.resource_ref,
+                cols.kind.as_str(),
+                cols.content,
+                cols.agent,
+                cols.texture,
+                cols.level,
+                cols.sensation,
+                cols.persona,
+                cols.created_at,
             ],
         )?;
         Ok(())
