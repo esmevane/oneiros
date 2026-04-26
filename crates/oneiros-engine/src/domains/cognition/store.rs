@@ -12,10 +12,8 @@ impl<'a> CognitionStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Cognition(cognition_event) = &event.data {
+        if let Event::Known(Events::Cognition(cognition_event)) = &event.data {
             match cognition_event {
                 CognitionEvents::CognitionAdded(cognition) => self.insert(cognition)?,
             }
@@ -40,8 +38,6 @@ impl<'a> CognitionStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let mut stmt = self.conn.prepare(
@@ -184,8 +180,6 @@ impl<'a> CognitionStore<'a> {
 
         Ok(cognitions)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn insert(&self, cognition: &Cognition) -> Result<(), EventError> {
         self.conn.execute(

@@ -12,7 +12,7 @@ impl<'a> TenantStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = &event.data {
+        if let Event::Known(Events::Tenant(TenantEvents::TenantCreated(tenant))) = &event.data {
             self.conn.execute(
                 "insert or replace into tenants (id, name, created_at) values (?1, ?2, ?3)",
                 params![

@@ -16,8 +16,6 @@ impl<'a> PressureStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     /// Recompute pressure for the agent associated with this event.
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         let agents = self.resolve_agents(event)?;
@@ -40,25 +38,24 @@ impl<'a> PressureStore<'a> {
     }
 
     pub fn reset(&self) -> Result<(), EventError> {
-        self.conn.execute("DELETE FROM pressures", [])?;
+        self.conn.execute("delete from pressures", [])?;
+
         Ok(())
     }
 
     pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS pressures (
-                id TEXT PRIMARY KEY,
-                agent_id TEXT NOT NULL,
-                urge TEXT NOT NULL,
-                data TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                UNIQUE(agent_id, urge)
+            "create table if not exists pressures (
+                id         text primary key,
+                agent_id   text not null,
+                urge       text not null,
+                data       text not null,
+                updated_at text not null,
+                unique(agent_id, urge)
             )",
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
         // Look up agent by name to get the ID
@@ -68,7 +65,7 @@ impl<'a> PressureStore<'a> {
         };
 
         let mut stmt = self.conn.prepare(
-            "SELECT id, agent_id, urge, data, updated_at FROM pressures WHERE agent_id = ?1 ORDER BY urge",
+            "select id, agent_id, urge, data, updated_at from pressures where agent_id = ?1 order by urge",
         )?;
 
         let pressures = stmt
@@ -104,8 +101,6 @@ impl<'a> PressureStore<'a> {
         Ok(pressures)
     }
 
-    // ── Write operations ─────────────────────────────────────────
-
     pub fn upsert(
         &self,
         agent_id: &AgentId,
@@ -117,8 +112,8 @@ impl<'a> PressureStore<'a> {
         let data_json = serde_json::to_string(gauge)?;
 
         self.conn.execute(
-            "INSERT INTO pressures (id, agent_id, urge, data, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
-             ON CONFLICT(agent_id, urge) DO UPDATE SET data = ?4, updated_at = ?5",
+            "insert into pressures (id, agent_id, urge, data, updated_at) values (?1, ?2, ?3, ?4, ?5)
+             on conflict(agent_id, urge) do update set data = ?4, updated_at = ?5",
             params![
                 id.to_string(),
                 agent_id.to_string(),
@@ -131,8 +126,6 @@ impl<'a> PressureStore<'a> {
         Ok(())
     }
 
-    // ── Private compute helpers ───────────────────────────────────
-
     /// Resolve which agents should have their pressure recomputed for this event.
     ///
     /// Most events map to a single agent. Connection and experience events may
@@ -143,24 +136,51 @@ impl<'a> PressureStore<'a> {
 
         // Try to resolve a single agent first
         let agent_name = match &event.data {
-            Events::Cognition(CognitionEvents::CognitionAdded(c)) => agent_store
-                .get_name_by_id(&c.agent_id)?
-                .map(|n| n.to_string()),
-            Events::Memory(MemoryEvents::MemoryAdded(m)) => agent_store
-                .get_name_by_id(&m.agent_id)?
-                .map(|n| n.to_string()),
-            Events::Experience(ExperienceEvents::ExperienceCreated(e)) => agent_store
-                .get_name_by_id(&e.agent_id)?
-                .map(|n| n.to_string()),
-            Events::Continuity(ContinuityEvents::Introspected(a)) => Some(a.agent.to_string()),
-            Events::Continuity(ContinuityEvents::Reflected(a)) => Some(a.agent.to_string()),
-            Events::Continuity(ContinuityEvents::Dreamed(a)) => Some(a.agent.to_string()),
-            Events::Continuity(ContinuityEvents::Slept(a)) => Some(a.agent.to_string()),
-            Events::Continuity(ContinuityEvents::Sensed(a)) => Some(a.agent.to_string()),
-            // Connection events affect orphaned/unconnected counts for any agent
-            // whose entities are referenced. Recompute for all agents.
-            Events::Connection(_) => None,
-            _ => return Ok(vec![]),
+            Event::Known(known_event) => match known_event {
+                Events::Cognition(CognitionEvents::CognitionAdded(cognition)) => agent_store
+                    .get_name_by_id(&cognition.agent_id)?
+                    .map(|n| n.to_string()),
+                Events::Memory(MemoryEvents::MemoryAdded(memory)) => agent_store
+                    .get_name_by_id(&memory.agent_id)?
+                    .map(|n| n.to_string()),
+                Events::Experience(ExperienceEvents::ExperienceCreated(experience)) => agent_store
+                    .get_name_by_id(&experience.agent_id)?
+                    .map(|n| n.to_string()),
+                Events::Continuity(ContinuityEvents::Introspected(continuity)) => {
+                    Some(continuity.agent.to_string())
+                }
+                Events::Continuity(ContinuityEvents::Reflected(continuity)) => {
+                    Some(continuity.agent.to_string())
+                }
+                Events::Continuity(ContinuityEvents::Dreamed(continuity)) => {
+                    Some(continuity.agent.to_string())
+                }
+                Events::Continuity(ContinuityEvents::Slept(continuity)) => {
+                    Some(continuity.agent.to_string())
+                }
+                Events::Continuity(ContinuityEvents::Sensed(sensed)) => {
+                    Some(sensed.agent.to_string())
+                }
+                // Connection events affect orphaned/unconnected counts for any agent
+                // whose entities are referenced. Recompute for all agents.
+                Events::Connection(_) => None,
+                Events::Level(_)
+                | Events::Texture(_)
+                | Events::Sensation(_)
+                | Events::Actor(_)
+                | Events::Nature(_)
+                | Events::Persona(_)
+                | Events::Urge(_)
+                | Events::Storage(_)
+                | Events::Tenant(_)
+                | Events::Brain(_)
+                | Events::Ticket(_)
+                | Events::Peer(_)
+                | Events::Agent(_)
+                | Events::Experience(_)
+                | Events::Bookmark(_) => return Ok(vec![]),
+            },
+            Event::Ephemeral(_) | Event::Unknown(_) | Event::Malformed => return Ok(vec![]),
         };
 
         match agent_name {

@@ -12,7 +12,7 @@ impl<'a> SensationStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Sensation(sensation_event) = &event.data {
+        if let Event::Known(Events::Sensation(sensation_event)) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
                 SensationEvents::SensationRemoved(removed) => self.remove(&removed.name)?,
@@ -36,8 +36,6 @@ impl<'a> SensationStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn list(&self) -> Result<Vec<Sensation>, EventError> {
         let mut stmt = self
@@ -65,8 +63,6 @@ impl<'a> SensationStore<'a> {
 
         Ok(sensations)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn set(&self, sensation: &Sensation) -> Result<(), EventError> {
         self.conn.execute(

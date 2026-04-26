@@ -43,14 +43,14 @@ impl<'a> EventLog<'a> {
     }
 
     /// Create the events table.
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub fn init(&self) -> Result<(), EventError> {
         self.conn.execute_batch(&format!(
-            "CREATE TABLE IF NOT EXISTS {} (
-                id TEXT PRIMARY KEY,
-                event_type TEXT NOT NULL,
-                data TEXT NOT NULL,
-                source TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL
+            "create table if not exists {} (
+                id         text primary key,
+                event_type text not null,
+                data       text not null,
+                source     text not null default '',
+                created_at text not null
             )",
             self.table,
         ))?;
@@ -69,7 +69,7 @@ impl<'a> EventLog<'a> {
 
         self.conn.execute(
             &format!(
-                "INSERT INTO {} (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                "insert into {} (id, event_type, data, source, created_at) values (?1, ?2, ?3, ?4, ?5)",
                 self.table,
             ),
             params![id.to_string(), event_type, data_json, source_json, now.as_string()],
@@ -80,20 +80,21 @@ impl<'a> EventLog<'a> {
         Ok(StoredEvent::builder()
             .id(id)
             .sequence(sequence)
-            .data(event.data.clone())
+            .data(Event::Known(event.data.clone()))
             .source(event.source)
             .created_at(now)
             .build())
     }
 
-    /// Load all events in sequence order.
+    /// Load all events in sequence order. Rows whose event type is not
+    /// recognized are logged at warn and filtered out of the result.
     pub fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
         let mut stmt = self.conn.prepare(&format!(
             "SELECT id, rowid, data, source, created_at FROM {} ORDER BY rowid",
             self.table,
         ))?;
 
-        let events = stmt
+        let rows = stmt
             .query_map([], |row| {
                 let id_str: String = row.get(0)?;
                 let data_str: String = row.get(2)?;
@@ -101,27 +102,39 @@ impl<'a> EventLog<'a> {
                 let created_at_str: String = row.get(4)?;
                 Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
             })?
-            .map(|result| {
+            .map(|result| -> Result<StoredEvent, EventError> {
                 let (id_str, sequence, data_str, source_str, created_at_str) = result?;
+
+                let id = id_str.parse().unwrap_or_default();
+                let record = serde_json::from_str(&data_str)
+                    .inspect_err(|error| {
+                        tracing::warn!(%error, "skipping event row with malformed json");
+                    })
+                    .unwrap_or_default();
+
                 Ok(StoredEvent::builder()
-                    .id(id_str.parse().unwrap_or_default())
+                    .id(id)
                     .sequence(sequence)
-                    .data(serde_json::from_str(&data_str).unwrap_or(Events::Unknown(
-                        serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
-                    )))
+                    .data(record)
                     .source(serde_json::from_str(&source_str).unwrap_or_default())
                     .created_at(
-                        Timestamp::parse_str(&created_at_str).unwrap_or_else(|_| Timestamp::now()),
+                        Timestamp::parse_str(created_at_str).unwrap_or_else(|_| Timestamp::now()),
                     )
                     .build())
-            })
-            .collect::<Result<Vec<_>, EventError>>()?;
+            });
 
+        let mut events = Vec::new();
+        for row in rows {
+            let row = row?;
+            if let Event::Known(_) = row.data {
+                events.push(row);
+            }
+        }
         Ok(events)
     }
 
     /// Fetch events by ID. Returns all found events in sequence order;
-    /// silently skips IDs that don't exist in the log.
+    ///
     pub fn get_batch(&self, ids: &[EventId]) -> Result<Vec<StoredEvent>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
@@ -129,7 +142,7 @@ impl<'a> EventLog<'a> {
 
         let placeholders: Vec<String> = (1..=ids.len()).map(|i| format!("?{i}")).collect();
         let query = format!(
-            "SELECT id, rowid, data, source, created_at FROM {} WHERE id IN ({}) ORDER BY rowid",
+            "select id, rowid, data, source, created_at from {} where id in ({}) order by rowid",
             self.table,
             placeholders.join(","),
         );
@@ -139,28 +152,44 @@ impl<'a> EventLog<'a> {
         let param_refs: Vec<&dyn rusqlite::ToSql> =
             params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
 
-        stmt.query_map(param_refs.as_slice(), |row| {
-            let id_str: String = row.get(0)?;
-            let data_str: String = row.get(2)?;
-            let source_str: String = row.get(3)?;
-            let created_at_str: String = row.get(4)?;
-            Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
-        })?
-        .map(|result| {
-            let (id_str, sequence, data_str, source_str, created_at_str) = result?;
-            Ok(StoredEvent::builder()
-                .id(id_str.parse().unwrap_or_default())
-                .sequence(sequence)
-                .data(serde_json::from_str(&data_str).unwrap_or(Events::Unknown(
-                    serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null),
-                )))
-                .source(serde_json::from_str(&source_str).unwrap_or_default())
-                .created_at(
-                    Timestamp::parse_str(&created_at_str).unwrap_or_else(|_| Timestamp::now()),
-                )
-                .build())
-        })
-        .collect()
+        let rows = stmt
+            .query_map(param_refs.as_slice(), |row| {
+                let id_str: String = row.get(0)?;
+                let data_str: String = row.get(2)?;
+                let source_str: String = row.get(3)?;
+                let created_at_str: String = row.get(4)?;
+                Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
+            })?
+            .map(|result| -> Result<StoredEvent, EventError> {
+                let (id_str, sequence, data_str, source_str, created_at_str) = result?;
+
+                let id = id_str.parse().unwrap_or_default();
+                let record = serde_json::from_str(&data_str)
+                    .inspect_err(|error| {
+                        tracing::warn!(%error, "skipping event row with malformed json");
+                    })
+                    .unwrap_or_default();
+
+                Ok(StoredEvent::builder()
+                    .id(id)
+                    .sequence(sequence)
+                    .data(record)
+                    .source(serde_json::from_str(&source_str).unwrap_or_default())
+                    .created_at(
+                        Timestamp::parse_str(created_at_str).unwrap_or_else(|_| Timestamp::now()),
+                    )
+                    .build())
+            });
+
+        let mut events = Vec::new();
+
+        for row in rows {
+            let row = row?;
+            if let Event::Known(_) = row.data {
+                events.push(row)
+            }
+        }
+        Ok(events)
     }
 
     /// Import a single event without running projections. Idempotent.
@@ -171,7 +200,7 @@ impl<'a> EventLog<'a> {
 
         self.conn.execute(
             &format!(
-                "INSERT OR IGNORE INTO {} (id, event_type, data, source, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                "insert or ignore into {} (id, event_type, data, source, created_at) values (?1, ?2, ?3, ?4, ?5)",
                 self.table,
             ),
             params![

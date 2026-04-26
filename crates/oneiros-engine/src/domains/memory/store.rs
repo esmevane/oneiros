@@ -12,10 +12,8 @@ impl<'a> MemoryStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Memory(memory_event) = &event.data {
+        if let Event::Known(Events::Memory(memory_event)) = &event.data {
             match memory_event {
                 MemoryEvents::MemoryAdded(memory) => self.insert(memory)?,
             }
@@ -40,8 +38,6 @@ impl<'a> MemoryStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let mut stmt = self.conn.prepare(
@@ -117,8 +113,6 @@ impl<'a> MemoryStore<'a> {
 
         Ok(memories)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn insert(&self, memory: &Memory) -> Result<(), EventError> {
         self.conn.execute(

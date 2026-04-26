@@ -23,7 +23,7 @@ pub struct StoredEvent {
     pub id: EventId,
     #[serde(default)]
     pub sequence: i64,
-    pub data: Events,
+    pub data: Event,
     #[serde(default)]
     pub source: Source,
     #[serde(alias = "timestamp")]

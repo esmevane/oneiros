@@ -12,7 +12,7 @@ impl<'a> TextureStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Texture(texture_event) = &event.data {
+        if let Event::Known(Events::Texture(texture_event)) = &event.data {
             match texture_event {
                 TextureEvents::TextureSet(texture) => self.set(texture)?,
                 TextureEvents::TextureRemoved(removed) => self.remove(&removed.name)?,
@@ -36,8 +36,6 @@ impl<'a> TextureStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn list(&self) -> Result<Vec<Texture>, EventError> {
         let mut stmt = self
@@ -65,8 +63,6 @@ impl<'a> TextureStore<'a> {
 
         Ok(textures)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn set(&self, texture: &Texture) -> Result<(), EventError> {
         self.conn.execute(

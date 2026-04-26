@@ -38,7 +38,9 @@ impl<T: Clone + Default> Projections<T> {
             }
         }
 
-        self.reducers.apply(&event.data)?;
+        if let Event::Known(data) = &event.data {
+            self.reducers.apply(data)?;
+        }
 
         Ok(())
     }
@@ -88,15 +90,17 @@ impl<T: Clone + Default> Projections<T> {
         let result = (|| -> Result<(), EventError> {
             for event in &events {
                 self.apply_frames(db, event)?;
-                self.reducers.apply(&event.data)?;
+                if let Event::Known(data) = &event.data {
+                    self.reducers.apply(data)?;
+                }
             }
             Ok(())
         })();
 
         match result {
-            Ok(()) => db.execute_batch("COMMIT")?,
+            Ok(()) => db.execute_batch("commit")?,
             Err(e) => {
-                let _ = db.execute_batch("ROLLBACK");
+                let _ = db.execute_batch("rollback");
                 return Err(e);
             }
         }

@@ -595,8 +595,6 @@ mod tests {
         assert!(json["data"]["calculation"].is_object());
     }
 
-    // ── Catharsis tests ─────────────────────────────────────────
-
     #[test]
     fn catharsis_gauge_from_inputs() {
         let inputs = CatharsisInputs {
@@ -653,8 +651,6 @@ mod tests {
         let json_value: serde_json::Value = serde_json::to_value(&gauge).unwrap();
         assert_eq!(json_value["type"], "catharsis");
     }
-
-    // ── Recollect tests ─────────────────────────────────────────
 
     #[test]
     fn recollect_gauge_from_inputs() {
@@ -713,8 +709,6 @@ mod tests {
         assert_eq!(json_value["type"], "recollect");
     }
 
-    // ── Retrospect tests ────────────────────────────────────────
-
     #[test]
     fn retrospect_gauge_from_inputs() {
         let inputs = RetrospectInputs {
@@ -765,8 +759,6 @@ mod tests {
         let json_value: serde_json::Value = serde_json::to_value(&gauge).unwrap();
         assert_eq!(json_value["type"], "retrospect");
     }
-
-    // ── Cross-gauge delegation ──────────────────────────────────
 
     #[test]
     fn gauge_urgency_delegates_all_variants() {

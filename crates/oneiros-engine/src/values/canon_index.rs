@@ -221,7 +221,9 @@ impl CanonIndex {
         let entry = self.brain_entry(name)?;
 
         for event in &events {
-            entry.pipeline.apply(&event.data)?;
+            if let Event::Known(data) = &event.data {
+                entry.pipeline.apply(data)?;
+            }
         }
 
         // Rebuild the chronicle in the system DB.

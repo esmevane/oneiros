@@ -16,7 +16,7 @@ impl<'a> FollowStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Bookmark(bookmark_event) = &event.data {
+        if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data {
             match bookmark_event {
                 BookmarkEvents::BookmarkFollowed(follow) => {
                     self.create_record(follow)?;

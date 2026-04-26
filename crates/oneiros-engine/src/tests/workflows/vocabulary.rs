@@ -18,8 +18,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = app.client();
 
-    // ── Levels ──────────────────────────────────────────────────
-
     app.command(r#"level set working --description "Active processing" --prompt "What you're actively processing""#)
         .await?;
     app.command(r#"level set session --description "Session context" --prompt "Current session""#)
@@ -68,8 +66,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected Levels, got {other:?}"),
     }
 
-    // ── Textures ────────────────────────────────────────────────
-
     app.command(r#"texture set observation --description "Noticing" --prompt "When you notice""#)
         .await?;
 
@@ -87,8 +83,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         }
         other => panic!("expected TextureDetails, got {other:?}"),
     }
-
-    // ── Sensations ──────────────────────────────────────────────
 
     app.command(r#"sensation set echoes --description "Resonance" --prompt "Things that rhyme""#)
         .await?;
@@ -108,8 +102,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected SensationDetails, got {other:?}"),
     }
 
-    // ── Natures ─────────────────────────────────────────────────
-
     app.command(r#"nature set reference --description "Related" --prompt "Cross-reference""#)
         .await?;
 
@@ -127,8 +119,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         }
         other => panic!("expected NatureDetails, got {other:?}"),
     }
-
-    // ── Personas ────────────────────────────────────────────────
 
     app.command(
         r#"persona set process --description "Process agents" --prompt "You manage process""#,
@@ -154,8 +144,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
 
-    // ── Urges ───────────────────────────────────────────────────
-
     app.command(r#"urge set introspect --description "Look inward" --prompt "Pause and reflect""#)
         .await?;
 
@@ -169,8 +157,6 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         }
         other => panic!("expected UrgeDetails, got {other:?}"),
     }
-
-    // ── Set is idempotent ───────────────────────────────────────
 
     // Setting the same level again with different description should update, not conflict
     app.command(r#"level set working --description "Updated description" --prompt """#)

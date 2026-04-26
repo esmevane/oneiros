@@ -12,10 +12,8 @@ impl<'a> PersonaStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Persona(persona_event) = &event.data {
+        if let Event::Known(Events::Persona(persona_event)) = &event.data {
             match persona_event {
                 PersonaEvents::PersonaSet(persona) => self.set(persona)?,
                 PersonaEvents::PersonaRemoved(removed) => self.remove(&removed.name)?,
@@ -39,8 +37,6 @@ impl<'a> PersonaStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
         let mut stmt = self
@@ -67,8 +63,6 @@ impl<'a> PersonaStore<'a> {
             Err(e) => Err(e.into()),
         }
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn set(&self, persona: &Persona) -> Result<(), EventError> {
         self.conn.execute(

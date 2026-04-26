@@ -29,8 +29,6 @@ use crate::*;
 /// the import.
 #[tokio::test]
 async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
-    // ── Alice: a brain with rich cognitive history ─────────────
-
     let alice = TestApp::new()
         .await?
         .init_system()
@@ -66,8 +64,6 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .find(|e| e.path().extension().is_some_and(|ext| ext == "jsonl"))
         .expect("export should produce a .jsonl file");
 
-    // ── Bob: a separate brain with its own agent ──────────────
-
     let bob = TestApp::new()
         .await?
         .init_system()
@@ -95,12 +91,8 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
     let cognitions_before = dream_before.cognitions.len();
     let _memories_before = dream_before.memories.len();
 
-    // ── Import Alice's brain into Bob's instance ──────────────
-
     bob.command(&format!("project import {}", export_file.path().display()))
         .await?;
-
-    // ── Bob's dream now incorporates Alice's material ─────────
 
     // Alice's agent should exist on Bob's instance
     match bob
@@ -166,8 +158,6 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
 /// Bob can switch to the bookmark and dream Alice's agent there.
 #[tokio::test]
 async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
-    // ── Alice: a brain with content to share ──────────────────
-
     let alice = TestApp::new()
         .await?
         .init_system()
@@ -197,8 +187,6 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         matches!(peer_link.link.target, Ref::V0(Resource::Bookmark(_))),
         "ticket target should be a bookmark ref"
     );
-
-    // ── Bob: follows Alice's link ─────────────────────────────
 
     let bob = TestApp::new()
         .await?
@@ -542,8 +530,6 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
 /// Alice → Team → Bob: Bob can trace material back to Alice.
 #[tokio::test]
 async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::Error>> {
-    // ── Three hosts ───────────────────────────────────────────
-
     let alice = TestApp::new()
         .await?
         .init_system()

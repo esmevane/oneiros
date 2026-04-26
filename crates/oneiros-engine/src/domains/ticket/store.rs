@@ -12,7 +12,7 @@ impl<'a> TicketStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Ticket(TicketEvents::TicketIssued(ticket)) = &event.data {
+        if let Event::Known(Events::Ticket(TicketEvents::TicketIssued(ticket))) = &event.data {
             self.create_record(ticket)?;
         }
         Ok(())

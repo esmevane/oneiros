@@ -20,7 +20,6 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
 
     let base_url = app.base_url();
 
-    // ── No token → rejected ──────────────────────────────────────
     let no_token = Client::new(base_url.clone());
     let agent_client = AgentClient::new(&no_token);
     assert!(
@@ -31,7 +30,6 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
         "project routes should reject unauthenticated requests"
     );
 
-    // ── Invalid token → rejected ─────────────────────────────────
     let bad_token = Client::with_token(base_url.clone(), Token::from("not-a-real-token"))?;
     let agent_client = AgentClient::new(&bad_token);
     assert!(
@@ -42,7 +40,6 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
         "project routes should reject invalid tokens"
     );
 
-    // ── Valid token → accepted ───────────────────────────────────
     let good_client = app.client();
     assert!(
         good_client
@@ -53,7 +50,6 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
         "project routes should accept valid tokens"
     );
 
-    // ── System routes don't require auth ─────────────────────────
     let no_token = Client::new(base_url);
     let tenant_client = TenantClient::new(&no_token);
     assert!(
@@ -81,8 +77,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     let client = app.client();
     let ghost = AgentName::new("ghost.nobody");
 
-    // ── Nonexistent agent ───────────────────────────────────────
-
     let result = client
         .agent()
         .get(&GetAgent::builder().key(ghost.clone()).build())
@@ -91,8 +85,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     let result = app.command("agent show ghost.nobody").await;
     assert!(result.is_err(), "nonexistent agent should fail via command");
-
-    // ── Nonexistent persona ─────────────────────────────────────
 
     let result = client
         .persona()
@@ -105,8 +97,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
         result.is_err(),
         "nonexistent persona should fail via command"
     );
-
-    // ── Nonexistent vocabulary ──────────────────────────────────
 
     assert!(
         client
@@ -148,8 +138,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
             .is_err()
     );
 
-    // ── Nonexistent storage key ─────────────────────────────────
-
     assert!(
         client
             .storage()
@@ -157,8 +145,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
             .await
             .is_err()
     );
-
-    // ── Nonexistent memory ──────────────────────────────────────
 
     let fake_id = Id(uuid::Uuid::nil());
     assert!(
@@ -169,8 +155,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
             .is_err(),
         "nonexistent memory should 404"
     );
-
-    // ── Nonexistent experience ──────────────────────────────────
 
     assert!(
         client
@@ -185,8 +169,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
         "nonexistent experience should 404"
     );
 
-    // ── Nonexistent connection ──────────────────────────────────
-
     assert!(
         client
             .connection()
@@ -199,8 +181,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
             .is_err(),
         "nonexistent connection should 404"
     );
-
-    // ── Continuity for nonexistent agent ────────────────────────
 
     assert!(
         client.continuity().dream(&ghost).await.is_err(),
@@ -217,7 +197,6 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
         "sleeping nonexistent agent should fail via client"
     );
 
-    // ── Pressure for nonexistent agent ──────────────────────────
     // Pressure doesn't validate agent existence — it returns empty readings.
     // This documents the current behavior.
 
@@ -252,8 +231,6 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     let client = app.client();
     let ghost = AgentName::new("nobody.nobody");
 
-    // ── Agent with nonexistent persona ──────────────────────────
-
     let result = client
         .agent()
         .create(
@@ -273,8 +250,6 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
         result.is_err(),
         "agent with nonexistent persona should fail via command"
     );
-
-    // ── Cognition for nonexistent agent ─────────────────────────
 
     // Via CLI
     let result = app
@@ -301,8 +276,6 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
         "cognition for nonexistent agent should fail via client"
     );
 
-    // ── Memory for nonexistent agent ────────────────────────────
-
     let result = app
         .command(r#"memory add nobody.nobody session "hello""#)
         .await;
@@ -325,8 +298,6 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
         result.is_err(),
         "memory for nonexistent agent should fail via client"
     );
-
-    // ── Experience for nonexistent agent ────────────────────────
 
     let result = app
         .command(r#"experience create nobody.nobody echoes "hello""#)
@@ -351,8 +322,6 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
         "experience for nonexistent agent should fail via client"
     );
 
-    // ── Continuity for nonexistent agent via CLI ────────────────
-
     assert!(app.command("dream nobody.nobody").await.is_err());
     assert!(app.command("introspect nobody.nobody").await.is_err());
     assert!(app.command("sleep nobody.nobody").await.is_err());
@@ -372,8 +341,6 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
         .await?;
 
     let client = app.client();
-
-    // ── Duplicate agent ─────────────────────────────────────────
 
     app.command("agent create gov process").await?;
 
@@ -399,8 +366,6 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
         "duplicate agent should conflict via command"
     );
 
-    // ── Duplicate brain ─────────────────────────────────────────
-
     client
         .brain()
         .create(&CreateBrain::builder().name("dupe-brain").build())
@@ -411,8 +376,6 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
         .create(&CreateBrain::builder().name("dupe-brain").build())
         .await;
     assert!(result.is_err(), "duplicate brain should conflict");
-
-    // ── Vocabulary set is idempotent (not a conflict) ───────────
 
     app.command(r#"persona set custom --description "First" --prompt """#)
         .await?;

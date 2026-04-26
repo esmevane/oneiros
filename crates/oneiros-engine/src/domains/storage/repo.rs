@@ -12,8 +12,6 @@ impl<'a> StorageRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;

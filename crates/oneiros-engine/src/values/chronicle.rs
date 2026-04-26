@@ -180,12 +180,14 @@ mod tests {
         StoredEvent::builder()
             .id(EventId::new())
             .sequence(seq)
-            .data(Events::Cognition(CognitionEvents::CognitionAdded(
-                Cognition::builder()
-                    .agent_id(AgentId::new())
-                    .texture("observation")
-                    .content(format!("thought {seq}"))
-                    .build(),
+            .data(Event::Known(Events::Cognition(
+                CognitionEvents::CognitionAdded(
+                    Cognition::builder()
+                        .agent_id(AgentId::new())
+                        .texture("observation")
+                        .content(format!("thought {seq}"))
+                        .build(),
+                ),
             )))
             .source(Source::default())
             .created_at(Timestamp::now())

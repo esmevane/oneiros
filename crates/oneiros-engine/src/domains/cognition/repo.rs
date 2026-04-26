@@ -12,8 +12,6 @@ impl<'a> CognitionRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(
