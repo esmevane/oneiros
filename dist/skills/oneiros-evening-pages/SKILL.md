@@ -6,11 +6,11 @@ description: >
   notice what wants to stay, and prepare continuity for whoever
   wakes next. The complement to morning pages — opening and closing
   the session as a complete arc.
-compatibility: Requires oneiros CLI and an initialized brain with at least one agent.
+compatibility: Requires oneiros CLI or MCP access, and an initialized brain with at least one agent.
 allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
   author: "JC McCormick <https://github.com/esmevane>"
 ---
 
