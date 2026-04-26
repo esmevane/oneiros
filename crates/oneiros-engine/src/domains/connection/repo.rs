@@ -12,8 +12,6 @@ impl<'a> ConnectionRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(

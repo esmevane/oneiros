@@ -12,8 +12,6 @@ impl<'a> MemoryRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(

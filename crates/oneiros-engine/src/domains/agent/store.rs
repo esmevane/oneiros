@@ -12,10 +12,8 @@ impl<'a> AgentStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Agent(agent_event) = &event.data {
+        if let Event::Known(Events::Agent(agent_event)) = &event.data {
             match agent_event {
                 AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
                 AgentEvents::AgentUpdated(agent) => self.update(agent)?,
@@ -42,8 +40,6 @@ impl<'a> AgentStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let mut stmt = self
@@ -134,8 +130,6 @@ impl<'a> AgentStore<'a> {
         )?;
         Ok(count > 0)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn create_record(&self, agent: &Agent) -> Result<(), EventError> {
         self.conn.execute(

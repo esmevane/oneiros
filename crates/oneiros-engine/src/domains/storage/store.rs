@@ -16,10 +16,8 @@ impl<'a> StorageStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Storage(storage_event) = &event.data {
+        if let Event::Known(Events::Storage(storage_event)) = &event.data {
             match storage_event {
                 StorageEvents::StorageSet(entry) => self.set_storage(entry)?,
                 StorageEvents::StorageRemoved(removed) => self.remove_storage(&removed.key)?,
@@ -54,8 +52,6 @@ impl<'a> StorageStore<'a> {
         Ok(())
     }
 
-    // ── Blob write operations (content-addressed) ────────────────
-
     #[tracing::instrument(skip_all, fields(hash = %content.hash, size = content.size.as_i64()), err(Display))]
     pub fn put_blob(&self, content: &BlobContent) -> Result<(), EventError> {
         let bytes = content.data.decode()?;
@@ -65,8 +61,6 @@ impl<'a> StorageStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     #[tracing::instrument(skip_all, fields(hash = %hash), err(Display))]
     pub fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
@@ -91,8 +85,6 @@ impl<'a> StorageStore<'a> {
             Err(e) => Err(e.into()),
         }
     }
-
-    // ── Storage metadata write operations ────────────────────────
 
     pub fn set_storage(&self, entry: &StorageEntry) -> Result<(), EventError> {
         self.conn.execute(

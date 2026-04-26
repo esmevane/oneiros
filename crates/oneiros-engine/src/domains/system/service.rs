@@ -13,7 +13,7 @@ impl SystemService {
         std::fs::create_dir_all(&context.config.data_dir)?;
         context.config.ensure_host_secret_key()?;
         let db = context.db()?;
-        EventLog::new(&db).migrate()?;
+        EventLog::new(&db).init()?;
         context.projections.migrate(&db)?;
         drop(db);
 

@@ -12,8 +12,6 @@ impl<'a> ExperienceRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db.prepare(

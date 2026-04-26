@@ -12,7 +12,7 @@ impl<'a> NatureStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Nature(nature_event) = &event.data {
+        if let Event::Known(Events::Nature(nature_event)) = &event.data {
             match nature_event {
                 NatureEvents::NatureSet(nature) => self.set(nature)?,
                 NatureEvents::NatureRemoved(removed) => self.remove(&removed.name)?,
@@ -36,8 +36,6 @@ impl<'a> NatureStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn list(&self) -> Result<Vec<Nature>, EventError> {
         let mut stmt = self
@@ -65,8 +63,6 @@ impl<'a> NatureStore<'a> {
 
         Ok(natures)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn set(&self, nature: &Nature) -> Result<(), EventError> {
         self.conn.execute(

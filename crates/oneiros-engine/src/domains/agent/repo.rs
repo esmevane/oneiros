@@ -12,8 +12,6 @@ impl<'a> AgentRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let db = self.context.db()?;
         let mut stmt = db

@@ -23,7 +23,7 @@ impl<'a> BookmarkStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Bookmark(bookmark_event) = &event.data {
+        if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data {
             match bookmark_event {
                 BookmarkEvents::BookmarkCreated(created) => {
                     self.insert(&created.brain, &created.name, &event.created_at)?;

@@ -12,10 +12,8 @@ impl<'a> ExperienceStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Experience(experience_event) = &event.data {
+        if let Event::Known(Events::Experience(experience_event)) = &event.data {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
                 ExperienceEvents::ExperienceDescriptionUpdated(update) => {
@@ -46,8 +44,6 @@ impl<'a> ExperienceStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let mut stmt = self.conn.prepare(
@@ -163,8 +159,6 @@ impl<'a> ExperienceStore<'a> {
 
         Ok(experiences)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn insert(&self, experience: &Experience) -> Result<(), EventError> {
         self.conn.execute(

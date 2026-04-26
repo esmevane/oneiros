@@ -12,7 +12,7 @@ impl<'a> PeerStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Peer(peer_event) = &event.data {
+        if let Event::Known(Events::Peer(peer_event)) = &event.data {
             match peer_event {
                 PeerEvents::PeerAdded(peer) => {
                     self.create_record(peer)?;

@@ -13,8 +13,6 @@ impl<'a> PressureRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
         let db = self.context.db()?;
 

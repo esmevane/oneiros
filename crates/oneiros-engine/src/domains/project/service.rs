@@ -46,7 +46,7 @@ impl ProjectService {
         // Event log — standalone, no ATTACH needed during init.
         let events_db = rusqlite::Connection::open(brain_dir.join("events.db"))?;
         events_db.pragma_update(None, "journal_mode", "wal")?;
-        EventLog::new(&events_db).migrate()?;
+        EventLog::new(&events_db).init()?;
         drop(events_db);
 
         // Default bookmark projections — standalone during init.
@@ -111,7 +111,7 @@ impl ProjectService {
         let mut buffer = String::new();
         for event in &events {
             // Synthesize ephemeral BlobStored events for storage portability.
-            if let Events::Storage(StorageEvents::StorageSet(entry)) = &event.data
+            if let Event::Known(Events::Storage(StorageEvents::StorageSet(entry))) = &event.data
                 && let Ok(Some(blob)) = storage.get_blob(&entry.hash)
             {
                 let synthetic = StoredEvent::builder()
@@ -119,7 +119,7 @@ impl ProjectService {
                     .sequence(0)
                     .created_at(event.created_at)
                     .source(event.source)
-                    .data(Events::Ephemeral(EphemeralEvents::BlobStored(blob)))
+                    .data(Event::Ephemeral(EphemeralEvents::BlobStored(blob)))
                     .build();
 
                 buffer.push_str(&serde_json::to_string(&synthetic)?);
@@ -163,7 +163,7 @@ impl ProjectService {
         // bookmark DB unmigrated. Running the migrations here is idempotent
         // (CREATE TABLE IF NOT EXISTS) and makes import the correctness
         // gate the versioning story relies on.
-        log.migrate()?;
+        log.init()?;
         context.projections.migrate(&db)?;
 
         // Batch all inserts in a single transaction — without this,
@@ -180,7 +180,7 @@ impl ProjectService {
 
                 let event: StoredEvent = serde_json::from_str(&line)?;
 
-                if let Events::Ephemeral(ephemeral) = &event.data {
+                if let Event::Ephemeral(ephemeral) = &event.data {
                     match ephemeral {
                         EphemeralEvents::BlobStored(content) => {
                             StorageStore::new(&db).put_blob(content)?;

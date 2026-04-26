@@ -13,8 +13,6 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = app.client();
 
-    // ── Tenants ─────────────────────────────────────────────────
-
     // System init creates a default tenant
     match client
         .tenant()
@@ -52,8 +50,6 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 2),
         other => panic!("expected Listed, got {other:?}"),
     }
-
-    // ── Actors ──────────────────────────────────────────────────
 
     // Create an actor within the tenant
     let actor = match client
@@ -97,8 +93,6 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected Listed, got {other:?}"),
     }
 
-    // ── Brains ──────────────────────────────────────────────────
-
     let brain_name = BrainName::new("test-brain");
 
     match client
@@ -130,8 +124,6 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         }
         other => panic!("expected Found, got {other:?}"),
     }
-
-    // ── Tickets ─────────────────────────────────────────────────
 
     // Issue a ticket — grants an actor access to a brain
     let ticket = match client

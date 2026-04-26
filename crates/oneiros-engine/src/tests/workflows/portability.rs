@@ -10,8 +10,6 @@ use crate::*;
 
 #[tokio::test]
 async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::Error>> {
-    // ── Instance A: build a rich cognitive history ───────────────
-
     let app_a = TestApp::new()
         .await?
         .init_system()
@@ -100,8 +98,6 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     assert!(dream_a.cognitions.len() >= 2, "A should have cognitions");
     assert!(dream_a.memories.len() >= 2, "A should have memories");
 
-    // ── Export from instance A ──────────────────────────────────
-
     let export_dir = tempfile::tempdir()?;
     app_a
         .command(&format!(
@@ -115,8 +111,6 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .filter_map(|e| e.ok())
         .find(|e| e.path().extension().is_some_and(|ext| ext == "jsonl"))
         .expect("export should produce a .jsonl file");
-
-    // ── Instance B: a fresh brain ───────────────────────────────
 
     let app_b = TestApp::new()
         .await?
@@ -133,15 +127,11 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .await;
     assert!(result.is_err(), "agent should not exist before import");
 
-    // ── Import into instance B ──────────────────────────────────
-
     app_b
         .command(&format!("project import {}", export_file.path().display()))
         .await?;
 
     let client_b = app_b.client();
-
-    // ── Verify continuity survived ──────────────────────────────
 
     // The agent exists
     match client_b

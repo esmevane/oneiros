@@ -610,7 +610,10 @@ async fn activity_stream_observes_events() -> Result<(), Box<dyn core::error::Er
                 while let Ok(event) = event_rx.try_recv() {
                     events.push(event);
                 }
-                let types: Vec<String> = events.iter().map(|e| e.data.event_type()).collect();
+                let types: Vec<String> = events
+                    .iter()
+                    .map(|stored_event| stored_event.data.event_type())
+                    .collect();
                 if expected.iter().all(|e| types.iter().any(|t| t == e)) {
                     Ok(())
                 } else {

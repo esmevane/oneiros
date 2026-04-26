@@ -12,7 +12,7 @@ impl<'a> BrainStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Brain(BrainEvents::BrainCreated(brain)) = &event.data {
+        if let Event::Known(Events::Brain(BrainEvents::BrainCreated(brain))) = &event.data {
             self.create_record(brain)?;
         }
         Ok(())

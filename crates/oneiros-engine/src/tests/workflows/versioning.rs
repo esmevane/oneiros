@@ -24,8 +24,6 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = app.client();
 
-    // ── Establish state on main ────────────────────────────────
-
     app.command("emerge thinker process").await?;
     app.command("cognition add thinker.process observation 'thought on main'")
         .await?;
@@ -43,8 +41,6 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
         CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
         other => panic!("expected 1 cognition on main, got {other:?}"),
     }
-
-    // ── Branch ─────────────────────────────────────────────────
 
     app.command("bookmark create experiment").await?;
 
@@ -68,8 +64,6 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected 2 cognitions on experiment, got {other:?}"),
     }
 
-    // ── Switch back to main ────────────────────────────────────
-
     app.command("bookmark switch main").await?;
 
     // Main should still have only the original cognition
@@ -87,8 +81,6 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
         }
         other => panic!("expected 1 cognition on main after switch, got {other:?}"),
     }
-
-    // ── Switch back to experiment to confirm ───────────────────
 
     app.command("bookmark switch experiment").await?;
 
@@ -108,8 +100,6 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
         ),
         other => panic!("expected 2 cognitions on experiment after round-trip, got {other:?}"),
     }
-
-    // ── Merge experiment into main ─────────────────────────────
 
     app.command("bookmark switch main").await?;
     app.command("bookmark merge experiment").await?;

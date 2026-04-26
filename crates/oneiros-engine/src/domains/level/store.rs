@@ -12,7 +12,7 @@ impl<'a> LevelStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Level(level_event) = &event.data {
+        if let Event::Known(Events::Level(level_event)) = &event.data {
             match level_event {
                 LevelEvents::LevelSet(level) => self.set(level)?,
                 LevelEvents::LevelRemoved(removed) => self.remove(&removed.name)?,
@@ -36,8 +36,6 @@ impl<'a> LevelStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn list(&self) -> Result<Vec<Level>, EventError> {
         let mut stmt = self
@@ -65,8 +63,6 @@ impl<'a> LevelStore<'a> {
 
         Ok(levels)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn set(&self, level: &Level) -> Result<(), EventError> {
         self.conn.execute(

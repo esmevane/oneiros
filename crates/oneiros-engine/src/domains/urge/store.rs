@@ -12,7 +12,7 @@ impl<'a> UrgeStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Urge(urge_event) = &event.data {
+        if let Event::Known(Events::Urge(urge_event)) = &event.data {
             match urge_event {
                 UrgeEvents::UrgeSet(urge) => self.set(urge)?,
                 UrgeEvents::UrgeRemoved(removed) => self.remove(&removed.name)?,
@@ -36,8 +36,6 @@ impl<'a> UrgeStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn list(&self) -> Result<Vec<Urge>, EventError> {
         let mut stmt = self
@@ -65,8 +63,6 @@ impl<'a> UrgeStore<'a> {
 
         Ok(urges)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn set(&self, urge: &Urge) -> Result<(), EventError> {
         self.conn.execute(

@@ -12,10 +12,8 @@ impl<'a> ConnectionStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Connection(connection_event) = &event.data {
+        if let Event::Known(Events::Connection(connection_event)) = &event.data {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
                 ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id)?,
@@ -41,8 +39,6 @@ impl<'a> ConnectionStore<'a> {
         )?;
         Ok(())
     }
-
-    // ── Sync read queries (for callers holding an open Connection) ──
 
     pub fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let mut stmt = self.conn.prepare(
@@ -120,8 +116,6 @@ impl<'a> ConnectionStore<'a> {
 
         Ok(connections)
     }
-
-    // ── Write operations (called by handle) ─────────────────────
 
     fn insert(&self, connection: &Connection) -> Result<(), EventError> {
         self.conn.execute(

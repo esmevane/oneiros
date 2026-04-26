@@ -12,8 +12,6 @@ impl<'a> SearchRepo<'a> {
         Self { context }
     }
 
-    // ── Read queries ────────────────────────────────────────────
-
     pub async fn search(
         &self,
         query: &str,
@@ -40,8 +38,6 @@ impl<'a> SearchRepo<'a> {
             }
         }
     }
-
-    // ── Helpers ──────────────────────────────────────────────────
 
     fn map_row(row: &rusqlite::Row) -> rusqlite::Result<Expression> {
         let ref_json: String = row.get(0)?;

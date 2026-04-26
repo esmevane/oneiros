@@ -12,7 +12,7 @@ impl<'a> ActorStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Events::Actor(ActorEvents::ActorCreated(actor)) = &event.data {
+        if let Event::Known(Events::Actor(ActorEvents::ActorCreated(actor))) = &event.data {
             self.create_record(actor)?;
         }
         Ok(())

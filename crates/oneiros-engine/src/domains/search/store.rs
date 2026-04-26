@@ -12,8 +12,6 @@ impl<'a> SearchStore<'a> {
         Self { conn }
     }
 
-    // ── Projection handling ─────────────────────────────────────
-
     pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create virtual table if not exists search_index
@@ -24,38 +22,55 @@ impl<'a> SearchStore<'a> {
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         match &event.data {
-            Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
+            Event::Known(Events::Cognition(CognitionEvents::CognitionAdded(cognition))) => {
                 self.index(
-                    Ref::cognition(c.id),
+                    Ref::cognition(cognition.id),
                     "cognition-content",
-                    &c.content,
-                    c.agent_id,
+                    &cognition.content,
+                    cognition.agent_id,
                 )?;
             }
-            Events::Memory(MemoryEvents::MemoryAdded(m)) => {
-                self.index(Ref::memory(m.id), "memory-content", &m.content, m.agent_id)?;
+            Event::Known(Events::Memory(MemoryEvents::MemoryAdded(memory))) => {
+                self.index(
+                    Ref::memory(memory.id),
+                    "memory-content",
+                    &memory.content,
+                    memory.agent_id,
+                )?;
             }
-            Events::Agent(AgentEvents::AgentCreated(a)) => {
-                let content = format!("{} {}", a.name, a.description);
-                self.index(Ref::agent(a.id), "agent-description", &content, &a.name)?;
+            Event::Known(Events::Agent(AgentEvents::AgentCreated(agent))) => {
+                let content = format!("{} {}", agent.name, agent.description);
+                self.index(
+                    Ref::agent(agent.id),
+                    "agent-description",
+                    &content,
+                    &agent.name,
+                )?;
             }
-            Events::Agent(AgentEvents::AgentUpdated(a)) => {
-                self.remove_by_ref(&Ref::agent(a.id))?;
-                let content = format!("{} {}", a.name, a.description);
-                self.index(Ref::agent(a.id), "agent-description", &content, &a.name)?;
+            Event::Known(Events::Agent(AgentEvents::AgentUpdated(agent))) => {
+                self.remove_by_ref(&Ref::agent(agent.id))?;
+                let content = format!("{} {}", agent.name, agent.description);
+                self.index(
+                    Ref::agent(agent.id),
+                    "agent-description",
+                    &content,
+                    &agent.name,
+                )?;
             }
-            Events::Agent(AgentEvents::AgentRemoved(removed)) => {
+            Event::Known(Events::Agent(AgentEvents::AgentRemoved(removed))) => {
                 self.remove_by_agent(&removed.name)?;
             }
-            Events::Experience(ExperienceEvents::ExperienceCreated(e)) => {
+            Event::Known(Events::Experience(ExperienceEvents::ExperienceCreated(experience))) => {
                 self.index(
-                    Ref::experience(e.id),
+                    Ref::experience(experience.id),
                     "experience-description",
-                    &e.description,
-                    e.agent_id,
+                    &experience.description,
+                    experience.agent_id,
                 )?;
             }
-            Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(update)) => {
+            Event::Known(Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(
+                update,
+            ))) => {
                 self.remove_by_ref(&Ref::experience(update.id))?;
                 if let Ok(Some(exp)) = ExperienceStore::new(self.conn).get(&update.id) {
                     self.index(
@@ -75,8 +90,6 @@ impl<'a> SearchStore<'a> {
         self.conn.execute("DELETE FROM search_index", [])?;
         Ok(())
     }
-
-    // ── Write operations ─────────────────────────────────────────
 
     pub fn index(
         &self,
