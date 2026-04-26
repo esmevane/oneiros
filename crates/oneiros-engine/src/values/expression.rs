@@ -6,157 +6,166 @@ use crate::*;
 /// A search expression — a normalized text fragment extracted from an entity
 /// and indexed for full-text search.
 ///
-/// One variant per content-bearing kind. Each variant carries exactly the
-/// metadata that kind populates — no optional fields meaning "this kind
-/// doesn't apply here." Construction goes through the named constructors
+/// One variant per content-bearing kind. Each variant wraps a private inner
+/// struct so callers can match on kind but cannot destructure the contents
+/// — all access goes through the methods on `Expression` itself.
+/// Construction goes through the named constructors
 /// ([`Expression::cognition`], [`Expression::memory`], etc.); reconstitution
 /// from the FTS5 index goes through [`Expression::from_row`].
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Expression {
-    Cognition {
-        resource_ref: Ref,
-        content: Content,
-        agent: AgentId,
-        texture: TextureName,
-        created_at: Timestamp,
-    },
-    Memory {
-        resource_ref: Ref,
-        content: Content,
-        agent: AgentId,
-        level: LevelName,
-        created_at: Timestamp,
-    },
-    Experience {
-        resource_ref: Ref,
-        content: Content,
-        agent: AgentId,
-        sensation: SensationName,
-        created_at: Timestamp,
-    },
-    Agent {
-        resource_ref: Ref,
-        content: Content,
-        agent: AgentId,
-        persona: PersonaName,
-    },
+    Cognition(CognitionExpression),
+    Memory(MemoryExpression),
+    Experience(ExperienceExpression),
+    Agent(AgentExpression),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct CognitionExpression {
+    resource_ref: Ref,
+    content: Content,
+    agent: AgentId,
+    texture: TextureName,
+    created_at: Timestamp,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct MemoryExpression {
+    resource_ref: Ref,
+    content: Content,
+    agent: AgentId,
+    level: LevelName,
+    created_at: Timestamp,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct ExperienceExpression {
+    resource_ref: Ref,
+    content: Content,
+    agent: AgentId,
+    sensation: SensationName,
+    created_at: Timestamp,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct AgentExpression {
+    resource_ref: Ref,
+    content: Content,
+    agent: AgentId,
+    persona: PersonaName,
 }
 
 impl Expression {
     pub fn cognition(cognition: &Cognition) -> Self {
-        Self::Cognition {
+        Self::Cognition(CognitionExpression {
             resource_ref: Ref::cognition(cognition.id),
             content: cognition.content.clone(),
             agent: cognition.agent_id,
             texture: cognition.texture.clone(),
             created_at: cognition.created_at,
-        }
+        })
     }
 
     pub fn memory(memory: &Memory) -> Self {
-        Self::Memory {
+        Self::Memory(MemoryExpression {
             resource_ref: Ref::memory(memory.id),
             content: memory.content.clone(),
             agent: memory.agent_id,
             level: memory.level.clone(),
             created_at: memory.created_at,
-        }
+        })
     }
 
     pub fn experience(experience: &Experience) -> Self {
-        Self::Experience {
+        Self::Experience(ExperienceExpression {
             resource_ref: Ref::experience(experience.id),
             content: Content::new(experience.description.to_string()),
             agent: experience.agent_id,
             sensation: experience.sensation.clone(),
             created_at: experience.created_at,
-        }
+        })
     }
 
     pub fn agent(agent: &Agent) -> Self {
-        Self::Agent {
+        Self::Agent(AgentExpression {
             resource_ref: Ref::agent(agent.id),
             content: Content::new(format!("{} {}", agent.name, agent.description)),
             agent: agent.id,
             persona: agent.persona.clone(),
-        }
+        })
     }
 
     pub fn kind(&self) -> SearchKind {
         match self {
-            Self::Cognition { .. } => SearchKind::Cognition,
-            Self::Memory { .. } => SearchKind::Memory,
-            Self::Experience { .. } => SearchKind::Experience,
-            Self::Agent { .. } => SearchKind::Agent,
+            Self::Cognition(_) => SearchKind::Cognition,
+            Self::Memory(_) => SearchKind::Memory,
+            Self::Experience(_) => SearchKind::Experience,
+            Self::Agent(_) => SearchKind::Agent,
         }
     }
 
     pub fn resource_ref(&self) -> &Ref {
         match self {
-            Self::Cognition { resource_ref, .. }
-            | Self::Memory { resource_ref, .. }
-            | Self::Experience { resource_ref, .. }
-            | Self::Agent { resource_ref, .. } => resource_ref,
+            Self::Cognition(c) => &c.resource_ref,
+            Self::Memory(m) => &m.resource_ref,
+            Self::Experience(e) => &e.resource_ref,
+            Self::Agent(a) => &a.resource_ref,
         }
     }
 
     pub fn content(&self) -> &Content {
         match self {
-            Self::Cognition { content, .. }
-            | Self::Memory { content, .. }
-            | Self::Experience { content, .. }
-            | Self::Agent { content, .. } => content,
+            Self::Cognition(c) => &c.content,
+            Self::Memory(m) => &m.content,
+            Self::Experience(e) => &e.content,
+            Self::Agent(a) => &a.content,
         }
     }
 
     pub fn agent_id(&self) -> AgentId {
         match self {
-            Self::Cognition { agent, .. }
-            | Self::Memory { agent, .. }
-            | Self::Experience { agent, .. }
-            | Self::Agent { agent, .. } => *agent,
+            Self::Cognition(c) => c.agent,
+            Self::Memory(m) => m.agent,
+            Self::Experience(e) => e.agent,
+            Self::Agent(a) => a.agent,
         }
     }
 
     pub fn texture(&self) -> Option<&TextureName> {
-        if let Self::Cognition { texture, .. } = self {
-            Some(texture)
-        } else {
-            None
+        match self {
+            Self::Cognition(c) => Some(&c.texture),
+            _ => None,
         }
     }
 
     pub fn level(&self) -> Option<&LevelName> {
-        if let Self::Memory { level, .. } = self {
-            Some(level)
-        } else {
-            None
+        match self {
+            Self::Memory(m) => Some(&m.level),
+            _ => None,
         }
     }
 
     pub fn sensation(&self) -> Option<&SensationName> {
-        if let Self::Experience { sensation, .. } = self {
-            Some(sensation)
-        } else {
-            None
+        match self {
+            Self::Experience(e) => Some(&e.sensation),
+            _ => None,
         }
     }
 
     pub fn persona(&self) -> Option<&PersonaName> {
-        if let Self::Agent { persona, .. } = self {
-            Some(persona)
-        } else {
-            None
+        match self {
+            Self::Agent(a) => Some(&a.persona),
+            _ => None,
         }
     }
 
     pub fn created_at(&self) -> Option<&Timestamp> {
         match self {
-            Self::Cognition { created_at, .. }
-            | Self::Memory { created_at, .. }
-            | Self::Experience { created_at, .. } => Some(created_at),
-            Self::Agent { .. } => None,
+            Self::Cognition(c) => Some(&c.created_at),
+            Self::Memory(m) => Some(&m.created_at),
+            Self::Experience(e) => Some(&e.created_at),
+            Self::Agent(_) => None,
         }
     }
 
@@ -201,33 +210,33 @@ impl Expression {
         let agent: AgentId = parse_column(row.get::<_, String>(3)?, 3)?;
 
         match kind {
-            SearchKind::Cognition => Ok(Self::Cognition {
+            SearchKind::Cognition => Ok(Self::Cognition(CognitionExpression {
                 resource_ref,
                 content,
                 agent,
                 texture: parse_column(row.get::<_, String>(4)?, 4)?,
                 created_at: parse_timestamp(row.get::<_, String>(8)?, 8)?,
-            }),
-            SearchKind::Memory => Ok(Self::Memory {
+            })),
+            SearchKind::Memory => Ok(Self::Memory(MemoryExpression {
                 resource_ref,
                 content,
                 agent,
                 level: parse_column(row.get::<_, String>(5)?, 5)?,
                 created_at: parse_timestamp(row.get::<_, String>(8)?, 8)?,
-            }),
-            SearchKind::Experience => Ok(Self::Experience {
+            })),
+            SearchKind::Experience => Ok(Self::Experience(ExperienceExpression {
                 resource_ref,
                 content,
                 agent,
                 sensation: parse_column(row.get::<_, String>(6)?, 6)?,
                 created_at: parse_timestamp(row.get::<_, String>(8)?, 8)?,
-            }),
-            SearchKind::Agent => Ok(Self::Agent {
+            })),
+            SearchKind::Agent => Ok(Self::Agent(AgentExpression {
                 resource_ref,
                 content,
                 agent,
                 persona: parse_column(row.get::<_, String>(7)?, 7)?,
-            }),
+            })),
         }
     }
 }
