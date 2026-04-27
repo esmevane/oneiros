@@ -27,7 +27,7 @@ impl SyncHandler {
             .await?
             .ok_or_else(|| BridgeError::Denied("ticket not found".into()))?;
 
-        if link.target != ticket.link.target {
+        if link.target != ticket.link().target {
             return Err(BridgeError::Denied(
                 "link target does not match ticket target".into(),
             ));
@@ -47,7 +47,7 @@ impl SyncHandler {
 
     async fn handle_diff(&self, diff: &BridgeDiff) -> Result<BridgeResponse, BridgeError> {
         let ticket = self.validate_ticket(&diff.link).await?;
-        let chronicle = self.canons.chronicle(&ticket.brain_name)?;
+        let chronicle = self.canons.chronicle(ticket.brain_name())?;
         let server_root = chronicle.root()?;
 
         // Roots match — no diff needed.
@@ -102,7 +102,7 @@ impl SyncHandler {
         let ticket = self.validate_ticket(&fetch.link).await?;
 
         // Event log lives in events.db (standalone, no ATTACH).
-        let db = self.events_db(&ticket.brain_name)?;
+        let db = self.events_db(ticket.brain_name())?;
 
         let ids: Vec<EventId> = fetch
             .event_ids

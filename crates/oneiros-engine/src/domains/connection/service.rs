@@ -14,16 +14,18 @@ impl ConnectionService {
         let from = from_ref.clone().into_inner();
         let to = to_ref.clone().into_inner();
 
-        let connection = Connection::builder()
-            .from_ref(from)
-            .to_ref(to)
-            .nature(nature.clone())
-            .build();
+        let connection = Connection::Current(
+            Connection::build_v1()
+                .from_ref(from)
+                .to_ref(to)
+                .nature(nature.clone())
+                .build(),
+        );
 
         context
             .emit(ConnectionEvents::ConnectionCreated(connection.clone()))
             .await?;
-        let ref_token = RefToken::new(Ref::connection(connection.id));
+        let ref_token = RefToken::new(Ref::connection(connection.id()));
         Ok(ConnectionResponse::ConnectionCreated(
             Response::new(connection).with_ref_token(ref_token),
         ))
@@ -38,7 +40,7 @@ impl ConnectionService {
             .get(&id)
             .await?
             .ok_or(ConnectionError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::connection(connection.id));
+        let ref_token = RefToken::new(Ref::connection(connection.id()));
         Ok(ConnectionResponse::ConnectionDetails(
             Response::new(connection).with_ref_token(ref_token),
         ))
@@ -63,7 +65,7 @@ impl ConnectionService {
             Ok(ConnectionResponse::NoConnections)
         } else {
             Ok(ConnectionResponse::Connections(listed.map(|c| {
-                let ref_token = RefToken::new(Ref::connection(c.id));
+                let ref_token = RefToken::new(Ref::connection(c.id()));
                 Response::new(c).with_ref_token(ref_token)
             })))
         }
@@ -82,9 +84,9 @@ impl ConnectionService {
         }
 
         context
-            .emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
-                id: selector.id,
-            }))
+            .emit(ConnectionEvents::ConnectionRemoved(
+                ConnectionRemoved::Current(ConnectionRemovedV1 { id: selector.id }),
+            ))
             .await?;
         Ok(ConnectionResponse::ConnectionRemoved(selector.id))
     }

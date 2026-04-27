@@ -140,8 +140,8 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .await?
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, agent);
-            assert_eq!(a.data.persona, PersonaName::new("process"));
+            assert_eq!(a.data.name(), &agent);
+            assert_eq!(a.data.persona(), &PersonaName::new("process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -181,7 +181,11 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
                 dream_a.memories.len(),
                 "memory count should match"
             );
-            let contents: Vec<&str> = mems.items.iter().map(|m| m.data.content.as_str()).collect();
+            let contents: Vec<&str> = mems
+                .items
+                .iter()
+                .map(|m| m.data.content().as_str())
+                .collect();
             assert!(
                 contents.contains(&"I think in types"),
                 "core memory should survive"
@@ -216,8 +220,8 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .await?
     {
         StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "notes.md");
-            assert_eq!(entry.data.description.as_str(), "Session notes");
+            assert_eq!(entry.data.key().as_str(), "notes.md");
+            assert_eq!(entry.data.description().as_str(), "Session notes");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -233,7 +237,7 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         .await?
     {
         PersonaResponse::PersonaDetails(p) => {
-            assert_eq!(p.data.name, PersonaName::new("process"));
+            assert_eq!(p.data.name(), &PersonaName::new("process"));
         }
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
@@ -255,7 +259,8 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
         "dream should have same memories after import"
     );
     assert_eq!(
-        dream_b.agent.name, agent,
+        dream_b.agent.name(),
+        &agent,
         "dream should reference the same agent"
     );
 

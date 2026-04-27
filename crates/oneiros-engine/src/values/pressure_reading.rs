@@ -33,8 +33,8 @@ impl PressureReading {
             .map(|p| {
                 let cta = urges
                     .iter()
-                    .find(|u| u.name == p.urge)
-                    .map(|u| u.prompt.clone())
+                    .find(|u| u.name() == &p.urge)
+                    .map(|u| u.prompt().clone())
                     .unwrap_or_default();
                 Self::new(p, cta)
             })

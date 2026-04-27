@@ -12,7 +12,7 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
                 1,
                 "system init should create exactly one tenant"
             );
-            assert_eq!(tenants.items[0].data.name.as_str(), "test");
+            assert_eq!(tenants.items[0].data.name().as_str(), "test");
         }
         other => panic!("expected Tenant(Listed), got {other:#?}"),
     }

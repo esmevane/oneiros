@@ -20,7 +20,7 @@ impl<'a> StorageStore<'a> {
         if let Event::Known(Events::Storage(storage_event)) = &event.data {
             match storage_event {
                 StorageEvents::StorageSet(entry) => self.set_storage(entry)?,
-                StorageEvents::StorageRemoved(removed) => self.remove_storage(&removed.key)?,
+                StorageEvents::StorageRemoved(removed) => self.remove_storage(removed.key())?,
             }
         }
         Ok(())
@@ -52,12 +52,12 @@ impl<'a> StorageStore<'a> {
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, fields(hash = %content.hash, size = content.size.as_i64()), err(Display))]
+    #[tracing::instrument(skip_all, fields(hash = %content.hash(), size = content.size().as_i64()), err(Display))]
     pub fn put_blob(&self, content: &BlobContent) -> Result<(), EventError> {
-        let bytes = content.data.decode()?;
+        let bytes = content.data().decode()?;
         self.conn.execute(
             "INSERT OR IGNORE INTO blob (hash, data, size) VALUES (?1, ?2, ?3)",
-            params![content.hash.as_str(), &bytes, content.size.as_i64()],
+            params![content.hash().as_str(), &bytes, content.size().as_i64()],
         )?;
         Ok(())
     }
@@ -76,11 +76,11 @@ impl<'a> StorageStore<'a> {
         });
 
         match result {
-            Ok((hash, data, size)) => Ok(Some(BlobContent {
+            Ok((hash, data, size)) => Ok(Some(BlobContent::Current(BlobContentV1 {
                 hash: ContentHash::new(hash),
                 size: Size::new(size as usize),
                 data: Blob::encode(&data),
-            })),
+            }))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -91,9 +91,9 @@ impl<'a> StorageStore<'a> {
             "INSERT INTO storage (key, description, hash) VALUES (?1, ?2, ?3)
              ON CONFLICT(key) DO UPDATE SET description = excluded.description, hash = excluded.hash",
             params![
-                entry.key.as_str(),
-                entry.description.as_str(),
-                entry.hash.as_str(),
+                entry.key().as_str(),
+                entry.description().as_str(),
+                entry.hash().as_str(),
             ],
         )?;
         Ok(())

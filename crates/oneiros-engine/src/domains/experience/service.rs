@@ -16,16 +16,18 @@ impl ExperienceService {
             .await?
             .ok_or_else(|| ExperienceError::AgentNotFound(agent.clone()))?;
 
-        let experience = Experience::builder()
-            .agent_id(agent_record.id)
-            .sensation(sensation.clone())
-            .description(description.clone())
-            .build();
+        let experience = Experience::Current(
+            Experience::build_v1()
+                .agent_id(agent_record.id())
+                .sensation(sensation.clone())
+                .description(description.clone())
+                .build(),
+        );
 
         context
             .emit(ExperienceEvents::ExperienceCreated(experience.clone()))
             .await?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+        let ref_token = RefToken::new(Ref::experience(experience.id()));
         Ok(ExperienceResponse::ExperienceCreated(
             Response::new(experience).with_ref_token(ref_token),
         ))
@@ -40,7 +42,7 @@ impl ExperienceService {
             .get(&id)
             .await?
             .ok_or(ExperienceError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+        let ref_token = RefToken::new(Ref::experience(experience.id()));
         Ok(ExperienceResponse::ExperienceDetails(
             Response::new(experience).with_ref_token(ref_token),
         ))
@@ -56,7 +58,7 @@ impl ExperienceService {
                     .get(name)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
-                Some(record.id.to_string())
+                Some(record.id().to_string())
             }
             None => None,
         };
@@ -68,7 +70,7 @@ impl ExperienceService {
             ExperienceResponse::NoExperiences
         } else {
             ExperienceResponse::Experiences(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::experience(e.id));
+                let ref_token = RefToken::new(Ref::experience(e.id()));
                 Response::new(e).with_ref_token(ref_token)
             }))
         })
@@ -83,17 +85,17 @@ impl ExperienceService {
             .await?
             .ok_or_else(|| ExperienceError::NotFound(*id))?;
 
-        experience.description = description.clone();
+        experience.set_description(description.clone());
 
         context
             .emit(ExperienceEvents::ExperienceDescriptionUpdated(
-                ExperienceDescriptionUpdate {
+                ExperienceDescriptionUpdate::Current(ExperienceDescriptionUpdateV1 {
                     id: *id,
                     description: description.clone(),
-                },
+                }),
             ))
             .await?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+        let ref_token = RefToken::new(Ref::experience(experience.id()));
         Ok(ExperienceResponse::ExperienceUpdated(
             Response::new(experience).with_ref_token(ref_token),
         ))
@@ -108,17 +110,17 @@ impl ExperienceService {
             .await?
             .ok_or_else(|| ExperienceError::NotFound(*id))?;
 
-        experience.sensation = sensation.clone();
+        experience.set_sensation(sensation.clone());
 
         context
             .emit(ExperienceEvents::ExperienceSensationUpdated(
-                ExperienceSensationUpdate {
+                ExperienceSensationUpdate::Current(ExperienceSensationUpdateV1 {
                     id: *id,
                     sensation: sensation.clone(),
-                },
+                }),
             ))
             .await?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+        let ref_token = RefToken::new(Ref::experience(experience.id()));
         Ok(ExperienceResponse::ExperienceUpdated(
             Response::new(experience).with_ref_token(ref_token),
         ))

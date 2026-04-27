@@ -16,9 +16,9 @@ impl<'a> TenantStore<'a> {
             self.conn.execute(
                 "insert or replace into tenants (id, name, created_at) values (?1, ?2, ?3)",
                 params![
-                    tenant.id.to_string(),
-                    tenant.name.to_string(),
-                    tenant.created_at.as_string()
+                    tenant.id().to_string(),
+                    tenant.name().to_string(),
+                    tenant.created_at().as_string()
                 ],
             )?;
         }

@@ -41,8 +41,8 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
         .query("agent show viewer.process")
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.name.as_str() == "viewer.process"
-                    && agent.data.persona.as_str() == "process"
+                if agent.data.name().as_str() == "viewer.process"
+                    && agent.data.persona().as_str() == "process"
         ))
         .await
 }
@@ -73,7 +73,7 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
         .query(&format!("agent show {ref_token}"))
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.name.as_str() == "viewer.process"
+                if agent.data.name().as_str() == "viewer.process"
         ))
         .await
 }
@@ -164,7 +164,7 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
         .query("agent show mutable.process")
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.description.as_str() == "Updated"
+                if agent.data.description().as_str() == "Updated"
         ))
         .await
 }
@@ -287,7 +287,7 @@ pub(crate) async fn name_includes_persona_suffix<B: Backend>() -> TestResult {
         .query("agent show governor.process")
         .assert_json(expect!(
             Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.name.as_str() == "governor.process"
+                if agent.data.name().as_str() == "governor.process"
         ))
         .await
 }

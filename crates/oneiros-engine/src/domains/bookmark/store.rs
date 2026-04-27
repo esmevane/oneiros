@@ -26,10 +26,10 @@ impl<'a> BookmarkStore<'a> {
         if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data {
             match bookmark_event {
                 BookmarkEvents::BookmarkCreated(created) => {
-                    self.insert(&created.brain, &created.name, &event.created_at)?;
+                    self.insert(created.brain(), created.name(), &event.created_at)?;
                 }
                 BookmarkEvents::BookmarkForked(forked) => {
-                    self.insert(&forked.brain, &forked.name, &event.created_at)?;
+                    self.insert(forked.brain(), forked.name(), &event.created_at)?;
                 }
                 BookmarkEvents::BookmarkSwitched(_)
                 | BookmarkEvents::BookmarkMerged(_)

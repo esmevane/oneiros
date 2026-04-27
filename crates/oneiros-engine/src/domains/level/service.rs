@@ -11,11 +11,13 @@ impl LevelService {
             prompt,
         }: &SetLevel,
     ) -> Result<LevelResponse, LevelError> {
-        let level = Level::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
-            .build();
+        let level = Level::Current(
+            Level::build_v1()
+                .name(name.clone())
+                .description(description.clone())
+                .prompt(prompt.clone())
+                .build(),
+        );
         context.emit(LevelEvents::LevelSet(level)).await?;
         Ok(LevelResponse::LevelSet(name.clone()))
     }
@@ -29,7 +31,7 @@ impl LevelService {
             .get(&name)
             .await?
             .ok_or(LevelError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::level(level.name.clone()));
+        let ref_token = RefToken::new(Ref::level(level.name().clone()));
         Ok(LevelResponse::LevelDetails(
             Response::new(level).with_ref_token(ref_token),
         ))
@@ -44,7 +46,7 @@ impl LevelService {
             Ok(LevelResponse::NoLevels)
         } else {
             Ok(LevelResponse::Levels(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::level(e.name.clone()));
+                let ref_token = RefToken::new(Ref::level(e.name().clone()));
                 Response::new(e).with_ref_token(ref_token)
             })))
         }
@@ -55,9 +57,11 @@ impl LevelService {
         selector: &RemoveLevel,
     ) -> Result<LevelResponse, LevelError> {
         context
-            .emit(LevelEvents::LevelRemoved(LevelRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(LevelEvents::LevelRemoved(LevelRemoved::Current(
+                LevelRemovedV1 {
+                    name: selector.name.clone(),
+                },
+            )))
             .await?;
         Ok(LevelResponse::LevelRemoved(selector.name.clone()))
     }

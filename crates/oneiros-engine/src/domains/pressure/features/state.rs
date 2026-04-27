@@ -18,7 +18,7 @@ impl PressureState {
         // Collect agent info we need before borrowing canon immutably
         let agents: Vec<(AgentId, AgentName)> = Self::resolve_agents(&canon, event)
             .into_iter()
-            .map(|a| (a.id, a.name.clone()))
+            .map(|a| (a.id(), a.name().clone()))
             .collect();
 
         if agents.is_empty() {
@@ -27,7 +27,7 @@ impl PressureState {
 
         let now = Timestamp::now();
         let referenced = Self::referenced_ids(&canon);
-        let urge_names: Vec<UrgeName> = canon.urges.values().map(|u| u.name.clone()).collect();
+        let urge_names: Vec<UrgeName> = canon.urges.values().map(|u| u.name().clone()).collect();
 
         // Compute all gauges, then apply them
         let mut updates: Vec<Pressure> = vec![];
@@ -72,26 +72,26 @@ impl PressureState {
             Events::Continuity(ContinuityEvents::Introspected(e)) => {
                 canon
                     .continuity_timestamps
-                    .get_or_default(&e.agent)
-                    .last_introspect = Some(e.created_at);
+                    .get_or_default(e.agent())
+                    .last_introspect = Some(e.created_at());
             }
             Events::Continuity(ContinuityEvents::Reflected(e)) => {
                 canon
                     .continuity_timestamps
-                    .get_or_default(&e.agent)
-                    .last_reflect = Some(e.created_at);
+                    .get_or_default(e.agent())
+                    .last_reflect = Some(e.created_at());
             }
             Events::Continuity(ContinuityEvents::Dreamed(e)) => {
                 canon
                     .continuity_timestamps
-                    .get_or_default(&e.agent)
-                    .last_dream = Some(e.created_at);
+                    .get_or_default(e.agent())
+                    .last_dream = Some(e.created_at());
             }
             Events::Continuity(ContinuityEvents::Slept(e)) => {
                 canon
                     .continuity_timestamps
-                    .get_or_default(&e.agent)
-                    .last_sleep = Some(e.created_at);
+                    .get_or_default(e.agent())
+                    .last_sleep = Some(e.created_at());
             }
             _ => {}
         }
@@ -101,28 +101,28 @@ impl PressureState {
     fn resolve_agents<'a>(canon: &'a BrainCanon, event: &Events) -> Vec<&'a Agent> {
         match event {
             Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
-                canon.agents.get(c.agent_id).into_iter().collect()
+                canon.agents.get(c.agent_id()).into_iter().collect()
             }
             Events::Memory(MemoryEvents::MemoryAdded(m)) => {
-                canon.agents.get(m.agent_id).into_iter().collect()
+                canon.agents.get(m.agent_id()).into_iter().collect()
             }
             Events::Experience(ExperienceEvents::ExperienceCreated(e)) => {
-                canon.agents.get(e.agent_id).into_iter().collect()
+                canon.agents.get(e.agent_id()).into_iter().collect()
             }
             Events::Continuity(ContinuityEvents::Introspected(e)) => {
-                canon.agents.find_by_name(&e.agent).into_iter().collect()
+                canon.agents.find_by_name(e.agent()).into_iter().collect()
             }
             Events::Continuity(ContinuityEvents::Reflected(e)) => {
-                canon.agents.find_by_name(&e.agent).into_iter().collect()
+                canon.agents.find_by_name(e.agent()).into_iter().collect()
             }
             Events::Continuity(ContinuityEvents::Dreamed(e)) => {
-                canon.agents.find_by_name(&e.agent).into_iter().collect()
+                canon.agents.find_by_name(e.agent()).into_iter().collect()
             }
             Events::Continuity(ContinuityEvents::Slept(e)) => {
-                canon.agents.find_by_name(&e.agent).into_iter().collect()
+                canon.agents.find_by_name(e.agent()).into_iter().collect()
             }
             Events::Continuity(ContinuityEvents::Sensed(e)) => {
-                canon.agents.find_by_name(&e.agent).into_iter().collect()
+                canon.agents.find_by_name(e.agent()).into_iter().collect()
             }
             // Connection events may affect orphaned/unconnected counts for any agent
             Events::Connection(_) => canon.agents.values().collect(),
@@ -134,8 +134,8 @@ impl PressureState {
     fn referenced_ids(canon: &BrainCanon) -> HashSet<String> {
         let mut ids = HashSet::new();
         for conn in canon.connections.values() {
-            Self::collect_ref_id(&conn.from_ref, &mut ids);
-            Self::collect_ref_id(&conn.to_ref, &mut ids);
+            Self::collect_ref_id(conn.from_ref(), &mut ids);
+            Self::collect_ref_id(conn.to_ref(), &mut ids);
         }
         ids
     }
@@ -161,16 +161,16 @@ impl PressureState {
     ) -> Gauge {
         match urge.as_str() {
             "introspect" => {
-                Gauge::Introspect(Self::compute_introspect(canon, &agent.id, &agent.name))
+                Gauge::Introspect(Self::compute_introspect(canon, agent.id(), agent.name()))
             }
             "catharsis" => Gauge::Catharsis(Self::compute_catharsis(
                 canon,
                 referenced,
-                &agent.id,
-                &agent.name,
+                agent.id(),
+                agent.name(),
             )),
-            "recollect" => Gauge::Recollect(Self::compute_recollect(canon, referenced, &agent.id)),
-            "retrospect" => Gauge::Retrospect(Self::compute_retrospect(canon, &agent.id)),
+            "recollect" => Gauge::Recollect(Self::compute_recollect(canon, referenced, agent.id())),
+            "retrospect" => Gauge::Retrospect(Self::compute_retrospect(canon, agent.id())),
             _ => Gauge::Introspect(IntrospectGauge::from_inputs(IntrospectInputs {
                 hours_since_last_introspect: 0.0,
                 total_cognitions: 0,
@@ -184,19 +184,19 @@ impl PressureState {
 
     fn compute_introspect(
         canon: &BrainCanon,
-        agent_id: &AgentId,
+        agent_id: AgentId,
         agent_name: &AgentName,
     ) -> IntrospectGauge {
         let agent_cognitions: Vec<&Cognition> = canon
             .cognitions
             .values()
-            .filter(|c| c.agent_id == *agent_id)
+            .filter(|c| c.agent_id() == agent_id)
             .collect();
 
         let total_cognitions = agent_cognitions.len() as u64;
         let working_cognitions = agent_cognitions
             .iter()
-            .filter(|c| c.texture.as_str() == "working")
+            .filter(|c| c.texture().as_str() == "working")
             .count() as u64;
 
         let timestamps = canon.continuity_timestamps.get(agent_name);
@@ -207,7 +207,10 @@ impl PressureState {
 
         // Cognitions since last introspect
         let cognitions_since = match last_introspect_at {
-            Some(t) => agent_cognitions.iter().filter(|c| c.created_at > t).count() as u64,
+            Some(t) => agent_cognitions
+                .iter()
+                .filter(|c| c.created_at() > t)
+                .count() as u64,
             None => total_cognitions,
         };
 
@@ -216,18 +219,21 @@ impl PressureState {
             Some(t) => canon
                 .memories
                 .values()
-                .filter(|m| m.agent_id == *agent_id && m.created_at > t)
+                .filter(|m| m.agent_id() == agent_id && m.created_at() > t)
                 .count() as u64,
             None => canon
                 .memories
                 .values()
-                .filter(|m| m.agent_id == *agent_id)
+                .filter(|m| m.agent_id() == agent_id)
                 .count() as u64,
         };
 
         // Session cognitions (since last wake/dream)
         let session_cognition_count = match last_dream_at {
-            Some(t) => agent_cognitions.iter().filter(|c| c.created_at > t).count() as u64,
+            Some(t) => agent_cognitions
+                .iter()
+                .filter(|c| c.created_at() > t)
+                .count() as u64,
             None => total_cognitions,
         };
 
@@ -244,25 +250,25 @@ impl PressureState {
     fn compute_catharsis(
         canon: &BrainCanon,
         referenced: &HashSet<String>,
-        agent_id: &AgentId,
+        agent_id: AgentId,
         agent_name: &AgentName,
     ) -> CatharsisGauge {
         let agent_cognitions: Vec<&Cognition> = canon
             .cognitions
             .values()
-            .filter(|c| c.agent_id == *agent_id)
+            .filter(|c| c.agent_id() == agent_id)
             .collect();
 
         let total_cognitions = agent_cognitions.len() as u64;
         let working_cognitions = agent_cognitions
             .iter()
-            .filter(|c| c.texture.as_str() == "working")
+            .filter(|c| c.texture().as_str() == "working")
             .count() as u64;
 
         let tensions_count = canon
             .experiences
             .values()
-            .filter(|e| e.agent_id == *agent_id && e.sensation.as_str() == "tensions")
+            .filter(|e| e.agent_id() == agent_id && e.sensation().as_str() == "tensions")
             .count() as u64;
 
         let hours_since_reflect = canon
@@ -275,7 +281,7 @@ impl PressureState {
         // Orphaned cognitions: not referenced by any connection
         let orphaned = agent_cognitions
             .iter()
-            .filter(|c| !referenced.contains(&c.id.to_string()))
+            .filter(|c| !referenced.contains(&c.id().to_string()))
             .count() as u64;
 
         CatharsisGauge::from_inputs(CatharsisInputs {
@@ -290,39 +296,39 @@ impl PressureState {
     fn compute_recollect(
         canon: &BrainCanon,
         referenced: &HashSet<String>,
-        agent_id: &AgentId,
+        agent_id: AgentId,
     ) -> RecollectGauge {
         let agent_memories: Vec<&Memory> = canon
             .memories
             .values()
-            .filter(|m| m.agent_id == *agent_id)
+            .filter(|m| m.agent_id() == agent_id)
             .collect();
 
         let session_memories = agent_memories
             .iter()
-            .filter(|m| m.level.as_str() == "session")
+            .filter(|m| m.level().as_str() == "session")
             .count() as u64;
 
         let working_memories = agent_memories
             .iter()
-            .filter(|m| m.level.as_str() == "working")
+            .filter(|m| m.level().as_str() == "working")
             .count() as u64;
 
         let agent_experiences: Vec<&Experience> = canon
             .experiences
             .values()
-            .filter(|e| e.agent_id == *agent_id)
+            .filter(|e| e.agent_id() == agent_id)
             .collect();
 
         let total_experiences = agent_experiences.len() as u64;
         let connected_experiences = agent_experiences
             .iter()
-            .filter(|e| referenced.contains(&e.id.to_string()))
+            .filter(|e| referenced.contains(&e.id().to_string()))
             .count() as u64;
         let unconnected = total_experiences - connected_experiences.min(total_experiences);
 
         // Hours since last memory added
-        let last_memory_at = agent_memories.iter().map(|m| &m.created_at).max().copied();
+        let last_memory_at = agent_memories.iter().map(|m| m.created_at()).max();
         let hours_since_memory = Self::hours_since(last_memory_at.as_ref());
 
         RecollectGauge::from_inputs(RecollectInputs {
@@ -334,31 +340,29 @@ impl PressureState {
         })
     }
 
-    fn compute_retrospect(canon: &BrainCanon, agent_id: &AgentId) -> RetrospectGauge {
+    fn compute_retrospect(canon: &BrainCanon, agent_id: AgentId) -> RetrospectGauge {
         let agent_memories: Vec<&Memory> = canon
             .memories
             .values()
-            .filter(|m| m.agent_id == *agent_id)
+            .filter(|m| m.agent_id() == agent_id)
             .collect();
 
         let last_archival_at = agent_memories
             .iter()
-            .filter(|m| m.level.as_str() == "archival")
-            .map(|m| &m.created_at)
-            .max()
-            .copied();
+            .filter(|m| m.level().as_str() == "archival")
+            .map(|m| m.created_at())
+            .max();
 
         let last_project_at = agent_memories
             .iter()
-            .filter(|m| m.level.as_str() == "project")
-            .map(|m| &m.created_at)
-            .max()
-            .copied();
+            .filter(|m| m.level().as_str() == "project")
+            .map(|m| m.created_at())
+            .max();
 
         let total_experiences = canon
             .experiences
             .values()
-            .filter(|e| e.agent_id == *agent_id)
+            .filter(|e| e.agent_id() == agent_id)
             .count() as u64;
 
         RetrospectGauge::from_inputs(RetrospectInputs {
@@ -391,24 +395,30 @@ mod tests {
     fn seeded_canon() -> BrainCanon {
         let mut canon = BrainCanon::default();
 
-        let agent = Agent::builder()
-            .name("gov.process")
-            .persona("process")
-            .description("Governor")
-            .prompt("You govern")
-            .build();
+        let agent = Agent::Current(
+            Agent::build_v1()
+                .name("gov.process")
+                .persona("process")
+                .description("Governor")
+                .prompt("You govern")
+                .build(),
+        );
 
-        let urge_introspect = Urge::builder()
-            .name("introspect")
-            .description("Look inward")
-            .prompt("")
-            .build();
+        let urge_introspect = Urge::Current(
+            Urge::build_v1()
+                .name("introspect")
+                .description("Look inward")
+                .prompt("")
+                .build(),
+        );
 
-        let urge_catharsis = Urge::builder()
-            .name("catharsis")
-            .description("Release tension")
-            .prompt("")
-            .build();
+        let urge_catharsis = Urge::Current(
+            Urge::build_v1()
+                .name("catharsis")
+                .description("Release tension")
+                .prompt("")
+                .build(),
+        );
 
         canon.agents.set(&agent);
         canon.urges.set(&urge_introspect);
@@ -420,13 +430,13 @@ mod tests {
     #[test]
     fn ignores_irrelevant_events() {
         let canon = seeded_canon();
-        let event = Events::Level(LevelEvents::LevelSet(
-            Level::builder()
+        let event = Events::Level(LevelEvents::LevelSet(Level::Current(
+            Level::build_v1()
                 .name("working")
                 .description("Short-term")
                 .prompt("")
                 .build(),
-        ));
+        )));
 
         let next = PressureState::reduce(canon, &event);
         assert!(next.pressures.is_empty());
@@ -439,13 +449,15 @@ mod tests {
             .agents
             .find_by_name(&AgentName::new("gov.process"))
             .unwrap();
-        let agent_id = agent.id;
+        let agent_id = agent.id();
 
-        let cognition = Cognition::builder()
-            .agent_id(agent_id)
-            .texture("observation")
-            .content("A thought")
-            .build();
+        let cognition = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(agent_id)
+                .texture("observation")
+                .content("A thought")
+                .build(),
+        );
 
         // Simulate the full pipeline: cognition reducer then pressure reducer
         let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition));
@@ -463,18 +475,22 @@ mod tests {
             .agents
             .find_by_name(&AgentName::new("gov.process"))
             .unwrap();
-        let agent_id = agent.id;
+        let agent_id = agent.id();
 
-        let working = Cognition::builder()
-            .agent_id(agent_id)
-            .texture("working")
-            .content("Working thought")
-            .build();
-        let observation = Cognition::builder()
-            .agent_id(agent_id)
-            .texture("observation")
-            .content("An observation")
-            .build();
+        let working = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(agent_id)
+                .texture("working")
+                .content("Working thought")
+                .build(),
+        );
+        let observation = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(agent_id)
+                .texture("observation")
+                .content("An observation")
+                .build(),
+        );
 
         canon.cognitions.set(&working);
         canon.cognitions.set(&observation);
@@ -503,14 +519,16 @@ mod tests {
             .agents
             .find_by_name(&AgentName::new("gov.process"))
             .unwrap();
-        let agent_id = agent.id;
+        let agent_id = agent.id();
 
-        let cognition = Cognition::builder()
-            .agent_id(agent_id)
-            .texture("observation")
-            .content("Orphaned thought")
-            .build();
-        let cog_id = cognition.id;
+        let cognition = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(agent_id)
+                .texture("observation")
+                .content("Orphaned thought")
+                .build(),
+        );
+        let cog_id = cognition.id();
         canon.cognitions.set(&cognition);
 
         // Before connection: cognition is orphaned
@@ -530,11 +548,13 @@ mod tests {
 
         // Add a connection referencing the cognition
         let mut canon = after_cog;
-        let connection = Connection::builder()
-            .from_ref(Ref::cognition(cog_id))
-            .to_ref(Ref::experience(ExperienceId::new()))
-            .nature("context")
-            .build();
+        let connection = Connection::Current(
+            Connection::build_v1()
+                .from_ref(Ref::cognition(cog_id))
+                .to_ref(Ref::experience(ExperienceId::new()))
+                .nature("context")
+                .build(),
+        );
         canon.connections.set(&connection);
 
         let conn_event = Events::Connection(ConnectionEvents::ConnectionCreated(connection));
@@ -556,10 +576,12 @@ mod tests {
     fn tracks_continuity_timestamps() {
         let mut canon = seeded_canon();
 
-        let event = Events::Continuity(ContinuityEvents::Introspected(ContinuityEvent {
-            agent: AgentName::new("gov.process"),
-            created_at: Timestamp::now(),
-        }));
+        let event = Events::Continuity(ContinuityEvents::Introspected(ContinuityEvent::Current(
+            ContinuityEventV1 {
+                agent: AgentName::new("gov.process"),
+                created_at: Timestamp::now(),
+            },
+        )));
 
         canon = PressureState::reduce(canon, &event);
 

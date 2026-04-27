@@ -12,7 +12,7 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
                 1,
                 "system init should create exactly one actor"
             );
-            assert_eq!(actors.items[0].data.name.as_str(), "test");
+            assert_eq!(actors.items[0].data.name().as_str(), "test");
         }
         other => panic!("expected Actor(Listed), got {other:#?}"),
     }

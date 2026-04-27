@@ -15,7 +15,7 @@ impl<'a> UrgeStore<'a> {
         if let Event::Known(Events::Urge(urge_event)) = &event.data {
             match urge_event {
                 UrgeEvents::UrgeSet(urge) => self.set(urge)?,
-                UrgeEvents::UrgeRemoved(removed) => self.remove(&removed.name)?,
+                UrgeEvents::UrgeRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -53,11 +53,13 @@ impl<'a> UrgeStore<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Urge::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Urge::Current(
+                    Urge::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 
@@ -68,9 +70,9 @@ impl<'a> UrgeStore<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO urges (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
-                urge.name.to_string(),
-                urge.description.to_string(),
-                urge.prompt.to_string()
+                urge.name().to_string(),
+                urge.description().to_string(),
+                urge.prompt().to_string()
             ],
         )?;
         Ok(())

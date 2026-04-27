@@ -24,11 +24,11 @@ impl<'a> StorageRepo<'a> {
         });
 
         match result {
-            Ok((key, description, hash)) => Ok(Some(StorageEntry {
+            Ok((key, description, hash)) => Ok(Some(StorageEntry::Current(StorageEntryV1 {
                 key: StorageKey::new(key),
                 description: Description::new(description),
                 hash: ContentHash::new(hash),
-            })),
+            }))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -57,10 +57,12 @@ impl<'a> StorageRepo<'a> {
 
         let items = entries
             .into_iter()
-            .map(|(key, description, hash)| StorageEntry {
-                key: StorageKey::new(key),
-                description: Description::new(description),
-                hash: ContentHash::new(hash),
+            .map(|(key, description, hash)| {
+                StorageEntry::Current(StorageEntryV1 {
+                    key: StorageKey::new(key),
+                    description: Description::new(description),
+                    hash: ContentHash::new(hash),
+                })
             })
             .collect();
 
@@ -79,11 +81,11 @@ impl<'a> StorageRepo<'a> {
         });
 
         match result {
-            Ok((hash, data, size)) => Ok(Some(BlobContent {
+            Ok((hash, data, size)) => Ok(Some(BlobContent::Current(BlobContentV1 {
                 hash: ContentHash::new(hash),
                 size: Size::new(size as usize),
                 data: Blob::encode(&data),
-            })),
+            }))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }

@@ -24,13 +24,13 @@ impl<'a> UrgeRepo<'a> {
         });
 
         match result {
-            Ok((name, description, prompt)) => Ok(Some(
-                Urge::builder()
+            Ok((name, description, prompt)) => Ok(Some(Urge::Current(
+                Urge::build_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -59,11 +59,13 @@ impl<'a> UrgeRepo<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Urge::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Urge::Current(
+                    Urge::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 

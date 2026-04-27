@@ -15,14 +15,14 @@ impl SensationView {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .map(|w| (w.data.name().to_string(), w.data.description().to_string()))
                     .collect();
                 Self::vocabulary_table("Sensations", &items)
             }
             SensationResponse::SensationDetails(wrapped) => {
                 let items = vec![(
-                    wrapped.data.name.to_string(),
-                    wrapped.data.description.to_string(),
+                    wrapped.data.name().to_string(),
+                    wrapped.data.description().to_string(),
                 )];
                 Self::vocabulary_table("Sensation", &items)
             }
@@ -63,9 +63,9 @@ impl SensationView {
                     .with_hints(hints)
             }
             SensationResponse::SensationDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("prompt:", wrapped.data.prompt.to_string())
+                let prompt = Detail::new(wrapped.data.name().to_string())
+                    .field("description:", wrapped.data.description().to_string())
+                    .field("prompt:", wrapped.data.prompt().to_string())
                     .to_string();
                 Rendered::new(
                     SensationResponse::SensationDetails(wrapped),
@@ -80,8 +80,8 @@ impl SensationView {
                 ]);
                 for wrapped in &listed.items {
                     table.push_row(vec![
-                        wrapped.data.name.to_string(),
-                        wrapped.data.description.to_string(),
+                        wrapped.data.name().to_string(),
+                        wrapped.data.description().to_string(),
                     ]);
                 }
                 let prompt = format!(

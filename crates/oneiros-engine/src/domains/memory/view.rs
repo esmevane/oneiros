@@ -21,7 +21,9 @@ impl<'a> MemoryView<'a> {
                 let ref_token = wrapped.data.ref_token();
                 McpResponse::new(format!(
                     "Memory consolidated ({}).\n\n**level:** {}\n**ref:** {}",
-                    wrapped.data.level, wrapped.data.level, ref_token
+                    wrapped.data.level(),
+                    wrapped.data.level(),
+                    ref_token
                 ))
                 .hint_set(HintSet::mutation(
                     MutationHints::builder().ref_token(ref_token).build(),
@@ -31,10 +33,10 @@ impl<'a> MemoryView<'a> {
                 let ref_token = wrapped.data.ref_token();
                 McpResponse::new(format!(
                     "# Memory\n\n**level:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
-                    wrapped.data.level,
-                    wrapped.data.agent_id,
-                    wrapped.data.created_at,
-                    wrapped.data.content
+                    wrapped.data.level(),
+                    wrapped.data.agent_id(),
+                    wrapped.data.created_at(),
+                    wrapped.data.content()
                 ))
                 .hint(Hint::suggest(
                     format!("create-connection <nature> {ref_token} <target>"),
@@ -54,7 +56,9 @@ impl<'a> MemoryView<'a> {
                 for wrapped in &listed.items {
                     md.push_str(&format!(
                         "### {} — {}\n{}\n\n",
-                        wrapped.data.level, wrapped.data.created_at, wrapped.data.content
+                        wrapped.data.level(),
+                        wrapped.data.created_at(),
+                        wrapped.data.content()
                     ));
                 }
                 let mut response = McpResponse::new(md)
@@ -96,8 +100,8 @@ impl<'a> MemoryView<'a> {
                     .with_hints(hints)
             }
             (MemoryResponse::MemoryDetails(wrapped), _) => {
-                let prompt = Detail::new(wrapped.data.level.to_string())
-                    .field("content:", wrapped.data.content.to_string())
+                let prompt = Detail::new(wrapped.data.level().to_string())
+                    .field("content:", wrapped.data.content().to_string())
                     .to_string();
 
                 let hints = match wrapped.meta().ref_token() {
@@ -128,8 +132,8 @@ impl<'a> MemoryView<'a> {
                         .map(|t| t.to_string())
                         .unwrap_or_default();
                     table.push_row(vec![
-                        wrapped.data.level.to_string(),
-                        wrapped.data.content.to_string(),
+                        wrapped.data.level().to_string(),
+                        wrapped.data.content().to_string(),
                         ref_token,
                     ]);
                 }

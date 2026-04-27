@@ -83,7 +83,7 @@ impl ContinuityService {
         let mut rows = Vec::with_capacity(agents.len());
 
         for agent in &agents {
-            let agent_id = agent.id.to_string();
+            let agent_id = agent.id().to_string();
 
             let cognition_count: usize = db.query_row(
                 "SELECT COUNT(*) FROM cognitions WHERE agent_id = ?1",
@@ -128,7 +128,7 @@ impl ContinuityService {
                 .ok();
 
             rows.push(AgentActivity {
-                name: agent.name.clone(),
+                name: agent.name().clone(),
                 cognition_count,
                 cognition_latest: cognition_latest.and_then(|s| Timestamp::parse_str(&s).ok()),
                 memory_count,
@@ -152,10 +152,12 @@ impl ContinuityService {
         let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
-            .emit(ContinuityEvents::Dreamed(ContinuityEvent {
-                agent: selector.agent.clone(),
-                created_at: Timestamp::now(),
-            }))
+            .emit(ContinuityEvents::Dreamed(ContinuityEvent::Current(
+                ContinuityEventV1 {
+                    agent: selector.agent.clone(),
+                    created_at: Timestamp::now(),
+                },
+            )))
             .await?;
 
         Ok(ContinuityResponse::Waking(dream))
@@ -170,10 +172,12 @@ impl ContinuityService {
         let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
-            .emit(ContinuityEvents::Dreamed(ContinuityEvent {
-                agent: selector.agent.clone(),
-                created_at: Timestamp::now(),
-            }))
+            .emit(ContinuityEvents::Dreamed(ContinuityEvent::Current(
+                ContinuityEventV1 {
+                    agent: selector.agent.clone(),
+                    created_at: Timestamp::now(),
+                },
+            )))
             .await?;
 
         Ok(ContinuityResponse::Dreaming(dream))
@@ -188,10 +192,12 @@ impl ContinuityService {
         let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
-            .emit(ContinuityEvents::Introspected(ContinuityEvent {
-                agent: selector.agent.clone(),
-                created_at: Timestamp::now(),
-            }))
+            .emit(ContinuityEvents::Introspected(ContinuityEvent::Current(
+                ContinuityEventV1 {
+                    agent: selector.agent.clone(),
+                    created_at: Timestamp::now(),
+                },
+            )))
             .await?;
 
         Ok(ContinuityResponse::Introspecting(dream))
@@ -206,10 +212,12 @@ impl ContinuityService {
         let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
-            .emit(ContinuityEvents::Reflected(ContinuityEvent {
-                agent: selector.agent.clone(),
-                created_at: Timestamp::now(),
-            }))
+            .emit(ContinuityEvents::Reflected(ContinuityEvent::Current(
+                ContinuityEventV1 {
+                    agent: selector.agent.clone(),
+                    created_at: Timestamp::now(),
+                },
+            )))
             .await?;
 
         Ok(ContinuityResponse::Reflecting(dream))
@@ -224,11 +232,13 @@ impl ContinuityService {
         let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
-            .emit(ContinuityEvents::Sensed(SensedEvent {
-                agent: selector.agent.clone(),
-                content: Content::new(selector.content.as_str()),
-                created_at: Timestamp::now(),
-            }))
+            .emit(ContinuityEvents::Sensed(SensedEvent::Current(
+                SensedEventV1 {
+                    agent: selector.agent.clone(),
+                    content: Content::new(selector.content.as_str()),
+                    created_at: Timestamp::now(),
+                },
+            )))
             .await?;
 
         Ok(ContinuityResponse::Sleeping(dream))
@@ -243,10 +253,12 @@ impl ContinuityService {
         let dream = Self::gather_context(context, &selector.agent, overrides)?;
 
         context
-            .emit(ContinuityEvents::Slept(ContinuityEvent {
-                agent: selector.agent.clone(),
-                created_at: Timestamp::now(),
-            }))
+            .emit(ContinuityEvents::Slept(ContinuityEvent::Current(
+                ContinuityEventV1 {
+                    agent: selector.agent.clone(),
+                    created_at: Timestamp::now(),
+                },
+            )))
             .await?;
 
         Ok(ContinuityResponse::Sleeping(dream))
@@ -280,10 +292,10 @@ impl ContinuityService {
             .get(agent_name)?
             .ok_or_else(|| ContinuityError::AgentNotFound(agent_name.clone()))?;
 
-        let persona_name = agent.persona.clone();
+        let persona_name = agent.persona().clone();
         let persona = PersonaStore::new(&db).get(&persona_name)?;
 
-        let agent_id_str = agent.id.to_string();
+        let agent_id_str = agent.id().to_string();
 
         // Vocabulary — system-wide
         let textures = TextureStore::new(&db).list()?;
@@ -296,12 +308,12 @@ impl ContinuityService {
         let all_memories = MemoryStore::new(&db).list(Some(&agent_id_str))?;
         let (core_memories, rest_memories): (Vec<_>, Vec<_>) = all_memories
             .into_iter()
-            .partition(|m| m.level.as_str() == "core");
+            .partition(|m| m.level().as_str() == "core");
 
         let filtered_rest = Self::filter_memories(&config, rest_memories);
         let mut memories: Vec<Memory> = core_memories;
         memories.extend(filtered_rest);
-        memories.sort_by_key(|a| a.created_at);
+        memories.sort_by_key(|a| a.created_at());
 
         // Recent experiences provide orientation
         let recent_experiences =
@@ -310,8 +322,8 @@ impl ContinuityService {
         // BFS seed: filtered memories + recent experiences
         let seed_refs: Vec<Ref> = memories
             .iter()
-            .map(|m| Ref::memory(m.id))
-            .chain(recent_experiences.iter().map(|e| Ref::experience(e.id)))
+            .map(|m| Ref::memory(m.id()))
+            .chain(recent_experiences.iter().map(|e| Ref::experience(e.id())))
             .collect();
 
         // Graph traversal — BFS from foundation through all connection types.
@@ -320,7 +332,7 @@ impl ContinuityService {
 
         let mut cognition_ids: HashSet<CognitionId> = HashSet::new();
         let mut experience_ids: HashSet<ExperienceId> =
-            recent_experiences.iter().map(|e| e.id).collect();
+            recent_experiences.iter().map(|e| e.id()).collect();
         let mut connections: Vec<Connection> = Vec::new();
         let mut seen_conn_ids: HashSet<ConnectionId> = HashSet::new();
 
@@ -333,14 +345,14 @@ impl ContinuityService {
             let node_connections = ConnectionStore::new(&db).list(Some(&ref_json))?;
 
             for conn in node_connections {
-                if !seen_conn_ids.insert(conn.id) {
+                if !seen_conn_ids.insert(conn.id()) {
                     continue;
                 }
 
-                let other = if conn.from_ref == current {
-                    &conn.to_ref
+                let other = if conn.from_ref() == &current {
+                    conn.to_ref()
                 } else {
-                    &conn.from_ref
+                    conn.from_ref()
                 };
 
                 // Only discover entities within the depth limit.
@@ -370,14 +382,14 @@ impl ContinuityService {
         // Decide cognition selection strategy
         let mut cognitions = if connections.is_empty() {
             // No connections means sparse graph — include all cognitions
-            CognitionStore::new(&db).list(Some(&agent.id), None)?
+            CognitionStore::new(&db).list(Some(&agent.id()), None)?
         } else {
             Self::assemble_cognitions(&db, &agent, &config, &cognition_ids)?
         };
 
         // Apply cognition_size cap — keep the most recent.
         if cognitions.len() > config.cognition_size {
-            cognitions.sort_by_key(|a| a.created_at);
+            cognitions.sort_by_key(|a| a.created_at());
             cognitions = cognitions.split_off(cognitions.len() - config.cognition_size);
         }
 
@@ -387,22 +399,22 @@ impl ContinuityService {
 
         // Apply experience_size cap — keep the most recent.
         if experiences.len() > config.experience_size {
-            experiences.sort_by_key(|a| a.created_at);
+            experiences.sort_by_key(|a| a.created_at());
             experiences = experiences.split_off(experiences.len() - config.experience_size);
         }
 
         // Filter connections: only retain edges whose endpoints are in the result.
         let included_refs: HashSet<Ref> = memories
             .iter()
-            .map(|m| Ref::memory(m.id))
-            .chain(cognitions.iter().map(|c| Ref::cognition(c.id)))
-            .chain(experiences.iter().map(|e| Ref::experience(e.id)))
+            .map(|m| Ref::memory(m.id()))
+            .chain(cognitions.iter().map(|c| Ref::cognition(c.id())))
+            .chain(experiences.iter().map(|e| Ref::experience(e.id())))
             .collect();
 
         let connections = connections
             .into_iter()
             .filter(|conn| {
-                included_refs.contains(&conn.from_ref) && included_refs.contains(&conn.to_ref)
+                included_refs.contains(conn.from_ref()) && included_refs.contains(conn.to_ref())
             })
             .collect();
 
@@ -429,10 +441,10 @@ impl ContinuityService {
     fn filter_memories(config: &DreamConfig, mut memories: Vec<Memory>) -> Vec<Memory> {
         // Filter by level threshold (log-level semantics)
         let min_priority = level_priority(&config.recollection_level);
-        memories.retain(|m| level_priority(&m.level) >= min_priority);
+        memories.retain(|m| level_priority(m.level()) >= min_priority);
 
         // Sort by created_at descending for recency-based capping
-        memories.sort_by_key(|b| std::cmp::Reverse(b.created_at));
+        memories.sort_by_key(|b| std::cmp::Reverse(b.created_at()));
 
         // Cap at recollection_size
         memories.truncate(config.recollection_size);
@@ -449,14 +461,14 @@ impl ContinuityService {
         let store = CognitionStore::new(db);
 
         // Recent cognitions for orientation
-        let recent = store.list_recent(&agent.id, config.recent_window)?;
+        let recent = store.list_recent(&agent.id(), config.recent_window)?;
 
         let mut cognitions: Vec<Cognition> = Vec::new();
         let mut seen: HashSet<CognitionId> = HashSet::new();
 
         // Recent first
         for cog in recent {
-            if seen.insert(cog.id) {
+            if seen.insert(cog.id()) {
                 cognitions.push(cog);
             }
         }
@@ -470,7 +482,7 @@ impl ContinuityService {
             }
         }
 
-        cognitions.sort_by_key(|a| a.created_at);
+        cognitions.sort_by_key(|a| a.created_at());
         Ok(cognitions)
     }
 
@@ -485,7 +497,7 @@ impl ContinuityService {
 
         // Recent first
         for exp in recent {
-            if seen.insert(exp.id) {
+            if seen.insert(exp.id()) {
                 experiences.push(exp.clone());
             }
         }
@@ -499,7 +511,7 @@ impl ContinuityService {
             }
         }
 
-        experiences.sort_by_key(|a| a.created_at);
+        experiences.sort_by_key(|a| a.created_at());
         Ok(experiences)
     }
 }

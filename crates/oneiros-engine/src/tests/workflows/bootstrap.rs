@@ -64,8 +64,8 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
         .await?
     {
         AgentResponse::AgentDetails(agent) => {
-            assert_eq!(agent.data.name, AgentName::new("thinker.process"));
-            assert_eq!(agent.data.persona, PersonaName::new("process"));
+            assert_eq!(agent.data.name(), &AgentName::new("thinker.process"));
+            assert_eq!(agent.data.persona(), &PersonaName::new("process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -106,8 +106,8 @@ async fn project_init_creates_main_bookmark() -> Result<(), Box<dyn core::error:
         BookmarkResponse::Bookmarks(bookmarks) => {
             assert_eq!(bookmarks.len(), 1, "exactly one bookmark after init");
             assert_eq!(
-                bookmarks.items[0].name,
-                BookmarkName::main(),
+                bookmarks.items[0].name(),
+                &BookmarkName::main(),
                 "the bookmark should be named main"
             );
         }

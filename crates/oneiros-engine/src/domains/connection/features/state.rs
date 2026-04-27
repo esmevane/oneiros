@@ -10,7 +10,7 @@ impl ConnectionState {
                     canon.connections.set(connection);
                 }
                 ConnectionEvents::ConnectionRemoved(removed) => {
-                    canon.connections.remove(removed.id);
+                    canon.connections.remove(removed.id());
                 }
             };
         }

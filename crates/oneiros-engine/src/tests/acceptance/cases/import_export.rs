@@ -123,7 +123,7 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
 
     match show_response {
         Responses::Storage(StorageResponse::StorageDetails(entry)) => {
-            assert_eq!(entry.data.key.as_str(), "portable-doc");
+            assert_eq!(entry.data.key().as_str(), "portable-doc");
         }
         other => panic!("expected StorageDetails on brain B after import, got {other:#?}"),
     }

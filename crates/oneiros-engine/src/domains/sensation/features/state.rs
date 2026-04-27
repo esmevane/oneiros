@@ -10,7 +10,7 @@ impl SensationState {
                     canon.sensations.set(sensation);
                 }
                 SensationEvents::SensationRemoved(removed) => {
-                    canon.sensations.remove(&removed.name);
+                    canon.sensations.remove(removed.name());
                 }
             };
         }

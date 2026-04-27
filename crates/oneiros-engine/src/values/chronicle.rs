@@ -181,13 +181,13 @@ mod tests {
             .id(EventId::new())
             .sequence(seq)
             .data(Event::Known(Events::Cognition(
-                CognitionEvents::CognitionAdded(
-                    Cognition::builder()
+                CognitionEvents::CognitionAdded(Cognition::Current(
+                    Cognition::build_v1()
                         .agent_id(AgentId::new())
                         .texture("observation")
                         .content(format!("thought {seq}"))
                         .build(),
-                ),
+                )),
             )))
             .source(Source::default())
             .created_at(Timestamp::now())

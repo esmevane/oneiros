@@ -16,8 +16,8 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Urge(UrgeResponse::UrgeDetails(u)) => {
-            assert_eq!(u.name.as_str(), "introspect");
-            assert_eq!(u.description.as_str(), "The pull to look inward");
+            assert_eq!(u.name().as_str(), "introspect");
+            assert_eq!(u.description().as_str(), "The pull to look inward");
         }
         other => panic!("expected UrgeDetails, got {other:#?}"),
     }
@@ -40,7 +40,7 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Urge(UrgeResponse::UrgeDetails(u)) => {
-            assert_eq!(u.description.as_str(), "Updated");
+            assert_eq!(u.description().as_str(), "Updated");
         }
         other => panic!("expected UrgeDetails, got {other:#?}"),
     }

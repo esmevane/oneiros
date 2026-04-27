@@ -23,11 +23,13 @@ mod tests {
     #[test]
     fn adds_cognition() {
         let canon = BrainCanon::default();
-        let cognition = Cognition::builder()
-            .agent_id(AgentId::new())
-            .texture("observation")
-            .content("Something noticed")
-            .build();
+        let cognition = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(AgentId::new())
+                .texture("observation")
+                .content("Something noticed")
+                .build(),
+        );
         let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));
 
         let next = CognitionState::reduce(canon, &event);

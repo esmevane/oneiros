@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +35,24 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionRemoved {
+#[serde(untagged)]
+pub enum ConnectionRemoved {
+    Current(ConnectionRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct ConnectionRemovedV1 {
     pub id: ConnectionId,
+}
+
+impl ConnectionRemoved {
+    pub fn build_v1() -> ConnectionRemovedV1Builder {
+        ConnectionRemovedV1::builder()
+    }
+
+    pub fn id(&self) -> ConnectionId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
 }

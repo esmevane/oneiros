@@ -13,7 +13,7 @@ impl AgentState {
                     canon.agents.set(agent);
                 }
                 AgentEvents::AgentRemoved(removed) => {
-                    canon.agents.remove_by_name(&removed.name);
+                    canon.agents.remove_by_name(removed.name());
                 }
             };
         }
@@ -33,12 +33,14 @@ mod tests {
     #[test]
     fn creates_agent() {
         let canon = BrainCanon::default();
-        let agent = Agent::builder()
-            .name("test.agent")
-            .persona("process")
-            .description("A test")
-            .prompt("You are a test")
-            .build();
+        let agent = Agent::Current(
+            Agent::build_v1()
+                .name("test.agent")
+                .persona("process")
+                .description("A test")
+                .prompt("You are a test")
+                .build(),
+        );
         let event = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
 
         let next = AgentState::reduce(canon, &event);
@@ -49,17 +51,21 @@ mod tests {
     #[test]
     fn removes_agent() {
         let mut canon = BrainCanon::default();
-        let agent = Agent::builder()
-            .name("test.agent")
-            .persona("process")
-            .description("A test")
-            .prompt("You are a test")
-            .build();
+        let agent = Agent::Current(
+            Agent::build_v1()
+                .name("test.agent")
+                .persona("process")
+                .description("A test")
+                .prompt("You are a test")
+                .build(),
+        );
         canon.agents.set(&agent);
 
-        let event = Events::Agent(AgentEvents::AgentRemoved(AgentRemoved {
-            name: agent.name.clone(),
-        }));
+        let event = Events::Agent(AgentEvents::AgentRemoved(AgentRemoved::Current(
+            AgentRemovedV1 {
+                name: agent.name().clone(),
+            },
+        )));
         let next = AgentState::reduce(canon, &event);
 
         assert_eq!(next.agents.len(), 0);

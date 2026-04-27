@@ -48,7 +48,7 @@ async fn add_cognition(context: &ProjectContext, agent: &AgentName, content: &st
     .await
     .unwrap()
     {
-        CognitionResponse::CognitionAdded(c) => c.data.id,
+        CognitionResponse::CognitionAdded(c) => c.data.id(),
         other => panic!("expected CognitionAdded, got {other:?}"),
     }
 }
@@ -70,7 +70,7 @@ async fn add_memory(
     .await
     .unwrap()
     {
-        MemoryResponse::MemoryAdded(m) => m.data.id,
+        MemoryResponse::MemoryAdded(m) => m.data.id(),
         other => panic!("expected MemoryAdded, got {other:?}"),
     }
 }
@@ -91,7 +91,7 @@ async fn add_experience(
     .await
     .unwrap()
     {
-        ExperienceResponse::ExperienceCreated(e) => e.data.id,
+        ExperienceResponse::ExperienceCreated(e) => e.data.id(),
         other => panic!("expected ExperienceCreated, got {other:?}"),
     }
 }
@@ -108,7 +108,7 @@ async fn connect(context: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId
     .await
     .unwrap()
     {
-        ConnectionResponse::ConnectionCreated(c) => c.data.id,
+        ConnectionResponse::ConnectionCreated(c) => c.data.id(),
         other => panic!("expected ConnectionCreated, got {other:?}"),
     }
 }
@@ -159,7 +159,7 @@ async fn dream_includes_persona() {
     let context = dream(&context, &agent).await;
 
     let persona = context.persona.expect("persona should be present");
-    assert_eq!(persona.name, PersonaName::new("process"));
+    assert_eq!(persona.name(), &PersonaName::new("process"));
 }
 
 // ── Memory filtering ─────────────────────────────────────────────
@@ -177,7 +177,7 @@ async fn core_memories_always_included() {
     let memory_contents: Vec<&str> = context
         .memories
         .iter()
-        .map(|m| m.content.as_str())
+        .map(|m| m.content().as_str())
         .collect();
     assert!(
         memory_contents.contains(&"identity fundament"),
@@ -202,7 +202,11 @@ async fn level_threshold_filters_lower_priority() {
 
     let context = dream(&context, &agent).await;
 
-    let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_str()).collect();
+    let levels: Vec<&str> = context
+        .memories
+        .iter()
+        .map(|m| m.level().as_str())
+        .collect();
     assert!(levels.contains(&"core"), "core always included");
     assert!(levels.contains(&"project"), "project >= threshold");
     assert!(levels.contains(&"session"), "session >= threshold");
@@ -230,7 +234,11 @@ async fn level_threshold_override_changes_filter() {
     };
     let context = dream_with(&context, &agent, &overrides).await;
 
-    let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_str()).collect();
+    let levels: Vec<&str> = context
+        .memories
+        .iter()
+        .map(|m| m.level().as_str())
+        .collect();
     assert!(levels.contains(&"core"), "core always included");
     assert_eq!(
         levels.len(),
@@ -258,12 +266,12 @@ async fn recollection_size_caps_non_core_memories() {
     let core_count = context
         .memories
         .iter()
-        .filter(|m| m.level.as_str() == "core")
+        .filter(|m| m.level().as_str() == "core")
         .count();
     let non_core_count = context
         .memories
         .iter()
-        .filter(|m| m.level.as_str() != "core")
+        .filter(|m| m.level().as_str() != "core")
         .count();
 
     assert_eq!(core_count, 1, "core memory is always included");
@@ -308,7 +316,7 @@ async fn cognition_size_cap_keeps_most_recent() {
     let contents: Vec<&str> = context
         .cognitions
         .iter()
-        .map(|c| c.content.as_str())
+        .map(|c| c.content().as_str())
         .collect();
     assert!(
         contents.contains(&"thought 9"),
@@ -348,7 +356,7 @@ async fn bfs_discovers_connected_cognitions() {
     };
     let context = dream_with(&context, &agent, &overrides).await;
 
-    let cog_ids: HashSet<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
+    let cog_ids: HashSet<CognitionId> = context.cognitions.iter().map(|c| c.id()).collect();
 
     assert!(
         cog_ids.contains(&connected_cog),
@@ -378,7 +386,7 @@ async fn bfs_discovers_connected_experiences() {
     };
     let context = dream_with(&context, &agent, &overrides).await;
 
-    let exp_ids: HashSet<ExperienceId> = context.experiences.iter().map(|e| e.id).collect();
+    let exp_ids: HashSet<ExperienceId> = context.experiences.iter().map(|e| e.id()).collect();
     assert!(
         exp_ids.contains(&connected_exp),
         "BFS should discover connected experience"
@@ -431,21 +439,21 @@ async fn connections_pruned_to_included_endpoints() {
     let included_refs: HashSet<Ref> = context
         .memories
         .iter()
-        .map(|m| Ref::memory(m.id))
-        .chain(context.cognitions.iter().map(|c| Ref::cognition(c.id)))
-        .chain(context.experiences.iter().map(|e| Ref::experience(e.id)))
+        .map(|m| Ref::memory(m.id()))
+        .chain(context.cognitions.iter().map(|c| Ref::cognition(c.id())))
+        .chain(context.experiences.iter().map(|e| Ref::experience(e.id())))
         .collect();
 
     for conn in &context.connections {
         assert!(
-            included_refs.contains(&conn.from_ref),
+            included_refs.contains(conn.from_ref()),
             "connection from_ref {:?} should be in included entities",
-            conn.from_ref
+            conn.from_ref()
         );
         assert!(
-            included_refs.contains(&conn.to_ref),
+            included_refs.contains(conn.to_ref()),
             "connection to_ref {:?} should be in included entities",
-            conn.to_ref
+            conn.to_ref()
         );
     }
 }
@@ -467,10 +475,11 @@ async fn pressures_paired_with_urge_ctas() {
         let urge = context
             .urges
             .iter()
-            .find(|u| u.name == reading.pressure.urge);
+            .find(|u| u.name() == &reading.pressure.urge);
         if let Some(urge) = urge {
             assert_eq!(
-                reading.cta, urge.prompt,
+                &reading.cta,
+                urge.prompt(),
                 "pressure CTA should match urge prompt"
             );
         }
@@ -527,7 +536,7 @@ async fn memories_sorted_by_created_at() {
 
     for window in context.memories.windows(2) {
         assert!(
-            window[0].created_at <= window[1].created_at,
+            window[0].created_at() <= window[1].created_at(),
             "memories should be sorted by created_at"
         );
     }
@@ -546,7 +555,7 @@ async fn cognitions_sorted_by_created_at() {
 
     for window in context.cognitions.windows(2) {
         assert!(
-            window[0].created_at <= window[1].created_at,
+            window[0].created_at() <= window[1].created_at(),
             "cognitions should be sorted by created_at"
         );
     }

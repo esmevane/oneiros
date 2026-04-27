@@ -40,7 +40,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         LevelResponse::LevelDetails(l) => {
-            assert_eq!(l.data.description.to_string(), "Active processing");
+            assert_eq!(l.data.description().to_string(), "Active processing");
         }
         other => panic!("expected LevelDetails, got {other:?}"),
     }
@@ -79,7 +79,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         TextureResponse::TextureDetails(t) => {
-            assert_eq!(t.data.name, TextureName::new("observation"));
+            assert_eq!(*t.data.name(), TextureName::new("observation"));
         }
         other => panic!("expected TextureDetails, got {other:?}"),
     }
@@ -97,7 +97,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         SensationResponse::SensationDetails(s) => {
-            assert_eq!(s.data.name, SensationName::new("echoes"));
+            assert_eq!(s.data.name(), &SensationName::new("echoes"));
         }
         other => panic!("expected SensationDetails, got {other:?}"),
     }
@@ -115,7 +115,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         NatureResponse::NatureDetails(n) => {
-            assert_eq!(n.data.name, NatureName::new("reference"));
+            assert_eq!(n.data.name(), &NatureName::new("reference"));
         }
         other => panic!("expected NatureDetails, got {other:?}"),
     }
@@ -139,7 +139,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         PersonaResponse::PersonaDetails(p) => {
-            assert_eq!(cmd_json["data"]["name"], p.data.name.to_string());
+            assert_eq!(cmd_json["data"]["name"], p.data.name().to_string());
         }
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
@@ -153,7 +153,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         UrgeResponse::UrgeDetails(u) => {
-            assert_eq!(u.name, UrgeName::new("introspect"));
+            assert_eq!(u.name(), &UrgeName::new("introspect"));
         }
         other => panic!("expected UrgeDetails, got {other:?}"),
     }
@@ -168,7 +168,7 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         LevelResponse::LevelDetails(l) => {
-            assert_eq!(l.data.description.to_string(), "Updated description");
+            assert_eq!(l.data.description().to_string(), "Updated description");
         }
         other => panic!("expected LevelDetails, got {other:?}"),
     }

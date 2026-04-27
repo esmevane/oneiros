@@ -15,7 +15,7 @@ impl<'a> LevelStore<'a> {
         if let Event::Known(Events::Level(level_event)) = &event.data {
             match level_event {
                 LevelEvents::LevelSet(level) => self.set(level)?,
-                LevelEvents::LevelRemoved(removed) => self.remove(&removed.name)?,
+                LevelEvents::LevelRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -53,11 +53,13 @@ impl<'a> LevelStore<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Level::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Level::Current(
+                    Level::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 
@@ -68,9 +70,9 @@ impl<'a> LevelStore<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO levels (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
-                level.name.to_string(),
-                level.description.to_string(),
-                level.prompt.to_string()
+                level.name().to_string(),
+                level.description().to_string(),
+                level.prompt().to_string()
             ],
         )?;
         Ok(())

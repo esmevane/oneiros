@@ -31,15 +31,15 @@ impl<'a> MemoryRepo<'a> {
         });
 
         match result {
-            Ok((id, agent_id, level, content, created_at)) => Ok(Some(
-                Memory::builder()
+            Ok((id, agent_id, level, content, created_at)) => Ok(Some(Memory::Current(
+                Memory::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .level(level)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -112,15 +112,15 @@ impl<'a> MemoryRepo<'a> {
 
         let mut memories = vec![];
         for (id, agent_id, level, content, created_at) in raw {
-            memories.push(
-                Memory::builder()
+            memories.push(Memory::Current(
+                Memory::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .level(level)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(memories, total))

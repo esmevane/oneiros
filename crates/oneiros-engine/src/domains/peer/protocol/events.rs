@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +17,26 @@ pub enum PeerEvents {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PeerRemoved {
+#[serde(untagged)]
+pub enum PeerRemoved {
+    Current(PeerRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct PeerRemovedV1 {
     pub id: PeerId,
+}
+
+impl PeerRemoved {
+    pub fn build_v1() -> PeerRemovedV1Builder {
+        PeerRemovedV1::builder()
+    }
+
+    pub fn id(&self) -> PeerId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
 }
 
 #[cfg(test)]

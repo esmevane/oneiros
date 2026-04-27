@@ -148,11 +148,13 @@ mod tests {
 
     #[test]
     fn known_event_round_trips_through_event_record() {
-        let level = Level::builder()
-            .name("working")
-            .description("Short-term")
-            .prompt("")
-            .build();
+        let level = Level::Current(
+            Level::build_v1()
+                .name("working")
+                .description("Short-term")
+                .prompt("")
+                .build(),
+        );
         let original = Events::Level(LevelEvents::LevelSet(level));
 
         let json = serde_json::to_string(&original).unwrap();
@@ -191,11 +193,13 @@ mod tests {
 
     #[test]
     fn known_event_record_serializes_transparently() {
-        let level = Level::builder()
-            .name("working")
-            .description("Short-term")
-            .prompt("")
-            .build();
+        let level = Level::Current(
+            Level::build_v1()
+                .name("working")
+                .description("Short-term")
+                .prompt("")
+                .build(),
+        );
         let record = Event::Known(Events::Level(LevelEvents::LevelSet(level.clone())));
         let record_json = serde_json::to_value(&record).unwrap();
 

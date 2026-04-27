@@ -30,10 +30,12 @@ impl ProjectService {
         .await?;
 
         context
-            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated {
-                brain: brain_name.clone(),
-                name: BookmarkName::main(),
-            }))
+            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated::Current(
+                BookmarkCreatedV1 {
+                    brain: brain_name.clone(),
+                    name: BookmarkName::main(),
+                },
+            )))
             .await?;
 
         // Create the brain's database layout:
@@ -65,13 +67,13 @@ impl ProjectService {
             match TicketService::create(
                 context,
                 &CreateTicket::builder()
-                    .actor_id(actor.id)
+                    .actor_id(actor.id())
                     .brain_name(brain_name.clone())
                     .build(),
             )
             .await?
             {
-                TicketResponse::Created(ticket) => ticket.link.token,
+                TicketResponse::Created(ticket) => ticket.link().token.clone(),
                 _ => return Err(ProjectError::Missing),
             }
         } else {
@@ -112,7 +114,7 @@ impl ProjectService {
         for event in &events {
             // Synthesize ephemeral BlobStored events for storage portability.
             if let Event::Known(Events::Storage(StorageEvents::StorageSet(entry))) = &event.data
-                && let Ok(Some(blob)) = storage.get_blob(&entry.hash)
+                && let Ok(Some(blob)) = storage.get_blob(entry.hash())
             {
                 let synthetic = StoredEvent::builder()
                     .id(EventId::new())

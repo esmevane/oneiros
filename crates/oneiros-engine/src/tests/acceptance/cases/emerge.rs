@@ -10,7 +10,7 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     match &response {
         // Engine: typed continuity response
         Responses::Continuity(ContinuityResponse::Emerged(ctx)) => {
-            assert_eq!(ctx.agent.name, AgentName::new("newborn.process"));
+            assert_eq!(ctx.agent.name(), &AgentName::new("newborn.process"));
         }
         other => panic!("expected Continuity(Emerged) or Json(emerged), got {other:#?}"),
     }

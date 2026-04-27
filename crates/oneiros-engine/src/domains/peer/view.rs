@@ -13,15 +13,15 @@ impl PeerView {
         match self.response {
             PeerResponse::Added(wrapped) => {
                 let prompt =
-                    Confirmation::new("Peer", wrapped.data.name.to_string(), "added").to_string();
+                    Confirmation::new("Peer", wrapped.data.name().to_string(), "added").to_string();
                 Rendered::new(PeerResponse::Added(wrapped), prompt, String::new())
             }
             PeerResponse::Found(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("id:", wrapped.data.id.to_string())
-                    .field("key:", wrapped.data.key.to_string())
-                    .field("address:", wrapped.data.address.to_string())
-                    .field("created_at:", wrapped.data.created_at.as_string())
+                let prompt = Detail::new(wrapped.data.name().to_string())
+                    .field("id:", wrapped.data.id().to_string())
+                    .field("key:", wrapped.data.key().to_string())
+                    .field("address:", wrapped.data.address().to_string())
+                    .field("created_at:", wrapped.data.created_at().as_string())
                     .to_string();
                 Rendered::new(PeerResponse::Found(wrapped), prompt, String::new())
             }
@@ -33,12 +33,12 @@ impl PeerView {
                 ]);
                 for wrapped in &listed.items {
                     let peer = &wrapped.data;
-                    let key_display = peer.key.to_string();
+                    let key_display = peer.key().to_string();
                     let short_key: String = key_display.chars().take(12).collect();
                     table.push_row(vec![
-                        peer.name.to_string(),
+                        peer.name().to_string(),
                         format!("{short_key}…"),
-                        peer.id.to_string(),
+                        peer.id().to_string(),
                     ]);
                 }
                 let prompt = format!(

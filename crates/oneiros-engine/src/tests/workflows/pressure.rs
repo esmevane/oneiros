@@ -219,8 +219,8 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
             .connection()
             .create(
                 &CreateConnection::builder()
-                    .from_ref(RefToken::new(Ref::cognition(cog.data.id)))
-                    .to_ref(RefToken::new(Ref::experience(experience.data.id)))
+                    .from_ref(RefToken::new(Ref::cognition(cog.data.id())))
+                    .to_ref(RefToken::new(Ref::experience(experience.data.id())))
                     .nature("context")
                     .build(),
             )
@@ -316,8 +316,8 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
             .connection()
             .create(
                 &CreateConnection::builder()
-                    .from_ref(RefToken::new(Ref::experience(experiences[0].data.id)))
-                    .to_ref(RefToken::new(Ref::experience(experiences[1].data.id)))
+                    .from_ref(RefToken::new(Ref::experience(experiences[0].data.id())))
+                    .to_ref(RefToken::new(Ref::experience(experiences[1].data.id())))
                     .nature("reference")
                     .build(),
             )

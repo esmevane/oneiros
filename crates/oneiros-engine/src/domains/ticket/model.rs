@@ -5,8 +5,14 @@ use std::collections::HashMap;
 
 use crate::*;
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Ticket {
+    Current(TicketV1),
+}
+
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Ticket {
+pub struct TicketV1 {
     #[builder(default, into)]
     pub id: TicketId,
     pub actor_id: ActorId,
@@ -29,6 +35,78 @@ pub struct Ticket {
     pub created_at: Timestamp,
 }
 
+impl Ticket {
+    pub fn build_v1() -> TicketV1Builder {
+        TicketV1::builder()
+    }
+
+    pub fn id(&self) -> TicketId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
+
+    pub fn actor_id(&self) -> ActorId {
+        match self {
+            Self::Current(v) => v.actor_id,
+        }
+    }
+
+    pub fn brain_name(&self) -> &BrainName {
+        match self {
+            Self::Current(v) => &v.brain_name,
+        }
+    }
+
+    pub fn brain_id(&self) -> BrainId {
+        match self {
+            Self::Current(v) => v.brain_id,
+        }
+    }
+
+    pub fn link(&self) -> &Link {
+        match self {
+            Self::Current(v) => &v.link,
+        }
+    }
+
+    pub fn granted_by(&self) -> ActorId {
+        match self {
+            Self::Current(v) => v.granted_by,
+        }
+    }
+
+    pub fn expires_at(&self) -> Option<Timestamp> {
+        match self {
+            Self::Current(v) => v.expires_at,
+        }
+    }
+
+    pub fn revoked_at(&self) -> Option<Timestamp> {
+        match self {
+            Self::Current(v) => v.revoked_at,
+        }
+    }
+
+    pub fn max_uses(&self) -> Option<u64> {
+        match self {
+            Self::Current(v) => v.max_uses,
+        }
+    }
+
+    pub fn uses(&self) -> u64 {
+        match self {
+            Self::Current(v) => v.uses,
+        }
+    }
+
+    pub fn created_at(&self) -> Timestamp {
+        match self {
+            Self::Current(v) => v.created_at,
+        }
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Tickets(HashMap<String, Ticket>);
 
@@ -46,7 +124,7 @@ impl Tickets {
     }
 
     pub fn set(&mut self, ticket: &Ticket) -> Option<Ticket> {
-        self.0.insert(ticket.id.to_string(), ticket.clone())
+        self.0.insert(ticket.id().to_string(), ticket.clone())
     }
 
     pub fn remove(&mut self, ticket_id: TicketId) -> Option<Ticket> {

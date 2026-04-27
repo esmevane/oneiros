@@ -12,11 +12,13 @@ impl FollowService {
         bookmark: BookmarkName,
         source: FollowSource,
     ) -> Result<Follow, FollowError> {
-        let follow = Follow::builder()
-            .brain(brain)
-            .bookmark(bookmark)
-            .source(source)
-            .build();
+        let follow = Follow::Current(
+            Follow::build_v1()
+                .brain(brain)
+                .bookmark(bookmark)
+                .source(source)
+                .build(),
+        );
 
         context
             .emit(BookmarkEvents::BookmarkFollowed(follow.clone()))
@@ -61,11 +63,13 @@ impl FollowService {
         events_received: u64,
     ) -> Result<(), FollowError> {
         context
-            .emit(BookmarkEvents::BookmarkCollected(BookmarkCollected {
-                follow_id,
-                checkpoint,
-                events_received,
-            }))
+            .emit(BookmarkEvents::BookmarkCollected(
+                BookmarkCollected::Current(BookmarkCollectedV1 {
+                    follow_id,
+                    checkpoint,
+                    events_received,
+                }),
+            ))
             .await?;
         Ok(())
     }
@@ -79,11 +83,13 @@ impl FollowService {
             .ok_or(FollowError::NotFound(id))?;
 
         context
-            .emit(BookmarkEvents::BookmarkUnfollowed(BookmarkUnfollowed {
-                follow_id: existing.id,
-                brain: existing.brain,
-                bookmark: existing.bookmark,
-            }))
+            .emit(BookmarkEvents::BookmarkUnfollowed(
+                BookmarkUnfollowed::Current(BookmarkUnfollowedV1 {
+                    follow_id: existing.id(),
+                    brain: existing.brain().clone(),
+                    bookmark: existing.bookmark().clone(),
+                }),
+            ))
             .await?;
 
         Ok(())

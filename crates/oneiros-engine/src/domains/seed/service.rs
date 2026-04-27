@@ -206,7 +206,7 @@ impl SeedService {
             offset: Offset(0),
         };
         let personas = PersonaRepo::new(context).list(&all_filters).await?;
-        let persona_names: Vec<&str> = personas.items.iter().map(|p| p.name.as_str()).collect();
+        let persona_names: Vec<&str> = personas.items.iter().map(|p| p.name().as_str()).collect();
 
         if !persona_names.contains(&"process") || !persona_names.contains(&"scribe") {
             return Err(SeedError::MissingPersonas);

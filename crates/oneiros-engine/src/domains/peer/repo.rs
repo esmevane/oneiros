@@ -84,11 +84,13 @@ fn peer_from_columns(
         .parse()
         .map_err(|e: PeerAddressError| EventError::Import(e.to_string()))?;
 
-    Ok(Peer::builder()
-        .id(id.parse::<PeerId>()?)
-        .key(parsed_key)
-        .address(parsed_addr)
-        .name(PeerName::new(name))
-        .created_at(Timestamp::parse_str(created_at)?)
-        .build())
+    Ok(Peer::Current(
+        Peer::build_v1()
+            .id(id.parse::<PeerId>()?)
+            .key(parsed_key)
+            .address(parsed_addr)
+            .name(PeerName::new(name))
+            .created_at(Timestamp::parse_str(created_at)?)
+            .build(),
+    ))
 }

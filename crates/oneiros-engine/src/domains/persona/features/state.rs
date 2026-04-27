@@ -10,7 +10,7 @@ impl PersonaState {
                     canon.personas.set(persona);
                 }
                 PersonaEvents::PersonaRemoved(removed) => {
-                    canon.personas.remove(&removed.name);
+                    canon.personas.remove(removed.name());
                 }
             };
         }

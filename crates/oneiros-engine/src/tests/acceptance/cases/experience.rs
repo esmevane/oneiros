@@ -80,7 +80,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     let id = match create_response {
         Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => {
-            experience.data.id
+            experience.data.id()
         }
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
@@ -89,7 +89,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.data.description.as_str(), "Show me this");
+            assert_eq!(experience.data.description().as_str(), "Show me this");
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -118,7 +118,7 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.data.description.as_str(), "Show me by ref");
+            assert_eq!(experience.data.description().as_str(), "Show me by ref");
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -170,7 +170,7 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 
     let id = match create_response {
         Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => {
-            experience.data.id
+            experience.data.id()
         }
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
@@ -193,7 +193,10 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.data.description.as_str(), "Updated description");
+            assert_eq!(
+                experience.data.description().as_str(),
+                "Updated description"
+            );
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -208,7 +211,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("experience create observer.process caused 'Show this'")
         .await?;
     let id = match response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id.to_string(),
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id().to_string(),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
@@ -249,7 +252,7 @@ pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
         .exec_json("experience create observer.process caused 'Original'")
         .await?;
     let id = match response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id.to_string(),
+        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id().to_string(),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 

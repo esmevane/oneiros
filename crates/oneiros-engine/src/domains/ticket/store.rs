@@ -44,7 +44,7 @@ impl<'a> TicketStore<'a> {
     }
 
     fn create_record(&self, ticket: &Ticket) -> Result<(), EventError> {
-        let target = RefToken::new(ticket.link.target.clone()).to_string();
+        let target = RefToken::new(ticket.link().target.clone()).to_string();
         self.conn.execute(
             "insert or replace into tickets (
                 id, actor_id, brain_name, brain_id, token, target, granted_by,
@@ -52,18 +52,18 @@ impl<'a> TicketStore<'a> {
              )
              values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             params![
-                ticket.id.to_string(),
-                ticket.actor_id.to_string(),
-                ticket.brain_name.to_string(),
-                ticket.brain_id.to_string(),
-                ticket.link.token.as_str(),
+                ticket.id().to_string(),
+                ticket.actor_id().to_string(),
+                ticket.brain_name().to_string(),
+                ticket.brain_id().to_string(),
+                ticket.link().token.as_str(),
                 target,
-                ticket.granted_by.to_string(),
-                ticket.expires_at.map(|t| t.as_string()),
-                ticket.revoked_at.map(|t| t.as_string()),
-                ticket.max_uses,
-                ticket.uses,
-                ticket.created_at.as_string()
+                ticket.granted_by().to_string(),
+                ticket.expires_at().map(|t| t.as_string()),
+                ticket.revoked_at().map(|t| t.as_string()),
+                ticket.max_uses(),
+                ticket.uses(),
+                ticket.created_at().as_string()
             ],
         )?;
         Ok(())

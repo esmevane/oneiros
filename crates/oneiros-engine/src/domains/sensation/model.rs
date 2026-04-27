@@ -1,21 +1,48 @@
 use bon::Builder;
-use clap::Args;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Sensation {
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Sensation {
+    Current(SensationV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct SensationV1 {
     #[builder(into)]
     pub name: SensationName,
     #[builder(into)]
-    #[arg(long, default_value = "")]
     pub description: Description,
     #[builder(into)]
-    #[arg(long, default_value = "")]
     pub prompt: Prompt,
+}
+
+impl Sensation {
+    pub fn build_v1() -> SensationV1Builder {
+        SensationV1::builder()
+    }
+
+    pub fn name(&self) -> &SensationName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
+
+    pub fn description(&self) -> &Description {
+        match self {
+            Self::Current(v) => &v.description,
+        }
+    }
+
+    pub fn prompt(&self) -> &Prompt {
+        match self {
+            Self::Current(v) => &v.prompt,
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -35,7 +62,8 @@ impl Sensations {
     }
 
     pub fn set(&mut self, sensation: &Sensation) -> Option<Sensation> {
-        self.0.insert(sensation.name.to_string(), sensation.clone())
+        self.0
+            .insert(sensation.name().to_string(), sensation.clone())
     }
 
     pub fn remove(&mut self, name: &SensationName) -> Option<Sensation> {

@@ -15,7 +15,7 @@ impl<'a> SensationStore<'a> {
         if let Event::Known(Events::Sensation(sensation_event)) = &event.data {
             match sensation_event {
                 SensationEvents::SensationSet(sensation) => self.set(sensation)?,
-                SensationEvents::SensationRemoved(removed) => self.remove(&removed.name)?,
+                SensationEvents::SensationRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -53,11 +53,13 @@ impl<'a> SensationStore<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Sensation::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Sensation::Current(
+                    Sensation::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 
@@ -68,9 +70,9 @@ impl<'a> SensationStore<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO sensations (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
-                sensation.name.to_string(),
-                sensation.description.to_string(),
-                sensation.prompt.to_string()
+                sensation.name().to_string(),
+                sensation.description().to_string(),
+                sensation.prompt().to_string()
             ],
         )?;
         Ok(())

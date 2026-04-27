@@ -25,13 +25,13 @@ impl<'a> TextureRepo<'a> {
         });
 
         match result {
-            Ok((name, description, prompt)) => Ok(Some(
-                Texture::builder()
+            Ok((name, description, prompt)) => Ok(Some(Texture::Current(
+                Texture::build_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -60,11 +60,13 @@ impl<'a> TextureRepo<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Texture::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Texture::Current(
+                    Texture::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 

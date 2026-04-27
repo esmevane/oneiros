@@ -147,8 +147,8 @@ async fn fresh_brain_lists_main_bookmark() -> Result<(), Box<dyn core::error::Er
                 "fresh brain should have exactly one bookmark entry"
             );
             assert_eq!(
-                listed.items[0].name,
-                BookmarkName::main(),
+                listed.items[0].name(),
+                &BookmarkName::main(),
                 "the sole bookmark should be `main`"
             );
         }

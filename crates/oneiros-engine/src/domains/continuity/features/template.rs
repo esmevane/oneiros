@@ -48,7 +48,7 @@ impl<'a> DreamTemplate<'a> {
         self.context
             .textures
             .iter()
-            .map(|t| t.name.as_str())
+            .map(|t| t.name().as_str())
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -57,7 +57,7 @@ impl<'a> DreamTemplate<'a> {
         self.context
             .levels
             .iter()
-            .map(|l| l.name.as_str())
+            .map(|l| l.name().as_str())
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -66,7 +66,7 @@ impl<'a> DreamTemplate<'a> {
         self.context
             .sensations
             .iter()
-            .map(|s| s.name.as_str())
+            .map(|s| s.name().as_str())
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -75,7 +75,7 @@ impl<'a> DreamTemplate<'a> {
         self.context
             .natures
             .iter()
-            .map(|n| n.name.as_str())
+            .map(|n| n.name().as_str())
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -84,7 +84,7 @@ impl<'a> DreamTemplate<'a> {
         self.context
             .urges
             .iter()
-            .map(|u| u.name.as_str())
+            .map(|u| u.name().as_str())
             .collect::<Vec<_>>()
             .join(", ")
     }

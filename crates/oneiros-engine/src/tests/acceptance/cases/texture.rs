@@ -16,8 +16,8 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Texture(TextureResponse::TextureDetails(t)) => {
-            assert_eq!(t.data.name.as_str(), "observation");
-            assert_eq!(t.data.description.as_str(), "Noticing patterns");
+            assert_eq!(t.data.name().as_str(), "observation");
+            assert_eq!(t.data.description().as_str(), "Noticing patterns");
         }
         other => panic!("expected TextureDetails, got {other:#?}"),
     }
@@ -40,7 +40,7 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Texture(TextureResponse::TextureDetails(t)) => {
-            assert_eq!(t.data.description.as_str(), "Updated");
+            assert_eq!(t.data.description().as_str(), "Updated");
         }
         other => panic!("expected TextureDetails, got {other:#?}"),
     }

@@ -15,8 +15,14 @@ use crate::*;
 /// sources, `FollowSource::Peer(PeerLink)` for cross-host sources). The
 /// ticket (when authorization is needed) lives inside the
 /// `PeerLink.link` for the Peer variant.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Follow {
+    Current(FollowV1),
+}
+
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Follow {
+pub struct FollowV1 {
     #[builder(default)]
     pub id: FollowId,
     #[builder(into)]
@@ -28,6 +34,48 @@ pub struct Follow {
     pub checkpoint: Checkpoint,
     #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
+}
+
+impl Follow {
+    pub fn build_v1() -> FollowV1Builder {
+        FollowV1::builder()
+    }
+
+    pub fn id(&self) -> FollowId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
+
+    pub fn brain(&self) -> &BrainName {
+        match self {
+            Self::Current(v) => &v.brain,
+        }
+    }
+
+    pub fn bookmark(&self) -> &BookmarkName {
+        match self {
+            Self::Current(v) => &v.bookmark,
+        }
+    }
+
+    pub fn source(&self) -> &FollowSource {
+        match self {
+            Self::Current(v) => &v.source,
+        }
+    }
+
+    pub fn checkpoint(&self) -> &Checkpoint {
+        match self {
+            Self::Current(v) => &v.checkpoint,
+        }
+    }
+
+    pub fn created_at(&self) -> Timestamp {
+        match self {
+            Self::Current(v) => v.created_at,
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -51,7 +99,7 @@ impl Follows {
     }
 
     pub fn set(&mut self, follow: &Follow) -> Option<Follow> {
-        self.0.insert(follow.id.to_string(), follow.clone())
+        self.0.insert(follow.id().to_string(), follow.clone())
     }
 
     pub fn remove(&mut self, follow_id: FollowId) -> Option<Follow> {

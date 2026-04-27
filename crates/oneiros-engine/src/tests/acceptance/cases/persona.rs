@@ -16,8 +16,8 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Persona(PersonaResponse::PersonaDetails(p)) => {
-            assert_eq!(p.data.name.as_str(), "process");
-            assert_eq!(p.data.description.as_str(), "Process agents");
+            assert_eq!(p.data.name().as_str(), "process");
+            assert_eq!(p.data.description().as_str(), "Process agents");
         }
         other => panic!("expected PersonaDetails, got {other:#?}"),
     }
@@ -40,7 +40,7 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Persona(PersonaResponse::PersonaDetails(p)) => {
-            assert_eq!(p.data.description.as_str(), "Updated");
+            assert_eq!(p.data.description().as_str(), "Updated");
         }
         other => panic!("expected PersonaDetails, got {other:#?}"),
     }

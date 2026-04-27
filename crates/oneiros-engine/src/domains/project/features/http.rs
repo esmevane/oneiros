@@ -51,7 +51,7 @@ async fn summary(context: ProjectContext) -> Result<Json<BrainSummary>, ProjectE
     // Get recent cognitions (last 30, newest first)
     let recent_cognitions = {
         let mut recent = cognitions;
-        recent.sort_by_key(|b| std::cmp::Reverse(b.created_at));
+        recent.sort_by_key(|b| std::cmp::Reverse(b.created_at()));
         recent.truncate(30);
         recent
     };

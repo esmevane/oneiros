@@ -21,7 +21,7 @@ impl<'a> PeerStore<'a> {
                     self.create_record(peer)?;
                 }
                 PeerEvents::PeerRemoved(removed) => {
-                    self.delete_record(removed.id)?;
+                    self.delete_record(removed.id())?;
                 }
             }
         }
@@ -51,11 +51,11 @@ impl<'a> PeerStore<'a> {
             "insert or replace into peers (id, key, address, name, created_at)
              values (?1, ?2, ?3, ?4, ?5)",
             params![
-                peer.id.to_string(),
-                peer.key.to_string(),
-                peer.address.to_string(),
-                peer.name.to_string(),
-                peer.created_at.as_string(),
+                peer.id().to_string(),
+                peer.key().to_string(),
+                peer.address().to_string(),
+                peer.name().to_string(),
+                peer.created_at().as_string(),
             ],
         )?;
         Ok(())

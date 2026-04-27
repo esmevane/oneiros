@@ -29,8 +29,8 @@ impl<'a> PressureStore<'a> {
 
         for agent in &agents {
             for urge in &urges {
-                let gauge = self.compute_gauge(&urge.name, &agent.id, &agent.name)?;
-                self.upsert(&agent.id, &urge.name, &gauge, &now)?;
+                let gauge = self.compute_gauge(urge.name(), &agent.id(), agent.name())?;
+                self.upsert(&agent.id(), urge.name(), &gauge, &now)?;
             }
         }
 
@@ -69,7 +69,7 @@ impl<'a> PressureStore<'a> {
         )?;
 
         let pressures = stmt
-            .query_map(params![agent.id.to_string()], |row| {
+            .query_map(params![agent.id().to_string()], |row| {
                 let data_str: String = row.get(3)?;
                 let updated_str: String = row.get(4)?;
                 Ok(Pressure {
@@ -138,28 +138,28 @@ impl<'a> PressureStore<'a> {
         let agent_name = match &event.data {
             Event::Known(known_event) => match known_event {
                 Events::Cognition(CognitionEvents::CognitionAdded(cognition)) => agent_store
-                    .get_name_by_id(&cognition.agent_id)?
+                    .get_name_by_id(&cognition.agent_id())?
                     .map(|n| n.to_string()),
                 Events::Memory(MemoryEvents::MemoryAdded(memory)) => agent_store
-                    .get_name_by_id(&memory.agent_id)?
+                    .get_name_by_id(&memory.agent_id())?
                     .map(|n| n.to_string()),
                 Events::Experience(ExperienceEvents::ExperienceCreated(experience)) => agent_store
-                    .get_name_by_id(&experience.agent_id)?
+                    .get_name_by_id(&experience.agent_id())?
                     .map(|n| n.to_string()),
                 Events::Continuity(ContinuityEvents::Introspected(continuity)) => {
-                    Some(continuity.agent.to_string())
+                    Some(continuity.agent().to_string())
                 }
                 Events::Continuity(ContinuityEvents::Reflected(continuity)) => {
-                    Some(continuity.agent.to_string())
+                    Some(continuity.agent().to_string())
                 }
                 Events::Continuity(ContinuityEvents::Dreamed(continuity)) => {
-                    Some(continuity.agent.to_string())
+                    Some(continuity.agent().to_string())
                 }
                 Events::Continuity(ContinuityEvents::Slept(continuity)) => {
-                    Some(continuity.agent.to_string())
+                    Some(continuity.agent().to_string())
                 }
                 Events::Continuity(ContinuityEvents::Sensed(sensed)) => {
-                    Some(sensed.agent.to_string())
+                    Some(sensed.agent().to_string())
                 }
                 // Connection events affect orphaned/unconnected counts for any agent
                 // whose entities are referenced. Recompute for all agents.

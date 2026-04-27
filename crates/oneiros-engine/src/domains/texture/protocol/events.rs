@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,24 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TextureRemoved {
+#[serde(untagged)]
+pub enum TextureRemoved {
+    Current(TextureRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct TextureRemovedV1 {
     pub name: TextureName,
+}
+
+impl TextureRemoved {
+    pub fn build_v1() -> TextureRemovedV1Builder {
+        TextureRemovedV1::builder()
+    }
+
+    pub fn name(&self) -> &TextureName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
 }

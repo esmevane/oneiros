@@ -12,19 +12,19 @@ impl TicketView {
     pub fn render(self) -> Rendered<TicketResponse> {
         match self.response {
             TicketResponse::Created(ticket) => {
-                let prompt = Confirmation::new("Ticket", ticket.brain_name.to_string(), "issued")
+                let prompt = Confirmation::new("Ticket", ticket.brain_name().to_string(), "issued")
                     .to_string();
                 Rendered::new(TicketResponse::Created(ticket), prompt, String::new())
             }
             TicketResponse::Found(ticket) => {
-                let prompt = Detail::new(ticket.brain_name.to_string())
-                    .field("actor_id:", ticket.actor_id.to_string())
+                let prompt = Detail::new(ticket.brain_name().to_string())
+                    .field("actor_id:", ticket.actor_id().to_string())
                     .to_string();
                 Rendered::new(TicketResponse::Found(ticket), prompt, String::new())
             }
             TicketResponse::Validated(ticket) => {
                 let prompt =
-                    Confirmation::new("Ticket", ticket.brain_name.to_string(), "validated")
+                    Confirmation::new("Ticket", ticket.brain_name().to_string(), "validated")
                         .to_string();
                 Rendered::new(TicketResponse::Validated(ticket), prompt, String::new())
             }
@@ -35,8 +35,8 @@ impl TicketView {
                 ]);
                 for ticket in &listed.items {
                     table.push_row(vec![
-                        ticket.brain_name.to_string(),
-                        ticket.actor_id.to_string(),
+                        ticket.brain_name().to_string(),
+                        ticket.actor_id().to_string(),
                     ]);
                 }
                 let prompt = format!(

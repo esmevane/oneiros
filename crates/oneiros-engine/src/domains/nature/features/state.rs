@@ -10,7 +10,7 @@ impl NatureState {
                     canon.natures.set(nature);
                 }
                 NatureEvents::NatureRemoved(removed) => {
-                    canon.natures.remove(&removed.name);
+                    canon.natures.remove(removed.name());
                 }
             };
         }

@@ -11,11 +11,13 @@ impl SensationService {
             prompt,
         }: &SetSensation,
     ) -> Result<SensationResponse, SensationError> {
-        let sensation = Sensation::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
-            .build();
+        let sensation = Sensation::Current(
+            Sensation::build_v1()
+                .name(name.clone())
+                .description(description.clone())
+                .prompt(prompt.clone())
+                .build(),
+        );
         context
             .emit(SensationEvents::SensationSet(sensation))
             .await?;
@@ -31,7 +33,7 @@ impl SensationService {
             .get(&name)
             .await?
             .ok_or(SensationError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::sensation(sensation.name.clone()));
+        let ref_token = RefToken::new(Ref::sensation(sensation.name().clone()));
         Ok(SensationResponse::SensationDetails(
             Response::new(sensation).with_ref_token(ref_token),
         ))
@@ -46,7 +48,7 @@ impl SensationService {
             Ok(SensationResponse::NoSensations)
         } else {
             Ok(SensationResponse::Sensations(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::sensation(e.name.clone()));
+                let ref_token = RefToken::new(Ref::sensation(e.name().clone()));
                 Response::new(e).with_ref_token(ref_token)
             })))
         }
@@ -57,9 +59,11 @@ impl SensationService {
         selector: &RemoveSensation,
     ) -> Result<SensationResponse, SensationError> {
         context
-            .emit(SensationEvents::SensationRemoved(SensationRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(SensationEvents::SensationRemoved(
+                SensationRemoved::Current(SensationRemovedV1 {
+                    name: selector.name.clone(),
+                }),
+            ))
             .await?;
         Ok(SensationResponse::SensationRemoved(selector.name.clone()))
     }

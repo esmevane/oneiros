@@ -15,23 +15,25 @@ impl<'a> ExperienceView<'a> {
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
             ExperienceResponse::ExperienceCreated(wrapped) => {
-                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+                let ref_token = RefToken::from(Ref::experience(wrapped.data.id()));
                 McpResponse::new(format!(
                     "Experience created ({}).\n\n**sensation:** {}\n**ref:** {}",
-                    wrapped.data.sensation, wrapped.data.sensation, ref_token
+                    wrapped.data.sensation(),
+                    wrapped.data.sensation(),
+                    ref_token
                 ))
                 .hint_set(HintSet::mutation(
                     MutationHints::builder().ref_token(ref_token).build(),
                 ))
             }
             ExperienceResponse::ExperienceDetails(wrapped) => {
-                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+                let ref_token = RefToken::from(Ref::experience(wrapped.data.id()));
                 McpResponse::new(format!(
                     "# Experience\n\n**sensation:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
-                    wrapped.data.sensation,
-                    wrapped.data.agent_id,
-                    wrapped.data.created_at,
-                    wrapped.data.description
+                    wrapped.data.sensation(),
+                    wrapped.data.agent_id(),
+                    wrapped.data.created_at(),
+                    wrapped.data.description()
                 ))
                 .hint(Hint::suggest(
                     format!("create-connection <nature> {ref_token} <target>"),
@@ -51,7 +53,9 @@ impl<'a> ExperienceView<'a> {
                 for wrapped in &listed.items {
                     md.push_str(&format!(
                         "### {} — {}\n{}\n\n",
-                        wrapped.data.sensation, wrapped.data.created_at, wrapped.data.description
+                        wrapped.data.sensation(),
+                        wrapped.data.created_at(),
+                        wrapped.data.description()
                     ));
                 }
                 let mut response = McpResponse::new(md).hint(Hint::suggest(
@@ -70,10 +74,12 @@ impl<'a> ExperienceView<'a> {
             }
             ExperienceResponse::NoExperiences => McpResponse::new("No experiences yet."),
             ExperienceResponse::ExperienceUpdated(wrapped) => {
-                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+                let ref_token = RefToken::from(Ref::experience(wrapped.data.id()));
                 McpResponse::new(format!(
                     "Experience updated ({}).\n\n**sensation:** {}\n**ref:** {}",
-                    wrapped.data.sensation, wrapped.data.sensation, ref_token
+                    wrapped.data.sensation(),
+                    wrapped.data.sensation(),
+                    ref_token
                 ))
                 .hint_set(HintSet::mutation(
                     MutationHints::builder().ref_token(ref_token).build(),
@@ -110,8 +116,8 @@ impl<'a> ExperienceView<'a> {
                 .with_hints(hints)
             }
             ExperienceResponse::ExperienceDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.sensation.to_string())
-                    .field("description:", wrapped.data.description.to_string())
+                let prompt = Detail::new(wrapped.data.sensation().to_string())
+                    .field("description:", wrapped.data.description().to_string())
                     .to_string();
                 let hints = match wrapped.meta().ref_token() {
                     Some(ref_token) => {
@@ -139,8 +145,8 @@ impl<'a> ExperienceView<'a> {
                         .map(|t| t.to_string())
                         .unwrap_or_default();
                     table.push_row(vec![
-                        wrapped.data.sensation.to_string(),
-                        wrapped.data.description.to_string(),
+                        wrapped.data.sensation().to_string(),
+                        wrapped.data.description().to_string(),
                         ref_token,
                     ]);
                 }

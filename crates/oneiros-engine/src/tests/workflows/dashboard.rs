@@ -54,12 +54,15 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
     );
 
     assert!(
-        bootstrap.brains.iter().any(|b| b.name == brain_name),
+        bootstrap.brains.iter().any(|b| b.name() == &brain_name),
         "init_project should create the 'test' brain"
     );
 
     assert!(
-        bootstrap.tickets.iter().any(|t| t.brain_name == brain_name),
+        bootstrap
+            .tickets
+            .iter()
+            .any(|t| t.brain_name() == &brain_name),
         "init_project should issue a ticket for the default brain"
     );
 

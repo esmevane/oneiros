@@ -25,13 +25,13 @@ impl<'a> LevelRepo<'a> {
         });
 
         match result {
-            Ok((name, description, prompt)) => Ok(Some(
-                Level::builder()
+            Ok((name, description, prompt)) => Ok(Some(Level::Current(
+                Level::build_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -60,11 +60,13 @@ impl<'a> LevelRepo<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Level::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Level::Current(
+                    Level::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 

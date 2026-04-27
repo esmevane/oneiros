@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,24 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UrgeRemoved {
+#[serde(untagged)]
+pub enum UrgeRemoved {
+    Current(UrgeRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct UrgeRemovedV1 {
     pub name: UrgeName,
+}
+
+impl UrgeRemoved {
+    pub fn build_v1() -> UrgeRemovedV1Builder {
+        UrgeRemovedV1::builder()
+    }
+
+    pub fn name(&self) -> &UrgeName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
 }

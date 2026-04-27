@@ -16,8 +16,8 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Nature(NatureResponse::NatureDetails(n)) => {
-            assert_eq!(n.data.name.as_str(), "context");
-            assert_eq!(n.data.description.as_str(), "Provides background");
+            assert_eq!(n.data.name().as_str(), "context");
+            assert_eq!(n.data.description().as_str(), "Provides background");
         }
         other => panic!("expected NatureDetails, got {other:#?}"),
     }
@@ -40,7 +40,7 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Nature(NatureResponse::NatureDetails(n)) => {
-            assert_eq!(n.data.description.as_str(), "Updated");
+            assert_eq!(n.data.description().as_str(), "Updated");
         }
         other => panic!("expected NatureDetails, got {other:#?}"),
     }

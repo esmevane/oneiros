@@ -160,7 +160,7 @@ mod agent_mcp {
         .map_err(Error::from)?;
 
         let agent_ref = match agent {
-            AgentResponse::AgentDetails(wrapped) => RefToken::from(Ref::agent(wrapped.data.id)),
+            AgentResponse::AgentDetails(wrapped) => RefToken::from(Ref::agent(wrapped.data.id())),
             _ => return Err(ToolError::NotFound(format!("Agent not found: {name}"))),
         };
 

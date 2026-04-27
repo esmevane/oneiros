@@ -222,7 +222,7 @@ pub(crate) async fn finds_updated_experience_description<B: Backend>() -> TestRe
 
     let exp_id = match response {
         Responses::Experience(ExperienceResponse::ExperienceCreated(exp)) => {
-            exp.data.id.to_string()
+            exp.data.id().to_string()
         }
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };

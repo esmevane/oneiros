@@ -13,26 +13,28 @@ impl<'a> CognitionView<'a> {
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
             CognitionResponse::CognitionAdded(wrapped) => {
-                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id));
+                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id()));
                 McpResponse::new(format!(
                     "Thought recorded ({}).\n\n**texture:** {}\n**ref:** {}",
-                    wrapped.data.texture, wrapped.data.texture, ref_token
+                    wrapped.data.texture(),
+                    wrapped.data.texture(),
+                    ref_token
                 ))
                 .hint_set(HintSet::cognition_added(
                     CognitionAddedHints::builder()
-                        .agent(AgentName::new(wrapped.data.agent_id.to_string()))
+                        .agent(AgentName::new(wrapped.data.agent_id().to_string()))
                         .ref_token(ref_token)
                         .build(),
                 ))
             }
             CognitionResponse::CognitionDetails(wrapped) => {
-                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id));
+                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id()));
                 McpResponse::new(format!(
                     "# Cognition\n\n**texture:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
-                    wrapped.data.texture,
-                    wrapped.data.agent_id,
-                    wrapped.data.created_at,
-                    wrapped.data.content
+                    wrapped.data.texture(),
+                    wrapped.data.agent_id(),
+                    wrapped.data.created_at(),
+                    wrapped.data.content()
                 ))
                 .hint(Hint::suggest(
                     format!("create-connection <nature> {ref_token} <target>"),
@@ -52,7 +54,9 @@ impl<'a> CognitionView<'a> {
                 for wrapped in &listed.items {
                     md.push_str(&format!(
                         "### {} — {}\n{}\n\n",
-                        wrapped.data.texture, wrapped.data.created_at, wrapped.data.content
+                        wrapped.data.texture(),
+                        wrapped.data.created_at(),
+                        wrapped.data.content()
                     ));
                 }
                 let mut response =
@@ -108,8 +112,8 @@ impl<'a> CognitionView<'a> {
                 .with_hints(hints)
             }
             (CognitionResponse::CognitionDetails(wrapped), _) => {
-                let prompt = Detail::new(wrapped.data.texture.to_string())
-                    .field("content:", wrapped.data.content.to_string())
+                let prompt = Detail::new(wrapped.data.texture().to_string())
+                    .field("content:", wrapped.data.content().to_string())
                     .to_string();
 
                 let hints = match wrapped.meta().ref_token() {
@@ -140,8 +144,8 @@ impl<'a> CognitionView<'a> {
                         .map(|t| t.to_string())
                         .unwrap_or_default();
                     table.push_row(vec![
-                        wrapped.data.texture.to_string(),
-                        wrapped.data.content.to_string(),
+                        wrapped.data.texture().to_string(),
+                        wrapped.data.content().to_string(),
                         ref_token,
                     ]);
                 }

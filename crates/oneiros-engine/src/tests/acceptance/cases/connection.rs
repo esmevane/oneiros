@@ -103,7 +103,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     let create_response = harness.exec_json(&create_cmd).await?;
 
     let id = match create_response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.data.id,
+        Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.data.id(),
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
@@ -111,7 +111,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Connection(ConnectionResponse::ConnectionDetails(connection)) => {
-            assert_eq!(connection.data.nature.as_str(), "caused");
+            assert_eq!(connection.data.nature().as_str(), "caused");
         }
         other => panic!("expected ConnectionDetails, got {other:#?}"),
     }
@@ -126,7 +126,7 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
     let create_response = harness.exec_json(&create_cmd).await?;
 
     let id = match create_response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.data.id,
+        Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.data.id(),
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
@@ -164,7 +164,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         ))
         .await?;
     let id = match response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.data.id.to_string(),
+        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.data.id().to_string(),
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
@@ -207,7 +207,7 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
         ))
         .await?;
     let id = match response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.data.id.to_string(),
+        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.data.id().to_string(),
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 

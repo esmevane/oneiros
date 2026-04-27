@@ -93,12 +93,14 @@ fn follow_from_row(
     let source: FollowSource = serde_json::from_str(&source)?;
     let checkpoint: Checkpoint = serde_json::from_str(&checkpoint)?;
 
-    Ok(Follow::builder()
-        .id(id.parse::<FollowId>()?)
-        .brain(BrainName::new(brain))
-        .bookmark(BookmarkName::new(bookmark))
-        .source(source)
-        .checkpoint(checkpoint)
-        .created_at(Timestamp::parse_str(created_at)?)
-        .build())
+    Ok(Follow::Current(
+        Follow::build_v1()
+            .id(id.parse::<FollowId>()?)
+            .brain(BrainName::new(brain))
+            .bookmark(BookmarkName::new(bookmark))
+            .source(source)
+            .checkpoint(checkpoint)
+            .created_at(Timestamp::parse_str(created_at)?)
+            .build(),
+    ))
 }
