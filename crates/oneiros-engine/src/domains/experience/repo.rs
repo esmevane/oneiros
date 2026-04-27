@@ -31,15 +31,17 @@ impl<'a> ExperienceRepo<'a> {
         });
 
         match result {
-            Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(
-                Experience::builder()
-                    .id(id.parse()?)
-                    .agent_id(agent_id.parse()?)
-                    .sensation(sensation)
-                    .description(description)
-                    .created_at(Timestamp::parse_str(&created_at)?)
-                    .build(),
-            )),
+            Ok((id, agent_id, sensation, description, created_at)) => {
+                Ok(Some(Experience::Current(
+                    Experience::build_v1()
+                        .id(id.parse()?)
+                        .agent_id(agent_id.parse()?)
+                        .sensation(sensation)
+                        .description(description)
+                        .created_at(Timestamp::parse_str(&created_at)?)
+                        .build(),
+                )))
+            }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -112,15 +114,15 @@ impl<'a> ExperienceRepo<'a> {
 
         let mut experiences = vec![];
         for (id, agent_id, sensation, description, created_at) in raw {
-            experiences.push(
-                Experience::builder()
+            experiences.push(Experience::Current(
+                Experience::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .sensation(sensation)
                     .description(description)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(experiences, total))
@@ -157,15 +159,15 @@ impl<'a> ExperienceRepo<'a> {
 
         let mut experiences = vec![];
         for (id, agent_id, sensation, description, created_at) in raw {
-            experiences.push(
-                Experience::builder()
+            experiences.push(Experience::Current(
+                Experience::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .sensation(sensation)
                     .description(description)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(experiences)

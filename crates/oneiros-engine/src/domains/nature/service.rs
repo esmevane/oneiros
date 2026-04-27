@@ -11,11 +11,13 @@ impl NatureService {
             prompt,
         }: &SetNature,
     ) -> Result<NatureResponse, NatureError> {
-        let nature = Nature::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
-            .build();
+        let nature = Nature::Current(
+            Nature::build_v1()
+                .name(name.clone())
+                .description(description.clone())
+                .prompt(prompt.clone())
+                .build(),
+        );
         context.emit(NatureEvents::NatureSet(nature)).await?;
         Ok(NatureResponse::NatureSet(name.clone()))
     }
@@ -29,7 +31,7 @@ impl NatureService {
             .get(&name)
             .await?
             .ok_or(NatureError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::nature(nature.name.clone()));
+        let ref_token = RefToken::new(Ref::nature(nature.name().clone()));
         Ok(NatureResponse::NatureDetails(
             Response::new(nature).with_ref_token(ref_token),
         ))
@@ -44,7 +46,7 @@ impl NatureService {
             Ok(NatureResponse::NoNatures)
         } else {
             Ok(NatureResponse::Natures(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::nature(e.name.clone()));
+                let ref_token = RefToken::new(Ref::nature(e.name().clone()));
                 Response::new(e).with_ref_token(ref_token)
             })))
         }
@@ -55,9 +57,11 @@ impl NatureService {
         selector: &RemoveNature,
     ) -> Result<NatureResponse, NatureError> {
         context
-            .emit(NatureEvents::NatureRemoved(NatureRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(NatureEvents::NatureRemoved(NatureRemoved::Current(
+                NatureRemovedV1 {
+                    name: selector.name.clone(),
+                },
+            )))
             .await?;
         Ok(NatureResponse::NatureRemoved(selector.name.clone()))
     }

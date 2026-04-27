@@ -8,7 +8,7 @@ impl SearchService {
         SearchQuery { query, agent }: &SearchQuery,
     ) -> Result<SearchResponse, SearchError> {
         let agent_id = match agent {
-            Some(name) => AgentRepo::new(context).get(name).await?.map(|a| a.id),
+            Some(name) => AgentRepo::new(context).get(name).await?.map(|a| a.id()),
             None => None,
         };
 

@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,24 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PersonaRemoved {
+#[serde(untagged)]
+pub enum PersonaRemoved {
+    Current(PersonaRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct PersonaRemovedV1 {
     pub name: PersonaName,
+}
+
+impl PersonaRemoved {
+    pub fn build_v1() -> PersonaRemovedV1Builder {
+        PersonaRemovedV1::builder()
+    }
+
+    pub fn name(&self) -> &PersonaName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
 }

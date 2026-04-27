@@ -10,7 +10,7 @@ impl StorageState {
                     canon.storage.set(entry);
                 }
                 StorageEvents::StorageRemoved(removed) => {
-                    canon.storage.remove(&removed.key);
+                    canon.storage.remove(removed.key());
                 }
             };
         }

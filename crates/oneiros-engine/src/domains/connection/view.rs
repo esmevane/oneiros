@@ -15,19 +15,22 @@ impl<'a> ConnectionView<'a> {
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
             ConnectionResponse::ConnectionCreated(wrapped) => {
-                let ref_token = RefToken::from(Ref::connection(wrapped.data.id));
+                let ref_token = RefToken::from(Ref::connection(wrapped.data.id()));
                 McpResponse::new(format!(
                     "Connection created.\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**ref:** {}",
-                    wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref, ref_token
+                    wrapped.data.nature(),
+                    wrapped.data.from_ref(),
+                    wrapped.data.to_ref(),
+                    ref_token
                 ))
                 .hint(Hint::suggest("search-query", "Search for related entities"))
             }
             ConnectionResponse::ConnectionDetails(wrapped) => McpResponse::new(format!(
                 "# Connection\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**created:** {}\n",
-                wrapped.data.nature,
-                wrapped.data.from_ref,
-                wrapped.data.to_ref,
-                wrapped.data.created_at
+                wrapped.data.nature(),
+                wrapped.data.from_ref(),
+                wrapped.data.to_ref(),
+                wrapped.data.created_at()
             ))
             .hint(Hint::suggest("search-query", "Search for related entities")),
             ConnectionResponse::Connections(listed) => {
@@ -42,7 +45,9 @@ impl<'a> ConnectionView<'a> {
                 for wrapped in &listed.items {
                     md.push_str(&format!(
                         "- **{}** {} → {}\n",
-                        wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref
+                        wrapped.data.nature(),
+                        wrapped.data.from_ref(),
+                        wrapped.data.to_ref()
                     ));
                 }
                 McpResponse::new(md)
@@ -87,9 +92,9 @@ impl<'a> ConnectionView<'a> {
                 .with_hints(hints)
             }
             ConnectionResponse::ConnectionDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.nature.to_string())
-                    .field("from:", wrapped.data.from_ref.to_string())
-                    .field("to:", wrapped.data.to_ref.to_string())
+                let prompt = Detail::new(wrapped.data.nature().to_string())
+                    .field("from:", wrapped.data.from_ref().to_string())
+                    .field("to:", wrapped.data.to_ref().to_string())
                     .to_string();
                 let hints = match wrapped.meta().ref_token() {
                     Some(ref_token) => {
@@ -118,9 +123,9 @@ impl<'a> ConnectionView<'a> {
                         .map(|t| t.to_string())
                         .unwrap_or_default();
                     table.push_row(vec![
-                        wrapped.data.nature.to_string(),
-                        wrapped.data.from_ref.to_string(),
-                        wrapped.data.to_ref.to_string(),
+                        wrapped.data.nature().to_string(),
+                        wrapped.data.from_ref().to_string(),
+                        wrapped.data.to_ref().to_string(),
                         ref_token,
                     ]);
                 }

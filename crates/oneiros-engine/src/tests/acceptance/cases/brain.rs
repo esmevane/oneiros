@@ -12,7 +12,7 @@ pub(crate) async fn list_after_project_init<B: Backend>() -> TestResult {
                 1,
                 "project init should create exactly one brain"
             );
-            assert_eq!(brains.items[0].data.name.as_str(), "test-project");
+            assert_eq!(brains.items[0].data.name().as_str(), "test-project");
         }
         other => panic!("expected Brain(Listed), got {other:#?}"),
     }
@@ -27,7 +27,7 @@ pub(crate) async fn get_by_name<B: Backend>() -> TestResult {
 
     match response {
         Responses::Brain(BrainResponse::Found(brain)) => {
-            assert_eq!(brain.data.name.as_str(), "test-project");
+            assert_eq!(brain.data.name().as_str(), "test-project");
         }
         other => panic!("expected Brain(Found), got {other:#?}"),
     }

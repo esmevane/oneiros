@@ -17,7 +17,7 @@ impl<'a> AgentStore<'a> {
             match agent_event {
                 AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
                 AgentEvents::AgentUpdated(agent) => self.update(agent)?,
-                AgentEvents::AgentRemoved(removed) => self.remove(&removed.name)?,
+                AgentEvents::AgentRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -57,15 +57,15 @@ impl<'a> AgentStore<'a> {
         });
 
         match result {
-            Ok((id, name, persona, description, prompt)) => Ok(Some(
-                Agent::builder()
+            Ok((id, name, persona, description, prompt)) => Ok(Some(Agent::Current(
+                Agent::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .persona(persona)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -90,15 +90,15 @@ impl<'a> AgentStore<'a> {
 
         let mut agents = vec![];
         for (id, name, persona, description, prompt) in raw {
-            agents.push(
-                Agent::builder()
+            agents.push(Agent::Current(
+                Agent::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .persona(persona)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            );
+            ));
         }
 
         Ok(agents)
@@ -136,11 +136,11 @@ impl<'a> AgentStore<'a> {
             "insert or replace into agents (id, name, persona, description, prompt)
              values (?1, ?2, ?3, ?4, ?5)",
             params![
-                agent.id.to_string(),
-                agent.name.to_string(),
-                agent.persona.to_string(),
-                agent.description.to_string(),
-                agent.prompt.to_string()
+                agent.id().to_string(),
+                agent.name().to_string(),
+                agent.persona().to_string(),
+                agent.description().to_string(),
+                agent.prompt().to_string()
             ],
         )?;
         Ok(())
@@ -151,11 +151,11 @@ impl<'a> AgentStore<'a> {
             "insert or replace into agents (id, name, persona, description, prompt)
              values (?1, ?2, ?3, ?4, ?5)",
             params![
-                agent.id.to_string(),
-                agent.name.to_string(),
-                agent.persona.to_string(),
-                agent.description.to_string(),
-                agent.prompt.to_string()
+                agent.id().to_string(),
+                agent.name().to_string(),
+                agent.persona().to_string(),
+                agent.description().to_string(),
+                agent.prompt().to_string()
             ],
         )?;
         Ok(())

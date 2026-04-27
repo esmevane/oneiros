@@ -182,12 +182,12 @@ async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Opti
         .ok()
         .flatten()?;
 
-    if ticket.actor_id != token.actor_id || ticket.brain_id != token.brain_id {
+    if ticket.actor_id() != token.actor_id || ticket.brain_id() != token.brain_id {
         return None;
     }
 
     let mut config = state.config().clone();
-    config.brain = ticket.brain_name;
+    config.brain = ticket.brain_name().clone();
     Some(config)
 }
 

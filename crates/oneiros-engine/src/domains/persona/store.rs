@@ -16,7 +16,7 @@ impl<'a> PersonaStore<'a> {
         if let Event::Known(Events::Persona(persona_event)) = &event.data {
             match persona_event {
                 PersonaEvents::PersonaSet(persona) => self.set(persona)?,
-                PersonaEvents::PersonaRemoved(removed) => self.remove(&removed.name)?,
+                PersonaEvents::PersonaRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -52,13 +52,13 @@ impl<'a> PersonaStore<'a> {
         });
 
         match result {
-            Ok((name, description, prompt)) => Ok(Some(
-                Persona::builder()
+            Ok((name, description, prompt)) => Ok(Some(Persona::Current(
+                Persona::build_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -68,9 +68,9 @@ impl<'a> PersonaStore<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO personas (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
-                persona.name.to_string(),
-                persona.description.to_string(),
-                persona.prompt.to_string()
+                persona.name().to_string(),
+                persona.description().to_string(),
+                persona.prompt().to_string()
             ],
         )?;
         Ok(())

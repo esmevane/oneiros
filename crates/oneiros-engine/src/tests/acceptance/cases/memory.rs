@@ -101,7 +101,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .await?;
 
     let id = match add_response {
-        Responses::Memory(MemoryResponse::MemoryAdded(memory)) => memory.data.id,
+        Responses::Memory(MemoryResponse::MemoryAdded(memory)) => memory.data.id(),
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 
@@ -109,7 +109,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Memory(MemoryResponse::MemoryDetails(memory)) => {
-            assert_eq!(memory.data.content.as_str(), "Show me this");
+            assert_eq!(memory.data.content().as_str(), "Show me this");
         }
         other => panic!("expected MemoryDetails, got {other:#?}"),
     }
@@ -124,7 +124,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("memory add learner.process session 'Show me this'")
         .await?;
     let id = match response {
-        Responses::Memory(MemoryResponse::MemoryAdded(m)) => m.data.id.to_string(),
+        Responses::Memory(MemoryResponse::MemoryAdded(m)) => m.data.id().to_string(),
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 

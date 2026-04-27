@@ -69,7 +69,7 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         MemoryResponse::MemoryAdded(m) => {
-            assert_eq!(m.data.level.as_str(), "core");
+            assert_eq!(m.data.level().as_str(), "core");
             m
         }
         other => panic!("expected MemoryAdded, got {other:?}"),
@@ -131,8 +131,8 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
         .connection()
         .create(
             &CreateConnection::builder()
-                .from_ref(RefToken::new(Ref::memory(core_memory.data.id)))
-                .to_ref(RefToken::new(Ref::experience(experience.data.id)))
+                .from_ref(RefToken::new(Ref::memory(core_memory.data.id())))
+                .to_ref(RefToken::new(Ref::experience(experience.data.id())))
                 .nature("context")
                 .build(),
         )
@@ -459,7 +459,7 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.persona, PersonaName::new("custom"));
+            assert_eq!(a.data.persona(), &PersonaName::new("custom"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }

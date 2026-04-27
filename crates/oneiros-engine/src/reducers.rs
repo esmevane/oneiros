@@ -112,22 +112,28 @@ mod tests {
     fn brain_reducers_chain_through_full_pipeline() {
         let reducers = ReducerPipeline::brain();
 
-        let agent = Agent::builder()
-            .name("test.agent")
-            .persona("process")
-            .description("A test")
-            .prompt("You are a test")
-            .build();
-        let cognition = Cognition::builder()
-            .agent_id(AgentId::new())
-            .texture("observation")
-            .content("Something noticed")
-            .build();
-        let level = Level::builder()
-            .name("working")
-            .description("Short-term")
-            .prompt("")
-            .build();
+        let agent = Agent::Current(
+            Agent::build_v1()
+                .name("test.agent")
+                .persona("process")
+                .description("A test")
+                .prompt("You are a test")
+                .build(),
+        );
+        let cognition = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(AgentId::new())
+                .texture("observation")
+                .content("Something noticed")
+                .build(),
+        );
+        let level = Level::Current(
+            Level::build_v1()
+                .name("working")
+                .description("Short-term")
+                .prompt("")
+                .build(),
+        );
 
         let events = vec![
             Events::Agent(AgentEvents::AgentCreated(agent)),
@@ -148,7 +154,7 @@ mod tests {
     fn system_reducers_chain_through_full_pipeline() {
         let reducers = ReducerPipeline::<SystemCanon>::system();
 
-        let tenant = Tenant::builder().name("test-tenant").build();
+        let tenant = Tenant::Current(Tenant::build_v1().name("test-tenant").build());
         let events = vec![Events::Tenant(TenantEvents::TenantCreated(tenant))];
 
         reducers.reduce(&events).unwrap();

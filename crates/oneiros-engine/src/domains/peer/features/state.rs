@@ -13,7 +13,7 @@ impl PeerState {
                     canon.peers.set(peer);
                 }
                 PeerEvents::PeerRemoved(removed) => {
-                    canon.peers.remove(removed.id);
+                    canon.peers.remove(removed.id());
                 }
             };
         }

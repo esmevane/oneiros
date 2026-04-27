@@ -23,7 +23,7 @@ mod tests {
     #[test]
     fn creates_tenant() {
         let canon = SystemCanon::default();
-        let tenant = Tenant::builder().name("test-tenant").build();
+        let tenant = Tenant::Current(Tenant::build_v1().name("test-tenant").build());
         let event = Events::Tenant(TenantEvents::TenantCreated(tenant.clone()));
 
         let next = TenantState::reduce(canon, &event);

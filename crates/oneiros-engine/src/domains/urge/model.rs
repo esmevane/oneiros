@@ -1,21 +1,48 @@
 use bon::Builder;
-use clap::Args;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Urge {
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Urge {
+    Current(UrgeV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct UrgeV1 {
     #[builder(into)]
     pub name: UrgeName,
     #[builder(into)]
-    #[arg(long, default_value = "")]
     pub description: Description,
     #[builder(into)]
-    #[arg(long, default_value = "")]
     pub prompt: Prompt,
+}
+
+impl Urge {
+    pub fn build_v1() -> UrgeV1Builder {
+        UrgeV1::builder()
+    }
+
+    pub fn name(&self) -> &UrgeName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
+
+    pub fn description(&self) -> &Description {
+        match self {
+            Self::Current(v) => &v.description,
+        }
+    }
+
+    pub fn prompt(&self) -> &Prompt {
+        match self {
+            Self::Current(v) => &v.prompt,
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -39,7 +66,7 @@ impl Urges {
     }
 
     pub fn set(&mut self, urge: &Urge) -> Option<Urge> {
-        self.0.insert(urge.name.to_string(), urge.clone())
+        self.0.insert(urge.name().to_string(), urge.clone())
     }
 
     pub fn remove(&mut self, name: &UrgeName) -> Option<Urge> {

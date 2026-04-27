@@ -164,8 +164,8 @@ impl FromRequestParts<ServerState> for ProjectContext {
             .ok_or(AuthError::InvalidToken)?;
 
         match (
-            ticket.actor_id == token.actor_id,
-            ticket.brain_id == token.brain_id,
+            ticket.actor_id() == token.actor_id,
+            ticket.brain_id() == token.brain_id,
             true, // ticket.tenant_id == token.tenant_id,
         ) {
             (true, true, true) => {}
@@ -174,12 +174,12 @@ impl FromRequestParts<ServerState> for ProjectContext {
 
         // Assemble ProjectContext with shared broadcast channel
         let mut config = state.config.clone();
-        config.brain = ticket.brain_name.clone();
+        config.brain = ticket.brain_name().clone();
 
         // Default to the active bookmark for this brain.
         config.bookmark = state
             .canons()
-            .active_bookmark(&ticket.brain_name)
+            .active_bookmark(ticket.brain_name())
             .unwrap_or_else(|_| BookmarkName::main());
 
         // Override with explicit X-Bookmark header or ?bookmark= query param.

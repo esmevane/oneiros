@@ -12,8 +12,8 @@ pub(crate) async fn list_after_project_init<B: Backend>() -> TestResult {
                 "project init should create at least one ticket"
             );
             assert_eq!(
-                tickets.items[0].brain_name,
-                "test-project".into(),
+                tickets.items[0].brain_name(),
+                &"test-project".into(),
                 "ticket should be for the initialized brain"
             );
         }

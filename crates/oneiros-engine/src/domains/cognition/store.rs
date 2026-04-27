@@ -56,15 +56,15 @@ impl<'a> CognitionStore<'a> {
         });
 
         match result {
-            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(
-                Cognition::builder()
+            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(Cognition::Current(
+                Cognition::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .texture(texture)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -123,15 +123,15 @@ impl<'a> CognitionStore<'a> {
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
-            cognitions.push(
-                Cognition::builder()
+            cognitions.push(Cognition::Current(
+                Cognition::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .texture(texture)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(cognitions)
@@ -167,15 +167,15 @@ impl<'a> CognitionStore<'a> {
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
-            cognitions.push(
-                Cognition::builder()
+            cognitions.push(Cognition::Current(
+                Cognition::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .texture(texture)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(cognitions)
@@ -186,11 +186,11 @@ impl<'a> CognitionStore<'a> {
             "INSERT OR REPLACE INTO cognitions (id, agent_id, texture, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                cognition.id.to_string(),
-                cognition.agent_id.to_string(),
-                cognition.texture.to_string(),
-                cognition.content.to_string(),
-                cognition.created_at.as_string(),
+                cognition.id().to_string(),
+                cognition.agent_id().to_string(),
+                cognition.texture().to_string(),
+                cognition.content().to_string(),
+                cognition.created_at().as_string(),
             ],
         )?;
         Ok(())

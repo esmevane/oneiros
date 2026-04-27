@@ -21,14 +21,16 @@ impl PeerService {
             _ => default_peer_name(&key),
         };
 
-        let peer = Peer::builder()
-            .key(key)
-            .address(parsed)
-            .name(peer_name)
-            .build();
+        let peer = Peer::Current(
+            Peer::build_v1()
+                .key(key)
+                .address(parsed)
+                .name(peer_name)
+                .build(),
+        );
 
         context.emit(PeerEvents::PeerAdded(peer.clone())).await?;
-        let ref_token = RefToken::new(Ref::peer(peer.id));
+        let ref_token = RefToken::new(Ref::peer(peer.id()));
         Ok(PeerResponse::Added(
             Response::new(peer).with_ref_token(ref_token),
         ))
@@ -43,7 +45,7 @@ impl PeerService {
             .get(id)
             .await?
             .ok_or(PeerError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::peer(peer.id));
+        let ref_token = RefToken::new(Ref::peer(peer.id()));
         Ok(PeerResponse::Found(
             Response::new(peer).with_ref_token(ref_token),
         ))
@@ -55,7 +57,7 @@ impl PeerService {
     ) -> Result<PeerResponse, PeerError> {
         let listed = PeerRepo::new(context).list(filters).await?;
         Ok(PeerResponse::Listed(listed.map(|peer| {
-            let ref_token = RefToken::new(Ref::peer(peer.id));
+            let ref_token = RefToken::new(Ref::peer(peer.id()));
             Response::new(peer).with_ref_token(ref_token)
         })))
     }
@@ -74,12 +76,18 @@ impl PeerService {
             offset: Offset(0),
         };
         let listed = PeerRepo::new(context).list(&all).await?;
-        if let Some(existing) = listed.items.iter().find(|p| p.key == key) {
+        if let Some(existing) = listed.items.iter().find(|p| p.key() == key) {
             return Ok(existing.clone());
         }
 
         let name = default_peer_name(&key);
-        let peer = Peer::builder().key(key).address(address).name(name).build();
+        let peer = Peer::Current(
+            Peer::build_v1()
+                .key(key)
+                .address(address)
+                .name(name)
+                .build(),
+        );
 
         context.emit(PeerEvents::PeerAdded(peer.clone())).await?;
 
@@ -98,7 +106,9 @@ impl PeerService {
             .ok_or(PeerError::NotFound(*id))?;
 
         context
-            .emit(PeerEvents::PeerRemoved(PeerRemoved { id: existing.id }))
+            .emit(PeerEvents::PeerRemoved(PeerRemoved::Current(
+                PeerRemovedV1 { id: existing.id() },
+            )))
             .await?;
 
         Ok(PeerResponse::Removed(*id))

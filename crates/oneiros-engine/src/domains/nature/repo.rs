@@ -25,13 +25,13 @@ impl<'a> NatureRepo<'a> {
         });
 
         match result {
-            Ok((name, description, prompt)) => Ok(Some(
-                Nature::builder()
+            Ok((name, description, prompt)) => Ok(Some(Nature::Current(
+                Nature::build_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -60,11 +60,13 @@ impl<'a> NatureRepo<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Nature::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Nature::Current(
+                    Nature::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 

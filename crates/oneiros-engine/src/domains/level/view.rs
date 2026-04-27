@@ -15,14 +15,14 @@ impl LevelView {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .map(|w| (w.data.name().to_string(), w.data.description().to_string()))
                     .collect();
                 Self::vocabulary_table("Levels", &items)
             }
             LevelResponse::LevelDetails(wrapped) => {
                 let items = vec![(
-                    wrapped.data.name.to_string(),
-                    wrapped.data.description.to_string(),
+                    wrapped.data.name().to_string(),
+                    wrapped.data.description().to_string(),
                 )];
                 Self::vocabulary_table("Level", &items)
             }
@@ -57,9 +57,9 @@ impl LevelView {
                     .with_hints(hints)
             }
             LevelResponse::LevelDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("prompt:", wrapped.data.prompt.to_string())
+                let prompt = Detail::new(wrapped.data.name().to_string())
+                    .field("description:", wrapped.data.description().to_string())
+                    .field("prompt:", wrapped.data.prompt().to_string())
                     .to_string();
                 Rendered::new(LevelResponse::LevelDetails(wrapped), prompt, String::new())
             }
@@ -70,8 +70,8 @@ impl LevelView {
                 ]);
                 for wrapped in &listed.items {
                     table.push_row(vec![
-                        wrapped.data.name.to_string(),
-                        wrapped.data.description.to_string(),
+                        wrapped.data.name().to_string(),
+                        wrapped.data.description().to_string(),
                     ]);
                 }
                 let prompt = format!(

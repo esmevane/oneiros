@@ -58,10 +58,10 @@ impl ContinuityPresenter {
                 };
                 let text = match &self.response {
                     ContinuityResponse::Dreaming(_) => {
-                        format!("Dreaming as {}...", context.agent.name)
+                        format!("Dreaming as {}...", context.agent.name())
                     }
                     ContinuityResponse::Emerged(_) => {
-                        format!("Emerged as {}.", context.agent.name)
+                        format!("Emerged as {}.", context.agent.name())
                     }
                     _ => unreachable!(),
                 };
@@ -80,13 +80,13 @@ impl ContinuityPresenter {
                     .collect();
                 let hints = HintSet::wake(
                     WakeHints::builder()
-                        .agent(context.agent.name.clone())
+                        .agent(context.agent.name().clone())
                         .pressures(pressures)
                         .build(),
                 );
                 (
                     template,
-                    format!("Waking as {}...", context.agent.name),
+                    format!("Waking as {}...", context.agent.name()),
                     hints,
                 )
             }
@@ -99,7 +99,7 @@ impl ContinuityPresenter {
                 let pressures = Self::relevant_pressures(context);
                 (
                     IntrospectTemplate::new(&context.agent, pressures).to_string(),
-                    format!("Introspecting as {}...", context.agent.name),
+                    format!("Introspecting as {}...", context.agent.name()),
                     HintSet::None,
                 )
             }
@@ -107,12 +107,12 @@ impl ContinuityPresenter {
                 let pressures = Self::relevant_pressures(context);
                 let hints = HintSet::reflect(
                     ReflectHints::builder()
-                        .agent(context.agent.name.clone())
+                        .agent(context.agent.name().clone())
                         .build(),
                 );
                 (
                     ReflectTemplate::new(&context.agent, pressures).to_string(),
-                    format!("Reflecting as {}...", context.agent.name),
+                    format!("Reflecting as {}...", context.agent.name()),
                     hints,
                 )
             }
@@ -120,13 +120,13 @@ impl ContinuityPresenter {
                 let pressures = Self::relevant_pressures(context);
                 (
                     IntrospectTemplate::new(&context.agent, pressures).to_string(),
-                    format!("Sleeping as {}...", context.agent.name),
+                    format!("Sleeping as {}...", context.agent.name()),
                     HintSet::None,
                 )
             }
             ContinuityResponse::Guidebook(context) => (
                 GuidebookTemplate::new(context).to_string(),
-                format!("Guidebook for {}.", context.agent.name),
+                format!("Guidebook for {}.", context.agent.name()),
                 HintSet::None,
             ),
             ContinuityResponse::Receded(name) => (

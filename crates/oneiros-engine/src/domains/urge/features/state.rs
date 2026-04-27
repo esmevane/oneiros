@@ -10,7 +10,7 @@ impl UrgeState {
                     canon.urges.set(urge);
                 }
                 UrgeEvents::UrgeRemoved(removed) => {
-                    canon.urges.remove(&removed.name);
+                    canon.urges.remove(removed.name());
                 }
             };
         }

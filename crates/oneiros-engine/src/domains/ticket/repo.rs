@@ -60,7 +60,7 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
         granted_by.parse()?
     };
 
-    Ok(Ticket {
+    Ok(Ticket::Current(TicketV1 {
         id: id.parse()?,
         actor_id,
         brain_name: BrainName::new(brain_name),
@@ -72,7 +72,7 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
         max_uses: max_uses.map(|v| v as u64),
         uses: uses as u64,
         created_at: Timestamp::parse_str(created_at)?,
-    })
+    }))
 }
 
 fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TicketRow> {

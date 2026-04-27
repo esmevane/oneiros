@@ -27,14 +27,14 @@ impl<'a> ActorRepo<'a> {
         });
 
         match raw {
-            Ok((id, tenant_id, name, created_at)) => Ok(Some(
-                Actor::builder()
+            Ok((id, tenant_id, name, created_at)) => Ok(Some(Actor::Current(
+                Actor::build_v1()
                     .id(id.parse()?)
                     .tenant_id(tenant_id.parse()?)
                     .name(name)
                     .created_at(Timestamp::parse_str(created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(error) => Err(error.into()),
         }
@@ -61,14 +61,14 @@ impl<'a> ActorRepo<'a> {
         let mut actors = vec![];
 
         for (id, tenant_id, name, created_at) in raw {
-            actors.push(
-                Actor::builder()
+            actors.push(Actor::Current(
+                Actor::build_v1()
                     .id(id.parse()?)
                     .tenant_id(tenant_id.parse()?)
                     .name(name)
                     .created_at(Timestamp::parse_str(created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(actors, total))

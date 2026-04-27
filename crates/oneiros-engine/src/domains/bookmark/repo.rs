@@ -41,12 +41,12 @@ impl<'a> BookmarkRepo<'a> {
         let mut bookmarks = vec![];
 
         for (id, brain, name, created_at) in raw {
-            bookmarks.push(Bookmark {
+            bookmarks.push(Bookmark::Current(BookmarkV1 {
                 id: id.parse()?,
                 brain: BrainName::new(brain),
                 name: BookmarkName::new(name),
                 created_at: Timestamp::parse_str(created_at)?,
-            });
+            }));
         }
 
         Ok(Listed::new(bookmarks, total))

@@ -15,7 +15,7 @@ impl TicketService {
             .await?
             .ok_or_else(|| TicketError::BrainNotFound(brain_name.clone()))?;
 
-        let target = Ref::brain(brain.id);
+        let target = Ref::brain(brain.id());
         let ticket = Self::issue(context, brain_name, &brain, *actor_id, target).await?;
         Ok(TicketResponse::Created(ticket))
     }
@@ -35,20 +35,22 @@ impl TicketService {
             .ok_or_else(|| TicketError::ActorNotFound(actor_id))?;
 
         let claims = TokenClaims::builder()
-            .brain_id(brain.id)
-            .tenant_id(actor.tenant_id)
+            .brain_id(brain.id())
+            .tenant_id(actor.tenant_id())
             .actor_id(actor_id)
             .build();
 
         let token = Token::issue(claims);
         let link = Link::new(target, token);
-        let ticket = Ticket::builder()
-            .actor_id(actor_id)
-            .brain_name(brain_name.clone())
-            .brain_id(brain.id)
-            .link(link)
-            .granted_by(actor_id)
-            .build();
+        let ticket = Ticket::Current(
+            Ticket::build_v1()
+                .actor_id(actor_id)
+                .brain_name(brain_name.clone())
+                .brain_id(brain.id())
+                .link(link)
+                .granted_by(actor_id)
+                .build(),
+        );
 
         context
             .emit(TicketEvents::TicketIssued(ticket.clone()))

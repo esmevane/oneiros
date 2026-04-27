@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,24 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NatureRemoved {
+#[serde(untagged)]
+pub enum NatureRemoved {
+    Current(NatureRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct NatureRemovedV1 {
     pub name: NatureName,
+}
+
+impl NatureRemoved {
+    pub fn build_v1() -> NatureRemovedV1Builder {
+        NatureRemovedV1::builder()
+    }
+
+    pub fn name(&self) -> &NatureName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
 }

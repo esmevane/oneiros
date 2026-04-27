@@ -56,15 +56,15 @@ impl<'a> MemoryStore<'a> {
         });
 
         match result {
-            Ok((id, agent_id, level, content, created_at)) => Ok(Some(
-                Memory::builder()
+            Ok((id, agent_id, level, content, created_at)) => Ok(Some(Memory::Current(
+                Memory::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .level(level)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -100,15 +100,15 @@ impl<'a> MemoryStore<'a> {
 
         let mut memories = vec![];
         for (id, agent_id, level, content, created_at) in raw {
-            memories.push(
-                Memory::builder()
+            memories.push(Memory::Current(
+                Memory::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .level(level)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(memories)
@@ -119,11 +119,11 @@ impl<'a> MemoryStore<'a> {
             "INSERT OR REPLACE INTO memories (id, agent_id, level, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                memory.id.to_string(),
-                memory.agent_id.to_string(),
-                memory.level.to_string(),
-                memory.content.to_string(),
-                memory.created_at.as_string(),
+                memory.id().to_string(),
+                memory.agent_id().to_string(),
+                memory.level().to_string(),
+                memory.content().to_string(),
+                memory.created_at().as_string(),
             ],
         )?;
         Ok(())

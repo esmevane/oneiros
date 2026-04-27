@@ -24,11 +24,11 @@ impl<'a> TenantRepo<'a> {
         });
 
         match raw {
-            Ok((id, name, created_at)) => Ok(Some(Tenant {
+            Ok((id, name, created_at)) => Ok(Some(Tenant::Current(TenantV1 {
                 id: id.parse()?,
                 name: TenantName::new(name),
                 created_at: Timestamp::parse_str(created_at)?,
-            })),
+            }))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -55,11 +55,11 @@ impl<'a> TenantRepo<'a> {
         let mut tenants = vec![];
 
         for (id, name, created_at) in raw {
-            tenants.push(Tenant {
+            tenants.push(Tenant::Current(TenantV1 {
                 id: id.parse()?,
                 name: TenantName::new(name),
                 created_at: Timestamp::parse_str(created_at)?,
-            });
+            }));
         }
 
         Ok(Listed::new(tenants, total))

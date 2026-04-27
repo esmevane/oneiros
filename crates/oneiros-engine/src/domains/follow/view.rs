@@ -15,15 +15,15 @@ impl FollowView {
 
         for wrapped in &follows.items {
             let follow = &wrapped.data;
-            let source_label = match &follow.source {
+            let source_label = match follow.source() {
                 FollowSource::Local(_) => "local",
                 FollowSource::Peer(_) => "peer",
             };
             table.push_row(vec![
-                follow.bookmark.to_string(),
-                follow.brain.to_string(),
+                follow.bookmark().to_string(),
+                follow.brain().to_string(),
                 source_label.to_string(),
-                follow.id.to_string(),
+                follow.id().to_string(),
             ]);
         }
 
@@ -31,18 +31,18 @@ impl FollowView {
     }
 
     pub fn detail(follow: &Follow) -> Detail {
-        let source_label = match &follow.source {
+        let source_label = match follow.source() {
             FollowSource::Local(_) => "local",
             FollowSource::Peer(_) => "peer",
         };
-        Detail::new(follow.bookmark.to_string())
-            .field("id:", follow.id.to_string())
-            .field("brain:", follow.brain.to_string())
+        Detail::new(follow.bookmark().to_string())
+            .field("id:", follow.id().to_string())
+            .field("brain:", follow.brain().to_string())
             .field("source:", source_label.to_string())
             .field(
                 "checkpoint.sequence:",
-                follow.checkpoint.sequence.to_string(),
+                follow.checkpoint().sequence.to_string(),
             )
-            .field("created_at:", follow.created_at.as_string())
+            .field("created_at:", follow.created_at().as_string())
     }
 }

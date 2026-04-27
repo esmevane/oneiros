@@ -23,17 +23,17 @@ impl AgentView {
                 )),
             AgentResponse::AgentDetails(wrapped) => McpResponse::new(format!(
                 "# {}\n\n**persona:** {}\n**description:** {}\n\n{}\n",
-                wrapped.data.name,
-                wrapped.data.persona,
-                wrapped.data.description,
-                wrapped.data.prompt
+                wrapped.data.name(),
+                wrapped.data.persona(),
+                wrapped.data.description(),
+                wrapped.data.prompt()
             ))
             .hint(Hint::inspect(
-                ResourcePath::AgentCognitions(wrapped.data.name.clone()).uri(),
+                ResourcePath::AgentCognitions(wrapped.data.name().clone()).uri(),
                 "Browse cognitions",
             ))
             .hint(Hint::inspect(
-                ResourcePath::AgentPressure(wrapped.data.name.clone()).uri(),
+                ResourcePath::AgentPressure(wrapped.data.name().clone()).uri(),
                 "Check pressure",
             )),
             AgentResponse::Agents(listed) => {
@@ -43,7 +43,9 @@ impl AgentView {
                 for wrapped in &listed.items {
                     md.push_str(&format!(
                         "| {} | {} | {} |\n",
-                        wrapped.data.name, wrapped.data.persona, wrapped.data.description
+                        wrapped.data.name(),
+                        wrapped.data.persona(),
+                        wrapped.data.description()
                     ));
                 }
                 McpResponse::new(md).hint(Hint::suggest(
@@ -79,10 +81,10 @@ impl AgentView {
             }
             AgentResponse::AgentDetails(wrapped) => {
                 let agent = &wrapped.data;
-                let prompt = Detail::new(agent.name.to_string())
-                    .field("persona:", agent.persona.to_string())
-                    .field("description:", agent.description.to_string())
-                    .field("prompt:", agent.prompt.to_string())
+                let prompt = Detail::new(agent.name().to_string())
+                    .field("persona:", agent.persona().to_string())
+                    .field("description:", agent.description().to_string())
+                    .field("prompt:", agent.prompt().to_string())
                     .to_string();
                 Rendered::new(AgentResponse::AgentDetails(wrapped), prompt, String::new())
             }
@@ -95,9 +97,9 @@ impl AgentView {
                 for wrapped in &listed.items {
                     let agent = &wrapped.data;
                     table.push_row(vec![
-                        agent.name.to_string(),
-                        agent.persona.to_string(),
-                        agent.description.to_string(),
+                        agent.name().to_string(),
+                        agent.persona().to_string(),
+                        agent.description().to_string(),
                     ]);
                 }
                 let prompt = format!(

@@ -10,7 +10,7 @@ impl TextureState {
                     canon.textures.set(texture);
                 }
                 TextureEvents::TextureRemoved(removed) => {
-                    canon.textures.remove(&removed.name);
+                    canon.textures.remove(removed.name());
                 }
             };
         }

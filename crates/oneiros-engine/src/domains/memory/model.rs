@@ -5,8 +5,14 @@ use std::collections::HashMap;
 
 use crate::*;
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Memory {
+    Current(MemoryV1),
+}
+
 #[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Memory {
+pub struct MemoryV1 {
     #[builder(default)]
     pub id: MemoryId,
     pub agent_id: AgentId,
@@ -18,7 +24,7 @@ pub struct Memory {
     pub created_at: Timestamp,
 }
 
-impl Memory {
+impl MemoryV1 {
     /// Produce a compact ref token for this memory (used in dream summaries).
     pub fn ref_token(&self) -> RefToken {
         RefToken::from(Ref::memory(self.id))
@@ -35,6 +41,56 @@ impl Memory {
                 end -= 1;
             }
             format!("{}…", &s[..end])
+        }
+    }
+}
+
+impl Memory {
+    pub fn build_v1() -> MemoryV1Builder {
+        MemoryV1::builder()
+    }
+
+    pub fn id(&self) -> MemoryId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
+
+    pub fn agent_id(&self) -> AgentId {
+        match self {
+            Self::Current(v) => v.agent_id,
+        }
+    }
+
+    pub fn level(&self) -> &LevelName {
+        match self {
+            Self::Current(v) => &v.level,
+        }
+    }
+
+    pub fn content(&self) -> &Content {
+        match self {
+            Self::Current(v) => &v.content,
+        }
+    }
+
+    pub fn created_at(&self) -> Timestamp {
+        match self {
+            Self::Current(v) => v.created_at,
+        }
+    }
+
+    /// Produce a compact ref token for this memory (used in dream summaries).
+    pub fn ref_token(&self) -> RefToken {
+        match self {
+            Self::Current(v) => v.ref_token(),
+        }
+    }
+
+    /// Truncate content to the given byte length, appending "…" if truncated.
+    pub fn summary(&self, max_len: usize) -> String {
+        match self {
+            Self::Current(v) => v.summary(max_len),
         }
     }
 }
@@ -56,7 +112,7 @@ impl Memories {
     }
 
     pub fn set(&mut self, memory: &Memory) -> Option<Memory> {
-        self.0.insert(memory.id.to_string(), memory.clone())
+        self.0.insert(memory.id().to_string(), memory.clone())
     }
 
     pub fn values(&self) -> impl Iterator<Item = &Memory> {

@@ -25,7 +25,7 @@ impl<'a> FollowStore<'a> {
                     self.advance_checkpoint(collected)?;
                 }
                 BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
-                    self.delete_record(unfollowed.follow_id)?;
+                    self.delete_record(unfollowed.follow_id())?;
                 }
                 BookmarkEvents::BookmarkCreated(_)
                 | BookmarkEvents::BookmarkForked(_)
@@ -58,8 +58,8 @@ impl<'a> FollowStore<'a> {
     }
 
     fn create_record(&self, follow: &Follow) -> Result<(), EventError> {
-        let source_json = serde_json::to_string(&follow.source)?;
-        let checkpoint_json = serde_json::to_string(&follow.checkpoint)?;
+        let source_json = serde_json::to_string(follow.source())?;
+        let checkpoint_json = serde_json::to_string(follow.checkpoint())?;
 
         self.conn.execute(
             "insert or replace into follows (
@@ -67,22 +67,22 @@ impl<'a> FollowStore<'a> {
              )
              values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
-                follow.id.to_string(),
-                follow.brain.to_string(),
-                follow.bookmark.to_string(),
+                follow.id().to_string(),
+                follow.brain().to_string(),
+                follow.bookmark().to_string(),
                 source_json,
                 checkpoint_json,
-                follow.created_at.as_string(),
+                follow.created_at().as_string(),
             ],
         )?;
         Ok(())
     }
 
     fn advance_checkpoint(&self, collected: &BookmarkCollected) -> Result<(), EventError> {
-        let checkpoint_json = serde_json::to_string(&collected.checkpoint)?;
+        let checkpoint_json = serde_json::to_string(collected.checkpoint())?;
         self.conn.execute(
             "update follows set checkpoint = ?1 where id = ?2",
-            params![checkpoint_json, collected.follow_id.to_string()],
+            params![checkpoint_json, collected.follow_id().to_string()],
         )?;
         Ok(())
     }

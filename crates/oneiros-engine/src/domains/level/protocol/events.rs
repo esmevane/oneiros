@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,24 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LevelRemoved {
+#[serde(untagged)]
+pub enum LevelRemoved {
+    Current(LevelRemovedV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct LevelRemovedV1 {
     pub name: LevelName,
+}
+
+impl LevelRemoved {
+    pub fn build_v1() -> LevelRemovedV1Builder {
+        LevelRemovedV1::builder()
+    }
+
+    pub fn name(&self) -> &LevelName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
 }

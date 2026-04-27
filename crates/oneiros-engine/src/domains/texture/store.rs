@@ -15,7 +15,7 @@ impl<'a> TextureStore<'a> {
         if let Event::Known(Events::Texture(texture_event)) = &event.data {
             match texture_event {
                 TextureEvents::TextureSet(texture) => self.set(texture)?,
-                TextureEvents::TextureRemoved(removed) => self.remove(&removed.name)?,
+                TextureEvents::TextureRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -53,11 +53,13 @@ impl<'a> TextureStore<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Texture::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Texture::Current(
+                    Texture::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 
@@ -68,9 +70,9 @@ impl<'a> TextureStore<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO textures (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
-                texture.name.to_string(),
-                texture.description.to_string(),
-                texture.prompt.to_string()
+                texture.name().to_string(),
+                texture.description().to_string(),
+                texture.prompt().to_string()
             ],
         )?;
         Ok(())

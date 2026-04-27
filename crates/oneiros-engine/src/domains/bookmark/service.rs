@@ -14,11 +14,11 @@ impl BookmarkService {
         // Create the new bookmark's DB and replay the source events into it.
         Self::create_bookmark_db(state.config(), brain, name)?;
 
-        let forked = BookmarkForked {
+        let forked = BookmarkForked::Current(BookmarkForkedV1 {
             brain: brain.clone(),
             name: name.clone(),
             from,
-        };
+        });
 
         state
             .system_context()
@@ -37,10 +37,10 @@ impl BookmarkService {
         // Both bookmark DBs already exist with current projections.
         state.canons().switch_brain(brain, name)?;
 
-        let switched = BookmarkSwitched {
+        let switched = BookmarkSwitched::Current(BookmarkSwitchedV1 {
             brain: brain.clone(),
             name: name.clone(),
-        };
+        });
 
         state
             .system_context()
@@ -60,11 +60,11 @@ impl BookmarkService {
 
         Self::replay_bookmark(state.config(), brain, &target)?;
 
-        let merged = BookmarkMerged {
+        let merged = BookmarkMerged::Current(BookmarkMergedV1 {
             brain: brain.clone(),
             source: source.clone(),
             target,
-        };
+        });
 
         state
             .system_context()
@@ -103,7 +103,7 @@ impl BookmarkService {
         let bookmark = bookmarks
             .items
             .iter()
-            .find(|b| b.name == *name)
+            .find(|bookmark| bookmark.name() == name)
             .ok_or_else(|| BookmarkError::NotFound(name.clone()))?
             .clone();
 
@@ -119,26 +119,28 @@ impl BookmarkService {
                 actors
                     .items
                     .first()
-                    .map(|a| a.id)
+                    .map(|actor| actor.id())
                     .ok_or(BookmarkError::NoActor)?
             }
         };
 
-        let target = Ref::bookmark(bookmark.id);
+        let target = Ref::bookmark(bookmark.id());
         let ticket =
             TicketService::issue(&system, brain, &brain_record, resolved_actor_id, target).await?;
 
         let identity = state.host_identity();
-        let peer_link = PeerLink::new(identity.address, ticket.link.clone());
+        let peer_link = PeerLink::new(identity.address, ticket.link().clone());
         let uri = OneirosUri::Peer(peer_link).to_string();
 
         system
-            .emit(BookmarkEvents::BookmarkShared(BookmarkShared {
-                brain: brain.clone(),
-                bookmark: name.clone(),
-                ticket_id: ticket.id,
-                shared_by: resolved_actor_id,
-            }))
+            .emit(BookmarkEvents::BookmarkShared(BookmarkShared::Current(
+                BookmarkSharedV1 {
+                    brain: brain.clone(),
+                    bookmark: name.clone(),
+                    ticket_id: ticket.id(),
+                    shared_by: resolved_actor_id,
+                },
+            )))
             .await?;
 
         Ok(BookmarkResponse::Shared(BookmarkShareResult {
@@ -169,10 +171,12 @@ impl BookmarkService {
         };
 
         system
-            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated {
-                brain: brain.clone(),
-                name: name.clone(),
-            }))
+            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated::Current(
+                BookmarkCreatedV1 {
+                    brain: brain.clone(),
+                    name: name.clone(),
+                },
+            )))
             .await?;
         state.canons().fork_brain(brain, name)?;
 
@@ -194,12 +198,12 @@ impl BookmarkService {
             .await?
             .ok_or_else(|| BookmarkError::FollowNotFound(name.clone()))?;
 
-        match follow.source.clone() {
+        match follow.source().clone() {
             FollowSource::Local(_) => {
                 let checkpoint = Checkpoint::empty();
-                FollowService::advance(&system, follow.id, checkpoint.clone(), 0).await?;
+                FollowService::advance(&system, follow.id(), checkpoint.clone(), 0).await?;
                 Ok(BookmarkResponse::Collected(BookmarkCollectResult {
-                    follow_id: follow.id,
+                    follow_id: follow.id(),
                     events_received: 0,
                     checkpoint,
                 }))
@@ -221,7 +225,9 @@ impl BookmarkService {
         let bridge = state.bridge();
 
         // Get the bookmark's chronicle — this tracks what we've collected.
-        let chronicle = state.canons().bookmark_chronicle(brain, &follow.bookmark)?;
+        let chronicle = state
+            .canons()
+            .bookmark_chronicle(brain, follow.bookmark())?;
         let local_root = chronicle.root()?;
 
         // Build a local resolver from the system DB's ChronicleStore.
@@ -297,21 +303,21 @@ impl BookmarkService {
         }
 
         // Phase 3: Replay projections into the follow's bookmark DB.
-        Self::replay_bookmark(state.config(), brain, &follow.bookmark)?;
+        Self::replay_bookmark(state.config(), brain, follow.bookmark())?;
 
         // Store the server's root hash in the checkpoint so we can
         // detect "already up to date" on the next collect.
         let checkpoint = Checkpoint {
-            sequence: follow.checkpoint.sequence + events_received,
+            sequence: follow.checkpoint().sequence + events_received,
             cumulative_hash: diff_result.server_root.unwrap_or_default(),
             head: None,
             taken_at: Timestamp::now(),
         };
 
-        FollowService::advance(&system, follow.id, checkpoint.clone(), events_received).await?;
+        FollowService::advance(&system, follow.id(), checkpoint.clone(), events_received).await?;
 
         Ok(BookmarkResponse::Collected(BookmarkCollectResult {
-            follow_id: follow.id,
+            follow_id: follow.id(),
             events_received,
             checkpoint,
         }))
@@ -328,14 +334,16 @@ impl BookmarkService {
             .await?
             .ok_or_else(|| BookmarkError::FollowNotFound(name.clone()))?;
 
-        let id = follow.id;
+        let id = follow.id();
         FollowService::remove(&system, id).await?;
 
-        Ok(BookmarkResponse::Unfollowed(BookmarkUnfollowed {
-            follow_id: id,
-            brain: brain.clone(),
-            bookmark: name.clone(),
-        }))
+        Ok(BookmarkResponse::Unfollowed(BookmarkUnfollowed::Current(
+            BookmarkUnfollowedV1 {
+                follow_id: id,
+                brain: brain.clone(),
+                bookmark: name.clone(),
+            },
+        )))
     }
 
     /// Replay the event log into a specific bookmark's projection DB.

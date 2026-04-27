@@ -1,3 +1,4 @@
+use bon::Builder;
 use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
@@ -39,13 +40,61 @@ mod tests {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExperienceDescriptionUpdate {
+#[serde(untagged)]
+pub enum ExperienceDescriptionUpdate {
+    Current(ExperienceDescriptionUpdateV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct ExperienceDescriptionUpdateV1 {
     pub id: ExperienceId,
     pub description: Description,
 }
 
+impl ExperienceDescriptionUpdate {
+    pub fn build_v1() -> ExperienceDescriptionUpdateV1Builder {
+        ExperienceDescriptionUpdateV1::builder()
+    }
+
+    pub fn id(&self) -> ExperienceId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
+
+    pub fn description(&self) -> &Description {
+        match self {
+            Self::Current(v) => &v.description,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExperienceSensationUpdate {
+#[serde(untagged)]
+pub enum ExperienceSensationUpdate {
+    Current(ExperienceSensationUpdateV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+pub struct ExperienceSensationUpdateV1 {
     pub id: ExperienceId,
     pub sensation: SensationName,
+}
+
+impl ExperienceSensationUpdate {
+    pub fn build_v1() -> ExperienceSensationUpdateV1Builder {
+        ExperienceSensationUpdateV1::builder()
+    }
+
+    pub fn id(&self) -> ExperienceId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
+
+    pub fn sensation(&self) -> &SensationName {
+        match self {
+            Self::Current(v) => &v.sensation,
+        }
+    }
 }

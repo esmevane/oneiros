@@ -29,12 +29,14 @@ impl AgentService {
             return Err(AgentError::Conflict(normalized_name));
         }
 
-        let agent = Agent::builder()
-            .name(normalized_name.clone())
-            .persona(persona.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
-            .build();
+        let agent = Agent::Current(
+            Agent::build_v1()
+                .name(normalized_name.clone())
+                .persona(persona.clone())
+                .description(description.clone())
+                .prompt(prompt.clone())
+                .build(),
+        );
 
         context.emit(AgentEvents::AgentCreated(agent)).await?;
 
@@ -67,7 +69,7 @@ impl AgentService {
                 }
             }
         };
-        let ref_token = RefToken::new(Ref::agent(agent.id));
+        let ref_token = RefToken::new(Ref::agent(agent.id()));
         Ok(AgentResponse::AgentDetails(
             Response::new(agent).with_ref_token(ref_token),
         ))
@@ -83,7 +85,7 @@ impl AgentService {
             Ok(AgentResponse::NoAgents)
         } else {
             Ok(AgentResponse::Agents(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::agent(e.id));
+                let ref_token = RefToken::new(Ref::agent(e.id()));
                 Response::new(e).with_ref_token(ref_token)
             })))
         }
@@ -103,13 +105,15 @@ impl AgentService {
             .await?
             .ok_or_else(|| AgentError::NotFound(name.clone()))?;
 
-        let agent = Agent::builder()
-            .id(existing.id)
-            .name(name.clone())
-            .persona(persona.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
-            .build();
+        let agent = Agent::Current(
+            Agent::build_v1()
+                .id(existing.id())
+                .name(name.clone())
+                .persona(persona.clone())
+                .description(description.clone())
+                .prompt(prompt.clone())
+                .build(),
+        );
 
         context.emit(AgentEvents::AgentUpdated(agent)).await?;
 
@@ -127,9 +131,11 @@ impl AgentService {
         }
 
         context
-            .emit(AgentEvents::AgentRemoved(AgentRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(AgentEvents::AgentRemoved(AgentRemoved::Current(
+                AgentRemovedV1 {
+                    name: selector.name.clone(),
+                },
+            )))
             .await?;
 
         Ok(AgentResponse::AgentRemoved(selector.name.clone()))

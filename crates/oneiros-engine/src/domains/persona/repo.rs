@@ -25,13 +25,13 @@ impl<'a> PersonaRepo<'a> {
         });
 
         match result {
-            Ok((name, description, prompt)) => Ok(Some(
-                Persona::builder()
+            Ok((name, description, prompt)) => Ok(Some(Persona::Current(
+                Persona::build_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -60,11 +60,13 @@ impl<'a> PersonaRepo<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Persona::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Persona::Current(
+                    Persona::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 

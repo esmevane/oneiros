@@ -17,18 +17,20 @@ impl StorageService {
         // Put the blob directly (not via event — the blob table is the durable store).
         StorageStore::new(&context.db()?).put_blob(&blob)?;
 
-        let entry = StorageEntry {
-            key: key.clone(),
-            description: description.clone(),
-            hash: blob.hash,
-        };
+        let entry = StorageEntry::Current(
+            StorageEntry::build_v1()
+                .key(key.clone())
+                .description(description.clone())
+                .hash(blob.hash().clone())
+                .build(),
+        );
 
         // Emit StorageSet — this drives the storage metadata projection.
         context
             .emit(StorageEvents::StorageSet(entry.clone()))
             .await?;
 
-        let ref_token = RefToken::new(Ref::storage(entry.key.clone()));
+        let ref_token = RefToken::new(Ref::storage(entry.key().clone()));
         Ok(StorageResponse::StorageSet(
             Response::new(entry).with_ref_token(ref_token),
         ))
@@ -44,7 +46,7 @@ impl StorageService {
             .get_storage(&key)
             .await?
             .ok_or(StorageError::KeyNotFound(key))?;
-        let ref_token = RefToken::new(Ref::storage(entry.key.clone()));
+        let ref_token = RefToken::new(Ref::storage(entry.key().clone()));
         Ok(StorageResponse::StorageDetails(
             Response::new(entry).with_ref_token(ref_token),
         ))
@@ -61,7 +63,7 @@ impl StorageService {
             Ok(StorageResponse::NoEntries)
         } else {
             Ok(StorageResponse::Entries(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::storage(e.key.clone()));
+                let ref_token = RefToken::new(Ref::storage(e.key().clone()));
                 Response::new(e).with_ref_token(ref_token)
             })))
         }
@@ -79,9 +81,11 @@ impl StorageService {
             .ok_or_else(|| StorageError::KeyNotFound(selector.key.clone()))?;
 
         context
-            .emit(StorageEvents::StorageRemoved(SelectStorageByKey {
-                key: selector.key.clone(),
-            }))
+            .emit(StorageEvents::StorageRemoved(SelectStorageByKey::Current(
+                SelectStorageByKeyV1 {
+                    key: selector.key.clone(),
+                },
+            )))
             .await?;
 
         Ok(StorageResponse::StorageRemoved(selector.key.clone()))
@@ -100,10 +104,10 @@ impl StorageService {
             .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
 
         let blob = repo
-            .get_blob(&entry.hash)
+            .get_blob(entry.hash())
             .await?
-            .ok_or_else(|| StorageError::BlobMissing(entry.hash.clone()))?;
+            .ok_or_else(|| StorageError::BlobMissing(entry.hash().clone()))?;
 
-        Ok(blob.data.decompressed()?)
+        Ok(blob.data().decompressed()?)
     }
 }

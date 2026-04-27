@@ -15,8 +15,14 @@ use crate::*;
 /// as the peer's network environment shifts). `name` is the human-readable
 /// label for display, defaulting to a short hex prefix of the key when no
 /// explicit name is provided.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Peer {
+    Current(PeerV1),
+}
+
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Peer {
+pub struct PeerV1 {
     #[builder(default)]
     pub id: PeerId,
     pub key: PeerKey,
@@ -25,6 +31,42 @@ pub struct Peer {
     pub name: PeerName,
     #[builder(default = Timestamp::now())]
     pub created_at: Timestamp,
+}
+
+impl Peer {
+    pub fn build_v1() -> PeerV1Builder {
+        PeerV1::builder()
+    }
+
+    pub fn id(&self) -> PeerId {
+        match self {
+            Self::Current(v) => v.id,
+        }
+    }
+
+    pub fn key(&self) -> PeerKey {
+        match self {
+            Self::Current(v) => v.key,
+        }
+    }
+
+    pub fn address(&self) -> &PeerAddress {
+        match self {
+            Self::Current(v) => &v.address,
+        }
+    }
+
+    pub fn name(&self) -> &PeerName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
+
+    pub fn created_at(&self) -> Timestamp {
+        match self {
+            Self::Current(v) => v.created_at,
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -48,7 +90,7 @@ impl Peers {
     }
 
     pub fn set(&mut self, peer: &Peer) -> Option<Peer> {
-        self.0.insert(peer.id.to_string(), peer.clone())
+        self.0.insert(peer.id().to_string(), peer.clone())
     }
 
     pub fn remove(&mut self, peer_id: PeerId) -> Option<Peer> {

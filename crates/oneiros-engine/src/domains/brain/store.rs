@@ -38,9 +38,9 @@ impl<'a> BrainStore<'a> {
         self.conn.execute(
             "insert or replace into brains (id, name, created_at) values (?1, ?2, ?3)",
             params![
-                brain.id.to_string(),
-                brain.name.to_string(),
-                brain.created_at.to_string()
+                brain.id().to_string(),
+                brain.name().to_string(),
+                brain.created_at().to_string()
             ],
         )?;
         Ok(())

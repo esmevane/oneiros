@@ -47,7 +47,7 @@ impl SystemService {
             ActorService::create(
                 context,
                 &CreateActor::builder()
-                    .tenant_id(tenant.id)
+                    .tenant_id(tenant.id())
                     .name(ActorName::new(&name))
                     .build(),
             )

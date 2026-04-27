@@ -15,12 +15,12 @@ impl UrgeView {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|u| (u.name.to_string(), u.description.to_string()))
+                    .map(|u| (u.name().to_string(), u.description().to_string()))
                     .collect();
                 Self::vocabulary_table("Urges", &items)
             }
             UrgeResponse::UrgeDetails(urge) => {
-                let items = vec![(urge.name.to_string(), urge.description.to_string())];
+                let items = vec![(urge.name().to_string(), urge.description().to_string())];
                 Self::vocabulary_table("Urge", &items)
             }
             UrgeResponse::NoUrges => Self::vocabulary_table("Urges", &[]),
@@ -53,9 +53,9 @@ impl UrgeView {
                 Rendered::new(UrgeResponse::UrgeSet(name), prompt, String::new()).with_hints(hints)
             }
             UrgeResponse::UrgeDetails(urge) => {
-                let prompt = Detail::new(urge.name.to_string())
-                    .field("description:", urge.description.to_string())
-                    .field("prompt:", urge.prompt.to_string())
+                let prompt = Detail::new(urge.name().to_string())
+                    .field("description:", urge.description().to_string())
+                    .field("prompt:", urge.prompt().to_string())
                     .to_string();
                 Rendered::new(UrgeResponse::UrgeDetails(urge), prompt, String::new())
             }
@@ -65,7 +65,10 @@ impl UrgeView {
                     Column::key("description", "Description").max(60),
                 ]);
                 for urge in &listed.items {
-                    table.push_row(vec![urge.name.to_string(), urge.description.to_string()]);
+                    table.push_row(vec![
+                        urge.name().to_string(),
+                        urge.description().to_string(),
+                    ]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",

@@ -31,15 +31,15 @@ impl<'a> CognitionRepo<'a> {
         });
 
         match result {
-            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(
-                Cognition::builder()
+            Ok((id, agent_id, texture, content, created_at)) => Ok(Some(Cognition::Current(
+                Cognition::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .texture(texture)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -117,15 +117,15 @@ impl<'a> CognitionRepo<'a> {
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
-            cognitions.push(
-                Cognition::builder()
+            cognitions.push(Cognition::Current(
+                Cognition::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .texture(texture)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(cognitions, total))
@@ -162,15 +162,15 @@ impl<'a> CognitionRepo<'a> {
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
-            cognitions.push(
-                Cognition::builder()
+            cognitions.push(Cognition::Current(
+                Cognition::build_v1()
                     .id(id.parse()?)
                     .agent_id(agent_id.parse()?)
                     .texture(texture)
                     .content(content)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(cognitions)

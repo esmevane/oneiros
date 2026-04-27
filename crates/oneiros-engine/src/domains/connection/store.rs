@@ -16,7 +16,7 @@ impl<'a> ConnectionStore<'a> {
         if let Event::Known(Events::Connection(connection_event)) = &event.data {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
-                ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id)?,
+                ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id())?,
             }
         }
         Ok(())
@@ -57,15 +57,15 @@ impl<'a> ConnectionStore<'a> {
         });
 
         match result {
-            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(
-                Connection::builder()
+            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(Connection::Current(
+                Connection::build_v1()
                     .id(id.parse()?)
                     .from_ref(serde_json::from_str(&from_ref)?)
                     .to_ref(serde_json::from_str(&to_ref)?)
                     .nature(nature)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -103,15 +103,15 @@ impl<'a> ConnectionStore<'a> {
 
         let mut connections = vec![];
         for (id, from_ref, to_ref, nature, created_at) in raw {
-            connections.push(
-                Connection::builder()
+            connections.push(Connection::Current(
+                Connection::build_v1()
                     .id(id.parse()?)
                     .from_ref(serde_json::from_str(&from_ref)?)
                     .to_ref(serde_json::from_str(&to_ref)?)
                     .nature(nature)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(connections)
@@ -123,11 +123,11 @@ impl<'a> ConnectionStore<'a> {
              (id, from_ref, to_ref, nature, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
-                connection.id.to_string(),
-                serde_json::to_string(&connection.from_ref)?,
-                serde_json::to_string(&connection.to_ref)?,
-                connection.nature.to_string(),
-                connection.created_at.as_string(),
+                connection.id().to_string(),
+                serde_json::to_string(&connection.from_ref())?,
+                serde_json::to_string(&connection.to_ref())?,
+                connection.nature().to_string(),
+                connection.created_at().as_string(),
             ],
         )?;
         Ok(())

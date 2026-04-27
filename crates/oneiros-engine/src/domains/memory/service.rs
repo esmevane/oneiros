@@ -16,16 +16,18 @@ impl MemoryService {
             .await?
             .ok_or_else(|| MemoryError::AgentNotFound(agent.clone()))?;
 
-        let memory = Memory::builder()
-            .agent_id(agent_record.id)
-            .level(level.clone())
-            .content(content.clone())
-            .build();
+        let memory = Memory::Current(
+            Memory::build_v1()
+                .agent_id(agent_record.id())
+                .level(level.clone())
+                .content(content.clone())
+                .build(),
+        );
 
         context
             .emit(MemoryEvents::MemoryAdded(memory.clone()))
             .await?;
-        let ref_token = RefToken::new(Ref::memory(memory.id));
+        let ref_token = RefToken::new(Ref::memory(memory.id()));
         Ok(MemoryResponse::MemoryAdded(
             Response::new(memory).with_ref_token(ref_token),
         ))
@@ -40,7 +42,7 @@ impl MemoryService {
             .get(&id)
             .await?
             .ok_or(MemoryError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::memory(memory.id));
+        let ref_token = RefToken::new(Ref::memory(memory.id()));
         Ok(MemoryResponse::MemoryDetails(
             Response::new(memory).with_ref_token(ref_token),
         ))
@@ -56,7 +58,7 @@ impl MemoryService {
                     .get(name)
                     .await?
                     .ok_or_else(|| MemoryError::AgentNotFound(name.clone()))?;
-                Some(record.id.to_string())
+                Some(record.id().to_string())
             }
             None => None,
         };
@@ -68,7 +70,7 @@ impl MemoryService {
             MemoryResponse::NoMemories
         } else {
             MemoryResponse::Memories(listed.map(|m| {
-                let ref_token = RefToken::new(Ref::memory(m.id));
+                let ref_token = RefToken::new(Ref::memory(m.id()));
                 Response::new(m).with_ref_token(ref_token)
             }))
         })

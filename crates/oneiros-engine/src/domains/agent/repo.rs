@@ -30,15 +30,15 @@ impl<'a> AgentRepo<'a> {
         });
 
         match result {
-            Ok((id, name, persona, description, prompt)) => Ok(Some(
-                Agent::builder()
+            Ok((id, name, persona, description, prompt)) => Ok(Some(Agent::Current(
+                Agent::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .persona(persona)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -62,15 +62,15 @@ impl<'a> AgentRepo<'a> {
         });
 
         match result {
-            Ok((id, name, persona, description, prompt)) => Ok(Some(
-                Agent::builder()
+            Ok((id, name, persona, description, prompt)) => Ok(Some(Agent::Current(
+                Agent::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .persona(persona)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -102,15 +102,15 @@ impl<'a> AgentRepo<'a> {
         let mut agents = vec![];
 
         for (id, name, persona, description, prompt) in raw {
-            agents.push(
-                Agent::builder()
+            agents.push(Agent::Current(
+                Agent::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .persona(persona)
                     .description(description)
                     .prompt(prompt)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(agents, total))

@@ -17,8 +17,8 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
-            assert_eq!(level.data.name.as_str(), "ephemeral");
-            assert_eq!(level.data.description.as_str(), "Short-lived context");
+            assert_eq!(level.data.name().as_str(), "ephemeral");
+            assert_eq!(level.data.description().as_str(), "Short-lived context");
         }
         other => panic!("expected LevelDetails, got {other:#?}"),
     }
@@ -45,8 +45,8 @@ pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Level(LevelResponse::LevelDetails(level)) => {
-            assert_eq!(level.data.description.as_str(), "Updated description");
-            assert_eq!(level.data.prompt.as_str(), "Updated prompt.");
+            assert_eq!(level.data.description().as_str(), "Updated description");
+            assert_eq!(level.data.prompt().as_str(), "Updated prompt.");
         }
         other => panic!("expected LevelDetails, got {other:#?}"),
     }

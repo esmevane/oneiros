@@ -13,13 +13,13 @@ impl BrainService {
             return Err(BrainError::Conflict(name.clone()));
         }
 
-        let brain = Brain::builder().name(name.clone()).build();
+        let brain = Brain::Current(Brain::build_v1().name(name.clone()).build());
 
         context
             .emit(BrainEvents::BrainCreated(brain.clone()))
             .await?;
 
-        let ref_token = RefToken::new(Ref::brain(brain.id));
+        let ref_token = RefToken::new(Ref::brain(brain.id()));
         Ok(BrainResponse::Created(
             Response::new(brain).with_ref_token(ref_token),
         ))
@@ -51,7 +51,7 @@ impl BrainService {
                 }
             }
         };
-        let ref_token = RefToken::new(Ref::brain(brain.id));
+        let ref_token = RefToken::new(Ref::brain(brain.id()));
         Ok(BrainResponse::Found(
             Response::new(brain).with_ref_token(ref_token),
         ))
@@ -63,7 +63,7 @@ impl BrainService {
     ) -> Result<BrainResponse, BrainError> {
         let listed = BrainRepo::new(context).list(filters).await?;
         Ok(BrainResponse::Listed(listed.map(|b| {
-            let ref_token = RefToken::new(Ref::brain(b.id));
+            let ref_token = RefToken::new(Ref::brain(b.id()));
             Response::new(b).with_ref_token(ref_token)
         })))
     }

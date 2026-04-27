@@ -24,13 +24,13 @@ impl<'a> BrainRepo<'a> {
         });
 
         match raw {
-            Ok((id, name, created_at)) => Ok(Some(
-                Brain::builder()
+            Ok((id, name, created_at)) => Ok(Some(Brain::Current(
+                Brain::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .created_at(Timestamp::parse_str(created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -48,13 +48,13 @@ impl<'a> BrainRepo<'a> {
         });
 
         match raw {
-            Ok((id, name, created_at)) => Ok(Some(
-                Brain::builder()
+            Ok((id, name, created_at)) => Ok(Some(Brain::Current(
+                Brain::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .created_at(Timestamp::parse_str(created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -80,13 +80,13 @@ impl<'a> BrainRepo<'a> {
         let mut brains = vec![];
 
         for (id, name, created_at) in raw {
-            brains.push(
-                Brain::builder()
+            brains.push(Brain::Current(
+                Brain::build_v1()
                     .id(id.parse()?)
                     .name(name)
                     .created_at(Timestamp::parse_str(created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(brains, total))

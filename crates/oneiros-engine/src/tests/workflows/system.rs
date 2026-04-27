@@ -34,7 +34,7 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         TenantResponse::Created(t) => {
-            assert_eq!(t.data.name, TenantName::new("acme"));
+            assert_eq!(t.data.name(), &TenantName::new("acme"));
             t
         }
         other => panic!("expected Created, got {other:?}"),
@@ -56,14 +56,14 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .actor()
         .create(
             &CreateActor::builder()
-                .tenant_id(tenant.data.id)
+                .tenant_id(tenant.data.id())
                 .name(ActorName::new("alice"))
                 .build(),
         )
         .await?
     {
         ActorResponse::Created(a) => {
-            assert_eq!(a.data.name, ActorName::new("alice"));
+            assert_eq!(a.data.name(), &ActorName::new("alice"));
             a
         }
         other => panic!("expected Created, got {other:?}"),
@@ -72,11 +72,11 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // Actor is retrievable
     match client
         .actor()
-        .get(&GetActor::builder().key(actor.data.id).build())
+        .get(&GetActor::builder().key(actor.data.id()).build())
         .await?
     {
         ActorResponse::Found(a) => {
-            assert_eq!(a.data.name, ActorName::new("alice"));
+            assert_eq!(a.data.name(), &ActorName::new("alice"));
         }
         other => panic!("expected Details, got {other:?}"),
     }
@@ -101,7 +101,7 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         BrainResponse::Created(b) => {
-            assert_eq!(b.data.name, brain_name);
+            assert_eq!(b.data.name(), &brain_name);
         }
         other => panic!("expected Created, got {other:?}"),
     }
@@ -120,7 +120,7 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         BrainResponse::Found(b) => {
-            assert_eq!(b.data.name, brain_name);
+            assert_eq!(b.data.name(), &brain_name);
         }
         other => panic!("expected Found, got {other:?}"),
     }
@@ -130,23 +130,23 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .ticket()
         .issue(
             &CreateTicket::builder()
-                .actor_id(actor.data.id)
+                .actor_id(actor.data.id())
                 .brain_name(brain_name.clone())
                 .build(),
         )
         .await?
     {
         TicketResponse::Created(t) => {
-            assert_eq!(t.brain_name, brain_name);
+            assert_eq!(t.brain_name(), &brain_name);
             t
         }
         other => panic!("expected Created, got {other:?}"),
     };
 
     // Ticket is retrievable
-    match client.ticket().get(&ticket.id).await? {
+    match client.ticket().get(&ticket.id()).await? {
         TicketResponse::Found(t) => {
-            assert_eq!(t.brain_name, brain_name);
+            assert_eq!(t.brain_name(), &brain_name);
         }
         other => panic!("expected Details, got {other:?}"),
     }
@@ -156,13 +156,13 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
         .ticket()
         .validate(
             &ValidateTicket::builder()
-                .token(ticket.link.token.clone())
+                .token(ticket.link().token.clone())
                 .build(),
         )
         .await?
     {
         TicketResponse::Validated(t) => {
-            assert_eq!(t.brain_name, brain_name);
+            assert_eq!(t.brain_name(), &brain_name);
         }
         other => panic!("expected Validated, got {other:?}"),
     }

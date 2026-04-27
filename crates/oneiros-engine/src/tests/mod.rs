@@ -145,7 +145,7 @@ async fn replay_reconstructs_read_models() {
     .unwrap()
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("gov.test-persona"))
+            assert_eq!(a.data.name(), &AgentName::new("gov.test-persona"))
         }
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
@@ -182,7 +182,7 @@ async fn storage_content_round_trips() {
     .unwrap()
     {
         StorageResponse::StorageSet(entry) => {
-            assert_eq!(entry.data.key.as_str(), "test.txt");
+            assert_eq!(entry.data.key().as_str(), "test.txt");
             entry
         }
         other => panic!("Expected StorageSet, got {other:?}"),
@@ -205,7 +205,7 @@ async fn storage_content_round_trips() {
     .unwrap()
     {
         StorageResponse::StorageDetails(shown) => {
-            assert_eq!(shown.data.hash, entry.data.hash);
+            assert_eq!(shown.data.hash(), entry.data.hash());
         }
         other => panic!("Expected StorageDetails, got {other:?}"),
     }

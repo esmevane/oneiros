@@ -30,15 +30,15 @@ impl<'a> ConnectionRepo<'a> {
         });
 
         match result {
-            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(
-                Connection::builder()
+            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(Connection::Current(
+                Connection::build_v1()
                     .id(id.parse()?)
                     .from_ref(serde_json::from_str(&from_ref)?)
                     .to_ref(serde_json::from_str(&to_ref)?)
                     .nature(nature)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            )),
+            ))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -115,15 +115,15 @@ impl<'a> ConnectionRepo<'a> {
 
         let mut connections = vec![];
         for (id, from_ref, to_ref, nature, created_at) in raw {
-            connections.push(
-                Connection::builder()
+            connections.push(Connection::Current(
+                Connection::build_v1()
                     .id(id.parse()?)
                     .from_ref(serde_json::from_str(&from_ref)?)
                     .to_ref(serde_json::from_str(&to_ref)?)
                     .nature(nature)
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
-            );
+            ));
         }
 
         Ok(Listed::new(connections, total))

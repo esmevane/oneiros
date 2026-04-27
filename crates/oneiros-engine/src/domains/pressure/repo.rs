@@ -27,7 +27,7 @@ impl<'a> PressureRepo<'a> {
         )?;
 
         let pressures = stmt
-            .query_map(params![agent.id.to_string()], |row| {
+            .query_map(params![agent.id().to_string()], |row| {
                 let data_str: String = row.get(3)?;
                 let updated_str: String = row.get(4)?;
                 Ok(Pressure {

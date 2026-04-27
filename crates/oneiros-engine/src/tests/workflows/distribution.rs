@@ -106,7 +106,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+            assert_eq!(a.data.name(), &AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails for Alice's agent, got {other:?}"),
     }
@@ -233,7 +233,7 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+            assert_eq!(a.data.name(), &AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -321,7 +321,7 @@ async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Erro
         CognitionResponse::Cognitions(cogs) => {
             assert_eq!(cogs.len(), 1, "only the observation should be visible");
             assert!(
-                cogs.items[0].data.content.as_str().contains("visible"),
+                cogs.items[0].data.content().as_str().contains("visible"),
                 "the visible cognition should be the observation"
             );
         }
@@ -480,7 +480,7 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
         .await?
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+            assert_eq!(a.data.name(), &AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -598,7 +598,7 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
             assert!(
                 cogs.items[0]
                     .data
-                    .content
+                    .content()
                     .as_str()
                     .contains("event sourcing"),
                 "the assessment content should be intact"
@@ -869,7 +869,7 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
         .await?
     {
         AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+            assert_eq!(a.data.name(), &AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }

@@ -15,7 +15,7 @@ impl<'a> NatureStore<'a> {
         if let Event::Known(Events::Nature(nature_event)) = &event.data {
             match nature_event {
                 NatureEvents::NatureSet(nature) => self.set(nature)?,
-                NatureEvents::NatureRemoved(removed) => self.remove(&removed.name)?,
+                NatureEvents::NatureRemoved(removed) => self.remove(removed.name())?,
             }
         }
         Ok(())
@@ -53,11 +53,13 @@ impl<'a> NatureStore<'a> {
             .collect::<Result<Vec<(String, String, String)>, _>>()?
             .into_iter()
             .map(|(name, description, prompt)| {
-                Nature::builder()
-                    .name(name)
-                    .description(description)
-                    .prompt(prompt)
-                    .build()
+                Nature::Current(
+                    Nature::build_v1()
+                        .name(name)
+                        .description(description)
+                        .prompt(prompt)
+                        .build(),
+                )
             })
             .collect();
 
@@ -68,9 +70,9 @@ impl<'a> NatureStore<'a> {
         self.conn.execute(
             "INSERT OR REPLACE INTO natures (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
-                nature.name.to_string(),
-                nature.description.to_string(),
-                nature.prompt.to_string()
+                nature.name().to_string(),
+                nature.description().to_string(),
+                nature.prompt().to_string()
             ],
         )?;
         Ok(())

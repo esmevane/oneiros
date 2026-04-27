@@ -14,7 +14,7 @@ impl StorageView {
     pub fn render(self) -> Rendered<StorageResponse> {
         match self.response {
             StorageResponse::StorageSet(wrapped) => {
-                let prompt = Confirmation::new("Storage", wrapped.data.key.to_string(), "stored")
+                let prompt = Confirmation::new("Storage", wrapped.data.key().to_string(), "stored")
                     .to_string();
                 let hints = match wrapped.meta().ref_token() {
                     Some(ref_token) => {
@@ -26,9 +26,9 @@ impl StorageView {
                     .with_hints(hints)
             }
             StorageResponse::StorageDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.key.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("hash:", wrapped.data.hash.to_string())
+                let prompt = Detail::new(wrapped.data.key().to_string())
+                    .field("description:", wrapped.data.description().to_string())
+                    .field("hash:", wrapped.data.hash().to_string())
                     .to_string();
                 Rendered::new(
                     StorageResponse::StorageDetails(wrapped),
@@ -44,9 +44,9 @@ impl StorageView {
                 ]);
                 for wrapped in &listed.items {
                     table.push_row(vec![
-                        wrapped.data.key.to_string(),
-                        wrapped.data.description.to_string(),
-                        wrapped.data.hash.to_string(),
+                        wrapped.data.key().to_string(),
+                        wrapped.data.description().to_string(),
+                        wrapped.data.hash().to_string(),
                     ]);
                 }
                 let prompt = format!(

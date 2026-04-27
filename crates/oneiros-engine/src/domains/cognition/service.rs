@@ -16,16 +16,18 @@ impl CognitionService {
             .await?
             .ok_or_else(|| CognitionError::AgentNotFound(agent.clone()))?;
 
-        let cognition = Cognition::builder()
-            .agent_id(agent_record.id)
-            .texture(texture.clone())
-            .content(content.clone())
-            .build();
+        let cognition = Cognition::Current(
+            Cognition::build_v1()
+                .agent_id(agent_record.id())
+                .texture(texture.clone())
+                .content(content.clone())
+                .build(),
+        );
 
         context
             .emit(CognitionEvents::CognitionAdded(cognition.clone()))
             .await?;
-        let ref_token = RefToken::new(Ref::cognition(cognition.id));
+        let ref_token = RefToken::new(Ref::cognition(cognition.id()));
         Ok(CognitionResponse::CognitionAdded(
             Response::new(cognition).with_ref_token(ref_token),
         ))
@@ -40,7 +42,7 @@ impl CognitionService {
             .get(&id)
             .await?
             .ok_or(CognitionError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::cognition(cognition.id));
+        let ref_token = RefToken::new(Ref::cognition(cognition.id()));
         Ok(CognitionResponse::CognitionDetails(
             Response::new(cognition).with_ref_token(ref_token),
         ))
@@ -60,7 +62,7 @@ impl CognitionService {
                     .get(name)
                     .await?
                     .ok_or_else(|| CognitionError::AgentNotFound(name.clone()))?;
-                Some(record.id)
+                Some(record.id())
             }
             None => None,
         };
@@ -72,7 +74,7 @@ impl CognitionService {
             CognitionResponse::NoCognitions
         } else {
             CognitionResponse::Cognitions(listed.map(|c| {
-                let ref_token = RefToken::new(Ref::cognition(c.id));
+                let ref_token = RefToken::new(Ref::cognition(c.id()));
                 Response::new(c).with_ref_token(ref_token)
             }))
         })

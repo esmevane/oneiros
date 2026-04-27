@@ -10,7 +10,7 @@ impl LevelState {
                     canon.levels.set(level);
                 }
                 LevelEvents::LevelRemoved(removed) => {
-                    canon.levels.remove(&removed.name);
+                    canon.levels.remove(removed.name());
                 }
             };
         }
@@ -30,19 +30,23 @@ mod tests {
     #[test]
     fn sets_and_removes_level() {
         let canon = BrainCanon::default();
-        let level = Level::builder()
-            .name("working")
-            .description("Short-term")
-            .prompt("")
-            .build();
+        let level = Level::Current(
+            Level::build_v1()
+                .name("working")
+                .description("Short-term")
+                .prompt("")
+                .build(),
+        );
         let event = Events::Level(LevelEvents::LevelSet(level.clone()));
 
         let next = LevelState::reduce(canon, &event);
         assert_eq!(next.levels.len(), 1);
 
-        let event = Events::Level(LevelEvents::LevelRemoved(LevelRemoved {
-            name: level.name.clone(),
-        }));
+        let event = Events::Level(LevelEvents::LevelRemoved(LevelRemoved::Current(
+            LevelRemovedV1 {
+                name: level.name().clone(),
+            },
+        )));
         let next = LevelState::reduce(next, &event);
         assert_eq!(next.levels.len(), 0);
     }

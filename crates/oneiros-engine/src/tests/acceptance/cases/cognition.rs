@@ -107,7 +107,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .await?;
 
     let id = match add_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id,
+        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id(),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
@@ -115,7 +115,7 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Cognition(CognitionResponse::CognitionDetails(cognition)) => {
-            assert_eq!(cognition.data.content.as_str(), "Show me this");
+            assert_eq!(cognition.data.content().as_str(), "Show me this");
         }
         other => panic!("expected CognitionDetails, got {other:#?}"),
     }
@@ -130,7 +130,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
     let id = match response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(c)) => c.data.id.to_string(),
+        Responses::Cognition(CognitionResponse::CognitionAdded(c)) => c.data.id().to_string(),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
@@ -170,7 +170,7 @@ pub(crate) async fn show_json_includes_ref<B: Backend>() -> TestResult {
         .await?;
 
     let id = match add_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id,
+        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id(),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 

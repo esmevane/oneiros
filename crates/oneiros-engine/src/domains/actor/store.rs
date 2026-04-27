@@ -40,10 +40,10 @@ impl<'a> ActorStore<'a> {
             "insert or replace into actors (id, tenant_id, name, created_at)
              values (?1, ?2, ?3, ?4)",
             params![
-                actor.id.to_string(),
-                actor.tenant_id.to_string(),
-                actor.name.to_string(),
-                actor.created_at.as_string()
+                actor.id().to_string(),
+                actor.tenant_id().to_string(),
+                actor.name().to_string(),
+                actor.created_at().as_string()
             ],
         )?;
         Ok(())

@@ -19,8 +19,8 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Sensation(SensationResponse::SensationDetails(s)) => {
-            assert_eq!(s.data.name.as_str(), "echoes");
-            assert_eq!(s.data.description.as_str(), "Resonance between thoughts");
+            assert_eq!(s.data.name().as_str(), "echoes");
+            assert_eq!(s.data.description().as_str(), "Resonance between thoughts");
         }
         other => panic!("expected SensationDetails, got {other:#?}"),
     }
@@ -43,7 +43,7 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
 
     match show_response {
         Responses::Sensation(SensationResponse::SensationDetails(s)) => {
-            assert_eq!(s.data.description.as_str(), "Updated");
+            assert_eq!(s.data.description().as_str(), "Updated");
         }
         other => panic!("expected SensationDetails, got {other:#?}"),
     }

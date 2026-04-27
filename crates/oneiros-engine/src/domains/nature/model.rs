@@ -1,21 +1,48 @@
 use bon::Builder;
-use clap::Args;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::*;
 
-#[derive(Args, Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Nature {
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(untagged)]
+pub enum Nature {
+    Current(NatureV1),
+}
+
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct NatureV1 {
     #[builder(into)]
     pub name: NatureName,
     #[builder(into)]
-    #[arg(long, default_value = "")]
     pub description: Description,
     #[builder(into)]
-    #[arg(long, default_value = "")]
     pub prompt: Prompt,
+}
+
+impl Nature {
+    pub fn build_v1() -> NatureV1Builder {
+        NatureV1::builder()
+    }
+
+    pub fn name(&self) -> &NatureName {
+        match self {
+            Self::Current(v) => &v.name,
+        }
+    }
+
+    pub fn description(&self) -> &Description {
+        match self {
+            Self::Current(v) => &v.description,
+        }
+    }
+
+    pub fn prompt(&self) -> &Prompt {
+        match self {
+            Self::Current(v) => &v.prompt,
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -35,7 +62,7 @@ impl Natures {
     }
 
     pub fn set(&mut self, nature: &Nature) -> Option<Nature> {
-        self.0.insert(nature.name.to_string(), nature.clone())
+        self.0.insert(nature.name().to_string(), nature.clone())
     }
 
     pub fn remove(&mut self, name: &NatureName) -> Option<Nature> {

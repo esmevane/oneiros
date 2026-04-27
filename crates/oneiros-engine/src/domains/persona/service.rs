@@ -11,11 +11,13 @@ impl PersonaService {
             prompt,
         }: &SetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
-        let persona = Persona::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
-            .build();
+        let persona = Persona::Current(
+            Persona::build_v1()
+                .name(name.clone())
+                .description(description.clone())
+                .prompt(prompt.clone())
+                .build(),
+        );
         context.emit(PersonaEvents::PersonaSet(persona)).await?;
         Ok(PersonaResponse::PersonaSet(name.clone()))
     }
@@ -29,7 +31,7 @@ impl PersonaService {
             .get(&name)
             .await?
             .ok_or(PersonaError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::persona(persona.name.clone()));
+        let ref_token = RefToken::new(Ref::persona(persona.name().clone()));
         Ok(PersonaResponse::PersonaDetails(
             Response::new(persona).with_ref_token(ref_token),
         ))
@@ -44,7 +46,7 @@ impl PersonaService {
             Ok(PersonaResponse::NoPersonas)
         } else {
             Ok(PersonaResponse::Personas(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::persona(e.name.clone()));
+                let ref_token = RefToken::new(Ref::persona(e.name().clone()));
                 Response::new(e).with_ref_token(ref_token)
             })))
         }
@@ -55,9 +57,11 @@ impl PersonaService {
         selector: &RemovePersona,
     ) -> Result<PersonaResponse, PersonaError> {
         context
-            .emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(PersonaEvents::PersonaRemoved(PersonaRemoved::Current(
+                PersonaRemovedV1 {
+                    name: selector.name.clone(),
+                },
+            )))
             .await?;
         Ok(PersonaResponse::PersonaRemoved(selector.name.clone()))
     }
