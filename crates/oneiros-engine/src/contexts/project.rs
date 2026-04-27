@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tokio::sync::broadcast;
 
 use crate::*;
@@ -8,46 +10,56 @@ impl aide::operation::OperationInput for ProjectContext {}
 pub struct ProjectContext {
     pub config: Config,
     pub projections: Projections<BrainCanon>,
-    chronicle: Chronicle,
-    broadcast: broadcast::Sender<StoredEvent>,
+    stream: ProjectStream,
 }
 
 impl ProjectContext {
     pub fn new(config: Config) -> Self {
-        let (broadcast, _) = broadcast::channel(256);
-
-        Self {
-            config,
-            projections: Projections::project(),
-            chronicle: Chronicle::new(),
-            broadcast,
-        }
+        let (wake, _) = broadcast::channel(256);
+        let projections = Projections::project();
+        let chronicle = Chronicle::new();
+        Self::assemble(config, wake, projections, chronicle)
     }
 
     /// Create a context that shares an existing broadcast channel.
     ///
     /// Used by the HTTP server so all per-request contexts and SSE
     /// subscribers share the same event stream.
-    pub fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
-        Self {
-            config,
-            projections: Projections::project(),
-            chronicle: Chronicle::new(),
-            broadcast,
-        }
+    pub fn with_broadcast(config: Config, wake: broadcast::Sender<StoredEvent>) -> Self {
+        let projections = Projections::project();
+        let chronicle = Chronicle::new();
+        Self::assemble(config, wake, projections, chronicle)
     }
 
     /// Create a context with shared broadcast and a pre-hydrated bookmark entry.
     pub fn with_entry(
         config: Config,
-        broadcast: broadcast::Sender<StoredEvent>,
+        wake: broadcast::Sender<StoredEvent>,
         entry: BookmarkEntry,
     ) -> Self {
+        let projections = Projections::project_with_pipeline(entry.pipeline);
+        Self::assemble(config, wake, projections, entry.chronicle)
+    }
+
+    /// Shared constructor — wires up the stream with its subscribers.
+    fn assemble(
+        config: Config,
+        wake: broadcast::Sender<StoredEvent>,
+        projections: Projections<BrainCanon>,
+        chronicle: Chronicle,
+    ) -> Self {
+        let subscribers: Vec<Arc<dyn Subscriber>> = vec![
+            Arc::new(ProjectionSubscriber::new(
+                projections.clone(),
+                config.clone(),
+            )),
+            Arc::new(ChronicleSubscriber::new(chronicle, config.clone())),
+        ];
+        let stream = ProjectStream::new(config.clone(), wake, subscribers);
         Self {
             config,
-            projections: Projections::project_with_pipeline(entry.pipeline),
-            chronicle: entry.chronicle,
-            broadcast,
+            projections,
+            stream,
         }
     }
 
@@ -71,7 +83,7 @@ impl ProjectContext {
 
     /// Subscribe to the event broadcast stream.
     pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
-        self.broadcast.subscribe()
+        self.stream.subscribe()
     }
 
     /// Open the bookmark DB with the events DB ATTACHed.
@@ -97,25 +109,14 @@ impl ProjectContext {
 
     /// Emit an event to the brain's event log and apply projections.
     pub async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
-        let db = self.db()?;
-        let new_event = NewEvent::builder().data(event).build();
-        let stored = EventLog::attached(&db).append(&new_event)?;
-
-        self.projections.apply_brain(&db, &stored)?;
-
-        // Chronicle the event in the system DB (shared across bookmarks).
-        let system_db = self.system_db()?;
-        let chronicle_store = ChronicleStore::new(&system_db);
-        chronicle_store.migrate()?;
-        self.chronicle.record(
-            &stored,
-            &chronicle_store.resolver(),
-            &chronicle_store.writer(),
-        )?;
-
-        // We broadcast the new event after projecting it.
-        let _ = self.broadcast.send(stored);
-
+        self.stream.publish(event)?;
         Ok(())
+    }
+
+    /// Ceremony barrier — wait until subscribers (projections, chronicle)
+    /// have caught up to the current log head. Call before reading back
+    /// projected state in multi-emit workflows.
+    pub async fn wait_for_head(&self) -> Result<(), EventError> {
+        self.stream.wait_for_head().await
     }
 }

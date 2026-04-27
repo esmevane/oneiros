@@ -55,6 +55,12 @@ impl ContinuityService {
             overrides,
         )
         .await?;
+
+        // Barrier: wait for subscribers to process AgentCreated + Dreamed
+        // before reading back projected state. No-op while fan-out is
+        // synchronous, load-bearing once subscribers become tasks.
+        context.wait_for_head().await?;
+
         let dream = Self::gather_context(context, &agent_name, overrides)?;
         Ok(ContinuityResponse::Emerged(dream))
     }
