@@ -36,7 +36,7 @@ impl Bridge {
     /// `/oneiros/sync/1` ALPN so peers can negotiate the sync protocol.
     pub async fn bind(secret: iroh::SecretKey) -> Result<Self, BridgeError> {
         let public = secret.public();
-        let endpoint = iroh::Endpoint::empty_builder()
+        let endpoint = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .secret_key(secret)
             .alpns(vec![SYNC_ALPN.to_vec()])
             .bind()
@@ -326,7 +326,7 @@ mod tests {
 
     #[tokio::test]
     async fn bridge_binds_with_fresh_key() {
-        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let secret = iroh::SecretKey::generate();
         let expected_key = PeerKey::from_bytes(*secret.public().as_bytes());
 
         let bridge = Bridge::bind(secret).await.unwrap();
@@ -337,7 +337,7 @@ mod tests {
 
     #[tokio::test]
     async fn bridge_exposes_host_identity() {
-        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let secret = iroh::SecretKey::generate();
         let bridge = Bridge::bind(secret).await.unwrap();
 
         let identity = bridge.host_identity();
@@ -348,12 +348,8 @@ mod tests {
 
     #[tokio::test]
     async fn two_bridges_have_distinct_keys() {
-        let a = Bridge::bind(iroh::SecretKey::generate(&mut rand::rng()))
-            .await
-            .unwrap();
-        let b = Bridge::bind(iroh::SecretKey::generate(&mut rand::rng()))
-            .await
-            .unwrap();
+        let a = Bridge::bind(iroh::SecretKey::generate()).await.unwrap();
+        let b = Bridge::bind(iroh::SecretKey::generate()).await.unwrap();
 
         assert_ne!(a.key(), b.key());
 

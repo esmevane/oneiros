@@ -49,6 +49,8 @@ impl ServiceService {
                 autostart: true,
                 restart_policy: RestartPolicy::OnFailure {
                     delay_secs: Some(config.service.restart_delay_secs),
+                    max_retries: None,
+                    reset_after_secs: None,
                 },
             })
             .map_err(manager_err)?;

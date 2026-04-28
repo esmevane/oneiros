@@ -18,24 +18,26 @@ askama = "0.15"
 aide = { version = "0.16.0-alpha.4", features = ["axum", "axum-json", "axum-query", "macros", "scalar"] }
 axum = "0.8.8"
 bon = "3.8"
-# bytes = "1.11"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
-# clap-verbosity-flag = { version = "3.0.4", default-features = false, features = [
-#   "tracing", "serde"
-# ] }
 data-encoding = "2"
-# directories = "5"
 etcetera = "0.11.0"
 flate2 = "1"
 futures = "0.3"
 inquire = "0.9.4"
-iroh = "0.97"
+iroh = "0.98"
 kinded = "0.5.0"
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.9" }
+# Pinned RustCrypto formats stack: ed25519 3.0.0-rc.4 (via iroh → ed25519-dalek
+# 3.0.0-pre.6) was compiled against pkcs8 0.11.0-rc.10, which in turn was
+# compiled against der 0.8.0-rc.10 and spki 0.8.0-rc.4. Each later rc / stable
+# release in the chain has API drift that breaks the layer above. Drop all
+# three pins together when ed25519 ships a release targeting current pkcs8.
+der = "=0.8.0-rc.10"
+pkcs8 = "=0.11.0-rc.10"
+spki = "=0.8.0-rc.4"
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"
-rand = "0.9"
 reqwest = { version = "0.13", features = ["json", "stream"] }
 rmcp = { version = "1.1.1", features = [
   "server",
@@ -50,14 +52,14 @@ rusqlite = { version = "0.31", features = [
 schemars = { version = "1.0", features = ["chrono04", "uuid1"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
-service-manager = "0.10"
+service-manager = "0.11"
 sha2 = "0.10"
 shlex = "1"
 tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
-toml = "0.8"
+toml = "1.1"
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.6", features = ["trace"] }
 tracing = "0.1"

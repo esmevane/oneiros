@@ -89,7 +89,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn sample_address() -> PeerAddress {
-        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let secret = iroh::SecretKey::generate();
         let endpoint_id = secret.public();
         PeerAddress::new(iroh::EndpointAddr::new(endpoint_id))
     }

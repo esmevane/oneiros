@@ -208,7 +208,7 @@ impl Config {
             std::fs::create_dir_all(parent)?;
         }
 
-        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let secret = iroh::SecretKey::generate();
         let bytes = secret.to_bytes();
 
         #[cfg(unix)]
