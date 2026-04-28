@@ -31,7 +31,11 @@ async fn get(
     Path(agent): Path<AgentName>,
 ) -> Result<Json<PressureResponse>, PressureError> {
     Ok(Json(
-        PressureService::get(&context, &GetPressure::builder().agent(agent).build()).await?,
+        PressureService::get(
+            &context,
+            &GetPressure::builder_v1().agent(agent).build().into(),
+        )
+        .await?,
     ))
 }
 

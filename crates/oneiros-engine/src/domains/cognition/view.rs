@@ -12,27 +12,27 @@ impl<'a> CognitionView<'a> {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            CognitionResponse::CognitionAdded(wrapped) => {
-                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id));
+            CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(added)) => {
+                let ref_token = RefToken::from(Ref::cognition(added.cognition.id));
                 McpResponse::new(format!(
                     "Thought recorded ({}).\n\n**texture:** {}\n**ref:** {}",
-                    wrapped.data.texture, wrapped.data.texture, ref_token
+                    added.cognition.texture, added.cognition.texture, ref_token
                 ))
                 .hint_set(HintSet::cognition_added(
                     CognitionAddedHints::builder()
-                        .agent(AgentName::new(wrapped.data.agent_id.to_string()))
+                        .agent(AgentName::new(added.cognition.agent_id.to_string()))
                         .ref_token(ref_token)
                         .build(),
                 ))
             }
-            CognitionResponse::CognitionDetails(wrapped) => {
-                let ref_token = RefToken::from(Ref::cognition(wrapped.data.id));
+            CognitionResponse::CognitionDetails(CognitionDetailsResponse::V1(details)) => {
+                let ref_token = RefToken::from(Ref::cognition(details.cognition.id));
                 McpResponse::new(format!(
                     "# Cognition\n\n**texture:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
-                    wrapped.data.texture,
-                    wrapped.data.agent_id,
-                    wrapped.data.created_at,
-                    wrapped.data.content
+                    details.cognition.texture,
+                    details.cognition.agent_id,
+                    details.cognition.created_at,
+                    details.cognition.content
                 ))
                 .hint(Hint::suggest(
                     format!("create-connection <nature> {ref_token} <target>"),
@@ -40,24 +40,30 @@ impl<'a> CognitionView<'a> {
                 ))
                 .hint(Hint::suggest("search-query", "Search for related entities"))
             }
-            CognitionResponse::Cognitions(listed) => {
+            CognitionResponse::Cognitions(CognitionsResponse::V1(listed)) => {
                 let title = match self.request {
-                    CognitionRequest::ListCognitions(listing) => match &listing.agent {
-                        Some(agent) => format!("# Cognitions — {agent}\n\n"),
-                        None => "# Cognitions\n\n".to_string(),
-                    },
+                    CognitionRequest::ListCognitions(ListCognitions::V1(listing)) => {
+                        match &listing.agent {
+                            Some(agent) => format!("# Cognitions — {agent}\n\n"),
+                            None => "# Cognitions\n\n".to_string(),
+                        }
+                    }
                     _ => "# Cognitions\n\n".to_string(),
                 };
-                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
+                let mut md = format!(
+                    "{title}{} of {} total\n\n",
+                    listed.items.len(),
+                    listed.total
+                );
+                for item in &listed.items {
                     md.push_str(&format!(
                         "### {} — {}\n{}\n\n",
-                        wrapped.data.texture, wrapped.data.created_at, wrapped.data.content
+                        item.texture, item.created_at, item.content
                     ));
                 }
                 let mut response =
                     McpResponse::new(md).hint(Hint::suggest("add-cognition", "Record a thought"));
-                if let CognitionRequest::ListCognitions(listing) = self.request
+                if let CognitionRequest::ListCognitions(ListCognitions::V1(listing)) = self.request
                     && let Some(agent) = &listing.agent
                 {
                     response = response.hint(Hint::inspect(
@@ -75,83 +81,70 @@ impl<'a> CognitionView<'a> {
     pub fn render(self) -> Rendered<CognitionResponse> {
         match (self.response, self.request) {
             (
-                CognitionResponse::CognitionAdded(wrapped),
-                CognitionRequest::AddCognition(addition),
+                CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(added)),
+                CognitionRequest::AddCognition(AddCognition::V1(addition)),
             ) => {
-                let subject = wrapped
-                    .meta()
-                    .ref_token()
-                    .map(|ref_token| {
-                        format!(
-                            "{} Cognition recorded: {}",
-                            "✓".success(),
-                            ref_token.muted()
-                        )
-                    })
-                    .unwrap_or_default();
-
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => HintSet::cognition_added(
-                        CognitionAddedHints::builder()
-                            .agent(addition.agent.clone())
-                            .ref_token(ref_token)
-                            .build(),
-                    ),
-                    None => HintSet::None,
-                };
+                let ref_token = RefToken::from(Ref::cognition(added.cognition.id));
+                let subject = format!(
+                    "{} Cognition recorded: {}",
+                    "✓".success(),
+                    ref_token.clone().muted()
+                );
+                let hints = HintSet::cognition_added(
+                    CognitionAddedHints::builder()
+                        .agent(addition.agent.clone())
+                        .ref_token(ref_token)
+                        .build(),
+                );
 
                 Rendered::new(
-                    CognitionResponse::CognitionAdded(wrapped),
+                    CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(added)),
                     subject,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            (CognitionResponse::CognitionDetails(wrapped), _) => {
-                let prompt = Detail::new(wrapped.data.texture.to_string())
-                    .field("content:", wrapped.data.content.to_string())
+            (CognitionResponse::CognitionDetails(CognitionDetailsResponse::V1(details)), _) => {
+                let prompt = Detail::new(details.cognition.texture.to_string())
+                    .field("content:", details.cognition.content.to_string())
                     .to_string();
-
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+                let ref_token = RefToken::from(Ref::cognition(details.cognition.id));
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
 
                 Rendered::new(
-                    CognitionResponse::CognitionDetails(wrapped),
+                    CognitionResponse::CognitionDetails(CognitionDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            (CognitionResponse::Cognitions(listed), _) => {
+            (CognitionResponse::Cognitions(CognitionsResponse::V1(listed)), _) => {
                 let mut table = Table::new(vec![
                     Column::key("texture", "Texture"),
                     Column::key("content", "Content").max(60),
                     Column::key("ref_token", "Ref"),
                 ]);
 
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|t| t.to_string())
-                        .unwrap_or_default();
+                for item in &listed.items {
+                    let ref_token = RefToken::from(Ref::cognition(item.id));
                     table.push_row(vec![
-                        wrapped.data.texture.to_string(),
-                        wrapped.data.content.to_string(),
-                        ref_token,
+                        item.texture.to_string(),
+                        item.content.to_string(),
+                        ref_token.to_string(),
                     ]);
                 }
 
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
 
-                Rendered::new(CognitionResponse::Cognitions(listed), prompt, String::new())
+                Rendered::new(
+                    CognitionResponse::Cognitions(CognitionsResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             (CognitionResponse::NoCognitions, _) => Rendered::new(
                 CognitionResponse::NoCognitions,

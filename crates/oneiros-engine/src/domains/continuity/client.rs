@@ -75,11 +75,12 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Run the sense continuity operation for the given agent with the provided content.
-    pub async fn sense(&self, selector: &SenseContent) -> Result<ContinuityResponse, ClientError> {
+    pub async fn sense(&self, sensing: &SenseContent) -> Result<ContinuityResponse, ClientError> {
+        let SenseContent::V1(sense) = sensing;
         self.client
             .post(
-                &format!("/continuity/{agent}/sense", agent = selector.agent),
-                selector,
+                &format!("/continuity/{agent}/sense", agent = sense.agent),
+                sensing,
             )
             .await
     }

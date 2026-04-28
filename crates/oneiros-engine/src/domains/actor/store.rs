@@ -12,8 +12,9 @@ impl<'a> ActorStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Event::Known(Events::Actor(ActorEvents::ActorCreated(actor))) = &event.data {
-            self.create_record(actor)?;
+        if let Event::Known(Events::Actor(ActorEvents::ActorCreated(creation))) = &event.data {
+            let actor = creation.current()?.actor;
+            self.write_actor(&actor)?;
         }
         Ok(())
     }
@@ -35,7 +36,7 @@ impl<'a> ActorStore<'a> {
         Ok(())
     }
 
-    fn create_record(&self, actor: &Actor) -> Result<(), EventError> {
+    fn write_actor(&self, actor: &Actor) -> Result<(), EventError> {
         self.conn.execute(
             "insert or replace into actors (id, tenant_id, name, created_at)
              values (?1, ?2, ?3, ?4)",

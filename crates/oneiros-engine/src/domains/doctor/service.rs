@@ -13,7 +13,12 @@ impl DoctorService {
             Ok(db) => db,
             Err(_) => {
                 checks.push(DoctorCheck::NotInitialized);
-                return DoctorResponse::CheckupStatus(checks);
+                return DoctorResponse::CheckupStatus(
+                    CheckupStatusResponse::builder_v1()
+                        .checks(checks)
+                        .build()
+                        .into(),
+                );
             }
         };
 
@@ -29,7 +34,12 @@ impl DoctorService {
 
         if tenant_count == 0 {
             checks.push(DoctorCheck::NotInitialized);
-            return DoctorResponse::CheckupStatus(checks);
+            return DoctorResponse::CheckupStatus(
+                CheckupStatusResponse::builder_v1()
+                    .checks(checks)
+                    .build()
+                    .into(),
+            );
         }
 
         checks.push(DoctorCheck::Initialized);
@@ -121,6 +131,11 @@ impl DoctorService {
             }
         }
 
-        DoctorResponse::CheckupStatus(checks)
+        DoctorResponse::CheckupStatus(
+            CheckupStatusResponse::builder_v1()
+                .checks(checks)
+                .build()
+                .into(),
+        )
     }
 }

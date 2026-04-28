@@ -56,8 +56,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("memory list").await?;
 
     match response {
-        Responses::Memory(MemoryResponse::Memories(memories)) => {
-            assert_eq!(memories.len(), 2);
+        Responses::Memory(MemoryResponse::Memories(MemoriesResponse::V1(memories))) => {
+            assert_eq!(memories.items.len(), 2);
         }
         other => panic!("expected Memories, got {other:#?}"),
     }
@@ -84,8 +84,8 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .await?;
 
     match response {
-        Responses::Memory(MemoryResponse::Memories(memories)) => {
-            assert_eq!(memories.len(), 1);
+        Responses::Memory(MemoryResponse::Memories(MemoriesResponse::V1(memories))) => {
+            assert_eq!(memories.items.len(), 1);
         }
         other => panic!("expected Memories, got {other:#?}"),
     }
@@ -101,15 +101,17 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .await?;
 
     let id = match add_response {
-        Responses::Memory(MemoryResponse::MemoryAdded(memory)) => memory.data.id,
+        Responses::Memory(MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added))) => {
+            added.memory.id
+        }
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("memory show {id}")).await?;
 
     match show_response {
-        Responses::Memory(MemoryResponse::MemoryDetails(memory)) => {
-            assert_eq!(memory.data.content.as_str(), "Show me this");
+        Responses::Memory(MemoryResponse::MemoryDetails(MemoryDetailsResponse::V1(details))) => {
+            assert_eq!(details.memory.content.as_str(), "Show me this");
         }
         other => panic!("expected MemoryDetails, got {other:#?}"),
     }
@@ -124,7 +126,9 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("memory add learner.process session 'Show me this'")
         .await?;
     let id = match response {
-        Responses::Memory(MemoryResponse::MemoryAdded(m)) => m.data.id.to_string(),
+        Responses::Memory(MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added))) => {
+            added.memory.id.to_string()
+        }
         other => panic!("expected MemoryAdded, got {other:#?}"),
     };
 

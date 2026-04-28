@@ -1,4 +1,4 @@
-use crate::{BlobError, IdParseError, TimestampParseError};
+use crate::{BlobError, IdParseError, TimestampParseError, UpcastError};
 
 /// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
@@ -17,6 +17,9 @@ pub enum EventError {
 
     #[error(transparent)]
     Blob(#[from] BlobError),
+
+    #[error(transparent)]
+    Upcast(#[from] UpcastError),
 
     #[error("Import error: {0}")]
     Import(String),

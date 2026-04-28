@@ -1,57 +1,74 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateAgent {
-    #[builder(into)]
-    pub name: AgentName,
-    #[builder(into)]
-    pub persona: PersonaName,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub description: Description,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub prompt: Prompt,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum CreateAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: AgentName,
+            #[builder(into)] pub persona: PersonaName,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)]
+            pub description: Description,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)]
+            pub prompt: Prompt,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetAgent {
-    #[builder(into)]
-    pub key: ResourceKey<AgentName>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<AgentName>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListAgents {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListAgents {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveAgent {
-    #[builder(into)]
-    pub name: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum UpdateAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: AgentName,
+            #[builder(into)] pub persona: PersonaName,
+            #[arg(long, default_value = "")]
+            #[builder(into)]
+            pub description: Description,
+            #[arg(long, default_value = "")]
+            #[builder(into)]
+            pub prompt: Prompt,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct UpdateAgent {
-    #[builder(into)]
-    pub name: AgentName,
-    #[builder(into)]
-    pub persona: PersonaName,
-    #[arg(long, default_value = "")]
-    #[builder(into)]
-    pub description: Description,
-    #[arg(long, default_value = "")]
-    #[builder(into)]
-    pub prompt: Prompt,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RemoveAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: AgentName,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
@@ -82,5 +99,23 @@ mod tests {
         for (request_type, expectation) in cases {
             assert_eq!(&request_type.to_string(), expectation)
         }
+    }
+
+    #[test]
+    fn create_agent_wire_format_is_unwrapped() {
+        let request = CreateAgent::V1(CreateAgentV1 {
+            name: AgentName::new("test.process"),
+            persona: PersonaName::new("process"),
+            description: Description::new("desc"),
+            prompt: Prompt::new("prompt"),
+        });
+
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["name"], "test.process");
+        assert_eq!(json["persona"], "process");
+        assert!(
+            json.get("V1").is_none(),
+            "V1 layer must not appear on the wire"
+        );
     }
 }

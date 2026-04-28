@@ -18,15 +18,17 @@ impl<'a> ActorClient<'a> {
     }
 
     /// Retrieve a single actor by key (id or ref).
-    pub async fn get(&self, request: &GetActor) -> Result<ActorResponse, ClientError> {
-        self.client.get(&format!("/actors/{}", request.key)).await
+    pub async fn get(&self, lookup: &GetActor) -> Result<ActorResponse, ClientError> {
+        let GetActor::V1(lookup) = lookup;
+        self.client.get(&format!("/actors/{}", lookup.key)).await
     }
 
     /// List all actors.
-    pub async fn list(&self, request: &ListActors) -> Result<ActorResponse, ClientError> {
+    pub async fn list(&self, listing: &ListActors) -> Result<ActorResponse, ClientError> {
+        let ListActors::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/actors?{query}")).await
     }

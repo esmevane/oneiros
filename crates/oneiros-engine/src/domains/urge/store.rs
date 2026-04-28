@@ -14,8 +14,8 @@ impl<'a> UrgeStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Urge(urge_event)) = &event.data {
             match urge_event {
-                UrgeEvents::UrgeSet(urge) => self.set(urge)?,
-                UrgeEvents::UrgeRemoved(removed) => self.remove(&removed.name)?,
+                UrgeEvents::UrgeSet(setting) => self.set(setting)?,
+                UrgeEvents::UrgeRemoved(removal) => self.remove(removal)?,
             }
         }
         Ok(())
@@ -64,7 +64,21 @@ impl<'a> UrgeStore<'a> {
         Ok(urges)
     }
 
-    fn set(&self, urge: &Urge) -> Result<(), EventError> {
+    fn set(&self, setting: &UrgeSet) -> Result<(), EventError> {
+        let urge = setting.current()?.urge;
+        self.write_urge(&urge)
+    }
+
+    fn remove(&self, removal: &UrgeRemoved) -> Result<(), EventError> {
+        let name = removal.current()?.name;
+        self.conn.execute(
+            "DELETE FROM urges WHERE name = ?1",
+            params![name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn write_urge(&self, urge: &Urge) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO urges (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -72,14 +86,6 @@ impl<'a> UrgeStore<'a> {
                 urge.description.to_string(),
                 urge.prompt.to_string()
             ],
-        )?;
-        Ok(())
-    }
-
-    fn remove(&self, name: &UrgeName) -> Result<(), EventError> {
-        self.conn.execute(
-            "DELETE FROM urges WHERE name = ?1",
-            params![name.to_string()],
         )?;
         Ok(())
     }

@@ -32,6 +32,9 @@ pub enum ClientError {
 
     #[error("Invalid request: {0}")]
     InvalidRequest(String),
+
+    #[error(transparent)]
+    Upcast(#[from] UpcastError),
 }
 
 impl IntoResponse for ClientError {

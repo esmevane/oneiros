@@ -18,18 +18,18 @@ impl MemoryCommands {
         let memory_client = MemoryClient::new(&client);
 
         let (response, request) = match self {
-            MemoryCommands::Add(addition) => {
-                let response = memory_client.add(addition).await?;
-                (response, MemoryRequest::AddMemory(addition.clone()))
-            }
-            MemoryCommands::Show(get) => {
-                let response = memory_client.get(get).await?;
-                (response, MemoryRequest::GetMemory(get.clone()))
-            }
-            MemoryCommands::List(listing) => {
-                let response = memory_client.list(listing).await?;
-                (response, MemoryRequest::ListMemories(listing.clone()))
-            }
+            Self::Add(addition) => (
+                memory_client.add(addition).await?,
+                MemoryRequest::AddMemory(addition.clone()),
+            ),
+            Self::Show(lookup) => (
+                memory_client.get(lookup).await?,
+                MemoryRequest::GetMemory(lookup.clone()),
+            ),
+            Self::List(listing) => (
+                memory_client.list(listing).await?,
+                MemoryRequest::ListMemories(listing.clone()),
+            ),
         };
 
         Ok(MemoryView::new(response, &request).render().map(Into::into))

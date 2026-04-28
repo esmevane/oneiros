@@ -14,24 +14,24 @@ impl<'a> ExperienceView<'a> {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            ExperienceResponse::ExperienceCreated(wrapped) => {
-                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+            ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
+                let ref_token = RefToken::from(Ref::experience(created.experience.id));
                 McpResponse::new(format!(
                     "Experience created ({}).\n\n**sensation:** {}\n**ref:** {}",
-                    wrapped.data.sensation, wrapped.data.sensation, ref_token
+                    created.experience.sensation, created.experience.sensation, ref_token
                 ))
                 .hint_set(HintSet::mutation(
                     MutationHints::builder().ref_token(ref_token).build(),
                 ))
             }
-            ExperienceResponse::ExperienceDetails(wrapped) => {
-                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+            ExperienceResponse::ExperienceDetails(ExperienceDetailsResponse::V1(details)) => {
+                let ref_token = RefToken::from(Ref::experience(details.experience.id));
                 McpResponse::new(format!(
                     "# Experience\n\n**sensation:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
-                    wrapped.data.sensation,
-                    wrapped.data.agent_id,
-                    wrapped.data.created_at,
-                    wrapped.data.description
+                    details.experience.sensation,
+                    details.experience.agent_id,
+                    details.experience.created_at,
+                    details.experience.description
                 ))
                 .hint(Hint::suggest(
                     format!("create-connection <nature> {ref_token} <target>"),
@@ -39,26 +39,33 @@ impl<'a> ExperienceView<'a> {
                 ))
                 .hint(Hint::suggest("search-query", "Search for related entities"))
             }
-            ExperienceResponse::Experiences(listed) => {
+            ExperienceResponse::Experiences(ExperiencesResponse::V1(listed)) => {
                 let title = match self.request {
-                    ExperienceRequest::ListExperiences(listing) => match &listing.agent {
-                        Some(agent) => format!("# Experiences — {agent}\n\n"),
-                        None => "# Experiences\n\n".to_string(),
-                    },
+                    ExperienceRequest::ListExperiences(ListExperiences::V1(listing)) => {
+                        match &listing.agent {
+                            Some(agent) => format!("# Experiences — {agent}\n\n"),
+                            None => "# Experiences\n\n".to_string(),
+                        }
+                    }
                     _ => "# Experiences\n\n".to_string(),
                 };
-                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
+                let mut md = format!(
+                    "{title}{} of {} total\n\n",
+                    listed.items.len(),
+                    listed.total
+                );
+                for item in &listed.items {
                     md.push_str(&format!(
                         "### {} — {}\n{}\n\n",
-                        wrapped.data.sensation, wrapped.data.created_at, wrapped.data.description
+                        item.sensation, item.created_at, item.description
                     ));
                 }
                 let mut response = McpResponse::new(md).hint(Hint::suggest(
                     "create-experience",
                     "Mark a meaningful moment",
                 ));
-                if let ExperienceRequest::ListExperiences(listing) = self.request
+                if let ExperienceRequest::ListExperiences(ListExperiences::V1(listing)) =
+                    self.request
                     && let Some(agent) = &listing.agent
                 {
                     response = response.hint(Hint::inspect(
@@ -69,11 +76,11 @@ impl<'a> ExperienceView<'a> {
                 response
             }
             ExperienceResponse::NoExperiences => McpResponse::new("No experiences yet."),
-            ExperienceResponse::ExperienceUpdated(wrapped) => {
-                let ref_token = RefToken::from(Ref::experience(wrapped.data.id));
+            ExperienceResponse::ExperienceUpdated(ExperienceUpdatedResponse::V1(updated)) => {
+                let ref_token = RefToken::from(Ref::experience(updated.experience.id));
                 McpResponse::new(format!(
                     "Experience updated ({}).\n\n**sensation:** {}\n**ref:** {}",
-                    wrapped.data.sensation, wrapped.data.sensation, ref_token
+                    updated.experience.sensation, updated.experience.sensation, ref_token
                 ))
                 .hint_set(HintSet::mutation(
                     MutationHints::builder().ref_token(ref_token).build(),
@@ -84,72 +91,56 @@ impl<'a> ExperienceView<'a> {
 
     pub fn render(self) -> Rendered<ExperienceResponse> {
         match self.response {
-            ExperienceResponse::ExperienceCreated(wrapped) => {
-                let subject = wrapped
-                    .meta()
-                    .ref_token()
-                    .map(|ref_token| {
-                        format!(
-                            "{} Experience recorded: {}",
-                            "✓".success(),
-                            ref_token.muted()
-                        )
-                    })
-                    .unwrap_or_default();
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+            ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
+                let ref_token = RefToken::from(Ref::experience(created.experience.id));
+                let subject = format!(
+                    "{} Experience recorded: {}",
+                    "✓".success(),
+                    ref_token.clone().muted()
+                );
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
                 Rendered::new(
-                    ExperienceResponse::ExperienceCreated(wrapped),
+                    ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)),
                     subject,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            ExperienceResponse::ExperienceDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.sensation.to_string())
-                    .field("description:", wrapped.data.description.to_string())
+            ExperienceResponse::ExperienceDetails(ExperienceDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.experience.sensation.to_string())
+                    .field("description:", details.experience.description.to_string())
                     .to_string();
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+                let ref_token = RefToken::from(Ref::experience(details.experience.id));
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
                 Rendered::new(
-                    ExperienceResponse::ExperienceDetails(wrapped),
+                    ExperienceResponse::ExperienceDetails(ExperienceDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            ExperienceResponse::Experiences(listed) => {
+            ExperienceResponse::Experiences(ExperiencesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("sensation", "Sensation"),
                     Column::key("description", "Description").max(60),
                     Column::key("ref_token", "Ref"),
                 ]);
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|t| t.to_string())
-                        .unwrap_or_default();
+                for item in &listed.items {
+                    let ref_token = RefToken::from(Ref::experience(item.id));
                     table.push_row(vec![
-                        wrapped.data.sensation.to_string(),
-                        wrapped.data.description.to_string(),
-                        ref_token,
+                        item.sensation.to_string(),
+                        item.description.to_string(),
+                        ref_token.to_string(),
                     ]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
                 Rendered::new(
-                    ExperienceResponse::Experiences(listed),
+                    ExperienceResponse::Experiences(ExperiencesResponse::V1(listed)),
                     prompt,
                     String::new(),
                 )
@@ -159,26 +150,17 @@ impl<'a> ExperienceView<'a> {
                 format!("{}", "No experiences.".muted()),
                 String::new(),
             ),
-            ExperienceResponse::ExperienceUpdated(wrapped) => {
-                let subject = wrapped
-                    .meta()
-                    .ref_token()
-                    .map(|ref_token| {
-                        format!(
-                            "{} Experience updated: {}",
-                            "✓".success(),
-                            ref_token.muted()
-                        )
-                    })
-                    .unwrap_or_default();
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+            ExperienceResponse::ExperienceUpdated(ExperienceUpdatedResponse::V1(updated)) => {
+                let ref_token = RefToken::from(Ref::experience(updated.experience.id));
+                let subject = format!(
+                    "{} Experience updated: {}",
+                    "✓".success(),
+                    ref_token.clone().muted()
+                );
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
                 Rendered::new(
-                    ExperienceResponse::ExperienceUpdated(wrapped),
+                    ExperienceResponse::ExperienceUpdated(ExperienceUpdatedResponse::V1(updated)),
                     subject,
                     String::new(),
                 )

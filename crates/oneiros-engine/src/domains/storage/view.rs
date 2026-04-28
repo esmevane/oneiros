@@ -13,56 +13,66 @@ impl StorageView {
 
     pub fn render(self) -> Rendered<StorageResponse> {
         match self.response {
-            StorageResponse::StorageSet(wrapped) => {
-                let prompt = Confirmation::new("Storage", wrapped.data.key.to_string(), "stored")
-                    .to_string();
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
-                Rendered::new(StorageResponse::StorageSet(wrapped), prompt, String::new())
-                    .with_hints(hints)
+            StorageResponse::StorageSet(StorageSetResponse::V1(set)) => {
+                let prompt =
+                    Confirmation::new("Storage", set.entry.key.to_string(), "stored").to_string();
+                let ref_token = RefToken::new(Ref::storage(set.entry.key.clone()));
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
+                Rendered::new(
+                    StorageResponse::StorageSet(StorageSetResponse::V1(set)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            StorageResponse::StorageDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.key.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("hash:", wrapped.data.hash.to_string())
+            StorageResponse::StorageDetails(StorageDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.entry.key.to_string())
+                    .field("description:", details.entry.description.to_string())
+                    .field("hash:", details.entry.hash.to_string())
                     .to_string();
                 Rendered::new(
-                    StorageResponse::StorageDetails(wrapped),
+                    StorageResponse::StorageDetails(StorageDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
             }
-            StorageResponse::Entries(listed) => {
+            StorageResponse::Entries(StorageEntriesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("key", "Key"),
                     Column::key("description", "Description").max(40),
                     Column::key("hash", "Hash"),
                 ]);
-                for wrapped in &listed.items {
+                for entry in &listed.items {
                     table.push_row(vec![
-                        wrapped.data.key.to_string(),
-                        wrapped.data.description.to_string(),
-                        wrapped.data.hash.to_string(),
+                        entry.key.to_string(),
+                        entry.description.to_string(),
+                        entry.hash.to_string(),
                     ]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(StorageResponse::Entries(listed), prompt, String::new())
+                Rendered::new(
+                    StorageResponse::Entries(StorageEntriesResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             StorageResponse::NoEntries => Rendered::new(
                 StorageResponse::NoEntries,
                 format!("{}", "No storage entries.".muted()),
                 String::new(),
             ),
-            StorageResponse::StorageRemoved(key) => {
-                let prompt = Confirmation::new("Storage", key.to_string(), "removed").to_string();
-                Rendered::new(StorageResponse::StorageRemoved(key), prompt, String::new())
+            StorageResponse::StorageRemoved(StorageRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Storage", removed.key.to_string(), "removed").to_string();
+                Rendered::new(
+                    StorageResponse::StorageRemoved(StorageRemovedResponse::V1(removed)),
+                    prompt,
+                    String::new(),
+                )
             }
         }
     }

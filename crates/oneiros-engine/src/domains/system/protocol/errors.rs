@@ -20,6 +20,9 @@ pub enum SystemError {
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    Upcast(#[from] UpcastError),
 }
 
 impl IntoResponse for SystemError {
@@ -28,9 +31,10 @@ impl IntoResponse for SystemError {
             SystemError::Tenant(_) | SystemError::Actor(_) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
-            SystemError::Database(_) | SystemError::Event(_) | SystemError::Io(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
-            }
+            SystemError::Database(_)
+            | SystemError::Event(_)
+            | SystemError::Io(_)
+            | SystemError::Upcast(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

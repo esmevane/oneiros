@@ -13,9 +13,15 @@ pub enum ProjectCommands {
 impl ProjectCommands {
     pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ProjectError> {
         let response: ProjectResponse = match self {
-            ProjectCommands::Init(init) => ProjectService::init(&config.system(), init).await?,
-            ProjectCommands::Export(export) => ProjectService::export(&config.project(), export)?,
-            ProjectCommands::Import(import) => ProjectService::import(&config.project(), import)?,
+            ProjectCommands::Init(initialization) => {
+                ProjectService::init(&config.system(), initialization).await?
+            }
+            ProjectCommands::Export(exporting) => {
+                ProjectService::export(&config.project(), exporting)?
+            }
+            ProjectCommands::Import(importing) => {
+                ProjectService::import(&config.project(), importing)?
+            }
             ProjectCommands::Replay => ProjectService::replay(&config.project())?,
         };
 

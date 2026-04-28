@@ -15,12 +15,17 @@ impl<'a> ExperienceStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Experience(experience_event)) = &event.data {
             match experience_event {
-                ExperienceEvents::ExperienceCreated(experience) => self.insert(experience)?,
-                ExperienceEvents::ExperienceDescriptionUpdated(update) => {
-                    self.update_description(&update.id, &update.description)?
+                ExperienceEvents::ExperienceCreated(created) => {
+                    let experience = created.current()?.experience;
+                    self.write_experience(&experience)?
                 }
-                ExperienceEvents::ExperienceSensationUpdated(update) => {
-                    self.update_sensation(&update.id, &update.sensation)?
+                ExperienceEvents::ExperienceDescriptionUpdated(updated) => {
+                    let current = updated.current()?;
+                    self.update_description(&current.id, &current.description)?
+                }
+                ExperienceEvents::ExperienceSensationUpdated(updated) => {
+                    let current = updated.current()?;
+                    self.update_sensation(&current.id, &current.sensation)?
                 }
             }
         }
@@ -160,7 +165,7 @@ impl<'a> ExperienceStore<'a> {
         Ok(experiences)
     }
 
-    fn insert(&self, experience: &Experience) -> Result<(), EventError> {
+    fn write_experience(&self, experience: &Experience) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO experiences (id, agent_id, sensation, description, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",

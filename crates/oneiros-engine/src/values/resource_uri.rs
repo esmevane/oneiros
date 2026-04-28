@@ -150,83 +150,97 @@ impl ResourcePath {
     pub fn as_request(&self) -> Option<ResourceRequest> {
         match self {
             ResourcePath::Agents => Some(ResourceRequest::Agent(AgentRequest::ListAgents(
-                ListAgents::default(),
+                ListAgents::builder_v1().build().into(),
             ))),
-            ResourcePath::Agent(name) => {
-                Some(ResourceRequest::Agent(AgentRequest::GetAgent(GetAgent {
-                    key: ResourceKey::Key(name.clone()),
-                })))
-            }
+            ResourcePath::Agent(name) => Some(ResourceRequest::Agent(AgentRequest::GetAgent(
+                GetAgent::builder_v1()
+                    .key(ResourceKey::Key(name.clone()))
+                    .build()
+                    .into(),
+            ))),
             ResourcePath::AgentCognitions(name) => Some(ResourceRequest::Cognition(
-                CognitionRequest::ListCognitions(ListCognitions {
-                    agent: Some(name.clone()),
-                    texture: None,
-                    filters: SearchFilters::default(),
-                }),
+                CognitionRequest::ListCognitions(
+                    ListCognitions::builder_v1()
+                        .agent(name.clone())
+                        .build()
+                        .into(),
+                ),
             )),
-            ResourcePath::AgentMemories(name) => Some(ResourceRequest::Memory(
-                MemoryRequest::ListMemories(ListMemories {
-                    agent: Some(name.clone()),
-                    filters: SearchFilters::default(),
-                }),
-            )),
+            ResourcePath::AgentMemories(name) => {
+                Some(ResourceRequest::Memory(MemoryRequest::ListMemories(
+                    ListMemories::builder_v1()
+                        .agent(name.clone())
+                        .build()
+                        .into(),
+                )))
+            }
             ResourcePath::AgentExperiences(name) => Some(ResourceRequest::Experience(
-                ExperienceRequest::ListExperiences(ListExperiences {
-                    agent: Some(name.clone()),
-                    filters: SearchFilters::default(),
-                }),
+                ExperienceRequest::ListExperiences(
+                    ListExperiences::builder_v1()
+                        .agent(name.clone())
+                        .build()
+                        .into(),
+                ),
             )),
             ResourcePath::AgentConnections(_) => None,
-            ResourcePath::AgentPressure(name) => Some(ResourceRequest::Pressure(
-                PressureRequest::GetPressure(GetPressure {
-                    agent: name.clone(),
-                }),
-            )),
-            ResourcePath::Cognition(id) => Some(ResourceRequest::Cognition(
-                CognitionRequest::GetCognition(GetCognition {
-                    key: ResourceKey::Key(*id),
-                }),
-            )),
+            ResourcePath::AgentPressure(name) => {
+                Some(ResourceRequest::Pressure(PressureRequest::GetPressure(
+                    GetPressure::builder_v1().agent(name.clone()).build().into(),
+                )))
+            }
+            ResourcePath::Cognition(id) => {
+                Some(ResourceRequest::Cognition(CognitionRequest::GetCognition(
+                    GetCognition::builder_v1()
+                        .key(ResourceKey::Key(*id))
+                        .build()
+                        .into(),
+                )))
+            }
             ResourcePath::Memory(id) => Some(ResourceRequest::Memory(MemoryRequest::GetMemory(
-                GetMemory {
-                    key: ResourceKey::Key(*id),
-                },
+                GetMemory::builder_v1()
+                    .key(ResourceKey::Key(*id))
+                    .build()
+                    .into(),
             ))),
             ResourcePath::Experience(id) => Some(ResourceRequest::Experience(
-                ExperienceRequest::GetExperience(GetExperience {
-                    key: ResourceKey::Key(*id),
-                }),
+                ExperienceRequest::GetExperience(
+                    GetExperience::builder_v1()
+                        .key(ResourceKey::Key(*id))
+                        .build()
+                        .into(),
+                ),
             )),
             ResourcePath::Connection(id) => Some(ResourceRequest::Connection(
-                ConnectionRequest::GetConnection(GetConnection {
-                    key: ResourceKey::Key(*id),
-                }),
+                ConnectionRequest::GetConnection(
+                    GetConnection::builder_v1()
+                        .key(ResourceKey::Key(*id))
+                        .build()
+                        .into(),
+                ),
             )),
             ResourcePath::Levels => Some(ResourceRequest::Level(LevelRequest::ListLevels(
-                ListLevels::builder().build(),
+                ListLevels::builder_v1().build().into(),
             ))),
             ResourcePath::Textures => Some(ResourceRequest::Texture(TextureRequest::ListTextures(
-                ListTextures::builder().build(),
+                ListTextures::builder_v1().build().into(),
             ))),
             ResourcePath::Sensations => Some(ResourceRequest::Sensation(
-                SensationRequest::ListSensations(ListSensations::builder().build()),
+                SensationRequest::ListSensations(ListSensations::builder_v1().build().into()),
             )),
             ResourcePath::Natures => Some(ResourceRequest::Nature(NatureRequest::ListNatures(
-                ListNatures::builder().build(),
+                ListNatures::builder_v1().build().into(),
             ))),
             ResourcePath::Personas => Some(ResourceRequest::Persona(PersonaRequest::ListPersonas(
-                ListPersonas::builder().build(),
+                ListPersonas::builder_v1().build().into(),
             ))),
             ResourcePath::Urges => Some(ResourceRequest::Urge(UrgeRequest::ListUrges(
-                ListUrges::builder().build(),
+                ListUrges::builder_v1().build().into(),
             ))),
             ResourcePath::Pressure => {
                 Some(ResourceRequest::Pressure(PressureRequest::ListPressures))
             }
             ResourcePath::Status => Some(ResourceRequest::Continuity(
-                ContinuityRequest::StatusAgent(StatusAgent {
-                    filters: SearchFilters::default(),
-                }),
+                ContinuityRequest::StatusAgent(StatusAgent::builder_v1().build().into()),
             )),
         }
     }

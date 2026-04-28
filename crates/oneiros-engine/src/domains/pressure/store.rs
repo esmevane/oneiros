@@ -137,28 +137,32 @@ impl<'a> PressureStore<'a> {
         // Try to resolve a single agent first
         let agent_name = match &event.data {
             Event::Known(known_event) => match known_event {
-                Events::Cognition(CognitionEvents::CognitionAdded(cognition)) => agent_store
-                    .get_name_by_id(&cognition.agent_id)?
+                Events::Cognition(CognitionEvents::CognitionAdded(CognitionAdded::V1(
+                    addition,
+                ))) => agent_store
+                    .get_name_by_id(&addition.cognition.agent_id)?
                     .map(|n| n.to_string()),
-                Events::Memory(MemoryEvents::MemoryAdded(memory)) => agent_store
-                    .get_name_by_id(&memory.agent_id)?
+                Events::Memory(MemoryEvents::MemoryAdded(MemoryAdded::V1(addition))) => agent_store
+                    .get_name_by_id(&addition.memory.agent_id)?
                     .map(|n| n.to_string()),
-                Events::Experience(ExperienceEvents::ExperienceCreated(experience)) => agent_store
-                    .get_name_by_id(&experience.agent_id)?
+                Events::Experience(ExperienceEvents::ExperienceCreated(ExperienceCreated::V1(
+                    creation,
+                ))) => agent_store
+                    .get_name_by_id(&creation.experience.agent_id)?
                     .map(|n| n.to_string()),
-                Events::Continuity(ContinuityEvents::Introspected(continuity)) => {
+                Events::Continuity(ContinuityEvents::Introspected(Introspected::V1(
+                    continuity,
+                ))) => Some(continuity.agent.to_string()),
+                Events::Continuity(ContinuityEvents::Reflected(Reflected::V1(continuity))) => {
                     Some(continuity.agent.to_string())
                 }
-                Events::Continuity(ContinuityEvents::Reflected(continuity)) => {
+                Events::Continuity(ContinuityEvents::Dreamed(Dreamed::V1(continuity))) => {
                     Some(continuity.agent.to_string())
                 }
-                Events::Continuity(ContinuityEvents::Dreamed(continuity)) => {
+                Events::Continuity(ContinuityEvents::Slept(Slept::V1(continuity))) => {
                     Some(continuity.agent.to_string())
                 }
-                Events::Continuity(ContinuityEvents::Slept(continuity)) => {
-                    Some(continuity.agent.to_string())
-                }
-                Events::Continuity(ContinuityEvents::Sensed(sensed)) => {
+                Events::Continuity(ContinuityEvents::Sensed(Sensed::V1(sensed))) => {
                     Some(sensed.agent.to_string())
                 }
                 // Connection events affect orphaned/unconnected counts for any agent

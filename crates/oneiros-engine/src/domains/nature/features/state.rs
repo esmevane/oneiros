@@ -6,11 +6,15 @@ impl NatureState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Nature(nature_event) = event {
             match nature_event {
-                NatureEvents::NatureSet(nature) => {
-                    canon.natures.set(nature);
+                NatureEvents::NatureSet(setting) => {
+                    if let Ok(current) = setting.current() {
+                        canon.natures.set(&current.nature);
+                    }
                 }
-                NatureEvents::NatureRemoved(removed) => {
-                    canon.natures.remove(&removed.name);
+                NatureEvents::NatureRemoved(removal) => {
+                    if let Ok(current) = removal.current() {
+                        canon.natures.remove(&current.name);
+                    }
                 }
             };
         }

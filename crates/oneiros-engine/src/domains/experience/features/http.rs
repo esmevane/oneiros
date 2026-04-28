@@ -70,7 +70,11 @@ async fn show(
     Path(key): Path<ResourceKey<ExperienceId>>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
-        ExperienceService::get(&context, &GetExperience::builder().key(key).build()).await?,
+        ExperienceService::get(
+            &context,
+            &GetExperience::builder_v1().key(key).build().into(),
+        )
+        .await?,
     ))
 }
 
@@ -82,10 +86,11 @@ async fn update_description(
     Ok(Json(
         ExperienceService::update_description(
             &context,
-            &UpdateExperienceDescription::builder()
+            &UpdateExperienceDescription::builder_v1()
                 .id(id)
                 .description(body.description)
-                .build(),
+                .build()
+                .into(),
         )
         .await?,
     ))
@@ -99,10 +104,11 @@ async fn update_sensation(
     Ok(Json(
         ExperienceService::update_sensation(
             &context,
-            &UpdateExperienceSensation::builder()
+            &UpdateExperienceSensation::builder_v1()
                 .id(id)
                 .sensation(body.sensation)
-                .build(),
+                .build()
+                .into(),
         )
         .await?,
     ))

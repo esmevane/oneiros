@@ -6,11 +6,23 @@ impl FollowState {
     pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Bookmark(bookmark_event) = event {
             match bookmark_event {
-                BookmarkEvents::BookmarkFollowed(follow) => {
-                    canon.follows.set(follow);
+                BookmarkEvents::BookmarkFollowed(followed) => {
+                    if let Ok(current) = followed.current() {
+                        let follow = Follow::builder()
+                            .id(current.id)
+                            .brain(current.brain)
+                            .bookmark(current.bookmark)
+                            .source(current.source)
+                            .checkpoint(current.checkpoint)
+                            .created_at(current.created_at)
+                            .build();
+                        canon.follows.set(&follow);
+                    }
                 }
                 BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
-                    canon.follows.remove(unfollowed.follow_id);
+                    if let Ok(current) = unfollowed.current() {
+                        canon.follows.remove(current.follow_id);
+                    }
                 }
                 BookmarkEvents::BookmarkCreated(_)
                 | BookmarkEvents::BookmarkForked(_)

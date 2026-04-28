@@ -1,29 +1,40 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateBrain {
-    #[builder(into)]
-    pub name: BrainName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum CreateBrain {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: BrainName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetBrain {
-    #[builder(into)]
-    pub key: ResourceKey<BrainName>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetBrain {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<BrainName>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListBrains {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListBrains {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

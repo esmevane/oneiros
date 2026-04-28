@@ -16,10 +16,10 @@ impl PeerCommands {
         let peer_client = PeerClient::new(&client);
 
         let response = match self {
-            PeerCommands::Add(add) => peer_client.add(add).await?,
-            PeerCommands::Get(get) => peer_client.get(get).await?,
-            PeerCommands::List(list) => peer_client.list(list).await?,
-            PeerCommands::Remove(remove) => peer_client.remove(&remove.id).await?,
+            Self::Add(addition) => peer_client.add(addition).await?,
+            Self::Get(lookup) => peer_client.get(lookup).await?,
+            Self::List(listing) => peer_client.list(listing).await?,
+            Self::Remove(removal) => peer_client.remove(removal).await?,
         };
 
         Ok(PeerView::new(response).render().map(Into::into))

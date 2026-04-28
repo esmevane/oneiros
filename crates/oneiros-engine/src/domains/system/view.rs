@@ -16,11 +16,16 @@ impl SystemView {
 
     pub fn render(self) -> Rendered<SystemResponse> {
         match self.response {
-            SystemResponse::SystemInitialized(name) => {
-                let prompt =
-                    Confirmation::new("System", name.to_string(), "initialized").to_string();
+            SystemResponse::SystemInitialized(SystemInitializedResponse::V1(details)) => {
+                let prompt = Confirmation::new("System", details.tenant.to_string(), "initialized")
+                    .to_string();
                 Rendered::new(
-                    SystemResponse::SystemInitialized(name),
+                    SystemResponse::SystemInitialized(
+                        SystemInitializedResponse::builder_v1()
+                            .tenant(details.tenant)
+                            .build()
+                            .into(),
+                    ),
                     prompt,
                     String::new(),
                 )

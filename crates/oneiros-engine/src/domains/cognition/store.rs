@@ -15,7 +15,10 @@ impl<'a> CognitionStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Cognition(cognition_event)) = &event.data {
             match cognition_event {
-                CognitionEvents::CognitionAdded(cognition) => self.insert(cognition)?,
+                CognitionEvents::CognitionAdded(added) => {
+                    let cognition = added.current()?.cognition;
+                    self.write_cognition(&cognition)?
+                }
             }
         }
         Ok(())
@@ -181,7 +184,7 @@ impl<'a> CognitionStore<'a> {
         Ok(cognitions)
     }
 
-    fn insert(&self, cognition: &Cognition) -> Result<(), EventError> {
+    fn write_cognition(&self, cognition: &Cognition) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO cognitions (id, agent_id, texture, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",

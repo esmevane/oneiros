@@ -5,19 +5,23 @@ pub struct TicketService;
 impl TicketService {
     pub async fn create(
         context: &SystemContext,
-        CreateTicket {
-            actor_id,
-            brain_name,
-        }: &CreateTicket,
+        request: &CreateTicket,
     ) -> Result<TicketResponse, TicketError> {
+        let CreateTicket::V1(create) = request;
         let brain = BrainRepo::new(context)
-            .get(brain_name)
+            .get(&create.brain_name)
             .await?
-            .ok_or_else(|| TicketError::BrainNotFound(brain_name.clone()))?;
+            .ok_or_else(|| TicketError::BrainNotFound(create.brain_name.clone()))?;
 
         let target = Ref::brain(brain.id);
-        let ticket = Self::issue(context, brain_name, &brain, *actor_id, target).await?;
-        Ok(TicketResponse::Created(ticket))
+        let ticket =
+            Self::issue(context, &create.brain_name, &brain, create.actor_id, target).await?;
+        Ok(TicketResponse::Created(
+            TicketCreatedResponse::builder_v1()
+                .ticket(ticket)
+                .build()
+                .into(),
+        ))
     }
 
     /// Issue a ticket scoped to a specific target ref. Used by both
@@ -51,7 +55,12 @@ impl TicketService {
             .build();
 
         context
-            .emit(TicketEvents::TicketIssued(ticket.clone()))
+            .emit(TicketEvents::TicketIssued(
+                TicketIssued::builder_v1()
+                    .ticket(ticket.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
 
         Ok(ticket)
@@ -59,32 +68,51 @@ impl TicketService {
 
     pub async fn get(
         context: &SystemContext,
-        selector: &GetTicket,
+        request: &GetTicket,
     ) -> Result<TicketResponse, TicketError> {
-        let id = selector.key.resolve()?;
+        let GetTicket::V1(lookup) = request;
+        let id = lookup.key.resolve()?;
         let ticket = TicketRepo::new(context)
             .get(&id)
             .await?
             .ok_or(TicketError::NotFound(id))?;
-        Ok(TicketResponse::Found(ticket))
+        Ok(TicketResponse::Found(
+            TicketFoundResponse::builder_v1()
+                .ticket(ticket)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn list(
         context: &SystemContext,
-        ListTickets { filters }: &ListTickets,
+        request: &ListTickets,
     ) -> Result<TicketResponse, TicketError> {
-        let listed = TicketRepo::new(context).list(filters).await?;
-        Ok(TicketResponse::Listed(listed))
+        let ListTickets::V1(listing) = request;
+        let listed = TicketRepo::new(context).list(&listing.filters).await?;
+        Ok(TicketResponse::Listed(
+            TicketsResponse::builder_v1()
+                .items(listed.items)
+                .total(listed.total)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn validate(
         context: &SystemContext,
-        ValidateTicket { token }: &ValidateTicket,
+        request: &ValidateTicket,
     ) -> Result<TicketResponse, TicketError> {
+        let ValidateTicket::V1(validate) = request;
         let ticket = TicketRepo::new(context)
-            .get_by_token(token.as_str())
+            .get_by_token(validate.token.as_str())
             .await?
             .ok_or(TicketError::InvalidToken)?;
-        Ok(TicketResponse::Validated(ticket))
+        Ok(TicketResponse::Validated(
+            TicketValidatedResponse::builder_v1()
+                .ticket(ticket)
+                .build()
+                .into(),
+        ))
     }
 }

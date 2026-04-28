@@ -55,9 +55,12 @@ impl ServiceService {
             })
             .map_err(manager_err)?;
 
-        Ok(ServiceResponse::ServiceInstalled(ServiceName::new(
-            config.service.label.clone(),
-        )))
+        Ok(ServiceResponse::ServiceInstalled(
+            ServiceInstalledResponse::builder_v1()
+                .name(config.service.label.clone())
+                .build()
+                .into(),
+        ))
     }
 
     /// Uninstall the managed service. Best-effort stop before removal.
@@ -92,9 +95,12 @@ impl ServiceService {
             tokio::time::sleep(*delay).await;
 
             if client.get(&health_url).send().await.is_ok() {
-                return Ok(ServiceResponse::ServiceHealthy(ServiceAddress::new(
-                    config.service.address.to_string(),
-                )));
+                return Ok(ServiceResponse::ServiceHealthy(
+                    ServiceHealthyResponse::builder_v1()
+                        .address(config.service.address.to_string())
+                        .build()
+                        .into(),
+                ));
             }
         }
 
@@ -120,13 +126,23 @@ impl ServiceService {
 
         match client.get(&health_url).send().await {
             Ok(resp) if resp.status().is_success() => ServiceResponse::ServiceRunning(
-                ServiceAddress::new(config.service.address.to_string()),
+                ServiceRunningResponse::builder_v1()
+                    .address(config.service.address.to_string())
+                    .build()
+                    .into(),
             ),
-            Ok(resp) => ServiceResponse::ServiceNotRunning(ServiceReason::new(format!(
-                "HTTP {}",
-                resp.status()
-            ))),
-            Err(e) => ServiceResponse::ServiceNotRunning(ServiceReason::new(e.to_string())),
+            Ok(resp) => ServiceResponse::ServiceNotRunning(
+                ServiceNotRunningResponse::builder_v1()
+                    .reason(format!("HTTP {}", resp.status()))
+                    .build()
+                    .into(),
+            ),
+            Err(e) => ServiceResponse::ServiceNotRunning(
+                ServiceNotRunningResponse::builder_v1()
+                    .reason(e.to_string())
+                    .build()
+                    .into(),
+            ),
         }
     }
 

@@ -152,22 +152,26 @@ mod agent_mcp {
     ) -> Result<McpResponse, ToolError> {
         let agent = AgentService::get(
             context,
-            &GetAgent {
-                key: ResourceKey::Key(name.clone()),
-            },
+            &GetAgent::builder_v1()
+                .key(ResourceKey::Key(name.clone()))
+                .build()
+                .into(),
         )
         .await
         .map_err(Error::from)?;
 
         let agent_ref = match agent {
-            AgentResponse::AgentDetails(wrapped) => RefToken::from(Ref::agent(wrapped.data.id)),
+            AgentResponse::AgentDetails(AgentDetailsResponse::V1(details)) => {
+                RefToken::from(Ref::agent(details.agent.id))
+            }
             _ => return Err(ToolError::NotFound(format!("Agent not found: {name}"))),
         };
 
-        let listing = ListConnections {
-            entity: Some(agent_ref),
-            filters: SearchFilters::default(),
-        };
+        let listing: ListConnections = ListConnections::builder_v1()
+            .entity(agent_ref)
+            .filters(SearchFilters::default())
+            .build()
+            .into();
         let request = ConnectionRequest::ListConnections(listing.clone());
         ConnectionMcp.resource(context, &request).await
     }

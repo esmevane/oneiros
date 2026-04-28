@@ -22,11 +22,12 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     client
         .storage()
         .upload(
-            &UploadStorage::builder()
+            &UploadStorage::builder_v1()
                 .key("notes/design.md")
                 .description("Design notes")
                 .data(b"# Architecture\nEvent sourcing all the way down.".to_vec())
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -34,44 +35,61 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("notes/design.md"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "notes/design.md");
-            assert_eq!(entry.data.description.as_str(), "Design notes");
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => {
+            assert_eq!(entry.entry.key.as_str(), "notes/design.md");
+            assert_eq!(entry.entry.description.as_str(), "Design notes");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
 
     // List — one entry
-    match client.storage().list(&ListStorage::default()).await? {
-        StorageResponse::Entries(entries) => assert_eq!(entries.len(), 1),
+    match client
+        .storage()
+        .list(&ListStorage::builder_v1().build().into())
+        .await?
+    {
+        StorageResponse::Entries(StorageEntriesResponse::V1(entries)) => {
+            assert_eq!(entries.items.len(), 1)
+        }
         other => panic!("expected Entries, got {other:?}"),
     }
 
     // Remove — metadata gone, system still functional
     client
         .storage()
-        .remove(&RemoveStorage::builder().key("notes/design.md").build())
+        .remove(
+            &RemoveStorage::builder_v1()
+                .key("notes/design.md")
+                .build()
+                .into(),
+        )
         .await?;
 
     assert!(
         client
             .storage()
             .show(
-                &GetStorage::builder()
+                &GetStorage::builder_v1()
                     .key(StorageKey::new("notes/design.md"))
                     .build()
+                    .into()
             )
             .await
             .is_err()
     );
 
-    match client.storage().list(&ListStorage::default()).await? {
+    match client
+        .storage()
+        .list(&ListStorage::builder_v1().build().into())
+        .await?
+    {
         StorageResponse::NoEntries => {}
         other => panic!("expected NoEntries, got {other:?}"),
     }
@@ -102,14 +120,15 @@ async fn storage_via_cli() -> Result<(), Box<dyn core::error::Error>> {
         .client()
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("test.txt"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "test.txt");
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => {
+            assert_eq!(entry.entry.key.as_str(), "test.txt");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -133,11 +152,12 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
         .client()
         .storage()
         .upload(
-            &UploadStorage::builder()
+            &UploadStorage::builder_v1()
                 .key("integrity-test.txt")
                 .description("Content integrity test")
                 .data(content.to_vec())
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -146,13 +166,14 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
         .client()
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("integrity-test.txt"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => entry.data.hash,
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => entry.entry.hash,
         other => panic!("expected StorageDetails, got {other:?}"),
     };
 
@@ -187,16 +208,17 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
         .client()
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("integrity-test.txt"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "integrity-test.txt");
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => {
+            assert_eq!(entry.entry.key.as_str(), "integrity-test.txt");
             assert_eq!(
-                entry.data.hash, original_hash,
+                entry.entry.hash, original_hash,
                 "content hash should be identical after import"
             );
         }
@@ -221,25 +243,27 @@ async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
     client
         .storage()
         .upload(
-            &UploadStorage::builder()
+            &UploadStorage::builder_v1()
                 .key("notes/design/architecture.md")
                 .description("Deep path")
                 .data(b"nested".to_vec())
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
     match client
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("notes/design/architecture.md"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "notes/design/architecture.md");
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => {
+            assert_eq!(entry.entry.key.as_str(), "notes/design/architecture.md");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -248,25 +272,27 @@ async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
     client
         .storage()
         .upload(
-            &UploadStorage::builder()
+            &UploadStorage::builder_v1()
                 .key("/usr/local/share/config.toml")
                 .description("Absolute path")
                 .data(b"absolute".to_vec())
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
     match client
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("/usr/local/share/config.toml"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "/usr/local/share/config.toml");
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => {
+            assert_eq!(entry.entry.key.as_str(), "/usr/local/share/config.toml");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }

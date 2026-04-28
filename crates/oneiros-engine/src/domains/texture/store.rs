@@ -14,8 +14,8 @@ impl<'a> TextureStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Texture(texture_event)) = &event.data {
             match texture_event {
-                TextureEvents::TextureSet(texture) => self.set(texture)?,
-                TextureEvents::TextureRemoved(removed) => self.remove(&removed.name)?,
+                TextureEvents::TextureSet(setting) => self.set(setting)?,
+                TextureEvents::TextureRemoved(removal) => self.remove(removal)?,
             }
         }
         Ok(())
@@ -64,7 +64,21 @@ impl<'a> TextureStore<'a> {
         Ok(textures)
     }
 
-    fn set(&self, texture: &Texture) -> Result<(), EventError> {
+    fn set(&self, setting: &TextureSet) -> Result<(), EventError> {
+        let texture = setting.current()?.texture;
+        self.write_texture(&texture)
+    }
+
+    fn remove(&self, removal: &TextureRemoved) -> Result<(), EventError> {
+        let name = removal.current()?.name;
+        self.conn.execute(
+            "DELETE FROM textures WHERE name = ?1",
+            params![name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn write_texture(&self, texture: &Texture) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO textures (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -72,14 +86,6 @@ impl<'a> TextureStore<'a> {
                 texture.description.to_string(),
                 texture.prompt.to_string()
             ],
-        )?;
-        Ok(())
-    }
-
-    fn remove(&self, name: &TextureName) -> Result<(), EventError> {
-        self.conn.execute(
-            "DELETE FROM textures WHERE name = ?1",
-            params![name.to_string()],
         )?;
         Ok(())
     }

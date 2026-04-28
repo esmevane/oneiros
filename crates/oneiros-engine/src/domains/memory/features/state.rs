@@ -4,8 +4,10 @@ pub struct MemoryState;
 
 impl MemoryState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        if let Events::Memory(MemoryEvents::MemoryAdded(memory)) = event {
-            canon.memories.set(memory);
+        if let Events::Memory(MemoryEvents::MemoryAdded(added)) = event
+            && let Ok(current) = added.current()
+        {
+            canon.memories.set(&current.memory);
         }
 
         canon

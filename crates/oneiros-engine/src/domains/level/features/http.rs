@@ -41,12 +41,14 @@ impl LevelRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<LevelName>,
-    Json(mut body): Json<SetLevel>,
+    Json(body): Json<SetLevel>,
 ) -> Result<(StatusCode, Json<LevelResponse>), LevelError> {
-    body.name = name;
+    let SetLevel::V1(mut setting) = body;
+    setting.name = name;
+    let request = SetLevel::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(LevelService::set(&context, &body).await?),
+        Json(LevelService::set(&context, &request).await?),
     ))
 }
 
@@ -62,7 +64,7 @@ async fn show(
     Path(key): Path<ResourceKey<LevelName>>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(
-        LevelService::get(&context, &GetLevel::builder().key(key).build()).await?,
+        LevelService::get(&context, &GetLevel::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -71,6 +73,10 @@ async fn remove(
     Path(name): Path<LevelName>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(
-        LevelService::remove(&context, &RemoveLevel::builder().name(name).build()).await?,
+        LevelService::remove(
+            &context,
+            &RemoveLevel::builder_v1().name(name).build().into(),
+        )
+        .await?,
     ))
 }

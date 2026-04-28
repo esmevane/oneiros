@@ -7,17 +7,41 @@ use crate::*;
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = PeerEventsType, display = "kebab-case")]
 pub enum PeerEvents {
-    /// A peer was added to this host's known-peers table.
-    PeerAdded(Peer),
-    /// A peer's address (or other mutable field) was refreshed.
-    PeerUpdated(Peer),
-    /// A peer was explicitly removed from this host's known-peers table.
+    PeerAdded(PeerAdded),
+    PeerUpdated(PeerUpdated),
     PeerRemoved(PeerRemoved),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PeerRemoved {
-    pub id: PeerId,
+versioned! {
+    pub enum PeerAdded {
+        V1 => {
+            #[builder(default)] pub id: PeerId,
+            pub key: PeerKey,
+            pub address: PeerAddress,
+            #[builder(into)] pub name: PeerName,
+            #[builder(default = Timestamp::now())] pub created_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub enum PeerUpdated {
+        V1 => {
+            #[builder(default)] pub id: PeerId,
+            pub key: PeerKey,
+            pub address: PeerAddress,
+            #[builder(into)] pub name: PeerName,
+            #[builder(default = Timestamp::now())] pub created_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub enum PeerRemoved {
+        V1 => {
+            pub id: PeerId,
+        }
+    }
 }
 
 #[cfg(test)]

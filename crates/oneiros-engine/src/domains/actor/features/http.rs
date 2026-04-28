@@ -52,6 +52,6 @@ async fn show(
     Path(key): Path<ResourceKey<ActorId>>,
 ) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(
-        ActorService::get(&context, &GetActor::builder().key(key).build()).await?,
+        ActorService::get(&context, &GetActor::builder_v1().key(key).build().into()).await?,
     ))
 }

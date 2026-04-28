@@ -31,6 +31,9 @@ pub enum ProjectError {
 
     #[error(transparent)]
     Client(#[from] ClientError),
+
+    #[error(transparent)]
+    Upcast(#[from] UpcastError),
 }
 
 resource_op_error!(ProjectError);
@@ -44,7 +47,8 @@ impl IntoResponse for ProjectError {
             | ProjectError::Database(_)
             | ProjectError::Event(_)
             | ProjectError::Serde(_)
-            | ProjectError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | ProjectError::Io(_)
+            | ProjectError::Upcast(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ProjectError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()

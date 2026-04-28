@@ -2,6 +2,9 @@ use clap::Subcommand;
 
 use crate::*;
 
+/// CLI subcommands for the actor domain. Each variant carries a versioned
+/// protocol request directly — clap derives parsing through the wrapper's
+/// `Args` impl, which delegates to the latest version's struct.
 #[derive(Debug, Subcommand)]
 pub enum ActorCommands {
     Create(CreateActor),
@@ -18,9 +21,9 @@ impl ActorCommands {
         let actor_client = ActorClient::new(&client);
 
         let response = match self {
-            ActorCommands::Create(creation) => actor_client.create(creation).await?,
-            ActorCommands::Get(get) => actor_client.get(get).await?,
-            ActorCommands::List(list) => actor_client.list(list).await?,
+            Self::Create(creation) => actor_client.create(creation).await?,
+            Self::Get(lookup) => actor_client.get(lookup).await?,
+            Self::List(listing) => actor_client.list(listing).await?,
         };
 
         Ok(ActorView::new(response).render().map(Into::into))

@@ -14,35 +14,46 @@ impl<'a> ConnectionView<'a> {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            ConnectionResponse::ConnectionCreated(wrapped) => {
-                let ref_token = RefToken::from(Ref::connection(wrapped.data.id));
+            ConnectionResponse::ConnectionCreated(ConnectionCreatedResponse::V1(created)) => {
+                let ref_token = RefToken::from(Ref::connection(created.connection.id));
                 McpResponse::new(format!(
                     "Connection created.\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**ref:** {}",
-                    wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref, ref_token
+                    created.connection.nature,
+                    created.connection.from_ref,
+                    created.connection.to_ref,
+                    ref_token
                 ))
                 .hint(Hint::suggest("search-query", "Search for related entities"))
             }
-            ConnectionResponse::ConnectionDetails(wrapped) => McpResponse::new(format!(
-                "# Connection\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**created:** {}\n",
-                wrapped.data.nature,
-                wrapped.data.from_ref,
-                wrapped.data.to_ref,
-                wrapped.data.created_at
-            ))
-            .hint(Hint::suggest("search-query", "Search for related entities")),
-            ConnectionResponse::Connections(listed) => {
+            ConnectionResponse::ConnectionDetails(ConnectionDetailsResponse::V1(details)) => {
+                McpResponse::new(format!(
+                    "# Connection\n\n**nature:** {}\n**from:** {}\n**to:** {}\n**created:** {}\n",
+                    details.connection.nature,
+                    details.connection.from_ref,
+                    details.connection.to_ref,
+                    details.connection.created_at
+                ))
+                .hint(Hint::suggest("search-query", "Search for related entities"))
+            }
+            ConnectionResponse::Connections(ConnectionsResponse::V1(listed)) => {
                 let title = match self.request {
-                    ConnectionRequest::ListConnections(listing) => match &listing.entity {
-                        Some(entity) => format!("# Connections — {entity}\n\n"),
-                        None => "# Connections\n\n".to_string(),
-                    },
+                    ConnectionRequest::ListConnections(ListConnections::V1(listing)) => {
+                        match &listing.entity {
+                            Some(entity) => format!("# Connections — {entity}\n\n"),
+                            None => "# Connections\n\n".to_string(),
+                        }
+                    }
                     _ => "# Connections\n\n".to_string(),
                 };
-                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
+                let mut md = format!(
+                    "{title}{} of {} total\n\n",
+                    listed.items.len(),
+                    listed.total
+                );
+                for item in &listed.items {
                     md.push_str(&format!(
                         "- **{}** {} → {}\n",
-                        wrapped.data.nature, wrapped.data.from_ref, wrapped.data.to_ref
+                        item.nature, item.from_ref, item.to_ref
                     ));
                 }
                 McpResponse::new(md)
@@ -53,83 +64,67 @@ impl<'a> ConnectionView<'a> {
                     .hint(Hint::suggest("search-query", "Search for related entities"))
             }
             ConnectionResponse::NoConnections => McpResponse::new("No connections yet."),
-            ConnectionResponse::ConnectionRemoved(id) => {
-                McpResponse::new(format!("Connection removed: {id}"))
+            ConnectionResponse::ConnectionRemoved(ConnectionRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Connection removed: {}", removed.id))
             }
         }
     }
 
     pub fn render(self) -> Rendered<ConnectionResponse> {
         match self.response {
-            ConnectionResponse::ConnectionCreated(wrapped) => {
-                let subject = wrapped
-                    .meta()
-                    .ref_token()
-                    .map(|ref_token| {
-                        format!(
-                            "{} Connection recorded: {}",
-                            "✓".success(),
-                            ref_token.muted()
-                        )
-                    })
-                    .unwrap_or_default();
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+            ConnectionResponse::ConnectionCreated(ConnectionCreatedResponse::V1(created)) => {
+                let ref_token = RefToken::from(Ref::connection(created.connection.id));
+                let subject = format!(
+                    "{} Connection recorded: {}",
+                    "✓".success(),
+                    ref_token.clone().muted()
+                );
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
                 Rendered::new(
-                    ConnectionResponse::ConnectionCreated(wrapped),
+                    ConnectionResponse::ConnectionCreated(ConnectionCreatedResponse::V1(created)),
                     subject,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            ConnectionResponse::ConnectionDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.nature.to_string())
-                    .field("from:", wrapped.data.from_ref.to_string())
-                    .field("to:", wrapped.data.to_ref.to_string())
+            ConnectionResponse::ConnectionDetails(ConnectionDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.connection.nature.to_string())
+                    .field("from:", details.connection.from_ref.to_string())
+                    .field("to:", details.connection.to_ref.to_string())
                     .to_string();
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+                let ref_token = RefToken::from(Ref::connection(details.connection.id));
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
                 Rendered::new(
-                    ConnectionResponse::ConnectionDetails(wrapped),
+                    ConnectionResponse::ConnectionDetails(ConnectionDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            ConnectionResponse::Connections(listed) => {
+            ConnectionResponse::Connections(ConnectionsResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("nature", "Nature"),
                     Column::key("from_ref", "From"),
                     Column::key("to_ref", "To"),
                     Column::key("ref_token", "Ref"),
                 ]);
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|t| t.to_string())
-                        .unwrap_or_default();
+                for item in &listed.items {
+                    let ref_token = RefToken::from(Ref::connection(item.id));
                     table.push_row(vec![
-                        wrapped.data.nature.to_string(),
-                        wrapped.data.from_ref.to_string(),
-                        wrapped.data.to_ref.to_string(),
-                        ref_token,
+                        item.nature.to_string(),
+                        item.from_ref.to_string(),
+                        item.to_ref.to_string(),
+                        ref_token.to_string(),
                     ]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
                 Rendered::new(
-                    ConnectionResponse::Connections(listed),
+                    ConnectionResponse::Connections(ConnectionsResponse::V1(listed)),
                     prompt,
                     String::new(),
                 )
@@ -139,10 +134,11 @@ impl<'a> ConnectionView<'a> {
                 format!("{}", "No connections.".muted()),
                 String::new(),
             ),
-            ConnectionResponse::ConnectionRemoved(id) => {
-                let prompt = Confirmation::new("Connection", id.to_string(), "removed").to_string();
+            ConnectionResponse::ConnectionRemoved(ConnectionRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Connection", removed.id.to_string(), "removed").to_string();
                 Rendered::new(
-                    ConnectionResponse::ConnectionRemoved(id),
+                    ConnectionResponse::ConnectionRemoved(ConnectionRemovedResponse::V1(removed)),
                     prompt,
                     String::new(),
                 )

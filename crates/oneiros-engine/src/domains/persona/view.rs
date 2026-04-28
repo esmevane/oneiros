@@ -11,25 +11,27 @@ impl PersonaView {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            PersonaResponse::Personas(listed) => {
+            PersonaResponse::Personas(PersonasResponse::V1(listed)) => {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .map(|item| (item.name.to_string(), item.description.to_string()))
                     .collect();
                 Self::vocabulary_table("Personas", &items)
             }
-            PersonaResponse::PersonaDetails(wrapped) => {
+            PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(details)) => {
                 let items = vec![(
-                    wrapped.data.name.to_string(),
-                    wrapped.data.description.to_string(),
+                    details.persona.name.to_string(),
+                    details.persona.description.to_string(),
                 )];
                 Self::vocabulary_table("Persona", &items)
             }
             PersonaResponse::NoPersonas => Self::vocabulary_table("Personas", &[]),
-            PersonaResponse::PersonaSet(name) => McpResponse::new(format!("Persona set: {name}")),
-            PersonaResponse::PersonaRemoved(name) => {
-                McpResponse::new(format!("Persona removed: {name}"))
+            PersonaResponse::PersonaSet(PersonaSetResponse::V1(set)) => {
+                McpResponse::new(format!("Persona set: {}", set.persona.name))
+            }
+            PersonaResponse::PersonaRemoved(PersonaRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Persona removed: {}", removed.name))
             }
         }
     }
@@ -50,58 +52,69 @@ impl PersonaView {
 
     pub fn render(self) -> Rendered<PersonaResponse> {
         match self.response {
-            PersonaResponse::PersonaSet(name) => {
-                let prompt = Confirmation::new("Persona", name.to_string(), "set").to_string();
+            PersonaResponse::PersonaSet(PersonaSetResponse::V1(set)) => {
+                let prompt =
+                    Confirmation::new("Persona", set.persona.name.to_string(), "set").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("persona".to_string())
                         .build(),
                 );
-                Rendered::new(PersonaResponse::PersonaSet(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    PersonaResponse::PersonaSet(PersonaSetResponse::V1(set)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            PersonaResponse::PersonaDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("prompt:", wrapped.data.prompt.to_string())
+            PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.persona.name.to_string())
+                    .field("description:", details.persona.description.to_string())
+                    .field("prompt:", details.persona.prompt.to_string())
                     .to_string();
                 Rendered::new(
-                    PersonaResponse::PersonaDetails(wrapped),
+                    PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
             }
-            PersonaResponse::Personas(listed) => {
+            PersonaResponse::Personas(PersonasResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("name", "Name"),
                     Column::key("description", "Description").max(60),
                 ]);
-                for wrapped in &listed.items {
-                    table.push_row(vec![
-                        wrapped.data.name.to_string(),
-                        wrapped.data.description.to_string(),
-                    ]);
+                for item in &listed.items {
+                    table.push_row(vec![item.name.to_string(), item.description.to_string()]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(PersonaResponse::Personas(listed), prompt, String::new())
+                Rendered::new(
+                    PersonaResponse::Personas(PersonasResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             PersonaResponse::NoPersonas => Rendered::new(
                 PersonaResponse::NoPersonas,
                 format!("{}", "No personas configured.".muted()),
                 String::new(),
             ),
-            PersonaResponse::PersonaRemoved(name) => {
-                let prompt = Confirmation::new("Persona", name.to_string(), "removed").to_string();
+            PersonaResponse::PersonaRemoved(PersonaRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Persona", removed.name.to_string(), "removed").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("persona".to_string())
                         .build(),
                 );
-                Rendered::new(PersonaResponse::PersonaRemoved(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    PersonaResponse::PersonaRemoved(PersonaRemovedResponse::V1(removed)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
         }
     }

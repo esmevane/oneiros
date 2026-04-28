@@ -13,9 +13,18 @@ impl DoctorView {
 
     pub fn render(self) -> Rendered<DoctorResponse> {
         match self.response {
-            DoctorResponse::CheckupStatus(checks) => {
-                let prompt = Self::checklist(&checks);
-                Rendered::new(DoctorResponse::CheckupStatus(checks), prompt, String::new())
+            DoctorResponse::CheckupStatus(CheckupStatusResponse::V1(details)) => {
+                let prompt = Self::checklist(&details.checks);
+                Rendered::new(
+                    DoctorResponse::CheckupStatus(
+                        CheckupStatusResponse::builder_v1()
+                            .checks(details.checks)
+                            .build()
+                            .into(),
+                    ),
+                    prompt,
+                    String::new(),
+                )
             }
         }
     }

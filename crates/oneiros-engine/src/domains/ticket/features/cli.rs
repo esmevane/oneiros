@@ -2,6 +2,9 @@ use clap::Subcommand;
 
 use crate::*;
 
+/// CLI subcommands for the ticket domain. Each variant carries a versioned
+/// protocol request directly — clap derives parsing through the wrapper's
+/// `Args` impl, which delegates to the latest version's struct.
 #[derive(Debug, Subcommand)]
 pub enum TicketCommands {
     Issue(CreateTicket),
@@ -18,9 +21,9 @@ impl TicketCommands {
         let ticket_client = TicketClient::new(&client);
 
         let response = match self {
-            TicketCommands::Issue(create) => ticket_client.issue(create).await?,
-            TicketCommands::Validate(validate) => ticket_client.validate(validate).await?,
-            TicketCommands::List(list) => ticket_client.list(list).await?,
+            Self::Issue(issuance) => ticket_client.issue(issuance).await?,
+            Self::Validate(validation) => ticket_client.validate(validation).await?,
+            Self::List(listing) => ticket_client.list(listing).await?,
         };
 
         Ok(TicketView::new(response).render().map(Into::into))

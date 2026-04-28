@@ -17,33 +17,43 @@ impl AgentView {
     pub fn mcp(&self) -> McpResponse {
         let response = &self.response;
         match response {
-            AgentResponse::AgentCreated(name) => McpResponse::new(format!("Agent created: {name}"))
-                .hint_set(HintSet::agent_created(
-                    AgentCreatedHints::builder().agent(name.clone()).build(),
-                )),
-            AgentResponse::AgentDetails(wrapped) => McpResponse::new(format!(
-                "# {}\n\n**persona:** {}\n**description:** {}\n\n{}\n",
-                wrapped.data.name,
-                wrapped.data.persona,
-                wrapped.data.description,
-                wrapped.data.prompt
-            ))
-            .hint(Hint::inspect(
-                ResourcePath::AgentCognitions(wrapped.data.name.clone()).uri(),
-                "Browse cognitions",
-            ))
-            .hint(Hint::inspect(
-                ResourcePath::AgentPressure(wrapped.data.name.clone()).uri(),
-                "Check pressure",
-            )),
-            AgentResponse::Agents(listed) => {
-                let mut md = format!("# Agents\n\n{} of {} total\n\n", listed.len(), listed.total);
+            AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)) => {
+                let agent = &created.agent;
+                McpResponse::new(format!("Agent created: {}", agent.name)).hint_set(
+                    HintSet::agent_created(
+                        AgentCreatedHints::builder()
+                            .agent(agent.name.clone())
+                            .build(),
+                    ),
+                )
+            }
+            AgentResponse::AgentDetails(AgentDetailsResponse::V1(details)) => {
+                let agent = &details.agent;
+                McpResponse::new(format!(
+                    "# {}\n\n**persona:** {}\n**description:** {}\n\n{}\n",
+                    agent.name, agent.persona, agent.description, agent.prompt
+                ))
+                .hint(Hint::inspect(
+                    ResourcePath::AgentCognitions(agent.name.clone()).uri(),
+                    "Browse cognitions",
+                ))
+                .hint(Hint::inspect(
+                    ResourcePath::AgentPressure(agent.name.clone()).uri(),
+                    "Check pressure",
+                ))
+            }
+            AgentResponse::Agents(AgentsResponse::V1(agents)) => {
+                let mut md = format!(
+                    "# Agents\n\n{} of {} total\n\n",
+                    agents.items.len(),
+                    agents.total
+                );
                 md.push_str("| Name | Persona | Description |\n");
                 md.push_str("|------|---------|-------------|\n");
-                for wrapped in &listed.items {
+                for agent in &agents.items {
                     md.push_str(&format!(
                         "| {} | {} | {} |\n",
-                        wrapped.data.name, wrapped.data.persona, wrapped.data.description
+                        agent.name, agent.persona, agent.description
                     ));
                 }
                 McpResponse::new(md).hint(Hint::suggest(
@@ -54,46 +64,58 @@ impl AgentView {
             AgentResponse::NoAgents => McpResponse::new("# Agents\n\nNo agents configured.").hint(
                 Hint::suggest("create-agent", "Bring a new agent into the brain"),
             ),
-            AgentResponse::AgentUpdated(name) => McpResponse::new(format!("Agent updated: {name}"))
-                .hint(Hint::inspect(
-                    ResourcePath::Agent(name.clone()).uri(),
+            AgentResponse::AgentUpdated(AgentUpdatedResponse::V1(updated)) => {
+                let agent = &updated.agent;
+                McpResponse::new(format!("Agent updated: {}", agent.name)).hint(Hint::inspect(
+                    ResourcePath::Agent(agent.name.clone()).uri(),
                     "View agent details",
-                )),
-            AgentResponse::AgentRemoved(name) => McpResponse::new(format!("Agent removed: {name}"))
-                .hint(Hint::inspect(
+                ))
+            }
+            AgentResponse::AgentRemoved(AgentRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Agent removed: {}", removed.name)).hint(Hint::inspect(
                     ResourcePath::Agents.uri(),
                     "See remaining agents",
-                )),
+                ))
+            }
         }
     }
 
     pub fn render(self) -> Rendered<AgentResponse> {
         match self.response {
-            AgentResponse::AgentCreated(name) => {
-                let prompt = Confirmation::new("Agent", name.to_string(), "created").to_string();
-                let hints = HintSet::agent_created(
-                    AgentCreatedHints::builder().agent(name.clone()).build(),
-                );
-                Rendered::new(AgentResponse::AgentCreated(name), prompt, String::new())
-                    .with_hints(hints)
-            }
-            AgentResponse::AgentDetails(wrapped) => {
-                let agent = &wrapped.data;
-                let prompt = Detail::new(agent.name.to_string())
-                    .field("persona:", agent.persona.to_string())
-                    .field("description:", agent.description.to_string())
-                    .field("prompt:", agent.prompt.to_string())
+            AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)) => {
+                let prompt = Confirmation::new("Agent", created.agent.name.to_string(), "created")
                     .to_string();
-                Rendered::new(AgentResponse::AgentDetails(wrapped), prompt, String::new())
+                let hints = HintSet::agent_created(
+                    AgentCreatedHints::builder()
+                        .agent(created.agent.name.clone())
+                        .build(),
+                );
+                Rendered::new(
+                    AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            AgentResponse::Agents(listed) => {
+            AgentResponse::AgentDetails(AgentDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.agent.name.to_string())
+                    .field("persona:", details.agent.persona.to_string())
+                    .field("description:", details.agent.description.to_string())
+                    .field("prompt:", details.agent.prompt.to_string())
+                    .to_string();
+                Rendered::new(
+                    AgentResponse::AgentDetails(AgentDetailsResponse::V1(details)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            AgentResponse::Agents(AgentsResponse::V1(agents)) => {
                 let mut table = Table::new(vec![
                     Column::key("name", "Name"),
                     Column::key("persona", "Persona"),
                     Column::key("description", "Description").max(60),
                 ]);
-                for wrapped in &listed.items {
-                    let agent = &wrapped.data;
+                for agent in &agents.items {
                     table.push_row(vec![
                         agent.name.to_string(),
                         agent.persona.to_string(),
@@ -102,22 +124,36 @@ impl AgentView {
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", agents.items.len(), agents.total).muted(),
                 );
-                Rendered::new(AgentResponse::Agents(listed), prompt, String::new())
+                Rendered::new(
+                    AgentResponse::Agents(AgentsResponse::V1(agents)),
+                    prompt,
+                    String::new(),
+                )
             }
             AgentResponse::NoAgents => Rendered::new(
                 AgentResponse::NoAgents,
                 format!("{}", "No agents configured.".muted()),
                 String::new(),
             ),
-            AgentResponse::AgentUpdated(name) => {
-                let prompt = Confirmation::new("Agent", name.to_string(), "updated").to_string();
-                Rendered::new(AgentResponse::AgentUpdated(name), prompt, String::new())
+            AgentResponse::AgentUpdated(AgentUpdatedResponse::V1(updated)) => {
+                let prompt = Confirmation::new("Agent", updated.agent.name.to_string(), "updated")
+                    .to_string();
+                Rendered::new(
+                    AgentResponse::AgentUpdated(AgentUpdatedResponse::V1(updated)),
+                    prompt,
+                    String::new(),
+                )
             }
-            AgentResponse::AgentRemoved(name) => {
-                let prompt = Confirmation::new("Agent", name.to_string(), "removed").to_string();
-                Rendered::new(AgentResponse::AgentRemoved(name), prompt, String::new())
+            AgentResponse::AgentRemoved(AgentRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Agent", removed.name.to_string(), "removed").to_string();
+                Rendered::new(
+                    AgentResponse::AgentRemoved(AgentRemovedResponse::V1(removed)),
+                    prompt,
+                    String::new(),
+                )
             }
         }
     }

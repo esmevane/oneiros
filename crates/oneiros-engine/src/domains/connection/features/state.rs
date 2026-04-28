@@ -6,11 +6,15 @@ impl ConnectionState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Connection(connection_event) = event {
             match connection_event {
-                ConnectionEvents::ConnectionCreated(connection) => {
-                    canon.connections.set(connection);
+                ConnectionEvents::ConnectionCreated(created) => {
+                    if let Ok(current) = created.current() {
+                        canon.connections.set(&current.connection);
+                    }
                 }
                 ConnectionEvents::ConnectionRemoved(removed) => {
-                    canon.connections.remove(removed.id);
+                    if let Ok(current) = removed.current() {
+                        canon.connections.remove(current.id);
+                    }
                 }
             };
         }

@@ -13,9 +13,18 @@ impl SetupView {
 
     pub fn render(self) -> Rendered<SetupResponse> {
         match self.response {
-            SetupResponse::SetupComplete(steps) => {
-                let prompt = Self::steps(&steps);
-                Rendered::new(SetupResponse::SetupComplete(steps), prompt, String::new())
+            SetupResponse::SetupComplete(SetupCompleteResponse::V1(details)) => {
+                let prompt = Self::steps(&details.steps);
+                Rendered::new(
+                    SetupResponse::SetupComplete(
+                        SetupCompleteResponse::builder_v1()
+                            .steps(details.steps)
+                            .build()
+                            .into(),
+                    ),
+                    prompt,
+                    String::new(),
+                )
             }
         }
     }

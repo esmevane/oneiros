@@ -1,41 +1,56 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetPersona {
-    #[builder(into)]
-    pub name: PersonaName,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub description: Description,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub prompt: Prompt,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SetPersona {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: PersonaName,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)]
+            pub description: Description,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)]
+            pub prompt: Prompt,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetPersona {
-    #[builder(into)]
-    pub key: ResourceKey<PersonaName>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetPersona {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<PersonaName>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemovePersona {
-    #[builder(into)]
-    pub name: PersonaName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RemovePersona {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: PersonaName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListPersonas {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListPersonas {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

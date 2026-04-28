@@ -62,8 +62,10 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("experience list").await?;
 
     match response {
-        Responses::Experience(ExperienceResponse::Experiences(experiences)) => {
-            assert_eq!(experiences.len(), 2);
+        Responses::Experience(ExperienceResponse::Experiences(ExperiencesResponse::V1(
+            experiences,
+        ))) => {
+            assert_eq!(experiences.items.len(), 2);
         }
         other => panic!("expected Experiences, got {other:#?}"),
     }
@@ -79,17 +81,19 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .await?;
 
     let id = match create_response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => {
-            experience.data.id
-        }
+        Responses::Experience(ExperienceResponse::ExperienceCreated(
+            ExperienceCreatedResponse::V1(created),
+        )) => created.experience.id,
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("experience show {id}")).await?;
 
     match show_response {
-        Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.data.description.as_str(), "Show me this");
+        Responses::Experience(ExperienceResponse::ExperienceDetails(
+            ExperienceDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.experience.description.as_str(), "Show me this");
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -105,10 +109,9 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
         .await?;
 
     let ref_token = match create_response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => experience
-            .meta()
-            .ref_token()
-            .expect("ExperienceCreated carries a ref token"),
+        Responses::Experience(ExperienceResponse::ExperienceCreated(
+            ExperienceCreatedResponse::V1(experience),
+        )) => RefToken::new(Ref::experience(experience.experience.id)),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
@@ -117,8 +120,10 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
         .await?;
 
     match show_response {
-        Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.data.description.as_str(), "Show me by ref");
+        Responses::Experience(ExperienceResponse::ExperienceDetails(
+            ExperienceDetailsResponse::V1(experience),
+        )) => {
+            assert_eq!(experience.experience.description.as_str(), "Show me by ref");
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -138,10 +143,9 @@ pub(crate) async fn show_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
         .await?;
 
     let cognition_ref = match cognition_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(cognition)) => cognition
-            .meta()
-            .ref_token()
-            .expect("CognitionAdded carries a ref token"),
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            cognition,
+        ))) => RefToken::new(Ref::cognition(cognition.cognition.id)),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
@@ -169,9 +173,9 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
         .await?;
 
     let id = match create_response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(experience)) => {
-            experience.data.id
-        }
+        Responses::Experience(ExperienceResponse::ExperienceCreated(
+            ExperienceCreatedResponse::V1(created),
+        )) => created.experience.id,
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
@@ -192,8 +196,13 @@ pub(crate) async fn update_description<B: Backend>() -> TestResult {
     let show_response = harness.exec_json(&format!("experience show {id}")).await?;
 
     match show_response {
-        Responses::Experience(ExperienceResponse::ExperienceDetails(experience)) => {
-            assert_eq!(experience.data.description.as_str(), "Updated description");
+        Responses::Experience(ExperienceResponse::ExperienceDetails(
+            ExperienceDetailsResponse::V1(experience),
+        )) => {
+            assert_eq!(
+                experience.experience.description.as_str(),
+                "Updated description"
+            );
         }
         other => panic!("expected ExperienceDetails, got {other:#?}"),
     }
@@ -208,7 +217,9 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("experience create observer.process caused 'Show this'")
         .await?;
     let id = match response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id.to_string(),
+        Responses::Experience(ExperienceResponse::ExperienceCreated(
+            ExperienceCreatedResponse::V1(e),
+        )) => e.experience.id.to_string(),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 
@@ -249,7 +260,9 @@ pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
         .exec_json("experience create observer.process caused 'Original'")
         .await?;
     let id = match response {
-        Responses::Experience(ExperienceResponse::ExperienceCreated(e)) => e.data.id.to_string(),
+        Responses::Experience(ExperienceResponse::ExperienceCreated(
+            ExperienceCreatedResponse::V1(e),
+        )) => e.experience.id.to_string(),
         other => panic!("expected ExperienceCreated, got {other:#?}"),
     };
 

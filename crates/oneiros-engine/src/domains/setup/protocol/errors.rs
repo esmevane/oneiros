@@ -22,6 +22,9 @@ pub enum SetupError {
 
     #[error(transparent)]
     Service(#[from] crate::ServiceError),
+
+    #[error(transparent)]
+    Upcast(#[from] crate::UpcastError),
 }
 
 impl IntoResponse for SetupError {

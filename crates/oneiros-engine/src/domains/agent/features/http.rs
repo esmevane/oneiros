@@ -61,7 +61,7 @@ async fn show(
     Path(key): Path<ResourceKey<AgentName>>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
-        AgentService::get(&context, &GetAgent::builder().key(key).build()).await?,
+        AgentService::get(&context, &GetAgent::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -78,6 +78,10 @@ async fn remove(
     Path(name): Path<AgentName>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
-        AgentService::remove(&context, &RemoveAgent::builder().name(name).build()).await?,
+        AgentService::remove(
+            &context,
+            &RemoveAgent::builder_v1().name(name).build().into(),
+        )
+        .await?,
     ))
 }

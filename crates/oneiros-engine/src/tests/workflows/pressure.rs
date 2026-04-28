@@ -44,10 +44,15 @@ async fn pressure_builds_from_activity() -> Result<(), Box<dyn core::error::Erro
     // Pressure should exist after activity
     let readings = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r,
         other => panic!("expected Readings, got {other:?}"),
     };
 
@@ -58,7 +63,8 @@ async fn pressure_builds_from_activity() -> Result<(), Box<dyn core::error::Erro
 
     // Dream should include pressure readings paired with urge CTAs
     match client.continuity().dream(&agent).await? {
-        ContinuityResponse::Dreaming(ctx) => {
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+            let ctx = &details.context;
             assert!(!ctx.pressures.is_empty(), "dream should include pressures");
             for reading in &ctx.pressures {
                 assert!(
@@ -72,7 +78,7 @@ async fn pressure_builds_from_activity() -> Result<(), Box<dyn core::error::Erro
 
     // List all pressures
     match client.pressure().list().await? {
-        PressureResponse::AllReadings(all) => {
+        PressureResponse::AllReadings(AllReadingsResponse::V1(all)) => {
             assert!(!all.pressures.is_empty());
         }
         other => panic!("expected AllReadings, got {other:?}"),
@@ -107,10 +113,15 @@ async fn introspecting_reduces_introspect_pressure() -> Result<(), Box<dyn core:
 
     let before = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r.pressures,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r.pressures,
         other => panic!("expected Readings, got {other:?}"),
     };
 
@@ -128,10 +139,15 @@ async fn introspecting_reduces_introspect_pressure() -> Result<(), Box<dyn core:
 
     let after = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r.pressures,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r.pressures,
         other => panic!("expected Readings, got {other:?}"),
     };
 
@@ -173,10 +189,15 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
 
     let before = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r.pressures,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r.pressures,
         other => panic!("expected Readings, got {other:?}"),
     };
 
@@ -187,29 +208,33 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
     let experience = match client
         .experience()
         .create(
-            &CreateExperience::builder()
+            &CreateExperience::builder_v1()
                 .agent(agent.clone())
                 .sensation("distills")
                 .description("These thoughts crystallize into understanding")
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        ExperienceResponse::ExperienceCreated(e) => e,
+        ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
+            created.experience
+        }
         other => panic!("expected ExperienceCreated, got {other:?}"),
     };
 
     // Get a cognition to connect
     let cognitions = match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(agent.clone()),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(c) => c.items,
+        CognitionResponse::Cognitions(CognitionsResponse::V1(c)) => c.items,
         other => panic!("expected Cognitions, got {other:?}"),
     };
 
@@ -218,11 +243,12 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
         client
             .connection()
             .create(
-                &CreateConnection::builder()
-                    .from_ref(RefToken::new(Ref::cognition(cog.data.id)))
-                    .to_ref(RefToken::new(Ref::experience(experience.data.id)))
+                &CreateConnection::builder_v1()
+                    .from_ref(RefToken::new(Ref::cognition(cog.id)))
+                    .to_ref(RefToken::new(Ref::experience(experience.id)))
                     .nature("context")
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
     }
@@ -232,10 +258,15 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
 
     let after = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r.pressures,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r.pressures,
         other => panic!("expected Readings, got {other:?}"),
     };
 
@@ -272,11 +303,12 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
         client
             .experience()
             .create(
-                &CreateExperience::builder()
+                &CreateExperience::builder_v1()
                     .agent(agent.clone())
                     .sensation("echoes")
                     .description(format!("Unconnected experience {i}"))
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
     }
@@ -287,10 +319,15 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
 
     let before = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r.pressures,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r.pressures,
         other => panic!("expected Readings, got {other:?}"),
     };
 
@@ -300,13 +337,15 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
     // Respond: connect the experiences and add a memory
     let experiences = match client
         .experience()
-        .list(&ListExperiences {
-            agent: Some(agent.clone()),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListExperiences::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        ExperienceResponse::Experiences(e) => e.items,
+        ExperienceResponse::Experiences(ExperiencesResponse::V1(e)) => e.items,
         other => panic!("expected Experiences, got {other:?}"),
     };
 
@@ -315,11 +354,12 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
         client
             .connection()
             .create(
-                &CreateConnection::builder()
-                    .from_ref(RefToken::new(Ref::experience(experiences[0].data.id)))
-                    .to_ref(RefToken::new(Ref::experience(experiences[1].data.id)))
+                &CreateConnection::builder_v1()
+                    .from_ref(RefToken::new(Ref::experience(experiences[0].id)))
+                    .to_ref(RefToken::new(Ref::experience(experiences[1].id)))
                     .nature("reference")
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
     }
@@ -330,10 +370,15 @@ async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::
 
     let after = match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => r.pressures,
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => r.pressures,
         other => panic!("expected Readings, got {other:?}"),
     };
 

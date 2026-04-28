@@ -2,6 +2,11 @@ use clap::Subcommand;
 
 use crate::*;
 
+/// CLI subcommands for the persona domain. Each variant carries a versioned
+/// protocol request directly — clap derives parsing through the wrapper's
+/// `Args` impl, which delegates to the latest version's struct. The
+/// dispatcher passes the wrapper through to the client without rebuilding,
+/// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
 pub enum PersonaCommands {
     Set(SetPersona),
@@ -19,10 +24,10 @@ impl PersonaCommands {
         let persona_client = PersonaClient::new(&client);
 
         let response = match self {
-            PersonaCommands::Set(set) => persona_client.set(set).await?,
-            PersonaCommands::Show(get) => persona_client.get(get).await?,
-            PersonaCommands::List(list) => persona_client.list(list).await?,
-            PersonaCommands::Remove(removal) => persona_client.remove(&removal.name).await?,
+            Self::Set(setting) => persona_client.set(setting).await?,
+            Self::Show(lookup) => persona_client.get(lookup).await?,
+            Self::List(listing) => persona_client.list(listing).await?,
+            Self::Remove(removal) => persona_client.remove(removal).await?,
         };
 
         Ok(PersonaView::new(response).render().map(Into::into))

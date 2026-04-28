@@ -1,32 +1,46 @@
 use std::path::PathBuf;
 
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct InitProject {
-    #[arg(long)]
-    #[builder(into)]
-    pub name: Option<BrainName>,
-    #[arg(long, short)]
-    #[builder(default)]
-    pub yes: bool,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum InitProject {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long)]
+            #[builder(into)]
+            pub name: Option<BrainName>,
+            #[arg(long, short)]
+            #[serde(default)]
+            #[builder(default)]
+            pub yes: bool,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ExportProject {
-    #[arg(long, short)]
-    pub target: PathBuf,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ExportProject {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long, short)]
+            pub target: PathBuf,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ImportProject {
-    pub file: PathBuf,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ImportProject {
+        #[derive(clap::Args)]
+        V1 => {
+            pub file: PathBuf,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

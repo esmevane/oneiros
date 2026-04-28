@@ -80,7 +80,8 @@ mod bookmark_mcp {
 
         let value = match request_type {
             BookmarkRequestType::ListBookmarks => {
-                let request: ListBookmarks = serde_json::from_str(params).unwrap_or_default();
+                let request: ListBookmarks = serde_json::from_str(params)
+                    .unwrap_or_else(|_| ListBookmarks::builder_v1().build().into());
                 BookmarkService::list(state, brain, &request)
                     .await
                     .map_err(Error::from)?

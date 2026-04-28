@@ -7,11 +7,57 @@ use crate::*;
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ContinuityEventsType, display = "kebab-case")]
 pub enum ContinuityEvents {
-    Dreamed(ContinuityEvent),
-    Introspected(ContinuityEvent),
-    Reflected(ContinuityEvent),
-    Sensed(SensedEvent),
-    Slept(ContinuityEvent),
+    Dreamed(Dreamed),
+    Introspected(Introspected),
+    Reflected(Reflected),
+    Sensed(Sensed),
+    Slept(Slept),
+}
+
+versioned! {
+    pub enum Dreamed {
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            pub created_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub enum Introspected {
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            pub created_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub enum Reflected {
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            pub created_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub enum Sensed {
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub content: Content,
+            pub created_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub enum Slept {
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            pub created_at: Timestamp,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -31,17 +77,4 @@ mod tests {
             assert_eq!(&event_type.to_string(), expectation);
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ContinuityEvent {
-    pub agent: AgentName,
-    pub created_at: Timestamp,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SensedEvent {
-    pub agent: AgentName,
-    pub content: Content,
-    pub created_at: Timestamp,
 }

@@ -1,17 +1,19 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SearchQuery {
-    #[builder(into)]
-    pub query: String,
-    #[arg(long)]
-    pub agent: Option<AgentName>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SearchQuery {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub query: String,
+            #[arg(long)]
+            pub agent: Option<AgentName>,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

@@ -5,56 +5,61 @@ pub struct CognitionService;
 impl CognitionService {
     pub async fn add(
         context: &ProjectContext,
-        AddCognition {
-            agent,
-            texture,
-            content,
-        }: &AddCognition,
+        request: &AddCognition,
     ) -> Result<CognitionResponse, CognitionError> {
+        let AddCognition::V1(addition) = request;
         let agent_record = AgentRepo::new(context)
-            .get(agent)
+            .get(&addition.agent)
             .await?
-            .ok_or_else(|| CognitionError::AgentNotFound(agent.clone()))?;
+            .ok_or_else(|| CognitionError::AgentNotFound(addition.agent.clone()))?;
 
         let cognition = Cognition::builder()
             .agent_id(agent_record.id)
-            .texture(texture.clone())
-            .content(content.clone())
+            .texture(addition.texture.clone())
+            .content(addition.content.clone())
             .build();
 
         context
-            .emit(CognitionEvents::CognitionAdded(cognition.clone()))
+            .emit(CognitionEvents::CognitionAdded(
+                CognitionAdded::builder_v1()
+                    .cognition(cognition.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        let ref_token = RefToken::new(Ref::cognition(cognition.id));
+
         Ok(CognitionResponse::CognitionAdded(
-            Response::new(cognition).with_ref_token(ref_token),
+            CognitionAddedResponse::builder_v1()
+                .cognition(cognition)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetCognition,
+        request: &GetCognition,
     ) -> Result<CognitionResponse, CognitionError> {
-        let id = selector.key.resolve()?;
+        let GetCognition::V1(lookup) = request;
+        let id = lookup.key.resolve()?;
         let cognition = CognitionRepo::new(context)
             .get(&id)
             .await?
             .ok_or(CognitionError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::cognition(cognition.id));
         Ok(CognitionResponse::CognitionDetails(
-            Response::new(cognition).with_ref_token(ref_token),
+            CognitionDetailsResponse::builder_v1()
+                .cognition(cognition)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListCognitions {
-            agent,
-            texture,
-            filters,
-        }: &ListCognitions,
+        request: &ListCognitions,
     ) -> Result<CognitionResponse, CognitionError> {
-        let agent_id = match agent {
+        let ListCognitions::V1(listing) = request;
+        let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context)
                     .get(name)
@@ -66,15 +71,22 @@ impl CognitionService {
         };
 
         let listed = CognitionRepo::new(context)
-            .list(agent_id.as_ref(), texture.as_ref(), filters)
+            .list(
+                agent_id.as_ref(),
+                listing.texture.as_ref(),
+                &listing.filters,
+            )
             .await?;
         Ok(if listed.total == 0 {
             CognitionResponse::NoCognitions
         } else {
-            CognitionResponse::Cognitions(listed.map(|c| {
-                let ref_token = RefToken::new(Ref::cognition(c.id));
-                Response::new(c).with_ref_token(ref_token)
-            }))
+            CognitionResponse::Cognitions(
+                CognitionsResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            )
         })
     }
 }

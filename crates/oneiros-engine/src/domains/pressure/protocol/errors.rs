@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{ErrorResponse, resource_op_error};
+use crate::{ErrorResponse, UpcastError, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum PressureError {
@@ -14,6 +14,9 @@ pub enum PressureError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Upcast(#[from] UpcastError),
 }
 
 resource_op_error!(PressureError);
@@ -21,7 +24,7 @@ resource_op_error!(PressureError);
 impl IntoResponse for PressureError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
-            PressureError::Database(_) | PressureError::Event(_) => {
+            PressureError::Database(_) | PressureError::Event(_) | PressureError::Upcast(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             PressureError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),

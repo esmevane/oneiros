@@ -1,78 +1,114 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct WakeAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum WakeAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct DreamAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum DreamAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct IntrospectAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum IntrospectAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ReflectAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ReflectAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SenseContent {
-    #[builder(into)]
-    pub agent: AgentName,
-    #[builder(into)]
-    pub content: Content,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SenseContent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub content: Content,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SleepAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SleepAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GuidebookAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GuidebookAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct EmergeAgent {
-    #[builder(into)]
-    pub name: AgentName,
-    #[builder(into)]
-    pub persona: PersonaName,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub description: Description,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum EmergeAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: AgentName,
+            #[builder(into)] pub persona: PersonaName,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)] pub description: Description,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RecedeAgent {
-    #[builder(into)]
-    pub agent: AgentName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RecedeAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct StatusAgent {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum StatusAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

@@ -15,8 +15,14 @@ impl<'a> ConnectionStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Connection(connection_event)) = &event.data {
             match connection_event {
-                ConnectionEvents::ConnectionCreated(connection) => self.insert(connection)?,
-                ConnectionEvents::ConnectionRemoved(removed) => self.remove(&removed.id)?,
+                ConnectionEvents::ConnectionCreated(created) => {
+                    let connection = created.current()?.connection;
+                    self.write_connection(&connection)?
+                }
+                ConnectionEvents::ConnectionRemoved(removed) => {
+                    let current = removed.current()?;
+                    self.remove(&current.id)?
+                }
             }
         }
         Ok(())
@@ -117,7 +123,7 @@ impl<'a> ConnectionStore<'a> {
         Ok(connections)
     }
 
-    fn insert(&self, connection: &Connection) -> Result<(), EventError> {
+    fn write_connection(&self, connection: &Connection) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO connections
              (id, from_ref, to_ref, nature, created_at)

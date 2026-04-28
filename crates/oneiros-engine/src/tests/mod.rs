@@ -27,13 +27,22 @@ async fn project_context() -> (ProjectContext, tempfile::TempDir) {
     let (config, dir) = test_config("test");
     let system = config.system();
 
-    SystemService::init(&system, &InitSystem::builder().name("test").build())
-        .await
-        .unwrap();
+    SystemService::init(
+        &system,
+        &InitSystem::builder_v1()
+            .name("test".to_string())
+            .build()
+            .into(),
+    )
+    .await
+    .unwrap();
 
     ProjectService::init(
         &system,
-        &InitProject::builder().name(BrainName::new("test")).build(),
+        &InitProject::builder_v1()
+            .name(BrainName::new("test"))
+            .build()
+            .into(),
     )
     .await
     .unwrap();
@@ -44,11 +53,12 @@ async fn project_context() -> (ProjectContext, tempfile::TempDir) {
 async fn seed_persona(context: &ProjectContext) {
     PersonaService::set(
         context,
-        &SetPersona::builder()
+        &SetPersona::builder_v1()
             .name("test-persona")
             .description("A test persona")
             .prompt("You are a test.")
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap();
@@ -57,12 +67,14 @@ async fn seed_persona(context: &ProjectContext) {
 async fn seed_agent(context: &ProjectContext) {
     AgentService::create(
         context,
-        &CreateAgent::builder()
-            .name("gov")
-            .persona("test-persona")
-            .description("Governor")
-            .prompt("You govern")
-            .build(),
+        &CreateAgent::V1(
+            CreateAgentV1::builder()
+                .name("gov")
+                .persona("test-persona")
+                .description("Governor")
+                .prompt("You govern")
+                .build(),
+        ),
     )
     .await
     .unwrap();
@@ -74,21 +86,23 @@ async fn replay_reconstructs_read_models() {
 
     LevelService::set(
         &context,
-        &SetLevel::builder()
+        &SetLevel::builder_v1()
             .name("working")
             .description("Active")
             .prompt("")
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap();
     LevelService::set(
         &context,
-        &SetLevel::builder()
+        &SetLevel::builder_v1()
             .name("session")
             .description("Session")
             .prompt("")
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap();
@@ -96,26 +110,22 @@ async fn replay_reconstructs_read_models() {
     seed_agent(&context).await;
     CognitionService::add(
         &context,
-        &AddCognition::builder()
+        &AddCognition::builder_v1()
             .agent("gov.test-persona")
             .texture("observation")
             .content("Test thought")
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap();
 
     // Verify read models before replay
-    match LevelService::list(
-        &context,
-        &ListLevels {
-            filters: SearchFilters::default(),
-        },
-    )
-    .await
-    .unwrap()
+    match LevelService::list(&context, &ListLevels::builder_v1().build().into())
+        .await
+        .unwrap()
     {
-        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
+        LevelResponse::Levels(LevelsResponse::V1(levels)) => assert_eq!(levels.items.len(), 2),
         other => panic!("Expected Listed, got {other:?}"),
     }
 
@@ -123,44 +133,42 @@ async fn replay_reconstructs_read_models() {
     context.replay().unwrap();
 
     // Read models should be identical after replay
-    match LevelService::list(
-        &context,
-        &ListLevels {
-            filters: SearchFilters::default(),
-        },
-    )
-    .await
-    .unwrap()
+    match LevelService::list(&context, &ListLevels::builder_v1().build().into())
+        .await
+        .unwrap()
     {
-        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
+        LevelResponse::Levels(LevelsResponse::V1(levels)) => assert_eq!(levels.items.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
     match AgentService::get(
         &context,
-        &GetAgent::builder()
-            .key(AgentName::new("gov.test-persona"))
-            .build(),
+        &GetAgent::V1(
+            GetAgentV1::builder()
+                .key(AgentName::new("gov.test-persona"))
+                .build(),
+        ),
     )
     .await
     .unwrap()
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("gov.test-persona"))
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, AgentName::new("gov.test-persona"))
         }
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
     match CognitionService::list(
         &context,
-        &ListCognitions {
-            agent: Some(AgentName::new("gov.test-persona")),
-            texture: None,
-            filters: SearchFilters::default(),
-        },
+        &ListCognitions::builder_v1()
+            .agent(AgentName::new("gov.test-persona"))
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1)
+        }
         other => panic!("Expected Cognitions after replay, got {other:?}"),
     }
 }
@@ -172,18 +180,19 @@ async fn storage_content_round_trips() {
 
     let entry = match StorageService::upload(
         &context,
-        &UploadStorage::builder()
+        &UploadStorage::builder_v1()
             .key("test.txt")
             .description("A test file")
             .data(content.to_vec())
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        StorageResponse::StorageSet(entry) => {
-            assert_eq!(entry.data.key.as_str(), "test.txt");
-            entry
+        StorageResponse::StorageSet(StorageSetResponse::V1(set)) => {
+            assert_eq!(set.entry.key.as_str(), "test.txt");
+            set.entry
         }
         other => panic!("Expected StorageSet, got {other:?}"),
     };
@@ -197,15 +206,16 @@ async fn storage_content_round_trips() {
     // Hash should be stable
     match StorageService::show(
         &context,
-        &GetStorage::builder()
+        &GetStorage::builder_v1()
             .key(StorageKey::new("test.txt"))
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        StorageResponse::StorageDetails(shown) => {
-            assert_eq!(shown.data.hash, entry.data.hash);
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(shown)) => {
+            assert_eq!(shown.entry.hash, entry.hash);
         }
         other => panic!("Expected StorageDetails, got {other:?}"),
     }

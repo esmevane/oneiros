@@ -23,40 +23,23 @@ impl<'a> BookmarkStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data {
-            match bookmark_event {
-                BookmarkEvents::BookmarkCreated(created) => {
-                    self.insert(&created.brain, &created.name, &event.created_at)?;
-                }
-                BookmarkEvents::BookmarkForked(forked) => {
-                    self.insert(&forked.brain, &forked.name, &event.created_at)?;
-                }
-                BookmarkEvents::BookmarkSwitched(_)
-                | BookmarkEvents::BookmarkMerged(_)
-                | BookmarkEvents::BookmarkShared(_)
-                | BookmarkEvents::BookmarkFollowed(_)
-                | BookmarkEvents::BookmarkCollected(_)
-                | BookmarkEvents::BookmarkUnfollowed(_) => {}
-            }
+        if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data
+            && let Some(bookmark) = bookmark_event.maybe_bookmark()
+        {
+            self.write_bookmark(&bookmark)?;
         }
         Ok(())
     }
 
-    fn insert(
-        &self,
-        brain: &BrainName,
-        name: &BookmarkName,
-        created_at: &Timestamp,
-    ) -> Result<(), EventError> {
-        let id = BookmarkId::new();
+    fn write_bookmark(&self, bookmark: &Bookmark) -> Result<(), EventError> {
         self.db.execute(
             "INSERT OR REPLACE INTO bookmarks (id, brain, name, created_at)
              VALUES (?1, ?2, ?3, ?4)",
             rusqlite::params![
-                id.to_string(),
-                brain.to_string(),
-                name.to_string(),
-                created_at.to_string(),
+                bookmark.id.to_string(),
+                bookmark.brain.to_string(),
+                bookmark.name.to_string(),
+                bookmark.created_at.to_string(),
             ],
         )?;
         Ok(())

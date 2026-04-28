@@ -31,14 +31,17 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     // Confirm baseline: one agent, one cognition
     match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1)
+        }
         other => panic!("expected 1 cognition on main, got {other:?}"),
     }
 
@@ -51,15 +54,20 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     // Experiment should have both cognitions
     match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 2, "experiment branch should have 2 cognitions")
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(
+                cogs.items.len(),
+                2,
+                "experiment branch should have 2 cognitions"
+            )
         }
         other => panic!("expected 2 cognitions on experiment, got {other:?}"),
     }
@@ -69,15 +77,20 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     // Main should still have only the original cognition
     match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 1, "main branch should still have 1 cognition")
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(
+                cogs.items.len(),
+                1,
+                "main branch should still have 1 cognition"
+            )
         }
         other => panic!("expected 1 cognition on main after switch, got {other:?}"),
     }
@@ -86,15 +99,16 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => assert_eq!(
-            cogs.len(),
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => assert_eq!(
+            cogs.items.len(),
             2,
             "experiment should still have 2 cognitions after round-trip"
         ),
@@ -107,15 +121,20 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     // Main should now have everything from both branches
     match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 2, "main should have 2 cognitions after merge")
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(
+                cogs.items.len(),
+                2,
+                "main should have 2 cognitions after merge"
+            )
         }
         other => panic!("expected 2 cognitions on main after merge, got {other:?}"),
     }
@@ -139,7 +158,11 @@ async fn fresh_brain_lists_main_bookmark() -> Result<(), Box<dyn core::error::Er
 
     let client = app.client();
 
-    match client.bookmark().list(&ListBookmarks::default()).await? {
+    match client
+        .bookmark()
+        .list(&ListBookmarks::builder_v1().build().into())
+        .await?
+    {
         BookmarkResponse::Bookmarks(listed) => {
             assert_eq!(
                 listed.len(),

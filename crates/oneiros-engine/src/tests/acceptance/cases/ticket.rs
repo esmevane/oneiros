@@ -6,9 +6,9 @@ pub(crate) async fn list_after_project_init<B: Backend>() -> TestResult {
     let response = harness.exec_json("ticket list").await?;
 
     match response {
-        Responses::Ticket(TicketResponse::Listed(tickets)) => {
+        Responses::Ticket(TicketResponse::Listed(TicketsResponse::V1(tickets))) => {
             assert!(
-                !tickets.is_empty(),
+                !tickets.items.is_empty(),
                 "project init should create at least one ticket"
             );
             assert_eq!(

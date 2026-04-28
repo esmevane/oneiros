@@ -177,16 +177,20 @@ mod tests {
     }
 
     fn test_event(seq: i64) -> StoredEvent {
+        let cognition = Cognition::builder()
+            .agent_id(AgentId::new())
+            .texture("observation")
+            .content(format!("thought {seq}"))
+            .build();
         StoredEvent::builder()
             .id(EventId::new())
             .sequence(seq)
             .data(Event::Known(Events::Cognition(
                 CognitionEvents::CognitionAdded(
-                    Cognition::builder()
-                        .agent_id(AgentId::new())
-                        .texture("observation")
-                        .content(format!("thought {seq}"))
-                        .build(),
+                    CognitionAdded::builder_v1()
+                        .cognition(cognition)
+                        .build()
+                        .into(),
                 ),
             )))
             .source(Source::default())

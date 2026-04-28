@@ -5,7 +5,7 @@ use crate::*;
 #[derive(Debug, Args)]
 pub struct SearchCommands {
     #[command(flatten)]
-    pub query: SearchQuery,
+    pub command: SearchQuery,
 }
 
 impl SearchCommands {
@@ -16,7 +16,7 @@ impl SearchCommands {
         let client = context.client();
         let search_client = SearchClient::new(&client);
 
-        let response = search_client.search(&self.query).await?;
+        let response = search_client.search(&self.command).await?;
         Ok(SearchView::new(response).render().map(Into::into))
     }
 }

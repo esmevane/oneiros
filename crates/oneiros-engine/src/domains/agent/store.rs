@@ -15,11 +15,12 @@ impl<'a> AgentStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Agent(agent_event)) = &event.data {
             match agent_event {
-                AgentEvents::AgentCreated(agent) => self.create_record(agent)?,
-                AgentEvents::AgentUpdated(agent) => self.update(agent)?,
-                AgentEvents::AgentRemoved(removed) => self.remove(&removed.name)?,
+                AgentEvents::AgentCreated(agent_created) => self.create(agent_created)?,
+                AgentEvents::AgentUpdated(agent_updated) => self.update(agent_updated)?,
+                AgentEvents::AgentRemoved(agent_removed) => self.remove(agent_removed)?,
             }
         }
+
         Ok(())
     }
 
@@ -30,12 +31,12 @@ impl<'a> AgentStore<'a> {
 
     pub fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS agents (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL UNIQUE,
-                persona TEXT NOT NULL DEFAULT '',
-                description TEXT NOT NULL DEFAULT '',
-                prompt TEXT NOT NULL DEFAULT ''
+            "create table if not exists agents (
+                id          text primary key,
+                name        text not null unique,
+                persona     text not null default '',
+                description text not null default '',
+                prompt      text not null default ''
             )",
         )?;
         Ok(())
@@ -131,40 +132,36 @@ impl<'a> AgentStore<'a> {
         Ok(count > 0)
     }
 
-    fn create_record(&self, agent: &Agent) -> Result<(), EventError> {
-        self.conn.execute(
-            "insert or replace into agents (id, name, persona, description, prompt)
-             values (?1, ?2, ?3, ?4, ?5)",
-            params![
-                agent.id.to_string(),
-                agent.name.to_string(),
-                agent.persona.to_string(),
-                agent.description.to_string(),
-                agent.prompt.to_string()
-            ],
-        )?;
-        Ok(())
+    fn create(&self, creation: &AgentCreated) -> Result<(), EventError> {
+        let agent = creation.current()?.agent;
+        self.write_agent(&agent)
     }
 
-    fn update(&self, agent: &Agent) -> Result<(), EventError> {
-        self.conn.execute(
-            "insert or replace into agents (id, name, persona, description, prompt)
-             values (?1, ?2, ?3, ?4, ?5)",
-            params![
-                agent.id.to_string(),
-                agent.name.to_string(),
-                agent.persona.to_string(),
-                agent.description.to_string(),
-                agent.prompt.to_string()
-            ],
-        )?;
-        Ok(())
+    fn update(&self, update: &AgentUpdated) -> Result<(), EventError> {
+        let agent = update.current()?.agent;
+        self.write_agent(&agent)
     }
 
-    fn remove(&self, name: &AgentName) -> Result<(), EventError> {
+    fn remove(&self, removal: &AgentRemoved) -> Result<(), EventError> {
+        let name = removal.current()?.name;
         self.conn.execute(
             "delete from agents where name = ?1",
             params![name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn write_agent(&self, agent: &Agent) -> Result<(), EventError> {
+        self.conn.execute(
+            "insert or replace into agents (id, name, persona, description, prompt)
+             values (?1, ?2, ?3, ?4, ?5)",
+            params![
+                agent.id.to_string(),
+                agent.name.to_string(),
+                agent.persona.to_string(),
+                agent.description.to_string(),
+                agent.prompt.to_string()
+            ],
         )?;
         Ok(())
     }

@@ -33,11 +33,12 @@ impl SeedService {
         ] {
             LevelService::set(
                 context,
-                &SetLevel::builder()
+                &SetLevel::builder_v1()
                     .name(LevelName::new(name))
                     .description(Description::from(description))
                     .prompt(Prompt::from(prompt))
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
@@ -71,10 +72,11 @@ impl SeedService {
         ] {
             TextureService::set(
                 context,
-                &SetTexture::builder()
+                &SetTexture::builder_v1()
                     .name(TextureName::new(name))
                     .description(Description::from(description))
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
@@ -104,10 +106,11 @@ impl SeedService {
         ] {
             SensationService::set(
                 context,
-                &SetSensation::builder()
+                &SetSensation::builder_v1()
                     .name(name)
                     .description(description)
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
@@ -134,10 +137,11 @@ impl SeedService {
         ] {
             NatureService::set(
                 context,
-                &SetNature::builder()
+                &SetNature::builder_v1()
                     .name(name)
                     .description(description)
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
@@ -155,10 +159,11 @@ impl SeedService {
         ] {
             PersonaService::set(
                 context,
-                &SetPersona::builder()
+                &SetPersona::builder_v1()
                     .name(name)
                     .description(description)
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
@@ -187,11 +192,12 @@ impl SeedService {
         ] {
             UrgeService::set(
                 context,
-                &SetUrge::builder()
+                &SetUrge::builder_v1()
                     .name(name)
                     .description(description)
                     .prompt(prompt)
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
@@ -246,12 +252,14 @@ impl SeedService {
 
             AgentService::create(
                 context,
-                &CreateAgent::builder()
-                    .name(agent_name)
-                    .persona(PersonaName::new(persona))
-                    .description(Description::from(description))
-                    .prompt(Prompt::from(prompt))
-                    .build(),
+                &CreateAgent::V1(
+                    CreateAgentV1::builder()
+                        .name(agent_name)
+                        .persona(PersonaName::new(persona))
+                        .description(Description::from(description))
+                        .prompt(Prompt::from(prompt))
+                        .build(),
+                ),
             )
             .await?;
         }

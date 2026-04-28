@@ -41,12 +41,14 @@ impl TextureRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<TextureName>,
-    Json(mut body): Json<SetTexture>,
+    Json(body): Json<SetTexture>,
 ) -> Result<(StatusCode, Json<TextureResponse>), TextureError> {
-    body.name = name;
+    let SetTexture::V1(mut setting) = body;
+    setting.name = name;
+    let request = SetTexture::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(TextureService::set(&context, &body).await?),
+        Json(TextureService::set(&context, &request).await?),
     ))
 }
 
@@ -62,7 +64,7 @@ async fn show(
     Path(key): Path<ResourceKey<TextureName>>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(
-        TextureService::get(&context, &GetTexture::builder().key(key).build()).await?,
+        TextureService::get(&context, &GetTexture::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -71,6 +73,10 @@ async fn remove(
     Path(name): Path<TextureName>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(
-        TextureService::remove(&context, &RemoveTexture::builder().name(name).build()).await?,
+        TextureService::remove(
+            &context,
+            &RemoveTexture::builder_v1().name(name).build().into(),
+        )
+        .await?,
     ))
 }

@@ -12,8 +12,9 @@ impl<'a> TicketStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Event::Known(Events::Ticket(TicketEvents::TicketIssued(ticket))) = &event.data {
-            self.create_record(ticket)?;
+        if let Event::Known(Events::Ticket(TicketEvents::TicketIssued(issued))) = &event.data {
+            let ticket = issued.current()?.ticket;
+            self.write_ticket(&ticket)?;
         }
         Ok(())
     }
@@ -43,7 +44,7 @@ impl<'a> TicketStore<'a> {
         Ok(())
     }
 
-    fn create_record(&self, ticket: &Ticket) -> Result<(), EventError> {
+    fn write_ticket(&self, ticket: &Ticket) -> Result<(), EventError> {
         let target = RefToken::new(ticket.link.target.clone()).to_string();
         self.conn.execute(
             "insert or replace into tickets (

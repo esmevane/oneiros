@@ -18,9 +18,14 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("sensation show echoes").await?;
 
     match show_response {
-        Responses::Sensation(SensationResponse::SensationDetails(s)) => {
-            assert_eq!(s.data.name.as_str(), "echoes");
-            assert_eq!(s.data.description.as_str(), "Resonance between thoughts");
+        Responses::Sensation(SensationResponse::SensationDetails(
+            SensationDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.sensation.name.as_str(), "echoes");
+            assert_eq!(
+                details.sensation.description.as_str(),
+                "Resonance between thoughts"
+            );
         }
         other => panic!("expected SensationDetails, got {other:#?}"),
     }
@@ -42,8 +47,10 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("sensation show draft").await?;
 
     match show_response {
-        Responses::Sensation(SensationResponse::SensationDetails(s)) => {
-            assert_eq!(s.data.description.as_str(), "Updated");
+        Responses::Sensation(SensationResponse::SensationDetails(
+            SensationDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.sensation.description.as_str(), "Updated");
         }
         other => panic!("expected SensationDetails, got {other:#?}"),
     }
@@ -81,8 +88,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("sensation list").await?;
 
     match response {
-        Responses::Sensation(SensationResponse::Sensations(list)) => {
-            assert_eq!(list.len(), 2);
+        Responses::Sensation(SensationResponse::Sensations(SensationsResponse::V1(list))) => {
+            assert_eq!(list.items.len(), 2);
         }
         other => panic!("expected Sensations, got {other:#?}"),
     }

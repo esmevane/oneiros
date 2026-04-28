@@ -11,34 +11,51 @@ impl BookmarkView {
 
     pub fn render(self) -> Rendered<BookmarkResponse> {
         match self.response {
-            BookmarkResponse::Created(created) => {
+            BookmarkResponse::Created(BookmarkCreatedResponse::V1(created)) => {
                 let prompt =
-                    Confirmation::new("Bookmark", created.name.to_string(), "created").to_string();
-                Rendered::new(BookmarkResponse::Created(created), prompt, String::new())
+                    Confirmation::new("Bookmark", created.bookmark.name.to_string(), "created")
+                        .to_string();
+                Rendered::new(
+                    BookmarkResponse::Created(BookmarkCreatedResponse::V1(created)),
+                    prompt,
+                    String::new(),
+                )
             }
-            BookmarkResponse::Forked(forked) => {
+            BookmarkResponse::Forked(BookmarkForkedResponse::V1(forked)) => {
                 let prompt = Confirmation::new(
                     "Bookmark",
-                    forked.name.to_string(),
+                    forked.bookmark.name.to_string(),
                     format!("forked from '{}'", forked.from),
                 )
                 .to_string();
-                Rendered::new(BookmarkResponse::Forked(forked), prompt, String::new())
+                Rendered::new(
+                    BookmarkResponse::Forked(BookmarkForkedResponse::V1(forked)),
+                    prompt,
+                    String::new(),
+                )
             }
-            BookmarkResponse::Switched(switched) => {
+            BookmarkResponse::Switched(BookmarkSwitchedResponse::V1(switched)) => {
                 let prompt =
                     Confirmation::new("Bookmark", switched.name.to_string(), "switched to")
                         .to_string();
-                Rendered::new(BookmarkResponse::Switched(switched), prompt, String::new())
+                Rendered::new(
+                    BookmarkResponse::Switched(BookmarkSwitchedResponse::V1(switched)),
+                    prompt,
+                    String::new(),
+                )
             }
-            BookmarkResponse::Merged(merged) => {
+            BookmarkResponse::Merged(BookmarkMergedResponse::V1(merged)) => {
                 let prompt = Confirmation::new(
                     "Bookmark",
                     merged.source.to_string(),
                     format!("merged into '{}'", merged.target),
                 )
                 .to_string();
-                Rendered::new(BookmarkResponse::Merged(merged), prompt, String::new())
+                Rendered::new(
+                    BookmarkResponse::Merged(BookmarkMergedResponse::V1(merged)),
+                    prompt,
+                    String::new(),
+                )
             }
             BookmarkResponse::Bookmarks(listed) => {
                 let mut table = Table::new(vec![Column::key("name", "Name")]);
@@ -69,12 +86,12 @@ impl BookmarkView {
                 .to_string();
                 Rendered::new(BookmarkResponse::Collected(result), prompt, String::new())
             }
-            BookmarkResponse::Unfollowed(unfollowed) => {
+            BookmarkResponse::Unfollowed(BookmarkUnfollowedResponse::V1(unfollowed)) => {
                 let prompt =
                     Confirmation::new("Bookmark", unfollowed.bookmark.to_string(), "unfollowed")
                         .to_string();
                 Rendered::new(
-                    BookmarkResponse::Unfollowed(unfollowed),
+                    BookmarkResponse::Unfollowed(BookmarkUnfollowedResponse::V1(unfollowed)),
                     prompt,
                     String::new(),
                 )

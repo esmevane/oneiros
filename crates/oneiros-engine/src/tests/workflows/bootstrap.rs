@@ -23,27 +23,26 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
     let client = app.client();
     match client
         .level()
-        .list(&ListLevels {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListLevels::builder_v1().build().into())
         .await?
     {
-        LevelResponse::Levels(levels) => {
-            assert!(levels.len() >= 4, "seed should create at least 4 levels");
+        LevelResponse::Levels(LevelsResponse::V1(levels)) => {
+            assert!(
+                levels.items.len() >= 4,
+                "seed should create at least 4 levels"
+            );
         }
         other => panic!("expected Levels, got {other:?}"),
     }
 
     match client
         .persona()
-        .list(&ListPersonas {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListPersonas::builder_v1().build().into())
         .await?
     {
-        PersonaResponse::Personas(personas) => {
+        PersonaResponse::Personas(PersonasResponse::V1(personas)) => {
             assert!(
-                !personas.is_empty(),
+                !personas.items.is_empty(),
                 "seed should create at least one persona"
             );
         }
@@ -56,16 +55,16 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
     // The agent exists
     match client
         .agent()
-        .get(
-            &GetAgent::builder()
+        .get(&GetAgent::V1(
+            GetAgentV1::builder()
                 .key(AgentName::new("thinker.process"))
                 .build(),
-        )
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(agent) => {
-            assert_eq!(agent.data.name, AgentName::new("thinker.process"));
-            assert_eq!(agent.data.persona, PersonaName::new("process"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)) => {
+            assert_eq!(agent.agent.name, AgentName::new("thinker.process"));
+            assert_eq!(agent.agent.persona, PersonaName::new("process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -102,7 +101,11 @@ async fn project_init_creates_main_bookmark() -> Result<(), Box<dyn core::error:
 
     let client = app.client();
 
-    match client.bookmark().list(&ListBookmarks::default()).await? {
+    match client
+        .bookmark()
+        .list(&ListBookmarks::builder_v1().build().into())
+        .await?
+    {
         BookmarkResponse::Bookmarks(bookmarks) => {
             assert_eq!(bookmarks.len(), 1, "exactly one bookmark after init");
             assert_eq!(

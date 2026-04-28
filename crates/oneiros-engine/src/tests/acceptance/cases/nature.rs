@@ -15,9 +15,9 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("nature show context").await?;
 
     match show_response {
-        Responses::Nature(NatureResponse::NatureDetails(n)) => {
-            assert_eq!(n.data.name.as_str(), "context");
-            assert_eq!(n.data.description.as_str(), "Provides background");
+        Responses::Nature(NatureResponse::NatureDetails(NatureDetailsResponse::V1(details))) => {
+            assert_eq!(details.nature.name.as_str(), "context");
+            assert_eq!(details.nature.description.as_str(), "Provides background");
         }
         other => panic!("expected NatureDetails, got {other:#?}"),
     }
@@ -39,8 +39,8 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("nature show draft").await?;
 
     match show_response {
-        Responses::Nature(NatureResponse::NatureDetails(n)) => {
-            assert_eq!(n.data.description.as_str(), "Updated");
+        Responses::Nature(NatureResponse::NatureDetails(NatureDetailsResponse::V1(details))) => {
+            assert_eq!(details.nature.description.as_str(), "Updated");
         }
         other => panic!("expected NatureDetails, got {other:#?}"),
     }
@@ -75,8 +75,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("nature list").await?;
 
     match response {
-        Responses::Nature(NatureResponse::Natures(list)) => {
-            assert_eq!(list.len(), 2);
+        Responses::Nature(NatureResponse::Natures(NaturesResponse::V1(list))) => {
+            assert_eq!(list.items.len(), 2);
         }
         other => panic!("expected Natures, got {other:#?}"),
     }

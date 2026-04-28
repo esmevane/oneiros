@@ -1,39 +1,54 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateConnection {
-    #[builder(into)]
-    pub nature: NatureName,
-    pub from_ref: RefToken,
-    pub to_ref: RefToken,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum CreateConnection {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub nature: NatureName,
+            pub from_ref: RefToken,
+            pub to_ref: RefToken,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetConnection {
-    #[builder(into)]
-    pub key: ResourceKey<ConnectionId>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetConnection {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<ConnectionId>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListConnections {
-    #[arg(long)]
-    pub entity: Option<RefToken>,
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListConnections {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long)]
+            pub entity: Option<RefToken>,
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveConnection {
-    #[builder(into)]
-    pub id: ConnectionId,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RemoveConnection {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub id: ConnectionId,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

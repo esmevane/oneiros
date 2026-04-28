@@ -1,39 +1,55 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetStorage {
-    #[builder(into)]
-    pub key: ResourceKey<StorageKey>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetStorage {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<StorageKey>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveStorage {
-    #[builder(into)]
-    pub key: StorageKey,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RemoveStorage {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: StorageKey,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct UploadStorage {
-    #[builder(into)]
-    pub key: StorageKey,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub description: Description,
-    pub data: Vec<u8>,
+// UploadStorage carries a `Vec<u8>` payload, which does not satisfy
+// clap's parsing requirements — the CLI uses an `--file` path instead
+// and reads the bytes before constructing the request.
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum UploadStorage {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: StorageKey,
+            #[builder(default, into)] pub description: Description,
+            pub data: Vec<u8>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListStorage {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListStorage {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

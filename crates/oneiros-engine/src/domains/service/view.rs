@@ -17,17 +17,15 @@ impl ServiceView {
 
     pub fn render(self) -> Rendered<ServiceResponse> {
         match self.response {
-            ServiceResponse::ServiceInstalled(name) => {
-                let prompt = format!(
-                    "{} {}",
-                    "✓".success(),
-                    ServiceResponse::ServiceInstalled(name.clone())
+            ServiceResponse::ServiceInstalled(ServiceInstalledResponse::V1(details)) => {
+                let response = ServiceResponse::ServiceInstalled(
+                    ServiceInstalledResponse::builder_v1()
+                        .name(details.name)
+                        .build()
+                        .into(),
                 );
-                Rendered::new(
-                    ServiceResponse::ServiceInstalled(name),
-                    prompt,
-                    String::new(),
-                )
+                let prompt = format!("{} {}", "✓".success(), response);
+                Rendered::new(response, prompt, String::new())
             }
             ServiceResponse::ServiceUninstalled => {
                 let prompt = format!("{} {}", "✓".success(), ServiceResponse::ServiceUninstalled);
@@ -37,37 +35,39 @@ impl ServiceView {
                 let prompt = format!("{} {}", "✓".success(), ServiceResponse::ServiceStarted);
                 Rendered::new(ServiceResponse::ServiceStarted, prompt, String::new())
             }
-            ServiceResponse::ServiceHealthy(addr) => {
-                let prompt = format!(
-                    "{} {}",
-                    "✓".success(),
-                    ServiceResponse::ServiceHealthy(addr.clone())
+            ServiceResponse::ServiceHealthy(ServiceHealthyResponse::V1(details)) => {
+                let response = ServiceResponse::ServiceHealthy(
+                    ServiceHealthyResponse::builder_v1()
+                        .address(details.address)
+                        .build()
+                        .into(),
                 );
-                Rendered::new(ServiceResponse::ServiceHealthy(addr), prompt, String::new())
+                let prompt = format!("{} {}", "✓".success(), response);
+                Rendered::new(response, prompt, String::new())
             }
             ServiceResponse::ServiceStopped => {
                 let prompt = format!("{} {}", "✓".success(), ServiceResponse::ServiceStopped);
                 Rendered::new(ServiceResponse::ServiceStopped, prompt, String::new())
             }
-            ServiceResponse::ServiceRunning(addr) => {
-                let prompt = format!(
-                    "{} {}",
-                    "✓".success(),
-                    ServiceResponse::ServiceRunning(addr.clone())
+            ServiceResponse::ServiceRunning(ServiceRunningResponse::V1(details)) => {
+                let response = ServiceResponse::ServiceRunning(
+                    ServiceRunningResponse::builder_v1()
+                        .address(details.address)
+                        .build()
+                        .into(),
                 );
-                Rendered::new(ServiceResponse::ServiceRunning(addr), prompt, String::new())
+                let prompt = format!("{} {}", "✓".success(), response);
+                Rendered::new(response, prompt, String::new())
             }
-            ServiceResponse::ServiceNotRunning(reason) => {
-                let prompt = format!(
-                    "{} {}",
-                    "!".warning(),
-                    ServiceResponse::ServiceNotRunning(reason.clone())
+            ServiceResponse::ServiceNotRunning(ServiceNotRunningResponse::V1(details)) => {
+                let response = ServiceResponse::ServiceNotRunning(
+                    ServiceNotRunningResponse::builder_v1()
+                        .reason(details.reason)
+                        .build()
+                        .into(),
                 );
-                Rendered::new(
-                    ServiceResponse::ServiceNotRunning(reason),
-                    prompt,
-                    String::new(),
-                )
+                let prompt = format!("{} {}", "!".warning(), response);
+                Rendered::new(response, prompt, String::new())
             }
         }
     }

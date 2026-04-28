@@ -50,7 +50,7 @@ async fn show(
     Path(key): Path<ResourceKey<PeerId>>,
 ) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
-        PeerService::get(&context, &GetPeer::builder().key(key).build()).await?,
+        PeerService::get(&context, &GetPeer::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -59,6 +59,6 @@ async fn remove(
     Path(id): Path<PeerId>,
 ) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
-        PeerService::remove(&context, &RemovePeer::builder().id(id).build()).await?,
+        PeerService::remove(&context, &RemovePeer::builder_v1().id(id).build().into()).await?,
     ))
 }

@@ -24,12 +24,12 @@ pub(crate) async fn core_creates_default_levels<B: Backend>() -> TestResult {
     let list_response = harness.exec_json("level list").await?;
 
     match list_response {
-        Responses::Level(LevelResponse::Levels(levels)) => {
+        Responses::Level(LevelResponse::Levels(LevelsResponse::V1(levels))) => {
             // Core seed includes working, session, project, archival, core
             assert!(
-                levels.len() >= 4,
+                levels.items.len() >= 4,
                 "expected at least 4 levels from core seed, got {}",
-                levels.len()
+                levels.items.len()
             );
         }
         other => panic!("expected Levels, got {other:#?}"),

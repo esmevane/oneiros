@@ -6,81 +6,112 @@ impl BookmarkService {
     pub async fn create(
         state: &ServerState,
         brain: &BrainName,
-        CreateBookmark { name }: &CreateBookmark,
+        request: &CreateBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let CreateBookmark::V1(creation) = request;
+        let name = &creation.name;
         let from = state.canons().active_bookmark(brain)?;
         state.canons().fork_brain(brain, name)?;
 
         // Create the new bookmark's DB and replay the source events into it.
         Self::create_bookmark_db(state.config(), brain, name)?;
 
-        let forked = BookmarkForked {
-            brain: brain.clone(),
-            name: name.clone(),
-            from,
-        };
+        let bookmark = Bookmark::builder()
+            .brain(brain.clone())
+            .name(name.clone())
+            .build();
 
         state
             .system_context()
-            .emit(BookmarkEvents::BookmarkForked(forked.clone()))
+            .emit(BookmarkEvents::BookmarkForked(
+                BookmarkForked::builder_v1()
+                    .bookmark(bookmark.clone())
+                    .from(from.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
 
-        Ok(BookmarkResponse::Forked(forked))
+        Ok(BookmarkResponse::Forked(
+            BookmarkForkedResponse::builder_v1()
+                .bookmark(bookmark)
+                .from(from)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn switch(
         state: &ServerState,
         brain: &BrainName,
-        SwitchBookmark { name }: &SwitchBookmark,
+        request: &SwitchBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
-        // With per-bookmark DBs, switch just updates the default.
-        // Both bookmark DBs already exist with current projections.
+        let SwitchBookmark::V1(switching) = request;
+        let name = &switching.name;
         state.canons().switch_brain(brain, name)?;
 
-        let switched = BookmarkSwitched {
-            brain: brain.clone(),
-            name: name.clone(),
-        };
+        let event = BookmarkSwitched::builder_v1()
+            .brain(brain.clone())
+            .name(name.clone())
+            .build();
 
         state
             .system_context()
-            .emit(BookmarkEvents::BookmarkSwitched(switched.clone()))
+            .emit(BookmarkEvents::BookmarkSwitched(event.into()))
             .await?;
 
-        Ok(BookmarkResponse::Switched(switched))
+        Ok(BookmarkResponse::Switched(
+            BookmarkSwitchedResponse::builder_v1()
+                .brain(brain.clone())
+                .name(name.clone())
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn merge(
         state: &ServerState,
         brain: &BrainName,
-        MergeBookmark { source }: &MergeBookmark,
+        request: &MergeBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let MergeBookmark::V1(merging) = request;
+        let source = &merging.source;
         let target = state.canons().active_bookmark(brain)?;
         state.canons().merge_brain(brain, source, &target)?;
 
         Self::replay_bookmark(state.config(), brain, &target)?;
 
-        let merged = BookmarkMerged {
-            brain: brain.clone(),
-            source: source.clone(),
-            target,
-        };
+        let event = BookmarkMerged::builder_v1()
+            .brain(brain.clone())
+            .source(source.clone())
+            .target(target.clone())
+            .build();
 
         state
             .system_context()
-            .emit(BookmarkEvents::BookmarkMerged(merged.clone()))
+            .emit(BookmarkEvents::BookmarkMerged(event.into()))
             .await?;
 
-        Ok(BookmarkResponse::Merged(merged))
+        Ok(BookmarkResponse::Merged(
+            BookmarkMergedResponse::builder_v1()
+                .brain(brain.clone())
+                .source(source.clone())
+                .target(target)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn list(
         state: &ServerState,
         brain: &BrainName,
-        ListBookmarks { filters }: &ListBookmarks,
+        request: &ListBookmarks,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let ListBookmarks::V1(listing) = request;
         let system = state.system_context();
-        let listed = BookmarkRepo::new(&system).list(brain, filters).await?;
+        let listed = BookmarkRepo::new(&system)
+            .list(brain, &listing.filters)
+            .await?;
         Ok(BookmarkResponse::Bookmarks(listed))
     }
 
@@ -91,8 +122,11 @@ impl BookmarkService {
     pub async fn share(
         state: &ServerState,
         brain: &BrainName,
-        ShareBookmark { name, actor_id }: &ShareBookmark,
+        request: &ShareBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let ShareBookmark::V1(sharing) = request;
+        let name = &sharing.name;
+        let actor_id = &sharing.actor_id;
         let system = state.system_context();
         let all = SearchFilters {
             limit: Limit(usize::MAX),
@@ -133,12 +167,15 @@ impl BookmarkService {
         let uri = OneirosUri::Peer(peer_link).to_string();
 
         system
-            .emit(BookmarkEvents::BookmarkShared(BookmarkShared {
-                brain: brain.clone(),
-                bookmark: name.clone(),
-                ticket_id: ticket.id,
-                shared_by: resolved_actor_id,
-            }))
+            .emit(BookmarkEvents::BookmarkShared(
+                BookmarkShared::builder_v1()
+                    .brain(brain.clone())
+                    .bookmark(name.clone())
+                    .ticket_id(ticket.id)
+                    .shared_by(resolved_actor_id)
+                    .build()
+                    .into(),
+            ))
             .await?;
 
         Ok(BookmarkResponse::Shared(BookmarkShareResult {
@@ -151,8 +188,11 @@ impl BookmarkService {
     pub async fn follow(
         state: &ServerState,
         brain: &BrainName,
-        FollowBookmark { uri, name }: &FollowBookmark,
+        request: &FollowBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let FollowBookmark::V1(following) = request;
+        let uri = &following.uri;
+        let name = &following.name;
         let system = state.system_context();
         let parsed: OneirosUri = uri
             .parse()
@@ -168,11 +208,18 @@ impl BookmarkService {
             }
         };
 
+        let bookmark = Bookmark::builder()
+            .brain(brain.clone())
+            .name(name.clone())
+            .build();
+
         system
-            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated {
-                brain: brain.clone(),
-                name: name.clone(),
-            }))
+            .emit(BookmarkEvents::BookmarkCreated(
+                BookmarkCreated::builder_v1()
+                    .bookmark(bookmark)
+                    .build()
+                    .into(),
+            ))
             .await?;
         state.canons().fork_brain(brain, name)?;
 
@@ -187,8 +234,10 @@ impl BookmarkService {
     pub async fn collect(
         state: &ServerState,
         brain: &BrainName,
-        CollectBookmark { name }: &CollectBookmark,
+        request: &CollectBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let CollectBookmark::V1(collection) = request;
+        let name = &collection.name;
         let system = state.system_context();
         let follow = FollowService::for_bookmark(&system, brain, name)
             .await?
@@ -321,8 +370,10 @@ impl BookmarkService {
     pub async fn unfollow(
         state: &ServerState,
         brain: &BrainName,
-        UnfollowBookmark { name }: &UnfollowBookmark,
+        request: &UnfollowBookmark,
     ) -> Result<BookmarkResponse, BookmarkError> {
+        let UnfollowBookmark::V1(unfollowing) = request;
+        let name = &unfollowing.name;
         let system = state.system_context();
         let follow = FollowService::for_bookmark(&system, brain, name)
             .await?
@@ -331,11 +382,14 @@ impl BookmarkService {
         let id = follow.id;
         FollowService::remove(&system, id).await?;
 
-        Ok(BookmarkResponse::Unfollowed(BookmarkUnfollowed {
-            follow_id: id,
-            brain: brain.clone(),
-            bookmark: name.clone(),
-        }))
+        Ok(BookmarkResponse::Unfollowed(
+            BookmarkUnfollowedResponse::builder_v1()
+                .follow_id(id)
+                .brain(brain.clone())
+                .bookmark(name.clone())
+                .build()
+                .into(),
+        ))
     }
 
     /// Replay the event log into a specific bookmark's projection DB.

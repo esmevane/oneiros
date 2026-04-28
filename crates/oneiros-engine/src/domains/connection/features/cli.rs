@@ -19,28 +19,22 @@ impl ConnectionCommands {
         let connection_client = ConnectionClient::new(&client);
 
         let (response, request) = match self {
-            ConnectionCommands::Create(creation) => {
-                let response = connection_client.create(creation).await?;
-                (
-                    response,
-                    ConnectionRequest::CreateConnection(creation.clone()),
-                )
-            }
-            ConnectionCommands::Show(get) => {
-                let response = connection_client.get(get).await?;
-                (response, ConnectionRequest::GetConnection(get.clone()))
-            }
-            ConnectionCommands::List(list) => {
-                let response = connection_client.list(list).await?;
-                (response, ConnectionRequest::ListConnections(list.clone()))
-            }
-            ConnectionCommands::Remove(remove) => {
-                let response = connection_client.remove(remove).await?;
-                (
-                    response,
-                    ConnectionRequest::RemoveConnection(remove.clone()),
-                )
-            }
+            Self::Create(creation) => (
+                connection_client.create(creation).await?,
+                ConnectionRequest::CreateConnection(creation.clone()),
+            ),
+            Self::Show(lookup) => (
+                connection_client.get(lookup).await?,
+                ConnectionRequest::GetConnection(lookup.clone()),
+            ),
+            Self::List(listing) => (
+                connection_client.list(listing).await?,
+                ConnectionRequest::ListConnections(listing.clone()),
+            ),
+            Self::Remove(removal) => (
+                connection_client.remove(removal).await?,
+                ConnectionRequest::RemoveConnection(removal.clone()),
+            ),
         };
 
         Ok(ConnectionView::new(response, &request)

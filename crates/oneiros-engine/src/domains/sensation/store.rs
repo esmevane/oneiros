@@ -14,8 +14,8 @@ impl<'a> SensationStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Sensation(sensation_event)) = &event.data {
             match sensation_event {
-                SensationEvents::SensationSet(sensation) => self.set(sensation)?,
-                SensationEvents::SensationRemoved(removed) => self.remove(&removed.name)?,
+                SensationEvents::SensationSet(setting) => self.set(setting)?,
+                SensationEvents::SensationRemoved(removal) => self.remove(removal)?,
             }
         }
         Ok(())
@@ -64,7 +64,21 @@ impl<'a> SensationStore<'a> {
         Ok(sensations)
     }
 
-    fn set(&self, sensation: &Sensation) -> Result<(), EventError> {
+    fn set(&self, setting: &SensationSet) -> Result<(), EventError> {
+        let sensation = setting.current()?.sensation;
+        self.write_sensation(&sensation)
+    }
+
+    fn remove(&self, removal: &SensationRemoved) -> Result<(), EventError> {
+        let name = removal.current()?.name;
+        self.conn.execute(
+            "DELETE FROM sensations WHERE name = ?1",
+            params![name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn write_sensation(&self, sensation: &Sensation) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO sensations (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -72,14 +86,6 @@ impl<'a> SensationStore<'a> {
                 sensation.description.to_string(),
                 sensation.prompt.to_string()
             ],
-        )?;
-        Ok(())
-    }
-
-    fn remove(&self, name: &SensationName) -> Result<(), EventError> {
-        self.conn.execute(
-            "DELETE FROM sensations WHERE name = ?1",
-            params![name.to_string()],
         )?;
         Ok(())
     }

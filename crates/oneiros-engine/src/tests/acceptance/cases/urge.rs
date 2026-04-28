@@ -15,9 +15,9 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("urge show introspect").await?;
 
     match show_response {
-        Responses::Urge(UrgeResponse::UrgeDetails(u)) => {
-            assert_eq!(u.name.as_str(), "introspect");
-            assert_eq!(u.description.as_str(), "The pull to look inward");
+        Responses::Urge(UrgeResponse::UrgeDetails(UrgeDetailsResponse::V1(details))) => {
+            assert_eq!(details.urge.name.as_str(), "introspect");
+            assert_eq!(details.urge.description.as_str(), "The pull to look inward");
         }
         other => panic!("expected UrgeDetails, got {other:#?}"),
     }
@@ -39,8 +39,8 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("urge show draft").await?;
 
     match show_response {
-        Responses::Urge(UrgeResponse::UrgeDetails(u)) => {
-            assert_eq!(u.description.as_str(), "Updated");
+        Responses::Urge(UrgeResponse::UrgeDetails(UrgeDetailsResponse::V1(details))) => {
+            assert_eq!(details.urge.description.as_str(), "Updated");
         }
         other => panic!("expected UrgeDetails, got {other:#?}"),
     }
@@ -75,8 +75,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("urge list").await?;
 
     match response {
-        Responses::Urge(UrgeResponse::Urges(list)) => {
-            assert_eq!(list.len(), 2);
+        Responses::Urge(UrgeResponse::Urges(UrgesResponse::V1(list))) => {
+            assert_eq!(list.items.len(), 2);
         }
         other => panic!("expected Urges, got {other:#?}"),
     }

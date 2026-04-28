@@ -15,9 +15,11 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("persona show process").await?;
 
     match show_response {
-        Responses::Persona(PersonaResponse::PersonaDetails(p)) => {
-            assert_eq!(p.data.name.as_str(), "process");
-            assert_eq!(p.data.description.as_str(), "Process agents");
+        Responses::Persona(PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(
+            details,
+        ))) => {
+            assert_eq!(details.persona.name.as_str(), "process");
+            assert_eq!(details.persona.description.as_str(), "Process agents");
         }
         other => panic!("expected PersonaDetails, got {other:#?}"),
     }
@@ -39,8 +41,10 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("persona show draft").await?;
 
     match show_response {
-        Responses::Persona(PersonaResponse::PersonaDetails(p)) => {
-            assert_eq!(p.data.description.as_str(), "Updated");
+        Responses::Persona(PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(
+            details,
+        ))) => {
+            assert_eq!(details.persona.description.as_str(), "Updated");
         }
         other => panic!("expected PersonaDetails, got {other:#?}"),
     }
@@ -75,8 +79,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("persona list").await?;
 
     match response {
-        Responses::Persona(PersonaResponse::Personas(list)) => {
-            assert_eq!(list.len(), 2);
+        Responses::Persona(PersonaResponse::Personas(PersonasResponse::V1(list))) => {
+            assert_eq!(list.items.len(), 2);
         }
         other => panic!("expected Personas, got {other:#?}"),
     }

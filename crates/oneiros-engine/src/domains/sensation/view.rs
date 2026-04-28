@@ -11,27 +11,27 @@ impl SensationView {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            SensationResponse::Sensations(listed) => {
+            SensationResponse::Sensations(SensationsResponse::V1(listed)) => {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .map(|item| (item.name.to_string(), item.description.to_string()))
                     .collect();
                 Self::vocabulary_table("Sensations", &items)
             }
-            SensationResponse::SensationDetails(wrapped) => {
+            SensationResponse::SensationDetails(SensationDetailsResponse::V1(details)) => {
                 let items = vec![(
-                    wrapped.data.name.to_string(),
-                    wrapped.data.description.to_string(),
+                    details.sensation.name.to_string(),
+                    details.sensation.description.to_string(),
                 )];
                 Self::vocabulary_table("Sensation", &items)
             }
             SensationResponse::NoSensations => Self::vocabulary_table("Sensations", &[]),
-            SensationResponse::SensationSet(name) => {
-                McpResponse::new(format!("Sensation set: {name}"))
+            SensationResponse::SensationSet(SensationSetResponse::V1(set)) => {
+                McpResponse::new(format!("Sensation set: {}", set.sensation.name))
             }
-            SensationResponse::SensationRemoved(name) => {
-                McpResponse::new(format!("Sensation removed: {name}"))
+            SensationResponse::SensationRemoved(SensationRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Sensation removed: {}", removed.name))
             }
         }
     }
@@ -52,59 +52,65 @@ impl SensationView {
 
     pub fn render(self) -> Rendered<SensationResponse> {
         match self.response {
-            SensationResponse::SensationSet(name) => {
-                let prompt = Confirmation::new("Sensation", name.to_string(), "set").to_string();
+            SensationResponse::SensationSet(SensationSetResponse::V1(set)) => {
+                let prompt = Confirmation::new("Sensation", set.sensation.name.to_string(), "set")
+                    .to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("sensation".to_string())
                         .build(),
                 );
-                Rendered::new(SensationResponse::SensationSet(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    SensationResponse::SensationSet(SensationSetResponse::V1(set)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            SensationResponse::SensationDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("prompt:", wrapped.data.prompt.to_string())
+            SensationResponse::SensationDetails(SensationDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.sensation.name.to_string())
+                    .field("description:", details.sensation.description.to_string())
+                    .field("prompt:", details.sensation.prompt.to_string())
                     .to_string();
                 Rendered::new(
-                    SensationResponse::SensationDetails(wrapped),
+                    SensationResponse::SensationDetails(SensationDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
             }
-            SensationResponse::Sensations(listed) => {
+            SensationResponse::Sensations(SensationsResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("name", "Name"),
                     Column::key("description", "Description").max(60),
                 ]);
-                for wrapped in &listed.items {
-                    table.push_row(vec![
-                        wrapped.data.name.to_string(),
-                        wrapped.data.description.to_string(),
-                    ]);
+                for item in &listed.items {
+                    table.push_row(vec![item.name.to_string(), item.description.to_string()]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(SensationResponse::Sensations(listed), prompt, String::new())
+                Rendered::new(
+                    SensationResponse::Sensations(SensationsResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             SensationResponse::NoSensations => Rendered::new(
                 SensationResponse::NoSensations,
                 format!("{}", "No sensations configured.".muted()),
                 String::new(),
             ),
-            SensationResponse::SensationRemoved(name) => {
+            SensationResponse::SensationRemoved(SensationRemovedResponse::V1(removed)) => {
                 let prompt =
-                    Confirmation::new("Sensation", name.to_string(), "removed").to_string();
+                    Confirmation::new("Sensation", removed.name.to_string(), "removed").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("sensation".to_string())
                         .build(),
                 );
                 Rendered::new(
-                    SensationResponse::SensationRemoved(name),
+                    SensationResponse::SensationRemoved(SensationRemovedResponse::V1(removed)),
                     prompt,
                     String::new(),
                 )

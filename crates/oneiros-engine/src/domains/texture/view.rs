@@ -11,25 +11,27 @@ impl TextureView {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            TextureResponse::Textures(listed) => {
+            TextureResponse::Textures(TexturesResponse::V1(listed)) => {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .map(|item| (item.name.to_string(), item.description.to_string()))
                     .collect();
                 Self::vocabulary_table("Textures", &items)
             }
-            TextureResponse::TextureDetails(wrapped) => {
+            TextureResponse::TextureDetails(TextureDetailsResponse::V1(details)) => {
                 let items = vec![(
-                    wrapped.data.name.to_string(),
-                    wrapped.data.description.to_string(),
+                    details.texture.name.to_string(),
+                    details.texture.description.to_string(),
                 )];
                 Self::vocabulary_table("Texture", &items)
             }
             TextureResponse::NoTextures => Self::vocabulary_table("Textures", &[]),
-            TextureResponse::TextureSet(name) => McpResponse::new(format!("Texture set: {name}")),
-            TextureResponse::TextureRemoved(name) => {
-                McpResponse::new(format!("Texture removed: {name}"))
+            TextureResponse::TextureSet(TextureSetResponse::V1(set)) => {
+                McpResponse::new(format!("Texture set: {}", set.texture.name))
+            }
+            TextureResponse::TextureRemoved(TextureRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Texture removed: {}", removed.name))
             }
         }
     }
@@ -50,58 +52,69 @@ impl TextureView {
 
     pub fn render(self) -> Rendered<TextureResponse> {
         match self.response {
-            TextureResponse::TextureSet(name) => {
-                let prompt = Confirmation::new("Texture", name.to_string(), "set").to_string();
+            TextureResponse::TextureSet(TextureSetResponse::V1(set)) => {
+                let prompt =
+                    Confirmation::new("Texture", set.texture.name.to_string(), "set").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("texture".to_string())
                         .build(),
                 );
-                Rendered::new(TextureResponse::TextureSet(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    TextureResponse::TextureSet(TextureSetResponse::V1(set)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            TextureResponse::TextureDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("prompt:", wrapped.data.prompt.to_string())
+            TextureResponse::TextureDetails(TextureDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.texture.name.to_string())
+                    .field("description:", details.texture.description.to_string())
+                    .field("prompt:", details.texture.prompt.to_string())
                     .to_string();
                 Rendered::new(
-                    TextureResponse::TextureDetails(wrapped),
+                    TextureResponse::TextureDetails(TextureDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
             }
-            TextureResponse::Textures(listed) => {
+            TextureResponse::Textures(TexturesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("name", "Name"),
                     Column::key("description", "Description").max(60),
                 ]);
-                for wrapped in &listed.items {
-                    table.push_row(vec![
-                        wrapped.data.name.to_string(),
-                        wrapped.data.description.to_string(),
-                    ]);
+                for item in &listed.items {
+                    table.push_row(vec![item.name.to_string(), item.description.to_string()]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(TextureResponse::Textures(listed), prompt, String::new())
+                Rendered::new(
+                    TextureResponse::Textures(TexturesResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             TextureResponse::NoTextures => Rendered::new(
                 TextureResponse::NoTextures,
                 format!("{}", "No textures configured.".muted()),
                 String::new(),
             ),
-            TextureResponse::TextureRemoved(name) => {
-                let prompt = Confirmation::new("Texture", name.to_string(), "removed").to_string();
+            TextureResponse::TextureRemoved(TextureRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Texture", removed.name.to_string(), "removed").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("texture".to_string())
                         .build(),
                 );
-                Rendered::new(TextureResponse::TextureRemoved(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    TextureResponse::TextureRemoved(TextureRemovedResponse::V1(removed)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
         }
     }

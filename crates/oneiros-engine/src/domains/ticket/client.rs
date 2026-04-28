@@ -13,20 +13,22 @@ impl<'a> TicketClient<'a> {
     }
 
     /// Issue a new ticket for the given actor and brain.
-    pub async fn issue(&self, creation: &CreateTicket) -> Result<TicketResponse, ClientError> {
-        self.client.post("/tickets", creation).await
+    pub async fn issue(&self, issuance: &CreateTicket) -> Result<TicketResponse, ClientError> {
+        self.client.post("/tickets", issuance).await
     }
 
-    /// Retrieve a single ticket by ID.
-    pub async fn get(&self, id: &TicketId) -> Result<TicketResponse, ClientError> {
-        self.client.get(&format!("/tickets/{}", id)).await
+    /// Retrieve a single ticket by key.
+    pub async fn get(&self, lookup: &GetTicket) -> Result<TicketResponse, ClientError> {
+        let GetTicket::V1(lookup) = lookup;
+        self.client.get(&format!("/tickets/{}", lookup.key)).await
     }
 
     /// List all tickets.
-    pub async fn list(&self, request: &ListTickets) -> Result<TicketResponse, ClientError> {
+    pub async fn list(&self, listing: &ListTickets) -> Result<TicketResponse, ClientError> {
+        let ListTickets::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/tickets?{query}")).await
     }

@@ -5,50 +5,58 @@ pub struct ConnectionService;
 impl ConnectionService {
     pub async fn create(
         context: &ProjectContext,
-        CreateConnection {
-            from_ref,
-            to_ref,
-            nature,
-        }: &CreateConnection,
+        request: &CreateConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        let from = from_ref.clone().into_inner();
-        let to = to_ref.clone().into_inner();
+        let CreateConnection::V1(creation) = request;
 
         let connection = Connection::builder()
-            .from_ref(from)
-            .to_ref(to)
-            .nature(nature.clone())
+            .from_ref(creation.from_ref.clone().into_inner())
+            .to_ref(creation.to_ref.clone().into_inner())
+            .nature(creation.nature.clone())
             .build();
 
         context
-            .emit(ConnectionEvents::ConnectionCreated(connection.clone()))
+            .emit(ConnectionEvents::ConnectionCreated(
+                ConnectionCreated::builder_v1()
+                    .connection(connection.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        let ref_token = RefToken::new(Ref::connection(connection.id));
+
         Ok(ConnectionResponse::ConnectionCreated(
-            Response::new(connection).with_ref_token(ref_token),
+            ConnectionCreatedResponse::builder_v1()
+                .connection(connection)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetConnection,
+        request: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        let id = selector.key.resolve()?;
+        let GetConnection::V1(lookup) = request;
+        let id = lookup.key.resolve()?;
         let connection = ConnectionRepo::new(context)
             .get(&id)
             .await?
             .ok_or(ConnectionError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::connection(connection.id));
         Ok(ConnectionResponse::ConnectionDetails(
-            Response::new(connection).with_ref_token(ref_token),
+            ConnectionDetailsResponse::builder_v1()
+                .connection(connection)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListConnections { entity, filters }: &ListConnections,
+        request: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
-        let ref_json = entity
+        let ListConnections::V1(listing) = request;
+        let ref_json = listing
+            .entity
             .as_ref()
             .map(|token| {
                 serde_json::to_string(&token.clone().into_inner())
@@ -57,35 +65,47 @@ impl ConnectionService {
             .transpose()?;
 
         let listed = ConnectionRepo::new(context)
-            .list(ref_json.as_deref(), filters)
+            .list(ref_json.as_deref(), &listing.filters)
             .await?;
         if listed.total == 0 {
             Ok(ConnectionResponse::NoConnections)
         } else {
-            Ok(ConnectionResponse::Connections(listed.map(|c| {
-                let ref_token = RefToken::new(Ref::connection(c.id));
-                Response::new(c).with_ref_token(ref_token)
-            })))
+            Ok(ConnectionResponse::Connections(
+                ConnectionsResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            ))
         }
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        selector: &RemoveConnection,
+        request: &RemoveConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
+        let RemoveConnection::V1(removal) = request;
         if ConnectionRepo::new(context)
-            .get(&selector.id)
+            .get(&removal.id)
             .await?
             .is_none()
         {
-            return Err(ConnectionError::NotFound(selector.id));
+            return Err(ConnectionError::NotFound(removal.id));
         }
 
         context
-            .emit(ConnectionEvents::ConnectionRemoved(ConnectionRemoved {
-                id: selector.id,
-            }))
+            .emit(ConnectionEvents::ConnectionRemoved(
+                ConnectionRemoved::builder_v1()
+                    .id(removal.id)
+                    .build()
+                    .into(),
+            ))
             .await?;
-        Ok(ConnectionResponse::ConnectionRemoved(selector.id))
+        Ok(ConnectionResponse::ConnectionRemoved(
+            ConnectionRemovedResponse::builder_v1()
+                .id(removal.id)
+                .build()
+                .into(),
+        ))
     }
 }

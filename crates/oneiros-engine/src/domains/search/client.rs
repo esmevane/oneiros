@@ -10,9 +10,10 @@ impl<'a> SearchClient<'a> {
     }
 
     pub async fn search(&self, request: &SearchQuery) -> Result<SearchResponse, ClientError> {
-        let path = match &request.agent {
-            Some(a) => format!("/search?query={}&agent={a}", request.query),
-            None => format!("/search?query={}", request.query),
+        let details = request.current()?;
+        let path = match &details.agent {
+            Some(a) => format!("/search?query={}&agent={a}", details.query),
+            None => format!("/search?query={}", details.query),
         };
 
         self.client.get(&path).await

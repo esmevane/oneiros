@@ -11,11 +11,18 @@ pub enum McpCommands {
 impl McpCommands {
     pub fn execute(&self, config: &Config) -> Result<Rendered<Responses>, McpConfigError> {
         let response = match self {
-            McpCommands::Init(init) => {
-                let result = McpConfigService::init(config, init)?;
+            McpCommands::Init(initialization) => {
+                let InitMcp::V1(init) = initialization;
+                let result = McpConfigService::init(config, initialization)?;
 
-                if let McpConfigResponse::McpConfigExists(ref path) = result {
+                if let McpConfigResponse::McpConfigExists(_) = &result {
                     if !init.yes {
+                        let path = match &result {
+                            McpConfigResponse::McpConfigExists(McpConfigExistsResponse::V1(d)) => {
+                                d.path.clone()
+                            }
+                            _ => unreachable!(),
+                        };
                         let overwrite = inquire::Confirm::new(&format!(
                             "{} already exists. Overwrite?",
                             path.display()
@@ -25,7 +32,7 @@ impl McpCommands {
                         .unwrap_or(false);
 
                         if overwrite {
-                            McpConfigService::write(config, init)?
+                            McpConfigService::write(config, initialization)?
                         } else {
                             result
                         }

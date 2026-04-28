@@ -103,9 +103,10 @@ pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> T
     let response = harness.exec_json("dream thinker.process").await?;
 
     match response {
-        Responses::Continuity(ContinuityResponse::Dreaming(ctx)) => {
+        Responses::Continuity(ContinuityResponse::Dreaming(DreamingResponse::V1(details))) => {
             // The dream context should have the seeded vocabulary
-            let json = serde_json::to_value(&ctx).unwrap();
+            let ctx = &details.context;
+            let json = serde_json::to_value(ctx).unwrap();
             let obj = json.as_object().unwrap();
 
             // These fields should exist and be non-empty (seed core creates them)

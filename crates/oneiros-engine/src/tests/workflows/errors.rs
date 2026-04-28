@@ -24,7 +24,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
     let agent_client = AgentClient::new(&no_token);
     assert!(
         agent_client
-            .list(&ListAgents::builder().build())
+            .list(&ListAgents::builder_v1().build().into())
             .await
             .is_err(),
         "project routes should reject unauthenticated requests"
@@ -34,7 +34,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
     let agent_client = AgentClient::new(&bad_token);
     assert!(
         agent_client
-            .list(&ListAgents::builder().build())
+            .list(&ListAgents::builder_v1().build().into())
             .await
             .is_err(),
         "project routes should reject invalid tokens"
@@ -44,7 +44,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         good_client
             .agent()
-            .list(&ListAgents::builder().build())
+            .list(&ListAgents::builder_v1().build().into())
             .await
             .is_ok(),
         "project routes should accept valid tokens"
@@ -54,7 +54,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
     let tenant_client = TenantClient::new(&no_token);
     assert!(
         tenant_client
-            .list(&ListTenants::builder().build())
+            .list(&ListTenants::builder_v1().build().into())
             .await
             .is_ok(),
         "system routes should not require auth"
@@ -79,7 +79,7 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     let result = client
         .agent()
-        .get(&GetAgent::builder().key(ghost.clone()).build())
+        .get(&GetAgent::builder_v1().key(ghost.clone()).build().into())
         .await;
     assert!(result.is_err(), "nonexistent agent should 404 via client");
 
@@ -88,7 +88,12 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     let result = client
         .persona()
-        .get(&GetPersona::builder().key(PersonaName::new("nope")).build())
+        .get(
+            &GetPersona::builder_v1()
+                .key(PersonaName::new("nope"))
+                .build()
+                .into(),
+        )
         .await;
     assert!(result.is_err(), "nonexistent persona should 404 via client");
 
@@ -101,21 +106,36 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .level()
-            .get(&GetLevel::builder().key(LevelName::new("nope")).build())
+            .get(
+                &GetLevel::builder_v1()
+                    .key(LevelName::new("nope"))
+                    .build()
+                    .into()
+            )
             .await
             .is_err()
     );
     assert!(
         client
             .texture()
-            .get(&GetTexture::builder().key(TextureName::new("nope")).build())
+            .get(
+                &GetTexture::builder_v1()
+                    .key(TextureName::new("nope"))
+                    .build()
+                    .into()
+            )
             .await
             .is_err()
     );
     assert!(
         client
             .nature()
-            .get(&GetNature::builder().key(NatureName::new("nope")).build())
+            .get(
+                &GetNature::builder_v1()
+                    .key(NatureName::new("nope"))
+                    .build()
+                    .into()
+            )
             .await
             .is_err()
     );
@@ -123,9 +143,10 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
         client
             .sensation()
             .get(
-                &GetSensation::builder()
+                &GetSensation::builder_v1()
                     .key(SensationName::new("nope"))
                     .build()
+                    .into()
             )
             .await
             .is_err()
@@ -133,7 +154,12 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .urge()
-            .get(&GetUrge::builder().key(UrgeName::new("nope")).build())
+            .get(
+                &GetUrge::builder_v1()
+                    .key(UrgeName::new("nope"))
+                    .build()
+                    .into()
+            )
             .await
             .is_err()
     );
@@ -141,7 +167,12 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .storage()
-            .show(&GetStorage::builder().key(StorageKey::new("nope")).build())
+            .show(
+                &GetStorage::builder_v1()
+                    .key(StorageKey::new("nope"))
+                    .build()
+                    .into()
+            )
             .await
             .is_err()
     );
@@ -150,7 +181,12 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .memory()
-            .get(&GetMemory::builder().key(MemoryId::from(fake_id)).build())
+            .get(
+                &GetMemory::builder_v1()
+                    .key(MemoryId::from(fake_id))
+                    .build()
+                    .into()
+            )
             .await
             .is_err(),
         "nonexistent memory should 404"
@@ -160,9 +196,10 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
         client
             .experience()
             .get(
-                &GetExperience::builder()
+                &GetExperience::builder_v1()
                     .key(ExperienceId::from(fake_id))
                     .build()
+                    .into()
             )
             .await
             .is_err(),
@@ -173,9 +210,10 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
         client
             .connection()
             .get(
-                &GetConnection::builder()
+                &GetConnection::builder_v1()
                     .key(ConnectionId::from(fake_id))
                     .build()
+                    .into()
             )
             .await
             .is_err(),
@@ -202,10 +240,10 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .pressure()
-        .get(&GetPressure::builder().agent(ghost).build())
+        .get(&GetPressure::builder_v1().agent(ghost).build().into())
         .await?
     {
-        PressureResponse::Readings(r) => {
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => {
             assert!(
                 r.pressures.is_empty(),
                 "nonexistent agent should have no pressures"
@@ -234,10 +272,11 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     let result = client
         .agent()
         .create(
-            &CreateAgent::builder()
+            &CreateAgent::builder_v1()
                 .name("ghost")
                 .persona("nonexistent")
-                .build(),
+                .build()
+                .into(),
         )
         .await;
     assert!(
@@ -264,11 +303,12 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     let result = client
         .cognition()
         .add(
-            &AddCognition::builder()
+            &AddCognition::builder_v1()
                 .agent(ghost.clone())
                 .texture("observation")
                 .content("hello")
-                .build(),
+                .build()
+                .into(),
         )
         .await;
     assert!(
@@ -287,11 +327,12 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     let result = client
         .memory()
         .add(
-            &AddMemory::builder()
+            &AddMemory::builder_v1()
                 .agent(ghost.clone())
                 .level("session")
                 .content("hello")
-                .build(),
+                .build()
+                .into(),
         )
         .await;
     assert!(
@@ -310,11 +351,12 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     let result = client
         .experience()
         .create(
-            &CreateExperience::builder()
+            &CreateExperience::builder_v1()
                 .agent(ghost.clone())
                 .sensation("echoes")
                 .description("hello")
-                .build(),
+                .build()
+                .into(),
         )
         .await;
     assert!(
@@ -348,10 +390,11 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
     let result = client
         .agent()
         .create(
-            &CreateAgent::builder()
+            &CreateAgent::builder_v1()
                 .name("gov")
                 .persona("process")
-                .build(),
+                .build()
+                .into(),
         )
         .await;
     assert!(
@@ -368,12 +411,12 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
 
     client
         .brain()
-        .create(&CreateBrain::builder().name("dupe-brain").build())
+        .create(&CreateBrain::builder_v1().name("dupe-brain").build().into())
         .await?;
 
     let result = client
         .brain()
-        .create(&CreateBrain::builder().name("dupe-brain").build())
+        .create(&CreateBrain::builder_v1().name("dupe-brain").build().into())
         .await;
     assert!(result.is_err(), "duplicate brain should conflict");
 
@@ -385,15 +428,16 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .persona()
         .get(
-            &GetPersona::builder()
+            &GetPersona::builder_v1()
                 .key(PersonaName::new("custom"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        PersonaResponse::PersonaDetails(p) => {
+        PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(p)) => {
             assert_eq!(
-                p.data.description.to_string(),
+                p.persona.description.to_string(),
                 "Second",
                 "second set should win"
             );
@@ -423,7 +467,7 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
     // Removing a nonexistent storage key
     let _ = client
         .storage()
-        .remove(&RemoveStorage::builder().key("nope").build())
+        .remove(&RemoveStorage::builder_v1().key("nope").build().into())
         .await;
 
     // Removing a nonexistent connection
@@ -431,9 +475,10 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
     let _ = client
         .connection()
         .remove(
-            &RemoveConnection::builder()
+            &RemoveConnection::builder_v1()
                 .id(ConnectionId::from(fake_id))
-                .build(),
+                .build()
+                .into(),
         )
         .await;
 
@@ -443,11 +488,16 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
 
     match client
         .level()
-        .get(&GetLevel::builder().key(LevelName::new("working")).build())
+        .get(
+            &GetLevel::builder_v1()
+                .key(LevelName::new("working"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        LevelResponse::LevelDetails(l) => {
-            assert_eq!(l.data.description.to_string(), "Still works");
+        LevelResponse::LevelDetails(LevelDetailsResponse::V1(l)) => {
+            assert_eq!(l.level.description.to_string(), "Still works");
         }
         other => panic!("expected LevelDetails, got {other:?}"),
     }

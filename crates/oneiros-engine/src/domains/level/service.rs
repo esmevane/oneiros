@@ -5,60 +5,81 @@ pub struct LevelService;
 impl LevelService {
     pub async fn set(
         context: &ProjectContext,
-        SetLevel {
-            name,
-            description,
-            prompt,
-        }: &SetLevel,
+        request: &SetLevel,
     ) -> Result<LevelResponse, LevelError> {
+        let SetLevel::V1(set) = request;
         let level = Level::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
+            .name(set.name.clone())
+            .description(set.description.clone())
+            .prompt(set.prompt.clone())
             .build();
-        context.emit(LevelEvents::LevelSet(level)).await?;
-        Ok(LevelResponse::LevelSet(name.clone()))
+
+        context
+            .emit(LevelEvents::LevelSet(
+                LevelSet::builder_v1().level(level.clone()).build().into(),
+            ))
+            .await?;
+
+        Ok(LevelResponse::LevelSet(
+            LevelSetResponse::builder_v1().level(level).build().into(),
+        ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetLevel,
+        request: &GetLevel,
     ) -> Result<LevelResponse, LevelError> {
-        let name = selector.key.resolve()?;
+        let GetLevel::V1(lookup) = request;
+        let name = lookup.key.resolve()?;
         let level = LevelRepo::new(context)
             .get(&name)
             .await?
             .ok_or(LevelError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::level(level.name.clone()));
         Ok(LevelResponse::LevelDetails(
-            Response::new(level).with_ref_token(ref_token),
+            LevelDetailsResponse::builder_v1()
+                .level(level)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListLevels { filters }: &ListLevels,
+        request: &ListLevels,
     ) -> Result<LevelResponse, LevelError> {
-        let listed = LevelRepo::new(context).list(filters).await?;
+        let ListLevels::V1(listing) = request;
+        let listed = LevelRepo::new(context).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(LevelResponse::NoLevels)
         } else {
-            Ok(LevelResponse::Levels(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::level(e.name.clone()));
-                Response::new(e).with_ref_token(ref_token)
-            })))
+            Ok(LevelResponse::Levels(
+                LevelsResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            ))
         }
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        selector: &RemoveLevel,
+        request: &RemoveLevel,
     ) -> Result<LevelResponse, LevelError> {
+        let RemoveLevel::V1(removal) = request;
         context
-            .emit(LevelEvents::LevelRemoved(LevelRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(LevelEvents::LevelRemoved(
+                LevelRemoved::builder_v1()
+                    .name(removal.name.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        Ok(LevelResponse::LevelRemoved(selector.name.clone()))
+        Ok(LevelResponse::LevelRemoved(
+            LevelRemovedResponse::builder_v1()
+                .name(removal.name.clone())
+                .build()
+                .into(),
+        ))
     }
 }

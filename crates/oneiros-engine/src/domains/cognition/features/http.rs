@@ -55,6 +55,10 @@ async fn show(
     Path(key): Path<ResourceKey<CognitionId>>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
     Ok(Json(
-        CognitionService::get(&context, &GetCognition::builder().key(key).build()).await?,
+        CognitionService::get(
+            &context,
+            &GetCognition::builder_v1().key(key).build().into(),
+        )
+        .await?,
     ))
 }

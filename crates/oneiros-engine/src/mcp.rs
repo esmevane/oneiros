@@ -415,9 +415,10 @@ impl ServerHandler for EngineToolBox {
                     .project_context(self.config().clone())
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
-                let request = DreamAgent {
-                    agent: AgentName::new(agent_name),
-                };
+                let request: DreamAgent = DreamAgent::builder_v1()
+                    .agent(AgentName::new(agent_name))
+                    .build()
+                    .into();
 
                 let response =
                     ContinuityService::dream(&context, &request, &DreamOverrides::default())
@@ -425,7 +426,8 @@ impl ServerHandler for EngineToolBox {
                         .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 match response {
-                    ContinuityResponse::Dreaming(dream) => {
+                    ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+                        let dream = details.context;
                         let text = DreamTemplate::new(&dream).to_string();
                         Ok(
                             GetPromptResult::new(vec![rmcp::model::PromptMessage::new_text(

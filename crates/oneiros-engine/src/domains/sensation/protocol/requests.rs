@@ -1,41 +1,56 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct SetSensation {
-    #[builder(into)]
-    pub name: SensationName,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub description: Description,
-    #[arg(long, default_value = "")]
-    #[builder(default, into)]
-    pub prompt: Prompt,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SetSensation {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: SensationName,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)]
+            pub description: Description,
+            #[arg(long, default_value = "")]
+            #[builder(default, into)]
+            pub prompt: Prompt,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetSensation {
-    #[builder(into)]
-    pub key: ResourceKey<SensationName>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetSensation {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<SensationName>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemoveSensation {
-    #[builder(into)]
-    pub name: SensationName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RemoveSensation {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub name: SensationName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListSensations {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListSensations {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

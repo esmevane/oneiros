@@ -9,23 +9,31 @@ impl<'a> UrgeClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, set: &SetUrge) -> Result<UrgeResponse, ClientError> {
-        self.client.put(&format!("/urges/{}", set.name), set).await
+    pub async fn set(&self, setting: &SetUrge) -> Result<UrgeResponse, ClientError> {
+        let SetUrge::V1(body) = setting;
+        self.client
+            .put(&format!("/urges/{}", body.name), setting)
+            .await
     }
 
-    pub async fn get(&self, request: &GetUrge) -> Result<UrgeResponse, ClientError> {
-        self.client.get(&format!("/urges/{}", request.key)).await
+    pub async fn get(&self, lookup: &GetUrge) -> Result<UrgeResponse, ClientError> {
+        let GetUrge::V1(lookup) = lookup;
+        self.client.get(&format!("/urges/{}", lookup.key)).await
     }
 
-    pub async fn list(&self, request: &ListUrges) -> Result<UrgeResponse, ClientError> {
+    pub async fn list(&self, listing: &ListUrges) -> Result<UrgeResponse, ClientError> {
+        let ListUrges::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/urges?{query}")).await
     }
 
-    pub async fn remove(&self, name: &UrgeName) -> Result<UrgeResponse, ClientError> {
-        self.client.delete(&format!("/urges/{name}")).await
+    pub async fn remove(&self, removal: &RemoveUrge) -> Result<UrgeResponse, ClientError> {
+        let RemoveUrge::V1(removal) = removal;
+        self.client
+            .delete(&format!("/urges/{}", removal.name))
+            .await
     }
 }

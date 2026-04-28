@@ -1,17 +1,23 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct InitSystem {
-    #[arg(long, short)]
-    #[builder(into)]
-    pub name: Option<String>,
-    #[arg(long, short)]
-    #[builder(default)]
-    pub yes: bool,
+use crate::*;
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum InitSystem {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long, short)]
+            #[builder(into)]
+            pub name: Option<String>,
+            #[arg(long, short)]
+            #[serde(default)]
+            #[builder(default)]
+            pub yes: bool,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

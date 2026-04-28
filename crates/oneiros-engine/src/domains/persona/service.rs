@@ -5,60 +5,87 @@ pub struct PersonaService;
 impl PersonaService {
     pub async fn set(
         context: &ProjectContext,
-        SetPersona {
-            name,
-            description,
-            prompt,
-        }: &SetPersona,
+        request: &SetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
+        let SetPersona::V1(set) = request;
         let persona = Persona::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
+            .name(set.name.clone())
+            .description(set.description.clone())
+            .prompt(set.prompt.clone())
             .build();
-        context.emit(PersonaEvents::PersonaSet(persona)).await?;
-        Ok(PersonaResponse::PersonaSet(name.clone()))
+
+        context
+            .emit(PersonaEvents::PersonaSet(
+                PersonaSet::builder_v1()
+                    .persona(persona.clone())
+                    .build()
+                    .into(),
+            ))
+            .await?;
+
+        Ok(PersonaResponse::PersonaSet(
+            PersonaSetResponse::builder_v1()
+                .persona(persona)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetPersona,
+        request: &GetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
-        let name = selector.key.resolve()?;
+        let GetPersona::V1(lookup) = request;
+        let name = lookup.key.resolve()?;
         let persona = PersonaRepo::new(context)
             .get(&name)
             .await?
             .ok_or(PersonaError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::persona(persona.name.clone()));
         Ok(PersonaResponse::PersonaDetails(
-            Response::new(persona).with_ref_token(ref_token),
+            PersonaDetailsResponse::builder_v1()
+                .persona(persona)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListPersonas { filters }: &ListPersonas,
+        request: &ListPersonas,
     ) -> Result<PersonaResponse, PersonaError> {
-        let listed = PersonaRepo::new(context).list(filters).await?;
+        let ListPersonas::V1(listing) = request;
+        let listed = PersonaRepo::new(context).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(PersonaResponse::NoPersonas)
         } else {
-            Ok(PersonaResponse::Personas(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::persona(e.name.clone()));
-                Response::new(e).with_ref_token(ref_token)
-            })))
+            Ok(PersonaResponse::Personas(
+                PersonasResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            ))
         }
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        selector: &RemovePersona,
+        request: &RemovePersona,
     ) -> Result<PersonaResponse, PersonaError> {
+        let RemovePersona::V1(removal) = request;
         context
-            .emit(PersonaEvents::PersonaRemoved(PersonaRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(PersonaEvents::PersonaRemoved(
+                PersonaRemoved::builder_v1()
+                    .name(removal.name.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        Ok(PersonaResponse::PersonaRemoved(selector.name.clone()))
+        Ok(PersonaResponse::PersonaRemoved(
+            PersonaRemovedResponse::builder_v1()
+                .name(removal.name.clone())
+                .build()
+                .into(),
+        ))
     }
 }

@@ -6,13 +6,13 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
     let response = harness.exec_json("tenant list").await?;
 
     match response {
-        Responses::Tenant(TenantResponse::Listed(tenants)) => {
+        Responses::Tenant(TenantResponse::Listed(TenantsResponse::V1(tenants))) => {
             assert_eq!(
-                tenants.len(),
+                tenants.items.len(),
                 1,
                 "system init should create exactly one tenant"
             );
-            assert_eq!(tenants.items[0].data.name.as_str(), "test");
+            assert_eq!(tenants.items[0].name.as_str(), "test");
         }
         other => panic!("expected Tenant(Listed), got {other:#?}"),
     }

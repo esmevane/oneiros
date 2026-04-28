@@ -9,23 +9,31 @@ impl<'a> LevelClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, set: &SetLevel) -> Result<LevelResponse, ClientError> {
-        self.client.put(&format!("/levels/{}", set.name), set).await
+    pub async fn set(&self, setting: &SetLevel) -> Result<LevelResponse, ClientError> {
+        let SetLevel::V1(body) = setting;
+        self.client
+            .put(&format!("/levels/{}", body.name), setting)
+            .await
     }
 
-    pub async fn get(&self, request: &GetLevel) -> Result<LevelResponse, ClientError> {
-        self.client.get(&format!("/levels/{}", request.key)).await
+    pub async fn get(&self, lookup: &GetLevel) -> Result<LevelResponse, ClientError> {
+        let GetLevel::V1(lookup) = lookup;
+        self.client.get(&format!("/levels/{}", lookup.key)).await
     }
 
-    pub async fn list(&self, request: &ListLevels) -> Result<LevelResponse, ClientError> {
+    pub async fn list(&self, listing: &ListLevels) -> Result<LevelResponse, ClientError> {
+        let ListLevels::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/levels?{query}")).await
     }
 
-    pub async fn remove(&self, name: &LevelName) -> Result<LevelResponse, ClientError> {
-        self.client.delete(&format!("/levels/{name}")).await
+    pub async fn remove(&self, removal: &RemoveLevel) -> Result<LevelResponse, ClientError> {
+        let RemoveLevel::V1(removal) = removal;
+        self.client
+            .delete(&format!("/levels/{}", removal.name))
+            .await
     }
 }

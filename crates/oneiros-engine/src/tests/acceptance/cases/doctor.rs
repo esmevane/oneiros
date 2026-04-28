@@ -16,7 +16,8 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
     let response = harness.exec_json("doctor").await?;
 
     match response {
-        Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {
+        Responses::Doctor(DoctorResponse::CheckupStatus(CheckupStatusResponse::V1(details))) => {
+            let checks = details.checks;
             assert!(
                 checks.iter().any(|r| matches!(r, DoctorCheck::Initialized)),
                 "expected Initialized check in {checks:?}"
@@ -50,7 +51,8 @@ pub(crate) async fn reports_uninitialized_system<B: Backend>() -> TestResult {
     let response = harness.exec_json("doctor").await?;
 
     match response {
-        Responses::Doctor(DoctorResponse::CheckupStatus(checks)) => {
+        Responses::Doctor(DoctorResponse::CheckupStatus(CheckupStatusResponse::V1(details))) => {
+            let checks = details.checks;
             assert!(
                 checks
                     .iter()

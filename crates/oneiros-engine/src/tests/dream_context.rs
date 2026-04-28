@@ -24,12 +24,14 @@ async fn seeded_context() -> (ProjectContext, TestApp) {
 async fn seed_agent(context: &ProjectContext) -> AgentName {
     AgentService::create(
         context,
-        &CreateAgent::builder()
-            .name("thinker")
-            .persona("process")
-            .description("A thinking agent")
-            .prompt("You think")
-            .build(),
+        &CreateAgent::V1(
+            CreateAgentV1::builder()
+                .name("thinker")
+                .persona("process")
+                .description("A thinking agent")
+                .prompt("You think")
+                .build(),
+        ),
     )
     .await
     .unwrap();
@@ -39,16 +41,17 @@ async fn seed_agent(context: &ProjectContext) -> AgentName {
 async fn add_cognition(context: &ProjectContext, agent: &AgentName, content: &str) -> CognitionId {
     match CognitionService::add(
         context,
-        &AddCognition::builder()
+        &AddCognition::builder_v1()
             .agent(agent.clone())
             .texture("observation")
             .content(content)
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        CognitionResponse::CognitionAdded(c) => c.data.id,
+        CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(added)) => added.cognition.id,
         other => panic!("expected CognitionAdded, got {other:?}"),
     }
 }
@@ -61,16 +64,17 @@ async fn add_memory(
 ) -> MemoryId {
     match MemoryService::add(
         context,
-        &AddMemory::builder()
+        &AddMemory::builder_v1()
             .agent(agent.clone())
             .level(level)
             .content(content)
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        MemoryResponse::MemoryAdded(m) => m.data.id,
+        MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)) => added.memory.id,
         other => panic!("expected MemoryAdded, got {other:?}"),
     }
 }
@@ -82,16 +86,19 @@ async fn add_experience(
 ) -> ExperienceId {
     match ExperienceService::create(
         context,
-        &CreateExperience::builder()
+        &CreateExperience::builder_v1()
             .agent(agent.clone())
             .sensation("echoes")
             .description(description)
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        ExperienceResponse::ExperienceCreated(e) => e.data.id,
+        ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
+            created.experience.id
+        }
         other => panic!("expected ExperienceCreated, got {other:?}"),
     }
 }
@@ -99,16 +106,19 @@ async fn add_experience(
 async fn connect(context: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId {
     match ConnectionService::create(
         context,
-        &CreateConnection::builder()
+        &CreateConnection::builder_v1()
             .from_ref(RefToken::from(from.clone()))
             .to_ref(RefToken::from(to.clone()))
             .nature("reference")
-            .build(),
+            .build()
+            .into(),
     )
     .await
     .unwrap()
     {
-        ConnectionResponse::ConnectionCreated(c) => c.data.id,
+        ConnectionResponse::ConnectionCreated(ConnectionCreatedResponse::V1(created)) => {
+            created.connection.id
+        }
         other => panic!("expected ConnectionCreated, got {other:?}"),
     }
 }
@@ -124,13 +134,13 @@ async fn dream_with(
 ) -> DreamContext {
     match ContinuityService::dream(
         context,
-        &DreamAgent::builder().agent(agent.clone()).build(),
+        &DreamAgent::builder_v1().agent(agent.clone()).build().into(),
         overrides,
     )
     .await
     .unwrap()
     {
-        ContinuityResponse::Dreaming(context) => context,
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
         other => panic!("expected Dreaming, got {other:?}"),
     }
 }

@@ -16,13 +16,14 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // System init creates a default tenant
     match client
         .tenant()
-        .list(&ListTenants {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListTenants::builder_v1().build().into())
         .await?
     {
-        TenantResponse::Listed(tenants) => {
-            assert!(!tenants.is_empty(), "init should create a default tenant");
+        TenantResponse::Listed(TenantsResponse::V1(tenants)) => {
+            assert!(
+                !tenants.items.is_empty(),
+                "init should create a default tenant"
+            );
         }
         other => panic!("expected Listed, got {other:?}"),
     }
@@ -30,24 +31,24 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // Create another tenant
     let tenant = match client
         .tenant()
-        .create(&CreateTenant::builder().name("acme").build())
+        .create(&CreateTenant::builder_v1().name("acme").build().into())
         .await?
     {
-        TenantResponse::Created(t) => {
-            assert_eq!(t.data.name, TenantName::new("acme"));
-            t
+        TenantResponse::Created(TenantCreatedResponse::V1(creation)) => {
+            assert_eq!(creation.tenant.name, TenantName::new("acme"));
+            creation.tenant
         }
         other => panic!("expected Created, got {other:?}"),
     };
 
     match client
         .tenant()
-        .list(&ListTenants {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListTenants::builder_v1().build().into())
         .await?
     {
-        TenantResponse::Listed(tenants) => assert_eq!(tenants.len(), 2),
+        TenantResponse::Listed(TenantsResponse::V1(tenants)) => {
+            assert_eq!(tenants.items.len(), 2)
+        }
         other => panic!("expected Listed, got {other:?}"),
     }
 
@@ -55,16 +56,17 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     let actor = match client
         .actor()
         .create(
-            &CreateActor::builder()
-                .tenant_id(tenant.data.id)
+            &CreateActor::builder_v1()
+                .tenant_id(tenant.id)
                 .name(ActorName::new("alice"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        ActorResponse::Created(a) => {
-            assert_eq!(a.data.name, ActorName::new("alice"));
-            a
+        ActorResponse::Created(ActorCreatedResponse::V1(creation)) => {
+            assert_eq!(creation.actor.name, ActorName::new("alice"));
+            creation.actor
         }
         other => panic!("expected Created, got {other:?}"),
     };
@@ -72,11 +74,11 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // Actor is retrievable
     match client
         .actor()
-        .get(&GetActor::builder().key(actor.data.id).build())
+        .get(&GetActor::builder_v1().key(actor.id).build().into())
         .await?
     {
-        ActorResponse::Found(a) => {
-            assert_eq!(a.data.name, ActorName::new("alice"));
+        ActorResponse::Found(ActorFoundResponse::V1(found)) => {
+            assert_eq!(found.actor.name, ActorName::new("alice"));
         }
         other => panic!("expected Details, got {other:?}"),
     }
@@ -84,12 +86,12 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // System init creates a default actor, plus ours
     match client
         .actor()
-        .list(&ListActors {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListActors::builder_v1().build().into())
         .await?
     {
-        ActorResponse::Listed(actors) => assert_eq!(actors.len(), 2),
+        ActorResponse::Listed(ActorsResponse::V1(actors)) => {
+            assert_eq!(actors.items.len(), 2)
+        }
         other => panic!("expected Listed, got {other:?}"),
     }
 
@@ -97,11 +99,16 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .brain()
-        .create(&CreateBrain::builder().name(brain_name.clone()).build())
+        .create(
+            &CreateBrain::builder_v1()
+                .name(brain_name.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        BrainResponse::Created(b) => {
-            assert_eq!(b.data.name, brain_name);
+        BrainResponse::Created(BrainCreatedResponse::V1(created)) => {
+            assert_eq!(created.brain.name, brain_name);
         }
         other => panic!("expected Created, got {other:?}"),
     }
@@ -109,18 +116,28 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // Duplicate brain name should conflict
     let result = client
         .brain()
-        .create(&CreateBrain::builder().name(brain_name.clone()).build())
+        .create(
+            &CreateBrain::builder_v1()
+                .name(brain_name.clone())
+                .build()
+                .into(),
+        )
         .await;
     assert!(result.is_err(), "duplicate brain name should conflict");
 
     // Brain is retrievable
     match client
         .brain()
-        .get(&GetBrain::builder().key(brain_name.clone()).build())
+        .get(
+            &GetBrain::builder_v1()
+                .key(brain_name.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        BrainResponse::Found(b) => {
-            assert_eq!(b.data.name, brain_name);
+        BrainResponse::Found(BrainFoundResponse::V1(found)) => {
+            assert_eq!(found.brain.name, brain_name);
         }
         other => panic!("expected Found, got {other:?}"),
     }
@@ -129,24 +146,34 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     let ticket = match client
         .ticket()
         .issue(
-            &CreateTicket::builder()
-                .actor_id(actor.data.id)
+            &CreateTicket::builder_v1()
+                .actor_id(actor.id)
                 .brain_name(brain_name.clone())
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        TicketResponse::Created(t) => {
-            assert_eq!(t.brain_name, brain_name);
-            t
+        TicketResponse::Created(TicketCreatedResponse::V1(creation)) => {
+            assert_eq!(creation.ticket.brain_name, brain_name);
+            creation.ticket
         }
         other => panic!("expected Created, got {other:?}"),
     };
 
     // Ticket is retrievable
-    match client.ticket().get(&ticket.id).await? {
-        TicketResponse::Found(t) => {
-            assert_eq!(t.brain_name, brain_name);
+    match client
+        .ticket()
+        .get(
+            &GetTicket::builder_v1()
+                .key(ResourceKey::Key(ticket.id))
+                .build()
+                .into(),
+        )
+        .await?
+    {
+        TicketResponse::Found(TicketFoundResponse::V1(found)) => {
+            assert_eq!(found.ticket.brain_name, brain_name);
         }
         other => panic!("expected Details, got {other:?}"),
     }
@@ -155,14 +182,15 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .ticket()
         .validate(
-            &ValidateTicket::builder()
+            &ValidateTicket::builder_v1()
                 .token(ticket.link.token.clone())
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        TicketResponse::Validated(t) => {
-            assert_eq!(t.brain_name, brain_name);
+        TicketResponse::Validated(TicketValidatedResponse::V1(validated)) => {
+            assert_eq!(validated.ticket.brain_name, brain_name);
         }
         other => panic!("expected Validated, got {other:?}"),
     }
@@ -170,14 +198,12 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     // List tickets
     match client
         .ticket()
-        .list(&ListTickets {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListTickets::builder_v1().build().into())
         .await?
     {
-        TicketResponse::Listed(tickets) => {
+        TicketResponse::Listed(TicketsResponse::V1(tickets)) => {
             assert!(
-                !tickets.is_empty(),
+                !tickets.items.is_empty(),
                 "should have at least the ticket we created"
             );
         }
@@ -205,7 +231,7 @@ async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::E
         "host key should not exist before system init"
     );
 
-    SystemService::init(&context, &InitSystem::builder().build()).await?;
+    SystemService::init(&context, &InitSystem::builder_v1().build().into()).await?;
 
     // After init, the host key should exist
     assert!(

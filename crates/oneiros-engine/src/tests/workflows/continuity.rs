@@ -27,10 +27,11 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     client
         .continuity()
         .emerge(
-            &EmergeAgent::builder()
+            &EmergeAgent::builder_v1()
                 .name("thinker")
                 .persona("process")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -45,14 +46,18 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     // Their thoughts are retrievable via client, filtered by texture
     match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(agent.clone()),
-            texture: Some(TextureName::new("observation")),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(agent.clone())
+                .texture(TextureName::new("observation"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => assert_eq!(cogs.len(), 1),
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1)
+        }
         other => panic!("expected Cognitions, got {other:?}"),
     }
 
@@ -60,17 +65,18 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     let core_memory = match client
         .memory()
         .add(
-            &AddMemory::builder()
+            &AddMemory::builder_v1()
                 .agent(agent.clone())
                 .level("core")
                 .content("I think in types")
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        MemoryResponse::MemoryAdded(m) => {
-            assert_eq!(m.data.level.as_str(), "core");
-            m
+        MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)) => {
+            assert_eq!(added.memory.level.as_str(), "core");
+            added.memory
         }
         other => panic!("expected MemoryAdded, got {other:?}"),
     };
@@ -78,23 +84,26 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     client
         .memory()
         .add(
-            &AddMemory::builder()
+            &AddMemory::builder_v1()
                 .agent(agent.clone())
                 .level("session")
                 .content("Typed events enforce boundaries")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
     match client
         .memory()
-        .list(&ListMemories {
-            agent: Some(agent.clone()),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListMemories::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        MemoryResponse::Memories(mems) => assert_eq!(mems.len(), 2),
+        MemoryResponse::Memories(MemoriesResponse::V1(mems)) => assert_eq!(mems.items.len(), 2),
         other => panic!("expected Memories, got {other:?}"),
     }
 
@@ -102,27 +111,34 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     let experience = match client
         .experience()
         .create(
-            &CreateExperience::builder()
+            &CreateExperience::builder_v1()
                 .agent(agent.clone())
                 .sensation("echoes")
                 .description("Architecture and type safety resonate")
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        ExperienceResponse::ExperienceCreated(e) => e,
+        ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
+            created.experience
+        }
         other => panic!("expected ExperienceCreated, got {other:?}"),
     };
 
     match client
         .experience()
-        .list(&ListExperiences {
-            agent: Some(agent.clone()),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListExperiences::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        ExperienceResponse::Experiences(exps) => assert_eq!(exps.len(), 1),
+        ExperienceResponse::Experiences(ExperiencesResponse::V1(exps)) => {
+            assert_eq!(exps.items.len(), 1)
+        }
         other => panic!("expected Experiences, got {other:?}"),
     }
 
@@ -130,29 +146,30 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     client
         .connection()
         .create(
-            &CreateConnection::builder()
-                .from_ref(RefToken::new(Ref::memory(core_memory.data.id)))
-                .to_ref(RefToken::new(Ref::experience(experience.data.id)))
+            &CreateConnection::builder_v1()
+                .from_ref(RefToken::new(Ref::memory(core_memory.id)))
+                .to_ref(RefToken::new(Ref::experience(experience.id)))
                 .nature("context")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
     match client
         .connection()
-        .list(&ListConnections {
-            entity: None,
-            filters: SearchFilters::default(),
-        })
+        .list(&ListConnections::builder_v1().build().into())
         .await?
     {
-        ConnectionResponse::Connections(conns) => assert_eq!(conns.len(), 1),
+        ConnectionResponse::Connections(ConnectionsResponse::V1(conns)) => {
+            assert_eq!(conns.items.len(), 1)
+        }
         other => panic!("expected Connections, got {other:?}"),
     }
 
     // Dream — via the continuity client
     match client.continuity().dream(&agent).await? {
-        ContinuityResponse::Dreaming(ctx) => {
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+            let ctx = &details.context;
             assert!(ctx.cognitions.len() >= 3, "dream should include cognitions");
             assert!(ctx.memories.len() >= 2, "dream should include memories");
         }
@@ -162,10 +179,15 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     // Check pressure after activity
     match client
         .pressure()
-        .get(&GetPressure::builder().agent(agent.clone()).build())
+        .get(
+            &GetPressure::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        PressureResponse::Readings(r) => {
+        PressureResponse::Readings(ReadingsResponse::V1(r)) => {
             assert!(
                 !r.pressures.is_empty(),
                 "should have pressure readings after activity"
@@ -455,19 +477,24 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     // Verify via client
     match client
         .agent()
-        .get(&GetAgent::builder().key(agent.clone()).build())
+        .get(&GetAgent::V1(
+            GetAgentV1::builder().key(agent.clone()).build(),
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.persona, PersonaName::new("custom"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.persona, PersonaName::new("custom"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
 
     // Status — via continuity client
     match client.continuity().status().await? {
-        ContinuityResponse::Status(table) => {
-            assert!(!table.agents.is_empty(), "should have agents in status");
+        ContinuityResponse::Status(StatusResponse::V1(details)) => {
+            assert!(
+                !details.table.agents.is_empty(),
+                "should have agents in status"
+            );
         }
         other => panic!("expected Status, got {other:?}"),
     }
@@ -481,12 +508,12 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     // Agent with nonexistent persona should fail
     let result = client
         .agent()
-        .create(
-            &CreateAgent::builder()
+        .create(&CreateAgent::V1(
+            CreateAgentV1::builder()
                 .name("bad")
                 .persona("nonexistent")
                 .build(),
-        )
+        ))
         .await;
     assert!(
         result.is_err(),
@@ -496,7 +523,12 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     // Duplicate agent should fail
     let result = client
         .agent()
-        .create(&CreateAgent::builder().name("gov").persona("custom").build())
+        .create(&CreateAgent::V1(
+            CreateAgentV1::builder()
+                .name("gov")
+                .persona("custom")
+                .build(),
+        ))
         .await;
     assert!(result.is_err(), "duplicate agent name should conflict");
 
@@ -506,7 +538,9 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     // Agent should be gone
     let result = client
         .agent()
-        .get(&GetAgent::builder().key(agent.clone()).build())
+        .get(&GetAgent::V1(
+            GetAgentV1::builder().key(agent.clone()).build(),
+        ))
         .await;
     assert!(result.is_err(), "receded agent should not be found");
 
@@ -816,10 +850,11 @@ async fn connect_via_listed_refs() -> Result<(), Box<dyn core::error::Error>> {
     client
         .continuity()
         .emerge(
-            &EmergeAgent::builder()
+            &EmergeAgent::builder_v1()
                 .name("thinker")
                 .persona("process")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -829,45 +864,38 @@ async fn connect_via_listed_refs() -> Result<(), Box<dyn core::error::Error>> {
     app.command(r#"memory add thinker.process session "A memory worth connecting""#)
         .await?;
 
-    // List cognitions — extract ref from response meta, not from raw ID
+    // List cognitions — derive ref from cognition id directly
     let cognition_ref = match client
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(agent.clone()),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(listed) => {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(listed)) => {
             let first = &listed.items[0];
-            first
-                .meta
-                .as_ref()
-                .and_then(|m| m.ref_token.as_ref())
-                .expect("listed cognition should carry ref_token in meta")
-                .clone()
+            RefToken::new(Ref::cognition(first.id))
         }
         other => panic!("expected Cognitions, got {other:?}"),
     };
 
-    // List memories — same pattern
+    // List memories — derive ref from memory id directly
     let memory_ref = match client
         .memory()
-        .list(&ListMemories {
-            agent: Some(agent.clone()),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListMemories::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        MemoryResponse::Memories(listed) => {
+        MemoryResponse::Memories(MemoriesResponse::V1(listed)) => {
             let first = &listed.items[0];
-            first
-                .meta
-                .as_ref()
-                .and_then(|m| m.ref_token.as_ref())
-                .expect("listed memory should carry ref_token in meta")
-                .clone()
+            RefToken::new(Ref::memory(first.id))
         }
         other => panic!("expected Memories, got {other:?}"),
     };
@@ -876,24 +904,24 @@ async fn connect_via_listed_refs() -> Result<(), Box<dyn core::error::Error>> {
     client
         .connection()
         .create(
-            &CreateConnection::builder()
+            &CreateConnection::builder_v1()
                 .from_ref(cognition_ref)
                 .to_ref(memory_ref)
                 .nature("context")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
     // Verify the connection exists
     match client
         .connection()
-        .list(&ListConnections {
-            entity: None,
-            filters: SearchFilters::default(),
-        })
+        .list(&ListConnections::builder_v1().build().into())
         .await?
     {
-        ConnectionResponse::Connections(conns) => assert_eq!(conns.len(), 1),
+        ConnectionResponse::Connections(ConnectionsResponse::V1(conns)) => {
+            assert_eq!(conns.items.len(), 1)
+        }
         other => panic!("expected Connections, got {other:?}"),
     }
 

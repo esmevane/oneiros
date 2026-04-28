@@ -41,12 +41,14 @@ impl UrgeRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<UrgeName>,
-    Json(mut body): Json<SetUrge>,
+    Json(body): Json<SetUrge>,
 ) -> Result<(StatusCode, Json<UrgeResponse>), UrgeError> {
-    body.name = name;
+    let SetUrge::V1(mut setting) = body;
+    setting.name = name;
+    let request = SetUrge::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(UrgeService::set(&context, &body).await?),
+        Json(UrgeService::set(&context, &request).await?),
     ))
 }
 
@@ -62,7 +64,7 @@ async fn show(
     Path(key): Path<ResourceKey<UrgeName>>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(
-        UrgeService::get(&context, &GetUrge::builder().key(key).build()).await?,
+        UrgeService::get(&context, &GetUrge::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -71,6 +73,10 @@ async fn remove(
     Path(name): Path<UrgeName>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(
-        UrgeService::remove(&context, &RemoveUrge::builder().name(name).build()).await?,
+        UrgeService::remove(
+            &context,
+            &RemoveUrge::builder_v1().name(name).build().into(),
+        )
+        .await?,
     ))
 }
