@@ -1067,19 +1067,14 @@ async fn urge_remove_prompt() -> TestResult {
     cases::urge::remove_prompt::<EngineBackend>().await
 }
 
-// Compact dream rendering
+// Greeting rendering
 #[tokio::test]
-async fn prompt_dream_vocabulary_names_only() -> TestResult {
-    cases::lifecycle::dream_prompt_vocabulary_names_only::<EngineBackend>().await
+async fn prompt_dream_omits_vocabulary() -> TestResult {
+    cases::lifecycle::dream_prompt_omits_vocabulary::<EngineBackend>().await
 }
 #[tokio::test]
-async fn prompt_dream_non_core_memories_summarized() -> TestResult {
-    cases::lifecycle::dream_prompt_non_core_memories_summarized::<EngineBackend>().await
-}
-
-#[tokio::test]
-async fn prompt_dream_deep_includes_full_vocabulary() -> TestResult {
-    cases::lifecycle::dream_deep_prompt_includes_full_vocabulary::<EngineBackend>().await
+async fn prompt_dream_omits_non_core_memories() -> TestResult {
+    cases::lifecycle::dream_prompt_omits_non_core_memories::<EngineBackend>().await
 }
 
 // Prompt output — lifecycle
@@ -1088,8 +1083,8 @@ async fn prompt_dream_contains_identity() -> TestResult {
     cases::lifecycle::dream_prompt_contains_identity::<EngineBackend>().await
 }
 #[tokio::test]
-async fn prompt_dream_contains_vocabulary() -> TestResult {
-    cases::lifecycle::dream_prompt_contains_vocabulary::<EngineBackend>().await
+async fn prompt_dream_contains_continuity() -> TestResult {
+    cases::lifecycle::dream_prompt_contains_continuity::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_memories() -> TestResult {

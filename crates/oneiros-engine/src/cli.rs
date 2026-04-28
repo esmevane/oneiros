@@ -116,15 +116,9 @@ pub enum Command {
     // Flat lifecycle commands — top-level shortcuts for the most common ops
     Wake {
         name: AgentName,
-        /// Render the full dream with all vocabulary and memories inline.
-        #[arg(long)]
-        deep: bool,
     },
     Dream {
         name: AgentName,
-        /// Render the full dream with all vocabulary and memories inline.
-        #[arg(long)]
-        deep: bool,
     },
     Introspect {
         name: AgentName,
@@ -218,18 +212,16 @@ impl Command {
             Command::Continuity(continuity) => continuity.execute(&config.project()).await?,
 
             // Flat lifecycle shortcuts — delegate to ContinuityCommands
-            Command::Wake { name, deep } => {
+            Command::Wake { name } => {
                 ContinuityCommands::Wake(WakeAgent {
                     agent: name.clone(),
-                    deep: *deep,
                 })
                 .execute(&config.project())
                 .await?
             }
-            Command::Dream { name, deep } => {
+            Command::Dream { name } => {
                 ContinuityCommands::Dream(DreamAgent {
                     agent: name.clone(),
-                    deep: *deep,
                 })
                 .execute(&config.project())
                 .await?

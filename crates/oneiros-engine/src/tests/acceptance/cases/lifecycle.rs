@@ -153,82 +153,58 @@ pub(crate) async fn guidebook<B: Backend>() -> TestResult {
     Ok(())
 }
 
-// -- Compact dream prompt tests --
+// -- Greeting prompt tests --
 
-pub(crate) async fn dream_prompt_vocabulary_names_only<B: Backend>() -> TestResult {
+pub(crate) async fn dream_prompt_omits_vocabulary<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    // Set a texture with a rich prompt so we can verify it's NOT shown in compact dream
     harness
-        .exec_json("texture set observation --description 'Noticing things' --prompt 'When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.'")
+        .exec_json("texture set observation --description 'Noticing things' --prompt 'When you notice something interesting about the code, architecture, or process, capture it as an observation.'")
         .await?;
 
     let prompt = harness.exec_prompt("dream thinker.process").await?;
 
-    // Should have vocabulary names
+    // Vocabulary lives in the guidebook, not the greeting.
     assert!(
-        prompt.contains("observation"),
-        "dream prompt should list vocabulary names"
+        !prompt.contains("## Cognitive Textures"),
+        "greeting must not include textures section"
     );
-    // Should NOT have full prompts inline
     assert!(
-        !prompt.contains("Focus on what you see, not what to do about it"),
-        "dream prompt should not include full vocabulary prompts"
+        !prompt.contains("## Memory Levels"),
+        "greeting must not include levels section"
     );
-    // Should reference guidebook
+    // The hints section still points to the guidebook for retrieval.
     assert!(
-        prompt.contains("guidebook"),
-        "dream prompt should point to guidebook for vocabulary details"
+        prompt.contains("oneiros guidebook"),
+        "greeting should point to guidebook for vocabulary details"
     );
 
     Ok(())
 }
 
-pub(crate) async fn dream_prompt_non_core_memories_summarized<B: Backend>() -> TestResult {
+pub(crate) async fn dream_prompt_omits_non_core_memories<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
     harness
         .exec_json("memory add thinker.process core 'I am the core of all things'")
         .await?;
     harness
-        .exec_json("memory add thinker.process project 'A detailed project memory with extensive architectural context that describes the full system design and all the patterns we discovered along the way'")
+        .exec_json("memory add thinker.process project 'A detailed project memory that should remain in the substrate, not the greeting'")
         .await?;
 
     let prompt = harness.exec_prompt("dream thinker.process").await?;
 
-    // Core memory should be fully inline
     assert!(
         prompt.contains("I am the core of all things"),
-        "core memory should be fully inline"
+        "core memory should appear inline in greeting"
     );
-    // Non-core should be truncated
     assert!(
-        !prompt.contains("all the patterns we discovered along the way"),
-        "non-core memory should be truncated in compact dream"
+        !prompt.contains("should remain in the substrate"),
+        "non-core memories belong in the substrate, not the greeting"
     );
-    // Should have ref tokens
     assert!(
         prompt.contains("ref:"),
-        "compact dream should include ref tokens for summarized memories"
-    );
-
-    Ok(())
-}
-
-pub(crate) async fn dream_deep_prompt_includes_full_vocabulary<B: Backend>() -> TestResult {
-    let harness = with_seeded_agent::<B>().await?;
-
-    // Set a texture with a rich prompt
-    harness
-        .exec_json("texture set observation --description 'Noticing things' --prompt 'When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.'")
-        .await?;
-
-    let prompt = harness.exec_prompt("dream thinker.process --deep").await?;
-
-    // Deep mode should include full texture prompts
-    assert!(
-        prompt.contains("Focus on what you see, not what to do about it"),
-        "deep dream should include full texture prompts"
+        "greeting should include ref tokens for entities it surfaces"
     );
 
     Ok(())
@@ -242,38 +218,30 @@ pub(crate) async fn dream_prompt_contains_identity<B: Backend>() -> TestResult {
     let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
-        prompt.contains("thinker.process"),
-        "dream prompt should contain agent name, got: {}",
+        prompt.starts_with("You are waking as thinker.process. Today is "),
+        "greeting should open with identity sentence and date, got: {}",
         &prompt[..prompt.len().min(200)]
     );
     assert!(
-        prompt.contains("## Your Identity"),
-        "dream prompt should have identity section"
+        prompt.contains("## Next steps"),
+        "greeting should include the next steps block"
     );
     assert!(
-        prompt.contains("## Instructions"),
-        "dream prompt should have instructions section"
+        prompt.contains("## Hints"),
+        "greeting should include the hints block"
     );
 
     Ok(())
 }
 
-pub(crate) async fn dream_prompt_contains_vocabulary<B: Backend>() -> TestResult {
+pub(crate) async fn dream_prompt_contains_continuity<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
     let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
-        prompt.contains("## Cognitive Textures"),
-        "dream prompt should include textures section"
-    );
-    assert!(
-        prompt.contains("observation"),
-        "dream prompt should include seeded texture"
-    );
-    assert!(
-        prompt.contains("## Memory Levels"),
-        "dream prompt should include levels section"
+        prompt.contains("## Continuity"),
+        "greeting should have continuity section"
     );
 
     Ok(())
@@ -289,12 +257,12 @@ pub(crate) async fn dream_prompt_contains_memories<B: Backend>() -> TestResult {
     let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
-        prompt.contains("## Your Memories"),
-        "dream prompt should have memories section when memories exist"
+        prompt.contains("### Your core memories"),
+        "greeting should have core memories block when core memories exist"
     );
     assert!(
         prompt.contains("I remember everything"),
-        "dream prompt should contain memory content"
+        "greeting should contain memory content"
     );
 
     Ok(())
@@ -310,12 +278,12 @@ pub(crate) async fn dream_prompt_contains_cognitions<B: Backend>() -> TestResult
     let prompt = harness.exec_prompt("dream thinker.process").await?;
 
     assert!(
-        prompt.contains("## Your Cognitions"),
-        "dream prompt should have cognitions section when cognitions exist"
+        prompt.contains("### Latest cognitions"),
+        "greeting should have latest cognitions block when cognitions exist"
     );
     assert!(
         prompt.contains("Something interesting happened"),
-        "dream prompt should contain cognition content"
+        "greeting should contain cognition content"
     );
 
     Ok(())
@@ -386,12 +354,12 @@ pub(crate) async fn wake_prompt_contains_identity<B: Backend>() -> TestResult {
     let prompt = harness.exec_prompt("wake thinker.process").await?;
 
     assert!(
-        prompt.contains("thinker.process"),
-        "wake prompt should contain agent name"
+        prompt.starts_with("You are waking as thinker.process. Today is "),
+        "wake prompt should open with the same greeting as dream"
     );
     assert!(
-        prompt.contains("## Your Identity"),
-        "wake prompt should have identity section (same template as dream)"
+        prompt.contains("## Continuity"),
+        "wake prompt should have continuity section"
     );
 
     Ok(())

@@ -17,6 +17,16 @@ pub struct Connection {
     pub created_at: Timestamp,
 }
 
+impl Connection {
+    pub fn from_token(&self) -> RefToken {
+        RefToken::from(self.from_ref.clone())
+    }
+
+    pub fn to_token(&self) -> RefToken {
+        RefToken::from(self.to_ref.clone())
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Connections(HashMap<String, Connection>);
 

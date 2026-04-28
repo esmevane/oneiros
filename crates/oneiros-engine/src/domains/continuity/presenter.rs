@@ -8,15 +8,11 @@ use crate::*;
 
 pub struct ContinuityPresenter {
     response: ContinuityResponse,
-    deep: bool,
 }
 
 impl ContinuityPresenter {
     pub fn new(response: ContinuityResponse) -> Self {
-        Self {
-            response,
-            deep: false,
-        }
+        Self { response }
     }
 
     pub fn mcp(&self) -> McpResponse {
@@ -42,20 +38,11 @@ impl ContinuityPresenter {
         }
     }
 
-    pub fn with_deep(mut self, deep: bool) -> Self {
-        self.deep = deep;
-        self
-    }
-
     /// Render this continuity response into all available forms.
     pub fn render(self) -> Rendered<ContinuityResponse> {
         let (prompt, text, hints) = match &self.response {
             ContinuityResponse::Dreaming(context) | ContinuityResponse::Emerged(context) => {
-                let template = if self.deep {
-                    DreamTemplate::deep(context).to_string()
-                } else {
-                    DreamTemplate::new(context).to_string()
-                };
+                let template = DreamTemplate::new(context).to_string();
                 let text = match &self.response {
                     ContinuityResponse::Dreaming(_) => {
                         format!("Dreaming as {}...", context.agent.name)
@@ -68,11 +55,7 @@ impl ContinuityPresenter {
                 (template, text, HintSet::None)
             }
             ContinuityResponse::Waking(context) => {
-                let template = if self.deep {
-                    DreamTemplate::deep(context).to_string()
-                } else {
-                    DreamTemplate::new(context).to_string()
-                };
+                let template = DreamTemplate::new(context).to_string();
                 let pressures = context
                     .pressures
                     .iter()

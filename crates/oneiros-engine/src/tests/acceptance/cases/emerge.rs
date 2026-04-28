@@ -34,12 +34,13 @@ pub(crate) async fn emerge_prompt_contains_identity<B: Backend>() -> TestResult 
         .await?;
 
     assert!(
-        prompt.contains("thinker.process"),
-        "emerge prompt should contain the created agent's full name"
+        prompt.starts_with("You are waking as thinker.process. Today is "),
+        "emerge prompt should render the greeting for the new agent, got: {}",
+        &prompt[..prompt.len().min(200)]
     );
     assert!(
-        prompt.contains("## Your Identity"),
-        "emerge prompt should render the dream template for the new agent"
+        prompt.contains("## Continuity"),
+        "emerge prompt should include the continuity section"
     );
 
     Ok(())

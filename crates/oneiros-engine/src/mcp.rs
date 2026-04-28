@@ -417,7 +417,6 @@ impl ServerHandler for EngineToolBox {
 
                 let request = DreamAgent {
                     agent: AgentName::new(agent_name),
-                    deep: true,
                 };
 
                 let response =
@@ -427,7 +426,7 @@ impl ServerHandler for EngineToolBox {
 
                 match response {
                     ContinuityResponse::Dreaming(dream) => {
-                        let text = DreamTemplate::deep(&dream).to_string();
+                        let text = DreamTemplate::new(&dream).to_string();
                         Ok(
                             GetPromptResult::new(vec![rmcp::model::PromptMessage::new_text(
                                 rmcp::model::PromptMessageRole::User,

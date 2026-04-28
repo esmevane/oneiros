@@ -2,13 +2,16 @@ use askama::Template;
 
 use crate::*;
 
+/// How many recent cognitions/experiences/threads the dream surfaces inline.
+/// The substrate carries the rest — agents reach for it via tools after waking.
+const LATEST_LIMIT: usize = 3;
+
 #[derive(Template)]
 #[template(path = "continuity/dream.md")]
 pub struct DreamTemplate<'a> {
     pub context: &'a DreamContext,
     pub pressures: RelevantPressures,
     pub readings: &'a [PressureReading],
-    pub deep: bool,
 }
 
 impl<'a> DreamTemplate<'a> {
@@ -24,69 +27,37 @@ impl<'a> DreamTemplate<'a> {
             context,
             pressures,
             readings: &context.pressures,
-            deep: false,
         }
     }
 
-    pub fn deep(context: &'a DreamContext) -> Self {
-        let pressures = RelevantPressures::from_pressures(
-            context
-                .pressures
-                .iter()
-                .map(|r| r.pressure.clone())
-                .collect(),
-        );
-        Self {
-            context,
-            pressures,
-            readings: &context.pressures,
-            deep: true,
-        }
+    pub fn today(&self) -> String {
+        chrono::Utc::now().date_naive().to_string()
     }
 
-    pub fn texture_names(&self) -> String {
+    pub fn core_memories(&self) -> Vec<&Memory> {
         self.context
-            .textures
+            .memories
             .iter()
-            .map(|t| t.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
+            .filter(|m| m.level.as_str() == "core")
+            .collect()
     }
 
-    pub fn level_names(&self) -> String {
-        self.context
-            .levels
-            .iter()
-            .map(|l| l.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
+    pub fn latest_cognitions(&self) -> Vec<&Cognition> {
+        Self::tail(&self.context.cognitions, LATEST_LIMIT)
     }
 
-    pub fn sensation_names(&self) -> String {
-        self.context
-            .sensations
-            .iter()
-            .map(|s| s.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
+    pub fn latest_experiences(&self) -> Vec<&Experience> {
+        Self::tail(&self.context.experiences, LATEST_LIMIT)
     }
 
-    pub fn nature_names(&self) -> String {
-        self.context
-            .natures
-            .iter()
-            .map(|n| n.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
+    pub fn latest_threads(&self) -> Vec<&Connection> {
+        Self::tail(&self.context.connections, LATEST_LIMIT)
     }
 
-    pub fn urge_names(&self) -> String {
-        self.context
-            .urges
-            .iter()
-            .map(|u| u.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
+    fn tail<T>(items: &[T], limit: usize) -> Vec<&T> {
+        let len = items.len();
+        let start = len.saturating_sub(limit);
+        items[start..].iter().collect()
     }
 }
 
