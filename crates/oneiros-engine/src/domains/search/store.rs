@@ -22,7 +22,10 @@ impl<'a> SearchStore<'a> {
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         match &event.data {
-            Event::Known(Events::Cognition(CognitionEvents::CognitionAdded(cognition))) => {
+            Event::Known(Events::Cognition(CognitionEvents::CognitionAdded(
+                CognitionAdded::V1(addition),
+            ))) => {
+                let cognition = &addition.cognition;
                 self.index(
                     Ref::cognition(cognition.id),
                     "cognition-content",
@@ -30,7 +33,8 @@ impl<'a> SearchStore<'a> {
                     cognition.agent_id,
                 )?;
             }
-            Event::Known(Events::Memory(MemoryEvents::MemoryAdded(memory))) => {
+            Event::Known(Events::Memory(MemoryEvents::MemoryAdded(MemoryAdded::V1(addition)))) => {
+                let memory = &addition.memory;
                 self.index(
                     Ref::memory(memory.id),
                     "memory-content",
@@ -38,7 +42,8 @@ impl<'a> SearchStore<'a> {
                     memory.agent_id,
                 )?;
             }
-            Event::Known(Events::Agent(AgentEvents::AgentCreated(agent))) => {
+            Event::Known(Events::Agent(AgentEvents::AgentCreated(AgentCreated::V1(creation)))) => {
+                let agent = &creation.agent;
                 let content = format!("{} {}", agent.name, agent.description);
                 self.index(
                     Ref::agent(agent.id),
@@ -47,7 +52,8 @@ impl<'a> SearchStore<'a> {
                     &agent.name,
                 )?;
             }
-            Event::Known(Events::Agent(AgentEvents::AgentUpdated(agent))) => {
+            Event::Known(Events::Agent(AgentEvents::AgentUpdated(AgentUpdated::V1(update)))) => {
+                let agent = &update.agent;
                 self.remove_by_ref(&Ref::agent(agent.id))?;
                 let content = format!("{} {}", agent.name, agent.description);
                 self.index(
@@ -57,10 +63,13 @@ impl<'a> SearchStore<'a> {
                     &agent.name,
                 )?;
             }
-            Event::Known(Events::Agent(AgentEvents::AgentRemoved(removed))) => {
-                self.remove_by_agent(&removed.name)?;
+            Event::Known(Events::Agent(AgentEvents::AgentRemoved(AgentRemoved::V1(v)))) => {
+                self.remove_by_agent(&v.name)?;
             }
-            Event::Known(Events::Experience(ExperienceEvents::ExperienceCreated(experience))) => {
+            Event::Known(Events::Experience(ExperienceEvents::ExperienceCreated(
+                ExperienceCreated::V1(creation),
+            ))) => {
+                let experience = &creation.experience;
                 self.index(
                     Ref::experience(experience.id),
                     "experience-description",
@@ -69,7 +78,7 @@ impl<'a> SearchStore<'a> {
                 )?;
             }
             Event::Known(Events::Experience(ExperienceEvents::ExperienceDescriptionUpdated(
-                update,
+                ExperienceDescriptionUpdated::V1(update),
             ))) => {
                 self.remove_by_ref(&Ref::experience(update.id))?;
                 if let Ok(Some(exp)) = ExperienceStore::new(self.conn).get(&update.id) {

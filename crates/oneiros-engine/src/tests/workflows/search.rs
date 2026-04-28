@@ -32,40 +32,53 @@ async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
     // Search finds cognitions by content
     match client
         .search()
-        .search(&SearchQuery::builder().query("architecture").build())
+        .search(
+            &SearchQuery::builder_v1()
+                .query("architecture")
+                .build()
+                .into(),
+        )
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 1),
     }
 
     // Search finds agent descriptions
     match client
         .search()
-        .search(&SearchQuery::builder().query("Governor").build())
+        .search(&SearchQuery::builder_v1().query("Governor").build().into())
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 1),
     }
 
     // Search with agent filter narrows results
     match client
         .search()
-        .search(&SearchQuery {
-            query: "typed".to_string(),
-            agent: Some(AgentName::new("gov.process")),
-        })
+        .search(
+            &SearchQuery::builder_v1()
+                .query("typed")
+                .agent(AgentName::new("gov.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 1),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 1),
     }
 
     // Search for something that doesn't exist
     match client
         .search()
-        .search(&SearchQuery::builder().query("xyznonexistent").build())
+        .search(
+            &SearchQuery::builder_v1()
+                .query("xyznonexistent")
+                .build()
+                .into(),
+        )
         .await?
     {
-        SearchResponse::Results(r) => assert_eq!(r.results.len(), 0),
+        SearchResponse::Results(ResultsResponse::V1(r)) => assert_eq!(r.results.len(), 0),
     }
 
     Ok(())

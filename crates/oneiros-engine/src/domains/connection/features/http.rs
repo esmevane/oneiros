@@ -58,7 +58,11 @@ async fn show(
     Path(key): Path<ResourceKey<ConnectionId>>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(
-        ConnectionService::get(&context, &GetConnection::builder().key(key).build()).await?,
+        ConnectionService::get(
+            &context,
+            &GetConnection::builder_v1().key(key).build().into(),
+        )
+        .await?,
     ))
 }
 
@@ -67,6 +71,10 @@ async fn remove(
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(
-        ConnectionService::remove(&context, &RemoveConnection::builder().id(id).build()).await?,
+        ConnectionService::remove(
+            &context,
+            &RemoveConnection::builder_v1().id(id).build().into(),
+        )
+        .await?,
     ))
 }

@@ -9,23 +9,24 @@ impl<'a> CognitionClient<'a> {
         Self { client }
     }
 
-    pub async fn add(&self, request: &AddCognition) -> Result<CognitionResponse, ClientError> {
-        self.client.post("/cognitions", request).await
+    pub async fn add(&self, addition: &AddCognition) -> Result<CognitionResponse, ClientError> {
+        self.client.post("/cognitions", addition).await
     }
 
-    pub async fn list(&self, request: &ListCognitions) -> Result<CognitionResponse, ClientError> {
+    pub async fn list(&self, listing: &ListCognitions) -> Result<CognitionResponse, ClientError> {
+        let ListCognitions::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
-        if let Some(agent_name) = &request.agent {
+        if let Some(agent_name) = &listing.agent {
             params.push(("agent", agent_name.to_string()));
         }
 
-        if let Some(texture_name) = &request.texture {
+        if let Some(texture_name) = &listing.texture {
             params.push(("texture", texture_name.to_string()));
         }
 
-        params.push(("limit", request.filters.limit.to_string()));
-        params.push(("offset", request.filters.offset.to_string()));
+        params.push(("limit", listing.filters.limit.to_string()));
+        params.push(("offset", listing.filters.offset.to_string()));
 
         let query = params
             .iter()
@@ -36,9 +37,10 @@ impl<'a> CognitionClient<'a> {
         self.client.get(&format!("/cognitions?{query}")).await
     }
 
-    pub async fn get(&self, request: &GetCognition) -> Result<CognitionResponse, ClientError> {
+    pub async fn get(&self, lookup: &GetCognition) -> Result<CognitionResponse, ClientError> {
+        let GetCognition::V1(lookup) = lookup;
         self.client
-            .get(&format!("/cognitions/{}", request.key))
+            .get(&format!("/cognitions/{}", lookup.key))
             .await
     }
 }

@@ -11,56 +11,60 @@ impl<'a> ExperienceClient<'a> {
 
     pub async fn create(
         &self,
-        request: &CreateExperience,
+        creation: &CreateExperience,
     ) -> Result<ExperienceResponse, ClientError> {
-        self.client.post("/experiences", request).await
+        self.client.post("/experiences", creation).await
     }
 
-    pub async fn list(&self, request: &ListExperiences) -> Result<ExperienceResponse, ClientError> {
+    pub async fn list(&self, listing: &ListExperiences) -> Result<ExperienceResponse, ClientError> {
+        let ListExperiences::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
-        if let Some(a) = &request.agent {
-            params.push(("agent", a.to_string()));
+        if let Some(agent_name) = &listing.agent {
+            params.push(("agent", agent_name.to_string()));
         }
 
-        params.push(("limit", request.filters.limit.to_string()));
-        params.push(("offset", request.filters.offset.to_string()));
+        params.push(("limit", listing.filters.limit.to_string()));
+        params.push(("offset", listing.filters.offset.to_string()));
 
         let query = params
             .iter()
-            .map(|(k, v)| format!("{k}={v}"))
+            .map(|(key, value)| format!("{key}={value}"))
             .collect::<Vec<_>>()
             .join("&");
 
         self.client.get(&format!("/experiences?{query}")).await
     }
 
-    pub async fn get(&self, request: &GetExperience) -> Result<ExperienceResponse, ClientError> {
+    pub async fn get(&self, lookup: &GetExperience) -> Result<ExperienceResponse, ClientError> {
+        let GetExperience::V1(lookup) = lookup;
         self.client
-            .get(&format!("/experiences/{}", request.key))
+            .get(&format!("/experiences/{}", lookup.key))
             .await
     }
 
     pub async fn update_description(
         &self,
-        request: &UpdateExperienceDescription,
+        update: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ClientError> {
+        let UpdateExperienceDescription::V1(update) = update;
         self.client
             .put(
-                &format!("/experiences/{}/description", request.id),
-                &serde_json::json!({ "description": request.description }),
+                &format!("/experiences/{}/description", update.id),
+                &serde_json::json!({ "description": update.description }),
             )
             .await
     }
 
     pub async fn update_sensation(
         &self,
-        request: &UpdateExperienceSensation,
+        update: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ClientError> {
+        let UpdateExperienceSensation::V1(update) = update;
         self.client
             .put(
-                &format!("/experiences/{}/sensation", request.id),
-                &serde_json::json!({ "sensation": request.sensation }),
+                &format!("/experiences/{}/sensation", update.id),
+                &serde_json::json!({ "sensation": update.sensation }),
             )
             .await
     }

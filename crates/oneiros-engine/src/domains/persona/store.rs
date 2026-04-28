@@ -15,8 +15,8 @@ impl<'a> PersonaStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Persona(persona_event)) = &event.data {
             match persona_event {
-                PersonaEvents::PersonaSet(persona) => self.set(persona)?,
-                PersonaEvents::PersonaRemoved(removed) => self.remove(&removed.name)?,
+                PersonaEvents::PersonaSet(setting) => self.set(setting)?,
+                PersonaEvents::PersonaRemoved(removal) => self.remove(removal)?,
             }
         }
         Ok(())
@@ -64,7 +64,21 @@ impl<'a> PersonaStore<'a> {
         }
     }
 
-    fn set(&self, persona: &Persona) -> Result<(), EventError> {
+    fn set(&self, setting: &PersonaSet) -> Result<(), EventError> {
+        let persona = setting.current()?.persona;
+        self.write_persona(&persona)
+    }
+
+    fn remove(&self, removal: &PersonaRemoved) -> Result<(), EventError> {
+        let name = removal.current()?.name;
+        self.conn.execute(
+            "DELETE FROM personas WHERE name = ?1",
+            params![name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn write_persona(&self, persona: &Persona) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO personas (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -72,14 +86,6 @@ impl<'a> PersonaStore<'a> {
                 persona.description.to_string(),
                 persona.prompt.to_string()
             ],
-        )?;
-        Ok(())
-    }
-
-    fn remove(&self, name: &PersonaName) -> Result<(), EventError> {
-        self.conn.execute(
-            "DELETE FROM personas WHERE name = ?1",
-            params![name.to_string()],
         )?;
         Ok(())
     }

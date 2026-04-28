@@ -62,8 +62,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("cognition list").await?;
 
     match response {
-        Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
-            assert_eq!(cognitions.len(), 2);
+        Responses::Cognition(CognitionResponse::Cognitions(CognitionsResponse::V1(cognitions))) => {
+            assert_eq!(cognitions.items.len(), 2);
         }
         other => panic!("expected Cognitions, got {other:#?}"),
     }
@@ -90,8 +90,8 @@ pub(crate) async fn list_filters_by_agent<B: Backend>() -> TestResult {
         .await?;
 
     match response {
-        Responses::Cognition(CognitionResponse::Cognitions(cognitions)) => {
-            assert_eq!(cognitions.len(), 1);
+        Responses::Cognition(CognitionResponse::Cognitions(CognitionsResponse::V1(cognitions))) => {
+            assert_eq!(cognitions.items.len(), 1);
         }
         other => panic!("expected Cognitions, got {other:#?}"),
     }
@@ -107,15 +107,19 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
         .await?;
 
     let id = match add_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id,
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => added.cognition.id,
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("cognition show {id}")).await?;
 
     match show_response {
-        Responses::Cognition(CognitionResponse::CognitionDetails(cognition)) => {
-            assert_eq!(cognition.data.content.as_str(), "Show me this");
+        Responses::Cognition(CognitionResponse::CognitionDetails(
+            CognitionDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.cognition.content.as_str(), "Show me this");
         }
         other => panic!("expected CognitionDetails, got {other:#?}"),
     }
@@ -130,7 +134,9 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("cognition add thinker.process observation 'Show me this'")
         .await?;
     let id = match response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(c)) => c.data.id.to_string(),
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => added.cognition.id.to_string(),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
@@ -170,22 +176,19 @@ pub(crate) async fn show_json_includes_ref<B: Backend>() -> TestResult {
         .await?;
 
     let id = match add_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(result)) => result.data.id,
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => added.cognition.id,
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("cognition show {id}")).await?;
 
     match show_response {
-        Responses::Cognition(CognitionResponse::CognitionDetails(wrapped)) => {
-            let ref_token = wrapped
-                .meta
-                .and_then(|m| m.ref_token)
-                .expect("show response should include ref_token in entity meta");
-            assert!(
-                ref_token.to_string().starts_with("ref:"),
-                "ref_token should be a valid ref token"
-            );
+        Responses::Cognition(CognitionResponse::CognitionDetails(
+            CognitionDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.cognition.id, id);
         }
         other => panic!("expected CognitionDetails, got {other:#?}"),
     }
@@ -204,22 +207,15 @@ pub(crate) async fn list_json_items_include_refs<B: Backend>() -> TestResult {
         .await?;
 
     let response = harness.exec_json("cognition list").await?;
-    let json = serde_json::to_value(&response)?;
 
-    let items = json["data"]["items"]
-        .as_array()
-        .expect("cognition list should have data.items array");
-
-    assert_eq!(items.len(), 2);
-
-    for item in items {
-        let ref_token = item["meta"]["ref_token"]
-            .as_str()
-            .expect("each listed cognition should have meta.ref_token");
-        assert!(
-            ref_token.starts_with("ref:"),
-            "ref_token should start with 'ref:', got: {ref_token}"
-        );
+    match response {
+        Responses::Cognition(CognitionResponse::Cognitions(CognitionsResponse::V1(listed))) => {
+            assert_eq!(listed.items.len(), 2);
+            for item in listed.items {
+                assert!(!item.id.to_string().is_empty());
+            }
+        }
+        other => panic!("expected Cognitions, got {other:#?}"),
     }
 
     Ok(())

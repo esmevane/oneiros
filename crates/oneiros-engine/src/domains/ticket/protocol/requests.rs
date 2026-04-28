@@ -1,39 +1,53 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct CreateTicket {
-    #[arg(long)]
-    #[builder(into)]
-    pub actor_id: ActorId,
-    #[arg(long)]
-    #[builder(into)]
-    pub brain_name: BrainName,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum CreateTicket {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long)]
+            #[builder(into)] pub actor_id: ActorId,
+            #[arg(long)]
+            #[builder(into)] pub brain_name: BrainName,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetTicket {
-    #[builder(into)]
-    pub key: ResourceKey<TicketId>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetTicket {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<TicketId>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ValidateTicket {
-    #[builder(into)]
-    pub token: Token,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ValidateTicket {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub token: Token,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListTickets {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListTickets {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

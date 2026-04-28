@@ -30,7 +30,8 @@ pub(crate) async fn returns_activity_table<B: Backend>() -> TestResult {
     let response = harness.exec_json("status").await?;
 
     match &response {
-        Responses::Continuity(ContinuityResponse::Status(table)) => {
+        Responses::Continuity(ContinuityResponse::Status(StatusResponse::V1(details))) => {
+            let table = &details.table;
             assert!(
                 !table.agents.is_empty(),
                 "activity table should contain agents"

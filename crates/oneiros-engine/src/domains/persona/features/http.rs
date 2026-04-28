@@ -41,12 +41,14 @@ impl PersonaRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<PersonaName>,
-    Json(mut body): Json<SetPersona>,
+    Json(body): Json<SetPersona>,
 ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
-    body.name = name;
+    let SetPersona::V1(mut setting) = body;
+    setting.name = name;
+    let request = SetPersona::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(PersonaService::set(&context, &body).await?),
+        Json(PersonaService::set(&context, &request).await?),
     ))
 }
 
@@ -62,7 +64,7 @@ async fn show(
     Path(key): Path<ResourceKey<PersonaName>>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(
-        PersonaService::get(&context, &GetPersona::builder().key(key).build()).await?,
+        PersonaService::get(&context, &GetPersona::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -71,6 +73,10 @@ async fn remove(
     Path(name): Path<PersonaName>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(
-        PersonaService::remove(&context, &RemovePersona::builder().name(name).build()).await?,
+        PersonaService::remove(
+            &context,
+            &RemovePersona::builder_v1().name(name).build().into(),
+        )
+        .await?,
     ))
 }

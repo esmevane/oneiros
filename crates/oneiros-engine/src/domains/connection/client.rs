@@ -11,20 +11,21 @@ impl<'a> ConnectionClient<'a> {
 
     pub async fn create(
         &self,
-        request: &CreateConnection,
+        creation: &CreateConnection,
     ) -> Result<ConnectionResponse, ClientError> {
-        self.client.post("/connections", request).await
+        self.client.post("/connections", creation).await
     }
 
-    pub async fn list(&self, request: &ListConnections) -> Result<ConnectionResponse, ClientError> {
+    pub async fn list(&self, listing: &ListConnections) -> Result<ConnectionResponse, ClientError> {
+        let ListConnections::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
-        if let Some(entity) = &request.entity {
+        if let Some(entity) = &listing.entity {
             params.push(("entity", entity.to_string()));
         }
 
-        params.push(("limit", request.filters.limit.to_string()));
-        params.push(("offset", request.filters.offset.to_string()));
+        params.push(("limit", listing.filters.limit.to_string()));
+        params.push(("offset", listing.filters.offset.to_string()));
 
         let query = params
             .iter()
@@ -35,18 +36,20 @@ impl<'a> ConnectionClient<'a> {
         self.client.get(&format!("/connections?{query}")).await
     }
 
-    pub async fn get(&self, request: &GetConnection) -> Result<ConnectionResponse, ClientError> {
+    pub async fn get(&self, lookup: &GetConnection) -> Result<ConnectionResponse, ClientError> {
+        let GetConnection::V1(lookup) = lookup;
         self.client
-            .get(&format!("/connections/{}", request.key))
+            .get(&format!("/connections/{}", lookup.key))
             .await
     }
 
     pub async fn remove(
         &self,
-        request: &RemoveConnection,
+        removal: &RemoveConnection,
     ) -> Result<ConnectionResponse, ClientError> {
+        let RemoveConnection::V1(removal) = removal;
         self.client
-            .delete(&format!("/connections/{}", request.id))
+            .delete(&format!("/connections/{}", removal.id))
             .await
     }
 }

@@ -152,9 +152,9 @@ mod tests {
     /// A struct with newtype fields should have properties inlined, no $ref.
     #[test]
     fn struct_with_newtype_fields_is_inlined() {
-        use crate::GetPressure;
+        use crate::GetPressureV1;
 
-        let schema = schema_for::<GetPressure>();
+        let schema = schema_for::<GetPressureV1>();
         let obj = schema.as_object().expect("schema should be an object");
 
         assert_eq!(obj.get("type").and_then(|v| v.as_str()), Some("object"));

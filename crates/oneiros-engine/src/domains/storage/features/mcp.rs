@@ -44,7 +44,8 @@ mod storage_mcp {
 
         let value = match request_type {
             StorageRequestType::ListStorage => {
-                let request: ListStorage = serde_json::from_str(params).unwrap_or_default();
+                let request: ListStorage = serde_json::from_str(params)
+                    .unwrap_or_else(|_| ListStorage::builder_v1().build().into());
                 StorageService::list(context, &request).await
             }
             StorageRequestType::GetStorage => {

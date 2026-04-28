@@ -11,7 +11,7 @@ impl SearchPresenter {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            SearchResponse::Results(results) => {
+            SearchResponse::Results(ResultsResponse::V1(results)) => {
                 let mut md = format!(
                     "# Search: {}\n\n{} results\n\n",
                     results.query,
@@ -37,7 +37,7 @@ impl SearchPresenter {
 
     fn render_prompt(&self) -> String {
         match &self.response {
-            SearchResponse::Results(results) => {
+            SearchResponse::Results(ResultsResponse::V1(results)) => {
                 if results.results.is_empty() {
                     return format!("No results for '{}'.", results.query);
                 }
@@ -65,7 +65,7 @@ impl SearchPresenter {
 
     fn render_text(&self) -> String {
         match &self.response {
-            SearchResponse::Results(results) => {
+            SearchResponse::Results(ResultsResponse::V1(results)) => {
                 if results.results.is_empty() {
                     format!("No results for '{}'.", results.query)
                 } else {

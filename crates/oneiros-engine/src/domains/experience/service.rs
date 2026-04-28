@@ -5,52 +5,61 @@ pub struct ExperienceService;
 impl ExperienceService {
     pub async fn create(
         context: &ProjectContext,
-        CreateExperience {
-            agent,
-            sensation,
-            description,
-        }: &CreateExperience,
+        request: &CreateExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
+        let CreateExperience::V1(creation) = request;
         let agent_record = AgentRepo::new(context)
-            .get(agent)
+            .get(&creation.agent)
             .await?
-            .ok_or_else(|| ExperienceError::AgentNotFound(agent.clone()))?;
+            .ok_or_else(|| ExperienceError::AgentNotFound(creation.agent.clone()))?;
 
         let experience = Experience::builder()
             .agent_id(agent_record.id)
-            .sensation(sensation.clone())
-            .description(description.clone())
+            .sensation(creation.sensation.clone())
+            .description(creation.description.clone())
             .build();
 
         context
-            .emit(ExperienceEvents::ExperienceCreated(experience.clone()))
+            .emit(ExperienceEvents::ExperienceCreated(
+                ExperienceCreated::builder_v1()
+                    .experience(experience.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+
         Ok(ExperienceResponse::ExperienceCreated(
-            Response::new(experience).with_ref_token(ref_token),
+            ExperienceCreatedResponse::builder_v1()
+                .experience(experience)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetExperience,
+        request: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
-        let id = selector.key.resolve()?;
+        let GetExperience::V1(lookup) = request;
+        let id = lookup.key.resolve()?;
         let experience = ExperienceRepo::new(context)
             .get(&id)
             .await?
             .ok_or(ExperienceError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
         Ok(ExperienceResponse::ExperienceDetails(
-            Response::new(experience).with_ref_token(ref_token),
+            ExperienceDetailsResponse::builder_v1()
+                .experience(experience)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListExperiences { agent, filters }: &ListExperiences,
+        request: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
-        let agent_id = match agent {
+        let ListExperiences::V1(listing) = request;
+        let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context)
                     .get(name)
@@ -62,65 +71,78 @@ impl ExperienceService {
         };
 
         let listed = ExperienceRepo::new(context)
-            .list(agent_id.as_deref(), filters)
+            .list(agent_id.as_deref(), &listing.filters)
             .await?;
         Ok(if listed.total == 0 {
             ExperienceResponse::NoExperiences
         } else {
-            ExperienceResponse::Experiences(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::experience(e.id));
-                Response::new(e).with_ref_token(ref_token)
-            }))
+            ExperienceResponse::Experiences(
+                ExperiencesResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            )
         })
     }
 
     pub async fn update_description(
         context: &ProjectContext,
-        UpdateExperienceDescription { id, description }: &UpdateExperienceDescription,
+        request: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ExperienceError> {
+        let UpdateExperienceDescription::V1(update) = request;
         let mut experience = ExperienceRepo::new(context)
-            .get(id)
+            .get(&update.id)
             .await?
-            .ok_or_else(|| ExperienceError::NotFound(*id))?;
+            .ok_or_else(|| ExperienceError::NotFound(update.id))?;
 
-        experience.description = description.clone();
+        experience.description = update.description.clone();
 
         context
             .emit(ExperienceEvents::ExperienceDescriptionUpdated(
-                ExperienceDescriptionUpdate {
-                    id: *id,
-                    description: description.clone(),
-                },
+                ExperienceDescriptionUpdated::builder_v1()
+                    .id(update.id)
+                    .description(update.description.clone())
+                    .build()
+                    .into(),
             ))
             .await?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+
         Ok(ExperienceResponse::ExperienceUpdated(
-            Response::new(experience).with_ref_token(ref_token),
+            ExperienceUpdatedResponse::builder_v1()
+                .experience(experience)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn update_sensation(
         context: &ProjectContext,
-        UpdateExperienceSensation { id, sensation }: &UpdateExperienceSensation,
+        request: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ExperienceError> {
+        let UpdateExperienceSensation::V1(update) = request;
         let mut experience = ExperienceRepo::new(context)
-            .get(id)
+            .get(&update.id)
             .await?
-            .ok_or_else(|| ExperienceError::NotFound(*id))?;
+            .ok_or_else(|| ExperienceError::NotFound(update.id))?;
 
-        experience.sensation = sensation.clone();
+        experience.sensation = update.sensation.clone();
 
         context
             .emit(ExperienceEvents::ExperienceSensationUpdated(
-                ExperienceSensationUpdate {
-                    id: *id,
-                    sensation: sensation.clone(),
-                },
+                ExperienceSensationUpdated::builder_v1()
+                    .id(update.id)
+                    .sensation(update.sensation.clone())
+                    .build()
+                    .into(),
             ))
             .await?;
-        let ref_token = RefToken::new(Ref::experience(experience.id));
+
         Ok(ExperienceResponse::ExperienceUpdated(
-            Response::new(experience).with_ref_token(ref_token),
+            ExperienceUpdatedResponse::builder_v1()
+                .experience(experience)
+                .build()
+                .into(),
         ))
     }
 }

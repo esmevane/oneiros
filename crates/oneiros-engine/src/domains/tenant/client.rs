@@ -18,15 +18,17 @@ impl<'a> TenantClient<'a> {
     }
 
     /// Retrieve a single tenant by key (id or ref).
-    pub async fn get(&self, request: &GetTenant) -> Result<TenantResponse, ClientError> {
-        self.client.get(&format!("/tenants/{}", request.key)).await
+    pub async fn get(&self, lookup: &GetTenant) -> Result<TenantResponse, ClientError> {
+        let GetTenant::V1(lookup) = lookup;
+        self.client.get(&format!("/tenants/{}", lookup.key)).await
     }
 
     /// List all tenants.
-    pub async fn list(&self, request: &ListTenants) -> Result<TenantResponse, ClientError> {
+    pub async fn list(&self, listing: &ListTenants) -> Result<TenantResponse, ClientError> {
+        let ListTenants::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/tenants?{query}")).await
     }

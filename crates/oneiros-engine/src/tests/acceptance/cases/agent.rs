@@ -40,9 +40,9 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
     harness
         .query("agent show viewer.process")
         .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.name.as_str() == "viewer.process"
-                    && agent.data.persona.as_str() == "process"
+            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+                if agent.agent.name.as_str() == "viewer.process"
+                    && agent.agent.persona.as_str() == "process"
         ))
         .await
 }
@@ -59,10 +59,9 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
             // AgentCreated returns a name, not a ref envelope — grab the ref via show.
             let show = harness.exec_json("agent show viewer.process").await?;
             match show {
-                Responses::Agent(AgentResponse::AgentDetails(agent)) => agent
-                    .meta()
-                    .ref_token()
-                    .expect("AgentDetails carries a ref token"),
+                Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent))) => {
+                    RefToken::new(Ref::agent(agent.agent.id))
+                }
                 other => panic!("expected AgentDetails, got {other:#?}"),
             }
         }
@@ -72,8 +71,8 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
     harness
         .query(&format!("agent show {ref_token}"))
         .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.name.as_str() == "viewer.process"
+            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+                if agent.agent.name.as_str() == "viewer.process"
         ))
         .await
 }
@@ -92,10 +91,9 @@ pub(crate) async fn show_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
         .await?;
 
     let cognition_ref = match cognition_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(cognition)) => cognition
-            .meta()
-            .ref_token()
-            .expect("CognitionAdded carries a ref token"),
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            cognition,
+        ))) => RefToken::new(Ref::cognition(cognition.cognition.id)),
         other => panic!("expected CognitionAdded, got {other:#?}"),
     };
 
@@ -137,7 +135,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     harness
         .query("agent list")
         .assert_json(expect!(
-            Responses::Agent(AgentResponse::Agents(agents)) if agents.len() == 2
+            Responses::Agent(AgentResponse::Agents(AgentsResponse::V1(agents))) if agents.items.len() == 2
         ))
         .await
 }
@@ -163,8 +161,8 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
     harness
         .query("agent show mutable.process")
         .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.description.as_str() == "Updated"
+            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+                if agent.agent.description.as_str() == "Updated"
         ))
         .await
 }
@@ -286,8 +284,8 @@ pub(crate) async fn name_includes_persona_suffix<B: Backend>() -> TestResult {
     harness
         .query("agent show governor.process")
         .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(agent))
-                if agent.data.name.as_str() == "governor.process"
+            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+                if agent.agent.name.as_str() == "governor.process"
         ))
         .await
 }

@@ -95,7 +95,11 @@ async fn recede(
     Path(agent): Path<AgentName>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
-        ContinuityService::recede(&context, &RecedeAgent::builder().agent(agent).build()).await?,
+        ContinuityService::recede(
+            &context,
+            &RecedeAgent::builder_v1().agent(agent).build().into(),
+        )
+        .await?,
     ))
 }
 
@@ -114,7 +118,7 @@ async fn wake(
     Ok(Json(
         ContinuityService::wake(
             &context,
-            &WakeAgent::builder().agent(agent).build(),
+            &WakeAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
         .await?,
@@ -129,7 +133,7 @@ async fn dream(
     Ok(Json(
         ContinuityService::dream(
             &context,
-            &DreamAgent::builder().agent(agent).build(),
+            &DreamAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
         .await?,
@@ -144,7 +148,7 @@ async fn introspect(
     Ok(Json(
         ContinuityService::introspect(
             &context,
-            &IntrospectAgent::builder().agent(agent).build(),
+            &IntrospectAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
         .await?,
@@ -159,7 +163,7 @@ async fn reflect(
     Ok(Json(
         ContinuityService::reflect(
             &context,
-            &ReflectAgent::builder().agent(agent).build(),
+            &ReflectAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
         .await?,
@@ -171,12 +175,14 @@ async fn sense(
     Path(agent): Path<AgentName>,
     Json(body): Json<SenseContent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
-    let selector = SenseContent::builder()
+    let SenseContent::V1(sensing) = body;
+    let request: SenseContent = SenseContent::builder_v1()
         .agent(agent)
-        .content(body.content)
-        .build();
+        .content(sensing.content)
+        .build()
+        .into();
     Ok(Json(
-        ContinuityService::sense(&context, &selector, &DreamOverrides::default()).await?,
+        ContinuityService::sense(&context, &request, &DreamOverrides::default()).await?,
     ))
 }
 
@@ -188,7 +194,7 @@ async fn sleep(
     Ok(Json(
         ContinuityService::sleep(
             &context,
-            &SleepAgent::builder().agent(agent).build(),
+            &SleepAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
         .await?,
@@ -202,7 +208,7 @@ async fn guidebook(
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(ContinuityService::guidebook(
         &context,
-        &GuidebookAgent::builder().agent(agent).build(),
+        &GuidebookAgent::builder_v1().agent(agent).build().into(),
         &overrides,
     )?))
 }

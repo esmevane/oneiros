@@ -18,18 +18,18 @@ impl CognitionCommands {
         let cognition_client = CognitionClient::new(&client);
 
         let (response, request) = match self {
-            CognitionCommands::Add(addition) => {
-                let response = cognition_client.add(addition).await?;
-                (response, CognitionRequest::AddCognition(addition.clone()))
-            }
-            CognitionCommands::Show(get) => {
-                let response = cognition_client.get(get).await?;
-                (response, CognitionRequest::GetCognition(get.clone()))
-            }
-            CognitionCommands::List(listing) => {
-                let response = cognition_client.list(listing).await?;
-                (response, CognitionRequest::ListCognitions(listing.clone()))
-            }
+            Self::Add(addition) => (
+                cognition_client.add(addition).await?,
+                CognitionRequest::AddCognition(addition.clone()),
+            ),
+            Self::Show(lookup) => (
+                cognition_client.get(lookup).await?,
+                CognitionRequest::GetCognition(lookup.clone()),
+            ),
+            Self::List(listing) => (
+                cognition_client.list(listing).await?,
+                CognitionRequest::ListCognitions(listing.clone()),
+            ),
         };
 
         Ok(CognitionView::new(response, &request)

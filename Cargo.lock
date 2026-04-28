@@ -2898,6 +2898,7 @@ dependencies = [
  "inquire",
  "iroh",
  "kinded",
+ "paste",
  "pkcs8",
  "postcard",
  "pretty_assertions",

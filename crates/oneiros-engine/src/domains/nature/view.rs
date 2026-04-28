@@ -11,25 +11,27 @@ impl NatureView {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            NatureResponse::Natures(listed) => {
+            NatureResponse::Natures(NaturesResponse::V1(listed)) => {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|w| (w.data.name.to_string(), w.data.description.to_string()))
+                    .map(|item| (item.name.to_string(), item.description.to_string()))
                     .collect();
                 Self::vocabulary_table("Natures", &items)
             }
-            NatureResponse::NatureDetails(wrapped) => {
+            NatureResponse::NatureDetails(NatureDetailsResponse::V1(details)) => {
                 let items = vec![(
-                    wrapped.data.name.to_string(),
-                    wrapped.data.description.to_string(),
+                    details.nature.name.to_string(),
+                    details.nature.description.to_string(),
                 )];
                 Self::vocabulary_table("Nature", &items)
             }
             NatureResponse::NoNatures => Self::vocabulary_table("Natures", &[]),
-            NatureResponse::NatureSet(name) => McpResponse::new(format!("Nature set: {name}")),
-            NatureResponse::NatureRemoved(name) => {
-                McpResponse::new(format!("Nature removed: {name}"))
+            NatureResponse::NatureSet(NatureSetResponse::V1(set)) => {
+                McpResponse::new(format!("Nature set: {}", set.nature.name))
+            }
+            NatureResponse::NatureRemoved(NatureRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Nature removed: {}", removed.name))
             }
         }
     }
@@ -50,58 +52,69 @@ impl NatureView {
 
     pub fn render(self) -> Rendered<NatureResponse> {
         match self.response {
-            NatureResponse::NatureSet(name) => {
-                let prompt = Confirmation::new("Nature", name.to_string(), "set").to_string();
+            NatureResponse::NatureSet(NatureSetResponse::V1(set)) => {
+                let prompt =
+                    Confirmation::new("Nature", set.nature.name.to_string(), "set").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("nature".to_string())
                         .build(),
                 );
-                Rendered::new(NatureResponse::NatureSet(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    NatureResponse::NatureSet(NatureSetResponse::V1(set)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            NatureResponse::NatureDetails(wrapped) => {
-                let prompt = Detail::new(wrapped.data.name.to_string())
-                    .field("description:", wrapped.data.description.to_string())
-                    .field("prompt:", wrapped.data.prompt.to_string())
+            NatureResponse::NatureDetails(NatureDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.nature.name.to_string())
+                    .field("description:", details.nature.description.to_string())
+                    .field("prompt:", details.nature.prompt.to_string())
                     .to_string();
                 Rendered::new(
-                    NatureResponse::NatureDetails(wrapped),
+                    NatureResponse::NatureDetails(NatureDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
             }
-            NatureResponse::Natures(listed) => {
+            NatureResponse::Natures(NaturesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("name", "Name"),
                     Column::key("description", "Description").max(60),
                 ]);
-                for wrapped in &listed.items {
-                    table.push_row(vec![
-                        wrapped.data.name.to_string(),
-                        wrapped.data.description.to_string(),
-                    ]);
+                for item in &listed.items {
+                    table.push_row(vec![item.name.to_string(), item.description.to_string()]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(NatureResponse::Natures(listed), prompt, String::new())
+                Rendered::new(
+                    NatureResponse::Natures(NaturesResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             NatureResponse::NoNatures => Rendered::new(
                 NatureResponse::NoNatures,
                 format!("{}", "No natures configured.".muted()),
                 String::new(),
             ),
-            NatureResponse::NatureRemoved(name) => {
-                let prompt = Confirmation::new("Nature", name.to_string(), "removed").to_string();
+            NatureResponse::NatureRemoved(NatureRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Nature", removed.name.to_string(), "removed").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder()
                         .kind("nature".to_string())
                         .build(),
                 );
-                Rendered::new(NatureResponse::NatureRemoved(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    NatureResponse::NatureRemoved(NatureRemovedResponse::V1(removed)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
         }
     }

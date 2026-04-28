@@ -7,17 +7,24 @@ impl PressureService {
         context: &ProjectContext,
         selector: &GetPressure,
     ) -> Result<PressureResponse, PressureError> {
-        let pressures = PressureRepo::new(context).get(&selector.agent).await?;
-        Ok(PressureResponse::Readings(PressureResult {
-            agent: selector.agent.clone(),
-            pressures,
-        }))
+        let details = selector.current()?;
+        let pressures = PressureRepo::new(context).get(&details.agent).await?;
+        Ok(PressureResponse::Readings(
+            ReadingsResponse::builder_v1()
+                .agent(details.agent)
+                .pressures(pressures)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn list(context: &ProjectContext) -> Result<PressureResponse, PressureError> {
         let pressures = PressureRepo::new(context).list().await?;
-        Ok(PressureResponse::AllReadings(ListPressureResult {
-            pressures,
-        }))
+        Ok(PressureResponse::AllReadings(
+            AllReadingsResponse::builder_v1()
+                .pressures(pressures)
+                .build()
+                .into(),
+        ))
     }
 }

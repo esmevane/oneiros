@@ -25,22 +25,25 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .level()
-        .list(&ListLevels {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListLevels::builder_v1().build().into())
         .await?
     {
-        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 2),
+        LevelResponse::Levels(LevelsResponse::V1(levels)) => assert_eq!(levels.items.len(), 2),
         other => panic!("expected Levels, got {other:?}"),
     }
 
     match client
         .level()
-        .get(&GetLevel::builder().key(LevelName::new("working")).build())
+        .get(
+            &GetLevel::builder_v1()
+                .key(LevelName::new("working"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        LevelResponse::LevelDetails(l) => {
-            assert_eq!(l.data.description.to_string(), "Active processing");
+        LevelResponse::LevelDetails(LevelDetailsResponse::V1(l)) => {
+            assert_eq!(l.level.description.to_string(), "Active processing");
         }
         other => panic!("expected LevelDetails, got {other:?}"),
     }
@@ -50,19 +53,22 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     assert!(
         client
             .level()
-            .get(&GetLevel::builder().key(LevelName::new("session")).build())
+            .get(
+                &GetLevel::builder_v1()
+                    .key(LevelName::new("session"))
+                    .build()
+                    .into()
+            )
             .await
             .is_err()
     );
 
     match client
         .level()
-        .list(&ListLevels {
-            filters: SearchFilters::default(),
-        })
+        .list(&ListLevels::builder_v1().build().into())
         .await?
     {
-        LevelResponse::Levels(levels) => assert_eq!(levels.len(), 1),
+        LevelResponse::Levels(LevelsResponse::V1(levels)) => assert_eq!(levels.items.len(), 1),
         other => panic!("expected Levels, got {other:?}"),
     }
 
@@ -72,14 +78,15 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .texture()
         .get(
-            &GetTexture::builder()
+            &GetTexture::builder_v1()
                 .key(TextureName::new("observation"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        TextureResponse::TextureDetails(t) => {
-            assert_eq!(t.data.name, TextureName::new("observation"));
+        TextureResponse::TextureDetails(TextureDetailsResponse::V1(t)) => {
+            assert_eq!(t.texture.name, TextureName::new("observation"));
         }
         other => panic!("expected TextureDetails, got {other:?}"),
     }
@@ -90,14 +97,15 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .sensation()
         .get(
-            &GetSensation::builder()
+            &GetSensation::builder_v1()
                 .key(SensationName::new("echoes"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        SensationResponse::SensationDetails(s) => {
-            assert_eq!(s.data.name, SensationName::new("echoes"));
+        SensationResponse::SensationDetails(SensationDetailsResponse::V1(s)) => {
+            assert_eq!(s.sensation.name, SensationName::new("echoes"));
         }
         other => panic!("expected SensationDetails, got {other:?}"),
     }
@@ -108,14 +116,15 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .nature()
         .get(
-            &GetNature::builder()
+            &GetNature::builder_v1()
                 .key(NatureName::new("reference"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        NatureResponse::NatureDetails(n) => {
-            assert_eq!(n.data.name, NatureName::new("reference"));
+        NatureResponse::NatureDetails(NatureDetailsResponse::V1(n)) => {
+            assert_eq!(n.nature.name, NatureName::new("reference"));
         }
         other => panic!("expected NatureDetails, got {other:?}"),
     }
@@ -132,14 +141,15 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     match client
         .persona()
         .get(
-            &GetPersona::builder()
+            &GetPersona::builder_v1()
                 .key(PersonaName::new("process"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        PersonaResponse::PersonaDetails(p) => {
-            assert_eq!(cmd_json["data"]["name"], p.data.name.to_string());
+        PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(p)) => {
+            assert_eq!(cmd_json["data"]["name"], p.persona.name.to_string());
         }
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
@@ -149,11 +159,16 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .urge()
-        .get(&GetUrge::builder().key(UrgeName::new("introspect")).build())
+        .get(
+            &GetUrge::builder_v1()
+                .key(UrgeName::new("introspect"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        UrgeResponse::UrgeDetails(u) => {
-            assert_eq!(u.name, UrgeName::new("introspect"));
+        UrgeResponse::UrgeDetails(UrgeDetailsResponse::V1(u)) => {
+            assert_eq!(u.urge.name, UrgeName::new("introspect"));
         }
         other => panic!("expected UrgeDetails, got {other:?}"),
     }
@@ -164,11 +179,16 @@ async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 
     match client
         .level()
-        .get(&GetLevel::builder().key(LevelName::new("working")).build())
+        .get(
+            &GetLevel::builder_v1()
+                .key(LevelName::new("working"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        LevelResponse::LevelDetails(l) => {
-            assert_eq!(l.data.description.to_string(), "Updated description");
+        LevelResponse::LevelDetails(LevelDetailsResponse::V1(l)) => {
+            assert_eq!(l.level.description.to_string(), "Updated description");
         }
         other => panic!("expected LevelDetails, got {other:?}"),
     }

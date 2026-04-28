@@ -14,14 +14,29 @@ impl<'a> PeerStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Peer(peer_event)) = &event.data {
             match peer_event {
-                PeerEvents::PeerAdded(peer) => {
-                    self.create_record(peer)?;
+                PeerEvents::PeerAdded(added) => {
+                    let current = added.current()?;
+                    self.create_record(
+                        &current.id,
+                        &current.key,
+                        &current.address,
+                        &current.name,
+                        &current.created_at,
+                    )?;
                 }
-                PeerEvents::PeerUpdated(peer) => {
-                    self.create_record(peer)?;
+                PeerEvents::PeerUpdated(updated) => {
+                    let current = updated.current()?;
+                    self.create_record(
+                        &current.id,
+                        &current.key,
+                        &current.address,
+                        &current.name,
+                        &current.created_at,
+                    )?;
                 }
                 PeerEvents::PeerRemoved(removed) => {
-                    self.delete_record(removed.id)?;
+                    let current = removed.current()?;
+                    self.delete_record(current.id)?;
                 }
             }
         }
@@ -46,16 +61,23 @@ impl<'a> PeerStore<'a> {
         Ok(())
     }
 
-    fn create_record(&self, peer: &Peer) -> Result<(), EventError> {
+    fn create_record(
+        &self,
+        id: &PeerId,
+        key: &PeerKey,
+        address: &PeerAddress,
+        name: &PeerName,
+        created_at: &Timestamp,
+    ) -> Result<(), EventError> {
         self.conn.execute(
             "insert or replace into peers (id, key, address, name, created_at)
              values (?1, ?2, ?3, ?4, ?5)",
             params![
-                peer.id.to_string(),
-                peer.key.to_string(),
-                peer.address.to_string(),
-                peer.name.to_string(),
-                peer.created_at.as_string(),
+                id.to_string(),
+                key.to_string(),
+                address.to_string(),
+                name.to_string(),
+                created_at.as_string(),
             ],
         )?;
         Ok(())

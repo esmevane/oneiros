@@ -41,12 +41,14 @@ impl SensationRouter {
 async fn set(
     context: ProjectContext,
     Path(name): Path<SensationName>,
-    Json(mut body): Json<SetSensation>,
+    Json(body): Json<SetSensation>,
 ) -> Result<(StatusCode, Json<SensationResponse>), SensationError> {
-    body.name = name;
+    let SetSensation::V1(mut setting) = body;
+    setting.name = name;
+    let request = SetSensation::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(SensationService::set(&context, &body).await?),
+        Json(SensationService::set(&context, &request).await?),
     ))
 }
 
@@ -62,7 +64,11 @@ async fn show(
     Path(key): Path<ResourceKey<SensationName>>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(
-        SensationService::get(&context, &GetSensation::builder().key(key).build()).await?,
+        SensationService::get(
+            &context,
+            &GetSensation::builder_v1().key(key).build().into(),
+        )
+        .await?,
     ))
 }
 
@@ -71,6 +77,10 @@ async fn remove(
     Path(name): Path<SensationName>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(
-        SensationService::remove(&context, &RemoveSensation::builder().name(name).build()).await?,
+        SensationService::remove(
+            &context,
+            &RemoveSensation::builder_v1().name(name).build().into(),
+        )
+        .await?,
     ))
 }

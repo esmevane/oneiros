@@ -52,6 +52,6 @@ async fn show(
     Path(key): Path<ResourceKey<TenantId>>,
 ) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(
-        TenantService::get(&context, &GetTenant::builder().key(key).build()).await?,
+        TenantService::get(&context, &GetTenant::builder_v1().key(key).build().into()).await?,
     ))
 }

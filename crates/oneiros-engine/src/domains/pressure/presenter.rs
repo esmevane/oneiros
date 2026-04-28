@@ -12,11 +12,12 @@ impl<'a> PressurePresenter<'a> {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            PressureResponse::Readings(result) => {
+            PressureResponse::Readings(ReadingsResponse::V1(result)) => {
                 let title = match self.request {
-                    PressureRequest::GetPressure(get) => {
-                        format!("# Pressure — {}\n\n", get.agent)
-                    }
+                    PressureRequest::GetPressure(get) => match get.current() {
+                        Ok(details) => format!("# Pressure — {}\n\n", details.agent),
+                        Err(_) => "# Pressure\n\n".to_string(),
+                    },
                     _ => "# Pressure\n\n".to_string(),
                 };
                 let mut md = title;
@@ -29,7 +30,7 @@ impl<'a> PressurePresenter<'a> {
                 }
                 McpResponse::new(md)
             }
-            PressureResponse::AllReadings(result) => {
+            PressureResponse::AllReadings(AllReadingsResponse::V1(result)) => {
                 let mut md = String::from("# Pressure — All Agents\n\n");
                 for pressure in &result.pressures {
                     md.push_str(&format!(
@@ -53,10 +54,10 @@ impl<'a> PressurePresenter<'a> {
 
     fn render_prompt(&self) -> String {
         match &self.response {
-            PressureResponse::Readings(result) => {
+            PressureResponse::Readings(ReadingsResponse::V1(result)) => {
                 RelevantPressures::from_pressures(result.pressures.clone()).to_string()
             }
-            PressureResponse::AllReadings(result) => {
+            PressureResponse::AllReadings(AllReadingsResponse::V1(result)) => {
                 RelevantPressures::from_pressures(result.pressures.clone()).to_string()
             }
         }
@@ -64,7 +65,7 @@ impl<'a> PressurePresenter<'a> {
 
     fn render_text(&self) -> String {
         match &self.response {
-            PressureResponse::Readings(result) => {
+            PressureResponse::Readings(ReadingsResponse::V1(result)) => {
                 format!("Pressure readings for {}.", result.agent)
             }
             PressureResponse::AllReadings(_) => "Pressure readings for all agents.".to_string(),

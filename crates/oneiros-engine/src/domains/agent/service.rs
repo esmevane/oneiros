@@ -5,21 +5,21 @@ pub struct AgentService;
 impl AgentService {
     pub async fn create(
         context: &ProjectContext,
-        CreateAgent {
-            name,
-            persona,
-            description,
-            prompt,
-        }: &CreateAgent,
+        request: &CreateAgent,
     ) -> Result<AgentResponse, AgentError> {
+        let CreateAgent::V1(create) = request;
+
         // Cross-resource validation: persona must exist
-        //
-        if PersonaRepo::new(context).get(persona).await?.is_none() {
-            return Err(AgentError::PersonaNotFound(persona.clone()));
+        if PersonaRepo::new(context)
+            .get(&create.persona)
+            .await?
+            .is_none()
+        {
+            return Err(AgentError::PersonaNotFound(create.persona.clone()));
         }
 
         // Normalize name: append .persona if not already present
-        let normalized_name = name.normalize_with(persona);
+        let normalized_name = create.name.normalize_with(&create.persona);
 
         // Validate name uniqueness
         if AgentRepo::new(context)
@@ -30,23 +30,36 @@ impl AgentService {
         }
 
         let agent = Agent::builder()
-            .name(normalized_name.clone())
-            .persona(persona.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
+            .name(normalized_name)
+            .persona(create.persona.clone())
+            .description(create.description.clone())
+            .prompt(create.prompt.clone())
             .build();
 
-        context.emit(AgentEvents::AgentCreated(agent)).await?;
+        context
+            .emit(AgentEvents::AgentCreated(
+                AgentCreated::builder_v1()
+                    .agent(agent.clone())
+                    .build()
+                    .into(),
+            ))
+            .await?;
 
-        Ok(AgentResponse::AgentCreated(normalized_name))
+        Ok(AgentResponse::AgentCreated(
+            AgentCreatedResponse::builder_v1()
+                .agent(agent)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetAgent,
+        request: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
+        let GetAgent::V1(lookup) = request;
         let repo = AgentRepo::new(context);
-        let agent = match &selector.key {
+        let agent = match &lookup.key {
             ResourceKey::Key(name) => repo
                 .get(name)
                 .await?
@@ -67,71 +80,94 @@ impl AgentService {
                 }
             }
         };
-        let ref_token = RefToken::new(Ref::agent(agent.id));
         Ok(AgentResponse::AgentDetails(
-            Response::new(agent).with_ref_token(ref_token),
+            AgentDetailsResponse::builder_v1()
+                .agent(agent)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListAgents { filters }: &ListAgents,
+        request: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
-        let listed = AgentRepo::new(context).list(filters).await?;
+        let ListAgents::V1(listing) = request;
+        let listed = AgentRepo::new(context).list(&listing.filters).await?;
 
         if listed.total == 0 {
             Ok(AgentResponse::NoAgents)
         } else {
-            Ok(AgentResponse::Agents(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::agent(e.id));
-                Response::new(e).with_ref_token(ref_token)
-            })))
+            Ok(AgentResponse::Agents(
+                AgentsResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            ))
         }
     }
 
     pub async fn update(
         context: &ProjectContext,
-        UpdateAgent {
-            name,
-            persona,
-            description,
-            prompt,
-        }: &UpdateAgent,
+        request: &UpdateAgent,
     ) -> Result<AgentResponse, AgentError> {
+        let UpdateAgent::V1(update) = request;
         let existing = AgentRepo::new(context)
-            .get(name)
+            .get(&update.name)
             .await?
-            .ok_or_else(|| AgentError::NotFound(name.clone()))?;
+            .ok_or_else(|| AgentError::NotFound(update.name.clone()))?;
 
         let agent = Agent::builder()
             .id(existing.id)
-            .name(name.clone())
-            .persona(persona.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
+            .name(update.name.clone())
+            .persona(update.persona.clone())
+            .description(update.description.clone())
+            .prompt(update.prompt.clone())
             .build();
 
-        context.emit(AgentEvents::AgentUpdated(agent)).await?;
+        context
+            .emit(AgentEvents::AgentUpdated(
+                AgentUpdated::builder_v1()
+                    .agent(agent.clone())
+                    .build()
+                    .into(),
+            ))
+            .await?;
 
-        Ok(AgentResponse::AgentUpdated(name.clone()))
+        Ok(AgentResponse::AgentUpdated(
+            AgentUpdatedResponse::builder_v1()
+                .agent(agent)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        selector: &RemoveAgent,
+        request: &RemoveAgent,
     ) -> Result<AgentResponse, AgentError> {
-        let exists = AgentRepo::new(context).name_exists(&selector.name).await?;
+        let RemoveAgent::V1(removal) = request;
+        let exists = AgentRepo::new(context).name_exists(&removal.name).await?;
 
         if !exists {
-            return Err(AgentError::NotFound(selector.name.clone()));
+            return Err(AgentError::NotFound(removal.name.clone()));
         }
 
         context
-            .emit(AgentEvents::AgentRemoved(AgentRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(AgentEvents::AgentRemoved(
+                AgentRemoved::builder_v1()
+                    .name(removal.name.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
 
-        Ok(AgentResponse::AgentRemoved(selector.name.clone()))
+        Ok(AgentResponse::AgentRemoved(
+            AgentRemovedResponse::builder_v1()
+                .name(removal.name.clone())
+                .build()
+                .into(),
+        ))
     }
 }

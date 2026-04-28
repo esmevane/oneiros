@@ -18,15 +18,17 @@ impl<'a> BrainClient<'a> {
     }
 
     /// Retrieve a single brain by key (name or ref).
-    pub async fn get(&self, request: &GetBrain) -> Result<BrainResponse, ClientError> {
-        self.client.get(&format!("/brains/{}", request.key)).await
+    pub async fn get(&self, lookup: &GetBrain) -> Result<BrainResponse, ClientError> {
+        let GetBrain::V1(lookup) = lookup;
+        self.client.get(&format!("/brains/{}", lookup.key)).await
     }
 
     /// List all brains.
-    pub async fn list(&self, request: &ListBrains) -> Result<BrainResponse, ClientError> {
+    pub async fn list(&self, listing: &ListBrains) -> Result<BrainResponse, ClientError> {
+        let ListBrains::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/brains?{query}")).await
     }

@@ -6,13 +6,14 @@ pub struct McpConfigService;
 
 impl McpConfigService {
     pub fn init(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
-        let token = request
+        let details = request.current()?;
+        let token = details
             .token
             .clone()
             .or_else(|| config.token())
             .ok_or(McpConfigError::NoToken)?;
 
-        let address = request.address.unwrap_or(config.service_addr());
+        let address = details.address.unwrap_or(config.service_addr());
 
         let mcp_json = serde_json::json!({
             "mcpServers": {
@@ -28,23 +29,38 @@ impl McpConfigService {
 
         let path = Self::mcp_json_path();
 
-        if path.exists() && !request.yes {
+        if path.exists() && !details.yes {
             // In non-interactive contexts (like setup), the caller handles
             // the prompt. Here we just report the file exists.
-            return Ok(McpConfigResponse::McpConfigExists(path));
+            return Ok(McpConfigResponse::McpConfigExists(
+                McpConfigExistsResponse::builder_v1()
+                    .path(path)
+                    .build()
+                    .into(),
+            ));
         }
 
         let content = serde_json::to_string_pretty(&mcp_json)?;
         std::fs::write(&path, content)?;
 
-        Ok(McpConfigResponse::McpConfigWritten(path))
+        Ok(McpConfigResponse::McpConfigWritten(
+            McpConfigWrittenResponse::builder_v1()
+                .path(path)
+                .build()
+                .into(),
+        ))
     }
 
     /// Write the .mcp.json regardless of whether it exists.
     /// Used by setup after the user confirms.
     pub fn write(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
-        let mut forced = request.clone();
-        forced.yes = true;
+        let details = request.current()?;
+        let forced: InitMcp = InitMcp::builder_v1()
+            .maybe_token(details.token.clone())
+            .maybe_address(details.address)
+            .yes(true)
+            .build()
+            .into();
         Self::init(config, &forced)
     }
 

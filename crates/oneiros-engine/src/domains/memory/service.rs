@@ -5,52 +5,61 @@ pub struct MemoryService;
 impl MemoryService {
     pub async fn add(
         context: &ProjectContext,
-        AddMemory {
-            agent,
-            level,
-            content,
-        }: &AddMemory,
+        request: &AddMemory,
     ) -> Result<MemoryResponse, MemoryError> {
+        let AddMemory::V1(addition) = request;
         let agent_record = AgentRepo::new(context)
-            .get(agent)
+            .get(&addition.agent)
             .await?
-            .ok_or_else(|| MemoryError::AgentNotFound(agent.clone()))?;
+            .ok_or_else(|| MemoryError::AgentNotFound(addition.agent.clone()))?;
 
         let memory = Memory::builder()
             .agent_id(agent_record.id)
-            .level(level.clone())
-            .content(content.clone())
+            .level(addition.level.clone())
+            .content(addition.content.clone())
             .build();
 
         context
-            .emit(MemoryEvents::MemoryAdded(memory.clone()))
+            .emit(MemoryEvents::MemoryAdded(
+                MemoryAdded::builder_v1()
+                    .memory(memory.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        let ref_token = RefToken::new(Ref::memory(memory.id));
+
         Ok(MemoryResponse::MemoryAdded(
-            Response::new(memory).with_ref_token(ref_token),
+            MemoryAddedResponse::builder_v1()
+                .memory(memory)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetMemory,
+        request: &GetMemory,
     ) -> Result<MemoryResponse, MemoryError> {
-        let id = selector.key.resolve()?;
+        let GetMemory::V1(lookup) = request;
+        let id = lookup.key.resolve()?;
         let memory = MemoryRepo::new(context)
             .get(&id)
             .await?
             .ok_or(MemoryError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::memory(memory.id));
         Ok(MemoryResponse::MemoryDetails(
-            Response::new(memory).with_ref_token(ref_token),
+            MemoryDetailsResponse::builder_v1()
+                .memory(memory)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListMemories { agent, filters }: &ListMemories,
+        request: &ListMemories,
     ) -> Result<MemoryResponse, MemoryError> {
-        let agent_id = match agent {
+        let ListMemories::V1(listing) = request;
+        let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context)
                     .get(name)
@@ -62,15 +71,18 @@ impl MemoryService {
         };
 
         let listed = MemoryRepo::new(context)
-            .list(agent_id.as_deref(), filters)
+            .list(agent_id.as_deref(), &listing.filters)
             .await?;
         Ok(if listed.total == 0 {
             MemoryResponse::NoMemories
         } else {
-            MemoryResponse::Memories(listed.map(|m| {
-                let ref_token = RefToken::new(Ref::memory(m.id));
-                Response::new(m).with_ref_token(ref_token)
-            }))
+            MemoryResponse::Memories(
+                MemoriesResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            )
         })
     }
 }

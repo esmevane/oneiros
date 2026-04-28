@@ -25,20 +25,16 @@ async fn with_connectable_entities<B: Backend>()
         .await?;
 
     let first_ref = match first_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(wrapped)) => wrapped
-            .meta
-            .and_then(|m| m.ref_token)
-            .expect("expected ref_token in meta for first cognition")
-            .to_string(),
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => RefToken::new(Ref::cognition(added.cognition.id)).to_string(),
         other => panic!("expected CognitionAdded for first cognition, got {other:#?}"),
     };
 
     let second_ref = match second_response {
-        Responses::Cognition(CognitionResponse::CognitionAdded(wrapped)) => wrapped
-            .meta
-            .and_then(|m| m.ref_token)
-            .expect("expected ref_token in meta for second cognition")
-            .to_string(),
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => RefToken::new(Ref::cognition(added.cognition.id)).to_string(),
         other => panic!("expected CognitionAdded for second cognition, got {other:#?}"),
     };
 
@@ -87,8 +83,10 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("connection list").await?;
 
     match response {
-        Responses::Connection(ConnectionResponse::Connections(connections)) => {
-            assert_eq!(connections.len(), 1);
+        Responses::Connection(ConnectionResponse::Connections(ConnectionsResponse::V1(
+            connections,
+        ))) => {
+            assert_eq!(connections.items.len(), 1);
         }
         other => panic!("expected Connections, got {other:#?}"),
     }
@@ -103,15 +101,19 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     let create_response = harness.exec_json(&create_cmd).await?;
 
     let id = match create_response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.data.id,
+        Responses::Connection(ConnectionResponse::ConnectionCreated(
+            ConnectionCreatedResponse::V1(created),
+        )) => created.connection.id,
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
     let show_response = harness.exec_json(&format!("connection show {id}")).await?;
 
     match show_response {
-        Responses::Connection(ConnectionResponse::ConnectionDetails(connection)) => {
-            assert_eq!(connection.data.nature.as_str(), "caused");
+        Responses::Connection(ConnectionResponse::ConnectionDetails(
+            ConnectionDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.connection.nature.as_str(), "caused");
         }
         other => panic!("expected ConnectionDetails, got {other:#?}"),
     }
@@ -126,7 +128,9 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
     let create_response = harness.exec_json(&create_cmd).await?;
 
     let id = match create_response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(result)) => result.data.id,
+        Responses::Connection(ConnectionResponse::ConnectionCreated(
+            ConnectionCreatedResponse::V1(created),
+        )) => created.connection.id,
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
@@ -164,7 +168,9 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         ))
         .await?;
     let id = match response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.data.id.to_string(),
+        Responses::Connection(ConnectionResponse::ConnectionCreated(
+            ConnectionCreatedResponse::V1(created),
+        )) => created.connection.id.to_string(),
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 
@@ -207,7 +213,9 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
         ))
         .await?;
     let id = match response {
-        Responses::Connection(ConnectionResponse::ConnectionCreated(c)) => c.data.id.to_string(),
+        Responses::Connection(ConnectionResponse::ConnectionCreated(
+            ConnectionCreatedResponse::V1(created),
+        )) => created.connection.id.to_string(),
         other => panic!("expected ConnectionCreated, got {other:#?}"),
     };
 

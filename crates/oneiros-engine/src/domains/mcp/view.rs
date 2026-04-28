@@ -16,25 +16,37 @@ impl McpView {
 
     pub fn render(self) -> Rendered<McpConfigResponse> {
         match self.response {
-            McpConfigResponse::McpConfigWritten(path) => {
+            McpConfigResponse::McpConfigWritten(McpConfigWrittenResponse::V1(details)) => {
+                let path = details.path;
                 let prompt = format!(
                     "{} MCP config written to {}.",
                     "✓".success(),
                     path.display()
                 );
                 Rendered::new(
-                    McpConfigResponse::McpConfigWritten(path),
+                    McpConfigResponse::McpConfigWritten(
+                        McpConfigWrittenResponse::builder_v1()
+                            .path(path)
+                            .build()
+                            .into(),
+                    ),
                     prompt,
                     String::new(),
                 )
             }
-            McpConfigResponse::McpConfigExists(path) => {
+            McpConfigResponse::McpConfigExists(McpConfigExistsResponse::V1(details)) => {
+                let path = details.path;
                 let prompt = format!(
                     "{}",
                     format!("MCP config already exists at {}. Skipped.", path.display()).muted()
                 );
                 Rendered::new(
-                    McpConfigResponse::McpConfigExists(path),
+                    McpConfigResponse::McpConfigExists(
+                        McpConfigExistsResponse::builder_v1()
+                            .path(path)
+                            .build()
+                            .into(),
+                    ),
                     prompt,
                     String::new(),
                 )

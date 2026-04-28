@@ -9,8 +9,11 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
 
     match &response {
         // Engine: typed continuity response
-        Responses::Continuity(ContinuityResponse::Emerged(ctx)) => {
-            assert_eq!(ctx.agent.name, AgentName::new("newborn.process"));
+        Responses::Continuity(ContinuityResponse::Emerged(EmergedResponse::V1(details))) => {
+            assert_eq!(
+                details.context.agent.name,
+                AgentName::new("newborn.process")
+            );
         }
         other => panic!("expected Continuity(Emerged) or Json(emerged), got {other:#?}"),
     }
@@ -77,8 +80,8 @@ pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
 
     match &response {
         // Engine: typed continuity response
-        Responses::Continuity(ContinuityResponse::Receded(name)) => {
-            assert_eq!(*name, AgentName::new("retiring.process"));
+        Responses::Continuity(ContinuityResponse::Receded(RecededResponse::V1(details))) => {
+            assert_eq!(details.agent, AgentName::new("retiring.process"));
         }
         other => panic!("expected Continuity(Receded) or Json(receded), got {other:#?}"),
     }

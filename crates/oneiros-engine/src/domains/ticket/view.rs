@@ -11,24 +11,40 @@ impl TicketView {
 
     pub fn render(self) -> Rendered<TicketResponse> {
         match self.response {
-            TicketResponse::Created(ticket) => {
-                let prompt = Confirmation::new("Ticket", ticket.brain_name.to_string(), "issued")
-                    .to_string();
-                Rendered::new(TicketResponse::Created(ticket), prompt, String::new())
-            }
-            TicketResponse::Found(ticket) => {
-                let prompt = Detail::new(ticket.brain_name.to_string())
-                    .field("actor_id:", ticket.actor_id.to_string())
-                    .to_string();
-                Rendered::new(TicketResponse::Found(ticket), prompt, String::new())
-            }
-            TicketResponse::Validated(ticket) => {
+            TicketResponse::Created(TicketCreatedResponse::V1(created)) => {
                 let prompt =
-                    Confirmation::new("Ticket", ticket.brain_name.to_string(), "validated")
+                    Confirmation::new("Ticket", created.ticket.brain_name.to_string(), "issued")
                         .to_string();
-                Rendered::new(TicketResponse::Validated(ticket), prompt, String::new())
+                Rendered::new(
+                    TicketResponse::Created(TicketCreatedResponse::V1(created)),
+                    prompt,
+                    String::new(),
+                )
             }
-            TicketResponse::Listed(listed) => {
+            TicketResponse::Found(TicketFoundResponse::V1(found)) => {
+                let prompt = Detail::new(found.ticket.brain_name.to_string())
+                    .field("actor_id:", found.ticket.actor_id.to_string())
+                    .to_string();
+                Rendered::new(
+                    TicketResponse::Found(TicketFoundResponse::V1(found)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            TicketResponse::Validated(TicketValidatedResponse::V1(validated)) => {
+                let prompt = Confirmation::new(
+                    "Ticket",
+                    validated.ticket.brain_name.to_string(),
+                    "validated",
+                )
+                .to_string();
+                Rendered::new(
+                    TicketResponse::Validated(TicketValidatedResponse::V1(validated)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            TicketResponse::Listed(TicketsResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("brain_name", "Brain"),
                     Column::key("actor_id", "Actor"),
@@ -41,9 +57,13 @@ impl TicketView {
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(TicketResponse::Listed(listed), prompt, String::new())
+                Rendered::new(
+                    TicketResponse::Listed(TicketsResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
         }
     }

@@ -26,8 +26,8 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("storage show test-doc").await?;
 
     match show_response {
-        Responses::Storage(StorageResponse::StorageDetails(entry)) => {
-            assert_eq!(entry.data.key.as_str(), "test-doc");
+        Responses::Storage(StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry))) => {
+            assert_eq!(entry.entry.key.as_str(), "test-doc");
         }
         other => panic!("expected StorageDetails, got {other:#?}"),
     }
@@ -61,8 +61,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("storage list").await?;
 
     match response {
-        Responses::Storage(StorageResponse::Entries(entries)) => {
-            assert_eq!(entries.len(), 1);
+        Responses::Storage(StorageResponse::Entries(StorageEntriesResponse::V1(entries))) => {
+            assert_eq!(entries.items.len(), 1);
         }
         other => panic!("expected Entries, got {other:#?}"),
     }

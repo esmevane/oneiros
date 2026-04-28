@@ -9,31 +9,50 @@ impl ProjectService {
         context: &SystemContext,
         request: &InitProject,
     ) -> Result<ProjectResponse, ProjectError> {
-        let brain_name = request
+        let details = request.current()?;
+        let brain_name = details
             .name
             .clone()
             .unwrap_or_else(|| context.config.brain.clone());
 
         if let Ok(BrainResponse::Found(_)) = BrainService::get(
             context,
-            &GetBrain::builder().key(brain_name.clone()).build(),
+            &GetBrain::builder_v1()
+                .key(brain_name.clone())
+                .build()
+                .into(),
         )
         .await
         {
-            return Ok(ProjectResponse::BrainAlreadyExists(brain_name));
+            return Ok(ProjectResponse::BrainAlreadyExists(
+                BrainAlreadyExistsResponse::builder_v1()
+                    .brain_name(brain_name)
+                    .build()
+                    .into(),
+            ));
         }
 
         BrainService::create(
             context,
-            &CreateBrain::builder().name(brain_name.clone()).build(),
+            &CreateBrain::builder_v1()
+                .name(brain_name.clone())
+                .build()
+                .into(),
         )
         .await?;
 
+        let main_bookmark = Bookmark::builder()
+            .brain(brain_name.clone())
+            .name(BookmarkName::main())
+            .build();
+
         context
-            .emit(BookmarkEvents::BookmarkCreated(BookmarkCreated {
-                brain: brain_name.clone(),
-                name: BookmarkName::main(),
-            }))
+            .emit(BookmarkEvents::BookmarkCreated(
+                BookmarkCreated::builder_v1()
+                    .bookmark(main_bookmark)
+                    .build()
+                    .into(),
+            ))
             .await?;
 
         // Create the brain's database layout:
@@ -64,14 +83,17 @@ impl ProjectService {
         let token = if let Some(actor) = actors.items.first() {
             match TicketService::create(
                 context,
-                &CreateTicket::builder()
+                &CreateTicket::builder_v1()
                     .actor_id(actor.id)
                     .brain_name(brain_name.clone())
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?
             {
-                TicketResponse::Created(ticket) => ticket.link.token,
+                TicketResponse::Created(TicketCreatedResponse::V1(created)) => {
+                    created.ticket.link.token
+                }
                 _ => return Err(ProjectError::Missing),
             }
         } else {
@@ -86,10 +108,13 @@ impl ProjectService {
 
         std::fs::write(&token_path, format!("{token}"))?;
 
-        Ok(ProjectResponse::Initialized(InitResult {
-            brain_name,
-            token,
-        }))
+        Ok(ProjectResponse::Initialized(
+            InitializedResponse::builder_v1()
+                .brain_name(brain_name)
+                .token(token)
+                .build()
+                .into(),
+        ))
     }
 
     /// Export all events to a JSONL file in the target directory.
@@ -102,7 +127,8 @@ impl ProjectService {
         context: &ProjectContext,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
-        let target_dir = &request.target;
+        let details = request.current()?;
+        let target_dir = &details.target;
         let project_name = context.brain_name();
         let db = context.db()?;
         let events = EventLog::attached(&db).load_all()?;
@@ -111,8 +137,9 @@ impl ProjectService {
         let mut buffer = String::new();
         for event in &events {
             // Synthesize ephemeral BlobStored events for storage portability.
-            if let Event::Known(Events::Storage(StorageEvents::StorageSet(entry))) = &event.data
-                && let Ok(Some(blob)) = storage.get_blob(&entry.hash)
+            if let Event::Known(Events::Storage(StorageEvents::StorageSet(set))) = &event.data
+                && let Ok(current) = set.current()
+                && let Ok(Some(blob)) = storage.get_blob(&current.entry.hash)
             {
                 let synthetic = StoredEvent::builder()
                     .id(EventId::new())
@@ -138,7 +165,12 @@ impl ProjectService {
 
         std::fs::write(&file_path, buffer)?;
 
-        Ok(ProjectResponse::WroteExport(ExportPath::new(file_path)))
+        Ok(ProjectResponse::WroteExport(
+            WroteExportResponse::builder_v1()
+                .path(file_path)
+                .build()
+                .into(),
+        ))
     }
 
     /// Import events from a JSONL file and replay projections.
@@ -151,7 +183,8 @@ impl ProjectService {
         context: &ProjectContext,
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
-        let file = std::fs::File::open(&request.file)?;
+        let details = request.current()?;
+        let file = std::fs::File::open(&details.file)?;
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
@@ -205,10 +238,13 @@ impl ProjectService {
         let log = EventLog::attached(&db);
         let replayed = context.projections.replay_brain(&db, &log)?;
 
-        Ok(ProjectResponse::Imported(ImportResult {
-            imported: EventCount::new(imported as i64),
-            replayed: EventCount::new(replayed as i64),
-        }))
+        Ok(ProjectResponse::Imported(
+            ImportedResponse::builder_v1()
+                .imported(imported as i64)
+                .replayed(replayed as i64)
+                .build()
+                .into(),
+        ))
     }
 
     /// Replay all events through projections, rebuilding read models.
@@ -217,8 +253,11 @@ impl ProjectService {
         let log = EventLog::attached(&db);
         let replayed = context.projections.replay_brain(&db, &log)?;
 
-        Ok(ProjectResponse::Replayed(ReplayResult {
-            replayed: EventCount::new(replayed as i64),
-        }))
+        Ok(ProjectResponse::Replayed(
+            ReplayedResponse::builder_v1()
+                .replayed(replayed as i64)
+                .build()
+                .into(),
+        ))
     }
 }

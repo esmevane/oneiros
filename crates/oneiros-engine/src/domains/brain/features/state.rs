@@ -4,8 +4,10 @@ pub struct BrainState;
 
 impl BrainState {
     pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
-        if let Events::Brain(BrainEvents::BrainCreated(brain)) = event {
-            canon.brains.set(brain);
+        if let Events::Brain(brain_event) = event
+            && let Some(brain) = brain_event.maybe_brain()
+        {
+            canon.brains.set(&brain);
         }
 
         canon

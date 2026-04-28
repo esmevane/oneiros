@@ -23,14 +23,14 @@ impl BookmarkCommands {
         let bookmark_client = BookmarkClient::new(&client);
 
         let response = match self {
-            BookmarkCommands::Create(create) => bookmark_client.create(create).await?,
-            BookmarkCommands::Switch(switch) => bookmark_client.switch(switch).await?,
-            BookmarkCommands::Merge(merge) => bookmark_client.merge(merge).await?,
-            BookmarkCommands::List(list) => bookmark_client.list(list).await?,
-            BookmarkCommands::Share(share) => bookmark_client.share(share).await?,
-            BookmarkCommands::Follow(follow) => bookmark_client.follow(follow).await?,
-            BookmarkCommands::Collect(collect) => bookmark_client.collect(collect).await?,
-            BookmarkCommands::Unfollow(unfollow) => bookmark_client.unfollow(unfollow).await?,
+            Self::Create(creation) => bookmark_client.create(creation).await?,
+            Self::Switch(switch) => bookmark_client.switch(switch).await?,
+            Self::Merge(merge) => bookmark_client.merge(merge).await?,
+            Self::List(listing) => bookmark_client.list(listing).await?,
+            Self::Share(share) => bookmark_client.share(share).await?,
+            Self::Follow(follow) => bookmark_client.follow(follow).await?,
+            Self::Collect(collect) => bookmark_client.collect(collect).await?,
+            Self::Unfollow(unfollow) => bookmark_client.unfollow(unfollow).await?,
         };
 
         Ok(BookmarkView::new(response).render().map(Into::into))

@@ -2,6 +2,9 @@ use clap::Subcommand;
 
 use crate::*;
 
+/// CLI subcommands for the brain domain. Each variant carries a versioned
+/// protocol request directly — clap derives parsing through the wrapper's
+/// `Args` impl, which delegates to the latest version's struct.
 #[derive(Debug, Subcommand)]
 pub enum BrainCommands {
     Create(CreateBrain),
@@ -18,9 +21,9 @@ impl BrainCommands {
         let brain_client = BrainClient::new(&client);
 
         let response = match self {
-            BrainCommands::Create(create) => brain_client.create(create).await?,
-            BrainCommands::Get(get) => brain_client.get(get).await?,
-            BrainCommands::List(list) => brain_client.list(list).await?,
+            Self::Create(creation) => brain_client.create(creation).await?,
+            Self::Get(lookup) => brain_client.get(lookup).await?,
+            Self::List(listing) => brain_client.list(listing).await?,
         };
 
         Ok(BrainView::new(response).render().map(Into::into))

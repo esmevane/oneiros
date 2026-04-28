@@ -19,8 +19,14 @@ impl<'a> StorageStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Storage(storage_event)) = &event.data {
             match storage_event {
-                StorageEvents::StorageSet(entry) => self.set_storage(entry)?,
-                StorageEvents::StorageRemoved(removed) => self.remove_storage(&removed.key)?,
+                StorageEvents::StorageSet(set) => {
+                    let entry = set.current()?.entry;
+                    self.set_storage(&entry)?
+                }
+                StorageEvents::StorageRemoved(removed) => {
+                    let current = removed.current()?;
+                    self.remove_storage(&current.key)?
+                }
             }
         }
         Ok(())

@@ -55,6 +55,6 @@ async fn show(
     Path(key): Path<ResourceKey<MemoryId>>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
     Ok(Json(
-        MemoryService::get(&context, &GetMemory::builder().key(key).build()).await?,
+        MemoryService::get(&context, &GetMemory::builder_v1().key(key).build().into()).await?,
     ))
 }

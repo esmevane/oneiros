@@ -4,14 +4,16 @@ pub struct SetupService;
 
 impl SetupService {
     pub async fn run(config: &Config, request: &SetupRequest) -> Result<SetupResponse, SetupError> {
+        let details = request.current()?;
         let mut steps = Vec::new();
 
         // 1. System init (always, idempotent)
         let system_ctx = config.system();
-        let system_request = InitSystem {
-            name: request.name.clone(),
-            yes: true,
-        };
+        let system_request: InitSystem = InitSystem::builder_v1()
+            .maybe_name(details.name.clone())
+            .yes(true)
+            .build()
+            .into();
 
         match SystemService::init(&system_ctx, &system_request).await {
             Ok(SystemResponse::SystemInitialized(_)) => {
@@ -25,26 +27,36 @@ impl SetupService {
                     step: "system init".into(),
                     reason: e.to_string(),
                 });
-                return Ok(SetupResponse::SetupComplete(steps));
+                return Ok(SetupResponse::SetupComplete(
+                    SetupCompleteResponse::builder_v1()
+                        .steps(steps)
+                        .build()
+                        .into(),
+                ));
             }
         }
 
         // 2. Project init (always, idempotent)
-        let project_request = InitProject::builder().yes(true).build();
+        let project_request: InitProject = InitProject::builder_v1().yes(true).build().into();
 
         match ProjectService::init(&system_ctx, &project_request).await {
-            Ok(ProjectResponse::Initialized(result)) => {
+            Ok(ProjectResponse::Initialized(InitializedResponse::V1(result))) => {
                 steps.push(SetupStep::ProjectInitialized(result.brain_name));
             }
-            Ok(ProjectResponse::BrainAlreadyExists(name)) => {
-                steps.push(SetupStep::ProjectAlreadyExists(name));
+            Ok(ProjectResponse::BrainAlreadyExists(BrainAlreadyExistsResponse::V1(details))) => {
+                steps.push(SetupStep::ProjectAlreadyExists(details.brain_name));
             }
             Err(e) => {
                 steps.push(SetupStep::StepFailed {
                     step: "project init".into(),
                     reason: e.to_string(),
                 });
-                return Ok(SetupResponse::SetupComplete(steps));
+                return Ok(SetupResponse::SetupComplete(
+                    SetupCompleteResponse::builder_v1()
+                        .steps(steps)
+                        .build()
+                        .into(),
+                ));
             }
             _ => {}
         }
@@ -74,14 +86,14 @@ impl SetupService {
         }
 
         // 5. MCP config (prompt unless --yes)
-        let do_mcp = request.yes
+        let do_mcp = details.yes
             || inquire::Confirm::new("Set up MCP config for Claude Code?")
                 .with_default(true)
                 .prompt()
                 .unwrap_or(false);
 
         if do_mcp {
-            let mcp_request = InitMcp::builder().yes(true).build();
+            let mcp_request: InitMcp = InitMcp::builder_v1().yes(true).build().into();
             match McpConfigService::init(config, &mcp_request) {
                 Ok(McpConfigResponse::McpConfigWritten(_)) => {
                     steps.push(SetupStep::McpConfigured);
@@ -102,7 +114,7 @@ impl SetupService {
         }
 
         // 6. Service install + start (prompt unless --yes)
-        let do_service = request.yes
+        let do_service = details.yes
             || inquire::Confirm::new("Install and start the oneiros service?")
                 .with_default(true)
                 .prompt()
@@ -132,6 +144,11 @@ impl SetupService {
             steps.push(SetupStep::ServiceSkipped);
         }
 
-        Ok(SetupResponse::SetupComplete(steps))
+        Ok(SetupResponse::SetupComplete(
+            SetupCompleteResponse::builder_v1()
+                .steps(steps)
+                .build()
+                .into(),
+        ))
     }
 }

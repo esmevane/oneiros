@@ -2,11 +2,21 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
-pub struct SeedCore;
+use crate::*;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
-pub struct SeedAgents;
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SeedCore {
+        V1 => {}
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum SeedAgents {
+        V1 => {}
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]

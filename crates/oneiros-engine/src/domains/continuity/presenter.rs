@@ -17,7 +17,8 @@ impl ContinuityPresenter {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            ContinuityResponse::Status(table) => {
+            ContinuityResponse::Status(StatusResponse::V1(details)) => {
+                let table = &details.table;
                 let mut md = String::from("# Agent Status\n\n");
                 md.push_str("| Agent | Cognitions | Memories | Experiences |\n");
                 md.push_str("|-------|------------|----------|-------------|\n");
@@ -41,20 +42,20 @@ impl ContinuityPresenter {
     /// Render this continuity response into all available forms.
     pub fn render(self) -> Rendered<ContinuityResponse> {
         let (prompt, text, hints) = match &self.response {
-            ContinuityResponse::Dreaming(context) | ContinuityResponse::Emerged(context) => {
+            ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+                let context = &details.context;
                 let template = DreamTemplate::new(context).to_string();
-                let text = match &self.response {
-                    ContinuityResponse::Dreaming(_) => {
-                        format!("Dreaming as {}...", context.agent.name)
-                    }
-                    ContinuityResponse::Emerged(_) => {
-                        format!("Emerged as {}.", context.agent.name)
-                    }
-                    _ => unreachable!(),
-                };
+                let text = format!("Dreaming as {}...", context.agent.name);
                 (template, text, HintSet::None)
             }
-            ContinuityResponse::Waking(context) => {
+            ContinuityResponse::Emerged(EmergedResponse::V1(details)) => {
+                let context = &details.context;
+                let template = DreamTemplate::new(context).to_string();
+                let text = format!("Emerged as {}.", context.agent.name);
+                (template, text, HintSet::None)
+            }
+            ContinuityResponse::Waking(WakingResponse::V1(details)) => {
+                let context = &details.context;
                 let template = DreamTemplate::new(context).to_string();
                 let pressures = context
                     .pressures
@@ -73,12 +74,16 @@ impl ContinuityPresenter {
                     hints,
                 )
             }
-            ContinuityResponse::Status(table) => (
-                table.to_string(),
-                format!("{} agents.", table.agents.len()),
-                HintSet::None,
-            ),
-            ContinuityResponse::Introspecting(context) => {
+            ContinuityResponse::Status(StatusResponse::V1(details)) => {
+                let table = &details.table;
+                (
+                    table.to_string(),
+                    format!("{} agents.", table.agents.len()),
+                    HintSet::None,
+                )
+            }
+            ContinuityResponse::Introspecting(IntrospectingResponse::V1(details)) => {
+                let context = &details.context;
                 let pressures = Self::relevant_pressures(context);
                 (
                     IntrospectTemplate::new(&context.agent, pressures).to_string(),
@@ -86,7 +91,8 @@ impl ContinuityPresenter {
                     HintSet::None,
                 )
             }
-            ContinuityResponse::Reflecting(context) => {
+            ContinuityResponse::Reflecting(ReflectingResponse::V1(details)) => {
+                let context = &details.context;
                 let pressures = Self::relevant_pressures(context);
                 let hints = HintSet::reflect(
                     ReflectHints::builder()
@@ -99,7 +105,8 @@ impl ContinuityPresenter {
                     hints,
                 )
             }
-            ContinuityResponse::Sleeping(context) => {
+            ContinuityResponse::Sleeping(SleepingResponse::V1(details)) => {
+                let context = &details.context;
                 let pressures = Self::relevant_pressures(context);
                 (
                     IntrospectTemplate::new(&context.agent, pressures).to_string(),
@@ -107,17 +114,20 @@ impl ContinuityPresenter {
                     HintSet::None,
                 )
             }
-            ContinuityResponse::Guidebook(context) => (
-                GuidebookTemplate::new(context).to_string(),
-                format!("Guidebook for {}.", context.agent.name),
-                HintSet::None,
-            ),
-            ContinuityResponse::Receded(name) => (
+            ContinuityResponse::Guidebook(GuidebookResponse::V1(details)) => {
+                let context = &details.context;
+                (
+                    GuidebookTemplate::new(context).to_string(),
+                    format!("Guidebook for {}.", context.agent.name),
+                    HintSet::None,
+                )
+            }
+            ContinuityResponse::Receded(RecededResponse::V1(details)) => (
                 format!(
                     "Agent '{}' has receded. Their cognitions, memories, and experiences remain in the record, but they will no longer participate in active sessions.",
-                    name
+                    details.agent
                 ),
-                format!("Agent {} has receded.", name),
+                format!("Agent {} has receded.", details.agent),
                 HintSet::None,
             ),
         };

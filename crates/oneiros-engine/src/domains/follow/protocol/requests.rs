@@ -1,23 +1,27 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetFollow {
-    #[builder(into)]
-    pub key: ResourceKey<FollowId>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetFollow {
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<FollowId>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListFollows {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListFollows {
+        V1 => {
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

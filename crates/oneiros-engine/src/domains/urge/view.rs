@@ -11,21 +11,28 @@ impl UrgeView {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            UrgeResponse::Urges(listed) => {
+            UrgeResponse::Urges(UrgesResponse::V1(listed)) => {
                 let items: Vec<_> = listed
                     .items
                     .iter()
-                    .map(|u| (u.name.to_string(), u.description.to_string()))
+                    .map(|item| (item.name.to_string(), item.description.to_string()))
                     .collect();
                 Self::vocabulary_table("Urges", &items)
             }
-            UrgeResponse::UrgeDetails(urge) => {
-                let items = vec![(urge.name.to_string(), urge.description.to_string())];
+            UrgeResponse::UrgeDetails(UrgeDetailsResponse::V1(details)) => {
+                let items = vec![(
+                    details.urge.name.to_string(),
+                    details.urge.description.to_string(),
+                )];
                 Self::vocabulary_table("Urge", &items)
             }
             UrgeResponse::NoUrges => Self::vocabulary_table("Urges", &[]),
-            UrgeResponse::UrgeSet(name) => McpResponse::new(format!("Urge set: {name}")),
-            UrgeResponse::UrgeRemoved(name) => McpResponse::new(format!("Urge removed: {name}")),
+            UrgeResponse::UrgeSet(UrgeSetResponse::V1(set)) => {
+                McpResponse::new(format!("Urge set: {}", set.urge.name))
+            }
+            UrgeResponse::UrgeRemoved(UrgeRemovedResponse::V1(removed)) => {
+                McpResponse::new(format!("Urge removed: {}", removed.name))
+            }
         }
     }
 
@@ -45,21 +52,31 @@ impl UrgeView {
 
     pub fn render(self) -> Rendered<UrgeResponse> {
         match self.response {
-            UrgeResponse::UrgeSet(name) => {
-                let prompt = Confirmation::new("Urge", name.to_string(), "set").to_string();
+            UrgeResponse::UrgeSet(UrgeSetResponse::V1(set)) => {
+                let prompt =
+                    Confirmation::new("Urge", set.urge.name.to_string(), "set").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder().kind("urge".to_string()).build(),
                 );
-                Rendered::new(UrgeResponse::UrgeSet(name), prompt, String::new()).with_hints(hints)
+                Rendered::new(
+                    UrgeResponse::UrgeSet(UrgeSetResponse::V1(set)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
-            UrgeResponse::UrgeDetails(urge) => {
-                let prompt = Detail::new(urge.name.to_string())
-                    .field("description:", urge.description.to_string())
-                    .field("prompt:", urge.prompt.to_string())
+            UrgeResponse::UrgeDetails(UrgeDetailsResponse::V1(details)) => {
+                let prompt = Detail::new(details.urge.name.to_string())
+                    .field("description:", details.urge.description.to_string())
+                    .field("prompt:", details.urge.prompt.to_string())
                     .to_string();
-                Rendered::new(UrgeResponse::UrgeDetails(urge), prompt, String::new())
+                Rendered::new(
+                    UrgeResponse::UrgeDetails(UrgeDetailsResponse::V1(details)),
+                    prompt,
+                    String::new(),
+                )
             }
-            UrgeResponse::Urges(listed) => {
+            UrgeResponse::Urges(UrgesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::key("name", "Name"),
                     Column::key("description", "Description").max(60),
@@ -69,22 +86,31 @@ impl UrgeView {
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
-                Rendered::new(UrgeResponse::Urges(listed), prompt, String::new())
+                Rendered::new(
+                    UrgeResponse::Urges(UrgesResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
             }
             UrgeResponse::NoUrges => Rendered::new(
                 UrgeResponse::NoUrges,
                 format!("{}", "No urges configured.".muted()),
                 String::new(),
             ),
-            UrgeResponse::UrgeRemoved(name) => {
-                let prompt = Confirmation::new("Urge", name.to_string(), "removed").to_string();
+            UrgeResponse::UrgeRemoved(UrgeRemovedResponse::V1(removed)) => {
+                let prompt =
+                    Confirmation::new("Urge", removed.name.to_string(), "removed").to_string();
                 let hints = HintSet::vocabulary(
                     VocabularyHints::builder().kind("urge".to_string()).build(),
                 );
-                Rendered::new(UrgeResponse::UrgeRemoved(name), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    UrgeResponse::UrgeRemoved(UrgeRemovedResponse::V1(removed)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
         }
     }

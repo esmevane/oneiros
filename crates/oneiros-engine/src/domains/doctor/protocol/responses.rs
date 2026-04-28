@@ -66,5 +66,14 @@ pub enum DoctorCheck {
 #[kinded(kind = DoctorResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum DoctorResponse {
-    CheckupStatus(Vec<DoctorCheck>),
+    CheckupStatus(CheckupStatusResponse),
+}
+
+versioned! {
+    #[derive(schemars::JsonSchema)]
+    pub enum CheckupStatusResponse {
+        V1 => {
+            pub checks: Vec<DoctorCheck>,
+        }
+    }
 }

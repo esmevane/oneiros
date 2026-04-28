@@ -5,7 +5,7 @@ use crate::*;
 #[derive(Debug, Args)]
 pub struct PressureCommands {
     #[command(flatten)]
-    pub request: GetPressure,
+    pub command: GetPressure,
 }
 
 impl PressureCommands {
@@ -16,9 +16,9 @@ impl PressureCommands {
         let client = context.client();
         let pressure_client = PressureClient::new(&client);
 
-        let request = PressureRequest::GetPressure(self.request.clone());
-        let response = pressure_client.get(&self.request).await?;
-        Ok(PressureView::new(response, &request)
+        let request = PressureRequest::GetPressure(self.command.clone());
+        let response = pressure_client.get(&self.command).await?;
+        Ok(PressurePresenter::new(response, &request)
             .render()
             .map(Into::into))
     }

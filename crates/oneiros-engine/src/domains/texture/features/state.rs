@@ -6,11 +6,15 @@ impl TextureState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Texture(texture_event) = event {
             match texture_event {
-                TextureEvents::TextureSet(texture) => {
-                    canon.textures.set(texture);
+                TextureEvents::TextureSet(setting) => {
+                    if let Ok(current) = setting.current() {
+                        canon.textures.set(&current.texture);
+                    }
                 }
-                TextureEvents::TextureRemoved(removed) => {
-                    canon.textures.remove(&removed.name);
+                TextureEvents::TextureRemoved(removal) => {
+                    if let Ok(current) = removal.current() {
+                        canon.textures.remove(&current.name);
+                    }
                 }
             };
         }

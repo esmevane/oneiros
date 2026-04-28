@@ -15,7 +15,10 @@ impl<'a> MemoryStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Memory(memory_event)) = &event.data {
             match memory_event {
-                MemoryEvents::MemoryAdded(memory) => self.insert(memory)?,
+                MemoryEvents::MemoryAdded(added) => {
+                    let memory = added.current()?.memory;
+                    self.write_memory(&memory)?
+                }
             }
         }
         Ok(())
@@ -114,7 +117,7 @@ impl<'a> MemoryStore<'a> {
         Ok(memories)
     }
 
-    fn insert(&self, memory: &Memory) -> Result<(), EventError> {
+    fn write_memory(&self, memory: &Memory) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO memories (id, agent_id, level, content, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",

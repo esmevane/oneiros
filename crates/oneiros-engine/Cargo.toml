@@ -22,6 +22,7 @@ flate2.workspace = true
 inquire.workspace = true
 iroh.workspace = true
 kinded.workspace = true
+paste.workspace = true
 pkcs8.workspace = true
 postcard.workspace = true
 reqwest.workspace = true

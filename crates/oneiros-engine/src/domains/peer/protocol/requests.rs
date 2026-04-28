@@ -1,46 +1,52 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-/// Add a new peer by supplying its address in base64url-encoded form.
-///
-/// The address carries the cryptographic identity (endpoint id = ed25519
-/// public key) plus reachability info (relay URLs, direct sockets).
-/// The service extracts the key from the address and stores the full peer
-/// record.
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct AddPeer {
-    /// The peer's address — a base64url-encoded PeerAddress, as produced
-    /// by `bookmark share` or extracted from an `oneiros://` URI.
-    pub address: String,
-    /// Optional human-readable label. Defaults to a short hex prefix of
-    /// the key (e.g. `peer-a3f2b1`).
-    #[arg(long)]
-    pub name: Option<String>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum AddPeer {
+        #[derive(clap::Args)]
+        V1 => {
+            pub address: String,
+            #[arg(long)]
+            pub name: Option<String>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetPeer {
-    #[builder(into)]
-    pub key: ResourceKey<PeerId>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetPeer {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<PeerId>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct RemovePeer {
-    #[builder(into)]
-    pub id: PeerId,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum RemovePeer {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub id: PeerId,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListPeers {
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListPeers {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

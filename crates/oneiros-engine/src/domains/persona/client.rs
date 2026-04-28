@@ -9,25 +9,31 @@ impl<'a> PersonaClient<'a> {
         Self { client }
     }
 
-    pub async fn set(&self, set: &SetPersona) -> Result<PersonaResponse, ClientError> {
+    pub async fn set(&self, setting: &SetPersona) -> Result<PersonaResponse, ClientError> {
+        let SetPersona::V1(body) = setting;
         self.client
-            .put(&format!("/personas/{}", set.name), set)
+            .put(&format!("/personas/{}", body.name), setting)
             .await
     }
 
-    pub async fn get(&self, request: &GetPersona) -> Result<PersonaResponse, ClientError> {
-        self.client.get(&format!("/personas/{}", request.key)).await
+    pub async fn get(&self, lookup: &GetPersona) -> Result<PersonaResponse, ClientError> {
+        let GetPersona::V1(lookup) = lookup;
+        self.client.get(&format!("/personas/{}", lookup.key)).await
     }
 
-    pub async fn list(&self, request: &ListPersonas) -> Result<PersonaResponse, ClientError> {
+    pub async fn list(&self, listing: &ListPersonas) -> Result<PersonaResponse, ClientError> {
+        let ListPersonas::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
-            request.filters.limit, request.filters.offset,
+            listing.filters.limit, listing.filters.offset,
         );
         self.client.get(&format!("/personas?{query}")).await
     }
 
-    pub async fn remove(&self, name: &PersonaName) -> Result<PersonaResponse, ClientError> {
-        self.client.delete(&format!("/personas/{name}")).await
+    pub async fn remove(&self, removal: &RemovePersona) -> Result<PersonaResponse, ClientError> {
+        let RemovePersona::V1(removal) = removal;
+        self.client
+            .delete(&format!("/personas/{}", removal.name))
+            .await
     }
 }

@@ -1,35 +1,44 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct AddMemory {
-    #[builder(into)]
-    pub agent: AgentName,
-    #[builder(into)]
-    pub level: LevelName,
-    #[builder(into)]
-    pub content: Content,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum AddMemory {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub level: LevelName,
+            #[builder(into)] pub content: Content,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetMemory {
-    #[builder(into)]
-    pub key: ResourceKey<MemoryId>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetMemory {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<MemoryId>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListMemories {
-    #[arg(long)]
-    pub agent: Option<AgentName>,
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListMemories {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long)]
+            pub agent: Option<AgentName>,
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

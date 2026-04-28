@@ -12,15 +12,9 @@ impl<'a> TenantStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Event::Known(Events::Tenant(TenantEvents::TenantCreated(tenant))) = &event.data {
-            self.conn.execute(
-                "insert or replace into tenants (id, name, created_at) values (?1, ?2, ?3)",
-                params![
-                    tenant.id.to_string(),
-                    tenant.name.to_string(),
-                    tenant.created_at.as_string()
-                ],
-            )?;
+        if let Event::Known(Events::Tenant(TenantEvents::TenantCreated(creation))) = &event.data {
+            let tenant = creation.current()?.tenant;
+            self.write_tenant(&tenant)?;
         }
         Ok(())
     }
@@ -37,6 +31,18 @@ impl<'a> TenantStore<'a> {
                 name text not null unique,
                 created_at text not null default ''
             )",
+        )?;
+        Ok(())
+    }
+
+    fn write_tenant(&self, tenant: &Tenant) -> Result<(), EventError> {
+        self.conn.execute(
+            "insert or replace into tenants (id, name, created_at) values (?1, ?2, ?3)",
+            params![
+                tenant.id.to_string(),
+                tenant.name.to_string(),
+                tenant.created_at.as_string()
+            ],
         )?;
         Ok(())
     }

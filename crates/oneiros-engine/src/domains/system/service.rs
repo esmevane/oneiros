@@ -7,6 +7,7 @@ impl SystemService {
         context: &SystemContext,
         request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {
+        let details = request.current()?;
         // system init is the bootstrapper — ensure data dir, schema, and
         // host keypair all exist. The keypair establishes host identity
         // before the server ever starts.
@@ -28,7 +29,7 @@ impl SystemService {
             return Ok(SystemResponse::HostAlreadyInitialized);
         }
 
-        let name = request
+        let name = details
             .name
             .clone()
             .unwrap_or_else(|| "oneiros user".to_string());
@@ -37,7 +38,10 @@ impl SystemService {
 
         TenantService::create(
             context,
-            &CreateTenant::builder().name(tenant_name.clone()).build(),
+            &CreateTenant::builder_v1()
+                .name(tenant_name.clone())
+                .build()
+                .into(),
         )
         .await?;
 
@@ -46,14 +50,20 @@ impl SystemService {
         if let Some(tenant) = tenants.items.first() {
             ActorService::create(
                 context,
-                &CreateActor::builder()
+                &CreateActor::builder_v1()
                     .tenant_id(tenant.id)
                     .name(ActorName::new(&name))
-                    .build(),
+                    .build()
+                    .into(),
             )
             .await?;
         }
 
-        Ok(SystemResponse::SystemInitialized(tenant_name))
+        Ok(SystemResponse::SystemInitialized(
+            SystemInitializedResponse::builder_v1()
+                .tenant(tenant_name)
+                .build()
+                .into(),
+        ))
     }
 }

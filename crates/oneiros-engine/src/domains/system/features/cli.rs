@@ -13,7 +13,9 @@ impl SystemCommands {
         context: SystemContext,
     ) -> Result<Rendered<Responses>, SystemError> {
         let response = match self {
-            SystemCommands::Init(init) => SystemService::init(&context, init).await?,
+            SystemCommands::Init(initialization) => {
+                SystemService::init(&context, initialization).await?
+            }
         };
 
         Ok(SystemView::new(response).render().map(Into::into))

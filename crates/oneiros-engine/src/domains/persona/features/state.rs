@@ -6,11 +6,15 @@ impl PersonaState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Persona(persona_event) = event {
             match persona_event {
-                PersonaEvents::PersonaSet(persona) => {
-                    canon.personas.set(persona);
+                PersonaEvents::PersonaSet(setting) => {
+                    if let Ok(current) = setting.current() {
+                        canon.personas.set(&current.persona);
+                    }
                 }
-                PersonaEvents::PersonaRemoved(removed) => {
-                    canon.personas.remove(&removed.name);
+                PersonaEvents::PersonaRemoved(removal) => {
+                    if let Ok(current) = removal.current() {
+                        canon.personas.remove(&current.name);
+                    }
                 }
             };
         }

@@ -16,9 +16,9 @@ pub(crate) async fn set_creates_a_new_level<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("level show ephemeral").await?;
 
     match show_response {
-        Responses::Level(LevelResponse::LevelDetails(level)) => {
-            assert_eq!(level.data.name.as_str(), "ephemeral");
-            assert_eq!(level.data.description.as_str(), "Short-lived context");
+        Responses::Level(LevelResponse::LevelDetails(LevelDetailsResponse::V1(details))) => {
+            assert_eq!(details.level.name.as_str(), "ephemeral");
+            assert_eq!(details.level.description.as_str(), "Short-lived context");
         }
         other => panic!("expected LevelDetails, got {other:#?}"),
     }
@@ -44,9 +44,9 @@ pub(crate) async fn set_updates_existing_level<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("level show working").await?;
 
     match show_response {
-        Responses::Level(LevelResponse::LevelDetails(level)) => {
-            assert_eq!(level.data.description.as_str(), "Updated description");
-            assert_eq!(level.data.prompt.as_str(), "Updated prompt.");
+        Responses::Level(LevelResponse::LevelDetails(LevelDetailsResponse::V1(details))) => {
+            assert_eq!(details.level.description.as_str(), "Updated description");
+            assert_eq!(details.level.prompt.as_str(), "Updated prompt.");
         }
         other => panic!("expected LevelDetails, got {other:#?}"),
     }
@@ -83,8 +83,8 @@ pub(crate) async fn list_returns_created_levels<B: Backend>() -> TestResult {
     let response = harness.exec_json("level list").await?;
 
     match response {
-        Responses::Level(LevelResponse::Levels(levels)) => {
-            assert_eq!(levels.len(), 2);
+        Responses::Level(LevelResponse::Levels(LevelsResponse::V1(levels))) => {
+            assert_eq!(levels.items.len(), 2);
         }
         other => panic!("expected Levels, got {other:#?}"),
     }

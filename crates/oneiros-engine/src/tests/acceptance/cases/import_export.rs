@@ -16,7 +16,9 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
     let response = harness.exec_json(&cmd).await?;
 
     let export_path = match response {
-        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        Responses::Project(ProjectResponse::WroteExport(WroteExportResponse::V1(details))) => {
+            details.path
+        }
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
@@ -56,7 +58,9 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     let export_response = harness.exec_json(&export_cmd).await?;
 
     let export_path = match export_response {
-        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        Responses::Project(ProjectResponse::WroteExport(WroteExportResponse::V1(details))) => {
+            details.path
+        }
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
@@ -69,7 +73,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     let search_response = harness.exec_json("search Remember").await?;
 
     match search_response {
-        Responses::Search(SearchResponse::Results(results)) => {
+        Responses::Search(SearchResponse::Results(ResultsResponse::V1(results))) => {
             assert!(
                 !results.results.is_empty(),
                 "expected to find the cognition after import"
@@ -107,7 +111,9 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     let export_response = brain_a.exec_json(&export_cmd).await?;
 
     let export_path = match export_response {
-        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        Responses::Project(ProjectResponse::WroteExport(WroteExportResponse::V1(details))) => {
+            details.path
+        }
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
@@ -122,8 +128,8 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     let show_response = brain_b.exec_json("storage show portable-doc").await?;
 
     match show_response {
-        Responses::Storage(StorageResponse::StorageDetails(entry)) => {
-            assert_eq!(entry.data.key.as_str(), "portable-doc");
+        Responses::Storage(StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry))) => {
+            assert_eq!(entry.entry.key.as_str(), "portable-doc");
         }
         other => panic!("expected StorageDetails on brain B after import, got {other:#?}"),
     }
@@ -157,7 +163,9 @@ pub(crate) async fn import_bootstraps_fresh_brain<B: Backend>() -> TestResult {
     let export_response = source.exec_json(&export_cmd).await?;
 
     let export_path = match export_response {
-        Responses::Project(ProjectResponse::WroteExport(path)) => path,
+        Responses::Project(ProjectResponse::WroteExport(WroteExportResponse::V1(details))) => {
+            details.path
+        }
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
@@ -170,16 +178,16 @@ pub(crate) async fn import_bootstraps_fresh_brain<B: Backend>() -> TestResult {
         .await?;
 
     match import_response {
-        Responses::Project(ProjectResponse::Imported(result)) => {
+        Responses::Project(ProjectResponse::Imported(ImportedResponse::V1(result))) => {
             assert!(
-                result.imported.0 > 0,
+                result.imported > 0,
                 "expected at least one event imported, got {}",
-                result.imported.0,
+                result.imported,
             );
             assert!(
-                result.replayed.0 > 0,
+                result.replayed > 0,
                 "expected at least one event replayed, got {}",
-                result.replayed.0,
+                result.replayed,
             );
         }
         other => panic!("expected Imported, got {other:#?}"),

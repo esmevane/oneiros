@@ -84,7 +84,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .dream(&AgentName::new("listener.process"))
         .await?
     {
-        ContinuityResponse::Dreaming(ctx) => ctx,
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
         other => panic!("expected Dreaming, got {other:?}"),
     };
 
@@ -98,15 +98,15 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .agent()
-        .get(
-            &GetAgent::builder()
+        .get(&GetAgent::V1(
+            GetAgentV1::builder()
                 .key(AgentName::new("thinker.process"))
                 .build(),
-        )
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails for Alice's agent, got {other:?}"),
     }
@@ -118,7 +118,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .dream(&AgentName::new("thinker.process"))
         .await?
     {
-        ContinuityResponse::Dreaming(ctx) => ctx,
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
         other => panic!("expected Dreaming, got {other:?}"),
     };
 
@@ -138,7 +138,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .dream(&AgentName::new("listener.process"))
         .await?
     {
-        ContinuityResponse::Dreaming(ctx) => ctx,
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
         other => panic!("expected Dreaming, got {other:?}"),
     };
 
@@ -225,15 +225,15 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .agent()
-        .get(
-            &GetAgent::builder()
+        .get(&GetAgent::V1(
+            GetAgentV1::builder()
                 .key(AgentName::new("thinker.process"))
                 .build(),
-        )
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -244,7 +244,8 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .dream(&AgentName::new("thinker.process"))
         .await?
     {
-        ContinuityResponse::Dreaming(ctx) => {
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+            let ctx = &details.context;
             assert!(
                 !ctx.cognitions.is_empty(),
                 "Alice's agent should have cognitions in the bookmark"
@@ -311,17 +312,22 @@ async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Erro
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 1, "only the observation should be visible");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(
+                cogs.items.len(),
+                1,
+                "only the observation should be visible"
+            );
             assert!(
-                cogs.items[0].data.content.as_str().contains("visible"),
+                cogs.items[0].content.as_str().contains("visible"),
                 "the visible cognition should be the observation"
             );
         }
@@ -378,15 +384,16 @@ async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 5, "first collect should bring all 5");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 5, "first collect should bring all 5");
         }
         other => panic!("expected Cognitions, got {other:?}"),
     }
@@ -406,15 +413,20 @@ async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 8, "second collect should bring total to 8");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(
+                cogs.items.len(),
+                8,
+                "second collect should bring total to 8"
+            );
         }
         other => panic!("expected Cognitions, got {other:?}"),
     }
@@ -472,15 +484,15 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
     match bob
         .client()
         .agent()
-        .get(
-            &GetAgent::builder()
+        .get(&GetAgent::V1(
+            GetAgentV1::builder()
                 .key(AgentName::new("thinker.process"))
                 .build(),
-        )
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -492,7 +504,8 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
         .dream(&AgentName::new("listener.process"))
         .await?
     {
-        ContinuityResponse::Dreaming(ctx) => {
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+            let ctx = &details.context;
             assert!(
                 !ctx.cognitions.is_empty(),
                 "Bob should still have his own cognitions"
@@ -508,7 +521,8 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
         .dream(&AgentName::new("thinker.process"))
         .await?
     {
-        ContinuityResponse::Dreaming(ctx) => {
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+            let ctx = &details.context;
             assert!(
                 !ctx.cognitions.is_empty(),
                 "Alice's agent should dream in Bob's main after merge"
@@ -586,21 +600,18 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("architect.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("architect.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 1, "Alice's assessment should reach Bob");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1, "Alice's assessment should reach Bob");
             assert!(
-                cogs.items[0]
-                    .data
-                    .content
-                    .as_str()
-                    .contains("event sourcing"),
+                cogs.items[0].content.as_str().contains("event sourcing"),
                 "the assessment content should be intact"
             );
         }
@@ -651,15 +662,16 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 1, "should have the initial cognition");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1, "should have the initial cognition");
         }
         other => panic!("expected Cognitions, got {other:?}"),
     }
@@ -679,16 +691,17 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
             assert_eq!(
-                cogs.len(),
+                cogs.items.len(),
                 1,
                 "should still have only the pre-unfollow cognition"
             );
@@ -744,15 +757,20 @@ async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 1, "first collect should bring the cognition");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(
+                cogs.items.len(),
+                1,
+                "first collect should bring the cognition"
+            );
         }
         other => panic!("expected Cognitions, got {other:?}"),
     }
@@ -765,16 +783,17 @@ async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
             assert_eq!(
-                cogs.len(),
+                cogs.items.len(),
                 1,
                 "second collect with no changes should not duplicate"
             );
@@ -844,15 +863,17 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(AgentName::new("thinker.process")),
-            texture: None,
-            filters: all,
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("thinker.process"))
+                .filters(all)
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
-            assert_eq!(cogs.len(), 30, "all 30 cognitions should arrive");
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 30, "all 30 cognitions should arrive");
         }
         other => panic!("expected Cognitions, got {other:?}"),
     }
@@ -861,15 +882,15 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
     match bob
         .client()
         .agent()
-        .get(
-            &GetAgent::builder()
+        .get(&GetAgent::V1(
+            GetAgentV1::builder()
                 .key(AgentName::new("thinker.process"))
                 .build(),
-        )
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, AgentName::new("thinker.process"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, AgentName::new("thinker.process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }

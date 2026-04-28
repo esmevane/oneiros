@@ -18,14 +18,17 @@ impl<'a> FollowStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data {
             match bookmark_event {
-                BookmarkEvents::BookmarkFollowed(follow) => {
-                    self.create_record(follow)?;
+                BookmarkEvents::BookmarkFollowed(followed) => {
+                    let current = followed.current()?;
+                    self.create_record(&current)?;
                 }
                 BookmarkEvents::BookmarkCollected(collected) => {
-                    self.advance_checkpoint(collected)?;
+                    let current = collected.current()?;
+                    self.advance_checkpoint(&current)?;
                 }
                 BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
-                    self.delete_record(unfollowed.follow_id)?;
+                    let current = unfollowed.current()?;
+                    self.delete_record(current.follow_id)?;
                 }
                 BookmarkEvents::BookmarkCreated(_)
                 | BookmarkEvents::BookmarkForked(_)
@@ -57,7 +60,7 @@ impl<'a> FollowStore<'a> {
         Ok(())
     }
 
-    fn create_record(&self, follow: &Follow) -> Result<(), EventError> {
+    fn create_record(&self, follow: &BookmarkFollowedV1) -> Result<(), EventError> {
         let source_json = serde_json::to_string(&follow.source)?;
         let checkpoint_json = serde_json::to_string(&follow.checkpoint)?;
 
@@ -78,7 +81,7 @@ impl<'a> FollowStore<'a> {
         Ok(())
     }
 
-    fn advance_checkpoint(&self, collected: &BookmarkCollected) -> Result<(), EventError> {
+    fn advance_checkpoint(&self, collected: &BookmarkCollectedV1) -> Result<(), EventError> {
         let checkpoint_json = serde_json::to_string(&collected.checkpoint)?;
         self.conn.execute(
             "update follows set checkpoint = ?1 where id = ?2",

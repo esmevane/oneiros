@@ -12,8 +12,9 @@ impl<'a> BrainStore<'a> {
     }
 
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
-        if let Event::Known(Events::Brain(BrainEvents::BrainCreated(brain))) = &event.data {
-            self.create_record(brain)?;
+        if let Event::Known(Events::Brain(BrainEvents::BrainCreated(creation))) = &event.data {
+            let brain = creation.current()?.brain;
+            self.write_brain(&brain)?;
         }
         Ok(())
     }
@@ -34,7 +35,7 @@ impl<'a> BrainStore<'a> {
         Ok(())
     }
 
-    fn create_record(&self, brain: &Brain) -> Result<(), EventError> {
+    fn write_brain(&self, brain: &Brain) -> Result<(), EventError> {
         self.conn.execute(
             "insert or replace into brains (id, name, created_at) values (?1, ?2, ?3)",
             params![

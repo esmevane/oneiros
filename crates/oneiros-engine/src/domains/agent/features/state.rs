@@ -5,17 +5,13 @@ pub struct AgentState;
 impl AgentState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Agent(agent_event) = event {
-            match agent_event {
-                AgentEvents::AgentCreated(agent) => {
-                    canon.agents.set(agent);
-                }
-                AgentEvents::AgentUpdated(agent) => {
-                    canon.agents.set(agent);
-                }
-                AgentEvents::AgentRemoved(removed) => {
-                    canon.agents.remove_by_name(&removed.name);
-                }
+            if let Some(agent) = agent_event.maybe_agent() {
+                canon.agents.set(&agent);
             };
+
+            if let AgentEvents::AgentRemoved(AgentRemoved::V1(removal)) = agent_event {
+                canon.agents.remove_by_name(&removal.name);
+            }
         }
 
         canon
@@ -32,16 +28,17 @@ mod tests {
 
     #[test]
     fn creates_agent() {
-        let canon = BrainCanon::default();
         let agent = Agent::builder()
             .name("test.agent")
             .persona("process")
             .description("A test")
             .prompt("You are a test")
             .build();
-        let event = Events::Agent(AgentEvents::AgentCreated(agent.clone()));
+        let event = Events::Agent(AgentEvents::AgentCreated(
+            AgentCreated::builder_v1().agent(agent).build().into(),
+        ));
 
-        let next = AgentState::reduce(canon, &event);
+        let next = AgentState::reduce(BrainCanon::default(), &event);
 
         assert_eq!(next.agents.len(), 1);
     }
@@ -57,9 +54,11 @@ mod tests {
             .build();
         canon.agents.set(&agent);
 
-        let event = Events::Agent(AgentEvents::AgentRemoved(AgentRemoved {
-            name: agent.name.clone(),
-        }));
+        let event = Events::Agent(AgentEvents::AgentRemoved(AgentRemoved::V1(
+            AgentRemovedV1 {
+                name: agent.name.clone(),
+            },
+        )));
         let next = AgentState::reduce(canon, &event);
 
         assert_eq!(next.agents.len(), 0);

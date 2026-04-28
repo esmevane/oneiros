@@ -17,24 +17,24 @@ impl<'a> MemoryView<'a> {
 
     pub fn mcp(&self) -> McpResponse {
         match &self.response {
-            MemoryResponse::MemoryAdded(wrapped) => {
-                let ref_token = wrapped.data.ref_token();
+            MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)) => {
+                let ref_token = RefToken::new(Ref::memory(added.memory.id));
                 McpResponse::new(format!(
                     "Memory consolidated ({}).\n\n**level:** {}\n**ref:** {}",
-                    wrapped.data.level, wrapped.data.level, ref_token
+                    added.memory.level, added.memory.level, ref_token
                 ))
                 .hint_set(HintSet::mutation(
                     MutationHints::builder().ref_token(ref_token).build(),
                 ))
             }
-            MemoryResponse::MemoryDetails(wrapped) => {
-                let ref_token = wrapped.data.ref_token();
+            MemoryResponse::MemoryDetails(MemoryDetailsResponse::V1(details)) => {
+                let ref_token = RefToken::new(Ref::memory(details.memory.id));
                 McpResponse::new(format!(
                     "# Memory\n\n**level:** {}\n**agent:** {}\n**created:** {}\n\n{}\n",
-                    wrapped.data.level,
-                    wrapped.data.agent_id,
-                    wrapped.data.created_at,
-                    wrapped.data.content
+                    details.memory.level,
+                    details.memory.agent_id,
+                    details.memory.created_at,
+                    details.memory.content
                 ))
                 .hint(Hint::suggest(
                     format!("create-connection <nature> {ref_token} <target>"),
@@ -42,24 +42,30 @@ impl<'a> MemoryView<'a> {
                 ))
                 .hint(Hint::suggest("search-query", "Search for related entities"))
             }
-            MemoryResponse::Memories(listed) => {
+            MemoryResponse::Memories(MemoriesResponse::V1(listed)) => {
                 let title = match self.request {
-                    MemoryRequest::ListMemories(listing) => match &listing.agent {
-                        Some(agent) => format!("# Memories — {agent}\n\n"),
-                        None => "# Memories\n\n".to_string(),
-                    },
+                    MemoryRequest::ListMemories(ListMemories::V1(listing)) => {
+                        match &listing.agent {
+                            Some(agent) => format!("# Memories — {agent}\n\n"),
+                            None => "# Memories\n\n".to_string(),
+                        }
+                    }
                     _ => "# Memories\n\n".to_string(),
                 };
-                let mut md = format!("{title}{} of {} total\n\n", listed.len(), listed.total);
-                for wrapped in &listed.items {
+                let mut md = format!(
+                    "{title}{} of {} total\n\n",
+                    listed.items.len(),
+                    listed.total
+                );
+                for item in &listed.items {
                     md.push_str(&format!(
                         "### {} — {}\n{}\n\n",
-                        wrapped.data.level, wrapped.data.created_at, wrapped.data.content
+                        item.level, item.created_at, item.content
                     ));
                 }
                 let mut response = McpResponse::new(md)
                     .hint(Hint::suggest("add-memory", "Consolidate what matters"));
-                if let MemoryRequest::ListMemories(listing) = self.request
+                if let MemoryRequest::ListMemories(ListMemories::V1(listing)) = self.request
                     && let Some(agent) = &listing.agent
                 {
                     response = response.hint(Hint::inspect(
@@ -76,81 +82,78 @@ impl<'a> MemoryView<'a> {
 
     pub fn render(self) -> Rendered<MemoryResponse> {
         match (self.response, self.request) {
-            (MemoryResponse::MemoryAdded(wrapped), _) => {
-                let subject = wrapped
-                    .meta()
-                    .ref_token()
-                    .map(|ref_token| {
-                        format!("{} Memory recorded: {}", "✓".success(), ref_token.muted())
-                    })
-                    .unwrap_or_default();
-
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
-
-                Rendered::new(MemoryResponse::MemoryAdded(wrapped), subject, String::new())
-                    .with_hints(hints)
-            }
-            (MemoryResponse::MemoryDetails(wrapped), _) => {
-                let prompt = Detail::new(wrapped.data.level.to_string())
-                    .field("content:", wrapped.data.content.to_string())
-                    .to_string();
-
-                let hints = match wrapped.meta().ref_token() {
-                    Some(ref_token) => {
-                        HintSet::mutation(MutationHints::builder().ref_token(ref_token).build())
-                    }
-                    None => HintSet::None,
-                };
+            (MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)), _) => {
+                let ref_token = RefToken::new(Ref::memory(added.memory.id));
+                let subject = format!(
+                    "{} Memory recorded: {}",
+                    "✓".success(),
+                    ref_token.clone().muted()
+                );
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
 
                 Rendered::new(
-                    MemoryResponse::MemoryDetails(wrapped),
+                    MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)),
+                    subject,
+                    String::new(),
+                )
+                .with_hints(hints)
+            }
+            (MemoryResponse::MemoryDetails(MemoryDetailsResponse::V1(details)), _) => {
+                let prompt = Detail::new(details.memory.level.to_string())
+                    .field("content:", details.memory.content.to_string())
+                    .to_string();
+                let ref_token = RefToken::new(Ref::memory(details.memory.id));
+                let hints =
+                    HintSet::mutation(MutationHints::builder().ref_token(ref_token).build());
+
+                Rendered::new(
+                    MemoryResponse::MemoryDetails(MemoryDetailsResponse::V1(details)),
                     prompt,
                     String::new(),
                 )
                 .with_hints(hints)
             }
-            (MemoryResponse::Memories(listed), MemoryRequest::ListMemories(listing)) => {
+            (
+                MemoryResponse::Memories(MemoriesResponse::V1(listed)),
+                MemoryRequest::ListMemories(ListMemories::V1(listing)),
+            ) => {
                 let mut table = Table::new(vec![
                     Column::key("level", "Level"),
                     Column::key("content", "Content").max(60),
                     Column::key("ref_token", "Ref"),
                 ]);
 
-                for wrapped in &listed.items {
-                    let ref_token = wrapped
-                        .meta()
-                        .ref_token()
-                        .map(|t| t.to_string())
-                        .unwrap_or_default();
+                for item in &listed.items {
+                    let ref_token = RefToken::new(Ref::memory(item.id));
                     table.push_row(vec![
-                        wrapped.data.level.to_string(),
-                        wrapped.data.content.to_string(),
-                        ref_token,
+                        item.level.to_string(),
+                        item.content.to_string(),
+                        ref_token.to_string(),
                     ]);
                 }
 
                 let prompt = format!(
                     "{}\n\n{table}",
-                    format_args!("{} of {} total", listed.len(), listed.total).muted(),
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
 
                 let hints = match &listing.agent {
                     Some(agent) => HintSet::listing(
                         ListingHints::builder()
                             .agent(agent.clone())
-                            .has_more(listed.len() < listed.total)
+                            .has_more(listed.items.len() < listed.total)
                             .build(),
                     ),
                     None => HintSet::None,
                 };
 
-                Rendered::new(MemoryResponse::Memories(listed), prompt, String::new())
-                    .with_hints(hints)
+                Rendered::new(
+                    MemoryResponse::Memories(MemoriesResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
+                .with_hints(hints)
             }
             (MemoryResponse::NoMemories, _) => Rendered::new(
                 MemoryResponse::NoMemories,

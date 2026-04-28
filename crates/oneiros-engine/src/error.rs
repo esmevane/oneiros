@@ -1,6 +1,22 @@
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
+pub enum UpcastError {
+    #[error("discontinuity {from} -> {to}: {reason}")]
+    Discontinuity {
+        from: &'static str,
+        to: &'static str,
+        reason: &'static str,
+    },
+}
+
+impl From<std::convert::Infallible> for UpcastError {
+    fn from(x: std::convert::Infallible) -> Self {
+        match x {}
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("{0}")]
     Context(String),

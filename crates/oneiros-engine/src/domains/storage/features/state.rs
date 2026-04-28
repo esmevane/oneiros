@@ -6,11 +6,15 @@ impl StorageState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Storage(storage_event) = event {
             match storage_event {
-                StorageEvents::StorageSet(entry) => {
-                    canon.storage.set(entry);
+                StorageEvents::StorageSet(set) => {
+                    if let Ok(current) = set.current() {
+                        canon.storage.set(&current.entry);
+                    }
                 }
                 StorageEvents::StorageRemoved(removed) => {
-                    canon.storage.remove(&removed.key);
+                    if let Ok(current) = removed.current() {
+                        canon.storage.remove(&current.key);
+                    }
                 }
             };
         }

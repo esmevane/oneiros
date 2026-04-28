@@ -1,37 +1,46 @@
-use bon::Builder;
-use clap::Args;
 use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct AddCognition {
-    #[builder(into)]
-    pub agent: AgentName,
-    #[builder(into)]
-    pub texture: TextureName,
-    #[builder(into)]
-    pub content: Content,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum AddCognition {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub texture: TextureName,
+            #[builder(into)] pub content: Content,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct GetCognition {
-    #[builder(into)]
-    pub key: ResourceKey<CognitionId>,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum GetCognition {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub key: ResourceKey<CognitionId>,
+        }
+    }
 }
 
-#[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, Args)]
-pub struct ListCognitions {
-    #[arg(long)]
-    pub agent: Option<AgentName>,
-    #[arg(long)]
-    pub texture: Option<TextureName>,
-    #[command(flatten)]
-    #[serde(flatten)]
-    #[builder(default)]
-    pub filters: SearchFilters,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ListCognitions {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(long)]
+            pub agent: Option<AgentName>,
+            #[arg(long)]
+            pub texture: Option<TextureName>,
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub filters: SearchFilters,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

@@ -64,7 +64,7 @@ async fn show(
         ResourceKey::Key(storage_ref.decode().map_err(|_| StorageError::InvalidRef)?)
     };
     Ok(Json(
-        StorageService::show(&context, &GetStorage::builder().key(key).build()).await?,
+        StorageService::show(&context, &GetStorage::builder_v1().key(key).build().into()).await?,
     ))
 }
 
@@ -75,6 +75,10 @@ async fn remove(
     let storage_ref = StorageRef(ref_key);
     let key = storage_ref.decode().map_err(|_| StorageError::InvalidRef)?;
     Ok(Json(
-        StorageService::remove(&context, &RemoveStorage::builder().key(key).build()).await?,
+        StorageService::remove(
+            &context,
+            &RemoveStorage::builder_v1().key(key).build().into(),
+        )
+        .await?,
     ))
 }

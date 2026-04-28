@@ -52,6 +52,6 @@ async fn show(
     Path(key): Path<ResourceKey<BrainName>>,
 ) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(
-        BrainService::get(&context, &GetBrain::builder().key(key).build()).await?,
+        BrainService::get(&context, &GetBrain::builder_v1().key(key).build().into()).await?,
     ))
 }

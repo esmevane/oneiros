@@ -69,25 +69,25 @@ impl PressureState {
     /// Update continuity timestamps when we see lifecycle events.
     fn track_continuity(canon: &mut BrainCanon, event: &Events) {
         match event {
-            Events::Continuity(ContinuityEvents::Introspected(e)) => {
+            Events::Continuity(ContinuityEvents::Introspected(Introspected::V1(e))) => {
                 canon
                     .continuity_timestamps
                     .get_or_default(&e.agent)
                     .last_introspect = Some(e.created_at);
             }
-            Events::Continuity(ContinuityEvents::Reflected(e)) => {
+            Events::Continuity(ContinuityEvents::Reflected(Reflected::V1(e))) => {
                 canon
                     .continuity_timestamps
                     .get_or_default(&e.agent)
                     .last_reflect = Some(e.created_at);
             }
-            Events::Continuity(ContinuityEvents::Dreamed(e)) => {
+            Events::Continuity(ContinuityEvents::Dreamed(Dreamed::V1(e))) => {
                 canon
                     .continuity_timestamps
                     .get_or_default(&e.agent)
                     .last_dream = Some(e.created_at);
             }
-            Events::Continuity(ContinuityEvents::Slept(e)) => {
+            Events::Continuity(ContinuityEvents::Slept(Slept::V1(e))) => {
                 canon
                     .continuity_timestamps
                     .get_or_default(&e.agent)
@@ -100,28 +100,38 @@ impl PressureState {
     /// Determine which agents need pressure recomputed for this event.
     fn resolve_agents<'a>(canon: &'a BrainCanon, event: &Events) -> Vec<&'a Agent> {
         match event {
-            Events::Cognition(CognitionEvents::CognitionAdded(c)) => {
-                canon.agents.get(c.agent_id).into_iter().collect()
+            Events::Cognition(CognitionEvents::CognitionAdded(CognitionAdded::V1(addition))) => {
+                canon
+                    .agents
+                    .get(addition.cognition.agent_id)
+                    .into_iter()
+                    .collect()
             }
-            Events::Memory(MemoryEvents::MemoryAdded(m)) => {
-                canon.agents.get(m.agent_id).into_iter().collect()
-            }
-            Events::Experience(ExperienceEvents::ExperienceCreated(e)) => {
-                canon.agents.get(e.agent_id).into_iter().collect()
-            }
-            Events::Continuity(ContinuityEvents::Introspected(e)) => {
+            Events::Memory(MemoryEvents::MemoryAdded(MemoryAdded::V1(addition))) => canon
+                .agents
+                .get(addition.memory.agent_id)
+                .into_iter()
+                .collect(),
+            Events::Experience(ExperienceEvents::ExperienceCreated(ExperienceCreated::V1(
+                creation,
+            ))) => canon
+                .agents
+                .get(creation.experience.agent_id)
+                .into_iter()
+                .collect(),
+            Events::Continuity(ContinuityEvents::Introspected(Introspected::V1(e))) => {
                 canon.agents.find_by_name(&e.agent).into_iter().collect()
             }
-            Events::Continuity(ContinuityEvents::Reflected(e)) => {
+            Events::Continuity(ContinuityEvents::Reflected(Reflected::V1(e))) => {
                 canon.agents.find_by_name(&e.agent).into_iter().collect()
             }
-            Events::Continuity(ContinuityEvents::Dreamed(e)) => {
+            Events::Continuity(ContinuityEvents::Dreamed(Dreamed::V1(e))) => {
                 canon.agents.find_by_name(&e.agent).into_iter().collect()
             }
-            Events::Continuity(ContinuityEvents::Slept(e)) => {
+            Events::Continuity(ContinuityEvents::Slept(Slept::V1(e))) => {
                 canon.agents.find_by_name(&e.agent).into_iter().collect()
             }
-            Events::Continuity(ContinuityEvents::Sensed(e)) => {
+            Events::Continuity(ContinuityEvents::Sensed(Sensed::V1(e))) => {
                 canon.agents.find_by_name(&e.agent).into_iter().collect()
             }
             // Connection events may affect orphaned/unconnected counts for any agent
@@ -421,11 +431,16 @@ mod tests {
     fn ignores_irrelevant_events() {
         let canon = seeded_canon();
         let event = Events::Level(LevelEvents::LevelSet(
-            Level::builder()
-                .name("working")
-                .description("Short-term")
-                .prompt("")
-                .build(),
+            LevelSet::builder_v1()
+                .level(
+                    Level::builder()
+                        .name("working")
+                        .description("Short-term")
+                        .prompt("")
+                        .build(),
+                )
+                .build()
+                .into(),
         ));
 
         let next = PressureState::reduce(canon, &event);
@@ -441,14 +456,19 @@ mod tests {
             .unwrap();
         let agent_id = agent.id;
 
-        let cognition = Cognition::builder()
-            .agent_id(agent_id)
-            .texture("observation")
-            .content("A thought")
-            .build();
+        let added: CognitionAdded = CognitionAdded::builder_v1()
+            .cognition(
+                Cognition::builder()
+                    .agent_id(agent_id)
+                    .texture("observation")
+                    .content("A thought")
+                    .build(),
+            )
+            .build()
+            .into();
 
         // Simulate the full pipeline: cognition reducer then pressure reducer
-        let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition));
+        let event = Events::Cognition(CognitionEvents::CognitionAdded(added));
         canon = CognitionState::reduce(canon, &event);
         let next = PressureState::reduce(canon, &event);
 
@@ -479,7 +499,11 @@ mod tests {
         canon.cognitions.set(&working);
         canon.cognitions.set(&observation);
 
-        let event = Events::Cognition(CognitionEvents::CognitionAdded(observation));
+        let added: CognitionAdded = CognitionAdded::builder_v1()
+            .cognition(observation.clone())
+            .build()
+            .into();
+        let event = Events::Cognition(CognitionEvents::CognitionAdded(added));
         let next = PressureState::reduce(canon, &event);
 
         let introspect = next
@@ -514,7 +538,11 @@ mod tests {
         canon.cognitions.set(&cognition);
 
         // Before connection: cognition is orphaned
-        let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition));
+        let added: CognitionAdded = CognitionAdded::builder_v1()
+            .cognition(cognition.clone())
+            .build()
+            .into();
+        let event = Events::Cognition(CognitionEvents::CognitionAdded(added));
         let after_cog = PressureState::reduce(canon, &event);
 
         let catharsis_before = after_cog
@@ -537,7 +565,11 @@ mod tests {
             .build();
         canon.connections.set(&connection);
 
-        let conn_event = Events::Connection(ConnectionEvents::ConnectionCreated(connection));
+        let conn_created: ConnectionCreated = ConnectionCreated::builder_v1()
+            .connection(connection.clone())
+            .build()
+            .into();
+        let conn_event = Events::Connection(ConnectionEvents::ConnectionCreated(conn_created));
         let after_conn = PressureState::reduce(canon, &conn_event);
 
         let catharsis_after = after_conn
@@ -556,10 +588,13 @@ mod tests {
     fn tracks_continuity_timestamps() {
         let mut canon = seeded_canon();
 
-        let event = Events::Continuity(ContinuityEvents::Introspected(ContinuityEvent {
-            agent: AgentName::new("gov.process"),
-            created_at: Timestamp::now(),
-        }));
+        let event = Events::Continuity(ContinuityEvents::Introspected(
+            Introspected::builder_v1()
+                .agent(AgentName::new("gov.process"))
+                .created_at(Timestamp::now())
+                .build()
+                .into(),
+        ));
 
         canon = PressureState::reduce(canon, &event);
 

@@ -5,62 +5,87 @@ pub struct SensationService;
 impl SensationService {
     pub async fn set(
         context: &ProjectContext,
-        SetSensation {
-            name,
-            description,
-            prompt,
-        }: &SetSensation,
+        request: &SetSensation,
     ) -> Result<SensationResponse, SensationError> {
+        let SetSensation::V1(set) = request;
         let sensation = Sensation::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
+            .name(set.name.clone())
+            .description(set.description.clone())
+            .prompt(set.prompt.clone())
             .build();
+
         context
-            .emit(SensationEvents::SensationSet(sensation))
+            .emit(SensationEvents::SensationSet(
+                SensationSet::builder_v1()
+                    .sensation(sensation.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        Ok(SensationResponse::SensationSet(name.clone()))
+
+        Ok(SensationResponse::SensationSet(
+            SensationSetResponse::builder_v1()
+                .sensation(sensation)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetSensation,
+        request: &GetSensation,
     ) -> Result<SensationResponse, SensationError> {
-        let name = selector.key.resolve()?;
+        let GetSensation::V1(lookup) = request;
+        let name = lookup.key.resolve()?;
         let sensation = SensationRepo::new(context)
             .get(&name)
             .await?
             .ok_or(SensationError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::sensation(sensation.name.clone()));
         Ok(SensationResponse::SensationDetails(
-            Response::new(sensation).with_ref_token(ref_token),
+            SensationDetailsResponse::builder_v1()
+                .sensation(sensation)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListSensations { filters }: &ListSensations,
+        request: &ListSensations,
     ) -> Result<SensationResponse, SensationError> {
-        let listed = SensationRepo::new(context).list(filters).await?;
+        let ListSensations::V1(listing) = request;
+        let listed = SensationRepo::new(context).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(SensationResponse::NoSensations)
         } else {
-            Ok(SensationResponse::Sensations(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::sensation(e.name.clone()));
-                Response::new(e).with_ref_token(ref_token)
-            })))
+            Ok(SensationResponse::Sensations(
+                SensationsResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            ))
         }
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        selector: &RemoveSensation,
+        request: &RemoveSensation,
     ) -> Result<SensationResponse, SensationError> {
+        let RemoveSensation::V1(removal) = request;
         context
-            .emit(SensationEvents::SensationRemoved(SensationRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(SensationEvents::SensationRemoved(
+                SensationRemoved::builder_v1()
+                    .name(removal.name.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        Ok(SensationResponse::SensationRemoved(selector.name.clone()))
+        Ok(SensationResponse::SensationRemoved(
+            SensationRemovedResponse::builder_v1()
+                .name(removal.name.clone())
+                .build()
+                .into(),
+        ))
     }
 }

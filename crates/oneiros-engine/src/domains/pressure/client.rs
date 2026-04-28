@@ -14,8 +14,9 @@ impl<'a> PressureClient<'a> {
 
     /// Retrieve pressure readings for a specific agent.
     pub async fn get(&self, request: &GetPressure) -> Result<PressureResponse, ClientError> {
+        let details = request.current()?;
         self.client
-            .get(&format!("/pressures/{}", request.agent))
+            .get(&format!("/pressures/{}", details.agent))
             .await
     }
 

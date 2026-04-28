@@ -5,45 +5,59 @@ pub struct ActorService;
 impl ActorService {
     pub async fn create(
         context: &SystemContext,
-        CreateActor { tenant_id, name }: &CreateActor,
+        request: &CreateActor,
     ) -> Result<ActorResponse, ActorError> {
+        let CreateActor::V1(create) = request;
+
         let actor = Actor::builder()
-            .tenant_id(*tenant_id)
-            .name(name.clone())
+            .tenant_id(create.tenant_id)
+            .name(create.name.clone())
             .build();
 
         context
-            .emit(ActorEvents::ActorCreated(actor.clone()))
+            .emit(ActorEvents::ActorCreated(
+                ActorCreated::builder_v1()
+                    .actor(actor.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        let ref_token = RefToken::new(Ref::actor(actor.id));
+
         Ok(ActorResponse::Created(
-            Response::new(actor).with_ref_token(ref_token),
+            ActorCreatedResponse::builder_v1()
+                .actor(actor)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn get(
         context: &SystemContext,
-        selector: &GetActor,
+        request: &GetActor,
     ) -> Result<ActorResponse, ActorError> {
-        let id = selector.key.resolve()?;
+        let GetActor::V1(lookup) = request;
+        let id = lookup.key.resolve()?;
         let actor = ActorRepo::new(context)
             .get(id)
             .await?
             .ok_or(ActorError::NotFound(id))?;
-        let ref_token = RefToken::new(Ref::actor(actor.id));
         Ok(ActorResponse::Found(
-            Response::new(actor).with_ref_token(ref_token),
+            ActorFoundResponse::builder_v1().actor(actor).build().into(),
         ))
     }
 
     pub async fn list(
         context: &SystemContext,
-        ListActors { filters }: &ListActors,
+        request: &ListActors,
     ) -> Result<ActorResponse, ActorError> {
-        let listed = ActorRepo::new(context).list(filters).await?;
-        Ok(ActorResponse::Listed(listed.map(|a| {
-            let ref_token = RefToken::new(Ref::actor(a.id));
-            Response::new(a).with_ref_token(ref_token)
-        })))
+        let ListActors::V1(listing) = request;
+        let listed = ActorRepo::new(context).list(&listing.filters).await?;
+        Ok(ActorResponse::Listed(
+            ActorsResponse::builder_v1()
+                .items(listed.items)
+                .total(listed.total)
+                .build()
+                .into(),
+        ))
     }
 }

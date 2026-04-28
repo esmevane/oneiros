@@ -5,32 +5,41 @@ pub struct BrainService;
 impl BrainService {
     pub async fn create(
         context: &SystemContext,
-        CreateBrain { name }: &CreateBrain,
+        request: &CreateBrain,
     ) -> Result<BrainResponse, BrainError> {
-        let already_exists = BrainRepo::new(context).name_exists(name).await?;
+        let CreateBrain::V1(create) = request;
+        let already_exists = BrainRepo::new(context).name_exists(&create.name).await?;
 
         if already_exists {
-            return Err(BrainError::Conflict(name.clone()));
+            return Err(BrainError::Conflict(create.name.clone()));
         }
 
-        let brain = Brain::builder().name(name.clone()).build();
+        let brain = Brain::builder().name(create.name.clone()).build();
 
         context
-            .emit(BrainEvents::BrainCreated(brain.clone()))
+            .emit(BrainEvents::BrainCreated(
+                BrainCreated::builder_v1()
+                    .brain(brain.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
 
-        let ref_token = RefToken::new(Ref::brain(brain.id));
         Ok(BrainResponse::Created(
-            Response::new(brain).with_ref_token(ref_token),
+            BrainCreatedResponse::builder_v1()
+                .brain(brain)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn get(
         context: &SystemContext,
-        selector: &GetBrain,
+        request: &GetBrain,
     ) -> Result<BrainResponse, BrainError> {
+        let GetBrain::V1(lookup) = request;
         let repo = BrainRepo::new(context);
-        let brain = match &selector.key {
+        let brain = match &lookup.key {
             ResourceKey::Key(name) => repo
                 .get(name)
                 .await?
@@ -51,20 +60,23 @@ impl BrainService {
                 }
             }
         };
-        let ref_token = RefToken::new(Ref::brain(brain.id));
         Ok(BrainResponse::Found(
-            Response::new(brain).with_ref_token(ref_token),
+            BrainFoundResponse::builder_v1().brain(brain).build().into(),
         ))
     }
 
     pub async fn list(
         context: &SystemContext,
-        ListBrains { filters }: &ListBrains,
+        request: &ListBrains,
     ) -> Result<BrainResponse, BrainError> {
-        let listed = BrainRepo::new(context).list(filters).await?;
-        Ok(BrainResponse::Listed(listed.map(|b| {
-            let ref_token = RefToken::new(Ref::brain(b.id));
-            Response::new(b).with_ref_token(ref_token)
-        })))
+        let ListBrains::V1(listing) = request;
+        let listed = BrainRepo::new(context).list(&listing.filters).await?;
+        Ok(BrainResponse::Listed(
+            BrainsResponse::builder_v1()
+                .items(listed.items)
+                .total(listed.total)
+                .build()
+                .into(),
+        ))
     }
 }

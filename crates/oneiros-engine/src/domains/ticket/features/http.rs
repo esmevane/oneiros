@@ -56,7 +56,7 @@ async fn show(
     Path(key): Path<ResourceKey<TicketId>>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(
-        TicketService::get(&context, &GetTicket::builder().key(key).build()).await?,
+        TicketService::get(&context, &GetTicket::builder_v1().key(key).build().into()).await?,
     ))
 }
 

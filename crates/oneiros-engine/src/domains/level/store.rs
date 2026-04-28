@@ -14,8 +14,8 @@ impl<'a> LevelStore<'a> {
     pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Level(level_event)) = &event.data {
             match level_event {
-                LevelEvents::LevelSet(level) => self.set(level)?,
-                LevelEvents::LevelRemoved(removed) => self.remove(&removed.name)?,
+                LevelEvents::LevelSet(setting) => self.set(setting)?,
+                LevelEvents::LevelRemoved(removal) => self.remove(removal)?,
             }
         }
         Ok(())
@@ -64,7 +64,21 @@ impl<'a> LevelStore<'a> {
         Ok(levels)
     }
 
-    fn set(&self, level: &Level) -> Result<(), EventError> {
+    fn set(&self, setting: &LevelSet) -> Result<(), EventError> {
+        let level = setting.current()?.level;
+        self.write_level(&level)
+    }
+
+    fn remove(&self, removal: &LevelRemoved) -> Result<(), EventError> {
+        let name = removal.current()?.name;
+        self.conn.execute(
+            "DELETE FROM levels WHERE name = ?1",
+            params![name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn write_level(&self, level: &Level) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT OR REPLACE INTO levels (name, description, prompt) VALUES (?1, ?2, ?3)",
             params![
@@ -72,14 +86,6 @@ impl<'a> LevelStore<'a> {
                 level.description.to_string(),
                 level.prompt.to_string()
             ],
-        )?;
-        Ok(())
-    }
-
-    fn remove(&self, name: &LevelName) -> Result<(), EventError> {
-        self.conn.execute(
-            "DELETE FROM levels WHERE name = ?1",
-            params![name.to_string()],
         )?;
         Ok(())
     }

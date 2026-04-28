@@ -4,8 +4,10 @@ pub struct CognitionState;
 
 impl CognitionState {
     pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
-        if let Events::Cognition(CognitionEvents::CognitionAdded(cognition)) = event {
-            canon.cognitions.set(cognition);
+        if let Events::Cognition(CognitionEvents::CognitionAdded(added)) = event
+            && let Ok(current) = added.current()
+        {
+            canon.cognitions.set(&current.cognition);
         }
 
         canon
@@ -28,7 +30,11 @@ mod tests {
             .texture("observation")
             .content("Something noticed")
             .build();
-        let event = Events::Cognition(CognitionEvents::CognitionAdded(cognition.clone()));
+        let added = CognitionAdded::builder_v1()
+            .cognition(cognition)
+            .build()
+            .into();
+        let event = Events::Cognition(CognitionEvents::CognitionAdded(added));
 
         let next = CognitionState::reduce(canon, &event);
 

@@ -25,10 +25,11 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     client_a
         .continuity()
         .emerge(
-            &EmergeAgent::builder()
+            &EmergeAgent::builder_v1()
                 .name("thinker")
                 .persona("process")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -46,21 +47,23 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     client_a
         .memory()
         .add(
-            &AddMemory::builder()
+            &AddMemory::builder_v1()
                 .agent(agent.clone())
                 .level("core")
                 .content("I think in types")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
     client_a
         .memory()
         .add(
-            &AddMemory::builder()
+            &AddMemory::builder_v1()
                 .agent(agent.clone())
                 .level("project")
                 .content("The engine consolidation is complete")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -68,11 +71,12 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     client_a
         .experience()
         .create(
-            &CreateExperience::builder()
+            &CreateExperience::builder_v1()
                 .agent(agent.clone())
                 .sensation("echoes")
                 .description("Architecture and type safety resonate")
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
@@ -80,17 +84,18 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     client_a
         .storage()
         .upload(
-            &UploadStorage::builder()
+            &UploadStorage::builder_v1()
                 .key("notes.md")
                 .description("Session notes")
                 .data(b"# Notes\nTypes are boundaries.".to_vec())
-                .build(),
+                .build()
+                .into(),
         )
         .await?;
 
     // Dream on instance A — capture what the dream looks like
     let dream_a = match client_a.continuity().dream(&agent).await? {
-        ContinuityResponse::Dreaming(ctx) => ctx,
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
         other => panic!("expected Dreaming, got {other:?}"),
     };
 
@@ -123,7 +128,9 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     let result = app_b
         .client()
         .agent()
-        .get(&GetAgent::builder().key(agent.clone()).build())
+        .get(&GetAgent::V1(
+            GetAgentV1::builder().key(agent.clone()).build(),
+        ))
         .await;
     assert!(result.is_err(), "agent should not exist before import");
 
@@ -136,12 +143,14 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     // The agent exists
     match client_b
         .agent()
-        .get(&GetAgent::builder().key(agent.clone()).build())
+        .get(&GetAgent::V1(
+            GetAgentV1::builder().key(agent.clone()).build(),
+        ))
         .await?
     {
-        AgentResponse::AgentDetails(a) => {
-            assert_eq!(a.data.name, agent);
-            assert_eq!(a.data.persona, PersonaName::new("process"));
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, agent);
+            assert_eq!(a.agent.persona, PersonaName::new("process"));
         }
         other => panic!("expected AgentDetails, got {other:?}"),
     }
@@ -149,16 +158,17 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     // Their cognitions survived
     match client_b
         .cognition()
-        .list(&ListCognitions {
-            agent: Some(agent.clone()),
-            texture: None,
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        CognitionResponse::Cognitions(cogs) => {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
             assert_eq!(
-                cogs.len(),
+                cogs.items.len(),
                 dream_a.cognitions.len(),
                 "cognition count should match"
             );
@@ -169,19 +179,21 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     // Their memories survived
     match client_b
         .memory()
-        .list(&ListMemories {
-            agent: Some(agent.clone()),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListMemories::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        MemoryResponse::Memories(mems) => {
+        MemoryResponse::Memories(MemoriesResponse::V1(mems)) => {
             assert_eq!(
-                mems.len(),
+                mems.items.len(),
                 dream_a.memories.len(),
                 "memory count should match"
             );
-            let contents: Vec<&str> = mems.items.iter().map(|m| m.data.content.as_str()).collect();
+            let contents: Vec<&str> = mems.items.iter().map(|m| m.content.as_str()).collect();
             assert!(
                 contents.contains(&"I think in types"),
                 "core memory should survive"
@@ -193,14 +205,16 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     // Their experiences survived
     match client_b
         .experience()
-        .list(&ListExperiences {
-            agent: Some(agent.clone()),
-            filters: SearchFilters::default(),
-        })
+        .list(
+            &ListExperiences::builder_v1()
+                .agent(agent.clone())
+                .build()
+                .into(),
+        )
         .await?
     {
-        ExperienceResponse::Experiences(exps) => {
-            assert_eq!(exps.len(), 1, "experience should survive");
+        ExperienceResponse::Experiences(ExperiencesResponse::V1(exps)) => {
+            assert_eq!(exps.items.len(), 1, "experience should survive");
         }
         other => panic!("expected Experiences, got {other:?}"),
     }
@@ -209,15 +223,16 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     match client_b
         .storage()
         .show(
-            &GetStorage::builder()
+            &GetStorage::builder_v1()
                 .key(StorageKey::new("notes.md"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        StorageResponse::StorageDetails(entry) => {
-            assert_eq!(entry.data.key.as_str(), "notes.md");
-            assert_eq!(entry.data.description.as_str(), "Session notes");
+        StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry)) => {
+            assert_eq!(entry.entry.key.as_str(), "notes.md");
+            assert_eq!(entry.entry.description.as_str(), "Session notes");
         }
         other => panic!("expected StorageDetails, got {other:?}"),
     }
@@ -226,21 +241,22 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
     match client_b
         .persona()
         .get(
-            &GetPersona::builder()
+            &GetPersona::builder_v1()
                 .key(PersonaName::new("process"))
-                .build(),
+                .build()
+                .into(),
         )
         .await?
     {
-        PersonaResponse::PersonaDetails(p) => {
-            assert_eq!(p.data.name, PersonaName::new("process"));
+        PersonaResponse::PersonaDetails(PersonaDetailsResponse::V1(p)) => {
+            assert_eq!(p.persona.name, PersonaName::new("process"));
         }
         other => panic!("expected PersonaDetails, got {other:?}"),
     }
 
     // Dream on instance B — the identity is intact
     let dream_b = match client_b.continuity().dream(&agent).await? {
-        ContinuityResponse::Dreaming(ctx) => ctx,
+        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
         other => panic!("expected Dreaming, got {other:?}"),
     };
 

@@ -15,9 +15,11 @@ pub(crate) async fn set_creates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("texture show observation").await?;
 
     match show_response {
-        Responses::Texture(TextureResponse::TextureDetails(t)) => {
-            assert_eq!(t.data.name.as_str(), "observation");
-            assert_eq!(t.data.description.as_str(), "Noticing patterns");
+        Responses::Texture(TextureResponse::TextureDetails(TextureDetailsResponse::V1(
+            details,
+        ))) => {
+            assert_eq!(details.texture.name.as_str(), "observation");
+            assert_eq!(details.texture.description.as_str(), "Noticing patterns");
         }
         other => panic!("expected TextureDetails, got {other:#?}"),
     }
@@ -39,8 +41,10 @@ pub(crate) async fn set_updates<B: Backend>() -> TestResult {
     let show_response = harness.exec_json("texture show draft").await?;
 
     match show_response {
-        Responses::Texture(TextureResponse::TextureDetails(t)) => {
-            assert_eq!(t.data.description.as_str(), "Updated");
+        Responses::Texture(TextureResponse::TextureDetails(TextureDetailsResponse::V1(
+            details,
+        ))) => {
+            assert_eq!(details.texture.description.as_str(), "Updated");
         }
         other => panic!("expected TextureDetails, got {other:#?}"),
     }
@@ -75,8 +79,8 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
     let response = harness.exec_json("texture list").await?;
 
     match response {
-        Responses::Texture(TextureResponse::Textures(list)) => {
-            assert_eq!(list.len(), 2);
+        Responses::Texture(TextureResponse::Textures(TexturesResponse::V1(list))) => {
+            assert_eq!(list.items.len(), 2);
         }
         other => panic!("expected Textures, got {other:#?}"),
     }

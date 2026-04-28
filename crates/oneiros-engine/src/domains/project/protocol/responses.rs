@@ -1,83 +1,65 @@
 use std::path::PathBuf;
 
 use kinded::Kinded;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-/// The filesystem path where the export file was written.
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(transparent)]
-pub struct ExportPath(pub PathBuf);
-
-impl ExportPath {
-    pub fn new(path: impl Into<PathBuf>) -> Self {
-        Self(path.into())
-    }
-}
-
-impl AsRef<std::path::Path> for ExportPath {
-    fn as_ref(&self) -> &std::path::Path {
-        &self.0
-    }
-}
-
-impl core::ops::Deref for ExportPath {
-    type Target = PathBuf;
-    fn deref(&self) -> &PathBuf {
-        &self.0
-    }
-}
-
-impl core::fmt::Display for ExportPath {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.0.display())
-    }
-}
-
-/// A count of events processed (imported or replayed).
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(transparent)]
-pub struct EventCount(pub i64);
-
-impl EventCount {
-    pub fn new(value: impl Into<i64>) -> Self {
-        Self(value.into())
-    }
-}
-
-impl core::fmt::Display for EventCount {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-/// The result of a successful project initialization — carries the
-/// token needed for all subsequent authenticated requests.
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct InitResult {
-    pub brain_name: BrainName,
-    pub token: Token,
-}
-
-#[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = ProjectResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub enum ProjectResponse {
-    Initialized(InitResult),
-    BrainAlreadyExists(BrainName),
-    WroteExport(ExportPath),
-    Imported(ImportResult),
-    Replayed(ReplayResult),
+    Initialized(InitializedResponse),
+    BrainAlreadyExists(BrainAlreadyExistsResponse),
+    WroteExport(WroteExportResponse),
+    Imported(ImportedResponse),
+    Replayed(ReplayedResponse),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct ImportResult {
-    pub imported: EventCount,
-    pub replayed: EventCount,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum InitializedResponse {
+        V1 => {
+            #[builder(into)] pub brain_name: BrainName,
+            pub token: Token,
+        }
+    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct ReplayResult {
-    pub replayed: EventCount,
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum BrainAlreadyExistsResponse {
+        V1 => {
+            #[builder(into)] pub brain_name: BrainName,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum WroteExportResponse {
+        V1 => {
+            pub path: PathBuf,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ImportedResponse {
+        V1 => {
+            pub imported: i64,
+            pub replayed: i64,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub enum ReplayedResponse {
+        V1 => {
+            pub replayed: i64,
+        }
+    }
 }

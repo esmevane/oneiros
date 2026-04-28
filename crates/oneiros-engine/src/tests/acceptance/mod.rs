@@ -146,12 +146,12 @@ impl<'h, B: Backend> Eventually<'h, B> {
 /// ```ignore
 /// // Match only — asserts the variant matches
 /// harness.query("agent list").assert_json(expect!(
-///     Responses::Agent(AgentResponse::Agents(a)) if a.len() == 2
+///     Responses::Agent(AgentResponse::Agents(AgentsResponse::V1(a))) if a.len() == 2
 /// )).await
 ///
 /// // Match with body — runs additional assertions on the extracted data
 /// harness.query("agent show x").assert_json(expect!(
-///     Responses::Agent(AgentResponse::AgentDetails(agent)) => {
+///     Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent))) => {
 ///         assert_eq!(agent.name.as_str(), "x");
 ///     }
 /// )).await

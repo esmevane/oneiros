@@ -213,52 +213,62 @@ impl Command {
 
             // Flat lifecycle shortcuts — delegate to ContinuityCommands
             Command::Wake { name } => {
-                ContinuityCommands::Wake(WakeAgent {
-                    agent: name.clone(),
-                })
-                .execute(&config.project())
-                .await?
+                ContinuityCommands::Wake(WakeAgent::builder_v1().agent(name.clone()).build().into())
+                    .execute(&config.project())
+                    .await?
             }
             Command::Dream { name } => {
-                ContinuityCommands::Dream(DreamAgent {
-                    agent: name.clone(),
-                })
+                ContinuityCommands::Dream(
+                    DreamAgent::builder_v1().agent(name.clone()).build().into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Introspect { name } => {
-                ContinuityCommands::Introspect(IntrospectAgent {
-                    agent: name.clone(),
-                })
+                ContinuityCommands::Introspect(
+                    IntrospectAgent::builder_v1()
+                        .agent(name.clone())
+                        .build()
+                        .into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Reflect { name } => {
-                ContinuityCommands::Reflect(ReflectAgent {
-                    agent: name.clone(),
-                })
+                ContinuityCommands::Reflect(
+                    ReflectAgent::builder_v1()
+                        .agent(name.clone())
+                        .build()
+                        .into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Sense { name, content } => {
-                ContinuityCommands::Sense(SenseContent {
-                    agent: name.clone(),
-                    content: content.clone(),
-                })
+                ContinuityCommands::Sense(
+                    SenseContent::builder_v1()
+                        .agent(name.clone())
+                        .content(content.clone())
+                        .build()
+                        .into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Sleep { name } => {
-                ContinuityCommands::Sleep(SleepAgent {
-                    agent: name.clone(),
-                })
+                ContinuityCommands::Sleep(
+                    SleepAgent::builder_v1().agent(name.clone()).build().into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Guidebook { name } => {
-                ContinuityCommands::Guidebook(GuidebookAgent {
-                    agent: name.clone(),
-                })
+                ContinuityCommands::Guidebook(
+                    GuidebookAgent::builder_v1()
+                        .agent(name.clone())
+                        .build()
+                        .into(),
+                )
                 .execute(&config.project())
                 .await?
             }
@@ -269,25 +279,33 @@ impl Command {
                 persona,
                 description,
             } => {
-                ContinuityCommands::Emerge(EmergeAgent {
-                    name: name.clone(),
-                    persona: persona.clone(),
-                    description: description.clone(),
-                })
+                ContinuityCommands::Emerge(
+                    EmergeAgent::builder_v1()
+                        .name(name.clone())
+                        .persona(persona.clone())
+                        .description(description.clone())
+                        .build()
+                        .into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Recede { name } => {
-                ContinuityCommands::Recede(RecedeAgent {
-                    agent: name.clone(),
-                })
+                ContinuityCommands::Recede(
+                    RecedeAgent::builder_v1().agent(name.clone()).build().into(),
+                )
                 .execute(&config.project())
                 .await?
             }
             Command::Status => {
-                ContinuityCommands::Status(StatusAgent::default())
-                    .execute(&config.project())
-                    .await?
+                ContinuityCommands::Status(
+                    StatusAgent::builder_v1()
+                        .filters(SearchFilters::default())
+                        .build()
+                        .into(),
+                )
+                .execute(&config.project())
+                .await?
             }
         })
     }

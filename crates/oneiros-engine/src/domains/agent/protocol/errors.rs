@@ -29,6 +29,9 @@ pub enum AgentError {
     Event(#[from] EventError),
 
     #[error(transparent)]
+    Upcast(#[from] UpcastError),
+
+    #[error(transparent)]
     Client(#[from] ClientError),
 }
 
@@ -42,7 +45,7 @@ impl IntoResponse for AgentError {
             AgentError::PersonaNotFound(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             AgentError::Conflict(_) => (StatusCode::CONFLICT, self.to_string()),
             AgentError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            AgentError::Database(_) | AgentError::Event(_) => {
+            AgentError::Database(_) | AgentError::Event(_) | AgentError::Upcast(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             AgentError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),

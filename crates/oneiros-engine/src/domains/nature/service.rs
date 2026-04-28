@@ -5,60 +5,87 @@ pub struct NatureService;
 impl NatureService {
     pub async fn set(
         context: &ProjectContext,
-        SetNature {
-            name,
-            description,
-            prompt,
-        }: &SetNature,
+        request: &SetNature,
     ) -> Result<NatureResponse, NatureError> {
+        let SetNature::V1(set) = request;
         let nature = Nature::builder()
-            .name(name.clone())
-            .description(description.clone())
-            .prompt(prompt.clone())
+            .name(set.name.clone())
+            .description(set.description.clone())
+            .prompt(set.prompt.clone())
             .build();
-        context.emit(NatureEvents::NatureSet(nature)).await?;
-        Ok(NatureResponse::NatureSet(name.clone()))
+
+        context
+            .emit(NatureEvents::NatureSet(
+                NatureSet::builder_v1()
+                    .nature(nature.clone())
+                    .build()
+                    .into(),
+            ))
+            .await?;
+
+        Ok(NatureResponse::NatureSet(
+            NatureSetResponse::builder_v1()
+                .nature(nature)
+                .build()
+                .into(),
+        ))
     }
 
     pub async fn get(
         context: &ProjectContext,
-        selector: &GetNature,
+        request: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
-        let name = selector.key.resolve()?;
+        let GetNature::V1(lookup) = request;
+        let name = lookup.key.resolve()?;
         let nature = NatureRepo::new(context)
             .get(&name)
             .await?
             .ok_or(NatureError::NotFound(name))?;
-        let ref_token = RefToken::new(Ref::nature(nature.name.clone()));
         Ok(NatureResponse::NatureDetails(
-            Response::new(nature).with_ref_token(ref_token),
+            NatureDetailsResponse::builder_v1()
+                .nature(nature)
+                .build()
+                .into(),
         ))
     }
 
     pub async fn list(
         context: &ProjectContext,
-        ListNatures { filters }: &ListNatures,
+        request: &ListNatures,
     ) -> Result<NatureResponse, NatureError> {
-        let listed = NatureRepo::new(context).list(filters).await?;
+        let ListNatures::V1(listing) = request;
+        let listed = NatureRepo::new(context).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(NatureResponse::NoNatures)
         } else {
-            Ok(NatureResponse::Natures(listed.map(|e| {
-                let ref_token = RefToken::new(Ref::nature(e.name.clone()));
-                Response::new(e).with_ref_token(ref_token)
-            })))
+            Ok(NatureResponse::Natures(
+                NaturesResponse::builder_v1()
+                    .items(listed.items)
+                    .total(listed.total)
+                    .build()
+                    .into(),
+            ))
         }
     }
 
     pub async fn remove(
         context: &ProjectContext,
-        selector: &RemoveNature,
+        request: &RemoveNature,
     ) -> Result<NatureResponse, NatureError> {
+        let RemoveNature::V1(removal) = request;
         context
-            .emit(NatureEvents::NatureRemoved(NatureRemoved {
-                name: selector.name.clone(),
-            }))
+            .emit(NatureEvents::NatureRemoved(
+                NatureRemoved::builder_v1()
+                    .name(removal.name.clone())
+                    .build()
+                    .into(),
+            ))
             .await?;
-        Ok(NatureResponse::NatureRemoved(selector.name.clone()))
+        Ok(NatureResponse::NatureRemoved(
+            NatureRemovedResponse::builder_v1()
+                .name(removal.name.clone())
+                .build()
+                .into(),
+        ))
     }
 }

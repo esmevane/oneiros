@@ -4,8 +4,10 @@ pub struct TenantState;
 
 impl TenantState {
     pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
-        if let Events::Tenant(TenantEvents::TenantCreated(tenant)) = event {
-            canon.tenants.set(tenant);
+        if let Events::Tenant(tenant_event) = event
+            && let Some(tenant) = tenant_event.maybe_tenant()
+        {
+            canon.tenants.set(&tenant);
         }
 
         canon
@@ -23,8 +25,12 @@ mod tests {
     #[test]
     fn creates_tenant() {
         let canon = SystemCanon::default();
-        let tenant = Tenant::builder().name("test-tenant").build();
-        let event = Events::Tenant(TenantEvents::TenantCreated(tenant.clone()));
+        let tenant = Tenant::builder()
+            .name(TenantName::new("test-tenant"))
+            .build();
+        let event = Events::Tenant(TenantEvents::TenantCreated(
+            TenantCreated::builder_v1().tenant(tenant).build().into(),
+        ));
 
         let next = TenantState::reduce(canon, &event);
 
