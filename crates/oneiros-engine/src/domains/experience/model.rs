@@ -18,6 +18,12 @@ pub struct Experience {
     pub created_at: Timestamp,
 }
 
+impl Experience {
+    pub fn ref_token(&self) -> RefToken {
+        RefToken::from(Ref::experience(self.id))
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Experiences(HashMap<String, Experience>);
 

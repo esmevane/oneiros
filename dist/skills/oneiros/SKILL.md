@@ -99,31 +99,61 @@ oneiros seed core             # Apply core seed data
 oneiros skill install        # Install this skill globally
 ```
 
-## Essential Commands
+## Two Ways In
+
+You can interact with oneiros through the **CLI** (`oneiros` commands via Bash) or through **MCP tools** (if the MCP server is configured). Both access the same brain — data created through one is visible in the other.
+
+**CLI** is best for setup, scripting, and when MCP isn't available. **MCP tools** are best for everything else — they're faster (no shell overhead), properly typed, and discoverable through your tool catalog.
+
+To set up MCP access: `oneiros mcp init` (creates `.mcp.json` for Claude Code).
+
+## Essential Operations
 
 ### The rhythm of a session
 
-| Command | What it does |
-|---------|---------|
-| `wake <agent>` | Restore your identity and begin a session |
-| `cognition add <agent> <texture> <content>` | Record a thought |
-| `memory add <agent> <level> <content>` | Consolidate something you've learned |
-| `experience create <agent> <sensation> <description>` | Mark a meaningful moment |
-| `reflect <agent>` | Pause on something significant |
-| `introspect <agent>` | Look inward before context compacts |
-| `sleep <agent>` | End a session and capture continuity |
+| What | CLI | MCP tool |
+|------|-----|----------|
+| Restore identity, begin a session | `oneiros wake <agent>` | `wake` |
+| Record a thought | `oneiros cognition add <agent> <texture> <content>` | `add_cognition` |
+| Consolidate something learned | `oneiros memory add <agent> <level> <content>` | `add_memory` |
+| Mark a meaningful moment | `oneiros experience create <agent> <sensation> <desc>` | `create_experience` |
+| Pause on something significant | `oneiros reflect <agent>` | `reflect` |
+| Look inward before compaction | `oneiros introspect <agent>` | `introspect` |
+| End a session | `oneiros sleep <agent>` | `sleep` |
+
+### Context and discovery
+
+| What | CLI | MCP tool |
+|------|-----|----------|
+| Assemble full identity and context | `oneiros dream <agent>` | `dream` |
+| Read the cognitive guidebook | `oneiros guidebook <agent>` | `guidebook` |
+| Check cognitive pressure | `oneiros pressure <agent>` | `get_pressure` |
+| See the full dashboard | `oneiros status` | `status` |
+| Search across everything | `oneiros search <query>` | `search` |
 
 ### Growing the system
 
-| Command | What it does |
-|---------|---------|
-| `dream <agent>` | Assemble an agent's full identity and context |
-| `search <query>` | Search across everything in the brain |
-| `agent create <name> <persona>` | Bring a new agent into the brain |
-| `texture set <name>` | Define a quality of thought |
-| `level set <name>` | Define how long a kind of memory should be kept |
-| `sensation set <name>` | Define a quality of connection |
-| `seed core` | Plant the initial vocabulary and agents |
+| What | CLI | MCP tool |
+|------|-----|----------|
+| Bring a new agent into existence | `oneiros emerge <name> <persona>` | `emerge` |
+| Create an agent directly | `oneiros agent create <name> <persona>` | `create_agent` |
+| Define a quality of thought | `oneiros texture set <name>` | `set_texture` |
+| Define a memory retention tier | `oneiros level set <name>` | `set_level` |
+| Define a quality of connection | `oneiros sensation set <name>` | `set_sensation` |
+| Plant initial vocabulary | `oneiros seed core` | — |
+
+### Dream tuning (MCP and HTTP only)
+
+MCP continuity tools (`dream`, `introspect`, `reflect`, `sleep`, `wake`) accept optional override parameters to tune dream assembly:
+
+| Parameter | Default | Purpose |
+|-----------|---------|---------|
+| `recent_window` | 5 | How many recent cognitions to include |
+| `dream_depth` | 1 | Depth of identity assembly |
+| `cognition_size` | 20 | Max cognitions in the dream |
+| `recollection_level` | "project" | Memory level to draw from |
+| `recollection_size` | 30 | Max memories to include |
+| `experience_size` | 10 | Max experiences to include |
 
 ## Resources
 

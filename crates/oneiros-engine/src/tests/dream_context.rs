@@ -552,47 +552,25 @@ async fn cognitions_sorted_by_created_at() {
     }
 }
 
-// ── Compact rendering (default) ─────────────────────────────────
+// ── Greeting rendering ──────────────────────────────────────────
 
 #[tokio::test]
-async fn compact_dream_vocabulary_shows_names_only() {
+async fn greeting_opens_with_identity_and_date() {
     let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
-
-    // Set a texture with a rich prompt so we can verify it's NOT shown in compact mode
-    TextureService::set(
-        &context,
-        &SetTexture::builder()
-            .name(TextureName::new("observation"))
-            .description("Noticing things")
-            .prompt("When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.")
-            .build(),
-    )
-    .await
-    .unwrap();
 
     let context = dream(&context, &agent).await;
     let rendered = DreamTemplate::new(&context).to_string();
 
-    // Texture names should be present
     assert!(
-        rendered.contains("observation"),
-        "compact dream should list texture names"
-    );
-    // But the full prompt should NOT be inline
-    assert!(
-        !rendered.contains("Focus on what you see, not what to do about it"),
-        "compact dream should not include full texture prompts"
-    );
-    // Should point to guidebook for details
-    assert!(
-        rendered.contains("guidebook"),
-        "compact dream should reference the guidebook for full vocabulary"
+        rendered.starts_with("You are waking as thinker.process. Today is "),
+        "greeting must open with identity sentence and date, got: {}",
+        &rendered[..rendered.len().min(120)]
     );
 }
 
 #[tokio::test]
-async fn compact_dream_core_memories_inline() {
+async fn greeting_includes_core_memories_inline() {
     let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
@@ -602,80 +580,21 @@ async fn compact_dream_core_memories_inline() {
     let rendered = DreamTemplate::new(&context).to_string();
 
     assert!(
+        rendered.contains("### Your core memories"),
+        "greeting should have core memories block"
+    );
+    assert!(
         rendered.contains("I am fundamentally a thinker"),
-        "core memories should appear inline in compact dream"
+        "core memory content should appear inline"
     );
-}
-
-#[tokio::test]
-async fn compact_dream_non_core_memories_as_summary() {
-    let (context, _app) = seeded_context().await;
-    let agent = seed_agent(&context).await;
-
-    add_memory(&context, &agent, "core", "core identity").await;
-    add_memory(
-        &context,
-        &agent,
-        "project",
-        "A very long project memory that contains detailed architectural information about the system design and implementation patterns that were discovered during session work",
-    )
-    .await;
-
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    // Core should be fully inline
-    assert!(
-        rendered.contains("core identity"),
-        "core memory should be fully inline"
-    );
-    // Non-core should be truncated/summarized, not full
-    assert!(
-        !rendered.contains("that were discovered during session work"),
-        "non-core memory should be truncated in compact dream"
-    );
-    // Should have ref tokens for lookup
     assert!(
         rendered.contains("ref:"),
-        "compact dream should include ref tokens for summarized memories"
-    );
-}
-
-// ── Deep rendering ──────────────────────────────────────────────
-
-#[tokio::test]
-async fn deep_dream_vocabulary_shows_full_prompts() {
-    let (context, _app) = seeded_context().await;
-    let agent = seed_agent(&context).await;
-
-    // Set a texture with a rich prompt so we can verify it IS shown in deep mode
-    TextureService::set(
-        &context,
-        &SetTexture::builder()
-            .name(TextureName::new("observation"))
-            .description("Noticing things")
-            .prompt("When you notice something interesting about the code, architecture, or process, capture it as an observation. Focus on what you see, not what to do about it.")
-            .build(),
-    )
-    .await
-    .unwrap();
-
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::deep(&context).to_string();
-
-    // Deep mode should include full texture prompts
-    assert!(
-        rendered.contains("observation"),
-        "deep dream should list texture names"
-    );
-    assert!(
-        rendered.contains("Focus on what you see, not what to do about it"),
-        "deep dream should include full texture prompts"
+        "core memories should be addressable by ref token"
     );
 }
 
 #[tokio::test]
-async fn deep_dream_all_memories_inline() {
+async fn greeting_omits_non_core_memories() {
     let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
@@ -684,81 +603,237 @@ async fn deep_dream_all_memories_inline() {
         &context,
         &agent,
         "project",
-        "A very long project memory that contains detailed architectural information about the system design and implementation patterns that were discovered during session work",
+        "A very long project memory that should not appear in the greeting",
     )
     .await;
 
     let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::deep(&context).to_string();
+    let rendered = DreamTemplate::new(&context).to_string();
 
-    // Both core and non-core should be fully inline in deep mode
     assert!(
         rendered.contains("core identity"),
-        "core memory should be inline in deep dream"
+        "core memory must appear in greeting"
     );
     assert!(
-        rendered.contains("that were discovered during session work"),
-        "non-core memory should be fully inline in deep dream"
+        !rendered.contains("should not appear in the greeting"),
+        "non-core memories belong in the substrate, not the greeting"
     );
 }
 
-// ── Template rendering ───────────────────────────────────────────
-
 #[tokio::test]
-async fn dream_template_renders_agent_identity() {
+async fn greeting_shows_latest_cognitions_with_refs() {
     let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
-    add_memory(&context, &agent, "core", "I am a thinker").await;
-    add_cognition(&context, &agent, "something interesting").await;
+    add_cognition(&context, &agent, "first thought").await;
+    add_cognition(&context, &agent, "second thought").await;
 
     let context = dream(&context, &agent).await;
     let rendered = DreamTemplate::new(&context).to_string();
 
     assert!(
-        rendered.contains("thinker.process"),
-        "dream should contain agent name"
+        rendered.contains("### Latest cognitions"),
+        "greeting should have latest cognitions block"
     );
     assert!(
-        rendered.contains("I am a thinker"),
-        "dream should contain core memory"
+        rendered.contains("second thought"),
+        "most recent cognition should appear"
     );
     assert!(
-        rendered.contains("something interesting"),
-        "dream should contain cognition"
-    );
-    assert!(
-        rendered.contains("## Your Identity"),
-        "dream should have identity section"
-    );
-    assert!(
-        rendered.contains("## Instructions"),
-        "dream should have instructions section"
+        rendered.contains("oneiros cognition list"),
+        "block should hint at the cognition list tool"
     );
 }
 
 #[tokio::test]
-async fn dream_template_omits_empty_sections() {
+async fn greeting_caps_latest_cognitions_to_three() {
+    let (context, _app) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    for i in 0..6 {
+        add_cognition(&context, &agent, &format!("thought {i}")).await;
+    }
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    // The 3 most recent should be there
+    assert!(
+        rendered.contains("thought 5"),
+        "latest cognition should appear"
+    );
+    assert!(
+        rendered.contains("thought 4"),
+        "second-latest should appear"
+    );
+    assert!(rendered.contains("thought 3"), "third-latest should appear");
+
+    // Older ones reachable through tools, not greeting
+    assert!(
+        !rendered.contains("thought 0"),
+        "oldest cognitions belong in the substrate"
+    );
+    assert!(
+        !rendered.contains("thought 1"),
+        "older cognitions belong in the substrate"
+    );
+}
+
+#[tokio::test]
+async fn greeting_shows_latest_experiences_with_refs() {
+    let (context, _app) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    add_experience(&context, &agent, "first moment").await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    assert!(
+        rendered.contains("### Latest experiences"),
+        "greeting should have latest experiences block"
+    );
+    assert!(rendered.contains("first moment"));
+    assert!(
+        rendered.contains("oneiros experience list"),
+        "block should hint at the experience list tool"
+    );
+}
+
+#[tokio::test]
+async fn greeting_shows_latest_threads_as_connections() {
+    let (context, _app) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    let mem = add_memory(&context, &agent, "core", "anchor").await;
+    let cog = add_cognition(&context, &agent, "linked thought").await;
+    connect(&context, &Ref::memory(mem), &Ref::cognition(cog)).await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    assert!(
+        rendered.contains("### Latest threads"),
+        "greeting should have latest threads block"
+    );
+    // from-ref [nature] to-ref shape
+    assert!(
+        rendered.contains("[reference]"),
+        "thread line should show the connection nature in brackets"
+    );
+}
+
+#[tokio::test]
+async fn greeting_omits_vocabulary_sections() {
     let (context, _app) = seeded_context().await;
     let agent = seed_agent(&context).await;
 
     let context = dream(&context, &agent).await;
     let rendered = DreamTemplate::new(&context).to_string();
 
-    assert!(rendered.contains("thinker.process"));
-    assert!(rendered.contains("## Cognitive Textures"));
+    assert!(
+        !rendered.contains("## Cognitive Textures"),
+        "vocabulary belongs in the guidebook, not the greeting"
+    );
+    assert!(!rendered.contains("## Memory Levels"));
+    assert!(!rendered.contains("## Sensations"));
+    assert!(!rendered.contains("## Natures"));
+    assert!(!rendered.contains("## Urges"));
+}
+
+#[tokio::test]
+async fn greeting_pressure_omits_verbose_forms() {
+    let (context, _app) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    for i in 0..10 {
+        add_cognition(&context, &agent, &format!("thought {i}")).await;
+    }
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    // Per-urge breakdowns belong in introspect/reflect templates, not the greeting.
+    assert!(
+        !rendered.contains("tensions:"),
+        "greeting should not include per-urge factor breakdowns"
+    );
+    assert!(
+        !rendered.contains("orphaned:"),
+        "greeting should not include per-urge factor breakdowns"
+    );
+    assert!(
+        !rendered.contains("## Pressure Gauge"),
+        "greeting should not include the verbose pressure section"
+    );
+
+    // When pressure readings are present, they appear as the compact gauge only.
+    if !context.pressures.is_empty() {
+        assert!(
+            rendered.contains("[urges:"),
+            "non-empty pressures should render as the compact gauge"
+        );
+    }
+}
+
+#[tokio::test]
+async fn greeting_includes_next_steps_and_hints() {
+    let (context, _app) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
 
     assert!(
-        !rendered.contains("## Your Memories"),
-        "empty memories section should be omitted"
+        rendered.contains("## Next steps"),
+        "greeting should include next steps section"
     );
     assert!(
-        !rendered.contains("## Your Cognitions"),
-        "empty cognitions section should be omitted"
+        rendered.contains("morning pages"),
+        "next steps should point at the morning pages practice"
+    );
+
+    assert!(
+        rendered.contains("## Hints"),
+        "greeting should include hints section"
     );
     assert!(
-        !rendered.contains("## Your Connections"),
-        "empty connections section should be omitted"
+        rendered.contains("oneiros search"),
+        "hints should point at search"
+    );
+    assert!(
+        rendered.contains("oneiros guidebook thinker.process"),
+        "hints should point at the agent's guidebook"
+    );
+}
+
+#[tokio::test]
+async fn greeting_omits_legacy_sections() {
+    let (context, _app) = seeded_context().await;
+    let agent = seed_agent(&context).await;
+
+    let context = dream(&context, &agent).await;
+    let rendered = DreamTemplate::new(&context).to_string();
+
+    assert!(
+        !rendered.contains("## Your Identity"),
+        "legacy identity section should be gone"
+    );
+    assert!(
+        !rendered.contains("## Your Persona"),
+        "legacy persona section should be gone"
+    );
+    assert!(
+        !rendered.contains("## Agent Definition"),
+        "legacy agent definition pointer should be gone"
+    );
+    assert!(
+        !rendered.contains("## Instructions"),
+        "legacy instructions section should be gone"
+    );
+    assert!(
+        !rendered.contains("### Morning Pages\n"),
+        "morning pages now lives in the skill, not the dream"
     );
 }
 

@@ -24,19 +24,6 @@ impl ContinuityCommands {
         let client = context.client();
         let continuity_client = ContinuityClient::new(&client);
 
-        let deep = match self {
-            ContinuityCommands::Wake(wake) => wake.deep,
-            ContinuityCommands::Dream(dream) => dream.deep,
-            ContinuityCommands::Introspect(_)
-            | ContinuityCommands::Reflect(_)
-            | ContinuityCommands::Sleep(_)
-            | ContinuityCommands::Sense(_)
-            | ContinuityCommands::Guidebook(_)
-            | ContinuityCommands::Emerge(_)
-            | ContinuityCommands::Recede(_)
-            | ContinuityCommands::Status(_) => false,
-        };
-
         let result = match self {
             ContinuityCommands::Wake(wake) => continuity_client.wake(&wake.agent).await?,
             ContinuityCommands::Dream(dream) => continuity_client.dream(&dream.agent).await?,
@@ -56,9 +43,6 @@ impl ContinuityCommands {
             ContinuityCommands::Status(_) => continuity_client.status().await?,
         };
 
-        Ok(ContinuityView::new(result)
-            .with_deep(deep)
-            .render()
-            .map(Into::into))
+        Ok(ContinuityView::new(result).render().map(Into::into))
     }
 }

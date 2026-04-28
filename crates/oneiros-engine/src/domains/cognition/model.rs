@@ -18,6 +18,12 @@ pub struct Cognition {
     pub created_at: Timestamp,
 }
 
+impl Cognition {
+    pub fn ref_token(&self) -> RefToken {
+        RefToken::from(Ref::cognition(self.id))
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Cognitions(HashMap<String, Cognition>);
 
