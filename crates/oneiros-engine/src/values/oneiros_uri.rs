@@ -74,7 +74,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn sample_peer_link() -> PeerLink {
-        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let secret = iroh::SecretKey::generate();
         let endpoint_id = secret.public();
         let host = PeerAddress::new(iroh::EndpointAddr::new(endpoint_id));
         let link = Link::new(Ref::bookmark(BookmarkId::new()), Token::from("testtoken"));

@@ -30,7 +30,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn sample_identity() -> HostIdentity {
-        let secret = iroh::SecretKey::generate(&mut rand::rng());
+        let secret = iroh::SecretKey::generate();
         let endpoint_id = secret.public();
         let address = PeerAddress::new(iroh::EndpointAddr::new(endpoint_id));
         let key = PeerKey::from_bytes(*endpoint_id.as_bytes());
