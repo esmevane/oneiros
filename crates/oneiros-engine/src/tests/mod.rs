@@ -174,6 +174,89 @@ async fn replay_reconstructs_read_models() {
 }
 
 #[tokio::test]
+async fn replay_recovers_from_deleted_bookmark_db() {
+    let (context, _dir) = project_context().await;
+
+    seed_persona(&context).await;
+    seed_agent(&context).await;
+    CognitionService::add(
+        &context,
+        &AddCognition::builder_v1()
+            .agent("gov.test-persona")
+            .texture("observation")
+            .content("Pre-nuke thought")
+            .build()
+            .into(),
+    )
+    .await
+    .unwrap();
+
+    // Verify baseline before nuking the DB
+    match CognitionService::list(
+        &context,
+        &ListCognitions::builder_v1()
+            .agent(AgentName::new("gov.test-persona"))
+            .build()
+            .into(),
+    )
+    .await
+    .unwrap()
+    {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1);
+        }
+        other => panic!("Expected Cognitions before nuke, got {other:?}"),
+    }
+
+    // Simulate schema-change / corruption: delete the bookmark DB file
+    let db_path = context.config.bookmark_db_path();
+    std::fs::remove_file(&db_path).unwrap();
+    let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
+    let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
+
+    // Replay should recreate the DB and restore all data
+    match ProjectService::replay(&context).unwrap() {
+        ProjectResponse::Replayed(ReplayedResponse::V1(result)) => {
+            assert!(result.replayed > 0);
+        }
+        other => panic!("Expected Replayed, got {other:?}"),
+    }
+
+    // Data should be fully restored
+    match AgentService::get(
+        &context,
+        &GetAgent::V1(
+            GetAgentV1::builder()
+                .key(AgentName::new("gov.test-persona"))
+                .build(),
+        ),
+    )
+    .await
+    .unwrap()
+    {
+        AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
+            assert_eq!(a.agent.name, AgentName::new("gov.test-persona"))
+        }
+        other => panic!("Expected AgentDetails after replay, got {other:?}"),
+    }
+    match CognitionService::list(
+        &context,
+        &ListCognitions::builder_v1()
+            .agent(AgentName::new("gov.test-persona"))
+            .build()
+            .into(),
+    )
+    .await
+    .unwrap()
+    {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+            assert_eq!(cogs.items.len(), 1);
+        }
+        other => panic!("Expected Cognitions after replay, got {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn storage_content_round_trips() {
     let (context, _dir) = project_context().await;
     let content = b"Hello, oneiros!";
