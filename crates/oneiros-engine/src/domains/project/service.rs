@@ -248,8 +248,26 @@ impl ProjectService {
     }
 
     /// Replay all events through projections, rebuilding read models.
+    ///
+    /// Deletes the bookmark DB file first, then recreates it with the
+    /// current schema via `migrate()` before replaying all events.
+    /// This ensures schema changes are picked up — `CREATE TABLE IF NOT EXISTS`
+    /// alone cannot add columns to existing tables. The event log
+    /// (`events.db`) is untouched; projection data is always derivable
+    /// from events.
     pub fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
+        // Ensure a clean schema by deleting the old bookmark DB.
+        // WAL sidecar files are silently cleaned up if present.
+        let db_path = context.config.bookmark_db_path();
+        if db_path.exists() {
+            std::fs::remove_file(&db_path)?;
+        }
+        let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
+        let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
+
+        // Open a fresh DB, create tables with current schema, then replay.
         let db = context.db()?;
+        context.projections.migrate(&db)?;
         let log = EventLog::attached(&db);
         let replayed = context.projections.replay_brain(&db, &log)?;
 
