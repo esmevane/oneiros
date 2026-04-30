@@ -224,10 +224,11 @@ async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::E
         .build();
 
     let context = HostLog::new(config.clone());
+    let keys = HostKey::new(&config.data_dir);
 
     // Before init, no host key exists
     assert!(
-        !config.host_key_path().exists(),
+        !keys.path().exists(),
         "host key should not exist before system init"
     );
 
@@ -235,12 +236,12 @@ async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::E
 
     // After init, the host key should exist
     assert!(
-        config.host_key_path().exists(),
+        keys.path().exists(),
         "system init should create the host keypair"
     );
 
     // The key should be loadable
-    let secret = config.load_host_secret_key()?;
+    let secret = keys.load()?;
     assert!(secret.is_some(), "host key should be loadable after init");
 
     Ok(())
