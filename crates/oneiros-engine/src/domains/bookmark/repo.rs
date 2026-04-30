@@ -14,7 +14,7 @@ impl<'a> BookmarkRepo<'a> {
         brain: &BrainName,
         filters: &SearchFilters,
     ) -> Result<Listed<Bookmark>, BookmarkError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
 
         let count_sql = "SELECT COUNT(*) FROM bookmarks WHERE brain = ?1";
         let total = {

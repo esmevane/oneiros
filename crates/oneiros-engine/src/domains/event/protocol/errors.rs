@@ -1,4 +1,7 @@
-use crate::{BlobError, IdParseError, TimestampParseError, UpcastError};
+use crate::{
+    BlobError, BookmarkDbError, EventsDbError, HostDbError, IdParseError, TimestampParseError,
+    UpcastError,
+};
 
 /// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
@@ -20,6 +23,15 @@ pub enum EventError {
 
     #[error(transparent)]
     Upcast(#[from] UpcastError),
+
+    #[error(transparent)]
+    HostDb(#[from] HostDbError),
+
+    #[error(transparent)]
+    EventsDb(#[from] EventsDbError),
+
+    #[error(transparent)]
+    BookmarkDb(#[from] BookmarkDbError),
 
     #[error("Import error: {0}")]
     Import(String),

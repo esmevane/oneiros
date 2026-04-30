@@ -13,7 +13,7 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
         let mut statement =
             db.prepare("select id, key, address, name, created_at from peers where id = ?1")?;
 
@@ -37,7 +37,7 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM peers")?;

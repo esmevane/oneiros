@@ -209,8 +209,8 @@ impl Scope<AtProject> {
 impl Scope<AtHost> {
     /// Open the system database. Each tier names the DB it touches —
     /// `host_db` opens system.db, never the bookmark DB.
-    pub fn host_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        self.inner.config.system_db()
+    pub async fn host_db(&self) -> Result<HostDb, HostDbError> {
+        HostDb::open(&self.inner.config.platform()).await
     }
 
     /// Strangler bridge — produce a legacy `HostLog`. Shrinks as
@@ -229,10 +229,8 @@ impl Scope<AtHost> {
 
 impl Scope<AtProject> {
     /// Open this project's events database.
-    pub fn events_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let conn = rusqlite::Connection::open(&self.inner.project.events_db_path)?;
-        conn.pragma_update(None, "journal_mode", "wal")?;
-        Ok(conn)
+    pub async fn events_db(&self) -> Result<EventsDb, EventsDbError> {
+        EventsDb::open(&self.inner.config.platform(), &self.inner.project.name).await
     }
 
     pub fn config(&self) -> &Config {
@@ -247,25 +245,19 @@ impl Scope<AtProject> {
 }
 
 impl Scope<AtBookmark> {
-    /// Open the bookmark DB with the events DB ATTACHed. Mirrors
-    /// `Config::bookmark_conn` but uses paths resolved at climb time.
-    pub fn bookmark_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let platform = self.inner.config.platform();
-        let _ = platform.ensure_bookmarks_dir(&self.inner.project.name);
-
-        let conn = rusqlite::Connection::open(&self.inner.bookmark.bookmark_db_path)?;
-        conn.pragma_update(None, "journal_mode", "wal")?;
-        conn.pragma_update(None, "limit_attached", "125")?;
-        conn.execute_batch(&format!(
-            "ATTACH DATABASE '{}' AS events",
-            self.inner.project.events_db_path.display(),
-        ))?;
-        Ok(conn)
+    /// Open the bookmark DB with the events DB ATTACHed.
+    pub async fn bookmark_db(&self) -> Result<BookmarkDb, BookmarkDbError> {
+        BookmarkDb::open(
+            &self.inner.config.platform(),
+            &self.inner.project.name,
+            &self.inner.bookmark.name,
+        )
+        .await
     }
 
     /// Open the system DB from the bookmark tier (shared host DB).
-    pub fn host_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        self.inner.config.system_db()
+    pub async fn host_db(&self) -> Result<HostDb, HostDbError> {
+        HostDb::open(&self.inner.config.platform()).await
     }
 
     /// Strangler bridge — produce a legacy `ProjectLog` with fresh
