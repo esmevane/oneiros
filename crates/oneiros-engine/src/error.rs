@@ -60,6 +60,10 @@ pub enum Error {
     #[error(transparent)]
     Project(#[from] ProjectError),
     #[error(transparent)]
+    Scope(#[from] ScopeError),
+    #[error(transparent)]
+    Compose(#[from] ComposeError),
+    #[error(transparent)]
     Seed(#[from] SeedError),
     #[error(transparent)]
     Search(#[from] SearchError),

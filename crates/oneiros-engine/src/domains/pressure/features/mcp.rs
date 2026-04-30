@@ -13,7 +13,7 @@ impl PressureMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &PressureRequest,
     ) -> Result<McpResponse, ToolError> {
         pressure_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod pressure_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &PressureRequest,
     ) -> Result<McpResponse, ToolError> {
         let response = match request {

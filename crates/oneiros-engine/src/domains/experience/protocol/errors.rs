@@ -22,6 +22,9 @@ pub enum ExperienceError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error("{0}")]
@@ -45,6 +48,7 @@ impl IntoResponse for ExperienceError {
             }
             ExperienceError::InvalidRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
             ExperienceError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            ExperienceError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

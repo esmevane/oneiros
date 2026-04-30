@@ -13,7 +13,7 @@ impl NatureMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &NatureRequest,
     ) -> Result<McpResponse, ToolError> {
         nature_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod nature_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &NatureRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

@@ -51,7 +51,7 @@ struct UpdateSensationBody {
 }
 
 async fn create(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<CreateExperience>,
 ) -> Result<(StatusCode, Json<ExperienceResponse>), ExperienceError> {
     let response = ExperienceService::create(&context, &body).await?;
@@ -59,14 +59,14 @@ async fn create(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListExperiences>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(ExperienceService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<ExperienceId>>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
@@ -79,7 +79,7 @@ async fn show(
 }
 
 async fn update_description(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(id): Path<ExperienceId>,
     Json(body): Json<UpdateDescriptionBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
@@ -97,7 +97,7 @@ async fn update_description(
 }
 
 async fn update_sensation(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(id): Path<ExperienceId>,
     Json(body): Json<UpdateSensationBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {

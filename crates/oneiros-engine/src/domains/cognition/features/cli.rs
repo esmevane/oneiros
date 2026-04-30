@@ -12,7 +12,7 @@ pub enum CognitionCommands {
 impl CognitionCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, CognitionError> {
         let client = context.client();
         let cognition_client = CognitionClient::new(&client);

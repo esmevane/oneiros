@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 pub struct UrgeRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> UrgeRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt = db.prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name.to_string()], |row| {
@@ -37,7 +37,7 @@ impl<'a> UrgeRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM urges")?;

@@ -13,7 +13,7 @@ impl UrgeMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &UrgeRequest,
     ) -> Result<McpResponse, ToolError> {
         urge_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod urge_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &UrgeRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

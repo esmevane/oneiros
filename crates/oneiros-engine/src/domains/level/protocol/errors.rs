@@ -21,6 +21,9 @@ pub enum LevelError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] EventError),
 }
 
@@ -35,6 +38,7 @@ impl IntoResponse for LevelError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             LevelError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            LevelError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

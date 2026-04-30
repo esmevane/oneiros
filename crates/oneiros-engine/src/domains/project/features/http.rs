@@ -30,14 +30,14 @@ impl ProjectRouter {
 }
 
 async fn init(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<InitProject>,
 ) -> Result<(StatusCode, Json<ProjectResponse>), ProjectError> {
     let response = ProjectService::init(&context, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn summary(context: ProjectContext) -> Result<Json<BrainSummary>, ProjectError> {
+async fn summary(context: ProjectLog) -> Result<Json<BrainSummary>, ProjectError> {
     let db = context.db()?;
 
     let agents = AgentStore::new(&db).list().unwrap_or_default();
@@ -87,7 +87,7 @@ async fn summary(context: ProjectContext) -> Result<Json<BrainSummary>, ProjectE
 }
 
 /// SSE activity stream — live events from the host-wide broadcast
-/// channel. Unauthenticated (`ServerState` rather than `ProjectContext`)
+/// channel. Unauthenticated (`ServerState` rather than `ProjectLog`)
 /// because the channel is already shared across every brain on the
 /// host and events are not brain-labeled on the wire. Brain attribution
 /// on the feed is a separate revision.

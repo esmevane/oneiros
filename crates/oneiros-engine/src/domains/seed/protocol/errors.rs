@@ -35,6 +35,9 @@ pub enum SeedError {
     #[error(transparent)]
     Client(#[from] ClientError),
 
+    #[error(transparent)]
+    Compose(#[from] ComposeError),
+
     #[error("Required personas (process, scribe) not found. Run `oneiros seed core` first.")]
     MissingPersonas,
 }
@@ -51,7 +54,7 @@ impl IntoResponse for SeedError {
             SeedError::Urge(urge) => urge.into_response(),
             SeedError::Level(level) => level.into_response(),
             SeedError::Agent(agent) => agent.into_response(),
-            SeedError::Event(_) => (
+            SeedError::Event(_) | SeedError::Compose(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse::new(self.to_string())),
             )

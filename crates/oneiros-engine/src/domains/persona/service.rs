@@ -4,7 +4,7 @@ pub struct PersonaService;
 
 impl PersonaService {
     pub async fn set(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let SetPersona::V1(set) = request;
@@ -32,12 +32,12 @@ impl PersonaService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let GetPersona::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let persona = PersonaRepo::new(context)
+        let persona = PersonaRepo::new(context.scope()?)
             .get(&name)
             .await?
             .ok_or(PersonaError::NotFound(name))?;
@@ -50,11 +50,13 @@ impl PersonaService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListPersonas,
     ) -> Result<PersonaResponse, PersonaError> {
         let ListPersonas::V1(listing) = request;
-        let listed = PersonaRepo::new(context).list(&listing.filters).await?;
+        let listed = PersonaRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         if listed.total == 0 {
             Ok(PersonaResponse::NoPersonas)
         } else {
@@ -69,7 +71,7 @@ impl PersonaService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemovePersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let RemovePersona::V1(removal) = request;

@@ -22,6 +22,9 @@ pub enum CognitionError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -41,6 +44,7 @@ impl IntoResponse for CognitionError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             CognitionError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            CognitionError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

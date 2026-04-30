@@ -4,7 +4,7 @@ pub struct TenantService;
 
 impl TenantService {
     pub async fn create(
-        context: &SystemContext,
+        context: &HostLog,
         request: &CreateTenant,
     ) -> Result<TenantResponse, TenantError> {
         let CreateTenant::V1(create) = request;
@@ -29,12 +29,13 @@ impl TenantService {
     }
 
     pub async fn get(
-        context: &SystemContext,
+        context: &HostLog,
         request: &GetTenant,
     ) -> Result<TenantResponse, TenantError> {
         let GetTenant::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let tenant = TenantRepo::new(context)
+        let scope = context.scope()?;
+        let tenant = TenantRepo::new(scope)
             .get(&id)
             .await?
             .ok_or(TenantError::NotFound(id))?;
@@ -47,11 +48,12 @@ impl TenantService {
     }
 
     pub async fn list(
-        context: &SystemContext,
+        context: &HostLog,
         request: &ListTenants,
     ) -> Result<TenantResponse, TenantError> {
         let ListTenants::V1(listing) = request;
-        let listed = TenantRepo::new(context).list(&listing.filters).await?;
+        let scope = context.scope()?;
+        let listed = TenantRepo::new(scope).list(&listing.filters).await?;
         Ok(TenantResponse::Listed(
             TenantsResponse::builder_v1()
                 .items(listed.items)

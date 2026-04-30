@@ -16,10 +16,7 @@ pub enum UrgeCommands {
 }
 
 impl UrgeCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Rendered<Responses>, UrgeError> {
+    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, UrgeError> {
         let client = context.client();
         let urge_client = UrgeClient::new(&client);
 

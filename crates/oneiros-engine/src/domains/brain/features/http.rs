@@ -33,7 +33,7 @@ impl BrainRouter {
 }
 
 async fn create(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<CreateBrain>,
 ) -> Result<(StatusCode, Json<BrainResponse>), BrainError> {
     let response = BrainService::create(&context, &body).await?;
@@ -41,14 +41,14 @@ async fn create(
 }
 
 async fn list(
-    context: SystemContext,
+    context: HostLog,
     Query(params): Query<ListBrains>,
 ) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(BrainService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: SystemContext,
+    context: HostLog,
     Path(key): Path<ResourceKey<BrainName>>,
 ) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(

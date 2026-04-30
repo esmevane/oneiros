@@ -28,6 +28,9 @@ pub enum StorageError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -45,7 +48,7 @@ impl IntoResponse for StorageError {
             StorageError::BlobMissing(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::BlobError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
-            StorageError::Database(_) | StorageError::Event(_) => {
+            StorageError::Database(_) | StorageError::Event(_) | StorageError::Compose(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             StorageError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),

@@ -9,7 +9,7 @@ impl BookmarkMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         state: &ServerState,
         tool_name: &str,
         params: &str,
@@ -67,7 +67,7 @@ mod bookmark_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         state: &ServerState,
         tool_name: &str,
         params: &str,

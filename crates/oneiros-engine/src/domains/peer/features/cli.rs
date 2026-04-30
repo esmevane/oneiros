@@ -11,7 +11,7 @@ pub enum PeerCommands {
 }
 
 impl PeerCommands {
-    pub async fn execute(&self, context: &SystemContext) -> Result<Rendered<Responses>, PeerError> {
+    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, PeerError> {
         let client = context.client();
         let peer_client = PeerClient::new(&client);
 

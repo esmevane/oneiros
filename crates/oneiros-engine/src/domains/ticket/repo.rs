@@ -4,7 +4,7 @@ use crate::*;
 
 /// Ticket read model — async queries against the system context.
 pub struct TicketRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 /// The full projected row for a ticket.
@@ -93,12 +93,12 @@ fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TicketRow> {
 }
 
 impl<'a> TicketRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE id = ?1");
         let mut stmt = db.prepare(&sql)?;
 
@@ -112,7 +112,7 @@ impl<'a> TicketRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM tickets")?;
@@ -141,7 +141,7 @@ impl<'a> TicketRepo<'a> {
     }
 
     pub async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE token = ?1");
         let mut stmt = db.prepare(&sql)?;
 

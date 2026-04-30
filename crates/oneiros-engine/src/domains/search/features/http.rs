@@ -20,7 +20,7 @@ impl SearchRouter {
 }
 
 async fn search(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<SearchQuery>,
 ) -> Result<Json<SearchResponse>, SearchError> {
     Ok(Json(SearchService::search(&context, &params).await?))

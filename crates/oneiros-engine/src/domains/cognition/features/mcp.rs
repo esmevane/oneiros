@@ -9,7 +9,7 @@ impl CognitionMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -26,7 +26,7 @@ impl CognitionMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &CognitionRequest,
     ) -> Result<McpResponse, ToolError> {
         cognition_mcp::resource(context, request).await
@@ -43,7 +43,7 @@ mod cognition_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -68,7 +68,7 @@ mod cognition_mcp {
     }
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &CognitionRequest,
     ) -> Result<McpResponse, ToolError> {
         let response = match request {

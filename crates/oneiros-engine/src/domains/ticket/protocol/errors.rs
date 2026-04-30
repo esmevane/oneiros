@@ -27,6 +27,9 @@ pub enum TicketError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -46,6 +49,7 @@ impl IntoResponse for TicketError {
             TicketError::Database(_) | TicketError::Event(_) | TicketError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
+            TicketError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

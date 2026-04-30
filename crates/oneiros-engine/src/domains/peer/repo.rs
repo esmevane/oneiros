@@ -4,16 +4,16 @@ use crate::*;
 
 /// Peer read model — async queries against the system context.
 pub struct PeerRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> PeerRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut statement =
             db.prepare("select id, key, address, name, created_at from peers where id = ?1")?;
 
@@ -37,7 +37,7 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM peers")?;

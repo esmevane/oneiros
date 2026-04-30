@@ -10,10 +10,7 @@ pub enum MemoryCommands {
 }
 
 impl MemoryCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Rendered<Responses>, MemoryError> {
+    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, MemoryError> {
         let client = context.client();
         let memory_client = MemoryClient::new(&client);
 

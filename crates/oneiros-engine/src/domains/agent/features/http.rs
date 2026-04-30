@@ -42,7 +42,7 @@ impl AgentRouter {
 }
 
 async fn create(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<CreateAgent>,
 ) -> Result<(StatusCode, Json<AgentResponse>), AgentError> {
     let response = AgentService::create(&context, &body).await?;
@@ -50,14 +50,14 @@ async fn create(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListAgents>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(AgentService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<AgentName>>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
@@ -66,7 +66,7 @@ async fn show(
 }
 
 async fn update(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(_): Path<AgentName>,
     Json(body): Json<UpdateAgent>,
 ) -> Result<Json<AgentResponse>, AgentError> {
@@ -74,7 +74,7 @@ async fn update(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<AgentName>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(

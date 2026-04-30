@@ -23,6 +23,9 @@ pub enum SystemError {
 
     #[error(transparent)]
     Upcast(#[from] UpcastError),
+
+    #[error(transparent)]
+    Compose(#[from] ComposeError),
 }
 
 impl IntoResponse for SystemError {
@@ -34,7 +37,8 @@ impl IntoResponse for SystemError {
             SystemError::Database(_)
             | SystemError::Event(_)
             | SystemError::Io(_)
-            | SystemError::Upcast(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | SystemError::Upcast(_)
+            | SystemError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

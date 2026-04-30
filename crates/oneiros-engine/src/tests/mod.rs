@@ -23,7 +23,7 @@ fn test_config(brain: &str) -> (Config, tempfile::TempDir) {
     (config, dir)
 }
 
-async fn project_context() -> (ProjectContext, tempfile::TempDir) {
+async fn project_log() -> (ProjectLog, tempfile::TempDir) {
     let (config, dir) = test_config("test");
     let system = config.system();
 
@@ -50,7 +50,7 @@ async fn project_context() -> (ProjectContext, tempfile::TempDir) {
     (config.project(), dir)
 }
 
-async fn seed_persona(context: &ProjectContext) {
+async fn seed_persona(context: &ProjectLog) {
     PersonaService::set(
         context,
         &SetPersona::builder_v1()
@@ -64,7 +64,7 @@ async fn seed_persona(context: &ProjectContext) {
     .unwrap();
 }
 
-async fn seed_agent(context: &ProjectContext) {
+async fn seed_agent(context: &ProjectLog) {
     AgentService::create(
         context,
         &CreateAgent::V1(
@@ -82,7 +82,7 @@ async fn seed_agent(context: &ProjectContext) {
 
 #[tokio::test]
 async fn replay_reconstructs_read_models() {
-    let (context, _dir) = project_context().await;
+    let (context, _dir) = project_log().await;
 
     LevelService::set(
         &context,
@@ -175,7 +175,7 @@ async fn replay_reconstructs_read_models() {
 
 #[tokio::test]
 async fn replay_recovers_from_deleted_bookmark_db() {
-    let (context, _dir) = project_context().await;
+    let (context, _dir) = project_log().await;
 
     seed_persona(&context).await;
     seed_agent(&context).await;
@@ -258,7 +258,7 @@ async fn replay_recovers_from_deleted_bookmark_db() {
 
 #[tokio::test]
 async fn storage_content_round_trips() {
-    let (context, _dir) = project_context().await;
+    let (context, _dir) = project_log().await;
     let content = b"Hello, oneiros!";
 
     let entry = match StorageService::upload(

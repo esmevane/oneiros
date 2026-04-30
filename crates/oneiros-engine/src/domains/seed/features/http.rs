@@ -30,14 +30,12 @@ impl SeedRouter {
     }
 }
 
-async fn seed_core(context: ProjectContext) -> Result<(StatusCode, Json<SeedResponse>), SeedError> {
+async fn seed_core(context: ProjectLog) -> Result<(StatusCode, Json<SeedResponse>), SeedError> {
     let response = SeedService::core(&context).await?;
     Ok((StatusCode::OK, Json(response)))
 }
 
-async fn seed_agents(
-    context: ProjectContext,
-) -> Result<(StatusCode, Json<SeedResponse>), SeedError> {
+async fn seed_agents(context: ProjectLog) -> Result<(StatusCode, Json<SeedResponse>), SeedError> {
     let response = SeedService::agents(&context).await?;
     Ok((StatusCode::OK, Json(response)))
 }

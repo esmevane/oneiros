@@ -101,9 +101,9 @@ impl ServerState {
     ///
     /// Resolves the active bookmark for the brain unless the config
     /// already has an explicit bookmark override.
-    pub fn project_context(&self, config: Config) -> Result<ProjectContext, EventError> {
+    pub fn project_log(&self, config: Config) -> Result<ProjectLog, EventError> {
         let entry = self.canons.brain_entry(&config.brain)?;
-        Ok(ProjectContext::with_entry(
+        Ok(ProjectLog::with_entry(
             config,
             self.broadcast.clone(),
             entry,
@@ -111,23 +111,23 @@ impl ServerState {
     }
 
     /// Build a system context.
-    pub fn system_context(&self) -> SystemContext {
-        SystemContext::new(self.config.clone())
+    pub fn host_log(&self) -> HostLog {
+        HostLog::new(self.config.clone())
     }
 }
 
-impl FromRequestParts<ServerState> for SystemContext {
+impl FromRequestParts<ServerState> for HostLog {
     type Rejection = std::convert::Infallible;
 
     async fn from_request_parts(
         _parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(state.system_context())
+        Ok(state.host_log())
     }
 }
 
-impl FromRequestParts<ServerState> for ProjectContext {
+impl FromRequestParts<ServerState> for ProjectLog {
     type Rejection = AuthError;
 
     async fn from_request_parts(
@@ -156,8 +156,10 @@ impl FromRequestParts<ServerState> for ProjectContext {
             .map_err(|_| AuthError::InvalidToken)?;
 
         // Revocation check — verify the ticket still exists in the DB
-        let system = state.config.system();
-        let ticket = TicketRepo::new(&system)
+        let scope = ComposeScope::new(state.config.clone())
+            .host()
+            .map_err(|_| AuthError::InvalidToken)?;
+        let ticket = TicketRepo::new(&scope)
             .get_by_token(token_str)
             .await
             .map_err(|_| AuthError::InvalidToken)?
@@ -172,7 +174,7 @@ impl FromRequestParts<ServerState> for ProjectContext {
             _ => return Err(AuthError::InvalidToken),
         }
 
-        // Assemble ProjectContext with shared broadcast channel
+        // Assemble ProjectLog with shared broadcast channel
         let mut config = state.config.clone();
         config.brain = ticket.brain_name.clone();
 
@@ -198,7 +200,7 @@ impl FromRequestParts<ServerState> for ProjectContext {
         }
 
         state
-            .project_context(config)
+            .project_log(config)
             .map_err(|_| AuthError::InvalidToken)
     }
 }

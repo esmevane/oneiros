@@ -4,7 +4,7 @@ pub struct SystemService;
 
 impl SystemService {
     pub async fn init(
-        context: &SystemContext,
+        context: &HostLog,
         request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {
         let details = request.current()?;
@@ -23,7 +23,8 @@ impl SystemService {
             offset: Offset(0),
         };
 
-        let tenants = TenantRepo::new(context).list(&all_filters).await?;
+        let scope = context.scope()?;
+        let tenants = TenantRepo::new(scope).list(&all_filters).await?;
 
         if tenants.total > 0 {
             return Ok(SystemResponse::HostAlreadyInitialized);
@@ -45,7 +46,7 @@ impl SystemService {
         )
         .await?;
 
-        let tenants = TenantRepo::new(context).list(&all_filters).await?;
+        let tenants = TenantRepo::new(scope).list(&all_filters).await?;
 
         if let Some(tenant) = tenants.items.first() {
             ActorService::create(

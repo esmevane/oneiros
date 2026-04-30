@@ -13,7 +13,7 @@ impl ContinuityMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ContinuityRequest,
     ) -> Result<McpResponse, ToolError> {
         continuity_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod continuity_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ContinuityRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

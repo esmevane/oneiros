@@ -13,7 +13,7 @@ impl SensationMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SensationRequest,
     ) -> Result<McpResponse, ToolError> {
         sensation_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod sensation_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SensationRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

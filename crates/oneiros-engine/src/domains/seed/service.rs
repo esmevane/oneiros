@@ -3,7 +3,7 @@ use crate::*;
 pub struct SeedService;
 
 impl SeedService {
-    pub async fn core(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
+    pub async fn core(context: &ProjectLog) -> Result<SeedResponse, SeedError> {
         for (name, description, prompt) in [
             (
                 "working",
@@ -205,13 +205,15 @@ impl SeedService {
         Ok(SeedResponse::SeedComplete)
     }
 
-    pub async fn agents(context: &ProjectContext) -> Result<SeedResponse, SeedError> {
+    pub async fn agents(context: &ProjectLog) -> Result<SeedResponse, SeedError> {
         // Verify required personas exist — hint at `seed core` if missing.
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let personas = PersonaRepo::new(context).list(&all_filters).await?;
+        let personas = PersonaRepo::new(context.scope()?)
+            .list(&all_filters)
+            .await?;
         let persona_names: Vec<&str> = personas.items.iter().map(|p| p.name.as_str()).collect();
 
         if !persona_names.contains(&"process") || !persona_names.contains(&"scribe") {
@@ -243,7 +245,7 @@ impl SeedService {
             // Skip agents that already exist (idempotent).
             let agent_name = AgentName::new(name);
 
-            if AgentRepo::new(context)
+            if AgentRepo::new(context.scope()?)
                 .name_exists(&agent_name.normalize_with(&PersonaName::new(persona)))
                 .await?
             {

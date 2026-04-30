@@ -4,7 +4,7 @@ pub struct TextureService;
 
 impl TextureService {
     pub async fn set(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SetTexture,
     ) -> Result<TextureResponse, TextureError> {
         let SetTexture::V1(set) = request;
@@ -32,12 +32,12 @@ impl TextureService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetTexture,
     ) -> Result<TextureResponse, TextureError> {
         let GetTexture::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let texture = TextureRepo::new(context)
+        let texture = TextureRepo::new(context.scope()?)
             .get(&name)
             .await?
             .ok_or(TextureError::NotFound(name))?;
@@ -50,11 +50,13 @@ impl TextureService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListTextures,
     ) -> Result<TextureResponse, TextureError> {
         let ListTextures::V1(listing) = request;
-        let listed = TextureRepo::new(context).list(&listing.filters).await?;
+        let listed = TextureRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         if listed.total == 0 {
             Ok(TextureResponse::NoTextures)
         } else {
@@ -69,7 +71,7 @@ impl TextureService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveTexture,
     ) -> Result<TextureResponse, TextureError> {
         let RemoveTexture::V1(removal) = request;

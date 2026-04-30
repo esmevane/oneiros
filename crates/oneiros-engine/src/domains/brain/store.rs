@@ -2,6 +2,14 @@ use rusqlite::params;
 
 use crate::*;
 
+fn is_missing_table(e: &rusqlite::Error) -> bool {
+    matches!(
+        e,
+        rusqlite::Error::SqliteFailure(_, Some(msg))
+            if msg.starts_with("no such table")
+    )
+}
+
 pub struct BrainStore<'a> {
     conn: &'a rusqlite::Connection,
 }
@@ -33,6 +41,20 @@ impl<'a> BrainStore<'a> {
             )",
         )?;
         Ok(())
+    }
+
+    /// List all brain names known to the system DB. Returns an empty
+    /// list if the projection has not been migrated yet (cold start).
+    pub fn list(&self) -> Result<Vec<BrainName>, rusqlite::Error> {
+        let mut stmt = match self.conn.prepare("select name from brains") {
+            Ok(stmt) => stmt,
+            Err(e) if is_missing_table(&e) => return Ok(Vec::new()),
+            Err(e) => return Err(e),
+        };
+        let rows = stmt
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows.into_iter().map(BrainName::from).collect())
     }
 
     fn write_brain(&self, brain: &Brain) -> Result<(), EventError> {

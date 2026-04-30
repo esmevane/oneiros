@@ -13,7 +13,7 @@ impl LevelMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &LevelRequest,
     ) -> Result<McpResponse, ToolError> {
         level_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod level_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &LevelRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

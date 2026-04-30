@@ -6,16 +6,16 @@ use crate::*;
 
 /// Cognition read model — async queries over the projection read model.
 pub struct CognitionRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> CognitionRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions WHERE id = ?1",
@@ -53,7 +53,7 @@ impl<'a> CognitionRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()
@@ -96,7 +96,7 @@ impl<'a> CognitionRepo<'a> {
         agent_id: &AgentId,
         limit: usize,
     ) -> Result<Vec<Cognition>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions

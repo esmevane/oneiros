@@ -81,7 +81,7 @@ impl ContinuityRouter {
 }
 
 async fn emerge(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<EmergeAgent>,
 ) -> Result<(StatusCode, Json<ContinuityResponse>), ContinuityError> {
     Ok((
@@ -91,7 +91,7 @@ async fn emerge(
 }
 
 async fn recede(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
@@ -104,14 +104,14 @@ async fn recede(
 }
 
 async fn status(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<StatusAgent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(ContinuityService::status(&context, &params)?))
 }
 
 async fn wake(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -126,7 +126,7 @@ async fn wake(
 }
 
 async fn dream(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -141,7 +141,7 @@ async fn dream(
 }
 
 async fn introspect(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -156,7 +156,7 @@ async fn introspect(
 }
 
 async fn reflect(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -171,7 +171,7 @@ async fn reflect(
 }
 
 async fn sense(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Json(body): Json<SenseContent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -187,7 +187,7 @@ async fn sense(
 }
 
 async fn sleep(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -202,7 +202,7 @@ async fn sleep(
 }
 
 async fn guidebook(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {

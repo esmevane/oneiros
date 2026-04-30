@@ -27,7 +27,7 @@ impl PressureRouter {
 }
 
 async fn get(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(agent): Path<AgentName>,
 ) -> Result<Json<PressureResponse>, PressureError> {
     Ok(Json(
@@ -39,6 +39,6 @@ async fn get(
     ))
 }
 
-async fn list(context: ProjectContext) -> Result<Json<PressureResponse>, PressureError> {
+async fn list(context: ProjectLog) -> Result<Json<PressureResponse>, PressureError> {
     Ok(Json(PressureService::list(&context).await?))
 }

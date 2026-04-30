@@ -21,6 +21,9 @@ pub enum ActorError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -35,9 +38,10 @@ impl IntoResponse for ActorError {
             ActorError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ActorError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ActorError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            ActorError::Database(_) | ActorError::Event(_) | ActorError::Client(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
-            }
+            ActorError::Database(_)
+            | ActorError::Event(_)
+            | ActorError::Client(_)
+            | ActorError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

@@ -6,10 +6,23 @@ impl DoctorService {
     pub async fn check(config: &Config) -> DoctorResponse {
         let mut checks = Vec::new();
 
-        // System checks
-        let context = config.system();
+        // Compose host-tier scope. Failure here means we don't have
+        // host substrate at all — strangler bridge still produces
+        // today's HostLog shape until consumers move to Scope.
+        let scope = match ComposeScope::new(config.clone()).host() {
+            Ok(scope) => scope,
+            Err(_) => {
+                checks.push(DoctorCheck::NotInitialized);
+                return DoctorResponse::CheckupStatus(
+                    CheckupStatusResponse::builder_v1()
+                        .checks(checks)
+                        .build()
+                        .into(),
+                );
+            }
+        };
 
-        let db = match context.db() {
+        let db = match scope.host_db() {
             Ok(db) => db,
             Err(_) => {
                 checks.push(DoctorCheck::NotInitialized);
@@ -26,7 +39,7 @@ impl DoctorService {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let tenant_count = TenantRepo::new(&context)
+        let tenant_count = TenantRepo::new(&scope)
             .list(&all_filters)
             .await
             .map(|l| l.total)

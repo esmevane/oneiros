@@ -36,7 +36,7 @@ impl CognitionRouter {
 }
 
 async fn add(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<AddCognition>,
 ) -> Result<(StatusCode, Json<CognitionResponse>), CognitionError> {
     let response = CognitionService::add(&context, &body).await?;
@@ -44,14 +44,14 @@ async fn add(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListCognitions>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
     Ok(Json(CognitionService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<CognitionId>>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
     Ok(Json(

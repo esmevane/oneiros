@@ -13,10 +13,7 @@ pub enum TicketCommands {
 }
 
 impl TicketCommands {
-    pub async fn execute(
-        &self,
-        context: &SystemContext,
-    ) -> Result<Rendered<Responses>, TicketError> {
+    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, TicketError> {
         let client = context.client();
         let ticket_client = TicketClient::new(&client);
 

@@ -4,16 +4,16 @@ use crate::*;
 
 /// Follow read model — async queries against the system context.
 pub struct FollowRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> FollowRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut stmt = db.prepare(
             "select id, brain, bookmark, source, checkpoint, created_at \
              from follows where id = ?1",
@@ -29,7 +29,7 @@ impl<'a> FollowRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM follows")?;
@@ -58,7 +58,7 @@ impl<'a> FollowRepo<'a> {
         brain: &BrainName,
         bookmark: &BookmarkName,
     ) -> Result<Option<Follow>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut stmt = db.prepare(
             "select id, brain, bookmark, source, checkpoint, created_at \
              from follows where brain = ?1 and bookmark = ?2",

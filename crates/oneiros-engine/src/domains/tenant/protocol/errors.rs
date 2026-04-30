@@ -28,6 +28,9 @@ pub enum TenantError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
 }
 
 resource_op_error!(TenantError);
@@ -41,7 +44,8 @@ impl IntoResponse for TenantError {
             TenantError::TimestampParse(_)
             | TenantError::Event(_)
             | TenantError::Database(_)
-            | TenantError::Client(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | TenantError::Client(_)
+            | TenantError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

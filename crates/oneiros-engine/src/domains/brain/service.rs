@@ -4,11 +4,13 @@ pub struct BrainService;
 
 impl BrainService {
     pub async fn create(
-        context: &SystemContext,
+        context: &HostLog,
         request: &CreateBrain,
     ) -> Result<BrainResponse, BrainError> {
         let CreateBrain::V1(create) = request;
-        let already_exists = BrainRepo::new(context).name_exists(&create.name).await?;
+        let already_exists = BrainRepo::new(context.scope()?)
+            .name_exists(&create.name)
+            .await?;
 
         if already_exists {
             return Err(BrainError::Conflict(create.name.clone()));
@@ -33,12 +35,9 @@ impl BrainService {
         ))
     }
 
-    pub async fn get(
-        context: &SystemContext,
-        request: &GetBrain,
-    ) -> Result<BrainResponse, BrainError> {
+    pub async fn get(context: &HostLog, request: &GetBrain) -> Result<BrainResponse, BrainError> {
         let GetBrain::V1(lookup) = request;
-        let repo = BrainRepo::new(context);
+        let repo = BrainRepo::new(context.scope()?);
         let brain = match &lookup.key {
             ResourceKey::Key(name) => repo
                 .get(name)
@@ -66,11 +65,13 @@ impl BrainService {
     }
 
     pub async fn list(
-        context: &SystemContext,
+        context: &HostLog,
         request: &ListBrains,
     ) -> Result<BrainResponse, BrainError> {
         let ListBrains::V1(listing) = request;
-        let listed = BrainRepo::new(context).list(&listing.filters).await?;
+        let listed = BrainRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         Ok(BrainResponse::Listed(
             BrainsResponse::builder_v1()
                 .items(listed.items)

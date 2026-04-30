@@ -6,12 +6,15 @@ pub struct SearchService;
 
 impl SearchService {
     pub async fn search(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SearchQuery,
     ) -> Result<SearchResponse, SearchError> {
         let query = request.current()?;
         let agent_id = match &query.agent {
-            Some(name) => AgentRepo::new(context).get(name).await?.map(|a| a.id),
+            Some(name) => AgentRepo::new(context.scope()?)
+                .get(name)
+                .await?
+                .map(|a| a.id),
             None => None,
         };
 
@@ -20,7 +23,7 @@ impl SearchService {
             total,
             hits,
             facets,
-        } = SearchRepo::new(context)
+        } = SearchRepo::new(context.scope()?)
             .search(&query, agent_id.as_ref())
             .await?;
 
@@ -41,7 +44,7 @@ impl SearchService {
 /// underlying row has been removed since the index was queried — search
 /// shouldn't surface ghosts.
 pub(crate) async fn hydrate_hits(
-    context: &ProjectContext,
+    context: &ProjectLog,
     ranked: Vec<RankedHit>,
 ) -> Result<Vec<Hit>, SearchError> {
     let mut cognition_ids: Vec<CognitionId> = Vec::new();
@@ -60,25 +63,25 @@ pub(crate) async fn hydrate_hits(
         }
     }
 
-    let cognitions: HashMap<CognitionId, Cognition> = CognitionRepo::new(context)
+    let cognitions: HashMap<CognitionId, Cognition> = CognitionRepo::new(context.scope()?)
         .get_many(&cognition_ids)
         .await?
         .into_iter()
         .map(|c| (c.id, c))
         .collect();
-    let memories: HashMap<MemoryId, Memory> = MemoryRepo::new(context)
+    let memories: HashMap<MemoryId, Memory> = MemoryRepo::new(context.scope()?)
         .get_many(&memory_ids)
         .await?
         .into_iter()
         .map(|m| (m.id, m))
         .collect();
-    let experiences: HashMap<ExperienceId, Experience> = ExperienceRepo::new(context)
+    let experiences: HashMap<ExperienceId, Experience> = ExperienceRepo::new(context.scope()?)
         .get_many(&experience_ids)
         .await?
         .into_iter()
         .map(|e| (e.id, e))
         .collect();
-    let mut agents: HashMap<AgentId, Agent> = AgentRepo::new(context)
+    let mut agents: HashMap<AgentId, Agent> = AgentRepo::new(context.scope()?)
         .get_many(&agent_ids)
         .await?
         .into_iter()

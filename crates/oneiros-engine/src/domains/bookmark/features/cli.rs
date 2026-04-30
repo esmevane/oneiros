@@ -17,7 +17,7 @@ pub enum BookmarkCommands {
 impl BookmarkCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, BookmarkError> {
         let client = context.client();
         let bookmark_client = BookmarkClient::new(&client);

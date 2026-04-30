@@ -39,7 +39,7 @@ impl PersonaRouter {
 }
 
 async fn set(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<PersonaName>,
     Json(body): Json<SetPersona>,
 ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
@@ -53,14 +53,14 @@ async fn set(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListPersonas>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(PersonaService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<PersonaName>>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(
@@ -69,7 +69,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<PersonaName>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(

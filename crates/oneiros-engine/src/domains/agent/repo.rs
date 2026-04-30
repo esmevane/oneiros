@@ -6,16 +6,16 @@ use crate::*;
 
 /// Agent read model — async queries over the projection read model.
 pub struct AgentRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> AgentRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt = db
             .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
 
@@ -47,7 +47,7 @@ impl<'a> AgentRepo<'a> {
     }
 
     pub async fn get_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt =
             db.prepare("select id, name, persona, description, prompt from agents where id = ?1")?;
 
@@ -84,7 +84,7 @@ impl<'a> AgentRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()
@@ -122,7 +122,7 @@ impl<'a> AgentRepo<'a> {
     }
 
     pub async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let count: i64 = db.query_row(
             "select count(*) from agents where name = ?1",
             params![name.to_string()],

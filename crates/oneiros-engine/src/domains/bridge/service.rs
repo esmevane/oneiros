@@ -20,9 +20,12 @@ impl SyncHandler {
         Self { config, canons }
     }
 
-    async fn validate_ticket(&self, link: &Link) -> Result<Ticket, BridgeError> {
-        let system = SystemContext::new(self.config.clone());
-        let ticket = TicketRepo::new(&system)
+    async fn validate_ticket(
+        &self,
+        scope: &Scope<AtHost>,
+        link: &Link,
+    ) -> Result<Ticket, BridgeError> {
+        let ticket = TicketRepo::new(scope)
             .get_by_token(link.token.as_str())
             .await?
             .ok_or_else(|| BridgeError::Denied("ticket not found".into()))?;
@@ -36,17 +39,9 @@ impl SyncHandler {
         Ok(ticket)
     }
 
-    fn events_db(&self, brain: &BrainName) -> Result<rusqlite::Connection, BridgeError> {
-        let mut config = self.config.clone();
-        config.brain = brain.clone();
-        let path = config.events_db_path();
-        let conn = rusqlite::Connection::open(path)?;
-        conn.pragma_update(None, "journal_mode", "wal")?;
-        Ok(conn)
-    }
-
     async fn handle_diff(&self, diff: &BridgeDiff) -> Result<BridgeResponse, BridgeError> {
-        let ticket = self.validate_ticket(&diff.link).await?;
+        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let ticket = self.validate_ticket(&scope, &diff.link).await?;
         let chronicle = self.canons.chronicle(&ticket.brain_name)?;
         let server_root = chronicle.root()?;
 
@@ -61,7 +56,7 @@ impl SyncHandler {
         };
 
         // Chronicle objects live in the system DB.
-        let system_db = self.config.system_db()?;
+        let system_db = scope.host_db()?;
         let store = ChronicleStore::new(&system_db);
         let resolve = store.resolver();
 
@@ -79,10 +74,11 @@ impl SyncHandler {
         &self,
         resolve_req: &BridgeResolve,
     ) -> Result<BridgeResponse, BridgeError> {
-        let _ticket = self.validate_ticket(&resolve_req.link).await?;
+        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let _ticket = self.validate_ticket(&scope, &resolve_req.link).await?;
 
         // Chronicle objects live in the system DB.
-        let system_db = self.config.system_db()?;
+        let system_db = scope.host_db()?;
         let store = ChronicleStore::new(&system_db);
         let resolve = store.resolver();
 
@@ -99,10 +95,16 @@ impl SyncHandler {
         &self,
         fetch: &BridgeFetchEvents,
     ) -> Result<BridgeResponse, BridgeError> {
-        let ticket = self.validate_ticket(&fetch.link).await?;
+        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let ticket = self.validate_ticket(&scope, &fetch.link).await?;
+
+        // Compose at the target brain's project tier — events DB
+        // lives there. ComposeScope verifies the brain exists.
+        let project_scope =
+            ComposeScope::new(self.config.clone()).project(ticket.brain_name.clone())?;
 
         // Event log lives in events.db (standalone, no ATTACH).
-        let db = self.events_db(&ticket.brain_name)?;
+        let db = project_scope.events_db()?;
 
         let ids: Vec<EventId> = fetch
             .event_ids

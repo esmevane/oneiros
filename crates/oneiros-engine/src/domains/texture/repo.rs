@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 pub struct TextureRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> TextureRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
 
@@ -38,7 +38,7 @@ impl<'a> TextureRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Texture>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM textures")?;

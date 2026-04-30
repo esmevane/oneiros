@@ -39,7 +39,7 @@ impl StorageRouter {
 }
 
 async fn upload(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<UploadStorage>,
 ) -> Result<(StatusCode, Json<StorageResponse>), StorageError> {
     let response = StorageService::upload(&context, &body).await?;
@@ -47,14 +47,14 @@ async fn upload(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListStorage>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     Ok(Json(StorageService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(ref_key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     let key = if ref_key.starts_with("ref:") {
@@ -69,7 +69,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(ref_key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     let storage_ref = StorageRef(ref_key);

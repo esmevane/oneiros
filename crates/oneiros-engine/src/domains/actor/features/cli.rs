@@ -13,10 +13,7 @@ pub enum ActorCommands {
 }
 
 impl ActorCommands {
-    pub async fn execute(
-        &self,
-        context: &SystemContext,
-    ) -> Result<Rendered<Responses>, ActorError> {
+    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, ActorError> {
         let client = context.client();
         let actor_client = ActorClient::new(&client);
 

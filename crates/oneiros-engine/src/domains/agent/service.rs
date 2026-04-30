@@ -4,13 +4,13 @@ pub struct AgentService;
 
 impl AgentService {
     pub async fn create(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &CreateAgent,
     ) -> Result<AgentResponse, AgentError> {
         let CreateAgent::V1(create) = request;
 
         // Cross-resource validation: persona must exist
-        if PersonaRepo::new(context)
+        if PersonaRepo::new(context.scope()?)
             .get(&create.persona)
             .await?
             .is_none()
@@ -22,7 +22,7 @@ impl AgentService {
         let normalized_name = create.name.normalize_with(&create.persona);
 
         // Validate name uniqueness
-        if AgentRepo::new(context)
+        if AgentRepo::new(context.scope()?)
             .name_exists(&normalized_name)
             .await?
         {
@@ -54,11 +54,11 @@ impl AgentService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
         let GetAgent::V1(lookup) = request;
-        let repo = AgentRepo::new(context);
+        let repo = AgentRepo::new(context.scope()?);
         let agent = match &lookup.key {
             ResourceKey::Key(name) => repo
                 .get(name)
@@ -89,7 +89,7 @@ impl AgentService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
         let ListAgents::V1(listing) = request;
@@ -99,7 +99,9 @@ impl AgentService {
             .filters(listing.filters)
             .build();
 
-        let results = SearchRepo::new(context).search(&search_query, None).await?;
+        let results = SearchRepo::new(context.scope()?)
+            .search(&search_query, None)
+            .await?;
 
         if results.total == 0 {
             return Ok(AgentResponse::NoAgents);
@@ -113,7 +115,7 @@ impl AgentService {
             }
         }
 
-        let items = AgentRepo::new(context).get_many(&ids).await?;
+        let items = AgentRepo::new(context.scope()?).get_many(&ids).await?;
 
         Ok(AgentResponse::Agents(
             AgentsResponse::builder_v1()
@@ -125,11 +127,11 @@ impl AgentService {
     }
 
     pub async fn update(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &UpdateAgent,
     ) -> Result<AgentResponse, AgentError> {
         let UpdateAgent::V1(update) = request;
-        let existing = AgentRepo::new(context)
+        let existing = AgentRepo::new(context.scope()?)
             .get(&update.name)
             .await?
             .ok_or_else(|| AgentError::NotFound(update.name.clone()))?;
@@ -160,11 +162,13 @@ impl AgentService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveAgent,
     ) -> Result<AgentResponse, AgentError> {
         let RemoveAgent::V1(removal) = request;
-        let exists = AgentRepo::new(context).name_exists(&removal.name).await?;
+        let exists = AgentRepo::new(context.scope()?)
+            .name_exists(&removal.name)
+            .await?;
 
         if !exists {
             return Err(AgentError::NotFound(removal.name.clone()));

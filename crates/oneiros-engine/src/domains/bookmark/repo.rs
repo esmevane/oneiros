@@ -1,12 +1,12 @@
 use crate::*;
 
 pub struct BookmarkRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> BookmarkRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn list(
@@ -14,7 +14,7 @@ impl<'a> BookmarkRepo<'a> {
         brain: &BrainName,
         filters: &SearchFilters,
     ) -> Result<Listed<Bookmark>, BookmarkError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let count_sql = "SELECT COUNT(*) FROM bookmarks WHERE brain = ?1";
         let total = {

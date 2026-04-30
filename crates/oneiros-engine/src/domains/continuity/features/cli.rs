@@ -19,7 +19,7 @@ pub enum ContinuityCommands {
 impl ContinuityCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, ContinuityError> {
         let client = context.client();
         let continuity_client = ContinuityClient::new(&client);

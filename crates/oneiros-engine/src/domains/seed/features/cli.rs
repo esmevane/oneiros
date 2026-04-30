@@ -9,10 +9,7 @@ pub enum SeedCommands {
 }
 
 impl SeedCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Rendered<Responses>, SeedError> {
+    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, SeedError> {
         let client = context.client();
         let seed = SeedClient::new(&client);
         let response = match self {

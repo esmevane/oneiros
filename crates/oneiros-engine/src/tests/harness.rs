@@ -131,7 +131,7 @@ impl TestApp {
     }
 
     /// The engine config — useful for tests that need the underlying
-    /// ProjectContext alongside the HTTP stack.
+    /// ProjectLog alongside the HTTP stack.
     pub fn config(&self) -> &Config {
         self.engine.config()
     }

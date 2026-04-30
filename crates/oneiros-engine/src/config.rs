@@ -320,13 +320,13 @@ impl Config {
     }
 
     /// Build a system context from this config.
-    pub fn system(&self) -> SystemContext {
-        SystemContext::new(self.clone())
+    pub fn system(&self) -> HostLog {
+        HostLog::new(self.clone())
     }
 
     /// Build a project context from this config.
-    pub fn project(&self) -> ProjectContext {
-        ProjectContext::new(self.clone())
+    pub fn project(&self) -> ProjectLog {
+        ProjectLog::new(self.clone())
     }
 }
 

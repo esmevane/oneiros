@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 pub struct PersonaRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> PersonaRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
 
@@ -38,7 +38,7 @@ impl<'a> PersonaRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Persona>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM personas")?;
