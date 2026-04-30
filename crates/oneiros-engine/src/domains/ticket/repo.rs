@@ -98,7 +98,7 @@ impl<'a> TicketRepo<'a> {
     }
 
     pub async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE id = ?1");
         let mut stmt = db.prepare(&sql)?;
 
@@ -112,7 +112,7 @@ impl<'a> TicketRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM tickets")?;
@@ -141,7 +141,7 @@ impl<'a> TicketRepo<'a> {
     }
 
     pub async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE token = ?1");
         let mut stmt = db.prepare(&sql)?;
 

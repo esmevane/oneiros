@@ -45,6 +45,12 @@ pub enum BookmarkError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    HostDb(#[from] HostDbError),
+
+    #[error(transparent)]
+    BookmarkDb(#[from] BookmarkDbError),
+
+    #[error(transparent)]
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
@@ -70,6 +76,8 @@ impl IntoResponse for BookmarkError {
             BookmarkError::InvalidUri(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             BookmarkError::NoActor
             | BookmarkError::Database(_)
+            | BookmarkError::HostDb(_)
+            | BookmarkError::BookmarkDb(_)
             | BookmarkError::Event(_)
             | BookmarkError::IdParse(_)
             | BookmarkError::TimestampParse(_)

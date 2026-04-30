@@ -12,7 +12,7 @@ impl<'a> LevelRepo<'a> {
     }
 
     pub async fn get(&self, name: &LevelName) -> Result<Option<Level>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM levels WHERE name = ?1")?;
 
@@ -38,7 +38,7 @@ impl<'a> LevelRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Level>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM levels")?;

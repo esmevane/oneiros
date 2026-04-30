@@ -13,7 +13,7 @@ impl<'a> ConnectionRepo<'a> {
     }
 
     pub async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(
             "SELECT id, from_ref, to_ref, nature, created_at
              FROM connections WHERE id = ?1",
@@ -49,7 +49,7 @@ impl<'a> ConnectionRepo<'a> {
         entity_ref: Option<&str>,
         filters: &SearchFilters,
     ) -> Result<Listed<Connection>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
 
         // Build WHERE clause from filters.
         let mut conditions = Vec::new();

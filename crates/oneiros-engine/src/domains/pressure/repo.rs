@@ -14,7 +14,7 @@ impl<'a> PressureRepo<'a> {
     }
 
     pub async fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
 
         // Look up agent by name to get the ID
         let agent = match AgentStore::new(&db).get(agent_name)? {
@@ -60,7 +60,7 @@ impl<'a> PressureRepo<'a> {
     }
 
     pub async fn list(&self) -> Result<Vec<Pressure>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
 
         let mut stmt = db.prepare(
             "SELECT id, agent_id, urge, data, updated_at FROM pressures ORDER BY agent_id, urge",

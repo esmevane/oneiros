@@ -15,7 +15,7 @@ impl<'a> CognitionRepo<'a> {
     }
 
     pub async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions WHERE id = ?1",
@@ -53,7 +53,7 @@ impl<'a> CognitionRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()
@@ -96,7 +96,7 @@ impl<'a> CognitionRepo<'a> {
         agent_id: &AgentId,
         limit: usize,
     ) -> Result<Vec<Cognition>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions

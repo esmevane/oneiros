@@ -1,6 +1,7 @@
 mod cli;
 mod client;
 mod config;
+mod db;
 mod docs;
 mod domains;
 mod engine;
@@ -24,6 +25,7 @@ mod values;
 pub use cli::*;
 pub use client::*;
 pub use config::*;
+pub use db::*;
 pub use docs::*;
 pub use domains::*;
 pub use engine::*;

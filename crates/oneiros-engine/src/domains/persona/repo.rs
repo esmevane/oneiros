@@ -12,7 +12,7 @@ impl<'a> PersonaRepo<'a> {
     }
 
     pub async fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
 
@@ -38,7 +38,7 @@ impl<'a> PersonaRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Persona>, EventError> {
-        let db = self.scope.bookmark_db()?;
+        let db = self.scope.bookmark_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM personas")?;

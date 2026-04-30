@@ -13,7 +13,7 @@ impl<'a> FollowRepo<'a> {
     }
 
     pub async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare(
             "select id, brain, bookmark, source, checkpoint, created_at \
              from follows where id = ?1",
@@ -29,7 +29,7 @@ impl<'a> FollowRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM follows")?;
@@ -58,7 +58,7 @@ impl<'a> FollowRepo<'a> {
         brain: &BrainName,
         bookmark: &BookmarkName,
     ) -> Result<Option<Follow>, EventError> {
-        let db = self.scope.host_db()?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare(
             "select id, brain, bookmark, source, checkpoint, created_at \
              from follows where brain = ?1 and bookmark = ?2",
