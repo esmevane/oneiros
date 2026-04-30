@@ -39,7 +39,7 @@ impl SensationRouter {
 }
 
 async fn set(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<SensationName>,
     Json(body): Json<SetSensation>,
 ) -> Result<(StatusCode, Json<SensationResponse>), SensationError> {
@@ -53,14 +53,14 @@ async fn set(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListSensations>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(SensationService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<SensationName>>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(
@@ -73,7 +73,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<SensationName>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(

@@ -6,16 +6,16 @@ use crate::*;
 
 /// Memory read model — async queries over the projection read model.
 pub struct MemoryRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> MemoryRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, level, content, created_at
              FROM memories WHERE id = ?1",
@@ -53,7 +53,7 @@ impl<'a> MemoryRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()

@@ -11,7 +11,7 @@ pub struct PressureCommands {
 impl PressureCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, PressureError> {
         let client = context.client();
         let pressure_client = PressureClient::new(&client);

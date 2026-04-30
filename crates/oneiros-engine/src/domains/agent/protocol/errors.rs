@@ -26,6 +26,9 @@ pub enum AgentError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -49,6 +52,7 @@ impl IntoResponse for AgentError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             AgentError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            AgentError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

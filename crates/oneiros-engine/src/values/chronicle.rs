@@ -6,7 +6,7 @@ use crate::*;
 ///
 /// Wraps a ledger root hash — the HAMT pointer that identifies
 /// which events this bookmark has seen. Shared via Arc<Mutex> so
-/// multiple ProjectContexts (per-request) can chronicle events
+/// multiple ProjectLogs (per-request) can chronicle events
 /// into the same bookmark.
 ///
 /// Forking snapshots the root (free structural sharing).

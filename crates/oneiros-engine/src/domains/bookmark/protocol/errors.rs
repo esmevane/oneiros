@@ -45,6 +45,9 @@ pub enum BookmarkError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -72,7 +75,8 @@ impl IntoResponse for BookmarkError {
             | BookmarkError::TimestampParse(_)
             | BookmarkError::Follow(_)
             | BookmarkError::Peer(_)
-            | BookmarkError::Ticket(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | BookmarkError::Ticket(_)
+            | BookmarkError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             BookmarkError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()

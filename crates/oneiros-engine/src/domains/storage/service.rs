@@ -5,7 +5,7 @@ pub struct StorageService;
 impl StorageService {
     /// Upload content — hash it, store the blob, record the metadata.
     pub async fn upload(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &UploadStorage,
     ) -> Result<StorageResponse, StorageError> {
         let UploadStorage::V1(upload) = request;
@@ -34,12 +34,12 @@ impl StorageService {
 
     /// Show storage metadata by key.
     pub async fn show(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetStorage,
     ) -> Result<StorageResponse, StorageError> {
         let GetStorage::V1(lookup) = request;
         let key = lookup.key.resolve()?;
-        let entry = StorageRepo::new(context)
+        let entry = StorageRepo::new(context.scope()?)
             .get_storage(&key)
             .await?
             .ok_or(StorageError::KeyNotFound(key))?;
@@ -53,11 +53,11 @@ impl StorageService {
 
     /// List all storage entries.
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListStorage,
     ) -> Result<StorageResponse, StorageError> {
         let ListStorage::V1(listing) = request;
-        let listed = StorageRepo::new(context)
+        let listed = StorageRepo::new(context.scope()?)
             .list_storage(&listing.filters)
             .await?;
 
@@ -76,12 +76,12 @@ impl StorageService {
 
     /// Remove storage metadata by key. The blob is NOT deleted (dedup preservation).
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveStorage,
     ) -> Result<StorageResponse, StorageError> {
         let RemoveStorage::V1(removal) = request;
         // Confirm the key exists before emitting.
-        StorageRepo::new(context)
+        StorageRepo::new(context.scope()?)
             .get_storage(&removal.key)
             .await?
             .ok_or_else(|| StorageError::KeyNotFound(removal.key.clone()))?;
@@ -105,10 +105,10 @@ impl StorageService {
 
     /// Retrieve the raw binary content for a storage key.
     pub async fn get_content(
-        context: &ProjectContext,
+        context: &ProjectLog,
         key: &StorageKey,
     ) -> Result<Vec<u8>, StorageError> {
-        let repo = StorageRepo::new(context);
+        let repo = StorageRepo::new(context.scope()?);
 
         let entry = repo
             .get_storage(key)

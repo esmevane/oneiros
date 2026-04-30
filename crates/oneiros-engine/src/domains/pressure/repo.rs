@@ -5,16 +5,16 @@ use rusqlite::params;
 use crate::*;
 
 pub struct PressureRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> PressureRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         // Look up agent by name to get the ID
         let agent = match AgentStore::new(&db).get(agent_name)? {
@@ -60,7 +60,7 @@ impl<'a> PressureRepo<'a> {
     }
 
     pub async fn list(&self) -> Result<Vec<Pressure>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         let mut stmt = db.prepare(
             "SELECT id, agent_id, urge, data, updated_at FROM pressures ORDER BY agent_id, urge",

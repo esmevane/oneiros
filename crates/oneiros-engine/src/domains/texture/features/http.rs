@@ -39,7 +39,7 @@ impl TextureRouter {
 }
 
 async fn set(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<TextureName>,
     Json(body): Json<SetTexture>,
 ) -> Result<(StatusCode, Json<TextureResponse>), TextureError> {
@@ -53,14 +53,14 @@ async fn set(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListTextures>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(TextureService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<TextureName>>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(
@@ -69,7 +69,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<TextureName>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(

@@ -13,7 +13,7 @@ impl TextureMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &TextureRequest,
     ) -> Result<McpResponse, ToolError> {
         texture_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod texture_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &TextureRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

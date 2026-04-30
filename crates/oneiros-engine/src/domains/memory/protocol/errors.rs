@@ -22,6 +22,9 @@ pub enum MemoryError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -41,6 +44,7 @@ impl IntoResponse for MemoryError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             MemoryError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            MemoryError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

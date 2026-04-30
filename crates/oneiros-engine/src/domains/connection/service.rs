@@ -4,7 +4,7 @@ pub struct ConnectionService;
 
 impl ConnectionService {
     pub async fn create(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &CreateConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let CreateConnection::V1(creation) = request;
@@ -33,12 +33,12 @@ impl ConnectionService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let GetConnection::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let connection = ConnectionRepo::new(context)
+        let connection = ConnectionRepo::new(context.scope()?)
             .get(&id)
             .await?
             .ok_or(ConnectionError::NotFound(id))?;
@@ -51,7 +51,7 @@ impl ConnectionService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let ListConnections::V1(listing) = request;
@@ -64,7 +64,7 @@ impl ConnectionService {
             })
             .transpose()?;
 
-        let listed = ConnectionRepo::new(context)
+        let listed = ConnectionRepo::new(context.scope()?)
             .list(ref_json.as_deref(), &listing.filters)
             .await?;
         if listed.total == 0 {
@@ -81,11 +81,11 @@ impl ConnectionService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let RemoveConnection::V1(removal) = request;
-        if ConnectionRepo::new(context)
+        if ConnectionRepo::new(context.scope()?)
             .get(&removal.id)
             .await?
             .is_none()

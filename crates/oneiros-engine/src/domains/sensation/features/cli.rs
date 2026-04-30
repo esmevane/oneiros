@@ -18,7 +18,7 @@ pub enum SensationCommands {
 impl SensationCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, SensationError> {
         let client = context.client();
         let sensation_client = SensationClient::new(&client);

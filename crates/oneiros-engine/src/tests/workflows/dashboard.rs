@@ -19,7 +19,7 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
         .init_project()
         .await?;
 
-    // Act: hit /dashboard/config without auth — it's a SystemContext route.
+    // Act: hit /dashboard/config without auth — it's a HostLog route.
     let http = reqwest::Client::new();
     let url = format!("{}/dashboard/config", app.base_url());
     let bootstrap: DashboardBootstrap = http

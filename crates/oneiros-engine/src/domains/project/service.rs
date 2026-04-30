@@ -6,7 +6,7 @@ pub struct ProjectService;
 
 impl ProjectService {
     pub async fn init(
-        context: &SystemContext,
+        context: &HostLog,
         request: &InitProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
@@ -78,7 +78,7 @@ impl ProjectService {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let actors = ActorRepo::new(context).list(&all_filters).await?;
+        let actors = ActorRepo::new(context.scope()?).list(&all_filters).await?;
 
         let token = if let Some(actor) = actors.items.first() {
             match TicketService::create(
@@ -124,7 +124,7 @@ impl ProjectService {
     /// portable — the receiving brain materializes the blob at import time
     /// without persisting the ephemeral event to the log.
     pub fn export(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
@@ -180,7 +180,7 @@ impl ProjectService {
     /// Domain events are persisted normally, then all projections
     /// are replayed to rebuild the read models.
     pub fn import(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
@@ -255,7 +255,7 @@ impl ProjectService {
     /// alone cannot add columns to existing tables. The event log
     /// (`events.db`) is untouched; projection data is always derivable
     /// from events.
-    pub fn replay(context: &ProjectContext) -> Result<ProjectResponse, ProjectError> {
+    pub fn replay(context: &ProjectLog) -> Result<ProjectResponse, ProjectError> {
         // Ensure a clean schema by deleting the old bookmark DB.
         // WAL sidecar files are silently cleaned up if present.
         let db_path = context.config.bookmark_db_path();

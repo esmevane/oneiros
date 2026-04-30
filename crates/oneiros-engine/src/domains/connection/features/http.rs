@@ -39,7 +39,7 @@ impl ConnectionRouter {
 }
 
 async fn create(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<CreateConnection>,
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
     let response = ConnectionService::create(&context, &body).await?;
@@ -47,14 +47,14 @@ async fn create(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListConnections>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(ConnectionService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<ConnectionId>>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(
@@ -67,7 +67,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(

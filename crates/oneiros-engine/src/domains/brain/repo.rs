@@ -4,16 +4,16 @@ use crate::*;
 
 /// Brain read model — async queries against the system context.
 pub struct BrainRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> BrainRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut stmt = db.prepare("select id, name, created_at from brains where name = ?1")?;
 
         let raw = stmt.query_row(params![name.to_string()], |row| {
@@ -37,7 +37,7 @@ impl<'a> BrainRepo<'a> {
     }
 
     pub async fn get_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut stmt = db.prepare("select id, name, created_at from brains where id = ?1")?;
 
         let raw = stmt.query_row(params![id.to_string()], |row| {
@@ -61,7 +61,7 @@ impl<'a> BrainRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Brain>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM brains")?;
@@ -93,7 +93,7 @@ impl<'a> BrainRepo<'a> {
     }
 
     pub async fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let count: i64 = db.query_row(
             "select count(*) from brains where name = ?1",
             params![name.to_string()],

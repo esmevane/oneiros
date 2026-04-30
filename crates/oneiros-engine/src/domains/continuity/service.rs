@@ -23,7 +23,7 @@ pub struct ContinuityService;
 impl ContinuityService {
     /// Emerge — create an agent and immediately activate its continuity.
     pub async fn emerge(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &EmergeAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -64,7 +64,7 @@ impl ContinuityService {
 
     /// Recede — retire an agent, ending its continuity.
     pub async fn recede(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RecedeAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let RecedeAgent::V1(receding) = request;
@@ -86,7 +86,7 @@ impl ContinuityService {
 
     /// Status — cross-agent activity overview.
     pub fn status(
-        context: &ProjectContext,
+        context: &ProjectLog,
         _request: &StatusAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let db = context.db()?;
@@ -160,7 +160,7 @@ impl ContinuityService {
 
     /// Wake — restore an agent's full cognitive context (initial session start).
     pub async fn wake(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &WakeAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -184,7 +184,7 @@ impl ContinuityService {
 
     /// Dream — restore an agent's full cognitive context.
     pub async fn dream(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &DreamAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -208,7 +208,7 @@ impl ContinuityService {
 
     /// Introspect — look inward, consolidate cognitive state.
     pub async fn introspect(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &IntrospectAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -235,7 +235,7 @@ impl ContinuityService {
 
     /// Reflect — pause on something significant.
     pub async fn reflect(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ReflectAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -262,7 +262,7 @@ impl ContinuityService {
 
     /// Sense — receive and interpret something from outside.
     pub async fn sense(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SenseContent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -287,7 +287,7 @@ impl ContinuityService {
 
     /// Sleep — end a session, capture continuity.
     pub async fn sleep(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SleepAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -314,7 +314,7 @@ impl ContinuityService {
     /// Used to display the agent's full operational context (textures,
     /// sensations, levels, urges) without marking a continuity transition.
     pub fn guidebook(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GuidebookAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -332,7 +332,7 @@ impl ContinuityService {
     ///
     /// Uses Store types directly since we hold an owned Connection.
     pub fn gather_context(
-        context: &ProjectContext,
+        context: &ProjectLog,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
     ) -> Result<DreamContext, ContinuityError> {

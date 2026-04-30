@@ -4,11 +4,11 @@ pub struct TicketService;
 
 impl TicketService {
     pub async fn create(
-        context: &SystemContext,
+        context: &HostLog,
         request: &CreateTicket,
     ) -> Result<TicketResponse, TicketError> {
         let CreateTicket::V1(create) = request;
-        let brain = BrainRepo::new(context)
+        let brain = BrainRepo::new(context.scope()?)
             .get(&create.brain_name)
             .await?
             .ok_or_else(|| TicketError::BrainNotFound(create.brain_name.clone()))?;
@@ -27,13 +27,13 @@ impl TicketService {
     /// Issue a ticket scoped to a specific target ref. Used by both
     /// `create` (brain-scoped) and `bookmark share` (bookmark-scoped).
     pub async fn issue(
-        context: &SystemContext,
+        context: &HostLog,
         brain_name: &BrainName,
         brain: &Brain,
         actor_id: ActorId,
         target: Ref,
     ) -> Result<Ticket, TicketError> {
-        let actor = ActorRepo::new(context)
+        let actor = ActorRepo::new(context.scope()?)
             .get(actor_id)
             .await?
             .ok_or_else(|| TicketError::ActorNotFound(actor_id))?;
@@ -67,12 +67,12 @@ impl TicketService {
     }
 
     pub async fn get(
-        context: &SystemContext,
+        context: &HostLog,
         request: &GetTicket,
     ) -> Result<TicketResponse, TicketError> {
         let GetTicket::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let ticket = TicketRepo::new(context)
+        let ticket = TicketRepo::new(context.scope()?)
             .get(&id)
             .await?
             .ok_or(TicketError::NotFound(id))?;
@@ -85,11 +85,13 @@ impl TicketService {
     }
 
     pub async fn list(
-        context: &SystemContext,
+        context: &HostLog,
         request: &ListTickets,
     ) -> Result<TicketResponse, TicketError> {
         let ListTickets::V1(listing) = request;
-        let listed = TicketRepo::new(context).list(&listing.filters).await?;
+        let listed = TicketRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         Ok(TicketResponse::Listed(
             TicketsResponse::builder_v1()
                 .items(listed.items)
@@ -100,11 +102,11 @@ impl TicketService {
     }
 
     pub async fn validate(
-        context: &SystemContext,
+        context: &HostLog,
         request: &ValidateTicket,
     ) -> Result<TicketResponse, TicketError> {
         let ValidateTicket::V1(validate) = request;
-        let ticket = TicketRepo::new(context)
+        let ticket = TicketRepo::new(context.scope()?)
             .get_by_token(validate.token.as_str())
             .await?
             .ok_or(TicketError::InvalidToken)?;

@@ -4,16 +4,16 @@ use crate::*;
 
 /// Connection read model — async queries over the projection read model.
 pub struct ConnectionRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> ConnectionRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
         let mut stmt = db.prepare(
             "SELECT id, from_ref, to_ref, nature, created_at
              FROM connections WHERE id = ?1",
@@ -49,7 +49,7 @@ impl<'a> ConnectionRepo<'a> {
         entity_ref: Option<&str>,
         filters: &SearchFilters,
     ) -> Result<Listed<Connection>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         // Build WHERE clause from filters.
         let mut conditions = Vec::new();

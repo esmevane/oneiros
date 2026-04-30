@@ -4,7 +4,7 @@ pub struct NatureService;
 
 impl NatureService {
     pub async fn set(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SetNature,
     ) -> Result<NatureResponse, NatureError> {
         let SetNature::V1(set) = request;
@@ -32,12 +32,12 @@ impl NatureService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
         let GetNature::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let nature = NatureRepo::new(context)
+        let nature = NatureRepo::new(context.scope()?)
             .get(&name)
             .await?
             .ok_or(NatureError::NotFound(name))?;
@@ -50,11 +50,13 @@ impl NatureService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListNatures,
     ) -> Result<NatureResponse, NatureError> {
         let ListNatures::V1(listing) = request;
-        let listed = NatureRepo::new(context).list(&listing.filters).await?;
+        let listed = NatureRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         if listed.total == 0 {
             Ok(NatureResponse::NoNatures)
         } else {
@@ -69,7 +71,7 @@ impl NatureService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveNature,
     ) -> Result<NatureResponse, NatureError> {
         let RemoveNature::V1(removal) = request;

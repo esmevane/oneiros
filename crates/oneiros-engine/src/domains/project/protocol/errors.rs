@@ -27,6 +27,9 @@ pub enum ProjectError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -48,7 +51,8 @@ impl IntoResponse for ProjectError {
             | ProjectError::Event(_)
             | ProjectError::Serde(_)
             | ProjectError::Io(_)
-            | ProjectError::Upcast(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | ProjectError::Upcast(_)
+            | ProjectError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ProjectError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()

@@ -69,7 +69,7 @@ async fn dispatch(
     params: &serde_json::Value,
 ) -> Result<McpResponse, ToolError> {
     let context = state
-        .project_context(config.clone())
+        .project_log(config.clone())
         .map_err(|e| ToolError::App(e.into()))?;
 
     let name = tool_name.as_str();
@@ -145,10 +145,7 @@ fn all_resource_templates() -> Vec<ResourceTemplateDef> {
     .collect()
 }
 
-async fn read_resource(
-    context: &ProjectContext,
-    uri: &ResourceUri,
-) -> Result<McpResponse, ToolError> {
+async fn read_resource(context: &ProjectLog, uri: &ResourceUri) -> Result<McpResponse, ToolError> {
     let path = uri.path();
 
     let Some(request) = path.as_request() else {
@@ -175,8 +172,8 @@ async fn read_resource(
 async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Option<Config> {
     let token = Token::from(token_str).decode().ok()?;
 
-    let system = state.config().system();
-    let ticket = TicketRepo::new(&system)
+    let scope = ComposeScope::new(state.config().clone()).host().ok()?;
+    let ticket = TicketRepo::new(&scope)
         .get_by_token(token_str)
         .await
         .ok()
@@ -351,7 +348,7 @@ impl ServerHandler for EngineToolBox {
     ) -> Result<ReadResourceResult, ErrorData> {
         let context = self
             .state
-            .project_context(self.config().clone())
+            .project_log(self.config().clone())
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
         let uri: ResourceUri = request
@@ -412,7 +409,7 @@ impl ServerHandler for EngineToolBox {
 
                 let context = self
                     .state
-                    .project_context(self.config().clone())
+                    .project_log(self.config().clone())
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 let request: DreamAgent = DreamAgent::builder_v1()

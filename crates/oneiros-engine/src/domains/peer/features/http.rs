@@ -31,7 +31,7 @@ impl PeerRouter {
 }
 
 async fn add(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<AddPeer>,
 ) -> Result<(StatusCode, Json<PeerResponse>), PeerError> {
     let response = PeerService::add(&context, &body).await?;
@@ -39,14 +39,14 @@ async fn add(
 }
 
 async fn list(
-    context: SystemContext,
+    context: HostLog,
     Query(params): Query<ListPeers>,
 ) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(PeerService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: SystemContext,
+    context: HostLog,
     Path(key): Path<ResourceKey<PeerId>>,
 ) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
@@ -54,10 +54,7 @@ async fn show(
     ))
 }
 
-async fn remove(
-    context: SystemContext,
-    Path(id): Path<PeerId>,
-) -> Result<Json<PeerResponse>, PeerError> {
+async fn remove(context: HostLog, Path(id): Path<PeerId>) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
         PeerService::remove(&context, &RemovePeer::builder_v1().id(id).build().into()).await?,
     ))

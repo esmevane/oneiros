@@ -39,7 +39,7 @@ impl UrgeRouter {
 }
 
 async fn set(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<UrgeName>,
     Json(body): Json<SetUrge>,
 ) -> Result<(StatusCode, Json<UrgeResponse>), UrgeError> {
@@ -53,14 +53,14 @@ async fn set(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListUrges>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(UrgeService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<UrgeName>>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(
@@ -69,7 +69,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<UrgeName>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(

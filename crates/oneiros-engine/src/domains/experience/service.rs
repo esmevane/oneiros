@@ -4,11 +4,11 @@ pub struct ExperienceService;
 
 impl ExperienceService {
     pub async fn create(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &CreateExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let CreateExperience::V1(creation) = request;
-        let agent_record = AgentRepo::new(context)
+        let agent_record = AgentRepo::new(context.scope()?)
             .get(&creation.agent)
             .await?
             .ok_or_else(|| ExperienceError::AgentNotFound(creation.agent.clone()))?;
@@ -37,12 +37,12 @@ impl ExperienceService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let GetExperience::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let experience = ExperienceRepo::new(context)
+        let experience = ExperienceRepo::new(context.scope()?)
             .get(&id)
             .await?
             .ok_or(ExperienceError::NotFound(id))?;
@@ -55,13 +55,13 @@ impl ExperienceService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let ListExperiences::V1(listing) = request;
         let agent_id = match &listing.agent {
             Some(name) => {
-                let record = AgentRepo::new(context)
+                let record = AgentRepo::new(context.scope()?)
                     .get(name)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
@@ -77,7 +77,7 @@ impl ExperienceService {
             .filters(listing.filters)
             .build();
 
-        let results = SearchRepo::new(context)
+        let results = SearchRepo::new(context.scope()?)
             .search(&search_query, agent_id.as_ref())
             .await?;
 
@@ -93,7 +93,7 @@ impl ExperienceService {
                 _ => None,
             })
             .collect();
-        let items = ExperienceRepo::new(context).get_many(&ids).await?;
+        let items = ExperienceRepo::new(context.scope()?).get_many(&ids).await?;
 
         Ok(ExperienceResponse::Experiences(
             ExperiencesResponse::builder_v1()
@@ -105,11 +105,11 @@ impl ExperienceService {
     }
 
     pub async fn update_description(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceDescription::V1(update) = request;
-        let mut experience = ExperienceRepo::new(context)
+        let mut experience = ExperienceRepo::new(context.scope()?)
             .get(&update.id)
             .await?
             .ok_or_else(|| ExperienceError::NotFound(update.id))?;
@@ -135,11 +135,11 @@ impl ExperienceService {
     }
 
     pub async fn update_sensation(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceSensation::V1(update) = request;
-        let mut experience = ExperienceRepo::new(context)
+        let mut experience = ExperienceRepo::new(context.scope()?)
             .get(&update.id)
             .await?
             .ok_or_else(|| ExperienceError::NotFound(update.id))?;

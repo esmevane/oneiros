@@ -66,7 +66,7 @@ impl BookmarkRouter {
 }
 
 async fn create(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<CreateBookmark>,
 ) -> Result<(StatusCode, Json<BookmarkResponse>), BookmarkError> {
@@ -75,7 +75,7 @@ async fn create(
 }
 
 async fn switch(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<SwitchBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
@@ -85,7 +85,7 @@ async fn switch(
 }
 
 async fn merge(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<MergeBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
@@ -95,7 +95,7 @@ async fn merge(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Query(params): Query<ListBookmarks>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
@@ -105,7 +105,7 @@ async fn list(
 }
 
 async fn share(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<ShareBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
@@ -115,7 +115,7 @@ async fn share(
 }
 
 async fn follow(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<FollowBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
@@ -125,7 +125,7 @@ async fn follow(
 }
 
 async fn unfollow(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<UnfollowBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
@@ -135,7 +135,7 @@ async fn unfollow(
 }
 
 async fn collect(
-    context: ProjectContext,
+    context: ProjectLog,
     State(state): State<ServerState>,
     Json(body): Json<CollectBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {

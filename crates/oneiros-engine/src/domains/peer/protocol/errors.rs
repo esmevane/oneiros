@@ -22,6 +22,9 @@ pub enum PeerError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -40,6 +43,7 @@ impl IntoResponse for PeerError {
             PeerError::Database(_) | PeerError::Event(_) | PeerError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
+            PeerError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

@@ -1,18 +1,22 @@
+use std::sync::Arc;
+
 use tokio::sync::broadcast;
 
 use crate::*;
 
-impl aide::operation::OperationInput for ProjectContext {}
+impl aide::operation::OperationInput for ProjectLog {}
 
 #[derive(Clone)]
-pub struct ProjectContext {
+pub struct ProjectLog {
     pub config: Config,
     pub projections: Projections<BrainCanon>,
     chronicle: Chronicle,
     broadcast: broadcast::Sender<StoredEvent>,
+    /// Lazily-composed Scope, cached for the context's lifetime.
+    scope: Arc<std::sync::OnceLock<Scope<AtBookmark>>>,
 }
 
-impl ProjectContext {
+impl ProjectLog {
     pub fn new(config: Config) -> Self {
         let (broadcast, _) = broadcast::channel(256);
 
@@ -21,19 +25,18 @@ impl ProjectContext {
             projections: Projections::project(),
             chronicle: Chronicle::new(),
             broadcast,
+            scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
 
     /// Create a context that shares an existing broadcast channel.
-    ///
-    /// Used by the HTTP server so all per-request contexts and SSE
-    /// subscribers share the same event stream.
     pub fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
         Self {
             config,
             projections: Projections::project(),
             chronicle: Chronicle::new(),
             broadcast,
+            scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
 
@@ -48,6 +51,7 @@ impl ProjectContext {
             projections: Projections::project_with_pipeline(entry.pipeline),
             chronicle: entry.chronicle,
             broadcast,
+            scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
 
@@ -81,6 +85,18 @@ impl ProjectContext {
     /// `EventLog::attached`.
     pub fn db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         self.config.bookmark_conn()
+    }
+
+    /// Compose a bookmark-tier Scope from this context's config
+    /// (lazy, cached). Strangler helper: lets services pass &Scope to
+    /// repos without changing their own signatures during migration.
+    pub fn scope(&self) -> Result<&Scope<AtBookmark>, ComposeError> {
+        if self.scope.get().is_none() {
+            let s = ComposeScope::new(self.config.clone())
+                .bookmark(self.config.brain.clone(), self.config.bookmark.clone())?;
+            let _ = self.scope.set(s);
+        }
+        Ok(self.scope.get().expect("just set above"))
     }
 
     /// Open the system database.

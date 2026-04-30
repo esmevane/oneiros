@@ -1,5 +1,13 @@
 use crate::*;
 
+fn is_missing_table(e: &rusqlite::Error) -> bool {
+    matches!(
+        e,
+        rusqlite::Error::SqliteFailure(_, Some(msg))
+            if msg.starts_with("no such table")
+    )
+}
+
 pub struct BookmarkStore<'a> {
     db: &'a rusqlite::Connection,
 }
@@ -48,5 +56,22 @@ impl<'a> BookmarkStore<'a> {
     pub fn reset(&self) -> Result<(), EventError> {
         self.db.execute_batch("DELETE FROM bookmarks")?;
         Ok(())
+    }
+
+    /// List bookmark names for a specific brain. Returns an empty
+    /// list if the projection has not been migrated yet (cold start).
+    pub fn list_for_brain(&self, brain: &BrainName) -> Result<Vec<BookmarkName>, rusqlite::Error> {
+        let mut stmt = match self
+            .db
+            .prepare("SELECT name FROM bookmarks WHERE brain = ?1")
+        {
+            Ok(stmt) => stmt,
+            Err(e) if is_missing_table(&e) => return Ok(Vec::new()),
+            Err(e) => return Err(e),
+        };
+        let rows = stmt
+            .query_map([brain.to_string()], |row| row.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows.into_iter().map(BookmarkName::from).collect())
     }
 }

@@ -13,7 +13,7 @@ impl PersonaMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &PersonaRequest,
     ) -> Result<McpResponse, ToolError> {
         persona_mcp::resource(context, request).await
@@ -24,7 +24,7 @@ mod persona_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &PersonaRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {

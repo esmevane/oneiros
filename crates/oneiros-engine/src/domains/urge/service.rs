@@ -3,10 +3,7 @@ use crate::*;
 pub struct UrgeService;
 
 impl UrgeService {
-    pub async fn set(
-        context: &ProjectContext,
-        request: &SetUrge,
-    ) -> Result<UrgeResponse, UrgeError> {
+    pub async fn set(context: &ProjectLog, request: &SetUrge) -> Result<UrgeResponse, UrgeError> {
         let SetUrge::V1(set) = request;
         let urge = Urge::builder()
             .name(set.name.clone())
@@ -25,13 +22,10 @@ impl UrgeService {
         ))
     }
 
-    pub async fn get(
-        context: &ProjectContext,
-        request: &GetUrge,
-    ) -> Result<UrgeResponse, UrgeError> {
+    pub async fn get(context: &ProjectLog, request: &GetUrge) -> Result<UrgeResponse, UrgeError> {
         let GetUrge::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let urge = UrgeRepo::new(context)
+        let urge = UrgeRepo::new(context.scope()?)
             .get(&name)
             .await?
             .ok_or(UrgeError::NotFound(name))?;
@@ -41,11 +35,13 @@ impl UrgeService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListUrges,
     ) -> Result<UrgeResponse, UrgeError> {
         let ListUrges::V1(listing) = request;
-        let listed = UrgeRepo::new(context).list(&listing.filters).await?;
+        let listed = UrgeRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         if listed.total == 0 {
             Ok(UrgeResponse::NoUrges)
         } else {
@@ -60,7 +56,7 @@ impl UrgeService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveUrge,
     ) -> Result<UrgeResponse, UrgeError> {
         let RemoveUrge::V1(removal) = request;

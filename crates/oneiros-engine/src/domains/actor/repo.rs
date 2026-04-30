@@ -4,16 +4,16 @@ use crate::*;
 
 /// Actor read model — queries, projection handling, and lifecycle.
 pub struct ActorRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> ActorRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut statement =
             db.prepare("select id, tenant_id, name, created_at from actors where id = ?1")?;
 
@@ -41,7 +41,7 @@ impl<'a> ActorRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM actors")?;

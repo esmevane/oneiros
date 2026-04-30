@@ -37,7 +37,7 @@ impl TicketRouter {
 }
 
 async fn create(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<CreateTicket>,
 ) -> Result<(StatusCode, Json<TicketResponse>), TicketError> {
     let response = TicketService::create(&context, &body).await?;
@@ -45,14 +45,14 @@ async fn create(
 }
 
 async fn list(
-    context: SystemContext,
+    context: HostLog,
     Query(params): Query<ListTickets>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(TicketService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: SystemContext,
+    context: HostLog,
     Path(key): Path<ResourceKey<TicketId>>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(
@@ -61,7 +61,7 @@ async fn show(
 }
 
 async fn validate(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<ValidateTicket>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(TicketService::validate(&context, &body).await?))

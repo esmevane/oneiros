@@ -19,10 +19,7 @@ pub enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Rendered<Responses>, StorageError> {
+    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, StorageError> {
         let client = context.client();
         let storage_client = StorageClient::new(&client);
 

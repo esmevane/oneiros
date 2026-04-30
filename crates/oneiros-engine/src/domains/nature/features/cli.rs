@@ -16,10 +16,7 @@ pub enum NatureCommands {
 }
 
 impl NatureCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Rendered<Responses>, NatureError> {
+    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, NatureError> {
         let client = context.client();
         let nature_client = NatureClient::new(&client);
 

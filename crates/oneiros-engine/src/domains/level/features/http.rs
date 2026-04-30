@@ -39,7 +39,7 @@ impl LevelRouter {
 }
 
 async fn set(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<LevelName>,
     Json(body): Json<SetLevel>,
 ) -> Result<(StatusCode, Json<LevelResponse>), LevelError> {
@@ -53,14 +53,14 @@ async fn set(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListLevels>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(LevelService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<LevelName>>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(
@@ -69,7 +69,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<LevelName>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(

@@ -165,63 +165,74 @@ impl Command {
     /// - `Rendered::Data` is the default for domains without a presenter
     #[tracing::instrument(skip_all, err(Display))]
     pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
+        // Strangler bridges — produce legacy Context types via Scope.
+        // Will simplify when consumers migrate to take Scope directly.
+        let system_ctx = || -> Result<HostLog, Error> {
+            Ok(ComposeScope::new(config.clone()).host()?.host_log())
+        };
+        let project_ctx = || -> Result<ProjectLog, Error> {
+            Ok(ComposeScope::new(config.clone())
+                .bookmark(config.brain.clone(), config.bookmark.clone())?
+                .project_log())
+        };
+
         Ok(match self {
             // Service management — operates before/outside HTTP transport
             Command::Service(service) => service.execute(config).await?,
 
             // Workflow domains — each knows its context
-            Command::System(system) => system.execute(config.system()).await?,
+            Command::System(system) => system.execute(system_ctx()?).await?,
             Command::Project(project) => project.execute(config).await?,
-            Command::Seed(seed) => seed.execute(&config.project()).await?,
+            Command::Seed(seed) => seed.execute(&project_ctx()?).await?,
             Command::Mcp(mcp) => mcp.execute(config)?,
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
 
             // Bookmark — canon navigation (routes through HTTP)
-            Command::Bookmark(bookmark) => bookmark.execute(&config.project()).await?,
+            Command::Bookmark(bookmark) => bookmark.execute(&project_ctx()?).await?,
 
             // System-scoped domains
-            Command::Tenant(tenant) => tenant.execute(&config.system()).await?,
-            Command::Actor(actor) => actor.execute(&config.system()).await?,
-            Command::Brain(brain) => brain.execute(&config.system()).await?,
-            Command::Ticket(ticket) => ticket.execute(&config.system()).await?,
-            Command::Peer(peer) => peer.execute(&config.system()).await?,
+            Command::Tenant(tenant) => tenant.execute(&system_ctx()?).await?,
+            Command::Actor(actor) => actor.execute(&system_ctx()?).await?,
+            Command::Brain(brain) => brain.execute(&system_ctx()?).await?,
+            Command::Ticket(ticket) => ticket.execute(&system_ctx()?).await?,
+            Command::Peer(peer) => peer.execute(&system_ctx()?).await?,
 
             // Project-scoped domains — vocabulary
-            Command::Level(level) => level.execute(&config.project()).await?,
-            Command::Texture(texture) => texture.execute(&config.project()).await?,
-            Command::Sensation(sensation) => sensation.execute(&config.project()).await?,
-            Command::Nature(nature) => nature.execute(&config.project()).await?,
-            Command::Persona(persona) => persona.execute(&config.project()).await?,
-            Command::Urge(urge) => urge.execute(&config.project()).await?,
-            Command::Agent(agent) => agent.execute(&config.project()).await?,
+            Command::Level(level) => level.execute(&project_ctx()?).await?,
+            Command::Texture(texture) => texture.execute(&project_ctx()?).await?,
+            Command::Sensation(sensation) => sensation.execute(&project_ctx()?).await?,
+            Command::Nature(nature) => nature.execute(&project_ctx()?).await?,
+            Command::Persona(persona) => persona.execute(&project_ctx()?).await?,
+            Command::Urge(urge) => urge.execute(&project_ctx()?).await?,
+            Command::Agent(agent) => agent.execute(&project_ctx()?).await?,
 
             // Entity domains — return Rendered with ref_token prompts on create
-            Command::Cognition(cognition) => cognition.execute(&config.project()).await?,
-            Command::Memory(memory) => memory.execute(&config.project()).await?,
-            Command::Experience(experience) => experience.execute(&config.project()).await?,
-            Command::Connection(connection) => connection.execute(&config.project()).await?,
+            Command::Cognition(cognition) => cognition.execute(&project_ctx()?).await?,
+            Command::Memory(memory) => memory.execute(&project_ctx()?).await?,
+            Command::Experience(experience) => experience.execute(&project_ctx()?).await?,
+            Command::Connection(connection) => connection.execute(&project_ctx()?).await?,
 
-            Command::Storage(storage) => storage.execute(&config.project()).await?,
-            Command::Search(search) => search.execute(&config.project()).await?,
-            Command::Pressure(pressure) => pressure.execute(&config.project()).await?,
+            Command::Storage(storage) => storage.execute(&project_ctx()?).await?,
+            Command::Search(search) => search.execute(&project_ctx()?).await?,
+            Command::Pressure(pressure) => pressure.execute(&project_ctx()?).await?,
 
             // Doctor — system diagnostics
             Command::Doctor => DoctorCli::execute(config).await?,
 
             // Continuity — domain subcommands go through the presenter
-            Command::Continuity(continuity) => continuity.execute(&config.project()).await?,
+            Command::Continuity(continuity) => continuity.execute(&project_ctx()?).await?,
 
             // Flat lifecycle shortcuts — delegate to ContinuityCommands
             Command::Wake { name } => {
                 ContinuityCommands::Wake(WakeAgent::builder_v1().agent(name.clone()).build().into())
-                    .execute(&config.project())
+                    .execute(&project_ctx()?)
                     .await?
             }
             Command::Dream { name } => {
                 ContinuityCommands::Dream(
                     DreamAgent::builder_v1().agent(name.clone()).build().into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Introspect { name } => {
@@ -231,7 +242,7 @@ impl Command {
                         .build()
                         .into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Reflect { name } => {
@@ -241,7 +252,7 @@ impl Command {
                         .build()
                         .into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Sense { name, content } => {
@@ -252,14 +263,14 @@ impl Command {
                         .build()
                         .into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Sleep { name } => {
                 ContinuityCommands::Sleep(
                     SleepAgent::builder_v1().agent(name.clone()).build().into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Guidebook { name } => {
@@ -269,7 +280,7 @@ impl Command {
                         .build()
                         .into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
 
@@ -287,14 +298,14 @@ impl Command {
                         .build()
                         .into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Recede { name } => {
                 ContinuityCommands::Recede(
                     RecedeAgent::builder_v1().agent(name.clone()).build().into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
             Command::Status => {
@@ -304,7 +315,7 @@ impl Command {
                         .build()
                         .into(),
                 )
-                .execute(&config.project())
+                .execute(&project_ctx()?)
                 .await?
             }
         })

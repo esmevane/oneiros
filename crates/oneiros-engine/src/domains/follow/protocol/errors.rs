@@ -19,6 +19,9 @@ pub enum FollowError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -34,6 +37,7 @@ impl IntoResponse for FollowError {
             FollowError::Database(_) | FollowError::Event(_) | FollowError::Client(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
+            FollowError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

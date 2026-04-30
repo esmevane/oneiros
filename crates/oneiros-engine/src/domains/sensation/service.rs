@@ -4,7 +4,7 @@ pub struct SensationService;
 
 impl SensationService {
     pub async fn set(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SetSensation,
     ) -> Result<SensationResponse, SensationError> {
         let SetSensation::V1(set) = request;
@@ -32,12 +32,12 @@ impl SensationService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetSensation,
     ) -> Result<SensationResponse, SensationError> {
         let GetSensation::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let sensation = SensationRepo::new(context)
+        let sensation = SensationRepo::new(context.scope()?)
             .get(&name)
             .await?
             .ok_or(SensationError::NotFound(name))?;
@@ -50,11 +50,13 @@ impl SensationService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListSensations,
     ) -> Result<SensationResponse, SensationError> {
         let ListSensations::V1(listing) = request;
-        let listed = SensationRepo::new(context).list(&listing.filters).await?;
+        let listed = SensationRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         if listed.total == 0 {
             Ok(SensationResponse::NoSensations)
         } else {
@@ -69,7 +71,7 @@ impl SensationService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveSensation,
     ) -> Result<SensationResponse, SensationError> {
         let RemoveSensation::V1(removal) = request;

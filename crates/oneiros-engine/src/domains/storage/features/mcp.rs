@@ -9,7 +9,7 @@ impl StorageMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -34,7 +34,7 @@ mod storage_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {

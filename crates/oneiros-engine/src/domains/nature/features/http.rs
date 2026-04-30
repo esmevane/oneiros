@@ -39,7 +39,7 @@ impl NatureRouter {
 }
 
 async fn set(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<NatureName>,
     Json(body): Json<SetNature>,
 ) -> Result<(StatusCode, Json<NatureResponse>), NatureError> {
@@ -53,14 +53,14 @@ async fn set(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListNatures>,
 ) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(NatureService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<NatureName>>,
 ) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(
@@ -69,7 +69,7 @@ async fn show(
 }
 
 async fn remove(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(name): Path<NatureName>,
 ) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(

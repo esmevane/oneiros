@@ -22,7 +22,7 @@ pub enum ExperienceCommands {
 impl ExperienceCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, ExperienceError> {
         let client = context.client();
         let experience_client = ExperienceClient::new(&client);

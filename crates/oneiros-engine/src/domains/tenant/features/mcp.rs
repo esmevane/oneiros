@@ -9,7 +9,7 @@ impl TenantMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -33,7 +33,7 @@ mod tenant_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -41,7 +41,10 @@ mod tenant_mcp {
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let system = SystemContext::new(context.config.clone());
+        let scope = ComposeScope::new(context.config.clone())
+            .host()
+            .map_err(Error::from)?;
+        let system = scope.host_log();
 
         let value = match request_type {
             TenantRequestType::CreateTenant => {

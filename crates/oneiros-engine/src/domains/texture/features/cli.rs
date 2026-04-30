@@ -16,10 +16,7 @@ pub enum TextureCommands {
 }
 
 impl TextureCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectContext,
-    ) -> Result<Rendered<Responses>, TextureError> {
+    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, TextureError> {
         let client = context.client();
         let texture_client = TextureClient::new(&client);
 

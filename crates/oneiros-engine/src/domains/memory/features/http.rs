@@ -36,7 +36,7 @@ impl MemoryRouter {
 }
 
 async fn add(
-    context: ProjectContext,
+    context: ProjectLog,
     Json(body): Json<AddMemory>,
 ) -> Result<(StatusCode, Json<MemoryResponse>), MemoryError> {
     let response = MemoryService::add(&context, &body).await?;
@@ -44,14 +44,14 @@ async fn add(
 }
 
 async fn list(
-    context: ProjectContext,
+    context: ProjectLog,
     Query(params): Query<ListMemories>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
     Ok(Json(MemoryService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: ProjectContext,
+    context: ProjectLog,
     Path(key): Path<ResourceKey<MemoryId>>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
     Ok(Json(

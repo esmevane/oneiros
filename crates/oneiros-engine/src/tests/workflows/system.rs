@@ -223,7 +223,7 @@ async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::E
         .brain(BrainName::new("test"))
         .build();
 
-    let context = SystemContext::new(config.clone());
+    let context = HostLog::new(config.clone());
 
     // Before init, no host key exists
     assert!(

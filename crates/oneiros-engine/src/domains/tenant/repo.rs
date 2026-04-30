@@ -2,18 +2,18 @@ use rusqlite::params;
 
 use crate::*;
 
-/// Tenant read model — async queries against the system context.
+/// Tenant read model — async queries against the host-tier scope.
 pub struct TenantRepo<'a> {
-    context: &'a SystemContext,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> TenantRepo<'a> {
-    pub fn new(context: &'a SystemContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+        Self { scope }
     }
 
     pub async fn get(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
         let mut stmt = db.prepare("select id, name, created_at from tenants where id = ?1")?;
 
         let raw = stmt.query_row(params![id.to_string()], |row| {
@@ -35,7 +35,7 @@ impl<'a> TenantRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Tenant>, TenantError> {
-        let db = self.context.db()?;
+        let db = self.scope.host_db()?;
 
         let count_sql = "SELECT COUNT(*) FROM tenants";
         let total = {

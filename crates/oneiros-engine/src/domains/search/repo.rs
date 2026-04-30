@@ -12,12 +12,12 @@ use crate::*;
 /// repo browses by filters alone, ordered by `created_at` descending — the
 /// shape list endpoints consume.
 pub struct SearchRepo<'a> {
-    context: &'a ProjectContext,
+    scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> SearchRepo<'a> {
-    pub fn new(context: &'a ProjectContext) -> Self {
-        Self { context }
+    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+        Self { scope }
     }
 
     /// Execute a search with optional filters. Returns ranked refs plus
@@ -32,7 +32,7 @@ impl<'a> SearchRepo<'a> {
         query: &SearchQueryV1,
         agent_id: Option<&AgentId>,
     ) -> Result<SearchHits, EventError> {
-        let db = self.context.db()?;
+        let db = self.scope.bookmark_db()?;
 
         let has_query = query.query.is_some();
         let where_clause = query.where_clause(agent_id);

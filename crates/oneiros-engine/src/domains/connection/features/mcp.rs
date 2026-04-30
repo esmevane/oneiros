@@ -9,7 +9,7 @@ impl ConnectionMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -26,7 +26,7 @@ impl ConnectionMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ConnectionRequest,
     ) -> Result<McpResponse, ToolError> {
         connection_mcp::resource(context, request).await
@@ -47,7 +47,7 @@ mod connection_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -74,7 +74,7 @@ mod connection_mcp {
     }
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ConnectionRequest,
     ) -> Result<McpResponse, ToolError> {
         let response = match request {

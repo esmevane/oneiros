@@ -4,7 +4,7 @@ pub struct LevelService;
 
 impl LevelService {
     pub async fn set(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &SetLevel,
     ) -> Result<LevelResponse, LevelError> {
         let SetLevel::V1(set) = request;
@@ -26,12 +26,12 @@ impl LevelService {
     }
 
     pub async fn get(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &GetLevel,
     ) -> Result<LevelResponse, LevelError> {
         let GetLevel::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let level = LevelRepo::new(context)
+        let level = LevelRepo::new(context.scope()?)
             .get(&name)
             .await?
             .ok_or(LevelError::NotFound(name))?;
@@ -44,11 +44,13 @@ impl LevelService {
     }
 
     pub async fn list(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ListLevels,
     ) -> Result<LevelResponse, LevelError> {
         let ListLevels::V1(listing) = request;
-        let listed = LevelRepo::new(context).list(&listing.filters).await?;
+        let listed = LevelRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         if listed.total == 0 {
             Ok(LevelResponse::NoLevels)
         } else {
@@ -63,7 +65,7 @@ impl LevelService {
     }
 
     pub async fn remove(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &RemoveLevel,
     ) -> Result<LevelResponse, LevelError> {
         let RemoveLevel::V1(removal) = request;

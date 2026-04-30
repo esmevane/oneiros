@@ -33,7 +33,7 @@ impl ActorRouter {
 }
 
 async fn create(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<CreateActor>,
 ) -> Result<(StatusCode, Json<ActorResponse>), ActorError> {
     let response = ActorService::create(&context, &body).await?;
@@ -41,14 +41,14 @@ async fn create(
 }
 
 async fn list(
-    context: SystemContext,
+    context: HostLog,
     Query(params): Query<ListActors>,
 ) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(ActorService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: SystemContext,
+    context: HostLog,
     Path(key): Path<ResourceKey<ActorId>>,
 ) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(

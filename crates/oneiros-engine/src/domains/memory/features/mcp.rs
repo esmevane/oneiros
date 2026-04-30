@@ -9,7 +9,7 @@ impl MemoryMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -26,7 +26,7 @@ impl MemoryMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &MemoryRequest,
     ) -> Result<McpResponse, ToolError> {
         memory_mcp::resource(context, request).await
@@ -47,7 +47,7 @@ mod memory_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -72,7 +72,7 @@ mod memory_mcp {
     }
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &MemoryRequest,
     ) -> Result<McpResponse, ToolError> {
         let response = match request {

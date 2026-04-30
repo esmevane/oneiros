@@ -9,7 +9,7 @@ impl AgentMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -33,7 +33,7 @@ impl AgentMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &AgentRequest,
     ) -> Result<McpResponse, ToolError> {
         agent_mcp::resource(context, request).await
@@ -45,7 +45,7 @@ impl AgentMcp {
     /// `ConnectionRequest`.
     pub async fn read_resource_special(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         path: &ResourcePath,
     ) -> Result<McpResponse, ToolError> {
         match path {
@@ -81,7 +81,7 @@ mod agent_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -119,7 +119,7 @@ mod agent_mcp {
     }
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &AgentRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {
@@ -147,7 +147,7 @@ mod agent_mcp {
     }
 
     pub async fn read_agent_connections(
-        context: &ProjectContext,
+        context: &ProjectLog,
         name: &AgentName,
     ) -> Result<McpResponse, ToolError> {
         let agent = AgentService::get(

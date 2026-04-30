@@ -23,10 +23,7 @@ fn peer_to_found_v1(peer: Peer) -> PeerFoundResponseV1 {
 }
 
 impl PeerService {
-    pub async fn add(
-        context: &SystemContext,
-        request: &AddPeer,
-    ) -> Result<PeerResponse, PeerError> {
+    pub async fn add(context: &HostLog, request: &AddPeer) -> Result<PeerResponse, PeerError> {
         let AddPeer::V1(add) = request;
         let parsed: PeerAddress = add
             .address
@@ -60,13 +57,10 @@ impl PeerService {
         )))
     }
 
-    pub async fn get(
-        context: &SystemContext,
-        request: &GetPeer,
-    ) -> Result<PeerResponse, PeerError> {
+    pub async fn get(context: &HostLog, request: &GetPeer) -> Result<PeerResponse, PeerError> {
         let GetPeer::V1(get) = request;
         let id = get.key.resolve()?;
-        let peer = PeerRepo::new(context)
+        let peer = PeerRepo::new(context.scope()?)
             .get(id)
             .await?
             .ok_or(PeerError::NotFound(id))?;
@@ -75,12 +69,11 @@ impl PeerService {
         )))
     }
 
-    pub async fn list(
-        context: &SystemContext,
-        request: &ListPeers,
-    ) -> Result<PeerResponse, PeerError> {
+    pub async fn list(context: &HostLog, request: &ListPeers) -> Result<PeerResponse, PeerError> {
         let ListPeers::V1(listing) = request;
-        let listed = PeerRepo::new(context).list(&listing.filters).await?;
+        let listed = PeerRepo::new(context.scope()?)
+            .list(&listing.filters)
+            .await?;
         let total = listed.total;
         let items: Vec<PeerFoundResponseV1> =
             listed.items.into_iter().map(peer_to_found_v1).collect();
@@ -97,7 +90,7 @@ impl PeerService {
     /// return it without emitting an event. Otherwise add it and return
     /// the newly-created record.
     pub async fn ensure(
-        context: &SystemContext,
+        context: &HostLog,
         key: PeerKey,
         address: PeerAddress,
     ) -> Result<Peer, PeerError> {
@@ -105,7 +98,7 @@ impl PeerService {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let listed = PeerRepo::new(context).list(&all).await?;
+        let listed = PeerRepo::new(context.scope()?).list(&all).await?;
         if let Some(existing) = listed.items.iter().find(|p| p.key == key) {
             return Ok(existing.clone());
         }
@@ -127,11 +120,11 @@ impl PeerService {
     }
 
     pub async fn remove(
-        context: &SystemContext,
+        context: &HostLog,
         request: &RemovePeer,
     ) -> Result<PeerResponse, PeerError> {
         let RemovePeer::V1(remove) = request;
-        let existing = PeerRepo::new(context)
+        let existing = PeerRepo::new(context.scope()?)
             .get(remove.id)
             .await?
             .ok_or(PeerError::NotFound(remove.id))?;

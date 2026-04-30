@@ -22,7 +22,7 @@ impl BookmarkService {
             .build();
 
         state
-            .system_context()
+            .host_log()
             .emit(BookmarkEvents::BookmarkForked(
                 BookmarkForked::builder_v1()
                     .bookmark(bookmark.clone())
@@ -56,7 +56,7 @@ impl BookmarkService {
             .build();
 
         state
-            .system_context()
+            .host_log()
             .emit(BookmarkEvents::BookmarkSwitched(event.into()))
             .await?;
 
@@ -88,7 +88,7 @@ impl BookmarkService {
             .build();
 
         state
-            .system_context()
+            .host_log()
             .emit(BookmarkEvents::BookmarkMerged(event.into()))
             .await?;
 
@@ -108,8 +108,9 @@ impl BookmarkService {
         request: &ListBookmarks,
     ) -> Result<BookmarkResponse, BookmarkError> {
         let ListBookmarks::V1(listing) = request;
-        let system = state.system_context();
-        let listed = BookmarkRepo::new(&system)
+        let system = state.host_log();
+        let scope = system.scope()?;
+        let listed = BookmarkRepo::new(scope)
             .list(brain, &listing.filters)
             .await?;
         Ok(BookmarkResponse::Bookmarks(listed))
@@ -127,13 +128,14 @@ impl BookmarkService {
         let ShareBookmark::V1(sharing) = request;
         let name = &sharing.name;
         let actor_id = &sharing.actor_id;
-        let system = state.system_context();
+        let system = state.host_log();
+        let scope = system.scope()?;
         let all = SearchFilters {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
 
-        let bookmarks = BookmarkRepo::new(&system).list(brain, &all).await?;
+        let bookmarks = BookmarkRepo::new(scope).list(brain, &all).await?;
         let bookmark = bookmarks
             .items
             .iter()
@@ -141,7 +143,7 @@ impl BookmarkService {
             .ok_or_else(|| BookmarkError::NotFound(name.clone()))?
             .clone();
 
-        let brain_record = BrainRepo::new(&system)
+        let brain_record = BrainRepo::new(scope)
             .get(brain)
             .await?
             .ok_or_else(|| BookmarkError::BrainNotFound(brain.clone()))?;
@@ -149,7 +151,7 @@ impl BookmarkService {
         let resolved_actor_id = match actor_id {
             Some(id) => *id,
             None => {
-                let actors = ActorRepo::new(&system).list(&all).await?;
+                let actors = ActorRepo::new(scope).list(&all).await?;
                 actors
                     .items
                     .first()
@@ -193,7 +195,7 @@ impl BookmarkService {
         let FollowBookmark::V1(following) = request;
         let uri = &following.uri;
         let name = &following.name;
-        let system = state.system_context();
+        let system = state.host_log();
         let parsed: OneirosUri = uri
             .parse()
             .map_err(|e: OneirosUriError| BookmarkError::InvalidUri(e.to_string()))?;
@@ -238,7 +240,7 @@ impl BookmarkService {
     ) -> Result<BookmarkResponse, BookmarkError> {
         let CollectBookmark::V1(collection) = request;
         let name = &collection.name;
-        let system = state.system_context();
+        let system = state.host_log();
         let follow = FollowService::for_bookmark(&system, brain, name)
             .await?
             .ok_or_else(|| BookmarkError::FollowNotFound(name.clone()))?;
@@ -266,7 +268,7 @@ impl BookmarkService {
         follow: &Follow,
         peer_link: PeerLink,
     ) -> Result<BookmarkResponse, BookmarkError> {
-        let system = state.system_context();
+        let system = state.host_log();
         let bridge = state.bridge();
 
         // Get the bookmark's chronicle — this tracks what we've collected.
@@ -374,7 +376,7 @@ impl BookmarkService {
     ) -> Result<BookmarkResponse, BookmarkError> {
         let UnfollowBookmark::V1(unfollowing) = request;
         let name = &unfollowing.name;
-        let system = state.system_context();
+        let system = state.host_log();
         let follow = FollowService::for_bookmark(&system, brain, name)
             .await?
             .ok_or_else(|| BookmarkError::FollowNotFound(name.clone()))?;

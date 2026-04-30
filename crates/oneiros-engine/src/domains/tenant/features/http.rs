@@ -33,7 +33,7 @@ impl TenantRouter {
 }
 
 async fn create(
-    context: SystemContext,
+    context: HostLog,
     Json(body): Json<CreateTenant>,
 ) -> Result<(StatusCode, Json<TenantResponse>), TenantError> {
     let response = TenantService::create(&context, &body).await?;
@@ -41,14 +41,14 @@ async fn create(
 }
 
 async fn list(
-    context: SystemContext,
+    context: HostLog,
     Query(params): Query<ListTenants>,
 ) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(TenantService::list(&context, &params).await?))
 }
 
 async fn show(
-    context: SystemContext,
+    context: HostLog,
     Path(key): Path<ResourceKey<TenantId>>,
 ) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(

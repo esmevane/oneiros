@@ -13,7 +13,7 @@ pub enum ConnectionCommands {
 impl ConnectionCommands {
     pub async fn execute(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
     ) -> Result<Rendered<Responses>, ConnectionError> {
         let client = context.client();
         let connection_client = ConnectionClient::new(&client);

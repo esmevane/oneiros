@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::tests::harness::TestApp;
 use crate::*;
 
-async fn seeded_context() -> (ProjectContext, TestApp) {
+async fn seeded_context() -> (ProjectLog, TestApp) {
     let app = TestApp::new()
         .await
         .expect("boot test app")
@@ -21,7 +21,7 @@ async fn seeded_context() -> (ProjectContext, TestApp) {
     (context, app)
 }
 
-async fn seed_agent(context: &ProjectContext) -> AgentName {
+async fn seed_agent(context: &ProjectLog) -> AgentName {
     AgentService::create(
         context,
         &CreateAgent::V1(
@@ -38,7 +38,7 @@ async fn seed_agent(context: &ProjectContext) -> AgentName {
     AgentName::new("thinker.process")
 }
 
-async fn add_cognition(context: &ProjectContext, agent: &AgentName, content: &str) -> CognitionId {
+async fn add_cognition(context: &ProjectLog, agent: &AgentName, content: &str) -> CognitionId {
     match CognitionService::add(
         context,
         &AddCognition::builder_v1()
@@ -57,7 +57,7 @@ async fn add_cognition(context: &ProjectContext, agent: &AgentName, content: &st
 }
 
 async fn add_memory(
-    context: &ProjectContext,
+    context: &ProjectLog,
     agent: &AgentName,
     level: &str,
     content: &str,
@@ -80,7 +80,7 @@ async fn add_memory(
 }
 
 async fn add_experience(
-    context: &ProjectContext,
+    context: &ProjectLog,
     agent: &AgentName,
     description: &str,
 ) -> ExperienceId {
@@ -103,7 +103,7 @@ async fn add_experience(
     }
 }
 
-async fn connect(context: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId {
+async fn connect(context: &ProjectLog, from: &Ref, to: &Ref) -> ConnectionId {
     match ConnectionService::create(
         context,
         &CreateConnection::builder_v1()
@@ -123,12 +123,12 @@ async fn connect(context: &ProjectContext, from: &Ref, to: &Ref) -> ConnectionId
     }
 }
 
-async fn dream(context: &ProjectContext, agent: &AgentName) -> DreamContext {
+async fn dream(context: &ProjectLog, agent: &AgentName) -> DreamContext {
     dream_with(context, agent, &DreamOverrides::default()).await
 }
 
 async fn dream_with(
-    context: &ProjectContext,
+    context: &ProjectLog,
     agent: &AgentName,
     overrides: &DreamOverrides,
 ) -> DreamContext {

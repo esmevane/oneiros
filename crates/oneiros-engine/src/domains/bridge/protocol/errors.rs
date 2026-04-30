@@ -49,4 +49,12 @@ pub enum BridgeError {
     /// Database error during sync handling.
     #[error(transparent)]
     Database(#[from] rusqlite::Error),
+
+    /// A scope hydration error during sync handling.
+    #[error(transparent)]
+    Scope(#[from] ScopeError),
+
+    /// A scope composition error during sync handling.
+    #[error(transparent)]
+    Compose(#[from] ComposeError),
 }

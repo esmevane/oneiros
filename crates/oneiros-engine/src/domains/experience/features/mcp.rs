@@ -9,7 +9,7 @@ impl ExperienceMcp {
 
     pub async fn dispatch(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -26,7 +26,7 @@ impl ExperienceMcp {
 
     pub async fn resource(
         &self,
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ExperienceRequest,
     ) -> Result<McpResponse, ToolError> {
         experience_mcp::resource(context, request).await
@@ -47,7 +47,7 @@ mod experience_mcp {
     }
 
     pub async fn dispatch(
-        context: &ProjectContext,
+        context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -75,7 +75,7 @@ mod experience_mcp {
     }
 
     pub async fn resource(
-        context: &ProjectContext,
+        context: &ProjectLog,
         request: &ExperienceRequest,
     ) -> Result<McpResponse, ToolError> {
         let response = match request {
