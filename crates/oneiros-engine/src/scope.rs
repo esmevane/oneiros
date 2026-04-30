@@ -250,17 +250,15 @@ impl Scope<AtBookmark> {
     /// Open the bookmark DB with the events DB ATTACHed. Mirrors
     /// `Config::bookmark_conn` but uses paths resolved at climb time.
     pub fn bookmark_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let bookmark_path = &self.inner.bookmark.bookmark_db_path;
-        if let Some(parent) = bookmark_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        let conn = rusqlite::Connection::open(bookmark_path)?;
+        let platform = self.inner.config.platform();
+        let _ = platform.ensure_bookmarks_dir(&self.inner.project.name);
+
+        let conn = rusqlite::Connection::open(&self.inner.bookmark.bookmark_db_path)?;
         conn.pragma_update(None, "journal_mode", "wal")?;
         conn.pragma_update(None, "limit_attached", "125")?;
-        let events_path = &self.inner.project.events_db_path;
         conn.execute_batch(&format!(
             "ATTACH DATABASE '{}' AS events",
-            events_path.display(),
+            self.inner.project.events_db_path.display(),
         ))?;
         Ok(conn)
     }
@@ -355,10 +353,11 @@ impl ComposeScope {
     }
 
     fn build_host_infra(&self) -> Result<HostInfra, ComposeError> {
-        if !self.config.data_dir.is_dir() {
+        let platform = self.config.platform();
+        if !platform.data_dir().is_dir() {
             return Err(ComposeError::HostHydrationFailed(format!(
                 "data_dir does not exist: {}",
-                self.config.data_dir.display()
+                platform.data_dir().display()
             )));
         }
 
@@ -371,26 +370,25 @@ impl ComposeScope {
 
         let mut projects = HashMap::new();
         for name in projection_names {
-            let brain_dir = self.config.data_dir.join(name.as_str());
             // System says the brain exists; verify it's actually
             // reachable on disk. Mismatch = orphan, exclude.
-            if !brain_dir.join("events.db").exists() {
+            if !platform.events_db_path(&name).exists() {
                 continue;
             }
             let project = ProjectInfra {
                 name: name.clone(),
-                brain_dir: brain_dir.clone(),
-                events_db_path: brain_dir.join("events.db"),
-                bookmarks_dir: brain_dir.join("bookmarks"),
+                brain_dir: platform.brain_dir(&name),
+                events_db_path: platform.events_db_path(&name),
+                bookmarks_dir: platform.bookmarks_dir(&name),
                 bookmarks: HashMap::new(),
             };
             projects.insert(name, Arc::new(project));
         }
 
         Ok(HostInfra {
-            data_dir: self.config.data_dir.clone(),
-            system_db_path: self.config.data_dir.join("system.db"),
-            host_key_path: HostKey::new(&self.config.data_dir).path(),
+            data_dir: platform.data_dir().to_path_buf(),
+            system_db_path: platform.system_db_path(),
+            host_key_path: platform.host_key_path(),
             projects,
         })
     }
@@ -398,12 +396,13 @@ impl ComposeScope {
     fn populate_bookmarks(&self, project: &ProjectInfra) -> Result<ProjectInfra, ComposeError> {
         // Authoritative source: `bookmarks` projection scoped to
         // brain. Filesystem must agree.
+        let platform = self.config.platform();
         let conn = self.config.system_db()?;
         let projection_names = BookmarkStore::new(&conn).list_for_brain(&project.name)?;
 
         let mut bookmarks = HashMap::new();
         for name in projection_names {
-            let bookmark_db_path = project.bookmarks_dir.join(format!("{name}.db"));
+            let bookmark_db_path = platform.bookmark_db_path(&project.name, &name);
             if !bookmark_db_path.exists() {
                 // Orphan: projection knows the bookmark but no DB on
                 // disk. Exclude.

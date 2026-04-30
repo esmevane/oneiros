@@ -17,7 +17,7 @@ fn detect_brain_name() -> BrainName {
 
 /// Resolve the default data directory from the platform.
 fn default_data_dir() -> PathBuf {
-    Platform::default().data_dir()
+    Platform::default().data_dir().to_path_buf()
 }
 
 /// Configuration for the engine.
@@ -87,38 +87,42 @@ impl Config {
         format!("http://{}", self.service.address)
     }
 
+    /// A Platform bound to this config's data directory.
+    pub fn platform(&self) -> Platform {
+        Platform::new(&self.data_dir)
+    }
+
     /// Path to the brain's data directory.
     pub fn brain_dir(&self) -> PathBuf {
-        self.data_dir.join(self.brain.as_str())
+        self.platform().brain_dir(&self.brain)
     }
 
     /// Path to the config file in the data directory.
     pub fn config_path(&self) -> PathBuf {
-        self.data_dir.join("config.toml")
+        self.platform().config_path()
     }
 
     /// Open the system database.
     pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let conn = rusqlite::Connection::open(self.data_dir.join("system.db"))?;
+        let conn = rusqlite::Connection::open(self.platform().system_db_path())?;
         conn.pragma_update(None, "journal_mode", "wal")?;
         Ok(conn)
     }
 
     /// Path to the brain's event log database.
     pub fn events_db_path(&self) -> PathBuf {
-        self.brain_dir().join("events.db")
+        self.platform().events_db_path(&self.brain)
     }
 
     /// Path to the bookmark's projection database.
     pub fn bookmark_db_path(&self) -> PathBuf {
-        self.brain_dir()
-            .join("bookmarks")
-            .join(format!("{}.db", self.bookmark))
+        self.platform()
+            .bookmark_db_path(&self.brain, &self.bookmark)
     }
 
     /// Directory containing all bookmark databases for this brain.
     pub fn bookmarks_dir(&self) -> PathBuf {
-        self.brain_dir().join("bookmarks")
+        self.platform().bookmarks_dir(&self.brain)
     }
 
     /// Open the bookmark DB as base with the events DB ATTACHed.
@@ -127,19 +131,17 @@ impl Config {
     /// Event log operations use the `events` schema qualifier.
     /// Both share one connection and transaction for atomicity.
     pub fn bookmark_conn(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let bookmark_path = self.bookmark_db_path();
-        if let Some(parent) = bookmark_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
+        let platform = self.platform();
+        let _ = platform.ensure_bookmarks_dir(&self.brain);
 
-        let conn = rusqlite::Connection::open(&bookmark_path)?;
+        let conn =
+            rusqlite::Connection::open(platform.bookmark_db_path(&self.brain, &self.bookmark))?;
         conn.pragma_update(None, "journal_mode", "wal")?;
         conn.pragma_update(None, "limit_attached", "125")?;
 
-        let events_path = self.events_db_path();
         conn.execute_batch(&format!(
             "ATTACH DATABASE '{}' AS events",
-            events_path.display(),
+            platform.events_db_path(&self.brain).display(),
         ))?;
 
         Ok(conn)
@@ -147,9 +149,7 @@ impl Config {
 
     /// Path to the token file for the current brain.
     pub fn token_path(&self) -> PathBuf {
-        self.data_dir
-            .join("tickets")
-            .join(format!("{}.token", self.brain))
+        self.platform().token_path(&self.brain)
     }
 
     /// Read the token for the current brain, if one exists.
