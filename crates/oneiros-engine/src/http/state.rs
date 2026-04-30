@@ -23,7 +23,7 @@ pub struct ServerState {
 #[derive(Debug, thiserror::Error)]
 pub enum ServerStateError {
     #[error("failed to read or generate host secret key: {0}")]
-    HostKey(#[from] std::io::Error),
+    HostKey(#[from] HostKeyError),
     #[error("failed to bind iroh bridge: {0}")]
     Bridge(#[from] BridgeError),
 }
@@ -32,7 +32,7 @@ impl ServerState {
     /// Construct a server state with a bound iroh bridge. Loads (or
     /// generates) the host secret key from disk and binds a `Bridge`.
     pub async fn bind(config: Config) -> Result<Self, ServerStateError> {
-        let secret = config.ensure_host_secret_key()?;
+        let secret = HostKey::new(&config.data_dir).ensure()?;
         let bridge = Bridge::bind(secret).await?;
 
         let (broadcast, _) = broadcast::channel(256);

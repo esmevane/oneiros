@@ -59,7 +59,7 @@ impl DoctorService {
         checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("system.db")));
 
         // Host keypair check — identity for distribution
-        if config.host_key_path().exists() {
+        if HostKey::new(&config.data_dir).path().exists() {
             checks.push(DoctorCheck::HostKeyOk);
         } else {
             checks.push(DoctorCheck::HostKeyMissing);

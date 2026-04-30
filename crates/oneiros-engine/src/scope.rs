@@ -390,7 +390,7 @@ impl ComposeScope {
         Ok(HostInfra {
             data_dir: self.config.data_dir.clone(),
             system_db_path: self.config.data_dir.join("system.db"),
-            host_key_path: self.config.host_key_path(),
+            host_key_path: HostKey::new(&self.config.data_dir).path(),
             projects,
         })
     }

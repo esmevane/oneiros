@@ -12,7 +12,7 @@ impl SystemService {
         // host keypair all exist. The keypair establishes host identity
         // before the server ever starts.
         std::fs::create_dir_all(&context.config.data_dir)?;
-        context.config.ensure_host_secret_key()?;
+        HostKey::new(&context.config.data_dir).ensure()?;
         let db = context.db()?;
         EventLog::new(&db).init()?;
         context.projections.migrate(&db)?;

@@ -19,6 +19,9 @@ pub enum SystemError {
     Event(#[from] EventError),
 
     #[error(transparent)]
+    HostKey(#[from] HostKeyError),
+
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 
     #[error(transparent)]
@@ -37,6 +40,7 @@ impl IntoResponse for SystemError {
             SystemError::Database(_)
             | SystemError::Event(_)
             | SystemError::Io(_)
+            | SystemError::HostKey(_)
             | SystemError::Upcast(_)
             | SystemError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
