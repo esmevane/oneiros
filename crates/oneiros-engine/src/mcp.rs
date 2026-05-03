@@ -3,10 +3,11 @@
 //! Tools are write operations (8 total). Resources are read operations
 //! rendered as markdown. Prompts assemble identity context.
 //!
-//! Session authentication: if the MCP client sends an `Authorization:
-//! Bearer <token>` header during the initialize handshake, the session
-//! resolves to the brain associated with that token. Without a token,
-//! the session uses the server's default brain.
+//! Session authentication: every MCP session must provide a valid
+//! `Authorization: Bearer <token>` header during the initialize handshake.
+//! The token resolves to the brain associated with the project. Sessions
+//! that fail to authenticate receive an informative error directing the
+//! agent to run `oneiros mcp init` in its project directory.
 
 use std::sync::OnceLock;
 
@@ -227,13 +228,38 @@ impl ServerHandler for EngineToolBox {
         request: rmcp::model::InitializeRequestParams,
         context: rmcp::service::RequestContext<rmcp::RoleServer>,
     ) -> Result<rmcp::model::InitializeResult, ErrorData> {
-        if let Some(parts) = context.extensions.get::<axum::http::request::Parts>()
-            && let Some(auth) = parts.headers.get("authorization")
-            && let Some(token_str) = auth.to_str().ok().and_then(|s| s.strip_prefix("Bearer "))
-            && let Some(config) = resolve_config_from_token(&self.state, token_str).await
-        {
-            let _ = self.session_config.set(config);
-        }
+        let parts = context.extensions.get::<axum::http::request::Parts>();
+        let auth_header = parts.and_then(|p| p.headers.get("authorization"));
+
+        let Some(header_value) = auth_header else {
+            return Err(ErrorData::invalid_params(
+                "No authorization token. Run `oneiros mcp init` in your project directory to configure MCP access.",
+                None,
+            ));
+        };
+
+        let Ok(header_str) = header_value.to_str() else {
+            return Err(ErrorData::invalid_params(
+                "Invalid authorization header encoding. Expected format: `Authorization: Bearer <token>`.",
+                None,
+            ));
+        };
+
+        let Some(token_str) = header_str.strip_prefix("Bearer ") else {
+            return Err(ErrorData::invalid_params(
+                "Invalid authorization scheme. Expected `Bearer <token>` — got something else. Run `oneiros mcp init` to generate a valid token.",
+                None,
+            ));
+        };
+
+        let Some(config) = resolve_config_from_token(&self.state, token_str).await else {
+            return Err(ErrorData::invalid_params(
+                "Invalid or unrecognized token. It may be expired, from a different server, or for a deleted project. Run `oneiros mcp init` to regenerate it.",
+                None,
+            ));
+        };
+
+        let _ = self.session_config.set(config);
 
         if context.peer.peer_info().is_none() {
             context.peer.set_peer_info(request);
