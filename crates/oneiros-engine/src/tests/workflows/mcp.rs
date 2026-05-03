@@ -23,39 +23,28 @@ fn extract_sse_json(body: &str) -> serde_json::Value {
     serde_json::from_str(json_str).expect("data: line should be valid JSON")
 }
 
-async fn mcp_initialize(http: &reqwest::Client, url: &str) -> Option<String> {
-    let init_resp = mcp_post(http, url)
-        .json(&serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": { "name": "test", "version": "0.1.0" }
-            }
-        }))
-        .send()
-        .await
-        .unwrap();
-
-    assert!(init_resp.status().is_success());
-
-    let session_id = init_resp
-        .headers()
-        .get("mcp-session-id")
-        .map(|v| v.to_str().unwrap().to_string());
-
-    let mut notif = mcp_post(http, url).json(&serde_json::json!({
+async fn mcp_initialize_raw(
+    http: &reqwest::Client,
+    url: &str,
+    auth_header: Option<(&str, &str)>,
+) -> serde_json::Value {
+    let mut req = mcp_post(http, url).json(&serde_json::json!({
         "jsonrpc": "2.0",
-        "method": "notifications/initialized"
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": { "name": "test", "version": "0.1.0" }
+        }
     }));
-    if let Some(ref sid) = session_id {
-        notif = notif.header("mcp-session-id", sid);
+    if let Some((name, value)) = auth_header {
+        req = req.header(name, value);
     }
-    notif.send().await.unwrap();
-
-    session_id
+    let resp = req.send().await.unwrap();
+    assert!(resp.status().is_success());
+    let body = resp.text().await.unwrap();
+    extract_sse_json(&body)
 }
 
 async fn mcp_initialize_with_token(
@@ -96,6 +85,25 @@ async fn mcp_initialize_with_token(
     notif.send().await.unwrap();
 
     session_id
+}
+
+async fn initialize_should_fail(
+    http: &reqwest::Client,
+    url: &str,
+    auth_header: Option<(&str, &str)>,
+    expected_substr: &str,
+) {
+    let json = mcp_initialize_raw(http, url, auth_header).await;
+    let error = json
+        .get("error")
+        .unwrap_or_else(|| panic!("expected JSON-RPC error, got: {json}"));
+    let message = error["message"]
+        .as_str()
+        .unwrap_or_else(|| panic!("error should have message, got: {error}"));
+    assert!(
+        message.contains(expected_substr),
+        "error message should contain '{expected_substr}', got: '{message}'"
+    );
 }
 
 async fn mcp_call_tool(
@@ -174,9 +182,10 @@ async fn tools_discovery() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let json = mcp_rpc(
         &http,
@@ -233,9 +242,10 @@ async fn tool_responses_are_markdown_with_hints() -> Result<(), Box<dyn core::er
         .seed_core()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let result = mcp_call_tool(
         &http,
@@ -304,9 +314,10 @@ async fn resources_discovery() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let json = mcp_rpc(
         &http,
@@ -375,9 +386,10 @@ async fn resource_reads_return_markdown_with_hints() -> Result<(), Box<dyn core:
         .seed_core()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let json = mcp_rpc(
         &http,
@@ -454,9 +466,10 @@ async fn prompts_discovery() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let json = mcp_rpc(
         &http,
@@ -492,9 +505,10 @@ async fn dream_prompt_returns_agent_context() -> Result<(), Box<dyn core::error:
 
     app.command("seed agents").await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     #[expect(
         unused_assignments,
@@ -559,9 +573,10 @@ async fn error_responses_include_hints() -> Result<(), Box<dyn core::error::Erro
         .init_project()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let result = mcp_call_tool(
         &http,
@@ -613,9 +628,10 @@ async fn invalid_resource_uri_returns_error() -> Result<(), Box<dyn core::error:
         .init_project()
         .await?;
 
+    let token = app.token().expect("project should have a token");
     let http = reqwest::Client::new();
     let url = app.mcp_url();
-    let session_id = mcp_initialize(&http, &url).await;
+    let session_id = mcp_initialize_with_token(&http, &url, &token).await;
 
     let json = mcp_rpc(
         &http,
@@ -631,6 +647,71 @@ async fn invalid_resource_uri_returns_error() -> Result<(), Box<dyn core::error:
         json["error"].is_object(),
         "invalid resource URI should return an error, got: {json}"
     );
+
+    Ok(())
+}
+
+// ── Auth failure paths ──────────────────────────────────────────
+
+#[tokio::test]
+async fn initialize_without_token_fails() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    let http = reqwest::Client::new();
+    let url = app.mcp_url();
+
+    initialize_should_fail(&http, &url, None, "oneiros mcp init").await;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn initialize_with_bad_token_fails() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    let http = reqwest::Client::new();
+    let url = app.mcp_url();
+
+    initialize_should_fail(
+        &http,
+        &url,
+        Some(("authorization", "Bearer garbage-token")),
+        "Invalid or unrecognized",
+    )
+    .await;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn initialize_with_non_bearer_scheme_fails() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_system()
+        .await?
+        .init_project()
+        .await?;
+
+    let http = reqwest::Client::new();
+    let url = app.mcp_url();
+
+    initialize_should_fail(
+        &http,
+        &url,
+        Some(("authorization", "Basic dXNlcjpwYXNz")),
+        "Invalid authorization scheme",
+    )
+    .await;
 
     Ok(())
 }
