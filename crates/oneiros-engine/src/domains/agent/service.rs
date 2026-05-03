@@ -9,9 +9,11 @@ impl AgentService {
     ) -> Result<AgentResponse, AgentError> {
         let CreateAgent::V1(create) = request;
 
-        // Cross-resource validation: persona must exist
+        // Cross-resource validation: persona must exist. Use `fetch` so a
+        // recently-set persona that hasn't yet projected gets a fair
+        // chance to appear.
         if PersonaRepo::new(context.scope()?)
-            .get(&create.persona)
+            .fetch(&create.persona, &context.config.fetch)
             .await?
             .is_none()
         {
@@ -59,16 +61,17 @@ impl AgentService {
     ) -> Result<AgentResponse, AgentError> {
         let GetAgent::V1(lookup) = request;
         let repo = AgentRepo::new(context.scope()?);
+        let policy = &context.config.fetch;
         let agent = match &lookup.key {
             ResourceKey::Key(name) => repo
-                .get(name)
+                .fetch(name, policy)
                 .await?
                 .ok_or_else(|| AgentError::NotFound(name.clone()))?,
             ResourceKey::Ref(token) => {
                 let Ref::V0(resource) = token.inner().clone();
                 match resource {
                     Resource::Agent(id) => repo
-                        .get_by_id(id)
+                        .fetch_by_id(id, policy)
                         .await?
                         .ok_or(AgentError::NotFoundById(id))?,
                     other => {

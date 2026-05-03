@@ -47,7 +47,8 @@ async fn project_log() -> (ProjectLog, tempfile::TempDir) {
     .await
     .unwrap();
 
-    (config.project(), dir)
+    let mailboxes = Mailboxes::spawn(CanonIndex::new());
+    (config.project().with_mailboxes(mailboxes), dir)
 }
 
 async fn seed_persona(context: &ProjectLog) {
@@ -191,22 +192,35 @@ async fn replay_recovers_from_deleted_bookmark_db() {
     .await
     .unwrap();
 
-    // Verify baseline before nuking the DB
-    match CognitionService::list(
-        &context,
-        &ListCognitions::builder_v1()
-            .agent(AgentName::new("gov.test-persona"))
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap()
-    {
-        CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
-            assert_eq!(cogs.items.len(), 1);
-        }
-        other => panic!("Expected Cognitions before nuke, got {other:?}"),
-    }
+    // Verify baseline before nuking the DB — projections apply
+    // eventually so the cognition may not be queryable immediately
+    // after `CognitionService::add` returns.
+    harness::Retryable::default()
+        .wait_for_async(
+            || async {
+                match CognitionService::list(
+                    &context,
+                    &ListCognitions::builder_v1()
+                        .agent(AgentName::new("gov.test-persona"))
+                        .build()
+                        .into(),
+                )
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                {
+                    CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
+                        if cogs.items.len() == 1 {
+                            Ok(())
+                        } else {
+                            Err(format!("expected 1, got {}", cogs.items.len()))
+                        }
+                    }
+                    other => Err(format!("expected Cognitions, got {other:?}")),
+                }
+            },
+            "cognition visible before nuke",
+        )
+        .await;
 
     // Simulate schema-change / corruption: delete the bookmark DB file
     let db_path = context.config.bookmark_db_path();
@@ -280,10 +294,19 @@ async fn storage_content_round_trips() {
         other => panic!("Expected StorageSet, got {other:?}"),
     };
 
-    // Get content — round-trips through compress/decompress
-    let retrieved = StorageService::get_content(&context, &StorageKey::new("test.txt"))
-        .await
-        .unwrap();
+    // Get content — round-trips through compress/decompress. Projections
+    // apply asynchronously, so the storage entry may not be visible
+    // immediately after upload returns.
+    let retrieved = harness::Retryable::default()
+        .wait_for_async(
+            || async {
+                StorageService::get_content(&context, &StorageKey::new("test.txt"))
+                    .await
+                    .map_err(|e| format!("{e:?}"))
+            },
+            "storage content available",
+        )
+        .await;
     assert_eq!(retrieved, content);
 
     // Hash should be stable

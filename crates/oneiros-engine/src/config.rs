@@ -47,6 +47,11 @@ pub struct Config {
     #[command(flatten)]
     #[builder(default)]
     pub dream: DreamConfig,
+    /// Eventually-tolerant read policy. Reads through `repo.fetch` poll
+    /// up to this timeout for projections to catch up before giving up.
+    #[command(flatten)]
+    #[builder(default)]
+    pub fetch: FetchPolicy,
     /// Output format: prompt (default), json, or text.
     #[arg(long, short, default_value_t, global = true)]
     #[builder(default)]
@@ -69,6 +74,7 @@ impl Default for Config {
             bookmark: BookmarkName::main(),
             service: ServiceConfig::default(),
             dream: DreamConfig::default(),
+            fetch: FetchPolicy::default(),
             output: OutputMode::default(),
             color: ColorChoice::default(),
             verbosity: Verbosity::default(),

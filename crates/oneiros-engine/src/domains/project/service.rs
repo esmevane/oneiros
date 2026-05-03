@@ -197,7 +197,7 @@ impl ProjectService {
         // (CREATE TABLE IF NOT EXISTS) and makes import the correctness
         // gate the versioning story relies on.
         log.init()?;
-        context.projections.migrate(&db)?;
+        Projections::project().migrate(&db)?;
 
         // Batch all inserts in a single transaction — without this,
         // each INSERT is an implicit transaction with an fsync.
@@ -236,7 +236,7 @@ impl ProjectService {
         }
 
         let log = EventLog::attached(&db);
-        let replayed = context.projections.replay_brain(&db, &log)?;
+        let replayed = Projections::project().replay_brain(&db, &log)?;
 
         Ok(ProjectResponse::Imported(
             ImportedResponse::builder_v1()
@@ -267,9 +267,9 @@ impl ProjectService {
 
         // Open a fresh DB, create tables with current schema, then replay.
         let db = context.db()?;
-        context.projections.migrate(&db)?;
+        Projections::project().migrate(&db)?;
         let log = EventLog::attached(&db);
-        let replayed = context.projections.replay_brain(&db, &log)?;
+        let replayed = Projections::project().replay_brain(&db, &log)?;
 
         Ok(ProjectResponse::Replayed(
             ReplayedResponse::builder_v1()

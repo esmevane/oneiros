@@ -17,6 +17,7 @@ pub struct ServerState {
     broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
     bridge: Bridge,
+    mailboxes: Mailboxes,
     api: Arc<OnceLock<OpenApi>>,
 }
 
@@ -37,11 +38,13 @@ impl ServerState {
 
         let (broadcast, _) = broadcast::channel(256);
         let canons = CanonIndex::new();
+        let mailboxes = Mailboxes::spawn(canons.clone());
         Ok(Self {
             config,
             broadcast,
             canons,
             bridge,
+            mailboxes,
             api: Arc::new(OnceLock::new()),
         })
     }
@@ -107,7 +110,8 @@ impl ServerState {
             config,
             self.broadcast.clone(),
             entry,
-        ))
+        )
+        .with_mailboxes(self.mailboxes.clone()))
     }
 
     /// Build a system context.

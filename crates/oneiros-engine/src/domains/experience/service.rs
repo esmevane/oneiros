@@ -9,7 +9,7 @@ impl ExperienceService {
     ) -> Result<ExperienceResponse, ExperienceError> {
         let CreateExperience::V1(creation) = request;
         let agent_record = AgentRepo::new(context.scope()?)
-            .get(&creation.agent)
+            .fetch(&creation.agent, &context.config.fetch)
             .await?
             .ok_or_else(|| ExperienceError::AgentNotFound(creation.agent.clone()))?;
 
@@ -62,7 +62,7 @@ impl ExperienceService {
         let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context.scope()?)
-                    .get(name)
+                    .fetch(name, &context.config.fetch)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
                 Some(record.id)

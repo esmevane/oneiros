@@ -37,6 +37,16 @@ impl<'a> PersonaRepo<'a> {
         }
     }
 
+    /// Eventually-tolerant lookup. Polls `get` until the persona is
+    /// visible through projections or `policy.timeout` elapses.
+    pub async fn fetch(
+        &self,
+        name: &PersonaName,
+        policy: &FetchPolicy,
+    ) -> Result<Option<Persona>, EventError> {
+        fetch_eventually(policy, || self.get(name)).await
+    }
+
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Persona>, EventError> {
         let db = self.scope.bookmark_db().await?;
 

@@ -9,9 +9,13 @@ impl aide::operation::OperationInput for ProjectLog {}
 #[derive(Clone)]
 pub struct ProjectLog {
     pub config: Config,
-    pub projections: Projections<BrainCanon>,
     chronicle: Chronicle,
     broadcast: broadcast::Sender<StoredEvent>,
+    /// Mailboxes for downstream actors. Only present when this `ProjectLog`
+    /// was constructed server-side via `ServerState::project_log`. Client
+    /// constructions (CLI talking to a remote, etc.) never publish through
+    /// the actor stream, so this stays `None`.
+    mailboxes: Option<Mailboxes>,
     /// Lazily-composed Scope, cached for the context's lifetime.
     scope: Arc<std::sync::OnceLock<Scope<AtBookmark>>>,
 }
@@ -22,9 +26,9 @@ impl ProjectLog {
 
         Self {
             config,
-            projections: Projections::project(),
             chronicle: Chronicle::new(),
             broadcast,
+            mailboxes: None,
             scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
@@ -33,9 +37,9 @@ impl ProjectLog {
     pub fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
         Self {
             config,
-            projections: Projections::project(),
             chronicle: Chronicle::new(),
             broadcast,
+            mailboxes: None,
             scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
@@ -48,11 +52,18 @@ impl ProjectLog {
     ) -> Self {
         Self {
             config,
-            projections: Projections::project_with_pipeline(entry.pipeline),
             chronicle: entry.chronicle,
             broadcast,
+            mailboxes: None,
             scope: Arc::new(std::sync::OnceLock::new()),
         }
+    }
+
+    /// Attach mailboxes to a server-constructed log. Called by
+    /// `ServerState::project_log`; non-server callers should not use this.
+    pub fn with_mailboxes(mut self, mailboxes: Mailboxes) -> Self {
+        self.mailboxes = Some(mailboxes);
+        self
     }
 
     /// The brain name for this project.
@@ -105,19 +116,30 @@ impl ProjectLog {
     }
 
     /// Replay all events through projections, rebuilding read models.
+    ///
+    /// Bulk catch-up — constructs a fresh `Projections` and rebuilds from
+    /// the event log. Distinct from runtime apply, which goes through the
+    /// projector actor asynchronously.
     pub fn replay(&self) -> Result<usize, EventError> {
         let db = self.db()?;
         let log = EventLog::attached(&db);
-        self.projections.replay_brain(&db, &log)
+        Projections::project().replay_brain(&db, &log)
     }
 
-    /// Emit an event to the brain's event log and apply projections.
+    /// Emit an event to the brain's event log and publish to downstream
+    /// actors. Projections apply asynchronously via the projector mailbox;
+    /// when this returns, the event is durable and broadcast, but the
+    /// projected read models may not yet reflect it.
     pub async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
         let db = self.db()?;
         let new_event = NewEvent::builder().data(event).build();
         let stored = EventLog::attached(&db).append(&new_event)?;
 
-        self.projections.apply_brain(&db, &stored)?;
+        if let Some(mailboxes) = &self.mailboxes {
+            mailboxes.projector.tell(self.config.clone(), stored.clone());
+        }
+        // Projections apply asynchronously via the projector actor;
+        // reads through `repo.fetch` poll until they catch up.
 
         // Chronicle the event in the system DB (shared across bookmarks).
         let system_db = self.system_db()?;
@@ -129,7 +151,7 @@ impl ProjectLog {
             &chronicle_store.writer(),
         )?;
 
-        // We broadcast the new event after projecting it.
+        // We broadcast the new event.
         let _ = self.broadcast.send(stored);
 
         Ok(())

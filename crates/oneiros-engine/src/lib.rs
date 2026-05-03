@@ -1,3 +1,4 @@
+mod actors;
 mod cli;
 mod client;
 mod config;
@@ -22,6 +23,7 @@ mod support;
 mod tests;
 mod values;
 
+pub use actors::*;
 pub use cli::*;
 pub use client::*;
 pub use config::*;

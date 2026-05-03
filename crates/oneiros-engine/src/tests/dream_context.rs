@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::tests::harness::TestApp;
+use crate::tests::harness::{Retryable, TestApp};
 use crate::*;
 
 async fn seeded_context() -> (ProjectLog, TestApp) {
@@ -17,7 +17,7 @@ async fn seeded_context() -> (ProjectLog, TestApp) {
         .await
         .expect("seed core");
 
-    let context = app.config().project();
+    let context = app.project_log();
     (context, app)
 }
 
@@ -127,22 +127,87 @@ async fn dream(context: &ProjectLog, agent: &AgentName) -> DreamContext {
     dream_with(context, agent, &DreamOverrides::default()).await
 }
 
+/// Retry the dream and a check closure together until both succeed.
+/// Use this when writes seeded after the agent need to be visible in
+/// the dream — the projector applies them eventually, so a single dream
+/// may succeed before all related data has propagated.
+async fn dream_satisfying<F>(context: &ProjectLog, agent: &AgentName, label: &str, check: F)
+where
+    F: FnMut(&DreamContext) -> Result<(), String>,
+{
+    dream_with_satisfying(context, agent, &DreamOverrides::default(), label, check).await
+}
+
+async fn dream_with_satisfying<F>(
+    context: &ProjectLog,
+    agent: &AgentName,
+    overrides: &DreamOverrides,
+    label: &str,
+    mut check: F,
+) where
+    F: FnMut(&DreamContext) -> Result<(), String>,
+{
+    let interval = std::time::Duration::from_millis(16);
+    let timeout = std::time::Duration::from_secs(2);
+    let deadline = std::time::Instant::now() + timeout;
+    let mut last_failure = String::from("never evaluated");
+
+    loop {
+        let response = ContinuityService::dream(
+            context,
+            &DreamAgent::builder_v1().agent(agent.clone()).build().into(),
+            overrides,
+        )
+        .await;
+
+        let attempt = match response {
+            Ok(ContinuityResponse::Dreaming(DreamingResponse::V1(details))) => {
+                check(&details.context)
+            }
+            Ok(other) => Err(format!("expected Dreaming, got {other:?}")),
+            Err(err) => Err(format!("{err:?}")),
+        };
+
+        match attempt {
+            Ok(()) => return,
+            Err(msg) => {
+                last_failure = msg;
+                if std::time::Instant::now() >= deadline {
+                    panic!("{label}: not met within {timeout:?}.\nLast failure: {last_failure}");
+                }
+                tokio::time::sleep(interval).await;
+            }
+        }
+    }
+}
+
 async fn dream_with(
     context: &ProjectLog,
     agent: &AgentName,
     overrides: &DreamOverrides,
 ) -> DreamContext {
-    match ContinuityService::dream(
-        context,
-        &DreamAgent::builder_v1().agent(agent.clone()).build().into(),
-        overrides,
-    )
-    .await
-    .unwrap()
-    {
-        ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => details.context,
-        other => panic!("expected Dreaming, got {other:?}"),
-    }
+    // Projections apply asynchronously; the dream call reads through
+    // them. Retry until the agent is visible and the dream resolves.
+    Retryable::default()
+        .wait_for_async(
+            || async {
+                ContinuityService::dream(
+                    context,
+                    &DreamAgent::builder_v1().agent(agent.clone()).build().into(),
+                    overrides,
+                )
+                .await
+                .map_err(|e| format!("{e:?}"))
+                .and_then(|response| match response {
+                    ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
+                        Ok(details.context)
+                    }
+                    other => Err(format!("expected Dreaming, got {other:?}")),
+                })
+            },
+            "dream context available",
+        )
+        .await
 }
 
 // ── Vocabulary ───────────────────────────────────────────────────
@@ -182,21 +247,17 @@ async fn core_memories_always_included() {
     add_memory(&context, &agent, "core", "identity fundament").await;
     add_memory(&context, &agent, "archival", "old history").await;
 
-    let context = dream(&context, &agent).await;
-
-    let memory_contents: Vec<&str> = context
-        .memories
-        .iter()
-        .map(|m| m.content.as_str())
-        .collect();
-    assert!(
-        memory_contents.contains(&"identity fundament"),
-        "core memories must always be included"
-    );
-    assert!(
-        !memory_contents.contains(&"old history"),
-        "archival memories should be excluded at project level threshold"
-    );
+    dream_satisfying(&context, &agent, "core memories visible", |dream| {
+        let contents: Vec<&str> = dream.memories.iter().map(|m| m.content.as_str()).collect();
+        if !contents.contains(&"identity fundament") {
+            return Err("core memory missing".into());
+        }
+        if contents.contains(&"old history") {
+            return Err("archival should be excluded at project threshold".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -210,17 +271,19 @@ async fn level_threshold_filters_lower_priority() {
     add_memory(&context, &agent, "working", "working memory").await;
     add_memory(&context, &agent, "archival", "archival memory").await;
 
-    let context = dream(&context, &agent).await;
-
-    let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_str()).collect();
-    assert!(levels.contains(&"core"), "core always included");
-    assert!(levels.contains(&"project"), "project >= threshold");
-    assert!(levels.contains(&"session"), "session >= threshold");
-    assert!(levels.contains(&"working"), "working >= threshold");
-    assert!(
-        !levels.contains(&"archival"),
-        "archival below project threshold"
-    );
+    dream_satisfying(&context, &agent, "level threshold applied", |dream| {
+        let levels: Vec<&str> = dream.memories.iter().map(|m| m.level.as_str()).collect();
+        for required in ["core", "project", "session", "working"] {
+            if !levels.contains(&required) {
+                return Err(format!("missing level {required}"));
+            }
+        }
+        if levels.contains(&"archival") {
+            return Err("archival should be below project threshold".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -238,15 +301,24 @@ async fn level_threshold_override_changes_filter() {
         recollection_level: Some(LevelName::new("core")),
         ..Default::default()
     };
-    let context = dream_with(&context, &agent, &overrides).await;
 
-    let levels: Vec<&str> = context.memories.iter().map(|m| m.level.as_str()).collect();
-    assert!(levels.contains(&"core"), "core always included");
-    assert_eq!(
-        levels.len(),
-        1,
-        "only core should survive at core threshold"
-    );
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "core-only override applied",
+        |dream| {
+            let levels: Vec<&str> = dream.memories.iter().map(|m| m.level.as_str()).collect();
+            if !levels.contains(&"core") {
+                return Err("core should always be included".into());
+            }
+            if levels.len() != 1 {
+                return Err(format!("expected only core, got {levels:?}"));
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -263,21 +335,33 @@ async fn recollection_size_caps_non_core_memories() {
         recollection_size: Some(2),
         ..Default::default()
     };
-    let context = dream_with(&context, &agent, &overrides).await;
 
-    let core_count = context
-        .memories
-        .iter()
-        .filter(|m| m.level.as_str() == "core")
-        .count();
-    let non_core_count = context
-        .memories
-        .iter()
-        .filter(|m| m.level.as_str() != "core")
-        .count();
-
-    assert_eq!(core_count, 1, "core memory is always included");
-    assert_eq!(non_core_count, 2, "non-core capped at recollection_size");
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "recollection size cap applied",
+        |dream| {
+            let core_count = dream
+                .memories
+                .iter()
+                .filter(|m| m.level.as_str() == "core")
+                .count();
+            let non_core_count = dream
+                .memories
+                .iter()
+                .filter(|m| m.level.as_str() != "core")
+                .count();
+            if core_count != 1 {
+                return Err(format!("expected 1 core, got {core_count}"));
+            }
+            if non_core_count != 2 {
+                return Err(format!("expected non_core=2, got {non_core_count}"));
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 // ── Cognition selection ──────────────────────────────────────────
@@ -291,12 +375,13 @@ async fn sparse_graph_includes_all_cognitions() {
         add_cognition(&context, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&context, &agent).await;
-    assert_eq!(
-        context.cognitions.len(),
-        5,
-        "sparse graph should include all cognitions"
-    );
+    dream_satisfying(&context, &agent, "all cognitions visible", |dream| {
+        if dream.cognitions.len() != 5 {
+            return Err(format!("expected 5 cognitions, got {}", dream.cognitions.len()));
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -312,26 +397,27 @@ async fn cognition_size_cap_keeps_most_recent() {
         cognition_size: Some(3),
         ..Default::default()
     };
-    let context = dream_with(&context, &agent, &overrides).await;
 
-    assert_eq!(context.cognitions.len(), 3, "capped at cognition_size");
-    let contents: Vec<&str> = context
-        .cognitions
-        .iter()
-        .map(|c| c.content.as_str())
-        .collect();
-    assert!(
-        contents.contains(&"thought 9"),
-        "most recent should survive cap"
-    );
-    assert!(
-        contents.contains(&"thought 8"),
-        "second most recent should survive"
-    );
-    assert!(
-        contents.contains(&"thought 7"),
-        "third most recent should survive"
-    );
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "cognition size cap applied",
+        |dream| {
+            if dream.cognitions.len() != 3 {
+                return Err(format!("expected 3 cognitions, got {}", dream.cognitions.len()));
+            }
+            let contents: Vec<&str> =
+                dream.cognitions.iter().map(|c| c.content.as_str()).collect();
+            for required in ["thought 9", "thought 8", "thought 7"] {
+                if !contents.contains(&required) {
+                    return Err(format!("missing recent cognition {required}"));
+                }
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 // ── BFS graph traversal ──────────────────────────────────────────
@@ -356,14 +442,21 @@ async fn bfs_discovers_connected_cognitions() {
         cognition_size: Some(100),
         ..Default::default()
     };
-    let context = dream_with(&context, &agent, &overrides).await;
 
-    let cog_ids: HashSet<CognitionId> = context.cognitions.iter().map(|c| c.id).collect();
-
-    assert!(
-        cog_ids.contains(&connected_cog),
-        "BFS should discover connected cognition"
-    );
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "BFS discovers connected cognition",
+        |dream| {
+            let cog_ids: HashSet<CognitionId> = dream.cognitions.iter().map(|c| c.id).collect();
+            if !cog_ids.contains(&connected_cog) {
+                return Err("connected cognition not discovered".into());
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -386,13 +479,21 @@ async fn bfs_discovers_connected_experiences() {
         experience_size: Some(100),
         ..Default::default()
     };
-    let context = dream_with(&context, &agent, &overrides).await;
 
-    let exp_ids: HashSet<ExperienceId> = context.experiences.iter().map(|e| e.id).collect();
-    assert!(
-        exp_ids.contains(&connected_exp),
-        "BFS should discover connected experience"
-    );
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "BFS discovers connected experience",
+        |dream| {
+            let exp_ids: HashSet<ExperienceId> = dream.experiences.iter().map(|e| e.id).collect();
+            if !exp_ids.contains(&connected_exp) {
+                return Err("connected experience not discovered".into());
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 // ── Experience selection ─────────────────────────────────────────
@@ -410,9 +511,23 @@ async fn experience_size_cap_keeps_most_recent() {
         experience_size: Some(3),
         ..Default::default()
     };
-    let context = dream_with(&context, &agent, &overrides).await;
 
-    assert_eq!(context.experiences.len(), 3, "capped at experience_size");
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "experience size cap applied",
+        |dream| {
+            if dream.experiences.len() != 3 {
+                return Err(format!(
+                    "expected 3 experiences, got {}",
+                    dream.experiences.len()
+                ));
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 // ── Connection pruning ───────────────────────────────────────────
@@ -436,28 +551,35 @@ async fn connections_pruned_to_included_endpoints() {
     )
     .await;
 
-    let context = dream(&context, &agent).await;
-
-    let included_refs: HashSet<Ref> = context
-        .memories
-        .iter()
-        .map(|m| Ref::memory(m.id))
-        .chain(context.cognitions.iter().map(|c| Ref::cognition(c.id)))
-        .chain(context.experiences.iter().map(|e| Ref::experience(e.id)))
-        .collect();
-
-    for conn in &context.connections {
-        assert!(
-            included_refs.contains(&conn.from_ref),
-            "connection from_ref {:?} should be in included entities",
-            conn.from_ref
-        );
-        assert!(
-            included_refs.contains(&conn.to_ref),
-            "connection to_ref {:?} should be in included entities",
-            conn.to_ref
-        );
-    }
+    dream_satisfying(&context, &agent, "connections pruned to endpoints", |dream| {
+        // Wait for the included connection to be visible — once both
+        // sides of the graph have caught up, the pruning invariant
+        // should hold for every connection in the dream.
+        if !dream
+            .connections
+            .iter()
+            .any(|c| c.from_ref == Ref::memory(mem_id) && c.to_ref == Ref::cognition(cog_id))
+        {
+            return Err("included connection not yet visible".into());
+        }
+        let included_refs: HashSet<Ref> = dream
+            .memories
+            .iter()
+            .map(|m| Ref::memory(m.id))
+            .chain(dream.cognitions.iter().map(|c| Ref::cognition(c.id)))
+            .chain(dream.experiences.iter().map(|e| Ref::experience(e.id)))
+            .collect();
+        for conn in &dream.connections {
+            if !included_refs.contains(&conn.from_ref) {
+                return Err(format!("from_ref {:?} not in included", conn.from_ref));
+            }
+            if !included_refs.contains(&conn.to_ref) {
+                return Err(format!("to_ref {:?} not in included", conn.to_ref));
+            }
+        }
+        Ok(())
+    })
+    .await;
 }
 
 // ── Pressure readings ────────────────────────────────────────────
@@ -471,20 +593,23 @@ async fn pressures_paired_with_urge_ctas() {
         add_cognition(&context, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&context, &agent).await;
-
-    for reading in &context.pressures {
-        let urge = context
-            .urges
-            .iter()
-            .find(|u| u.name == reading.pressure.urge);
-        if let Some(urge) = urge {
-            assert_eq!(
-                reading.cta, urge.prompt,
-                "pressure CTA should match urge prompt"
-            );
+    dream_satisfying(&context, &agent, "pressures paired with urges", |dream| {
+        if dream.pressures.is_empty() {
+            return Err("pressures not yet populated".into());
         }
-    }
+        for reading in &dream.pressures {
+            if let Some(urge) = dream.urges.iter().find(|u| u.name == reading.pressure.urge) {
+                if reading.cta != urge.prompt {
+                    return Err(format!(
+                        "cta mismatch: {:?} != {:?}",
+                        reading.cta, urge.prompt
+                    ));
+                }
+            }
+        }
+        Ok(())
+    })
+    .await;
 }
 
 // ── Config override integration ──────────────────────────────────
@@ -501,24 +626,51 @@ async fn dream_overrides_change_output() {
         add_memory(&context, &agent, "project", &format!("memory {i}")).await;
     }
 
-    let default_context = dream(&context, &agent).await;
+    // Wait for the default dream to have all 10 cognitions before
+    // comparing — otherwise the assertions race the projector.
+    let mut default_cognition_count = 0usize;
+    let mut default_memory_count = 0usize;
+    dream_satisfying(&context, &agent, "default dream populated", |dream| {
+        if dream.cognitions.len() < 10 {
+            return Err(format!(
+                "only {} cognitions visible, want 10",
+                dream.cognitions.len()
+            ));
+        }
+        default_cognition_count = dream.cognitions.len();
+        default_memory_count = dream.memories.len();
+        Ok(())
+    })
+    .await;
 
     let overrides = DreamOverrides {
         cognition_size: Some(2),
         recollection_size: Some(2),
         ..Default::default()
     };
-    let restricted_context = dream_with(&context, &agent, &overrides).await;
 
-    assert!(
-        restricted_context.cognitions.len() <= 2,
-        "override should restrict cognitions"
-    );
-    assert!(
-        restricted_context.memories.len() < default_context.memories.len()
-            || default_context.memories.len() <= 3,
-        "override should restrict memories"
-    );
+    dream_with_satisfying(
+        &context,
+        &agent,
+        &overrides,
+        "overrides restrict output",
+        |dream| {
+            if dream.cognitions.len() > 2 {
+                return Err(format!(
+                    "override should cap cognitions at 2, got {}",
+                    dream.cognitions.len()
+                ));
+            }
+            if dream.memories.len() >= default_memory_count && default_memory_count > 3 {
+                return Err(format!(
+                    "override should restrict memories below default {default_memory_count}, got {}",
+                    dream.memories.len()
+                ));
+            }
+            Ok(())
+        },
+    )
+    .await;
 }
 
 // ── Ordering ─────────────────────────────────────────────────────
@@ -533,14 +685,21 @@ async fn memories_sorted_by_created_at() {
     add_memory(&context, &agent, "core", "second core").await;
     add_memory(&context, &agent, "project", "second project").await;
 
-    let context = dream(&context, &agent).await;
-
-    for window in context.memories.windows(2) {
-        assert!(
-            window[0].created_at <= window[1].created_at,
-            "memories should be sorted by created_at"
-        );
-    }
+    dream_satisfying(&context, &agent, "memories sorted by created_at", |dream| {
+        if dream.memories.len() < 4 {
+            return Err(format!(
+                "want >=4 memories, got {}",
+                dream.memories.len()
+            ));
+        }
+        for window in dream.memories.windows(2) {
+            if window[0].created_at > window[1].created_at {
+                return Err("memories not sorted by created_at".into());
+            }
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -552,14 +711,21 @@ async fn cognitions_sorted_by_created_at() {
         add_cognition(&context, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&context, &agent).await;
-
-    for window in context.cognitions.windows(2) {
-        assert!(
-            window[0].created_at <= window[1].created_at,
-            "cognitions should be sorted by created_at"
-        );
-    }
+    dream_satisfying(&context, &agent, "cognitions sorted by created_at", |dream| {
+        if dream.cognitions.len() < 5 {
+            return Err(format!(
+                "want >=5 cognitions, got {}",
+                dream.cognitions.len()
+            ));
+        }
+        for window in dream.cognitions.windows(2) {
+            if window[0].created_at > window[1].created_at {
+                return Err("cognitions not sorted by created_at".into());
+            }
+        }
+        Ok(())
+    })
+    .await;
 }
 
 // ── Greeting rendering ──────────────────────────────────────────
@@ -586,21 +752,20 @@ async fn greeting_includes_core_memories_inline() {
 
     add_memory(&context, &agent, "core", "I am fundamentally a thinker").await;
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    assert!(
-        rendered.contains("### Your core memories"),
-        "greeting should have core memories block"
-    );
-    assert!(
-        rendered.contains("I am fundamentally a thinker"),
-        "core memory content should appear inline"
-    );
-    assert!(
-        rendered.contains("ref:"),
-        "core memories should be addressable by ref token"
-    );
+    dream_satisfying(&context, &agent, "core memory inline in greeting", |dream| {
+        let rendered = DreamTemplate::new(dream).to_string();
+        if !rendered.contains("### Your core memories") {
+            return Err("missing core memories block".into());
+        }
+        if !rendered.contains("I am fundamentally a thinker") {
+            return Err("core memory content not inlined".into());
+        }
+        if !rendered.contains("ref:") {
+            return Err("core memories not addressable by ref".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -617,17 +782,17 @@ async fn greeting_omits_non_core_memories() {
     )
     .await;
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    assert!(
-        rendered.contains("core identity"),
-        "core memory must appear in greeting"
-    );
-    assert!(
-        !rendered.contains("should not appear in the greeting"),
-        "non-core memories belong in the substrate, not the greeting"
-    );
+    dream_satisfying(&context, &agent, "non-core memories omitted", |dream| {
+        let rendered = DreamTemplate::new(dream).to_string();
+        if !rendered.contains("core identity") {
+            return Err("core memory missing from greeting".into());
+        }
+        if rendered.contains("should not appear in the greeting") {
+            return Err("non-core memory leaked into greeting".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -638,21 +803,20 @@ async fn greeting_shows_latest_cognitions_with_refs() {
     add_cognition(&context, &agent, "first thought").await;
     add_cognition(&context, &agent, "second thought").await;
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    assert!(
-        rendered.contains("### Latest cognitions"),
-        "greeting should have latest cognitions block"
-    );
-    assert!(
-        rendered.contains("second thought"),
-        "most recent cognition should appear"
-    );
-    assert!(
-        rendered.contains("oneiros cognition list"),
-        "block should hint at the cognition list tool"
-    );
+    dream_satisfying(&context, &agent, "latest cognitions in greeting", |dream| {
+        let rendered = DreamTemplate::new(dream).to_string();
+        if !rendered.contains("### Latest cognitions") {
+            return Err("missing latest cognitions block".into());
+        }
+        if !rendered.contains("second thought") {
+            return Err("most recent cognition not visible".into());
+        }
+        if !rendered.contains("oneiros cognition list") {
+            return Err("missing cognition list hint".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -664,29 +828,21 @@ async fn greeting_caps_latest_cognitions_to_three() {
         add_cognition(&context, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    // The 3 most recent should be there
-    assert!(
-        rendered.contains("thought 5"),
-        "latest cognition should appear"
-    );
-    assert!(
-        rendered.contains("thought 4"),
-        "second-latest should appear"
-    );
-    assert!(rendered.contains("thought 3"), "third-latest should appear");
-
-    // Older ones reachable through tools, not greeting
-    assert!(
-        !rendered.contains("thought 0"),
-        "oldest cognitions belong in the substrate"
-    );
-    assert!(
-        !rendered.contains("thought 1"),
-        "older cognitions belong in the substrate"
-    );
+    dream_satisfying(&context, &agent, "greeting caps cognitions to three", |dream| {
+        let rendered = DreamTemplate::new(dream).to_string();
+        for required in ["thought 5", "thought 4", "thought 3"] {
+            if !rendered.contains(required) {
+                return Err(format!("missing {required}"));
+            }
+        }
+        for forbidden in ["thought 0", "thought 1"] {
+            if rendered.contains(forbidden) {
+                return Err(format!("older cognition {forbidden} should not appear"));
+            }
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -696,18 +852,20 @@ async fn greeting_shows_latest_experiences_with_refs() {
 
     add_experience(&context, &agent, "first moment").await;
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    assert!(
-        rendered.contains("### Latest experiences"),
-        "greeting should have latest experiences block"
-    );
-    assert!(rendered.contains("first moment"));
-    assert!(
-        rendered.contains("oneiros experience list"),
-        "block should hint at the experience list tool"
-    );
+    dream_satisfying(&context, &agent, "latest experiences in greeting", |dream| {
+        let rendered = DreamTemplate::new(dream).to_string();
+        if !rendered.contains("### Latest experiences") {
+            return Err("missing latest experiences block".into());
+        }
+        if !rendered.contains("first moment") {
+            return Err("experience content not visible".into());
+        }
+        if !rendered.contains("oneiros experience list") {
+            return Err("missing experience list hint".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -719,18 +877,17 @@ async fn greeting_shows_latest_threads_as_connections() {
     let cog = add_cognition(&context, &agent, "linked thought").await;
     connect(&context, &Ref::memory(mem), &Ref::cognition(cog)).await;
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    assert!(
-        rendered.contains("### Latest threads"),
-        "greeting should have latest threads block"
-    );
-    // from-ref [nature] to-ref shape
-    assert!(
-        rendered.contains("[reference]"),
-        "thread line should show the connection nature in brackets"
-    );
+    dream_satisfying(&context, &agent, "latest threads visible", |dream| {
+        let rendered = DreamTemplate::new(dream).to_string();
+        if !rendered.contains("### Latest threads") {
+            return Err("missing latest threads block".into());
+        }
+        if !rendered.contains("[reference]") {
+            return Err("thread line missing connection nature".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -760,30 +917,27 @@ async fn greeting_pressure_omits_verbose_forms() {
         add_cognition(&context, &agent, &format!("thought {i}")).await;
     }
 
-    let context = dream(&context, &agent).await;
-    let rendered = DreamTemplate::new(&context).to_string();
-
-    // Per-urge breakdowns belong in introspect/reflect templates, not the greeting.
-    assert!(
-        !rendered.contains("tensions:"),
-        "greeting should not include per-urge factor breakdowns"
-    );
-    assert!(
-        !rendered.contains("orphaned:"),
-        "greeting should not include per-urge factor breakdowns"
-    );
-    assert!(
-        !rendered.contains("## Pressure Gauge"),
-        "greeting should not include the verbose pressure section"
-    );
-
-    // When pressure readings are present, they appear as the compact gauge only.
-    if !context.pressures.is_empty() {
-        assert!(
-            rendered.contains("[urges:"),
-            "non-empty pressures should render as the compact gauge"
-        );
-    }
+    dream_satisfying(&context, &agent, "compact pressure gauge", |dream| {
+        // Wait for cognitions to flow through so pressures populate.
+        if dream.cognitions.is_empty() {
+            return Err("cognitions not yet visible".into());
+        }
+        let rendered = DreamTemplate::new(dream).to_string();
+        if rendered.contains("tensions:") {
+            return Err("verbose 'tensions:' should be absent".into());
+        }
+        if rendered.contains("orphaned:") {
+            return Err("verbose 'orphaned:' should be absent".into());
+        }
+        if rendered.contains("## Pressure Gauge") {
+            return Err("verbose pressure section should be absent".into());
+        }
+        if !dream.pressures.is_empty() && !rendered.contains("[urges:") {
+            return Err("non-empty pressures should render as compact gauge".into());
+        }
+        Ok(())
+    })
+    .await;
 }
 
 #[tokio::test]

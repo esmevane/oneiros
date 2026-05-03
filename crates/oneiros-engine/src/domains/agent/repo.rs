@@ -121,6 +121,26 @@ impl<'a> AgentRepo<'a> {
         Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
     }
 
+    /// Eventually-tolerant lookup by name. Polls `get` until the agent
+    /// is visible through projections or `policy.timeout` elapses.
+    /// Returns `Ok(None)` after the deadline if the agent never appears.
+    pub async fn fetch(
+        &self,
+        name: &AgentName,
+        policy: &FetchPolicy,
+    ) -> Result<Option<Agent>, EventError> {
+        fetch_eventually(policy, || self.get(name)).await
+    }
+
+    /// Eventually-tolerant lookup by id.
+    pub async fn fetch_by_id(
+        &self,
+        id: AgentId,
+        policy: &FetchPolicy,
+    ) -> Result<Option<Agent>, EventError> {
+        fetch_eventually(policy, || self.get_by_id(id)).await
+    }
+
     pub async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
         let db = self.scope.bookmark_db().await?;
         let count: i64 = db.query_row(

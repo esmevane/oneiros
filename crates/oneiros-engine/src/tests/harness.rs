@@ -30,6 +30,8 @@ use crate::*;
 /// Commands and client calls go through the full HTTP stack.
 pub struct TestApp {
     engine: Engine,
+    canons: CanonIndex,
+    mailboxes: Mailboxes,
     _dir: tempfile::TempDir,
     _handle: ServerHandle,
 }
@@ -56,11 +58,32 @@ impl TestApp {
             .await
             .map_err(|e| Error::Context(e.to_string()))?;
 
+        let canons = CanonIndex::new();
+        let mailboxes = Mailboxes::spawn(canons.clone());
+
         Ok(Self {
             engine,
+            canons,
+            mailboxes,
             _dir: dir,
             _handle: handle,
         })
+    }
+
+    /// Build a `ProjectLog` with this test app's local mailboxes attached,
+    /// matching the server-side construction shape. Tests that call
+    /// services directly should use this rather than `config().project()`,
+    /// otherwise emitted events have no projector to apply them.
+    ///
+    /// The test-local `CanonIndex` is hydrated from the events DB so the
+    /// reducer pipeline (which carries the in-memory state pressure
+    /// computation depends on) catches up to whatever the server-side
+    /// startup already applied.
+    pub fn project_log(&self) -> ProjectLog {
+        let config = self.engine.config();
+        // Best-effort hydrate — pre-init databases simply don't exist yet.
+        let _ = self.canons.hydrate_brain(config, &config.brain);
+        config.project().with_mailboxes(self.mailboxes.clone())
     }
 
     /// Initialize the system database and default tenant/actor.
@@ -188,6 +211,33 @@ impl Retryable {
         loop {
             match predicate() {
                 Ok(()) => return,
+                Err(msg) => {
+                    if std::time::Instant::now() >= deadline {
+                        panic!(
+                            "{label}: not met within {:?}.\nLast failure: {msg}",
+                            self.timeout,
+                        );
+                    }
+                    tokio::time::sleep(self.interval).await;
+                }
+            }
+        }
+    }
+
+    /// Async variant — re-evaluates an async predicate until it succeeds,
+    /// returning whatever value it produced. Use this for reads through
+    /// the system (HTTP, services) where projections apply eventually.
+    /// For assertion-only use, return `Ok(())`.
+    pub async fn wait_for_async<F, Fut, T>(&self, mut predicate: F, label: &str) -> T
+    where
+        F: FnMut() -> Fut,
+        Fut: std::future::Future<Output = Result<T, String>>,
+    {
+        let deadline = std::time::Instant::now() + self.timeout;
+
+        loop {
+            match predicate().await {
+                Ok(value) => return value,
                 Err(msg) => {
                     if std::time::Instant::now() >= deadline {
                         panic!(

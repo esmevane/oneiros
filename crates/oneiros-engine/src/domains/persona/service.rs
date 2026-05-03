@@ -38,7 +38,7 @@ impl PersonaService {
         let GetPersona::V1(lookup) = request;
         let name = lookup.key.resolve()?;
         let persona = PersonaRepo::new(context.scope()?)
-            .get(&name)
+            .fetch(&name, &context.config.fetch)
             .await?
             .ok_or(PersonaError::NotFound(name))?;
         Ok(PersonaResponse::PersonaDetails(
