@@ -40,7 +40,7 @@ impl StorageService {
         let GetStorage::V1(lookup) = request;
         let key = lookup.key.resolve()?;
         let entry = StorageRepo::new(context.scope()?)
-            .get_storage(&key)
+            .fetch_storage(&key)
             .await?
             .ok_or(StorageError::KeyNotFound(key))?;
         Ok(StorageResponse::StorageDetails(
@@ -82,7 +82,7 @@ impl StorageService {
         let RemoveStorage::V1(removal) = request;
         // Confirm the key exists before emitting.
         StorageRepo::new(context.scope()?)
-            .get_storage(&removal.key)
+            .fetch_storage(&removal.key)
             .await?
             .ok_or_else(|| StorageError::KeyNotFound(removal.key.clone()))?;
 
@@ -111,12 +111,12 @@ impl StorageService {
         let repo = StorageRepo::new(context.scope()?);
 
         let entry = repo
-            .get_storage(key)
+            .fetch_storage(key)
             .await?
             .ok_or_else(|| StorageError::KeyNotFound(key.clone()))?;
 
         let blob = repo
-            .get_blob(&entry.hash)
+            .fetch_blob(&entry.hash)
             .await?
             .ok_or_else(|| StorageError::BlobMissing(entry.hash.clone()))?;
 

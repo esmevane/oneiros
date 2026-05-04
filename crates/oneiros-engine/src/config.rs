@@ -47,6 +47,10 @@ pub struct Config {
     #[command(flatten)]
     #[builder(default)]
     pub dream: DreamConfig,
+    /// Default patience window for eventually-consistent reads.
+    #[command(flatten)]
+    #[builder(default)]
+    pub fetch: Fetch,
     /// Output format: prompt (default), json, or text.
     #[arg(long, short, default_value_t, global = true)]
     #[builder(default)]
@@ -69,6 +73,7 @@ impl Default for Config {
             bookmark: BookmarkName::main(),
             service: ServiceConfig::default(),
             dream: DreamConfig::default(),
+            fetch: Fetch::default(),
             output: OutputMode::default(),
             color: ColorChoice::default(),
             verbosity: Verbosity::default(),
@@ -243,6 +248,14 @@ impl Config {
             self.dream.experience_size = file_config.dream.experience_size;
         }
 
+        // Fetch
+        if self.fetch.interval == defaults.fetch.interval {
+            self.fetch.interval = file_config.fetch.interval;
+        }
+        if self.fetch.timeout == defaults.fetch.timeout {
+            self.fetch.timeout = file_config.fetch.timeout;
+        }
+
         self
     }
 
@@ -322,6 +335,24 @@ address = "127.0.0.1:3000"
             merged.service.address,
             "127.0.0.1:3000".parse::<SocketAddr>().unwrap()
         );
+    }
+
+    #[test]
+    fn file_overrides_default_fetch_config() {
+        let dir = tempfile::tempdir().unwrap();
+        write_config(
+            dir.path(),
+            r#"
+[fetch]
+interval = "50ms"
+timeout = "5s"
+"#,
+        );
+        let config = config_in(dir.path());
+        let merged = config.with_config_file();
+
+        assert_eq!(merged.fetch.interval, std::time::Duration::from_millis(50));
+        assert_eq!(merged.fetch.timeout, std::time::Duration::from_secs(5));
     }
 
     #[test]

@@ -14,6 +14,14 @@ impl<'a> CognitionRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// cognition appears or the configured patience window expires.
+    ///
+    /// [`get`]: CognitionRepo::get
+    pub async fn fetch(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(

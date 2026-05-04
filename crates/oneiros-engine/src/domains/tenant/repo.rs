@@ -12,6 +12,14 @@ impl<'a> TenantRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// tenant appears or the configured patience window expires.
+    ///
+    /// [`get`]: TenantRepo::get
+    pub async fn fetch(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
         let db = self.scope.host_db().await?;
         let mut stmt = db.prepare("select id, name, created_at from tenants where id = ?1")?;

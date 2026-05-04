@@ -36,7 +36,7 @@ impl TenantService {
         let id = lookup.key.resolve()?;
         let scope = context.scope()?;
         let tenant = TenantRepo::new(scope)
-            .get(&id)
+            .fetch(&id)
             .await?
             .ok_or(TenantError::NotFound(id))?;
         Ok(TenantResponse::Found(

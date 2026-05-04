@@ -40,14 +40,14 @@ impl BrainService {
         let repo = BrainRepo::new(context.scope()?);
         let brain = match &lookup.key {
             ResourceKey::Key(name) => repo
-                .get(name)
+                .fetch(name)
                 .await?
                 .ok_or_else(|| BrainError::NotFound(name.clone()))?,
             ResourceKey::Ref(token) => {
                 let Ref::V0(resource) = token.inner().clone();
                 match resource {
                     Resource::Brain(id) => repo
-                        .get_by_id(&id)
+                        .fetch_by_id(&id)
                         .await?
                         .ok_or(BrainError::NotFoundById(id))?,
                     other => {

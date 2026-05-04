@@ -12,6 +12,14 @@ impl<'a> ActorRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// actor appears or the configured patience window expires.
+    ///
+    /// [`get`]: ActorRepo::get
+    pub async fn fetch(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
         let db = self.scope.host_db().await?;
         let mut statement =

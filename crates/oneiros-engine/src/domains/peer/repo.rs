@@ -12,6 +12,14 @@ impl<'a> PeerRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// peer appears or the configured patience window expires.
+    ///
+    /// [`get`]: PeerRepo::get
+    pub async fn fetch(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
         let db = self.scope.host_db().await?;
         let mut statement =

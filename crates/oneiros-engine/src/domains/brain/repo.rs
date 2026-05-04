@@ -12,6 +12,26 @@ impl<'a> BrainRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// brain appears or the configured patience window expires.
+    ///
+    /// [`get`]: BrainRepo::get
+    pub async fn fetch(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(name)).await
+    }
+
+    /// Eventually-consistent variant of [`get_by_id`]. Polls until the
+    /// brain appears or the configured patience window expires.
+    ///
+    /// [`get_by_id`]: BrainRepo::get_by_id
+    pub async fn fetch_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
+        self.scope
+            .config()
+            .fetch
+            .eventual(|| self.get_by_id(id))
+            .await
+    }
+
     pub async fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
         let db = self.scope.host_db().await?;
         let mut stmt = db.prepare("select id, name, created_at from brains where name = ?1")?;

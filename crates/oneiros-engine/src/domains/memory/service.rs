@@ -9,7 +9,7 @@ impl MemoryService {
     ) -> Result<MemoryResponse, MemoryError> {
         let AddMemory::V1(addition) = request;
         let agent_record = AgentRepo::new(context.scope()?)
-            .get(&addition.agent)
+            .fetch(&addition.agent)
             .await?
             .ok_or_else(|| MemoryError::AgentNotFound(addition.agent.clone()))?;
 
@@ -43,7 +43,7 @@ impl MemoryService {
         let GetMemory::V1(lookup) = request;
         let id = lookup.key.resolve()?;
         let memory = MemoryRepo::new(context.scope()?)
-            .get(&id)
+            .fetch(&id)
             .await?
             .ok_or(MemoryError::NotFound(id))?;
         Ok(MemoryResponse::MemoryDetails(
@@ -62,7 +62,7 @@ impl MemoryService {
         let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context.scope()?)
-                    .get(name)
+                    .fetch(name)
                     .await?
                     .ok_or_else(|| MemoryError::AgentNotFound(name.clone()))?;
                 Some(record.id)

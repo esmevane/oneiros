@@ -39,7 +39,7 @@ impl ConnectionService {
         let GetConnection::V1(lookup) = request;
         let id = lookup.key.resolve()?;
         let connection = ConnectionRepo::new(context.scope()?)
-            .get(&id)
+            .fetch(&id)
             .await?
             .ok_or(ConnectionError::NotFound(id))?;
         Ok(ConnectionResponse::ConnectionDetails(
@@ -86,7 +86,7 @@ impl ConnectionService {
     ) -> Result<ConnectionResponse, ConnectionError> {
         let RemoveConnection::V1(removal) = request;
         if ConnectionRepo::new(context.scope()?)
-            .get(&removal.id)
+            .fetch(&removal.id)
             .await?
             .is_none()
         {

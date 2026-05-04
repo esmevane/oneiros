@@ -32,7 +32,7 @@ impl LevelService {
         let GetLevel::V1(lookup) = request;
         let name = lookup.key.resolve()?;
         let level = LevelRepo::new(context.scope()?)
-            .get(&name)
+            .fetch(&name)
             .await?
             .ok_or(LevelError::NotFound(name))?;
         Ok(LevelResponse::LevelDetails(

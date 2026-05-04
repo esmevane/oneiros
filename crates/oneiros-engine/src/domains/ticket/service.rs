@@ -73,7 +73,7 @@ impl TicketService {
         let GetTicket::V1(lookup) = request;
         let id = lookup.key.resolve()?;
         let ticket = TicketRepo::new(context.scope()?)
-            .get(&id)
+            .fetch(&id)
             .await?
             .ok_or(TicketError::NotFound(id))?;
         Ok(TicketResponse::Found(

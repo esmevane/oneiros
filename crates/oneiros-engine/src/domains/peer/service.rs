@@ -61,7 +61,7 @@ impl PeerService {
         let GetPeer::V1(get) = request;
         let id = get.key.resolve()?;
         let peer = PeerRepo::new(context.scope()?)
-            .get(id)
+            .fetch(id)
             .await?
             .ok_or(PeerError::NotFound(id))?;
         Ok(PeerResponse::Found(PeerFoundResponse::V1(

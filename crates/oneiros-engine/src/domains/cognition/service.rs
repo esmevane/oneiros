@@ -9,7 +9,7 @@ impl CognitionService {
     ) -> Result<CognitionResponse, CognitionError> {
         let AddCognition::V1(addition) = request;
         let agent_record = AgentRepo::new(context.scope()?)
-            .get(&addition.agent)
+            .fetch(&addition.agent)
             .await?
             .ok_or_else(|| CognitionError::AgentNotFound(addition.agent.clone()))?;
 
@@ -43,7 +43,7 @@ impl CognitionService {
         let GetCognition::V1(lookup) = request;
         let id = lookup.key.resolve()?;
         let cognition = CognitionRepo::new(context.scope()?)
-            .get(&id)
+            .fetch(&id)
             .await?
             .ok_or(CognitionError::NotFound(id))?;
         Ok(CognitionResponse::CognitionDetails(
@@ -62,7 +62,7 @@ impl CognitionService {
         let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context.scope()?)
-                    .get(name)
+                    .fetch(name)
                     .await?
                     .ok_or_else(|| CognitionError::AgentNotFound(name.clone()))?;
                 Some(record.id)
