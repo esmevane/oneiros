@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.9...oneiros-engine-v0.0.10) - 2026-05-04
+
+### Other
+
+- Inits pass through http.
+- Not eventually.
+- Make fetch happen.
+- Remove SSE "activity stream".
+- MCP sessions.
+- Database extraction.
+- Platform determines layout.
+- Extract keys from config.
+- Scopes over context.
+- Replayable bookmarks.
+- Lists are searches.
+- Versionable protocol.
+- Update iroh, misc crates; temp pins.
+- Dream compaction.
+- Known, unknown, ephemeral, malformed events.
+- Explicit event match arms
+- Importable bookmarks.
+- Host centric dashboard. ([#228](https://github.com/esmevane/oneiros/pull/228))
+- Resource keys.
+- Logging
+- Bookmarks as lenses.
+- Arc the API.
+- Massive MCP reduction.
+- Remove canon, leverage events for distribution.
+- OpenAPI docs and Scalar page.
+- Schema generation in MCP
+- Hints use actual command paths.
+- Hints
+- Structured errors.
+- Seeds use a client.
+- Use WAL for dbs
+- Move acceptance tests into engine.
+- Move bin code into engine.
+- SSE test flake fix.
+- Explicit errors. Generate keypair in system init.
+- Distribution feedback.
+- Distribution.
+- Create a `main` bookmark on project init.
+- Enum centric ergonomics.
+- Viewable resources.
+- Distribution workflow tests.
+- Bookmark MCP & MCP Auth.
+- MCP Quality of Life improvements
+- Fixes for import speed and system migrations.
+- Morning / evening pages, the skills.
+- Bookmarks and chronicles.
+- Rehydrate canon at start.
+- Reconciliation.
+- Reductionism.
+- Reducers and split canon.
+- Morning pages v3
+- Loro-capable tables.
+- Basic loro support.
+- More morning page work.
+- Morning pages, ref tokens.
+
 ## [0.0.9](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.8...oneiros-engine-v0.0.9) - 2026-04-03
 
 ### Other
