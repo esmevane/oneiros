@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use tokio::sync::broadcast;
-
 use crate::*;
 
 impl aide::operation::OperationInput for ProjectLog {}
@@ -11,46 +9,26 @@ pub struct ProjectLog {
     pub config: Config,
     pub projections: Projections<BrainCanon>,
     chronicle: Chronicle,
-    broadcast: broadcast::Sender<StoredEvent>,
     /// Lazily-composed Scope, cached for the context's lifetime.
     scope: Arc<std::sync::OnceLock<Scope<AtBookmark>>>,
 }
 
 impl ProjectLog {
     pub fn new(config: Config) -> Self {
-        let (broadcast, _) = broadcast::channel(256);
-
         Self {
             config,
             projections: Projections::project(),
             chronicle: Chronicle::new(),
-            broadcast,
             scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
 
-    /// Create a context that shares an existing broadcast channel.
-    pub fn with_broadcast(config: Config, broadcast: broadcast::Sender<StoredEvent>) -> Self {
-        Self {
-            config,
-            projections: Projections::project(),
-            chronicle: Chronicle::new(),
-            broadcast,
-            scope: Arc::new(std::sync::OnceLock::new()),
-        }
-    }
-
-    /// Create a context with shared broadcast and a pre-hydrated bookmark entry.
-    pub fn with_entry(
-        config: Config,
-        broadcast: broadcast::Sender<StoredEvent>,
-        entry: BookmarkEntry,
-    ) -> Self {
+    /// Create a context with a pre-hydrated bookmark entry.
+    pub fn with_entry(config: Config, entry: BookmarkEntry) -> Self {
         Self {
             config,
             projections: Projections::project_with_pipeline(entry.pipeline),
             chronicle: entry.chronicle,
-            broadcast,
             scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
@@ -71,11 +49,6 @@ impl ProjectLog {
                 .unwrap_or_else(|_| Client::new(self.config.base_url())),
             None => Client::new(self.config.base_url()),
         }
-    }
-
-    /// Subscribe to the event broadcast stream.
-    pub fn subscribe(&self) -> broadcast::Receiver<StoredEvent> {
-        self.broadcast.subscribe()
     }
 
     /// Open the bookmark DB with the events DB ATTACHed.
@@ -128,9 +101,6 @@ impl ProjectLog {
             &chronicle_store.resolver(),
             &chronicle_store.writer(),
         )?;
-
-        // We broadcast the new event after projecting it.
-        let _ = self.broadcast.send(stored);
 
         Ok(())
     }

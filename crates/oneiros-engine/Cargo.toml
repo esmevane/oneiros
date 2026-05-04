@@ -36,7 +36,6 @@ sha2.workspace = true
 spki.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-tokio-stream.workspace = true
 tracing.workspace = true
 tracing-appender.workspace = true
 tracing-subscriber.workspace = true

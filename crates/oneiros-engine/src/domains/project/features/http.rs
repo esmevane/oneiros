@@ -1,12 +1,5 @@
 use aide::axum::{ApiRouter, routing};
-use axum::{
-    Json,
-    extract::State,
-    http::{HeaderMap, StatusCode},
-    response::sse::{Event as SseEvent, KeepAlive, Sse},
-};
-use std::convert::Infallible;
-use tokio_stream::{StreamExt, wrappers::BroadcastStream};
+use axum::{Json, http::StatusCode};
 
 use crate::*;
 
@@ -24,8 +17,6 @@ impl ProjectRouter {
             )
             // Brain-scoped — BrainSummary lacks OperationOutput, use plain route()
             .route("/summary", axum::routing::get(summary))
-            // SSE streaming — kept as route() since SSE doesn't map to OpenAPI
-            .route("/activity", axum::routing::get(activity))
     }
 }
 
@@ -84,39 +75,4 @@ async fn summary(context: ProjectLog) -> Result<Json<BrainSummary>, ProjectError
     };
 
     Ok(Json(summary))
-}
-
-/// SSE activity stream — live events from the host-wide broadcast
-/// channel. Unauthenticated (`ServerState` rather than `ProjectLog`)
-/// because the channel is already shared across every brain on the
-/// host and events are not brain-labeled on the wire. Brain attribution
-/// on the feed is a separate revision.
-async fn activity(
-    State(state): State<ServerState>,
-    headers: HeaderMap,
-) -> Sse<impl tokio_stream::Stream<Item = Result<SseEvent, Infallible>>> {
-    let last_event_id: Option<i64> = headers
-        .get("last-event-id")
-        .and_then(|header| header.to_str().ok())
-        .and_then(|given_value| given_value.parse().ok());
-
-    let rx = state.broadcast().subscribe();
-    let mut last_sent = last_event_id.unwrap_or(0);
-
-    let stream = BroadcastStream::new(rx).filter_map(move |result| match result {
-        Ok(event) => {
-            if event.sequence <= last_sent {
-                return None;
-            }
-            last_sent = event.sequence;
-
-            let json = serde_json::to_string(&event).unwrap_or_default();
-            Some(Ok(SseEvent::default()
-                .id(event.sequence.to_string())
-                .data(json)))
-        }
-        Err(_) => None,
-    });
-
-    Sse::new(stream).keep_alive(KeepAlive::default())
 }

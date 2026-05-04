@@ -131,14 +131,6 @@ a{color:inherit;text-decoration:none}
 .cog-who{font-family:var(--font-family-sans);font-size:var(--font-size-3xs);font-weight:var(--font-weight-600);color:var(--color-text-secondary)}
 .cog-when{font-family:var(--font-family-mono);font-size:var(--font-size-3xs);color:var(--colors-neutral-700);margin-left:auto}
 .cog-txt{font-family:var(--font-family-serif);font-size:var(--font-size-xxs);color:var(--color-text-secondary);line-height:var(--line-height-lg);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-/* Activity */
-.feed{padding:var(--space-md);max-height:320px;overflow-y:auto}
-.feed::-webkit-scrollbar{width:3px}.feed::-webkit-scrollbar-thumb{background:var(--color-border-strong);border-radius:2px}
-.feed-row{display:flex;align-items:baseline;gap:var(--space-sm);padding:var(--space-xxs) 0;border-bottom:var(--border-width-sm) solid rgba(255,255,255,0.03);font-size:var(--font-size-3xs)}
-.feed-row:last-child{border-bottom:none}
-.feed-type{font-family:var(--font-family-mono);font-weight:var(--font-weight-500);color:var(--colors-primary-500);letter-spacing:var(--letter-spacing-wide);flex-shrink:0}
-.feed-detail{font-family:var(--font-family-serif);color:var(--color-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.feed-time{font-family:var(--font-family-mono);color:var(--colors-neutral-700);margin-left:auto;flex-shrink:0}
 /* Search */
 .search-box{position:relative;margin-bottom:var(--space-3xl)}
 .search-input{width:100%;background:var(--color-bg-raised);border:var(--border-width-sm) solid var(--color-border);border-radius:var(--border-radius);padding:var(--space-md) var(--space-lg) var(--space-md) var(--space-xxl);font-family:var(--font-family-serif);font-size:var(--font-size-md);color:var(--color-text);outline:none;transition:border-color var(--transition-default)}
@@ -200,11 +192,6 @@ a{color:inherit;text-decoration:none}
         <div class="section-head"><span class="section-num">04</span><h2>Peers</h2></div>
         <div class="agent-grid" id="host-peer-grid"><div class="loading">loading&hellip;</div></div>
       </div>
-      <div class="section">
-        <div class="section-head"><span class="section-num">05</span><h2>Activity</h2></div>
-        <div class="card feed" id="activity"><div class="loading">listening&hellip;</div></div>
-      </div>
-    </div>
 
     <!-- BRAIN -->
     <div class="page" id="page-brain">
@@ -485,34 +472,6 @@ a{color:inherit;text-decoration:none}
           '<div class="a-desc">' + esc(p.address && p.address.id ? String(p.address.id).slice(0, 16) + '…' : '—') + '</div>';
         peerGrid.appendChild(card);
       });
-    }
-
-    // SSE activity stream — host-wide, unauthenticated. Events are
-    // not brain-labeled on the wire; brain attribution is a separate
-    // revision of the feed.
-    if (!window._sse) {
-      var feed = document.getElementById('activity');
-      window._sse = new EventSource('/activity');
-      window._sse.onmessage = function(e) {
-        try {
-          var ev = JSON.parse(e.data);
-          var type = ev.event_type || ev.events && Object.keys(ev.events)[0] || 'event';
-          if (feed.querySelector('.loading')) feed.innerHTML = '';
-          var row = document.createElement('div');
-          row.className = 'feed-row';
-          row.innerHTML = '<span class="feed-type">' + esc(type) + '</span>' +
-            '<span class="feed-detail">' + esc(JSON.stringify(ev).substring(0, 120)) + '</span>' +
-            '<span class="feed-time">' + new Date().toLocaleTimeString() + '</span>';
-          feed.prepend(row);
-          while (feed.children.length > 100) feed.removeChild(feed.lastChild);
-        } catch(err) {}
-      };
-      window._sse.onerror = function() {
-        var row = document.createElement('div');
-        row.className = 'feed-row';
-        row.innerHTML = '<span class="feed-detail">reconnecting&hellip;</span>';
-        feed.prepend(row);
-      };
     }
   }
 

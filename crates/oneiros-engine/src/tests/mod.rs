@@ -9,9 +9,8 @@ use crate::*;
 //
 // These test infrastructure that isn't exposed through the CLI/HTTP
 // surface: projection replay and storage content-addressing.
-// Broadcast events are tested via SSE in the continuity workflow.
-// Event serialization is covered implicitly by every workflow that
-// persists and reads back data.
+// Write-side event emission is covered implicitly by every workflow
+// that persists and reads back data.
 
 fn test_config(brain: &str) -> (Config, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create tempdir");

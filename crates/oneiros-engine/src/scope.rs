@@ -260,10 +260,9 @@ impl Scope<AtBookmark> {
         HostDb::open(&self.inner.config.platform()).await
     }
 
-    /// Strangler bridge — produce a legacy `ProjectLog` with fresh
-    /// chronicle/broadcast (CLI-shape). HTTP construction handles its
-    /// own behavior state (with_entry, with_broadcast) until the
-    /// extractor migrates.
+    /// Strangler bridge — produce a legacy `ProjectLog` (CLI-shape).
+    /// HTTP construction handles its own behavior state (with_entry)
+    /// until the extractor migrates.
     pub fn project_log(&self) -> ProjectLog {
         ProjectLog::new(self.inner.config.clone())
     }
