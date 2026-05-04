@@ -11,6 +11,14 @@ impl<'a> SensationRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// sensation appears or the configured patience window expires.
+    ///
+    /// [`get`]: SensationRepo::get
+    pub async fn fetch(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(name)).await
+    }
+
     pub async fn get(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt =

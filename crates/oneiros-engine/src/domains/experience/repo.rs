@@ -14,6 +14,14 @@ impl<'a> ExperienceRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// experience appears or the configured patience window expires.
+    ///
+    /// [`get`]: ExperienceRepo::get
+    pub async fn fetch(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(

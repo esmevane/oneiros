@@ -12,6 +12,21 @@ impl<'a> StorageRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get_storage`]. Polls until
+    /// the entry appears or the configured patience window expires.
+    ///
+    /// [`get_storage`]: StorageRepo::get_storage
+    pub async fn fetch_storage(
+        &self,
+        key: &StorageKey,
+    ) -> Result<Option<StorageEntry>, EventError> {
+        self.scope
+            .config()
+            .fetch
+            .eventual(|| self.get_storage(key))
+            .await
+    }
+
     pub async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
@@ -65,6 +80,18 @@ impl<'a> StorageRepo<'a> {
             .collect();
 
         Ok(Listed::new(items, total))
+    }
+
+    /// Eventually-consistent variant of [`get_blob`]. Polls until the
+    /// blob appears or the configured patience window expires.
+    ///
+    /// [`get_blob`]: StorageRepo::get_blob
+    pub async fn fetch_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+        self.scope
+            .config()
+            .fetch
+            .eventual(|| self.get_blob(hash))
+            .await
     }
 
     pub async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {

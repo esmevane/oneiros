@@ -38,7 +38,7 @@ impl SensationService {
         let GetSensation::V1(lookup) = request;
         let name = lookup.key.resolve()?;
         let sensation = SensationRepo::new(context.scope()?)
-            .get(&name)
+            .fetch(&name)
             .await?
             .ok_or(SensationError::NotFound(name))?;
         Ok(SensationResponse::SensationDetails(

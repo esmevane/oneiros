@@ -48,6 +48,13 @@ impl TestApp {
                     .address("127.0.0.1:0".parse().unwrap())
                     .build(),
             )
+            // Tighter fetch window for tests — patience semantics still
+            // exercised, but missing-entity tests don't pay the production
+            // 2-second wait per call.
+            .fetch(Fetch {
+                interval: std::time::Duration::from_millis(2),
+                timeout: std::time::Duration::from_millis(100),
+            })
             .build();
 
         let mut engine = Engine::new(config);

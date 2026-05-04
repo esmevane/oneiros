@@ -11,6 +11,14 @@ impl<'a> LevelRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// level appears or the configured patience window expires.
+    ///
+    /// [`get`]: LevelRepo::get
+    pub async fn fetch(&self, name: &LevelName) -> Result<Option<Level>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(name)).await
+    }
+
     pub async fn get(&self, name: &LevelName) -> Result<Option<Level>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt =

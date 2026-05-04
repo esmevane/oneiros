@@ -130,4 +130,24 @@ impl<'a> AgentRepo<'a> {
         )?;
         Ok(count > 0)
     }
+
+    /// Eventually-consistent variant of [`get`]. Polls until the agent
+    /// appears or the configured patience window expires.
+    ///
+    /// [`get`]: AgentRepo::get
+    pub async fn fetch(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(name)).await
+    }
+
+    /// Eventually-consistent variant of [`get_by_id`]. Polls until the
+    /// agent appears or the configured patience window expires.
+    ///
+    /// [`get_by_id`]: AgentRepo::get_by_id
+    pub async fn fetch_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
+        self.scope
+            .config()
+            .fetch
+            .eventual(|| self.get_by_id(id))
+            .await
+    }
 }

@@ -11,7 +11,7 @@ impl AgentService {
 
         // Cross-resource validation: persona must exist
         if PersonaRepo::new(context.scope()?)
-            .get(&create.persona)
+            .fetch(&create.persona)
             .await?
             .is_none()
         {
@@ -61,14 +61,14 @@ impl AgentService {
         let repo = AgentRepo::new(context.scope()?);
         let agent = match &lookup.key {
             ResourceKey::Key(name) => repo
-                .get(name)
+                .fetch(name)
                 .await?
                 .ok_or_else(|| AgentError::NotFound(name.clone()))?,
             ResourceKey::Ref(token) => {
                 let Ref::V0(resource) = token.inner().clone();
                 match resource {
                     Resource::Agent(id) => repo
-                        .get_by_id(id)
+                        .fetch_by_id(id)
                         .await?
                         .ok_or(AgentError::NotFoundById(id))?,
                     other => {
@@ -132,7 +132,7 @@ impl AgentService {
     ) -> Result<AgentResponse, AgentError> {
         let UpdateAgent::V1(update) = request;
         let existing = AgentRepo::new(context.scope()?)
-            .get(&update.name)
+            .fetch(&update.name)
             .await?
             .ok_or_else(|| AgentError::NotFound(update.name.clone()))?;
 
@@ -166,11 +166,11 @@ impl AgentService {
         request: &RemoveAgent,
     ) -> Result<AgentResponse, AgentError> {
         let RemoveAgent::V1(removal) = request;
-        let exists = AgentRepo::new(context.scope()?)
-            .name_exists(&removal.name)
-            .await?;
-
-        if !exists {
+        if AgentRepo::new(context.scope()?)
+            .fetch(&removal.name)
+            .await?
+            .is_none()
+        {
             return Err(AgentError::NotFound(removal.name.clone()));
         }
 

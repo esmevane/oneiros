@@ -38,7 +38,7 @@ impl NatureService {
         let GetNature::V1(lookup) = request;
         let name = lookup.key.resolve()?;
         let nature = NatureRepo::new(context.scope()?)
-            .get(&name)
+            .fetch(&name)
             .await?
             .ok_or(NatureError::NotFound(name))?;
         Ok(NatureResponse::NatureDetails(

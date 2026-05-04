@@ -26,7 +26,7 @@ impl UrgeService {
         let GetUrge::V1(lookup) = request;
         let name = lookup.key.resolve()?;
         let urge = UrgeRepo::new(context.scope()?)
-            .get(&name)
+            .fetch(&name)
             .await?
             .ok_or(UrgeError::NotFound(name))?;
         Ok(UrgeResponse::UrgeDetails(

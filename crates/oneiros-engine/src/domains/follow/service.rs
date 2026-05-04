@@ -36,7 +36,7 @@ impl FollowService {
 
     pub async fn get(context: &HostLog, id: FollowId) -> Result<Follow, FollowError> {
         FollowRepo::new(context.scope()?)
-            .get(id)
+            .fetch(id)
             .await?
             .ok_or(FollowError::NotFound(id))
     }

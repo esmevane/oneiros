@@ -9,7 +9,7 @@ impl ExperienceService {
     ) -> Result<ExperienceResponse, ExperienceError> {
         let CreateExperience::V1(creation) = request;
         let agent_record = AgentRepo::new(context.scope()?)
-            .get(&creation.agent)
+            .fetch(&creation.agent)
             .await?
             .ok_or_else(|| ExperienceError::AgentNotFound(creation.agent.clone()))?;
 
@@ -43,7 +43,7 @@ impl ExperienceService {
         let GetExperience::V1(lookup) = request;
         let id = lookup.key.resolve()?;
         let experience = ExperienceRepo::new(context.scope()?)
-            .get(&id)
+            .fetch(&id)
             .await?
             .ok_or(ExperienceError::NotFound(id))?;
         Ok(ExperienceResponse::ExperienceDetails(
@@ -62,7 +62,7 @@ impl ExperienceService {
         let agent_id = match &listing.agent {
             Some(name) => {
                 let record = AgentRepo::new(context.scope()?)
-                    .get(name)
+                    .fetch(name)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
                 Some(record.id)
@@ -110,7 +110,7 @@ impl ExperienceService {
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceDescription::V1(update) = request;
         let mut experience = ExperienceRepo::new(context.scope()?)
-            .get(&update.id)
+            .fetch(&update.id)
             .await?
             .ok_or_else(|| ExperienceError::NotFound(update.id))?;
 
@@ -140,7 +140,7 @@ impl ExperienceService {
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceSensation::V1(update) = request;
         let mut experience = ExperienceRepo::new(context.scope()?)
-            .get(&update.id)
+            .fetch(&update.id)
             .await?
             .ok_or_else(|| ExperienceError::NotFound(update.id))?;
 

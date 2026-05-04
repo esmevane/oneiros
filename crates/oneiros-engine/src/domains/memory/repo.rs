@@ -14,6 +14,14 @@ impl<'a> MemoryRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// memory appears or the configured patience window expires.
+    ///
+    /// [`get`]: MemoryRepo::get
+    pub async fn fetch(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(

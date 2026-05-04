@@ -38,7 +38,7 @@ impl TextureService {
         let GetTexture::V1(lookup) = request;
         let name = lookup.key.resolve()?;
         let texture = TextureRepo::new(context.scope()?)
-            .get(&name)
+            .fetch(&name)
             .await?
             .ok_or(TextureError::NotFound(name))?;
         Ok(TextureResponse::TextureDetails(

@@ -11,6 +11,14 @@ impl<'a> TextureRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// texture appears or the configured patience window expires.
+    ///
+    /// [`get`]: TextureRepo::get
+    pub async fn fetch(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(name)).await
+    }
+
     pub async fn get(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt =

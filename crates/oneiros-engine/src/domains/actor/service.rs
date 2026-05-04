@@ -35,7 +35,7 @@ impl ActorService {
         let GetActor::V1(lookup) = request;
         let id = lookup.key.resolve()?;
         let actor = ActorRepo::new(context.scope()?)
-            .get(id)
+            .fetch(id)
             .await?
             .ok_or(ActorError::NotFound(id))?;
         Ok(ActorResponse::Found(

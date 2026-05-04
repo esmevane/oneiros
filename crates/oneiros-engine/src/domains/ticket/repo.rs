@@ -97,6 +97,14 @@ impl<'a> TicketRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// ticket appears or the configured patience window expires.
+    ///
+    /// [`get`]: TicketRepo::get
+    pub async fn fetch(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
         let db = self.scope.host_db().await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE id = ?1");

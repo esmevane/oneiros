@@ -11,6 +11,14 @@ impl<'a> UrgeRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// urge appears or the configured patience window expires.
+    ///
+    /// [`get`]: UrgeRepo::get
+    pub async fn fetch(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(name)).await
+    }
+
     pub async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;

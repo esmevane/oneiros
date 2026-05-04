@@ -12,6 +12,14 @@ impl<'a> ConnectionRepo<'a> {
         Self { scope }
     }
 
+    /// Eventually-consistent variant of [`get`]. Polls until the
+    /// connection appears or the configured patience window expires.
+    ///
+    /// [`get`]: ConnectionRepo::get
+    pub async fn fetch(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
+        self.scope.config().fetch.eventual(|| self.get(id)).await
+    }
+
     pub async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(
