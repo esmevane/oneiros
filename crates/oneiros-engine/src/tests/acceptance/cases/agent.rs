@@ -6,12 +6,14 @@ async fn with_persona<B: Backend>() -> Result<Harness<B>, Box<dyn core::error::E
     harness
         .exec_json("persona set process --description 'Process agents'")
         .await?;
-    harness
-        .query("persona show process")
-        .assert_json(expect!(Responses::Persona(
-            PersonaResponse::PersonaDetails(_)
-        )))
-        .await?;
+    let response = harness.exec_json("persona show process").await?;
+    assert!(
+        matches!(
+            response,
+            Responses::Persona(PersonaResponse::PersonaDetails(_))
+        ),
+        "expected PersonaDetails, got {response:#?}"
+    );
     Ok(harness)
 }
 
@@ -37,14 +39,14 @@ pub(crate) async fn show_returns_details<B: Backend>() -> TestResult {
         .exec_json("agent create viewer process --description 'Views things'")
         .await?;
 
-    harness
-        .query("agent show viewer.process")
-        .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
-                if agent.agent.name.as_str() == "viewer.process"
-                    && agent.agent.persona.as_str() == "process"
-        ))
-        .await
+    let response = harness.exec_json("agent show viewer.process").await?;
+    match response {
+        Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+            if agent.agent.name.as_str() == "viewer.process"
+                && agent.agent.persona.as_str() == "process" => {}
+        other => panic!("expected viewer.process AgentDetails, got {other:#?}"),
+    }
+    Ok(())
 }
 
 pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
@@ -68,13 +70,15 @@ pub(crate) async fn show_by_ref<B: Backend>() -> TestResult {
         other => panic!("expected AgentCreated, got {other:#?}"),
     };
 
-    harness
-        .query(&format!("agent show {ref_token}"))
-        .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
-                if agent.agent.name.as_str() == "viewer.process"
-        ))
-        .await
+    let response = harness
+        .exec_json(&format!("agent show {ref_token}"))
+        .await?;
+    match response {
+        Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+            if agent.agent.name.as_str() == "viewer.process" => {}
+        other => panic!("expected viewer.process AgentDetails, got {other:#?}"),
+    }
+    Ok(())
 }
 
 pub(crate) async fn show_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
@@ -116,10 +120,12 @@ pub(crate) async fn show_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let harness = Harness::<B>::init_project().await?;
 
-    harness
-        .query("agent list")
-        .assert_json(expect!(Responses::Agent(AgentResponse::NoAgents)))
-        .await
+    let response = harness.exec_json("agent list").await?;
+    assert!(
+        matches!(response, Responses::Agent(AgentResponse::NoAgents)),
+        "expected NoAgents, got {response:#?}"
+    );
+    Ok(())
 }
 
 pub(crate) async fn list_populated<B: Backend>() -> TestResult {
@@ -132,12 +138,13 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
         .exec_json("agent create second process --description 'Second'")
         .await?;
 
-    harness
-        .query("agent list")
-        .assert_json(expect!(
-            Responses::Agent(AgentResponse::Agents(AgentsResponse::V1(agents))) if agents.items.len() == 2
-        ))
-        .await
+    let response = harness.exec_json("agent list").await?;
+    match response {
+        Responses::Agent(AgentResponse::Agents(AgentsResponse::V1(agents)))
+            if agents.items.len() == 2 => {}
+        other => panic!("expected 2 agents, got {other:#?}"),
+    }
+    Ok(())
 }
 
 pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
@@ -158,13 +165,13 @@ pub(crate) async fn update_changes_fields<B: Backend>() -> TestResult {
         "expected AgentUpdated, got {response:#?}"
     );
 
-    harness
-        .query("agent show mutable.process")
-        .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
-                if agent.agent.description.as_str() == "Updated"
-        ))
-        .await
+    let response = harness.exec_json("agent show mutable.process").await?;
+    match response {
+        Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+            if agent.agent.description.as_str() == "Updated" => {}
+        other => panic!("expected updated AgentDetails, got {other:#?}"),
+    }
+    Ok(())
 }
 
 pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
@@ -181,10 +188,12 @@ pub(crate) async fn remove_makes_it_unlisted<B: Backend>() -> TestResult {
         "expected AgentRemoved, got {response:#?}"
     );
 
-    harness
-        .query("agent list")
-        .assert_json(expect!(Responses::Agent(AgentResponse::NoAgents)))
-        .await
+    let response = harness.exec_json("agent list").await?;
+    assert!(
+        matches!(response, Responses::Agent(AgentResponse::NoAgents)),
+        "expected NoAgents after removal, got {response:#?}"
+    );
+    Ok(())
 }
 
 pub(crate) async fn create_prompt<B: Backend>() -> TestResult {
@@ -208,18 +217,13 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    harness
-        .query("agent show thinker.process")
-        .assert_prompt(|prompt| {
-            if prompt.is_empty() {
-                return Err("agent show prompt should not be empty".into());
-            }
-            if !prompt.contains("thinker.process") {
-                return Err("agent show prompt should contain the agent name".into());
-            }
-            Ok(())
-        })
-        .await
+    let prompt = harness.exec_prompt("agent show thinker.process").await?;
+    assert!(!prompt.is_empty(), "agent show prompt should not be empty");
+    assert!(
+        prompt.contains("thinker.process"),
+        "agent show prompt should contain the agent name"
+    );
+    Ok(())
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
@@ -228,16 +232,12 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    harness
-        .query("agent list")
-        .assert_prompt(|prompt| {
-            if prompt.is_empty() {
-                Err("agent list prompt should not be empty when agents exist".into())
-            } else {
-                Ok(())
-            }
-        })
-        .await
+    let prompt = harness.exec_prompt("agent list").await?;
+    assert!(
+        !prompt.is_empty(),
+        "agent list prompt should not be empty when agents exist"
+    );
+    Ok(())
 }
 
 pub(crate) async fn update_prompt<B: Backend>() -> TestResult {
@@ -281,11 +281,11 @@ pub(crate) async fn name_includes_persona_suffix<B: Backend>() -> TestResult {
         .exec_json("agent create governor process --description 'Governor'")
         .await?;
 
-    harness
-        .query("agent show governor.process")
-        .assert_json(expect!(
-            Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
-                if agent.agent.name.as_str() == "governor.process"
-        ))
-        .await
+    let response = harness.exec_json("agent show governor.process").await?;
+    match response {
+        Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent)))
+            if agent.agent.name.as_str() == "governor.process" => {}
+        other => panic!("expected governor.process AgentDetails, got {other:#?}"),
+    }
+    Ok(())
 }

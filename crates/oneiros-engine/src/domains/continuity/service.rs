@@ -39,24 +39,27 @@ impl ContinuityService {
         )
         .await?;
 
-        let agent_name = match created {
-            AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)) => created.agent.name,
+        let created_agent = match created {
+            AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)) => created.agent,
             other => {
                 return Err(ContinuityError::UnexpectedResponse(format!("{other:?}")));
             }
         };
 
-        // Wake activates continuity; then gather the full context for the response.
+        // Wake activates continuity; then gather the full context for the
+        // response. We pass the agent record we already hold rather than
+        // re-looking-up by name — the lookup race doesn't happen because
+        // the lookup doesn't happen.
         Self::wake(
             context,
             &WakeAgent::builder_v1()
-                .agent(agent_name.clone())
+                .agent(created_agent.name.clone())
                 .build()
                 .into(),
             overrides,
         )
         .await?;
-        let dream = Self::gather_context(context, &agent_name, overrides)?;
+        let dream = Self::gather_context_for(context, &created_agent, overrides)?;
         Ok(ContinuityResponse::Emerged(
             EmergedResponse::builder_v1().context(dream).build().into(),
         ))
@@ -165,7 +168,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let WakeAgent::V1(wake) = request;
-        let dream = Self::gather_context(context, &wake.agent, overrides)?;
+        let dream = Self::gather_context(context, &wake.agent, overrides).await?;
 
         context
             .emit(ContinuityEvents::Dreamed(
@@ -189,7 +192,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let DreamAgent::V1(dreaming) = request;
-        let dream = Self::gather_context(context, &dreaming.agent, overrides)?;
+        let dream = Self::gather_context(context, &dreaming.agent, overrides).await?;
 
         context
             .emit(ContinuityEvents::Dreamed(
@@ -213,7 +216,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let IntrospectAgent::V1(introspecting) = request;
-        let dream = Self::gather_context(context, &introspecting.agent, overrides)?;
+        let dream = Self::gather_context(context, &introspecting.agent, overrides).await?;
 
         context
             .emit(ContinuityEvents::Introspected(
@@ -240,7 +243,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let ReflectAgent::V1(reflecting) = request;
-        let dream = Self::gather_context(context, &reflecting.agent, overrides)?;
+        let dream = Self::gather_context(context, &reflecting.agent, overrides).await?;
 
         context
             .emit(ContinuityEvents::Reflected(
@@ -267,7 +270,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let SenseContent::V1(sensing) = request;
-        let dream = Self::gather_context(context, &sensing.agent, overrides)?;
+        let dream = Self::gather_context(context, &sensing.agent, overrides).await?;
 
         context
             .emit(ContinuityEvents::Sensed(
@@ -292,7 +295,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let SleepAgent::V1(sleeping) = request;
-        let dream = Self::gather_context(context, &sleeping.agent, overrides)?;
+        let dream = Self::gather_context(context, &sleeping.agent, overrides).await?;
 
         context
             .emit(ContinuityEvents::Slept(
@@ -313,13 +316,13 @@ impl ContinuityService {
     ///
     /// Used to display the agent's full operational context (textures,
     /// sensations, levels, urges) without marking a continuity transition.
-    pub fn guidebook(
+    pub async fn guidebook(
         context: &ProjectLog,
         request: &GuidebookAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let GuidebookAgent::V1(lookup) = request;
-        let dream = Self::gather_context(context, &lookup.agent, overrides)?;
+        let dream = Self::gather_context(context, &lookup.agent, overrides).await?;
         Ok(ContinuityResponse::Guidebook(
             GuidebookResponse::builder_v1()
                 .context(dream)
@@ -328,20 +331,39 @@ impl ContinuityService {
         ))
     }
 
-    /// Gather the full cognitive context for an agent.
+    /// Gather the full cognitive context for an agent by name.
     ///
-    /// Uses Store types directly since we hold an owned Connection.
-    pub fn gather_context(
+    /// Resolves the agent record patiently via [`AgentRepo::fetch`], then
+    /// delegates to [`gather_context_for`].
+    ///
+    /// [`gather_context_for`]: ContinuityService::gather_context_for
+    pub async fn gather_context(
         context: &ProjectLog,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
     ) -> Result<DreamContext, ContinuityError> {
+        let agent = AgentRepo::new(context.scope()?)
+            .fetch(agent_name)
+            .await?
+            .ok_or_else(|| ContinuityError::AgentNotFound(agent_name.clone()))?;
+        Self::gather_context_for(context, &agent, overrides)
+    }
+
+    /// Gather the full cognitive context for a known agent.
+    ///
+    /// Takes the agent record directly — used by composers that already
+    /// hold the agent (e.g. [`emerge`] passes the agent it just created)
+    /// to avoid the re-lookup race. Uses Store types directly since we
+    /// hold an owned Connection.
+    ///
+    /// [`emerge`]: ContinuityService::emerge
+    pub fn gather_context_for(
+        context: &ProjectLog,
+        agent: &Agent,
+        overrides: &DreamOverrides,
+    ) -> Result<DreamContext, ContinuityError> {
         let config = context.config.dream.merge(overrides);
         let db = context.db()?;
-
-        let agent = AgentStore::new(&db)
-            .get(agent_name)?
-            .ok_or_else(|| ContinuityError::AgentNotFound(agent_name.clone()))?;
 
         let persona_name = agent.persona.clone();
         let persona = PersonaStore::new(&db).get(&persona_name)?;
@@ -435,7 +457,7 @@ impl ContinuityService {
             // No connections means sparse graph — include all cognitions
             CognitionStore::new(&db).list(Some(&agent.id), None)?
         } else {
-            Self::assemble_cognitions(&db, &agent, &config, &cognition_ids)?
+            Self::assemble_cognitions(&db, agent, &config, &cognition_ids)?
         };
 
         // Apply cognition_size cap — keep the most recent.
@@ -470,11 +492,11 @@ impl ContinuityService {
             .collect();
 
         // Pressure readings paired with urge CTAs
-        let raw_pressures = PressureStore::new(&db).get(agent_name)?;
+        let raw_pressures = PressureStore::new(&db).get(&agent.name)?;
         let pressures = PressureReading::from_pressures_and_urges(raw_pressures, &urges);
 
         Ok(DreamContext::builder()
-            .agent(agent)
+            .agent(agent.clone())
             .maybe_persona(persona)
             .memories(memories)
             .cognitions(cognitions)

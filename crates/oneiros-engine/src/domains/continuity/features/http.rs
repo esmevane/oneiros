@@ -206,9 +206,12 @@ async fn guidebook(
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
-    Ok(Json(ContinuityService::guidebook(
-        &context,
-        &GuidebookAgent::builder_v1().agent(agent).build().into(),
-        &overrides,
-    )?))
+    Ok(Json(
+        ContinuityService::guidebook(
+            &context,
+            &GuidebookAgent::builder_v1().agent(agent).build().into(),
+            &overrides,
+        )
+        .await?,
+    ))
 }

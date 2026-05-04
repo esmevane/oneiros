@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::time::{Duration, Instant};
 
 use clap::Parser;
 
@@ -27,152 +26,6 @@ pub(crate) trait Backend: Sized {
 
     /// Execute in prompt mode — returns rendered text for content assertions.
     fn exec_prompt(&self, command: &str) -> impl Future<Output = Result<String, Error>>;
-}
-
-// ── Eventually-consistent assertions ────────────────────────────
-
-/// Configuration for eventual-consistency retries.
-#[derive(Clone)]
-pub(crate) struct RetryPolicy {
-    pub interval: Duration,
-    pub timeout: Duration,
-}
-
-impl Default for RetryPolicy {
-    fn default() -> Self {
-        Self {
-            interval: Duration::from_millis(50),
-            timeout: Duration::from_secs(2),
-        }
-    }
-}
-
-/// A re-queryable handle for eventually-consistent assertions.
-///
-/// Does not hold a response — holds the ability to re-execute the command.
-/// Each assertion method retries the query until the predicate passes or
-/// the timeout expires.
-///
-/// Legacy backends pass on the first try (projections are inline).
-/// Async backends may retry a few times while projections catch up.
-pub(crate) struct Eventually<'h, B> {
-    harness: &'h Harness<B>,
-    command: String,
-    policy: RetryPolicy,
-}
-
-impl<'h, B: Backend> Eventually<'h, B> {
-    /// Assert on the JSON response, retrying until the predicate passes.
-    ///
-    /// Both execution errors (e.g., entity not found) and predicate failures
-    /// are retried — the entity might not be projected yet.
-    pub async fn assert_json<F>(self, predicate: F) -> TestResult
-    where
-        F: Fn(&Responses) -> Result<(), String>,
-    {
-        let deadline = Instant::now() + self.policy.timeout;
-        #[expect(
-            unused_assignments,
-            reason = "We know we're overwriting the empty string"
-        )]
-        let mut last_err = String::new();
-
-        loop {
-            match self.harness.exec_json(&self.command).await {
-                Ok(response) => match predicate(&response) {
-                    Ok(()) => return Ok(()),
-                    Err(msg) => last_err = msg,
-                },
-                Err(e) => last_err = e.to_string(),
-            }
-
-            if Instant::now() >= deadline {
-                panic!(
-                    "assertion not met within {:?} on command {:?}.\nLast failure: {last_err}",
-                    self.policy.timeout, self.command,
-                );
-            }
-
-            tokio::time::sleep(self.policy.interval).await;
-        }
-    }
-
-    /// Assert on the prompt output, retrying until the predicate passes.
-    pub async fn assert_prompt<F>(self, predicate: F) -> TestResult
-    where
-        F: Fn(&str) -> Result<(), String>,
-    {
-        let deadline = Instant::now() + self.policy.timeout;
-        #[expect(
-            unused_assignments,
-            reason = "We know we're overwriting the empty string"
-        )]
-        let mut last_err = String::new();
-
-        loop {
-            match self.harness.exec_prompt(&self.command).await {
-                Ok(prompt) => match predicate(&prompt) {
-                    Ok(()) => return Ok(()),
-                    Err(msg) => last_err = msg,
-                },
-                Err(e) => last_err = e.to_string(),
-            }
-
-            if Instant::now() >= deadline {
-                panic!(
-                    "assertion not met within {:?} on command {:?}.\nLast failure: {}",
-                    self.policy.timeout, self.command, last_err
-                );
-            }
-
-            tokio::time::sleep(self.policy.interval).await;
-        }
-    }
-
-    /// Override the retry policy for this query.
-    #[expect(
-        dead_code,
-        reason = "available for tests that need custom retry timing"
-    )]
-    pub fn with_policy(mut self, policy: RetryPolicy) -> Self {
-        self.policy = policy;
-        self
-    }
-}
-
-/// Match on `response.data` and assert. Generates a predicate closure for
-/// use with `Eventually::assert_json`.
-///
-/// ```ignore
-/// // Match only — asserts the variant matches
-/// harness.query("agent list").assert_json(expect!(
-///     Responses::Agent(AgentResponse::Agents(AgentsResponse::V1(a))) if a.len() == 2
-/// )).await
-///
-/// // Match with body — runs additional assertions on the extracted data
-/// harness.query("agent show x").assert_json(expect!(
-///     Responses::Agent(AgentResponse::AgentDetails(AgentDetailsResponse::V1(agent))) => {
-///         assert_eq!(agent.name.as_str(), "x");
-///     }
-/// )).await
-/// ```
-macro_rules! expect {
-    ($pattern:pat $(if $guard:expr)? => $body:block) => {
-        |response: &Responses| {
-            match response {
-                $pattern $(if $guard)? => { $body; Ok(()) },
-                other => Err(format!("expected {}, got {other:#?}", stringify!($pattern))),
-            }
-        }
-    };
-    ($pattern:pat $(if $guard:expr)?) => {
-        |response: &Responses| {
-            match response {
-                $pattern $(if $guard)? => Ok(()),
-                other => Err(format!("expected {}, got {other:#?}", stringify!($pattern))),
-            }
-        }
-    };
 }
 
 // ── Harness ─────────────────────────────────────────────────────
@@ -251,26 +104,6 @@ impl<B: Backend> Harness<B> {
     /// Execute in prompt mode — delegates to the backend.
     pub async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
         self.backend.exec_prompt(command).await
-    }
-
-    /// Start an eventually-consistent query.
-    ///
-    /// The returned handle re-executes the command on each assertion attempt
-    /// until the assertion passes or the timeout expires. Use this for
-    /// read-after-write assertions where projections might not have caught up.
-    ///
-    /// ```ignore
-    /// harness.exec_json("agent create viewer process ...").await?;
-    /// harness.query("agent show viewer.process").assert_json(expect!(
-    ///     Responses::Agent(AgentResponse::AgentDetails(_))
-    /// )).await
-    /// ```
-    pub fn query(&self, command: &str) -> Eventually<'_, B> {
-        Eventually {
-            harness: self,
-            command: command.to_string(),
-            policy: RetryPolicy::default(),
-        }
     }
 }
 
