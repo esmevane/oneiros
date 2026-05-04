@@ -114,6 +114,7 @@ impl Server {
             .merge(SeedRouter.routes())
             .merge(SensationRouter.routes())
             .merge(StorageRouter.routes())
+            .merge(SystemRouter.routes())
             .merge(TenantRouter.routes())
             .merge(TextureRouter.routes())
             .merge(TicketRouter.routes())

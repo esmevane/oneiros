@@ -3,167 +3,157 @@ mod dream_context;
 mod harness;
 mod workflows;
 
+use crate::tests::harness::TestApp;
 use crate::*;
 
 // ── Internal mechanics tests ────────────────────────────────────
 //
-// These test infrastructure that isn't exposed through the CLI/HTTP
-// surface: projection replay and storage content-addressing.
-// Write-side event emission is covered implicitly by every workflow
-// that persists and reads back data.
+// These test infrastructure that isn't directly exposed through HTTP:
+// projection replay (driven via the `project replay` CLI command) and
+// storage content-addressing (compress/decompress round-trip on the local
+// blob, which has no HTTP fetch route by design).
+//
+// All bootstrap and write-side setup goes through TestApp + TestClient —
+// the same path the binary takes. Pulling a ProjectLog out of the app is
+// reserved for exercising the specific internal mechanism under test.
 
-fn test_config(brain: &str) -> (Config, tempfile::TempDir) {
-    let dir = tempfile::tempdir().expect("create tempdir");
-    let config = Config::builder()
-        .data_dir(dir.path().to_path_buf())
-        .brain(BrainName::new(brain))
-        .build();
-
-    (config, dir)
+async fn booted_app() -> TestApp {
+    TestApp::new()
+        .await
+        .expect("boot test app")
+        .init_system()
+        .await
+        .expect("init system")
+        .init_project()
+        .await
+        .expect("init project")
 }
 
-async fn project_log() -> (ProjectLog, tempfile::TempDir) {
-    let (config, dir) = test_config("test");
-    let system = config.system();
-
-    SystemService::init(
-        &system,
-        &InitSystem::builder_v1()
-            .name("test".to_string())
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
-
-    ProjectService::init(
-        &system,
-        &InitProject::builder_v1()
-            .name(BrainName::new("test"))
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
-
-    (config.project(), dir)
+async fn seed_persona(client: &harness::TestClient) {
+    client
+        .persona()
+        .set(
+            &SetPersona::builder_v1()
+                .name("test-persona")
+                .description("A test persona")
+                .prompt("You are a test.")
+                .build()
+                .into(),
+        )
+        .await
+        .expect("seed persona");
 }
 
-async fn seed_persona(context: &ProjectLog) {
-    PersonaService::set(
-        context,
-        &SetPersona::builder_v1()
-            .name("test-persona")
-            .description("A test persona")
-            .prompt("You are a test.")
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
-}
-
-async fn seed_agent(context: &ProjectLog) {
-    AgentService::create(
-        context,
-        &CreateAgent::V1(
+async fn seed_agent(client: &harness::TestClient) {
+    client
+        .agent()
+        .create(&CreateAgent::V1(
             CreateAgentV1::builder()
                 .name("gov")
                 .persona("test-persona")
                 .description("Governor")
                 .prompt("You govern")
                 .build(),
-        ),
-    )
-    .await
-    .unwrap();
+        ))
+        .await
+        .expect("seed agent");
 }
 
 #[tokio::test]
 async fn replay_reconstructs_read_models() {
-    let (context, _dir) = project_log().await;
+    let app = booted_app().await;
+    let client = app.client();
 
-    LevelService::set(
-        &context,
-        &SetLevel::builder_v1()
-            .name("working")
-            .description("Active")
-            .prompt("")
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
-    LevelService::set(
-        &context,
-        &SetLevel::builder_v1()
-            .name("session")
-            .description("Session")
-            .prompt("")
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
-    seed_persona(&context).await;
-    seed_agent(&context).await;
-    CognitionService::add(
-        &context,
-        &AddCognition::builder_v1()
-            .agent("gov.test-persona")
-            .texture("observation")
-            .content("Test thought")
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
+    client
+        .level()
+        .set(
+            &SetLevel::builder_v1()
+                .name("working")
+                .description("Active")
+                .prompt("")
+                .build()
+                .into(),
+        )
+        .await
+        .expect("set working level");
+    client
+        .level()
+        .set(
+            &SetLevel::builder_v1()
+                .name("session")
+                .description("Session")
+                .prompt("")
+                .build()
+                .into(),
+        )
+        .await
+        .expect("set session level");
+    seed_persona(&client).await;
+    seed_agent(&client).await;
+    client
+        .cognition()
+        .add(
+            &AddCognition::builder_v1()
+                .agent("gov.test-persona")
+                .texture("observation")
+                .content("Test thought")
+                .build()
+                .into(),
+        )
+        .await
+        .expect("add cognition");
 
     // Verify read models before replay
-    match LevelService::list(&context, &ListLevels::builder_v1().build().into())
+    match client
+        .level()
+        .list(&ListLevels::builder_v1().build().into())
         .await
-        .unwrap()
+        .expect("list levels")
     {
         LevelResponse::Levels(LevelsResponse::V1(levels)) => assert_eq!(levels.items.len(), 2),
         other => panic!("Expected Listed, got {other:?}"),
     }
 
-    // Replay — resets all projections and re-applies all events
-    context.replay().unwrap();
+    // Replay through the CLI — same path the user takes.
+    app.command("project replay")
+        .await
+        .expect("project replay command");
 
     // Read models should be identical after replay
-    match LevelService::list(&context, &ListLevels::builder_v1().build().into())
+    match client
+        .level()
+        .list(&ListLevels::builder_v1().build().into())
         .await
-        .unwrap()
+        .expect("list levels after replay")
     {
         LevelResponse::Levels(LevelsResponse::V1(levels)) => assert_eq!(levels.items.len(), 2),
         other => panic!("Expected Listed after replay, got {other:?}"),
     }
-    match AgentService::get(
-        &context,
-        &GetAgent::V1(
+    match client
+        .agent()
+        .get(&GetAgent::V1(
             GetAgentV1::builder()
                 .key(AgentName::new("gov.test-persona"))
                 .build(),
-        ),
-    )
-    .await
-    .unwrap()
+        ))
+        .await
+        .expect("get agent after replay")
     {
         AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
             assert_eq!(a.agent.name, AgentName::new("gov.test-persona"))
         }
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
-    match CognitionService::list(
-        &context,
-        &ListCognitions::builder_v1()
-            .agent(AgentName::new("gov.test-persona"))
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap()
+    match client
+        .cognition()
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("gov.test-persona"))
+                .build()
+                .into(),
+        )
+        .await
+        .expect("list cognitions after replay")
     {
         CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
             assert_eq!(cogs.items.len(), 1)
@@ -174,32 +164,35 @@ async fn replay_reconstructs_read_models() {
 
 #[tokio::test]
 async fn replay_recovers_from_deleted_bookmark_db() {
-    let (context, _dir) = project_log().await;
+    let app = booted_app().await;
+    let client = app.client();
 
-    seed_persona(&context).await;
-    seed_agent(&context).await;
-    CognitionService::add(
-        &context,
-        &AddCognition::builder_v1()
-            .agent("gov.test-persona")
-            .texture("observation")
-            .content("Pre-nuke thought")
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap();
+    seed_persona(&client).await;
+    seed_agent(&client).await;
+    client
+        .cognition()
+        .add(
+            &AddCognition::builder_v1()
+                .agent("gov.test-persona")
+                .texture("observation")
+                .content("Pre-nuke thought")
+                .build()
+                .into(),
+        )
+        .await
+        .expect("add cognition");
 
     // Verify baseline before nuking the DB
-    match CognitionService::list(
-        &context,
-        &ListCognitions::builder_v1()
-            .agent(AgentName::new("gov.test-persona"))
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap()
+    match client
+        .cognition()
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("gov.test-persona"))
+                .build()
+                .into(),
+        )
+        .await
+        .expect("list cognitions baseline")
     {
         CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
             assert_eq!(cogs.items.len(), 1);
@@ -208,45 +201,42 @@ async fn replay_recovers_from_deleted_bookmark_db() {
     }
 
     // Simulate schema-change / corruption: delete the bookmark DB file
-    let db_path = context.config.bookmark_db_path();
+    let db_path = app.config().bookmark_db_path();
     std::fs::remove_file(&db_path).unwrap();
     let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
     let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
 
-    // Replay should recreate the DB and restore all data
-    match ProjectService::replay(&context).unwrap() {
-        ProjectResponse::Replayed(ReplayedResponse::V1(result)) => {
-            assert!(result.replayed > 0);
-        }
-        other => panic!("Expected Replayed, got {other:?}"),
-    }
+    // Replay through the CLI should recreate the DB and restore all data.
+    app.command("project replay")
+        .await
+        .expect("project replay command");
 
     // Data should be fully restored
-    match AgentService::get(
-        &context,
-        &GetAgent::V1(
+    match client
+        .agent()
+        .get(&GetAgent::V1(
             GetAgentV1::builder()
                 .key(AgentName::new("gov.test-persona"))
                 .build(),
-        ),
-    )
-    .await
-    .unwrap()
+        ))
+        .await
+        .expect("get agent after replay")
     {
         AgentResponse::AgentDetails(AgentDetailsResponse::V1(a)) => {
             assert_eq!(a.agent.name, AgentName::new("gov.test-persona"))
         }
         other => panic!("Expected AgentDetails after replay, got {other:?}"),
     }
-    match CognitionService::list(
-        &context,
-        &ListCognitions::builder_v1()
-            .agent(AgentName::new("gov.test-persona"))
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap()
+    match client
+        .cognition()
+        .list(
+            &ListCognitions::builder_v1()
+                .agent(AgentName::new("gov.test-persona"))
+                .build()
+                .into(),
+        )
+        .await
+        .expect("list cognitions after replay")
     {
         CognitionResponse::Cognitions(CognitionsResponse::V1(cogs)) => {
             assert_eq!(cogs.items.len(), 1);
@@ -257,20 +247,22 @@ async fn replay_recovers_from_deleted_bookmark_db() {
 
 #[tokio::test]
 async fn storage_content_round_trips() {
-    let (context, _dir) = project_log().await;
+    let app = booted_app().await;
+    let client = app.client();
     let content = b"Hello, oneiros!";
 
-    let entry = match StorageService::upload(
-        &context,
-        &UploadStorage::builder_v1()
-            .key("test.txt")
-            .description("A test file")
-            .data(content.to_vec())
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap()
+    let entry = match client
+        .storage()
+        .upload(
+            &UploadStorage::builder_v1()
+                .key("test.txt")
+                .description("A test file")
+                .data(content.to_vec())
+                .build()
+                .into(),
+        )
+        .await
+        .expect("upload storage")
     {
         StorageResponse::StorageSet(StorageSetResponse::V1(set)) => {
             assert_eq!(set.entry.key.as_str(), "test.txt");
@@ -279,26 +271,30 @@ async fn storage_content_round_trips() {
         other => panic!("Expected StorageSet, got {other:?}"),
     };
 
-    // Get content — round-trips through compress/decompress
-    let retrieved = StorageService::get_content(&context, &StorageKey::new("test.txt"))
+    // Hash should be stable — verify via the show client.
+    match client
+        .storage()
+        .show(
+            &GetStorage::builder_v1()
+                .key(StorageKey::new("test.txt"))
+                .build()
+                .into(),
+        )
         .await
-        .unwrap();
-    assert_eq!(retrieved, content);
-
-    // Hash should be stable
-    match StorageService::show(
-        &context,
-        &GetStorage::builder_v1()
-            .key(StorageKey::new("test.txt"))
-            .build()
-            .into(),
-    )
-    .await
-    .unwrap()
+        .expect("show storage")
     {
         StorageResponse::StorageDetails(StorageDetailsResponse::V1(shown)) => {
             assert_eq!(shown.entry.hash, entry.hash);
         }
         other => panic!("Expected StorageDetails, got {other:?}"),
     }
+
+    // Internal mechanism under test: blob compression round-trip. There is
+    // no HTTP route that returns raw blob bytes, so this single call
+    // exercises the storage subsystem directly.
+    let context = app.config().project();
+    let retrieved = StorageService::get_content(&context, &StorageKey::new("test.txt"))
+        .await
+        .expect("get content");
+    assert_eq!(retrieved, content);
 }

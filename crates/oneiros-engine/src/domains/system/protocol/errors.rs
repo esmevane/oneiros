@@ -29,7 +29,12 @@ pub enum SystemError {
 
     #[error(transparent)]
     Compose(#[from] ComposeError),
+
+    #[error(transparent)]
+    Client(#[from] ClientError),
 }
+
+resource_op_error!(SystemError);
 
 impl IntoResponse for SystemError {
     fn into_response(self) -> Response {
@@ -43,6 +48,7 @@ impl IntoResponse for SystemError {
             | SystemError::HostKey(_)
             | SystemError::Upcast(_)
             | SystemError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            SystemError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

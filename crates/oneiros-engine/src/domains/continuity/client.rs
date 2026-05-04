@@ -46,12 +46,26 @@ impl<'a> ContinuityClient<'a> {
 
     /// Run the dream continuity operation for the given agent.
     pub async fn dream(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
-        self.client
-            .post(
-                &format!("/continuity/{agent}/dream"),
-                &serde_json::Value::Null,
-            )
-            .await
+        self.dream_with(agent, &DreamOverrides::default()).await
+    }
+
+    /// Run the dream continuity operation with explicit per-request overrides.
+    ///
+    /// Overrides serialize into the URL query string. Only `Some(_)` fields
+    /// are emitted, so passing `DreamOverrides::default()` is equivalent to
+    /// `dream(agent)`.
+    pub async fn dream_with(
+        &self,
+        agent: &AgentName,
+        overrides: &DreamOverrides,
+    ) -> Result<ContinuityResponse, ClientError> {
+        let query = encode_dream_overrides(overrides);
+        let path = if query.is_empty() {
+            format!("/continuity/{agent}/dream")
+        } else {
+            format!("/continuity/{agent}/dream?{query}")
+        };
+        self.client.post(&path, &serde_json::Value::Null).await
     }
 
     /// Run the introspect continuity operation for the given agent.
@@ -94,4 +108,27 @@ impl<'a> ContinuityClient<'a> {
             )
             .await
     }
+}
+
+fn encode_dream_overrides(overrides: &DreamOverrides) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(value) = overrides.recent_window {
+        parts.push(format!("recent_window={value}"));
+    }
+    if let Some(value) = overrides.dream_depth {
+        parts.push(format!("dream_depth={value}"));
+    }
+    if let Some(value) = overrides.cognition_size {
+        parts.push(format!("cognition_size={value}"));
+    }
+    if let Some(value) = &overrides.recollection_level {
+        parts.push(format!("recollection_level={value}"));
+    }
+    if let Some(value) = overrides.recollection_size {
+        parts.push(format!("recollection_size={value}"));
+    }
+    if let Some(value) = overrides.experience_size {
+        parts.push(format!("experience_size={value}"));
+    }
+    parts.join("&")
 }
