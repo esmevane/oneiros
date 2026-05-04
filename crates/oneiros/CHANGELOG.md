@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/esmevane/oneiros/compare/v0.0.9...v0.0.10) - 2026-05-04
+
+### Other
+
+- Structured errors.
+- Move bin code into engine.
+- Viewable resources.
+
 ## [0.0.9](https://github.com/esmevane/oneiros/compare/v0.0.8...v0.0.9) - 2026-04-03
 
 ### Other
