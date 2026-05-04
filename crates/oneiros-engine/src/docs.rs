@@ -44,6 +44,7 @@ impl AppDocs {
             SeedDocs::SeedCore.tag(),
             SensationDocs::List.tag(),
             StorageDocs::Upload.tag(),
+            SystemDocs::Init.tag(),
             TenantDocs::Create.tag(),
             TextureDocs::List.tag(),
             TicketDocs::Create.tag(),

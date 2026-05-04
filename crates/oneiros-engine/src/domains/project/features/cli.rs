@@ -14,7 +14,8 @@ impl ProjectCommands {
     pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ProjectError> {
         let response: ProjectResponse = match self {
             ProjectCommands::Init(initialization) => {
-                ProjectService::init(&config.system(), initialization).await?
+                let client = config.system().client();
+                ProjectClient::new(&client).init(initialization).await?
             }
             ProjectCommands::Export(exporting) => {
                 ProjectService::export(&config.project(), exporting)?

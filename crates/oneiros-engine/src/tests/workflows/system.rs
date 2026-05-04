@@ -213,36 +213,34 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
-/// System init must generate the host keypair so that the host
-/// identity exists before the server is ever started.
+/// System init must produce a usable host keypair on disk, and must not
+/// rotate it on subsequent calls. We wield the app: drive `system init`
+/// through the CLI (HTTP-mediated) and then verify the keypair file.
 #[tokio::test]
 async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::Error>> {
-    let dir = tempfile::tempdir()?;
-    let config = Config::builder()
-        .data_dir(dir.path().to_path_buf())
-        .brain(BrainName::new("test"))
-        .build();
+    let app = TestApp::new().await?;
+    let keys = HostKey::new(&app.config().data_dir);
 
-    let context = HostLog::new(config.clone());
-    let keys = HostKey::new(&config.data_dir);
+    // The server's bind path generates the host key (see `ServerState::bind`),
+    // but `Engine::start` returns before that bind completes. Wait for the
+    // server to handle a request — that synchronizes against bind — so the
+    // key file is guaranteed to be on disk.
+    let _ = ServiceService::status(app.config()).await;
 
-    // Before init, no host key exists
-    assert!(
-        !keys.path().exists(),
-        "host key should not exist before system init"
+    let key_before = keys
+        .load()?
+        .expect("host key should exist after server bind");
+
+    app.command("system init --name test").await?;
+
+    let key_after = keys
+        .load()?
+        .expect("host key should still exist after init");
+    assert_eq!(
+        key_before.to_bytes(),
+        key_after.to_bytes(),
+        "system init must not rotate the host keypair",
     );
-
-    SystemService::init(&context, &InitSystem::builder_v1().build().into()).await?;
-
-    // After init, the host key should exist
-    assert!(
-        keys.path().exists(),
-        "system init should create the host keypair"
-    );
-
-    // The key should be loadable
-    let secret = keys.load()?;
-    assert!(secret.is_some(), "host key should be loadable after init");
 
     Ok(())
 }

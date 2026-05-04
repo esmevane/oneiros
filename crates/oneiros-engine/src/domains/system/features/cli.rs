@@ -9,10 +9,11 @@ pub enum SystemCommands {
 
 impl SystemCommands {
     pub async fn execute(&self, context: HostLog) -> Result<Rendered<Responses>, SystemError> {
+        let client = context.client();
+        let system_client = SystemClient::new(&client);
+
         let response = match self {
-            SystemCommands::Init(initialization) => {
-                SystemService::init(&context, initialization).await?
-            }
+            SystemCommands::Init(initialization) => system_client.init(initialization).await?,
         };
 
         Ok(SystemView::new(response).render().map(Into::into))
