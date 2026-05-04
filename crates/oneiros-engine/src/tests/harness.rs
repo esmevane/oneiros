@@ -152,56 +152,6 @@ impl TestApp {
     }
 }
 
-/// Retry policy for async convergence in tests.
-///
-/// Repeatedly evaluates a predicate until it succeeds or the timeout
-/// expires. The predicate returns `Ok(())` on success or `Err(message)`
-/// describing why it hasn't converged yet.
-///
-/// ```rust,ignore
-/// Retryable::default()
-///     .wait_for(|| {
-///         if ready() { Ok(()) } else { Err("not ready".into()) }
-///     }, "thing to be ready")
-///     .await;
-/// ```
-pub struct Retryable {
-    interval: std::time::Duration,
-    timeout: std::time::Duration,
-}
-
-impl Default for Retryable {
-    fn default() -> Self {
-        Self {
-            interval: std::time::Duration::from_millis(16),
-            timeout: std::time::Duration::from_secs(2),
-        }
-    }
-}
-
-impl Retryable {
-    /// Block until the predicate returns `Ok(())`, polling at `interval`.
-    /// Panics with a descriptive message if `timeout` expires first.
-    pub async fn wait_for(&self, mut predicate: impl FnMut() -> Result<(), String>, label: &str) {
-        let deadline = std::time::Instant::now() + self.timeout;
-
-        loop {
-            match predicate() {
-                Ok(()) => return,
-                Err(msg) => {
-                    if std::time::Instant::now() >= deadline {
-                        panic!(
-                            "{label}: not met within {:?}.\nLast failure: {msg}",
-                            self.timeout,
-                        );
-                    }
-                    tokio::time::sleep(self.interval).await;
-                }
-            }
-        }
-    }
-}
-
 /// A typed HTTP client for test assertions.
 ///
 /// Wraps the existing domain clients behind a fluent API.

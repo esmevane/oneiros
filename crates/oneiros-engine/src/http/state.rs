@@ -2,19 +2,16 @@ use std::sync::{Arc, OnceLock};
 
 use aide::openapi::OpenApi;
 use axum::{extract::FromRequestParts, http::request::Parts};
-use tokio::sync::broadcast;
 
 use crate::*;
 
 /// Shared state for the HTTP server.
 ///
-/// Carries the system context (always available), a shared broadcast
-/// channel for SSE subscribers, and resolves brain context per-request
-/// via Bearer token.
+/// Carries the system context (always available) and resolves brain
+/// context per-request via Bearer token.
 #[derive(Clone)]
 pub struct ServerState {
     config: Config,
-    broadcast: broadcast::Sender<StoredEvent>,
     canons: CanonIndex,
     bridge: Bridge,
     api: Arc<OnceLock<OpenApi>>,
@@ -35,11 +32,9 @@ impl ServerState {
         let secret = HostKey::new(&config.data_dir).ensure()?;
         let bridge = Bridge::bind(secret).await?;
 
-        let (broadcast, _) = broadcast::channel(256);
         let canons = CanonIndex::new();
         Ok(Self {
             config,
-            broadcast,
             canons,
             bridge,
             api: Arc::new(OnceLock::new()),
@@ -92,22 +87,13 @@ impl ServerState {
         &self.config.brain
     }
 
-    /// The shared broadcast sender for SSE event streaming.
-    pub fn broadcast(&self) -> &broadcast::Sender<StoredEvent> {
-        &self.broadcast
-    }
-
-    /// Build a project context with shared broadcast and pipeline.
+    /// Build a project context with pre-hydrated pipeline.
     ///
     /// Resolves the active bookmark for the brain unless the config
     /// already has an explicit bookmark override.
     pub fn project_log(&self, config: Config) -> Result<ProjectLog, EventError> {
         let entry = self.canons.brain_entry(&config.brain)?;
-        Ok(ProjectLog::with_entry(
-            config,
-            self.broadcast.clone(),
-            entry,
-        ))
+        Ok(ProjectLog::with_entry(config, entry))
     }
 
     /// Build a system context.
@@ -134,20 +120,11 @@ impl FromRequestParts<ServerState> for ProjectLog {
         parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        // Extract Bearer token from header, falling back to ?token= query
-        // param. The query fallback exists because browser EventSource
-        // (SSE) cannot set custom headers.
         let token_str = parts
             .headers
             .get("authorization")
             .and_then(|value| value.to_str().ok())
             .and_then(|value| value.strip_prefix("Bearer "))
-            .or_else(|| {
-                parts
-                    .uri
-                    .query()
-                    .and_then(|q| q.split('&').find_map(|pair| pair.strip_prefix("token=")))
-            })
             .ok_or(AuthError::NoAuthHeader)?;
 
         // Decode claims from the self-describing token
@@ -174,7 +151,7 @@ impl FromRequestParts<ServerState> for ProjectLog {
             _ => return Err(AuthError::InvalidToken),
         }
 
-        // Assemble ProjectLog with shared broadcast channel
+        // Assemble ProjectLog for this request
         let mut config = state.config.clone();
         config.brain = ticket.brain_name.clone();
 
