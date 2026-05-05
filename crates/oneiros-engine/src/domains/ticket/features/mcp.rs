@@ -10,10 +10,11 @@ impl TicketMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        ticket_mcp::dispatch(context, tool_name, params).await
+        ticket_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 }
 
@@ -43,6 +44,7 @@ mod ticket_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -53,20 +55,19 @@ mod ticket_mcp {
         let scope = ComposeScope::new(context.config.clone())
             .host()
             .map_err(Error::from)?;
-        let system = scope.host_log();
 
         let value = match request_type {
             TicketRequestType::CreateTicket => {
-                TicketService::create(&system, &serde_json::from_str(params)?).await
+                TicketService::create(&scope, mailbox, &serde_json::from_str(params)?).await
             }
             TicketRequestType::GetTicket => {
-                TicketService::get(&system, &serde_json::from_str(params)?).await
+                TicketService::get(&scope, &serde_json::from_str(params)?).await
             }
             TicketRequestType::ListTickets => {
-                TicketService::list(&system, &serde_json::from_str(params)?).await
+                TicketService::list(&scope, &serde_json::from_str(params)?).await
             }
             TicketRequestType::ValidateTicket => {
-                TicketService::validate(&system, &serde_json::from_str(params)?).await
+                TicketService::validate(&scope, &serde_json::from_str(params)?).await
             }
         }
         .map_err(Error::from)?;

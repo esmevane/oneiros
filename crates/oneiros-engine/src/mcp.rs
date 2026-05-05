@@ -69,26 +69,34 @@ async fn dispatch(
     tool_name: &ToolName,
     params: &serde_json::Value,
 ) -> Result<McpResponse, ToolError> {
-    let context = state
-        .project_log(config.clone())
-        .map_err(|e| ToolError::App(e.into()))?;
+    let context = state.project_log(config.clone());
 
     let name = tool_name.as_str();
 
     if name.parse::<AgentRequestType>().is_ok() {
-        return AgentMcp.dispatch(&context, tool_name, params).await;
+        return AgentMcp
+            .dispatch(&context, state.mailbox(), tool_name, params)
+            .await;
     }
     if name.parse::<CognitionRequestType>().is_ok() {
-        return CognitionMcp.dispatch(&context, tool_name, params).await;
+        return CognitionMcp
+            .dispatch(&context, state.mailbox(), tool_name, params)
+            .await;
     }
     if name.parse::<MemoryRequestType>().is_ok() {
-        return MemoryMcp.dispatch(&context, tool_name, params).await;
+        return MemoryMcp
+            .dispatch(&context, state.mailbox(), tool_name, params)
+            .await;
     }
     if name.parse::<ExperienceRequestType>().is_ok() {
-        return ExperienceMcp.dispatch(&context, tool_name, params).await;
+        return ExperienceMcp
+            .dispatch(&context, state.mailbox(), tool_name, params)
+            .await;
     }
     if name.parse::<ConnectionRequestType>().is_ok() {
-        return ConnectionMcp.dispatch(&context, tool_name, params).await;
+        return ConnectionMcp
+            .dispatch(&context, state.mailbox(), tool_name, params)
+            .await;
     }
     if name.parse::<SearchRequestType>().is_ok() {
         return SearchMcp.dispatch(&context, tool_name, params).await;
@@ -372,10 +380,7 @@ impl ServerHandler for EngineToolBox {
         request: rmcp::model::ReadResourceRequestParams,
         _context: rmcp::service::RequestContext<rmcp::RoleServer>,
     ) -> Result<ReadResourceResult, ErrorData> {
-        let context = self
-            .state
-            .project_log(self.config().clone())
-            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+        let context = self.state.project_log(self.config().clone());
 
         let uri: ResourceUri = request
             .uri
@@ -433,9 +438,8 @@ impl ServerHandler for EngineToolBox {
                         ErrorData::invalid_params("Missing required argument: agent", None)
                     })?;
 
-                let context = self
-                    .state
-                    .project_log(self.config().clone())
+                let scope = ComposeScope::new(self.config().clone())
+                    .bookmark(self.config().brain.clone(), self.config().bookmark.clone())
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 let request: DreamAgent = DreamAgent::builder_v1()
@@ -443,10 +447,14 @@ impl ServerHandler for EngineToolBox {
                     .build()
                     .into();
 
-                let response =
-                    ContinuityService::dream(&context, &request, &DreamOverrides::default())
-                        .await
-                        .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+                let response = ContinuityService::dream(
+                    &scope,
+                    self.state.mailbox(),
+                    &request,
+                    &DreamOverrides::default(),
+                )
+                .await
+                .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 match response {
                     ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {

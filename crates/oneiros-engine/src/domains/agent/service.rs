@@ -4,13 +4,14 @@ pub struct AgentService;
 
 impl AgentService {
     pub async fn create(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &CreateAgent,
     ) -> Result<AgentResponse, AgentError> {
         let CreateAgent::V1(create) = request;
 
         // Cross-resource validation: persona must exist
-        if PersonaRepo::new(context.scope()?)
+        if PersonaRepo::new(scope)
             .fetch(&create.persona)
             .await?
             .is_none()
@@ -22,43 +23,43 @@ impl AgentService {
         let normalized_name = create.name.normalize_with(&create.persona);
 
         // Validate name uniqueness
-        if AgentRepo::new(context.scope()?)
-            .name_exists(&normalized_name)
-            .await?
-        {
+        if AgentRepo::new(scope).name_exists(&normalized_name).await? {
             return Err(AgentError::Conflict(normalized_name));
         }
 
         let agent = Agent::builder()
-            .name(normalized_name)
+            .name(normalized_name.clone())
             .persona(create.persona.clone())
             .description(create.description.clone())
             .prompt(create.prompt.clone())
             .build();
 
-        context
-            .emit(AgentEvents::AgentCreated(
-                AgentCreated::builder_v1()
-                    .agent(agent.clone())
-                    .build()
-                    .into(),
-            ))
-            .await?;
+        let new_event = NewEvent::builder()
+            .data(Events::Agent(AgentEvents::AgentCreated(
+                AgentCreated::builder_v1().agent(agent).build().into(),
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let stored = AgentRepo::new(scope)
+            .fetch(&normalized_name)
+            .await?
+            .ok_or(AgentError::NotFound(normalized_name))?;
 
         Ok(AgentResponse::AgentCreated(
             AgentCreatedResponse::builder_v1()
-                .agent(agent)
+                .agent(stored)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
         let GetAgent::V1(lookup) = request;
-        let repo = AgentRepo::new(context.scope()?);
+        let repo = AgentRepo::new(scope);
         let agent = match &lookup.key {
             ResourceKey::Key(name) => repo
                 .fetch(name)
@@ -89,7 +90,7 @@ impl AgentService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
         let ListAgents::V1(listing) = request;
@@ -99,9 +100,7 @@ impl AgentService {
             .filters(listing.filters)
             .build();
 
-        let results = SearchRepo::new(context.scope()?)
-            .search(&search_query, None)
-            .await?;
+        let results = SearchRepo::new(scope).search(&search_query, None).await?;
 
         if results.total == 0 {
             return Ok(AgentResponse::NoAgents);
@@ -115,7 +114,7 @@ impl AgentService {
             }
         }
 
-        let items = AgentRepo::new(context.scope()?).get_many(&ids).await?;
+        let items = AgentRepo::new(scope).get_many(&ids).await?;
 
         Ok(AgentResponse::Agents(
             AgentsResponse::builder_v1()
@@ -127,11 +126,12 @@ impl AgentService {
     }
 
     pub async fn update(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &UpdateAgent,
     ) -> Result<AgentResponse, AgentError> {
         let UpdateAgent::V1(update) = request;
-        let existing = AgentRepo::new(context.scope()?)
+        let existing = AgentRepo::new(scope)
             .fetch(&update.name)
             .await?
             .ok_or_else(|| AgentError::NotFound(update.name.clone()))?;
@@ -144,43 +144,64 @@ impl AgentService {
             .prompt(update.prompt.clone())
             .build();
 
-        context
-            .emit(AgentEvents::AgentUpdated(
-                AgentUpdated::builder_v1()
-                    .agent(agent.clone())
-                    .build()
-                    .into(),
-            ))
-            .await?;
+        let new_event = NewEvent::builder()
+            .data(Events::Agent(AgentEvents::AgentUpdated(
+                AgentUpdated::builder_v1().agent(agent).build().into(),
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        // Read back the updated record. Filter on the fields we just
+        // changed so fetch keeps polling until the projection reflects
+        // them — otherwise we'd race the projector and return the
+        // pre-update record.
+        let updated = scope
+            .config()
+            .fetch
+            .eventual(|| async {
+                AgentRepo::new(scope).get(&update.name).await.map(|opt| {
+                    opt.filter(|agent| {
+                        agent.persona == update.persona
+                            && agent.description == update.description
+                            && agent.prompt == update.prompt
+                    })
+                })
+            })
+            .await?
+            .ok_or_else(|| AgentError::NotFound(update.name.clone()))?;
 
         Ok(AgentResponse::AgentUpdated(
             AgentUpdatedResponse::builder_v1()
-                .agent(agent)
+                .agent(updated)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn remove(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &RemoveAgent,
     ) -> Result<AgentResponse, AgentError> {
         let RemoveAgent::V1(removal) = request;
-        if AgentRepo::new(context.scope()?)
-            .fetch(&removal.name)
-            .await?
-            .is_none()
-        {
+        if AgentRepo::new(scope).fetch(&removal.name).await?.is_none() {
             return Err(AgentError::NotFound(removal.name.clone()));
         }
 
-        context
-            .emit(AgentEvents::AgentRemoved(
+        let new_event = NewEvent::builder()
+            .data(Events::Agent(AgentEvents::AgentRemoved(
                 AgentRemoved::builder_v1()
                     .name(removal.name.clone())
                     .build()
                     .into(),
-            ))
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        scope
+            .config()
+            .fetch
+            .until_absent(|| async { AgentRepo::new(scope).get(&removal.name).await })
             .await?;
 
         Ok(AgentResponse::AgentRemoved(

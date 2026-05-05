@@ -23,7 +23,7 @@ impl<'a> ExperienceRepo<'a> {
     }
 
     pub async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences WHERE id = ?1",
@@ -61,7 +61,7 @@ impl<'a> ExperienceRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()
@@ -104,7 +104,7 @@ impl<'a> ExperienceRepo<'a> {
         agent_id: &str,
         limit: usize,
     ) -> Result<Vec<Experience>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences

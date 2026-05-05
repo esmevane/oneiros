@@ -3,7 +3,10 @@ use crate::*;
 pub struct SeedService;
 
 impl SeedService {
-    pub async fn core(context: &ProjectLog) -> Result<SeedResponse, SeedError> {
+    pub async fn core(
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
+    ) -> Result<SeedResponse, SeedError> {
         for (name, description, prompt) in [
             (
                 "working",
@@ -32,7 +35,8 @@ impl SeedService {
             ),
         ] {
             LevelService::set(
-                context,
+                scope,
+                mailbox,
                 &SetLevel::builder_v1()
                     .name(LevelName::new(name))
                     .description(Description::from(description))
@@ -71,7 +75,8 @@ impl SeedService {
             ),
         ] {
             TextureService::set(
-                context,
+                scope,
+                mailbox,
                 &SetTexture::builder_v1()
                     .name(TextureName::new(name))
                     .description(Description::from(description))
@@ -105,7 +110,8 @@ impl SeedService {
             ),
         ] {
             SensationService::set(
-                context,
+                scope,
+                mailbox,
                 &SetSensation::builder_v1()
                     .name(name)
                     .description(description)
@@ -136,7 +142,8 @@ impl SeedService {
             ),
         ] {
             NatureService::set(
-                context,
+                scope,
+                mailbox,
                 &SetNature::builder_v1()
                     .name(name)
                     .description(description)
@@ -158,7 +165,8 @@ impl SeedService {
             ("scribe", "Record-keepers — maintain the cognitive record."),
         ] {
             PersonaService::set(
-                context,
+                scope,
+                mailbox,
                 &SetPersona::builder_v1()
                     .name(name)
                     .description(description)
@@ -191,7 +199,8 @@ impl SeedService {
             ),
         ] {
             UrgeService::set(
-                context,
+                scope,
+                mailbox,
                 &SetUrge::builder_v1()
                     .name(name)
                     .description(description)
@@ -205,15 +214,16 @@ impl SeedService {
         Ok(SeedResponse::SeedComplete)
     }
 
-    pub async fn agents(context: &ProjectLog) -> Result<SeedResponse, SeedError> {
+    pub async fn agents(
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
+    ) -> Result<SeedResponse, SeedError> {
         // Verify required personas exist — hint at `seed core` if missing.
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let personas = PersonaRepo::new(context.scope()?)
-            .list(&all_filters)
-            .await?;
+        let personas = PersonaRepo::new(scope).list(&all_filters).await?;
         let persona_names: Vec<&str> = personas.items.iter().map(|p| p.name.as_str()).collect();
 
         if !persona_names.contains(&"process") || !persona_names.contains(&"scribe") {
@@ -245,7 +255,7 @@ impl SeedService {
             // Skip agents that already exist (idempotent).
             let agent_name = AgentName::new(name);
 
-            if AgentRepo::new(context.scope()?)
+            if AgentRepo::new(scope)
                 .name_exists(&agent_name.normalize_with(&PersonaName::new(persona)))
                 .await?
             {
@@ -253,7 +263,8 @@ impl SeedService {
             }
 
             AgentService::create(
-                context,
+                scope,
+                mailbox,
                 &CreateAgent::V1(
                     CreateAgentV1::builder()
                         .name(agent_name)

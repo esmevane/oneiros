@@ -226,6 +226,10 @@ async fn tenant_list_after_system_init() -> TestResult {
 async fn tenant_list_prompt() -> TestResult {
     cases::tenant::list_prompt::<EngineBackend>().await
 }
+#[tokio::test]
+async fn tenant_create_dispatches_via_bus() -> TestResult {
+    cases::tenant::create_dispatches_via_bus::<EngineBackend>().await
+}
 
 // Actor (system-scoped)
 #[tokio::test]
@@ -420,6 +424,10 @@ async fn connection_remove_prompt() -> TestResult {
 #[tokio::test]
 async fn cognition_add() -> TestResult {
     cases::cognition::add_creates_cognition::<EngineBackend>().await
+}
+#[tokio::test]
+async fn cognition_add_dispatches_via_bus() -> TestResult {
+    cases::cognition::add_dispatches_via_bus::<EngineBackend>().await
 }
 #[tokio::test]
 async fn cognition_show_json_includes_ref() -> TestResult {

@@ -31,6 +31,9 @@ pub enum StorageError {
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
+    BookmarkDb(#[from] crate::BookmarkDbError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -48,9 +51,10 @@ impl IntoResponse for StorageError {
             StorageError::BlobMissing(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::BlobError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
-            StorageError::Database(_) | StorageError::Event(_) | StorageError::Compose(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
-            }
+            StorageError::Database(_)
+            | StorageError::Event(_)
+            | StorageError::Compose(_)
+            | StorageError::BookmarkDb(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()

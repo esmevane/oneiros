@@ -10,10 +10,11 @@ impl ExperienceMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
-        experience_mcp::dispatch(context, tool_name, params).await
+        experience_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -48,6 +49,7 @@ mod experience_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -60,7 +62,8 @@ mod experience_mcp {
             ExperienceRequestType::CreateExperience => {
                 let creation: CreateExperience = serde_json::from_value(params.clone())?;
                 let request = ExperienceRequest::CreateExperience(creation.clone());
-                let response = ExperienceService::create(context, &creation)
+                let scope = context.scope().map_err(Error::from)?;
+                let response = ExperienceService::create(scope, mailbox, &creation)
                     .await
                     .map_err(Error::from)?;
                 Ok(ExperienceView::new(response, &request).mcp())
@@ -78,15 +81,14 @@ mod experience_mcp {
         context: &ProjectLog,
         request: &ExperienceRequest,
     ) -> Result<McpResponse, ToolError> {
+        let scope = context.scope().map_err(Error::from)?;
         let response = match request {
-            ExperienceRequest::GetExperience(get) => ExperienceService::get(context, get)
+            ExperienceRequest::GetExperience(get) => ExperienceService::get(scope, get)
                 .await
                 .map_err(Error::from)?,
-            ExperienceRequest::ListExperiences(listing) => {
-                ExperienceService::list(context, listing)
-                    .await
-                    .map_err(Error::from)?
-            }
+            ExperienceRequest::ListExperiences(listing) => ExperienceService::list(scope, listing)
+                .await
+                .map_err(Error::from)?,
             ExperienceRequest::CreateExperience(_)
             | ExperienceRequest::UpdateExperienceDescription(_)
             | ExperienceRequest::UpdateExperienceSensation(_) => {

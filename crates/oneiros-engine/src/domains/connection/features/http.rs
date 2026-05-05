@@ -39,40 +39,40 @@ impl ConnectionRouter {
 }
 
 async fn create(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<CreateConnection>,
 ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
-    let response = ConnectionService::create(&context, &body).await?;
+    let response = ConnectionService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListConnections>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
-    Ok(Json(ConnectionService::list(&context, &params).await?))
+    Ok(Json(ConnectionService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<ConnectionId>>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(
-        ConnectionService::get(
-            &context,
-            &GetConnection::builder_v1().key(key).build().into(),
-        )
-        .await?,
+        ConnectionService::get(&scope, &GetConnection::builder_v1().key(key).build().into())
+            .await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(id): Path<ConnectionId>,
 ) -> Result<Json<ConnectionResponse>, ConnectionError> {
     Ok(Json(
         ConnectionService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveConnection::builder_v1().id(id).build().into(),
         )
         .await?,

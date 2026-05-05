@@ -1,5 +1,5 @@
 use aide::axum::{ApiRouter, routing};
-use axum::{Json, http::StatusCode};
+use axum::{Json, extract::State, http::StatusCode};
 
 use crate::*;
 
@@ -17,9 +17,9 @@ impl SystemRouter {
 }
 
 async fn init(
-    context: HostLog,
+    State(state): State<ServerState>,
     Json(body): Json<InitSystem>,
 ) -> Result<(StatusCode, Json<SystemResponse>), SystemError> {
-    let response = SystemService::init(&context, &body).await?;
+    let response = SystemService::init(state.config(), state.mailbox(), &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }

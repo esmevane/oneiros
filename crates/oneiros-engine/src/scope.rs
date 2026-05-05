@@ -69,6 +69,30 @@ pub struct AtBookmark {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Capability markers.
+//
+// Each trait says "this scope tier carries enough info to open the
+// resources at <its> tier." DB types take `&impl HasHost` /
+// `&impl HasProject` / `&impl HasBookmark` and ask scope for what
+// they need — scope is shape, db is opening. The hierarchical bounds
+// (`HasProject: HasHost`, `HasBookmark: HasProject`) mean lower tiers
+// can open higher-tier resources for free.
+// ─────────────────────────────────────────────────────────────────────
+
+pub trait HasHost {
+    fn config(&self) -> &Config;
+    fn host(&self) -> &HostInfra;
+}
+
+pub trait HasProject: HasHost {
+    fn project(&self) -> &ProjectInfra;
+}
+
+pub trait HasBookmark: HasProject {
+    fn bookmark(&self) -> &BookmarkInfra;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Resource bundles
 //
 // Hold paths and registry data. Never connections — those are per-call
@@ -207,59 +231,38 @@ impl Scope<AtProject> {
 // ─────────────────────────────────────────────────────────────────────
 
 impl Scope<AtHost> {
-    /// Open the system database. Each tier names the DB it touches —
-    /// `host_db` opens system.db, never the bookmark DB.
-    pub async fn host_db(&self) -> Result<HostDb, HostDbError> {
-        HostDb::open(&self.inner.config.platform()).await
-    }
-
     /// Strangler bridge — produce a legacy `HostLog`. Shrinks as
     /// consumers move to use Scope ops directly.
     pub fn host_log(&self) -> HostLog {
         HostLog::new(self.inner.config.clone())
     }
+}
 
-    pub fn config(&self) -> &Config {
+impl HasHost for Scope<AtHost> {
+    fn config(&self) -> &Config {
         &self.inner.config
     }
-    pub fn host(&self) -> &HostInfra {
+    fn host(&self) -> &HostInfra {
         &self.inner.host
     }
 }
 
-impl Scope<AtProject> {
-    /// Open this project's events database.
-    pub async fn events_db(&self) -> Result<EventsDb, EventsDbError> {
-        EventsDb::open(&self.inner.config.platform(), &self.inner.project.name).await
-    }
-
-    pub fn config(&self) -> &Config {
+impl HasHost for Scope<AtProject> {
+    fn config(&self) -> &Config {
         &self.inner.config
     }
-    pub fn host(&self) -> &HostInfra {
+    fn host(&self) -> &HostInfra {
         &self.inner.host
     }
-    pub fn project(&self) -> &ProjectInfra {
+}
+
+impl HasProject for Scope<AtProject> {
+    fn project(&self) -> &ProjectInfra {
         &self.inner.project
     }
 }
 
 impl Scope<AtBookmark> {
-    /// Open the bookmark DB with the events DB ATTACHed.
-    pub async fn bookmark_db(&self) -> Result<BookmarkDb, BookmarkDbError> {
-        BookmarkDb::open(
-            &self.inner.config.platform(),
-            &self.inner.project.name,
-            &self.inner.bookmark.name,
-        )
-        .await
-    }
-
-    /// Open the system DB from the bookmark tier (shared host DB).
-    pub async fn host_db(&self) -> Result<HostDb, HostDbError> {
-        HostDb::open(&self.inner.config.platform()).await
-    }
-
     /// Strangler bridge — produce a legacy `ProjectLog` (CLI-shape).
     /// HTTP construction handles its own behavior state (with_entry)
     /// until the extractor migrates.
@@ -271,17 +274,25 @@ impl Scope<AtBookmark> {
     pub fn host_log(&self) -> HostLog {
         HostLog::new(self.inner.config.clone())
     }
+}
 
-    pub fn config(&self) -> &Config {
+impl HasHost for Scope<AtBookmark> {
+    fn config(&self) -> &Config {
         &self.inner.config
     }
-    pub fn host(&self) -> &HostInfra {
+    fn host(&self) -> &HostInfra {
         &self.inner.host
     }
-    pub fn project(&self) -> &ProjectInfra {
+}
+
+impl HasProject for Scope<AtBookmark> {
+    fn project(&self) -> &ProjectInfra {
         &self.inner.project
     }
-    pub fn bookmark(&self) -> &BookmarkInfra {
+}
+
+impl HasBookmark for Scope<AtBookmark> {
+    fn bookmark(&self) -> &BookmarkInfra {
         &self.inner.bookmark
     }
 }

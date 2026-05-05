@@ -3,12 +3,20 @@ use crate::*;
 pub struct CognitionService;
 
 impl CognitionService {
+    /// Record a cognition by dispatching `CognitionAdded` through the
+    /// bus and reading the eventually-consistent record back via fetch.
+    ///
+    /// No phantom state — the response carries whatever the projection
+    /// has seen, never a synthesised record. If the fetch window
+    /// expires before the projection catches up, this surfaces as
+    /// `CognitionError::NotFound`.
     pub async fn add(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &AddCognition,
     ) -> Result<CognitionResponse, CognitionError> {
         let AddCognition::V1(addition) = request;
-        let agent_record = AgentRepo::new(context.scope()?)
+        let agent_record = AgentRepo::new(scope)
             .fetch(&addition.agent)
             .await?
             .ok_or_else(|| CognitionError::AgentNotFound(addition.agent.clone()))?;
@@ -18,31 +26,39 @@ impl CognitionService {
             .texture(addition.texture.clone())
             .content(addition.content.clone())
             .build();
+        let id = cognition.id;
 
-        context
-            .emit(CognitionEvents::CognitionAdded(
+        let new_event = NewEvent::builder()
+            .data(Events::Cognition(CognitionEvents::CognitionAdded(
                 CognitionAdded::builder_v1()
-                    .cognition(cognition.clone())
+                    .cognition(cognition)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let stored = CognitionRepo::new(scope)
+            .fetch(&id)
+            .await?
+            .ok_or(CognitionError::NotFound(id))?;
 
         Ok(CognitionResponse::CognitionAdded(
             CognitionAddedResponse::builder_v1()
-                .cognition(cognition)
+                .cognition(stored)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetCognition,
     ) -> Result<CognitionResponse, CognitionError> {
         let GetCognition::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let cognition = CognitionRepo::new(context.scope()?)
+        let cognition = CognitionRepo::new(scope)
             .fetch(&id)
             .await?
             .ok_or(CognitionError::NotFound(id))?;
@@ -55,13 +71,13 @@ impl CognitionService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListCognitions,
     ) -> Result<CognitionResponse, CognitionError> {
         let ListCognitions::V1(listing) = request;
         let agent_id = match &listing.agent {
             Some(name) => {
-                let record = AgentRepo::new(context.scope()?)
+                let record = AgentRepo::new(scope)
                     .fetch(name)
                     .await?
                     .ok_or_else(|| CognitionError::AgentNotFound(name.clone()))?;
@@ -77,7 +93,7 @@ impl CognitionService {
             .filters(listing.filters)
             .build();
 
-        let results = SearchRepo::new(context.scope()?)
+        let results = SearchRepo::new(scope)
             .search(&search_query, agent_id.as_ref())
             .await?;
 
@@ -93,7 +109,7 @@ impl CognitionService {
                 _ => None,
             })
             .collect();
-        let items = CognitionRepo::new(context.scope()?).get_many(&ids).await?;
+        let items = CognitionRepo::new(scope).get_many(&ids).await?;
 
         Ok(CognitionResponse::Cognitions(
             CognitionsResponse::builder_v1()

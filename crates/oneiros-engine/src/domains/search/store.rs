@@ -66,6 +66,15 @@ impl<'a> SearchStore<'a> {
             .map(ToString::to_string)
             .unwrap_or_default();
         let created_at = entry.created_at.map(|t| t.as_string()).unwrap_or_default();
+        // Idempotent — delete any prior row for this resource ref
+        // before inserting. FTS5 has no native upsert, so
+        // delete-then-insert is the canonical pattern; matches the
+        // discipline used by other projections (cognitions etc.) so
+        // the same event applied twice settles to one row.
+        self.conn.execute(
+            "delete from search_index where resource_ref = ?1",
+            params![&resource_ref],
+        )?;
         self.conn.execute(
             "insert into search_index (
                  resource_ref, kind, content,

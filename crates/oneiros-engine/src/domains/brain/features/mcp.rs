@@ -10,10 +10,11 @@ impl BrainMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        brain_mcp::dispatch(context, tool_name, params).await
+        brain_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 }
 
@@ -34,6 +35,7 @@ mod brain_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -44,17 +46,16 @@ mod brain_mcp {
         let scope = ComposeScope::new(context.config.clone())
             .host()
             .map_err(Error::from)?;
-        let system = scope.host_log();
 
         let value = match request_type {
             BrainRequestType::CreateBrain => {
-                BrainService::create(&system, &serde_json::from_str(params)?).await
+                BrainService::create(&scope, mailbox, &serde_json::from_str(params)?).await
             }
             BrainRequestType::GetBrain => {
-                BrainService::get(&system, &serde_json::from_str(params)?).await
+                BrainService::get(&scope, &serde_json::from_str(params)?).await
             }
             BrainRequestType::ListBrains => {
-                BrainService::list(&system, &serde_json::from_str(params)?).await
+                BrainService::list(&scope, &serde_json::from_str(params)?).await
             }
         }
         .map_err(Error::from)?;

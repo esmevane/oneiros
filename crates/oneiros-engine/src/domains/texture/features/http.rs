@@ -39,7 +39,8 @@ impl TextureRouter {
 }
 
 async fn set(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<TextureName>,
     Json(body): Json<SetTexture>,
 ) -> Result<(StatusCode, Json<TextureResponse>), TextureError> {
@@ -48,33 +49,35 @@ async fn set(
     let request = SetTexture::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(TextureService::set(&context, &request).await?),
+        Json(TextureService::set(&scope, &mailbox, &request).await?),
     ))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListTextures>,
 ) -> Result<Json<TextureResponse>, TextureError> {
-    Ok(Json(TextureService::list(&context, &params).await?))
+    Ok(Json(TextureService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<TextureName>>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(
-        TextureService::get(&context, &GetTexture::builder_v1().key(key).build().into()).await?,
+        TextureService::get(&scope, &GetTexture::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<TextureName>,
 ) -> Result<Json<TextureResponse>, TextureError> {
     Ok(Json(
         TextureService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveTexture::builder_v1().name(name).build().into(),
         )
         .await?,

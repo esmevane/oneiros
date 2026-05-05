@@ -10,10 +10,11 @@ impl StorageMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        storage_mcp::dispatch(context, tool_name, params).await
+        storage_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 }
 
@@ -35,6 +36,7 @@ mod storage_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -42,17 +44,19 @@ mod storage_mcp {
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
+        let scope = context.scope().map_err(Error::from)?;
+
         let value = match request_type {
             StorageRequestType::ListStorage => {
                 let request: ListStorage = serde_json::from_str(params)
                     .unwrap_or_else(|_| ListStorage::builder_v1().build().into());
-                StorageService::list(context, &request).await
+                StorageService::list(scope, &request).await
             }
             StorageRequestType::GetStorage => {
-                StorageService::show(context, &serde_json::from_str(params)?).await
+                StorageService::show(scope, &serde_json::from_str(params)?).await
             }
             StorageRequestType::RemoveStorage => {
-                StorageService::remove(context, &serde_json::from_str(params)?).await
+                StorageService::remove(scope, mailbox, &serde_json::from_str(params)?).await
             }
             StorageRequestType::UploadStorage => {
                 return Err(ToolError::UnknownTool(tool_name.to_string()));

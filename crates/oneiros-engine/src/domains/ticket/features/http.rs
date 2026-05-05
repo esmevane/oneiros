@@ -37,32 +37,33 @@ impl TicketRouter {
 }
 
 async fn create(
-    context: HostLog,
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
     Json(body): Json<CreateTicket>,
 ) -> Result<(StatusCode, Json<TicketResponse>), TicketError> {
-    let response = TicketService::create(&context, &body).await?;
+    let response = TicketService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Query(params): Query<ListTickets>,
 ) -> Result<Json<TicketResponse>, TicketError> {
-    Ok(Json(TicketService::list(&context, &params).await?))
+    Ok(Json(TicketService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Path(key): Path<ResourceKey<TicketId>>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(
-        TicketService::get(&context, &GetTicket::builder_v1().key(key).build().into()).await?,
+        TicketService::get(&scope, &GetTicket::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn validate(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Json(body): Json<ValidateTicket>,
 ) -> Result<Json<TicketResponse>, TicketError> {
-    Ok(Json(TicketService::validate(&context, &body).await?))
+    Ok(Json(TicketService::validate(&scope, &body).await?))
 }

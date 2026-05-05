@@ -4,7 +4,8 @@ pub struct ConnectionService;
 
 impl ConnectionService {
     pub async fn create(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &CreateConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let CreateConnection::V1(creation) = request;
@@ -14,31 +15,38 @@ impl ConnectionService {
             .to_ref(creation.to_ref.clone().into_inner())
             .nature(creation.nature.clone())
             .build();
+        let id = connection.id;
 
-        context
-            .emit(ConnectionEvents::ConnectionCreated(
+        let new_event = NewEvent::builder()
+            .data(Events::Connection(ConnectionEvents::ConnectionCreated(
                 ConnectionCreated::builder_v1()
-                    .connection(connection.clone())
+                    .connection(connection)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let stored = ConnectionRepo::new(scope)
+            .fetch(&id)
+            .await?
+            .ok_or(ConnectionError::NotFound(id))?;
 
         Ok(ConnectionResponse::ConnectionCreated(
             ConnectionCreatedResponse::builder_v1()
-                .connection(connection)
+                .connection(stored)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let GetConnection::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let connection = ConnectionRepo::new(context.scope()?)
+        let connection = ConnectionRepo::new(scope)
             .fetch(&id)
             .await?
             .ok_or(ConnectionError::NotFound(id))?;
@@ -51,7 +59,7 @@ impl ConnectionService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let ListConnections::V1(listing) = request;
@@ -64,7 +72,7 @@ impl ConnectionService {
             })
             .transpose()?;
 
-        let listed = ConnectionRepo::new(context.scope()?)
+        let listed = ConnectionRepo::new(scope)
             .list(ref_json.as_deref(), &listing.filters)
             .await?;
         if listed.total == 0 {
@@ -81,11 +89,12 @@ impl ConnectionService {
     }
 
     pub async fn remove(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &RemoveConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let RemoveConnection::V1(removal) = request;
-        if ConnectionRepo::new(context.scope()?)
+        if ConnectionRepo::new(scope)
             .fetch(&removal.id)
             .await?
             .is_none()
@@ -93,14 +102,22 @@ impl ConnectionService {
             return Err(ConnectionError::NotFound(removal.id));
         }
 
-        context
-            .emit(ConnectionEvents::ConnectionRemoved(
+        let new_event = NewEvent::builder()
+            .data(Events::Connection(ConnectionEvents::ConnectionRemoved(
                 ConnectionRemoved::builder_v1()
                     .id(removal.id)
                     .build()
                     .into(),
-            ))
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        scope
+            .config()
+            .fetch
+            .until_absent(|| async { ConnectionRepo::new(scope).get(&removal.id).await })
             .await?;
+
         Ok(ConnectionResponse::ConnectionRemoved(
             ConnectionRemovedResponse::builder_v1()
                 .id(removal.id)

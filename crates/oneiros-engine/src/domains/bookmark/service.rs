@@ -21,16 +21,17 @@ impl BookmarkService {
             .name(name.clone())
             .build();
 
-        state
-            .host_log()
-            .emit(BookmarkEvents::BookmarkForked(
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let new_event = NewEvent::builder()
+            .data(Events::Bookmark(BookmarkEvents::BookmarkForked(
                 BookmarkForked::builder_v1()
                     .bookmark(bookmark.clone())
                     .from(from.clone())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        state.mailbox().tell(Message::new(scope, new_event));
 
         Ok(BookmarkResponse::Forked(
             BookmarkForkedResponse::builder_v1()
@@ -55,10 +56,13 @@ impl BookmarkService {
             .name(name.clone())
             .build();
 
-        state
-            .host_log()
-            .emit(BookmarkEvents::BookmarkSwitched(event.into()))
-            .await?;
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let new_event = NewEvent::builder()
+            .data(Events::Bookmark(BookmarkEvents::BookmarkSwitched(
+                event.into(),
+            )))
+            .build();
+        state.mailbox().tell(Message::new(scope, new_event));
 
         Ok(BookmarkResponse::Switched(
             BookmarkSwitchedResponse::builder_v1()
@@ -87,10 +91,13 @@ impl BookmarkService {
             .target(target.clone())
             .build();
 
-        state
-            .host_log()
-            .emit(BookmarkEvents::BookmarkMerged(event.into()))
-            .await?;
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let new_event = NewEvent::builder()
+            .data(Events::Bookmark(BookmarkEvents::BookmarkMerged(
+                event.into(),
+            )))
+            .build();
+        state.mailbox().tell(Message::new(scope, new_event));
 
         Ok(BookmarkResponse::Merged(
             BookmarkMergedResponse::builder_v1()
@@ -108,9 +115,8 @@ impl BookmarkService {
         request: &ListBookmarks,
     ) -> Result<BookmarkResponse, BookmarkError> {
         let ListBookmarks::V1(listing) = request;
-        let system = state.host_log();
-        let scope = system.scope()?;
-        let listed = BookmarkRepo::new(scope)
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let listed = BookmarkRepo::new(&scope)
             .list(brain, &listing.filters)
             .await?;
         Ok(BookmarkResponse::Bookmarks(listed))
@@ -128,14 +134,14 @@ impl BookmarkService {
         let ShareBookmark::V1(sharing) = request;
         let name = &sharing.name;
         let actor_id = &sharing.actor_id;
-        let system = state.host_log();
-        let scope = system.scope()?;
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let mailbox = state.mailbox();
         let all = SearchFilters {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
 
-        let bookmarks = BookmarkRepo::new(scope).list(brain, &all).await?;
+        let bookmarks = BookmarkRepo::new(&scope).list(brain, &all).await?;
         let bookmark = bookmarks
             .items
             .iter()
@@ -143,7 +149,7 @@ impl BookmarkService {
             .ok_or_else(|| BookmarkError::NotFound(name.clone()))?
             .clone();
 
-        let brain_record = BrainRepo::new(scope)
+        let brain_record = BrainRepo::new(&scope)
             .get(brain)
             .await?
             .ok_or_else(|| BookmarkError::BrainNotFound(brain.clone()))?;
@@ -151,7 +157,7 @@ impl BookmarkService {
         let resolved_actor_id = match actor_id {
             Some(id) => *id,
             None => {
-                let actors = ActorRepo::new(scope).list(&all).await?;
+                let actors = ActorRepo::new(&scope).list(&all).await?;
                 actors
                     .items
                     .first()
@@ -161,15 +167,22 @@ impl BookmarkService {
         };
 
         let target = Ref::bookmark(bookmark.id);
-        let ticket =
-            TicketService::issue(&system, brain, &brain_record, resolved_actor_id, target).await?;
+        let ticket = TicketService::issue(
+            &scope,
+            mailbox,
+            brain,
+            &brain_record,
+            resolved_actor_id,
+            target,
+        )
+        .await?;
 
         let identity = state.host_identity();
         let peer_link = PeerLink::new(identity.address, ticket.link.clone());
         let uri = OneirosUri::Peer(peer_link).to_string();
 
-        system
-            .emit(BookmarkEvents::BookmarkShared(
+        let new_event = NewEvent::builder()
+            .data(Events::Bookmark(BookmarkEvents::BookmarkShared(
                 BookmarkShared::builder_v1()
                     .brain(brain.clone())
                     .bookmark(name.clone())
@@ -177,8 +190,9 @@ impl BookmarkService {
                     .shared_by(resolved_actor_id)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope, new_event));
 
         Ok(BookmarkResponse::Shared(BookmarkShareResult {
             ticket,
@@ -195,7 +209,8 @@ impl BookmarkService {
         let FollowBookmark::V1(following) = request;
         let uri = &following.uri;
         let name = &following.name;
-        let system = state.host_log();
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let mailbox = state.mailbox();
         let parsed: OneirosUri = uri
             .parse()
             .map_err(|e: OneirosUriError| BookmarkError::InvalidUri(e.to_string()))?;
@@ -205,7 +220,7 @@ impl BookmarkService {
             OneirosUri::Link(link) => FollowSource::Local(link.target),
             OneirosUri::Peer(peer_link) => {
                 let key = PeerKey::from_bytes(*peer_link.host.inner().id.as_bytes());
-                PeerService::ensure(&system, key, peer_link.host.clone()).await?;
+                PeerService::ensure(&scope, mailbox, key, peer_link.host.clone()).await?;
                 FollowSource::Peer(peer_link)
             }
         };
@@ -215,20 +230,23 @@ impl BookmarkService {
             .name(name.clone())
             .build();
 
-        system
-            .emit(BookmarkEvents::BookmarkCreated(
+        let new_event = NewEvent::builder()
+            .data(Events::Bookmark(BookmarkEvents::BookmarkCreated(
                 BookmarkCreated::builder_v1()
                     .bookmark(bookmark)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
         state.canons().fork_brain(brain, name)?;
 
         // Create the new bookmark's DB (empty — collect will populate it).
         Self::create_bookmark_db(state.config(), brain, name)?;
 
-        let follow = FollowService::create(&system, brain.clone(), name.clone(), source).await?;
+        let follow =
+            FollowService::create(&scope, mailbox, brain.clone(), name.clone(), source).await?;
         Ok(BookmarkResponse::Followed(follow))
     }
 
@@ -240,15 +258,16 @@ impl BookmarkService {
     ) -> Result<BookmarkResponse, BookmarkError> {
         let CollectBookmark::V1(collection) = request;
         let name = &collection.name;
-        let system = state.host_log();
-        let follow = FollowService::for_bookmark(&system, brain, name)
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let mailbox = state.mailbox();
+        let follow = FollowService::for_bookmark(&scope, brain, name)
             .await?
             .ok_or_else(|| BookmarkError::FollowNotFound(name.clone()))?;
 
         match follow.source.clone() {
             FollowSource::Local(_) => {
                 let checkpoint = Checkpoint::empty();
-                FollowService::advance(&system, follow.id, checkpoint.clone(), 0).await?;
+                FollowService::advance(&scope, mailbox, follow.id, checkpoint.clone(), 0).await?;
                 Ok(BookmarkResponse::Collected(BookmarkCollectResult {
                     follow_id: follow.id,
                     events_received: 0,
@@ -262,24 +281,31 @@ impl BookmarkService {
     }
 
     /// Collect from a peer via Merkle diff on the chronicle HAMT.
+    ///
+    /// The local-side ingestion flows through the bus as `Import`
+    /// messages. The inbound actor handles the events.db insert
+    /// (insert-or-ignore by id), then forwards `Stored` to the
+    /// bookmark + chronicle children — which project and record
+    /// without distinction from locally-emitted events.
     async fn collect_from_peer(
         state: &ServerState,
         brain: &BrainName,
         follow: &Follow,
         peer_link: PeerLink,
     ) -> Result<BookmarkResponse, BookmarkError> {
-        let system = state.host_log();
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let mailbox = state.mailbox();
         let bridge = state.bridge();
 
-        // Get the bookmark's chronicle — this tracks what we've collected.
+        // Get the bookmark's chronicle — read-only here, used for the
+        // Merkle diff. The chronicle actor updates it on each Stored
+        // notification from the inbound actor.
         let chronicle = state.canons().bookmark_chronicle(brain, &follow.bookmark)?;
         let local_root = chronicle.root()?;
 
         // Build a local resolver from the system DB's ChronicleStore.
         // Opens its own connection per resolve call — Send-safe across
         // the async diff, and fast with WAL mode (~20 resolves per tree walk).
-        let mut brain_config = state.config().clone();
-        brain_config.brain = brain.clone();
         {
             let db = state.config().system_db()?;
             ChronicleStore::new(&db).migrate()?;
@@ -306,7 +332,10 @@ impl BookmarkService {
 
         let events_received = diff_result.missing.len() as u64;
 
-        // Phase 2: Fetch missing events and import them.
+        // Phase 2: Fetch missing events and dispatch each as an
+        // `Import` through the bus. The inbound actor handles
+        // events.db insert and notifies the project actor; bookmark
+        // + chronicle children project / record naturally.
         if !diff_result.missing.is_empty() {
             let event_ids: Vec<String> = diff_result
                 .missing
@@ -324,31 +353,50 @@ impl BookmarkService {
                 .await
                 .map_err(|e: BridgeError| BookmarkError::InvalidUri(e.to_string()))?;
 
-            // Import events to the event log (standalone events.db).
-            let events_path = brain_config.events_db_path();
-            let events_db = rusqlite::Connection::open(&events_path)?;
-            events_db.pragma_update(None, "journal_mode", "wal")?;
-            let log = EventLog::new(&events_db);
+            let bookmark_scope = ComposeScope::new(state.config().clone())
+                .bookmark(brain.clone(), follow.bookmark.clone())?;
 
-            // Chronicle objects live in the system DB.
-            let system_db = state.config().system_db()?;
-            let chronicle_store = ChronicleStore::new(&system_db);
-            chronicle_store.migrate()?;
+            // Capture the imported event ids — we'll wait until the
+            // chronicle (and therefore the bookmark actor processing
+            // the same FIFO) has seen them all.
+            let expected_ids: std::collections::HashSet<String> =
+                events.iter().map(|event| event.id.to_string()).collect();
 
-            for event in &events {
-                let _ = log.import(event);
-                // Record each collected event in the bookmark's chronicle
-                // so the next diff can short-circuit on matching roots.
-                chronicle.record(
-                    event,
-                    &chronicle_store.resolver(),
-                    &chronicle_store.writer(),
-                )?;
+            for event in events {
+                let import_message = Message {
+                    scope: bookmark_scope.clone(),
+                    event: Event::Import(Box::new(event)),
+                };
+                mailbox.tell_import(import_message);
             }
-        }
 
-        // Phase 3: Replay projections into the follow's bookmark DB.
-        Self::replay_bookmark(state.config(), brain, &follow.bookmark)?;
+            // Wait for every imported event id to appear in the
+            // bookmark's chronicle.
+            let chronicle_for_wait = chronicle.clone();
+            let resolve_for_wait = {
+                let config = state.config().clone();
+                move |hash: &ContentHash| -> Option<LedgerNode> {
+                    let db = config.system_db().ok()?;
+                    ChronicleStore::new(&db).get(hash)
+                }
+            };
+            state
+                .config()
+                .fetch
+                .eventual(|| async {
+                    let root = chronicle_for_wait.root()?;
+                    let seen = match root.as_ref() {
+                        Some(hash) => Ledger::collect_all_ids(Some(hash), &resolve_for_wait),
+                        None => std::collections::HashSet::new(),
+                    };
+                    Ok::<_, EventError>(if expected_ids.is_subset(&seen) {
+                        Some(())
+                    } else {
+                        None
+                    })
+                })
+                .await?;
+        }
 
         // Store the server's root hash in the checkpoint so we can
         // detect "already up to date" on the next collect.
@@ -359,7 +407,14 @@ impl BookmarkService {
             taken_at: Timestamp::now(),
         };
 
-        FollowService::advance(&system, follow.id, checkpoint.clone(), events_received).await?;
+        FollowService::advance(
+            &scope,
+            mailbox,
+            follow.id,
+            checkpoint.clone(),
+            events_received,
+        )
+        .await?;
 
         Ok(BookmarkResponse::Collected(BookmarkCollectResult {
             follow_id: follow.id,
@@ -376,13 +431,14 @@ impl BookmarkService {
     ) -> Result<BookmarkResponse, BookmarkError> {
         let UnfollowBookmark::V1(unfollowing) = request;
         let name = &unfollowing.name;
-        let system = state.host_log();
-        let follow = FollowService::for_bookmark(&system, brain, name)
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let mailbox = state.mailbox();
+        let follow = FollowService::for_bookmark(&scope, brain, name)
             .await?
             .ok_or_else(|| BookmarkError::FollowNotFound(name.clone()))?;
 
         let id = follow.id;
-        FollowService::remove(&system, id).await?;
+        FollowService::remove(&scope, mailbox, id).await?;
 
         Ok(BookmarkResponse::Unfollowed(
             BookmarkUnfollowedResponse::builder_v1()
