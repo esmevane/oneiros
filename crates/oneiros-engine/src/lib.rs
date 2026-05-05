@@ -1,4 +1,3 @@
-mod bus;
 mod cli;
 mod client;
 mod config;
@@ -12,6 +11,7 @@ mod http;
 mod keys;
 mod logs;
 mod macros;
+mod mailbox;
 mod mcp;
 mod projections;
 mod protocol;
@@ -23,7 +23,6 @@ mod support;
 mod tests;
 mod values;
 
-pub use bus::*;
 pub use cli::*;
 pub use client::*;
 pub use config::*;
@@ -36,6 +35,7 @@ pub use events::*;
 pub use http::*;
 pub use keys::*;
 pub use logs::*;
+pub use mailbox::*;
 pub use mcp::*;
 pub use projections::*;
 pub use protocol::*;

@@ -21,7 +21,13 @@ impl ActorService {
                 ActorCreated::builder_v1().actor(actor).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = ActorRepo::new(scope)
             .fetch(id)

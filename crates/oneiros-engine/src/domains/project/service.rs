@@ -56,7 +56,13 @@ impl ProjectService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         // Create the brain's database layout:
         //   {brain_dir}/events.db         — event log (append-only)

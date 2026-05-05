@@ -21,7 +21,13 @@ impl TextureService {
                 TextureSet::builder_v1().texture(texture).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let projected = TextureRepo::new(scope)
             .fetch(&name)
@@ -89,7 +95,13 @@ impl TextureService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         scope
             .config()

@@ -21,7 +21,13 @@ impl NatureService {
                 NatureSet::builder_v1().nature(nature).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let projected = NatureRepo::new(scope)
             .fetch(&name)
@@ -89,7 +95,13 @@ impl NatureService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         scope
             .config()

@@ -21,7 +21,13 @@ impl LevelService {
                 LevelSet::builder_v1().level(level).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let projected = LevelRepo::new(scope)
             .fetch(&name)
@@ -86,7 +92,13 @@ impl LevelService {
                 LevelRemoved::builder_v1().name(name.clone()).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         scope
             .config()

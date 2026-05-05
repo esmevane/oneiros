@@ -25,7 +25,13 @@ impl ConnectionService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = ConnectionRepo::new(scope)
             .fetch(&id)
@@ -110,7 +116,13 @@ impl ConnectionService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         scope
             .config()

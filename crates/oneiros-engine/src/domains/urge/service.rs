@@ -21,7 +21,13 @@ impl UrgeService {
                 UrgeSet::builder_v1().urge(urge).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let projected = UrgeRepo::new(scope)
             .fetch(&name)
@@ -80,7 +86,13 @@ impl UrgeService {
                 UrgeRemoved::builder_v1().name(name.clone()).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         scope
             .config()
