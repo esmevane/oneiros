@@ -6,17 +6,18 @@ pub struct ProjectService;
 
 impl ProjectService {
     pub async fn init(
-        context: &HostLog,
+        scope: &Scope<AtHost>,
+        mailbox: &Mailbox,
         request: &InitProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
         let brain_name = details
             .name
             .clone()
-            .unwrap_or_else(|| context.config.brain.clone());
+            .unwrap_or_else(|| scope.config().brain.clone());
 
         if let Ok(BrainResponse::Found(_)) = BrainService::get(
-            context,
+            scope,
             &GetBrain::builder_v1()
                 .key(brain_name.clone())
                 .build()
@@ -33,7 +34,8 @@ impl ProjectService {
         }
 
         BrainService::create(
-            context,
+            scope,
+            mailbox,
             &CreateBrain::builder_v1()
                 .name(brain_name.clone())
                 .build()
@@ -46,19 +48,20 @@ impl ProjectService {
             .name(BookmarkName::main())
             .build();
 
-        context
-            .emit(BookmarkEvents::BookmarkCreated(
+        let new_event = NewEvent::builder()
+            .data(Events::Bookmark(BookmarkEvents::BookmarkCreated(
                 BookmarkCreated::builder_v1()
                     .bookmark(main_bookmark)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         // Create the brain's database layout:
         //   {brain_dir}/events.db         — event log (append-only)
         //   {brain_dir}/bookmarks/main.db — projection tables for the default bookmark
-        let brain_dir = context.config.data_dir.join(brain_name.as_str());
+        let brain_dir = scope.config().data_dir.join(brain_name.as_str());
         let bookmarks_dir = brain_dir.join("bookmarks");
         std::fs::create_dir_all(&bookmarks_dir)?;
 
@@ -78,11 +81,12 @@ impl ProjectService {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let actors = ActorRepo::new(context.scope()?).list(&all_filters).await?;
+        let actors = ActorRepo::new(scope).list(&all_filters).await?;
 
         let token = if let Some(actor) = actors.items.first() {
             match TicketService::create(
-                context,
+                scope,
+                mailbox,
                 &CreateTicket::builder_v1()
                     .actor_id(actor.id)
                     .brain_name(brain_name.clone())
@@ -100,7 +104,7 @@ impl ProjectService {
             return Err(ProjectError::Missing);
         };
 
-        let tickets_dir = context.config.data_dir.join("tickets");
+        let tickets_dir = scope.config().data_dir.join("tickets");
 
         std::fs::create_dir_all(&tickets_dir)?;
 
@@ -123,14 +127,14 @@ impl ProjectService {
     /// event is prepended carrying the binary content. This makes the export
     /// portable — the receiving brain materializes the blob at import time
     /// without persisting the ephemeral event to the log.
-    pub fn export(
-        context: &ProjectLog,
+    pub async fn export(
+        scope: &Scope<AtBookmark>,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
         let target_dir = &details.target;
-        let project_name = context.brain_name();
-        let db = context.db()?;
+        let project_name = &scope.config().brain;
+        let db = BookmarkDb::open(scope).await?;
         let events = EventLog::attached(&db).load_all()?;
         let storage = StorageStore::new(&db);
 
@@ -179,8 +183,13 @@ impl ProjectService {
     /// at the import boundary — they never enter the event log.
     /// Domain events are persisted normally, then all projections
     /// are replayed to rebuild the read models.
-    pub fn import(
-        context: &ProjectLog,
+    /// Import is self-bootstrapping — the destination brain may not yet
+    /// be in the projection (system init without project init), so we
+    /// can't compose a `Scope<AtBookmark>` here. Take the platform +
+    /// brain + bookmark directly and open the bookmark DB via the
+    /// underlying primitive.
+    pub async fn import(
+        config: &Config,
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
@@ -188,8 +197,9 @@ impl ProjectService {
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
-        let db = context.db()?;
+        let db = BookmarkDb::open_with(&config.platform(), &config.brain, &config.bookmark).await?;
         let log = EventLog::attached(&db);
+        let projections = Projections::<BrainCanon>::project();
 
         // Import is self-bootstrapping: a destination brain may have seen
         // `system init` without `project init`, leaving the events DB and
@@ -197,7 +207,7 @@ impl ProjectService {
         // (CREATE TABLE IF NOT EXISTS) and makes import the correctness
         // gate the versioning story relies on.
         log.init()?;
-        context.projections.migrate(&db)?;
+        projections.migrate(&db)?;
 
         // Batch all inserts in a single transaction — without this,
         // each INSERT is an implicit transaction with an fsync.
@@ -236,7 +246,7 @@ impl ProjectService {
         }
 
         let log = EventLog::attached(&db);
-        let replayed = context.projections.replay_brain(&db, &log)?;
+        let replayed = projections.replay_brain(&db, &log)?;
 
         Ok(ProjectResponse::Imported(
             ImportedResponse::builder_v1()
@@ -255,10 +265,14 @@ impl ProjectService {
     /// alone cannot add columns to existing tables. The event log
     /// (`events.db`) is untouched; projection data is always derivable
     /// from events.
-    pub fn replay(context: &ProjectLog) -> Result<ProjectResponse, ProjectError> {
+    ///
+    /// Takes `&Config` rather than `&Scope<AtBookmark>` because the
+    /// bookmark DB file may be deleted mid-call — composing a scope
+    /// would fail the existence check.
+    pub async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
         // Ensure a clean schema by deleting the old bookmark DB.
         // WAL sidecar files are silently cleaned up if present.
-        let db_path = context.config.bookmark_db_path();
+        let db_path = config.bookmark_db_path();
         if db_path.exists() {
             std::fs::remove_file(&db_path)?;
         }
@@ -266,10 +280,11 @@ impl ProjectService {
         let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
 
         // Open a fresh DB, create tables with current schema, then replay.
-        let db = context.db()?;
-        context.projections.migrate(&db)?;
+        let db = BookmarkDb::open_with(&config.platform(), &config.brain, &config.bookmark).await?;
+        let projections = Projections::<BrainCanon>::project();
+        projections.migrate(&db)?;
         let log = EventLog::attached(&db);
-        let replayed = context.projections.replay_brain(&db, &log)?;
+        let replayed = projections.replay_brain(&db, &log)?;
 
         Ok(ProjectResponse::Replayed(
             ReplayedResponse::builder_v1()

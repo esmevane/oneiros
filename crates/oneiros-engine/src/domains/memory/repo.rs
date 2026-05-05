@@ -23,7 +23,7 @@ impl<'a> MemoryRepo<'a> {
     }
 
     pub async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, level, content, created_at
              FROM memories WHERE id = ?1",
@@ -61,7 +61,7 @@ impl<'a> MemoryRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()

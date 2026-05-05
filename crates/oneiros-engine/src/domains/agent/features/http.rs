@@ -42,44 +42,48 @@ impl AgentRouter {
 }
 
 async fn create(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<CreateAgent>,
 ) -> Result<(StatusCode, Json<AgentResponse>), AgentError> {
-    let response = AgentService::create(&context, &body).await?;
+    let response = AgentService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListAgents>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::list(&context, &params).await?))
+    Ok(Json(AgentService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<AgentName>>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
-        AgentService::get(&context, &GetAgent::builder_v1().key(key).build().into()).await?,
+        AgentService::get(&scope, &GetAgent::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn update(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(_): Path<AgentName>,
     Json(body): Json<UpdateAgent>,
 ) -> Result<Json<AgentResponse>, AgentError> {
-    Ok(Json(AgentService::update(&context, &body).await?))
+    Ok(Json(AgentService::update(&scope, &mailbox, &body).await?))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<AgentName>,
 ) -> Result<Json<AgentResponse>, AgentError> {
     Ok(Json(
         AgentService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveAgent::builder_v1().name(name).build().into(),
         )
         .await?,

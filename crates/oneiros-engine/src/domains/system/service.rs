@@ -3,28 +3,35 @@ use crate::*;
 pub struct SystemService;
 
 impl SystemService {
+    /// Initialize the host system. Bootstrapping order:
+    ///
+    /// 1. ensure data dir, host key, system db schema, projection migrations
+    ///    — this is a precondition for any scope composition or actor work
+    /// 2. compose `Scope<AtHost>` (now that data_dir exists)
+    /// 3. idempotency check via `TenantRepo::list`
+    /// 4. dispatch the bootstrap tenant via the bus
+    /// 5. dispatch the bootstrap actor via the bus
     pub async fn init(
-        context: &HostLog,
+        config: &Config,
+        mailbox: &Mailbox,
         request: &InitSystem,
     ) -> Result<SystemResponse, SystemError> {
         let details = request.current()?;
-        // system init is the bootstrapper — ensure data dir, schema, and
-        // host keypair all exist. The keypair establishes host identity
-        // before the server ever starts.
-        std::fs::create_dir_all(&context.config.data_dir)?;
-        HostKey::new(&context.config.data_dir).ensure()?;
-        let db = context.db()?;
-        EventLog::new(&db).init()?;
-        context.projections.migrate(&db)?;
-        drop(db);
+
+        std::fs::create_dir_all(&config.data_dir)?;
+        HostKey::new(&config.data_dir).ensure()?;
+        let host_db = HostDb::open_with(&config.platform()).await?;
+        EventLog::new(&host_db).init()?;
+        Projections::system().migrate(&host_db)?;
+        drop(host_db);
+
+        let scope = ComposeScope::new(config.clone()).host()?;
 
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-
-        let scope = context.scope()?;
-        let tenants = TenantRepo::new(scope).list(&all_filters).await?;
+        let tenants = TenantRepo::new(&scope).list(&all_filters).await?;
 
         if tenants.total > 0 {
             return Ok(SystemResponse::HostAlreadyInitialized);
@@ -34,11 +41,11 @@ impl SystemService {
             .name
             .clone()
             .unwrap_or_else(|| "oneiros user".to_string());
-
         let tenant_name = TenantName::new(&name);
 
-        TenantService::create(
-            context,
+        let tenant_response = TenantService::create(
+            &scope,
+            mailbox,
             &CreateTenant::builder_v1()
                 .name(tenant_name.clone())
                 .build()
@@ -46,19 +53,25 @@ impl SystemService {
         )
         .await?;
 
-        let tenants = TenantRepo::new(scope).list(&all_filters).await?;
+        let tenant = match tenant_response {
+            TenantResponse::Created(TenantCreatedResponse::V1(created)) => created.tenant,
+            other => {
+                return Err(SystemError::UnexpectedResponse(format!(
+                    "expected Tenant(Created), got {other:?}"
+                )));
+            }
+        };
 
-        if let Some(tenant) = tenants.items.first() {
-            ActorService::create(
-                context,
-                &CreateActor::builder_v1()
-                    .tenant_id(tenant.id)
-                    .name(ActorName::new(&name))
-                    .build()
-                    .into(),
-            )
-            .await?;
-        }
+        ActorService::create(
+            &scope,
+            mailbox,
+            &CreateActor::builder_v1()
+                .tenant_id(tenant.id)
+                .name(ActorName::new(&name))
+                .build()
+                .into(),
+        )
+        .await?;
 
         Ok(SystemResponse::SystemInitialized(
             SystemInitializedResponse::builder_v1()

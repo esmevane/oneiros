@@ -36,25 +36,26 @@ impl MemoryRouter {
 }
 
 async fn add(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<AddMemory>,
 ) -> Result<(StatusCode, Json<MemoryResponse>), MemoryError> {
-    let response = MemoryService::add(&context, &body).await?;
+    let response = MemoryService::add(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListMemories>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
-    Ok(Json(MemoryService::list(&context, &params).await?))
+    Ok(Json(MemoryService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<MemoryId>>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
     Ok(Json(
-        MemoryService::get(&context, &GetMemory::builder_v1().key(key).build().into()).await?,
+        MemoryService::get(&scope, &GetMemory::builder_v1().key(key).build().into()).await?,
     ))
 }

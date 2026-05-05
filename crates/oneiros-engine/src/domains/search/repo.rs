@@ -32,7 +32,7 @@ impl<'a> SearchRepo<'a> {
         query: &SearchQueryV1,
         agent_id: Option<&AgentId>,
     ) -> Result<SearchHits, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
 
         let has_query = query.query.is_some();
         let where_clause = query.where_clause(agent_id);

@@ -10,10 +10,11 @@ impl TenantMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        tenant_mcp::dispatch(context, tool_name, params).await
+        tenant_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 }
 
@@ -34,6 +35,7 @@ mod tenant_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -44,17 +46,16 @@ mod tenant_mcp {
         let scope = ComposeScope::new(context.config.clone())
             .host()
             .map_err(Error::from)?;
-        let system = scope.host_log();
 
         let value = match request_type {
             TenantRequestType::CreateTenant => {
-                TenantService::create(&system, &serde_json::from_str(params)?).await
+                TenantService::create(&scope, mailbox, &serde_json::from_str(params)?).await
             }
             TenantRequestType::GetTenant => {
-                TenantService::get(&system, &serde_json::from_str(params)?).await
+                TenantService::get(&scope, &serde_json::from_str(params)?).await
             }
             TenantRequestType::ListTenants => {
-                TenantService::list(&system, &serde_json::from_str(params)?).await
+                TenantService::list(&scope, &serde_json::from_str(params)?).await
             }
         }
         .map_err(Error::from)?;

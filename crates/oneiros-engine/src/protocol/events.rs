@@ -19,6 +19,13 @@ use crate::*;
 /// JSON preserved for diagnostics. Callers at the load boundary filter
 /// Unknown entries (typically with a warn-level log) so downstream
 /// code only ever handles pure `Events`.
+///
+/// `New` and `Stored` are in-memory-only lifecycle variants used by
+/// the bus. `New(NewEvent)` is a fresh emission travelling toward the
+/// log-append actor; `Stored(StoredEvent)` is the post-append
+/// notification that downstream actors (projection, chronicle) react
+/// to. Both are `#[serde(skip)]` because the bus does not persist
+/// these envelopes — they only exist in transit between actors.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Event {
@@ -27,6 +34,20 @@ pub enum Event {
     Unknown(UnknownEvent),
     #[default]
     Malformed,
+    /// Boxed: `StoredEvent.data` is itself an `Event`, which would
+    /// recurse without indirection.
+    #[serde(skip)]
+    New(Box<NewEvent>),
+    /// Boxed for the same reason as `New`.
+    #[serde(skip)]
+    Stored(Box<StoredEvent>),
+    /// A foreign `StoredEvent` arriving for ingest into this brain's
+    /// event log — typically from a peer collect or an import. The
+    /// `InboundActor` listens for this variant and is responsible for
+    /// the insert-or-ignore-by-id semantics; downstream actors only
+    /// see `Stored` once ingestion has happened.
+    #[serde(skip)]
+    Import(Box<StoredEvent>),
 }
 
 impl Event {
@@ -36,7 +57,22 @@ impl Event {
             Self::Ephemeral(ephemeral) => ephemeral.kind().to_string(),
             Self::Unknown(_) => "__@unknown".to_string(),
             Self::Malformed => "__@malformed".to_string(),
+            Self::New(new) => new.data.event_type(),
+            Self::Stored(stored) => stored.data.event_type(),
+            Self::Import(imported) => imported.data.event_type(),
         }
+    }
+}
+
+impl From<NewEvent> for Event {
+    fn from(value: NewEvent) -> Self {
+        Self::New(Box::new(value))
+    }
+}
+
+impl From<StoredEvent> for Event {
+    fn from(value: StoredEvent) -> Self {
+        Self::Stored(Box::new(value))
     }
 }
 

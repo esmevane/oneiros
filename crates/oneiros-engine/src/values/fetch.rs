@@ -66,6 +66,33 @@ impl Fetch {
         .await
         .unwrap_or(Ok(None))
     }
+
+    /// Poll a presence-check closure until it returns `Ok(None)` (the
+    /// resource has disappeared) or the patience window expires. The
+    /// remove-side counterpart to [`eventual`]: after dispatching a
+    /// remove event, callers wait here until the projection has caught
+    /// up to the absence, so the response acknowledges actual state
+    /// rather than just receipt.
+    ///
+    /// Returns `Ok(true)` if absence was observed within the window,
+    /// `Ok(false)` if the timeout expired with the resource still
+    /// present, and `Err(_)` if the closure errored.
+    pub async fn until_absent<T, E, F, Fut>(&self, f: F) -> Result<bool, E>
+    where
+        F: Fn() -> Fut,
+        Fut: Future<Output = Result<Option<T>, E>>,
+    {
+        tokio::time::timeout(self.timeout, async {
+            loop {
+                if f().await?.is_none() {
+                    return Ok(true);
+                }
+                tokio::time::sleep(self.interval).await;
+            }
+        })
+        .await
+        .unwrap_or(Ok(false))
+    }
 }
 
 #[cfg(test)]

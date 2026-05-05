@@ -33,25 +33,26 @@ impl TenantRouter {
 }
 
 async fn create(
-    context: HostLog,
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
     Json(body): Json<CreateTenant>,
 ) -> Result<(StatusCode, Json<TenantResponse>), TenantError> {
-    let response = TenantService::create(&context, &body).await?;
+    let response = TenantService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Query(params): Query<ListTenants>,
 ) -> Result<Json<TenantResponse>, TenantError> {
-    Ok(Json(TenantService::list(&context, &params).await?))
+    Ok(Json(TenantService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Path(key): Path<ResourceKey<TenantId>>,
 ) -> Result<Json<TenantResponse>, TenantError> {
     Ok(Json(
-        TenantService::get(&context, &GetTenant::builder_v1().key(key).build().into()).await?,
+        TenantService::get(&scope, &GetTenant::builder_v1().key(key).build().into()).await?,
     ))
 }

@@ -4,11 +4,12 @@ pub struct ExperienceService;
 
 impl ExperienceService {
     pub async fn create(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &CreateExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let CreateExperience::V1(creation) = request;
-        let agent_record = AgentRepo::new(context.scope()?)
+        let agent_record = AgentRepo::new(scope)
             .fetch(&creation.agent)
             .await?
             .ok_or_else(|| ExperienceError::AgentNotFound(creation.agent.clone()))?;
@@ -18,31 +19,38 @@ impl ExperienceService {
             .sensation(creation.sensation.clone())
             .description(creation.description.clone())
             .build();
+        let id = experience.id;
 
-        context
-            .emit(ExperienceEvents::ExperienceCreated(
+        let new_event = NewEvent::builder()
+            .data(Events::Experience(ExperienceEvents::ExperienceCreated(
                 ExperienceCreated::builder_v1()
-                    .experience(experience.clone())
+                    .experience(experience)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let stored = ExperienceRepo::new(scope)
+            .fetch(&id)
+            .await?
+            .ok_or(ExperienceError::NotFound(id))?;
 
         Ok(ExperienceResponse::ExperienceCreated(
             ExperienceCreatedResponse::builder_v1()
-                .experience(experience)
+                .experience(stored)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let GetExperience::V1(lookup) = request;
         let id = lookup.key.resolve()?;
-        let experience = ExperienceRepo::new(context.scope()?)
+        let experience = ExperienceRepo::new(scope)
             .fetch(&id)
             .await?
             .ok_or(ExperienceError::NotFound(id))?;
@@ -55,13 +63,13 @@ impl ExperienceService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let ListExperiences::V1(listing) = request;
         let agent_id = match &listing.agent {
             Some(name) => {
-                let record = AgentRepo::new(context.scope()?)
+                let record = AgentRepo::new(scope)
                     .fetch(name)
                     .await?
                     .ok_or_else(|| ExperienceError::AgentNotFound(name.clone()))?;
@@ -77,7 +85,7 @@ impl ExperienceService {
             .filters(listing.filters)
             .build();
 
-        let results = SearchRepo::new(context.scope()?)
+        let results = SearchRepo::new(scope)
             .search(&search_query, agent_id.as_ref())
             .await?;
 
@@ -93,7 +101,7 @@ impl ExperienceService {
                 _ => None,
             })
             .collect();
-        let items = ExperienceRepo::new(context.scope()?).get_many(&ids).await?;
+        let items = ExperienceRepo::new(scope).get_many(&ids).await?;
 
         Ok(ExperienceResponse::Experiences(
             ExperiencesResponse::builder_v1()
@@ -105,60 +113,91 @@ impl ExperienceService {
     }
 
     pub async fn update_description(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceDescription::V1(update) = request;
-        let mut experience = ExperienceRepo::new(context.scope()?)
+        // Validate the experience exists before dispatching the update.
+        ExperienceRepo::new(scope)
             .fetch(&update.id)
             .await?
-            .ok_or_else(|| ExperienceError::NotFound(update.id))?;
+            .ok_or(ExperienceError::NotFound(update.id))?;
 
-        experience.description = update.description.clone();
-
-        context
-            .emit(ExperienceEvents::ExperienceDescriptionUpdated(
-                ExperienceDescriptionUpdated::builder_v1()
-                    .id(update.id)
-                    .description(update.description.clone())
-                    .build()
-                    .into(),
+        let new_event = NewEvent::builder()
+            .data(Events::Experience(
+                ExperienceEvents::ExperienceDescriptionUpdated(
+                    ExperienceDescriptionUpdated::builder_v1()
+                        .id(update.id)
+                        .description(update.description.clone())
+                        .build()
+                        .into(),
+                ),
             ))
-            .await?;
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        // Read back the updated record. Fetch polls until the projection
+        // reflects the new description.
+        let updated = scope
+            .config()
+            .fetch
+            .eventual(|| async {
+                ExperienceRepo::new(scope)
+                    .get(&update.id)
+                    .await
+                    .map(|opt| opt.filter(|exp| exp.description == update.description))
+            })
+            .await?
+            .ok_or(ExperienceError::NotFound(update.id))?;
 
         Ok(ExperienceResponse::ExperienceUpdated(
             ExperienceUpdatedResponse::builder_v1()
-                .experience(experience)
+                .experience(updated)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn update_sensation(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceSensation::V1(update) = request;
-        let mut experience = ExperienceRepo::new(context.scope()?)
+        ExperienceRepo::new(scope)
             .fetch(&update.id)
             .await?
-            .ok_or_else(|| ExperienceError::NotFound(update.id))?;
+            .ok_or(ExperienceError::NotFound(update.id))?;
 
-        experience.sensation = update.sensation.clone();
-
-        context
-            .emit(ExperienceEvents::ExperienceSensationUpdated(
-                ExperienceSensationUpdated::builder_v1()
-                    .id(update.id)
-                    .sensation(update.sensation.clone())
-                    .build()
-                    .into(),
+        let new_event = NewEvent::builder()
+            .data(Events::Experience(
+                ExperienceEvents::ExperienceSensationUpdated(
+                    ExperienceSensationUpdated::builder_v1()
+                        .id(update.id)
+                        .sensation(update.sensation.clone())
+                        .build()
+                        .into(),
+                ),
             ))
-            .await?;
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let updated = scope
+            .config()
+            .fetch
+            .eventual(|| async {
+                ExperienceRepo::new(scope)
+                    .get(&update.id)
+                    .await
+                    .map(|opt| opt.filter(|exp| exp.sensation == update.sensation))
+            })
+            .await?
+            .ok_or(ExperienceError::NotFound(update.id))?;
 
         Ok(ExperienceResponse::ExperienceUpdated(
             ExperienceUpdatedResponse::builder_v1()
-                .experience(experience)
+                .experience(updated)
                 .build()
                 .into(),
         ))

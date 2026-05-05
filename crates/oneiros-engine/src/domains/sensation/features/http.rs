@@ -39,7 +39,8 @@ impl SensationRouter {
 }
 
 async fn set(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<SensationName>,
     Json(body): Json<SetSensation>,
 ) -> Result<(StatusCode, Json<SensationResponse>), SensationError> {
@@ -48,37 +49,35 @@ async fn set(
     let request = SetSensation::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(SensationService::set(&context, &request).await?),
+        Json(SensationService::set(&scope, &mailbox, &request).await?),
     ))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListSensations>,
 ) -> Result<Json<SensationResponse>, SensationError> {
-    Ok(Json(SensationService::list(&context, &params).await?))
+    Ok(Json(SensationService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<SensationName>>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(
-        SensationService::get(
-            &context,
-            &GetSensation::builder_v1().key(key).build().into(),
-        )
-        .await?,
+        SensationService::get(&scope, &GetSensation::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<SensationName>,
 ) -> Result<Json<SensationResponse>, SensationError> {
     Ok(Json(
         SensationService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveSensation::builder_v1().name(name).build().into(),
         )
         .await?,

@@ -33,6 +33,53 @@ pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
     Ok(())
 }
 
+/// Vertical slice through the lazy bookmark actor tree: `cognition
+/// add` dispatches a `Message<AtBookmark>` through the bus, the host
+/// actor lazy-spawns the project actor for the brain, the project
+/// actor lazy-spawns bookmark + chronicle actors for the bookmark on
+/// scope, and the projection materializes the row that the service
+/// then fetches eventually-consistently.
+///
+/// The assertion that proves it: the response carries the projected
+/// record, and a follow-up `cognition show` against the projected ID
+/// returns the same record. If the bus didn't reach the bookmark
+/// actor, the projection would be empty and `show` would 404.
+pub(crate) async fn add_dispatches_via_bus<B: Backend>() -> TestResult {
+    let harness = with_agent::<B>().await?;
+
+    let response = harness
+        .exec_json("cognition add thinker.process observation 'bus-routed thought'")
+        .await?;
+
+    let added = match response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => added.cognition,
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
+
+    assert_eq!(added.content.as_str(), "bus-routed thought");
+
+    let shown = harness
+        .exec_json(&format!("cognition show {}", added.id))
+        .await?;
+
+    match shown {
+        Responses::Cognition(CognitionResponse::CognitionDetails(
+            CognitionDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(
+                details.cognition.id, added.id,
+                "show must return the projected cognition"
+            );
+            assert_eq!(details.cognition.content.as_str(), "bus-routed thought");
+        }
+        other => panic!("expected CognitionDetails, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let harness = with_agent::<B>().await?;
 

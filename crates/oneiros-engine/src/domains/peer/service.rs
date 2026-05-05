@@ -23,7 +23,11 @@ fn peer_to_found_v1(peer: Peer) -> PeerFoundResponseV1 {
 }
 
 impl PeerService {
-    pub async fn add(context: &HostLog, request: &AddPeer) -> Result<PeerResponse, PeerError> {
+    pub async fn add(
+        scope: &Scope<AtHost>,
+        mailbox: &Mailbox,
+        request: &AddPeer,
+    ) -> Result<PeerResponse, PeerError> {
         let AddPeer::V1(add) = request;
         let parsed: PeerAddress = add
             .address
@@ -51,16 +55,20 @@ impl PeerService {
             .created_at(peer.created_at)
             .build();
 
-        context.emit(PeerEvents::PeerAdded(event.into())).await?;
+        let new_event = NewEvent::builder()
+            .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
         Ok(PeerResponse::Added(PeerAddedResponse::V1(
             peer_to_added_v1(peer),
         )))
     }
 
-    pub async fn get(context: &HostLog, request: &GetPeer) -> Result<PeerResponse, PeerError> {
+    pub async fn get(scope: &Scope<AtHost>, request: &GetPeer) -> Result<PeerResponse, PeerError> {
         let GetPeer::V1(get) = request;
         let id = get.key.resolve()?;
-        let peer = PeerRepo::new(context.scope()?)
+        let peer = PeerRepo::new(scope)
             .fetch(id)
             .await?
             .ok_or(PeerError::NotFound(id))?;
@@ -69,11 +77,12 @@ impl PeerService {
         )))
     }
 
-    pub async fn list(context: &HostLog, request: &ListPeers) -> Result<PeerResponse, PeerError> {
+    pub async fn list(
+        scope: &Scope<AtHost>,
+        request: &ListPeers,
+    ) -> Result<PeerResponse, PeerError> {
         let ListPeers::V1(listing) = request;
-        let listed = PeerRepo::new(context.scope()?)
-            .list(&listing.filters)
-            .await?;
+        let listed = PeerRepo::new(scope).list(&listing.filters).await?;
         let total = listed.total;
         let items: Vec<PeerFoundResponseV1> =
             listed.items.into_iter().map(peer_to_found_v1).collect();
@@ -90,7 +99,8 @@ impl PeerService {
     /// return it without emitting an event. Otherwise add it and return
     /// the newly-created record.
     pub async fn ensure(
-        context: &HostLog,
+        scope: &Scope<AtHost>,
+        mailbox: &Mailbox,
         key: PeerKey,
         address: PeerAddress,
     ) -> Result<Peer, PeerError> {
@@ -98,7 +108,7 @@ impl PeerService {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let listed = PeerRepo::new(context.scope()?).list(&all).await?;
+        let listed = PeerRepo::new(scope).list(&all).await?;
         if let Some(existing) = listed.items.iter().find(|p| p.key == key) {
             return Ok(existing.clone());
         }
@@ -114,26 +124,31 @@ impl PeerService {
             .created_at(peer.created_at)
             .build();
 
-        context.emit(PeerEvents::PeerAdded(event.into())).await?;
+        let new_event = NewEvent::builder()
+            .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(peer)
     }
 
     pub async fn remove(
-        context: &HostLog,
+        scope: &Scope<AtHost>,
+        mailbox: &Mailbox,
         request: &RemovePeer,
     ) -> Result<PeerResponse, PeerError> {
         let RemovePeer::V1(remove) = request;
-        let existing = PeerRepo::new(context.scope()?)
+        let existing = PeerRepo::new(scope)
             .get(remove.id)
             .await?
             .ok_or(PeerError::NotFound(remove.id))?;
 
-        context
-            .emit(PeerEvents::PeerRemoved(
+        let new_event = NewEvent::builder()
+            .data(Events::Peer(PeerEvents::PeerRemoved(
                 PeerRemoved::builder_v1().id(existing.id).build().into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(PeerResponse::Removed(
             PeerRemovedResponse::builder_v1()

@@ -22,7 +22,7 @@ impl DoctorService {
             }
         };
 
-        let db = match scope.host_db().await {
+        let db = match HostDb::open(&scope).await {
             Ok(db) => db,
             Err(_) => {
                 checks.push(DoctorCheck::NotInitialized);

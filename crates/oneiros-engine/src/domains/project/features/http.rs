@@ -21,15 +21,16 @@ impl ProjectRouter {
 }
 
 async fn init(
-    context: HostLog,
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
     Json(body): Json<InitProject>,
 ) -> Result<(StatusCode, Json<ProjectResponse>), ProjectError> {
-    let response = ProjectService::init(&context, &body).await?;
+    let response = ProjectService::init(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn summary(context: ProjectLog) -> Result<Json<BrainSummary>, ProjectError> {
-    let db = context.db()?;
+async fn summary(scope: Scope<AtBookmark>) -> Result<Json<BrainSummary>, ProjectError> {
+    let db = BookmarkDb::open(&scope).await?;
 
     let agents = AgentStore::new(&db).list().unwrap_or_default();
     let agent_count = agents.len();

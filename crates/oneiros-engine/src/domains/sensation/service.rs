@@ -4,7 +4,8 @@ pub struct SensationService;
 
 impl SensationService {
     pub async fn set(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &SetSensation,
     ) -> Result<SensationResponse, SensationError> {
         let SetSensation::V1(set) = request;
@@ -13,31 +14,38 @@ impl SensationService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
+        let name = sensation.name.clone();
 
-        context
-            .emit(SensationEvents::SensationSet(
+        let new_event = NewEvent::builder()
+            .data(Events::Sensation(SensationEvents::SensationSet(
                 SensationSet::builder_v1()
-                    .sensation(sensation.clone())
+                    .sensation(sensation)
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let projected = SensationRepo::new(scope)
+            .fetch(&name)
+            .await?
+            .ok_or(SensationError::NotFound(name))?;
 
         Ok(SensationResponse::SensationSet(
             SensationSetResponse::builder_v1()
-                .sensation(sensation)
+                .sensation(projected)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetSensation,
     ) -> Result<SensationResponse, SensationError> {
         let GetSensation::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let sensation = SensationRepo::new(context.scope()?)
+        let sensation = SensationRepo::new(scope)
             .fetch(&name)
             .await?
             .ok_or(SensationError::NotFound(name))?;
@@ -50,13 +58,11 @@ impl SensationService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListSensations,
     ) -> Result<SensationResponse, SensationError> {
         let ListSensations::V1(listing) = request;
-        let listed = SensationRepo::new(context.scope()?)
-            .list(&listing.filters)
-            .await?;
+        let listed = SensationRepo::new(scope).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(SensationResponse::NoSensations)
         } else {
@@ -71,21 +77,32 @@ impl SensationService {
     }
 
     pub async fn remove(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &RemoveSensation,
     ) -> Result<SensationResponse, SensationError> {
         let RemoveSensation::V1(removal) = request;
-        context
-            .emit(SensationEvents::SensationRemoved(
+        let name = removal.name.clone();
+
+        let new_event = NewEvent::builder()
+            .data(Events::Sensation(SensationEvents::SensationRemoved(
                 SensationRemoved::builder_v1()
-                    .name(removal.name.clone())
+                    .name(name.clone())
                     .build()
                     .into(),
-            ))
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        scope
+            .config()
+            .fetch
+            .until_absent(|| async { SensationRepo::new(scope).get(&name).await })
             .await?;
+
         Ok(SensationResponse::SensationRemoved(
             SensationRemovedResponse::builder_v1()
-                .name(removal.name.clone())
+                .name(name)
                 .build()
                 .into(),
         ))
