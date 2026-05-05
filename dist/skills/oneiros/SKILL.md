@@ -10,7 +10,7 @@ compatibility: Requires oneiros CLI tool or MCP access, and an initialized oneir
 allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
 metadata:
-  version: "0.0.9"
+  version: "0.0.10"
   author: "JC McCormick <https://github.com/esmevane>"
 ---
 

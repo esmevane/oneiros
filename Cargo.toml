@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.9"
+version = "0.0.10"
 edition = "2024"
 repository = "https://github.com/esmevane/oneiros"
 license = "MIT"
@@ -41,7 +41,7 @@ humantime-serde = "1"
 inquire = "0.9.4"
 iroh = "0.98"
 kinded = "0.5.0"
-oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.9" }
+oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.10" }
 paste = "1"
 pkcs8 = "=0.11.0-rc.10"
 postcard = { version = "1", features = ["alloc"] }
