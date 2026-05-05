@@ -39,7 +39,8 @@ impl UrgeRouter {
 }
 
 async fn set(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<UrgeName>,
     Json(body): Json<SetUrge>,
 ) -> Result<(StatusCode, Json<UrgeResponse>), UrgeError> {
@@ -48,33 +49,35 @@ async fn set(
     let request = SetUrge::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(UrgeService::set(&context, &request).await?),
+        Json(UrgeService::set(&scope, &mailbox, &request).await?),
     ))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListUrges>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
-    Ok(Json(UrgeService::list(&context, &params).await?))
+    Ok(Json(UrgeService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<UrgeName>>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(
-        UrgeService::get(&context, &GetUrge::builder_v1().key(key).build().into()).await?,
+        UrgeService::get(&scope, &GetUrge::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<UrgeName>,
 ) -> Result<Json<UrgeResponse>, UrgeError> {
     Ok(Json(
         UrgeService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveUrge::builder_v1().name(name).build().into(),
         )
         .await?,

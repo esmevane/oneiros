@@ -4,7 +4,8 @@ pub struct PersonaService;
 
 impl PersonaService {
     pub async fn set(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &SetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let SetPersona::V1(set) = request;
@@ -13,31 +14,35 @@ impl PersonaService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
+        let name = persona.name.clone();
 
-        context
-            .emit(PersonaEvents::PersonaSet(
-                PersonaSet::builder_v1()
-                    .persona(persona.clone())
-                    .build()
-                    .into(),
-            ))
-            .await?;
+        let new_event = NewEvent::builder()
+            .data(Events::Persona(PersonaEvents::PersonaSet(
+                PersonaSet::builder_v1().persona(persona).build().into(),
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let projected = PersonaRepo::new(scope)
+            .fetch(&name)
+            .await?
+            .ok_or(PersonaError::NotFound(name))?;
 
         Ok(PersonaResponse::PersonaSet(
             PersonaSetResponse::builder_v1()
-                .persona(persona)
+                .persona(projected)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetPersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let GetPersona::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let persona = PersonaRepo::new(context.scope()?)
+        let persona = PersonaRepo::new(scope)
             .fetch(&name)
             .await?
             .ok_or(PersonaError::NotFound(name))?;
@@ -50,13 +55,11 @@ impl PersonaService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListPersonas,
     ) -> Result<PersonaResponse, PersonaError> {
         let ListPersonas::V1(listing) = request;
-        let listed = PersonaRepo::new(context.scope()?)
-            .list(&listing.filters)
-            .await?;
+        let listed = PersonaRepo::new(scope).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(PersonaResponse::NoPersonas)
         } else {
@@ -71,21 +74,32 @@ impl PersonaService {
     }
 
     pub async fn remove(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &RemovePersona,
     ) -> Result<PersonaResponse, PersonaError> {
         let RemovePersona::V1(removal) = request;
-        context
-            .emit(PersonaEvents::PersonaRemoved(
+        let name = removal.name.clone();
+
+        let new_event = NewEvent::builder()
+            .data(Events::Persona(PersonaEvents::PersonaRemoved(
                 PersonaRemoved::builder_v1()
-                    .name(removal.name.clone())
+                    .name(name.clone())
                     .build()
                     .into(),
-            ))
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        scope
+            .config()
+            .fetch
+            .until_absent(|| async { PersonaRepo::new(scope).get(&name).await })
             .await?;
+
         Ok(PersonaResponse::PersonaRemoved(
             PersonaRemovedResponse::builder_v1()
-                .name(removal.name.clone())
+                .name(name)
                 .build()
                 .into(),
         ))

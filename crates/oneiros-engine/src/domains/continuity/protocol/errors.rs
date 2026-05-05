@@ -19,6 +19,9 @@ pub enum ContinuityError {
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
+    BookmarkDb(#[from] crate::BookmarkDbError),
+
+    #[error(transparent)]
     Event(#[from] crate::EventError),
 
     #[error(transparent)]
@@ -35,7 +38,9 @@ impl IntoResponse for ContinuityError {
         let (status, message) = match &self {
             ContinuityError::AgentNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ContinuityError::Agent(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            ContinuityError::Database(_) | ContinuityError::Event(_) => {
+            ContinuityError::Database(_)
+            | ContinuityError::Event(_)
+            | ContinuityError::BookmarkDb(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             ContinuityError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),

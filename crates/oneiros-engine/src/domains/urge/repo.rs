@@ -20,7 +20,7 @@ impl<'a> UrgeRepo<'a> {
     }
 
     pub async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
         let result = stmt.query_row(params![name.to_string()], |row| {
@@ -45,7 +45,7 @@ impl<'a> UrgeRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM urges")?;

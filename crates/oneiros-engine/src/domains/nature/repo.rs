@@ -20,7 +20,7 @@ impl<'a> NatureRepo<'a> {
     }
 
     pub async fn get(&self, name: &NatureName) -> Result<Option<Nature>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM natures WHERE name = ?1")?;
 
@@ -46,7 +46,7 @@ impl<'a> NatureRepo<'a> {
     }
 
     pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Nature>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM natures")?;

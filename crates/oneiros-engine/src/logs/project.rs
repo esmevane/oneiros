@@ -4,11 +4,17 @@ use crate::*;
 
 impl aide::operation::OperationInput for ProjectLog {}
 
+/// Strangler — request-shaped context for legacy bookmark-tier callers.
+///
+/// Carries the request's `Config` (with brain + bookmark already
+/// resolved) and provides a lazily-composed `Scope<AtBookmark>` plus
+/// an authenticated HTTP `client()`. New code uses
+/// `Scope<AtBookmark>` + `Mailbox` directly; this remains for CLI
+/// commands and MCP dispatchers that derive their scope from the
+/// request context during the bus migration.
 #[derive(Clone)]
 pub struct ProjectLog {
     pub config: Config,
-    pub projections: Projections<BrainCanon>,
-    chronicle: Chronicle,
     /// Lazily-composed Scope, cached for the context's lifetime.
     scope: Arc<std::sync::OnceLock<Scope<AtBookmark>>>,
 }
@@ -17,18 +23,6 @@ impl ProjectLog {
     pub fn new(config: Config) -> Self {
         Self {
             config,
-            projections: Projections::project(),
-            chronicle: Chronicle::new(),
-            scope: Arc::new(std::sync::OnceLock::new()),
-        }
-    }
-
-    /// Create a context with a pre-hydrated bookmark entry.
-    pub fn with_entry(config: Config, entry: BookmarkEntry) -> Self {
-        Self {
-            config,
-            projections: Projections::project_with_pipeline(entry.pipeline),
-            chronicle: entry.chronicle,
             scope: Arc::new(std::sync::OnceLock::new()),
         }
     }
@@ -51,18 +45,9 @@ impl ProjectLog {
         }
     }
 
-    /// Open the bookmark DB with the events DB ATTACHed.
-    ///
-    /// Unqualified table names resolve to the bookmark DB (projections).
-    /// Event log operations use the `events` schema qualifier via
-    /// `EventLog::attached`.
-    pub fn db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        self.config.bookmark_conn()
-    }
-
     /// Compose a bookmark-tier Scope from this context's config
-    /// (lazy, cached). Strangler helper: lets services pass &Scope to
-    /// repos without changing their own signatures during migration.
+    /// (lazy, cached). Strangler helper: MCP dispatchers extract this
+    /// to pass `&Scope<AtBookmark>` to migrated services.
     pub fn scope(&self) -> Result<&Scope<AtBookmark>, ComposeError> {
         if self.scope.get().is_none() {
             let s = ComposeScope::new(self.config.clone())
@@ -70,38 +55,5 @@ impl ProjectLog {
             let _ = self.scope.set(s);
         }
         Ok(self.scope.get().expect("just set above"))
-    }
-
-    /// Open the system database.
-    pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        self.config.system_db()
-    }
-
-    /// Replay all events through projections, rebuilding read models.
-    pub fn replay(&self) -> Result<usize, EventError> {
-        let db = self.db()?;
-        let log = EventLog::attached(&db);
-        self.projections.replay_brain(&db, &log)
-    }
-
-    /// Emit an event to the brain's event log and apply projections.
-    pub async fn emit(&self, event: impl Into<Events>) -> Result<(), EventError> {
-        let db = self.db()?;
-        let new_event = NewEvent::builder().data(event).build();
-        let stored = EventLog::attached(&db).append(&new_event)?;
-
-        self.projections.apply_brain(&db, &stored)?;
-
-        // Chronicle the event in the system DB (shared across bookmarks).
-        let system_db = self.system_db()?;
-        let chronicle_store = ChronicleStore::new(&system_db);
-        chronicle_store.migrate()?;
-        self.chronicle.record(
-            &stored,
-            &chronicle_store.resolver(),
-            &chronicle_store.writer(),
-        )?;
-
-        Ok(())
     }
 }

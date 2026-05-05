@@ -28,7 +28,7 @@ impl<'a> StorageRepo<'a> {
     }
 
     pub async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
 
         let result = stmt.query_row(params![key.as_str()], |row| {
@@ -53,7 +53,7 @@ impl<'a> StorageRepo<'a> {
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<StorageEntry>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
 
         let total: usize = db.query_row("SELECT COUNT(*) FROM storage", [], |row| row.get(0))?;
 
@@ -95,7 +95,7 @@ impl<'a> StorageRepo<'a> {
     }
 
     pub async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
-        let db = self.scope.bookmark_db().await?;
+        let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
 
         let result = stmt.query_row(params![hash.as_str()], |row| {

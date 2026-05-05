@@ -39,7 +39,8 @@ impl PersonaRouter {
 }
 
 async fn set(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<PersonaName>,
     Json(body): Json<SetPersona>,
 ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
@@ -48,33 +49,35 @@ async fn set(
     let request = SetPersona::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(PersonaService::set(&context, &request).await?),
+        Json(PersonaService::set(&scope, &mailbox, &request).await?),
     ))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListPersonas>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
-    Ok(Json(PersonaService::list(&context, &params).await?))
+    Ok(Json(PersonaService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<PersonaName>>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(
-        PersonaService::get(&context, &GetPersona::builder_v1().key(key).build().into()).await?,
+        PersonaService::get(&scope, &GetPersona::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<PersonaName>,
 ) -> Result<Json<PersonaResponse>, PersonaError> {
     Ok(Json(
         PersonaService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemovePersona::builder_v1().name(name).build().into(),
         )
         .await?,

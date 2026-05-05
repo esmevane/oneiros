@@ -16,7 +16,8 @@ impl SensationMcp {
         context: &ProjectLog,
         request: &SensationRequest,
     ) -> Result<McpResponse, ToolError> {
-        sensation_mcp::resource(context, request).await
+        let scope = context.scope().map_err(Error::from)?;
+        sensation_mcp::resource(scope, request).await
     }
 }
 
@@ -24,18 +25,18 @@ mod sensation_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &SensationRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {
             SensationRequest::ListSensations(list) => {
-                let response = SensationService::list(context, list)
+                let response = SensationService::list(scope, list)
                     .await
                     .map_err(Error::from)?;
                 Ok(SensationView::new(response).mcp())
             }
             SensationRequest::GetSensation(get) => {
-                let response = SensationService::get(context, get)
+                let response = SensationService::get(scope, get)
                     .await
                     .map_err(Error::from)?;
                 Ok(SensationView::new(response).mcp())

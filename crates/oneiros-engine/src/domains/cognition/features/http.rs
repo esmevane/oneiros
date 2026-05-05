@@ -36,29 +36,26 @@ impl CognitionRouter {
 }
 
 async fn add(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<AddCognition>,
 ) -> Result<(StatusCode, Json<CognitionResponse>), CognitionError> {
-    let response = CognitionService::add(&context, &body).await?;
+    let response = CognitionService::add(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListCognitions>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
-    Ok(Json(CognitionService::list(&context, &params).await?))
+    Ok(Json(CognitionService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<CognitionId>>,
 ) -> Result<Json<CognitionResponse>, CognitionError> {
     Ok(Json(
-        CognitionService::get(
-            &context,
-            &GetCognition::builder_v1().key(key).build().into(),
-        )
-        .await?,
+        CognitionService::get(&scope, &GetCognition::builder_v1().key(key).build().into()).await?,
     ))
 }

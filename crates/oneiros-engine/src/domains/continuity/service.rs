@@ -23,13 +23,15 @@ pub struct ContinuityService;
 impl ContinuityService {
     /// Emerge — create an agent and immediately activate its continuity.
     pub async fn emerge(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &EmergeAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let EmergeAgent::V1(emerging) = request;
         let created = AgentService::create(
-            context,
+            scope,
+            mailbox,
             &CreateAgent::builder_v1()
                 .name(emerging.name.clone())
                 .persona(emerging.persona.clone())
@@ -46,12 +48,13 @@ impl ContinuityService {
             }
         };
 
-        // Wake activates continuity; then gather the full context for the
-        // response. We pass the agent record we already hold rather than
-        // re-looking-up by name — the lookup race doesn't happen because
-        // the lookup doesn't happen.
+        // Wake activates continuity; then gather the full context for
+        // the response. We pass the agent record we already hold
+        // rather than re-looking-up by name — the lookup race doesn't
+        // happen because the lookup doesn't happen.
         Self::wake(
-            context,
+            scope,
+            mailbox,
             &WakeAgent::builder_v1()
                 .agent(created_agent.name.clone())
                 .build()
@@ -59,7 +62,7 @@ impl ContinuityService {
             overrides,
         )
         .await?;
-        let dream = Self::gather_context_for(context, &created_agent, overrides)?;
+        let dream = Self::gather_context_for(scope, &created_agent, overrides).await?;
         Ok(ContinuityResponse::Emerged(
             EmergedResponse::builder_v1().context(dream).build().into(),
         ))
@@ -67,12 +70,14 @@ impl ContinuityService {
 
     /// Recede — retire an agent, ending its continuity.
     pub async fn recede(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &RecedeAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let RecedeAgent::V1(receding) = request;
         AgentService::remove(
-            context,
+            scope,
+            mailbox,
             &RemoveAgent::builder_v1()
                 .name(receding.agent.clone())
                 .build()
@@ -88,11 +93,11 @@ impl ContinuityService {
     }
 
     /// Status — cross-agent activity overview.
-    pub fn status(
-        context: &ProjectLog,
+    pub async fn status(
+        scope: &Scope<AtBookmark>,
         _request: &StatusAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let db = context.db()?;
+        let db = BookmarkDb::open(scope).await?;
         let agents = AgentStore::new(&db).list()?;
 
         let mut rows = Vec::with_capacity(agents.len());
@@ -163,22 +168,24 @@ impl ContinuityService {
 
     /// Wake — restore an agent's full cognitive context (initial session start).
     pub async fn wake(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &WakeAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let WakeAgent::V1(wake) = request;
-        let dream = Self::gather_context(context, &wake.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &wake.agent, overrides).await?;
 
-        context
-            .emit(ContinuityEvents::Dreamed(
+        let new_event = NewEvent::builder()
+            .data(Events::Continuity(ContinuityEvents::Dreamed(
                 Dreamed::builder_v1()
                     .agent(wake.agent.clone())
                     .created_at(Timestamp::now())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(ContinuityResponse::Waking(
             WakingResponse::builder_v1().context(dream).build().into(),
@@ -187,22 +194,24 @@ impl ContinuityService {
 
     /// Dream — restore an agent's full cognitive context.
     pub async fn dream(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &DreamAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let DreamAgent::V1(dreaming) = request;
-        let dream = Self::gather_context(context, &dreaming.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &dreaming.agent, overrides).await?;
 
-        context
-            .emit(ContinuityEvents::Dreamed(
+        let new_event = NewEvent::builder()
+            .data(Events::Continuity(ContinuityEvents::Dreamed(
                 Dreamed::builder_v1()
                     .agent(dreaming.agent.clone())
                     .created_at(Timestamp::now())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(ContinuityResponse::Dreaming(
             DreamingResponse::builder_v1().context(dream).build().into(),
@@ -211,22 +220,24 @@ impl ContinuityService {
 
     /// Introspect — look inward, consolidate cognitive state.
     pub async fn introspect(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &IntrospectAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let IntrospectAgent::V1(introspecting) = request;
-        let dream = Self::gather_context(context, &introspecting.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &introspecting.agent, overrides).await?;
 
-        context
-            .emit(ContinuityEvents::Introspected(
+        let new_event = NewEvent::builder()
+            .data(Events::Continuity(ContinuityEvents::Introspected(
                 Introspected::builder_v1()
                     .agent(introspecting.agent.clone())
                     .created_at(Timestamp::now())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(ContinuityResponse::Introspecting(
             IntrospectingResponse::builder_v1()
@@ -238,22 +249,24 @@ impl ContinuityService {
 
     /// Reflect — pause on something significant.
     pub async fn reflect(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &ReflectAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let ReflectAgent::V1(reflecting) = request;
-        let dream = Self::gather_context(context, &reflecting.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &reflecting.agent, overrides).await?;
 
-        context
-            .emit(ContinuityEvents::Reflected(
+        let new_event = NewEvent::builder()
+            .data(Events::Continuity(ContinuityEvents::Reflected(
                 Reflected::builder_v1()
                     .agent(reflecting.agent.clone())
                     .created_at(Timestamp::now())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(ContinuityResponse::Reflecting(
             ReflectingResponse::builder_v1()
@@ -265,23 +278,25 @@ impl ContinuityService {
 
     /// Sense — receive and interpret something from outside.
     pub async fn sense(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &SenseContent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let SenseContent::V1(sensing) = request;
-        let dream = Self::gather_context(context, &sensing.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &sensing.agent, overrides).await?;
 
-        context
-            .emit(ContinuityEvents::Sensed(
+        let new_event = NewEvent::builder()
+            .data(Events::Continuity(ContinuityEvents::Sensed(
                 Sensed::builder_v1()
                     .agent(sensing.agent.clone())
                     .content(Content::new(sensing.content.as_str()))
                     .created_at(Timestamp::now())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(ContinuityResponse::Sleeping(
             SleepingResponse::builder_v1().context(dream).build().into(),
@@ -290,22 +305,24 @@ impl ContinuityService {
 
     /// Sleep — end a session, capture continuity.
     pub async fn sleep(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &SleepAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let SleepAgent::V1(sleeping) = request;
-        let dream = Self::gather_context(context, &sleeping.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &sleeping.agent, overrides).await?;
 
-        context
-            .emit(ContinuityEvents::Slept(
+        let new_event = NewEvent::builder()
+            .data(Events::Continuity(ContinuityEvents::Slept(
                 Slept::builder_v1()
                     .agent(sleeping.agent.clone())
                     .created_at(Timestamp::now())
                     .build()
                     .into(),
-            ))
-            .await?;
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
 
         Ok(ContinuityResponse::Sleeping(
             SleepingResponse::builder_v1().context(dream).build().into(),
@@ -317,12 +334,12 @@ impl ContinuityService {
     /// Used to display the agent's full operational context (textures,
     /// sensations, levels, urges) without marking a continuity transition.
     pub async fn guidebook(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GuidebookAgent,
         overrides: &DreamOverrides,
     ) -> Result<ContinuityResponse, ContinuityError> {
         let GuidebookAgent::V1(lookup) = request;
-        let dream = Self::gather_context(context, &lookup.agent, overrides).await?;
+        let dream = Self::gather_context(scope, &lookup.agent, overrides).await?;
         Ok(ContinuityResponse::Guidebook(
             GuidebookResponse::builder_v1()
                 .context(dream)
@@ -338,15 +355,15 @@ impl ContinuityService {
     ///
     /// [`gather_context_for`]: ContinuityService::gather_context_for
     pub async fn gather_context(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
     ) -> Result<DreamContext, ContinuityError> {
-        let agent = AgentRepo::new(context.scope()?)
+        let agent = AgentRepo::new(scope)
             .fetch(agent_name)
             .await?
             .ok_or_else(|| ContinuityError::AgentNotFound(agent_name.clone()))?;
-        Self::gather_context_for(context, &agent, overrides)
+        Self::gather_context_for(scope, &agent, overrides).await
     }
 
     /// Gather the full cognitive context for a known agent.
@@ -357,13 +374,13 @@ impl ContinuityService {
     /// hold an owned Connection.
     ///
     /// [`emerge`]: ContinuityService::emerge
-    pub fn gather_context_for(
-        context: &ProjectLog,
+    pub async fn gather_context_for(
+        scope: &Scope<AtBookmark>,
         agent: &Agent,
         overrides: &DreamOverrides,
     ) -> Result<DreamContext, ContinuityError> {
-        let config = context.config.dream.merge(overrides);
-        let db = context.db()?;
+        let config = scope.config().dream.merge(overrides);
+        let db = BookmarkDb::open(scope).await?;
 
         let persona_name = agent.persona.clone();
         let persona = PersonaStore::new(&db).get(&persona_name)?;

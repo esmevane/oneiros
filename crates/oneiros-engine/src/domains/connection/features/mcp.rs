@@ -10,10 +10,11 @@ impl ConnectionMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
-        connection_mcp::dispatch(context, tool_name, params).await
+        connection_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -48,6 +49,7 @@ mod connection_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -60,7 +62,8 @@ mod connection_mcp {
             ConnectionRequestType::CreateConnection => {
                 let creation: CreateConnection = serde_json::from_value(params.clone())?;
                 let request = ConnectionRequest::CreateConnection(creation.clone());
-                let response = ConnectionService::create(context, &creation)
+                let scope = context.scope().map_err(Error::from)?;
+                let response = ConnectionService::create(scope, mailbox, &creation)
                     .await
                     .map_err(Error::from)?;
                 Ok(ConnectionView::new(response, &request).mcp())
@@ -77,15 +80,14 @@ mod connection_mcp {
         context: &ProjectLog,
         request: &ConnectionRequest,
     ) -> Result<McpResponse, ToolError> {
+        let scope = context.scope().map_err(Error::from)?;
         let response = match request {
-            ConnectionRequest::GetConnection(get) => ConnectionService::get(context, get)
+            ConnectionRequest::GetConnection(get) => ConnectionService::get(scope, get)
                 .await
                 .map_err(Error::from)?,
-            ConnectionRequest::ListConnections(listing) => {
-                ConnectionService::list(context, listing)
-                    .await
-                    .map_err(Error::from)?
-            }
+            ConnectionRequest::ListConnections(listing) => ConnectionService::list(scope, listing)
+                .await
+                .map_err(Error::from)?,
             ConnectionRequest::CreateConnection(_) | ConnectionRequest::RemoveConnection(_) => {
                 return Err(ToolError::NotAResource(
                     "Mutations are tools, not resources".to_string(),

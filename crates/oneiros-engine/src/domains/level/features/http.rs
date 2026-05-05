@@ -39,7 +39,8 @@ impl LevelRouter {
 }
 
 async fn set(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<LevelName>,
     Json(body): Json<SetLevel>,
 ) -> Result<(StatusCode, Json<LevelResponse>), LevelError> {
@@ -48,33 +49,35 @@ async fn set(
     let request = SetLevel::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(LevelService::set(&context, &request).await?),
+        Json(LevelService::set(&scope, &mailbox, &request).await?),
     ))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListLevels>,
 ) -> Result<Json<LevelResponse>, LevelError> {
-    Ok(Json(LevelService::list(&context, &params).await?))
+    Ok(Json(LevelService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<LevelName>>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(
-        LevelService::get(&context, &GetLevel::builder_v1().key(key).build().into()).await?,
+        LevelService::get(&scope, &GetLevel::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<LevelName>,
 ) -> Result<Json<LevelResponse>, LevelError> {
     Ok(Json(
         LevelService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveLevel::builder_v1().name(name).build().into(),
         )
         .await?,

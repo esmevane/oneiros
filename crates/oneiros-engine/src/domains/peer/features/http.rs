@@ -31,31 +31,41 @@ impl PeerRouter {
 }
 
 async fn add(
-    context: HostLog,
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
     Json(body): Json<AddPeer>,
 ) -> Result<(StatusCode, Json<PeerResponse>), PeerError> {
-    let response = PeerService::add(&context, &body).await?;
+    let response = PeerService::add(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Query(params): Query<ListPeers>,
 ) -> Result<Json<PeerResponse>, PeerError> {
-    Ok(Json(PeerService::list(&context, &params).await?))
+    Ok(Json(PeerService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Path(key): Path<ResourceKey<PeerId>>,
 ) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
-        PeerService::get(&context, &GetPeer::builder_v1().key(key).build().into()).await?,
+        PeerService::get(&scope, &GetPeer::builder_v1().key(key).build().into()).await?,
     ))
 }
 
-async fn remove(context: HostLog, Path(id): Path<PeerId>) -> Result<Json<PeerResponse>, PeerError> {
+async fn remove(
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
+    Path(id): Path<PeerId>,
+) -> Result<Json<PeerResponse>, PeerError> {
     Ok(Json(
-        PeerService::remove(&context, &RemovePeer::builder_v1().id(id).build().into()).await?,
+        PeerService::remove(
+            &scope,
+            &mailbox,
+            &RemovePeer::builder_v1().id(id).build().into(),
+        )
+        .await?,
     ))
 }

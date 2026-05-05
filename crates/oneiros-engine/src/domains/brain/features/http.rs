@@ -33,25 +33,26 @@ impl BrainRouter {
 }
 
 async fn create(
-    context: HostLog,
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
     Json(body): Json<CreateBrain>,
 ) -> Result<(StatusCode, Json<BrainResponse>), BrainError> {
-    let response = BrainService::create(&context, &body).await?;
+    let response = BrainService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Query(params): Query<ListBrains>,
 ) -> Result<Json<BrainResponse>, BrainError> {
-    Ok(Json(BrainService::list(&context, &params).await?))
+    Ok(Json(BrainService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Path(key): Path<ResourceKey<BrainName>>,
 ) -> Result<Json<BrainResponse>, BrainError> {
     Ok(Json(
-        BrainService::get(&context, &GetBrain::builder_v1().key(key).build().into()).await?,
+        BrainService::get(&scope, &GetBrain::builder_v1().key(key).build().into()).await?,
     ))
 }

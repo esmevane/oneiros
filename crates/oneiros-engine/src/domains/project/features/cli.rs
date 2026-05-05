@@ -18,12 +18,12 @@ impl ProjectCommands {
                 ProjectClient::new(&client).init(initialization).await?
             }
             ProjectCommands::Export(exporting) => {
-                ProjectService::export(&config.project(), exporting)?
+                let scope = ComposeScope::new(config.clone())
+                    .bookmark(config.brain.clone(), config.bookmark.clone())?;
+                ProjectService::export(&scope, exporting).await?
             }
-            ProjectCommands::Import(importing) => {
-                ProjectService::import(&config.project(), importing)?
-            }
-            ProjectCommands::Replay => ProjectService::replay(&config.project())?,
+            ProjectCommands::Import(importing) => ProjectService::import(config, importing).await?,
+            ProjectCommands::Replay => ProjectService::replay(config).await?,
         };
 
         Ok(ProjectView::new(response).render().map(Into::into))

@@ -33,25 +33,26 @@ impl ActorRouter {
 }
 
 async fn create(
-    context: HostLog,
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
     Json(body): Json<CreateActor>,
 ) -> Result<(StatusCode, Json<ActorResponse>), ActorError> {
-    let response = ActorService::create(&context, &body).await?;
+    let response = ActorService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Query(params): Query<ListActors>,
 ) -> Result<Json<ActorResponse>, ActorError> {
-    Ok(Json(ActorService::list(&context, &params).await?))
+    Ok(Json(ActorService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: HostLog,
+    scope: Scope<AtHost>,
     Path(key): Path<ResourceKey<ActorId>>,
 ) -> Result<Json<ActorResponse>, ActorError> {
     Ok(Json(
-        ActorService::get(&context, &GetActor::builder_v1().key(key).build().into()).await?,
+        ActorService::get(&scope, &GetActor::builder_v1().key(key).build().into()).await?,
     ))
 }

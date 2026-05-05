@@ -51,41 +51,41 @@ struct UpdateSensationBody {
 }
 
 async fn create(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<CreateExperience>,
 ) -> Result<(StatusCode, Json<ExperienceResponse>), ExperienceError> {
-    let response = ExperienceService::create(&context, &body).await?;
+    let response = ExperienceService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListExperiences>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
-    Ok(Json(ExperienceService::list(&context, &params).await?))
+    Ok(Json(ExperienceService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<ExperienceId>>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
-        ExperienceService::get(
-            &context,
-            &GetExperience::builder_v1().key(key).build().into(),
-        )
-        .await?,
+        ExperienceService::get(&scope, &GetExperience::builder_v1().key(key).build().into())
+            .await?,
     ))
 }
 
 async fn update_description(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(id): Path<ExperienceId>,
     Json(body): Json<UpdateDescriptionBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
         ExperienceService::update_description(
-            &context,
+            &scope,
+            &mailbox,
             &UpdateExperienceDescription::builder_v1()
                 .id(id)
                 .description(body.description)
@@ -97,13 +97,15 @@ async fn update_description(
 }
 
 async fn update_sensation(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(id): Path<ExperienceId>,
     Json(body): Json<UpdateSensationBody>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
     Ok(Json(
         ExperienceService::update_sensation(
-            &context,
+            &scope,
+            &mailbox,
             &UpdateExperienceSensation::builder_v1()
                 .id(id)
                 .sensation(body.sensation)

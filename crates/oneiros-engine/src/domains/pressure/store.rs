@@ -184,7 +184,12 @@ impl<'a> PressureStore<'a> {
                 | Events::Experience(_)
                 | Events::Bookmark(_) => return Ok(vec![]),
             },
-            Event::Ephemeral(_) | Event::Unknown(_) | Event::Malformed => return Ok(vec![]),
+            Event::Ephemeral(_)
+            | Event::Unknown(_)
+            | Event::Malformed
+            | Event::New(_)
+            | Event::Stored(_)
+            | Event::Import(_) => return Ok(vec![]),
         };
 
         match agent_name {

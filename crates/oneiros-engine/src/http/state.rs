@@ -15,6 +15,7 @@ pub struct ServerState {
     canons: CanonIndex,
     bridge: Bridge,
     api: Arc<OnceLock<OpenApi>>,
+    mailbox: Mailbox,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -27,18 +28,28 @@ pub enum ServerStateError {
 
 impl ServerState {
     /// Construct a server state with a bound iroh bridge. Loads (or
-    /// generates) the host secret key from disk and binds a `Bridge`.
+    /// generates) the host secret key from disk, binds a `Bridge`, and
+    /// spawns the host actor that consumes the bus.
     pub async fn bind(config: Config) -> Result<Self, ServerStateError> {
         let secret = HostKey::new(&config.data_dir).ensure()?;
         let bridge = Bridge::bind(secret).await?;
 
         let canons = CanonIndex::new();
+        let (mailbox, rx) = Mailbox::open();
+        let _actor = HostActor::spawn(config.clone(), canons.clone(), rx);
+
         Ok(Self {
             config,
             canons,
             bridge,
             api: Arc::new(OnceLock::new()),
+            mailbox,
         })
+    }
+
+    /// The bus mailbox — services dispatch events through this handle.
+    pub fn mailbox(&self) -> &Mailbox {
+        &self.mailbox
     }
 
     /// Install the OpenAPI spec. Called once after the router is assembled.
@@ -87,13 +98,10 @@ impl ServerState {
         &self.config.brain
     }
 
-    /// Build a project context with pre-hydrated pipeline.
-    ///
-    /// Resolves the active bookmark for the brain unless the config
-    /// already has an explicit bookmark override.
-    pub fn project_log(&self, config: Config) -> Result<ProjectLog, EventError> {
-        let entry = self.canons.brain_entry(&config.brain)?;
-        Ok(ProjectLog::with_entry(config, entry))
+    /// Build a project context for a request. Strangler — used by the
+    /// `ProjectLog` extractor for legacy CLI/MCP dispatchers.
+    pub fn project_log(&self, config: Config) -> ProjectLog {
+        ProjectLog::new(config)
     }
 
     /// Build a system context.
@@ -113,6 +121,127 @@ impl FromRequestParts<ServerState> for HostLog {
     }
 }
 
+impl aide::operation::OperationInput for Mailbox {}
+
+impl FromRequestParts<ServerState> for Mailbox {
+    type Rejection = std::convert::Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut Parts,
+        state: &ServerState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(state.mailbox().clone())
+    }
+}
+
+impl aide::operation::OperationInput for Scope<AtHost> {}
+
+impl FromRequestParts<ServerState> for Scope<AtHost> {
+    type Rejection = ScopeExtractError;
+
+    async fn from_request_parts(
+        _parts: &mut Parts,
+        state: &ServerState,
+    ) -> Result<Self, Self::Rejection> {
+        ComposeScope::new(state.config.clone())
+            .host()
+            .map_err(|e| ScopeExtractError::Other(e.to_string()))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ScopeExtractError {
+    #[error("{0}")]
+    Other(String),
+}
+
+impl axum::response::IntoResponse for ScopeExtractError {
+    fn into_response(self) -> axum::response::Response {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            self.to_string(),
+        )
+            .into_response()
+    }
+}
+
+/// Resolve the bookmark-tier capability for a request: validate the
+/// Bearer token against the ticket store, pick the bookmark (active by
+/// default; `X-Bookmark` header / `?bookmark=` query overrides), and
+/// return both the request-shaped `Config` and the composed scope.
+///
+/// Standalone helper — not built on top of `ProjectLog`. Both the new
+/// `Scope<AtBookmark>` extractor and the legacy `ProjectLog` extractor
+/// share this resolution.
+async fn resolve_request(
+    parts: &Parts,
+    state: &ServerState,
+) -> Result<(Config, Scope<AtBookmark>), AuthError> {
+    let token_str = parts
+        .headers
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .ok_or(AuthError::NoAuthHeader)?;
+
+    let token = Token::from(token_str)
+        .decode()
+        .map_err(|_| AuthError::InvalidToken)?;
+
+    let host_scope = ComposeScope::new(state.config.clone())
+        .host()
+        .map_err(|_| AuthError::InvalidToken)?;
+    let ticket = TicketRepo::new(&host_scope)
+        .get_by_token(token_str)
+        .await
+        .map_err(|_| AuthError::InvalidToken)?
+        .ok_or(AuthError::InvalidToken)?;
+
+    if ticket.actor_id != token.actor_id || ticket.brain_id != token.brain_id {
+        return Err(AuthError::InvalidToken);
+    }
+
+    let mut config = state.config.clone();
+    config.brain = ticket.brain_name.clone();
+    config.bookmark = state
+        .canons()
+        .active_bookmark(&ticket.brain_name)
+        .unwrap_or_else(|_| BookmarkName::main());
+
+    if let Some(bookmark) = parts
+        .headers
+        .get("x-bookmark")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| {
+            parts
+                .uri
+                .query()
+                .and_then(|q| q.split('&').find_map(|pair| pair.strip_prefix("bookmark=")))
+        })
+    {
+        config.bookmark = BookmarkName::new(bookmark);
+    }
+
+    let scope = ComposeScope::new(config.clone())
+        .bookmark(config.brain.clone(), config.bookmark.clone())
+        .map_err(|_| AuthError::InvalidToken)?;
+    Ok((config, scope))
+}
+
+impl aide::operation::OperationInput for Scope<AtBookmark> {}
+
+impl FromRequestParts<ServerState> for Scope<AtBookmark> {
+    type Rejection = AuthError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &ServerState,
+    ) -> Result<Self, Self::Rejection> {
+        let (_config, scope) = resolve_request(parts, state).await?;
+        Ok(scope)
+    }
+}
+
 impl FromRequestParts<ServerState> for ProjectLog {
     type Rejection = AuthError;
 
@@ -120,64 +249,7 @@ impl FromRequestParts<ServerState> for ProjectLog {
         parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        let token_str = parts
-            .headers
-            .get("authorization")
-            .and_then(|value| value.to_str().ok())
-            .and_then(|value| value.strip_prefix("Bearer "))
-            .ok_or(AuthError::NoAuthHeader)?;
-
-        // Decode claims from the self-describing token
-        let token = Token::from(token_str)
-            .decode()
-            .map_err(|_| AuthError::InvalidToken)?;
-
-        // Revocation check — verify the ticket still exists in the DB
-        let scope = ComposeScope::new(state.config.clone())
-            .host()
-            .map_err(|_| AuthError::InvalidToken)?;
-        let ticket = TicketRepo::new(&scope)
-            .get_by_token(token_str)
-            .await
-            .map_err(|_| AuthError::InvalidToken)?
-            .ok_or(AuthError::InvalidToken)?;
-
-        match (
-            ticket.actor_id == token.actor_id,
-            ticket.brain_id == token.brain_id,
-            true, // ticket.tenant_id == token.tenant_id,
-        ) {
-            (true, true, true) => {}
-            _ => return Err(AuthError::InvalidToken),
-        }
-
-        // Assemble ProjectLog for this request
-        let mut config = state.config.clone();
-        config.brain = ticket.brain_name.clone();
-
-        // Default to the active bookmark for this brain.
-        config.bookmark = state
-            .canons()
-            .active_bookmark(&ticket.brain_name)
-            .unwrap_or_else(|_| BookmarkName::main());
-
-        // Override with explicit X-Bookmark header or ?bookmark= query param.
-        if let Some(bookmark) = parts
-            .headers
-            .get("x-bookmark")
-            .and_then(|v| v.to_str().ok())
-            .or_else(|| {
-                parts
-                    .uri
-                    .query()
-                    .and_then(|q| q.split('&').find_map(|pair| pair.strip_prefix("bookmark=")))
-            })
-        {
-            config.bookmark = BookmarkName::new(bookmark);
-        }
-
-        state
-            .project_log(config)
-            .map_err(|_| AuthError::InvalidToken)
+        let (config, _scope) = resolve_request(parts, state).await?;
+        Ok(state.project_log(config))
     }
 }

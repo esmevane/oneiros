@@ -16,7 +16,8 @@ impl UrgeMcp {
         context: &ProjectLog,
         request: &UrgeRequest,
     ) -> Result<McpResponse, ToolError> {
-        urge_mcp::resource(context, request).await
+        let scope = context.scope().map_err(Error::from)?;
+        urge_mcp::resource(scope, request).await
     }
 }
 
@@ -24,18 +25,16 @@ mod urge_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &UrgeRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {
             UrgeRequest::ListUrges(list) => {
-                let response = UrgeService::list(context, list)
-                    .await
-                    .map_err(Error::from)?;
+                let response = UrgeService::list(scope, list).await.map_err(Error::from)?;
                 Ok(UrgeView::new(response).mcp())
             }
             UrgeRequest::GetUrge(get) => {
-                let response = UrgeService::get(context, get).await.map_err(Error::from)?;
+                let response = UrgeService::get(scope, get).await.map_err(Error::from)?;
                 Ok(UrgeView::new(response).mcp())
             }
             UrgeRequest::SetUrge(_) | UrgeRequest::RemoveUrge(_) => Err(ToolError::NotAResource(

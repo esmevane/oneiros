@@ -10,10 +10,11 @@ impl CognitionMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
-        cognition_mcp::dispatch(context, tool_name, params).await
+        cognition_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -44,6 +45,7 @@ mod cognition_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -56,7 +58,8 @@ mod cognition_mcp {
             CognitionRequestType::AddCognition => {
                 let addition: AddCognition = serde_json::from_value(params.clone())?;
                 let request = CognitionRequest::AddCognition(addition.clone());
-                let response = CognitionService::add(context, &addition)
+                let scope = context.scope().map_err(Error::from)?;
+                let response = CognitionService::add(scope, mailbox, &addition)
                     .await
                     .map_err(Error::from)?;
                 Ok(CognitionView::new(response, &request).mcp())
@@ -71,11 +74,12 @@ mod cognition_mcp {
         context: &ProjectLog,
         request: &CognitionRequest,
     ) -> Result<McpResponse, ToolError> {
+        let scope = context.scope().map_err(Error::from)?;
         let response = match request {
-            CognitionRequest::GetCognition(get) => CognitionService::get(context, get)
+            CognitionRequest::GetCognition(get) => CognitionService::get(scope, get)
                 .await
                 .map_err(Error::from)?,
-            CognitionRequest::ListCognitions(listing) => CognitionService::list(context, listing)
+            CognitionRequest::ListCognitions(listing) => CognitionService::list(scope, listing)
                 .await
                 .map_err(Error::from)?,
             CognitionRequest::AddCognition(_) => {

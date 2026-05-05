@@ -16,7 +16,8 @@ impl LevelMcp {
         context: &ProjectLog,
         request: &LevelRequest,
     ) -> Result<McpResponse, ToolError> {
-        level_mcp::resource(context, request).await
+        let scope = context.scope().map_err(Error::from)?;
+        level_mcp::resource(scope, request).await
     }
 }
 
@@ -24,18 +25,16 @@ mod level_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &LevelRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {
             LevelRequest::ListLevels(list) => {
-                let response = LevelService::list(context, list)
-                    .await
-                    .map_err(Error::from)?;
+                let response = LevelService::list(scope, list).await.map_err(Error::from)?;
                 Ok(LevelView::new(response).mcp())
             }
             LevelRequest::GetLevel(get) => {
-                let response = LevelService::get(context, get).await.map_err(Error::from)?;
+                let response = LevelService::get(scope, get).await.map_err(Error::from)?;
                 Ok(LevelView::new(response).mcp())
             }
             LevelRequest::SetLevel(_) | LevelRequest::RemoveLevel(_) => Err(

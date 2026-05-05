@@ -10,10 +10,11 @@ impl AgentMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
-        agent_mcp::dispatch(context, tool_name, params).await
+        agent_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -82,6 +83,7 @@ mod agent_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -90,24 +92,26 @@ mod agent_mcp {
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
+        let scope = context.scope().map_err(Error::from)?;
+
         match request_type {
             AgentRequestType::CreateAgent => {
                 let response =
-                    AgentService::create(context, &serde_json::from_value(params.clone())?)
+                    AgentService::create(scope, mailbox, &serde_json::from_value(params.clone())?)
                         .await
                         .map_err(Error::from)?;
                 Ok(AgentView::new(response).mcp())
             }
             AgentRequestType::UpdateAgent => {
                 let response =
-                    AgentService::update(context, &serde_json::from_value(params.clone())?)
+                    AgentService::update(scope, mailbox, &serde_json::from_value(params.clone())?)
                         .await
                         .map_err(Error::from)?;
                 Ok(AgentView::new(response).mcp())
             }
             AgentRequestType::RemoveAgent => {
                 let response =
-                    AgentService::remove(context, &serde_json::from_value(params.clone())?)
+                    AgentService::remove(scope, mailbox, &serde_json::from_value(params.clone())?)
                         .await
                         .map_err(Error::from)?;
                 Ok(AgentView::new(response).mcp())
@@ -122,9 +126,10 @@ mod agent_mcp {
         context: &ProjectLog,
         request: &AgentRequest,
     ) -> Result<McpResponse, ToolError> {
+        let scope = context.scope().map_err(Error::from)?;
         match request {
             AgentRequest::GetAgent(get) => {
-                let response = AgentService::get(context, get).await.map_err(Error::from)?;
+                let response = AgentService::get(scope, get).await.map_err(Error::from)?;
                 match &response {
                     AgentResponse::NoAgents => {
                         Err(ToolError::NotFound("Agent not found".to_string()))
@@ -133,7 +138,7 @@ mod agent_mcp {
                 }
             }
             AgentRequest::ListAgents(listing) => {
-                let response = AgentService::list(context, listing)
+                let response = AgentService::list(scope, listing)
                     .await
                     .map_err(Error::from)?;
                 Ok(AgentView::new(response).mcp())
@@ -150,8 +155,9 @@ mod agent_mcp {
         context: &ProjectLog,
         name: &AgentName,
     ) -> Result<McpResponse, ToolError> {
+        let scope = context.scope().map_err(Error::from)?;
         let agent = AgentService::get(
-            context,
+            scope,
             &GetAgent::builder_v1()
                 .key(ResourceKey::Key(name.clone()))
                 .build()

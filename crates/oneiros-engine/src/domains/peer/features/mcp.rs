@@ -10,10 +10,11 @@ impl PeerTools {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        peer_mcp::dispatch(context, tool_name, params).await
+        peer_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 }
 
@@ -35,6 +36,7 @@ mod peer_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -45,20 +47,19 @@ mod peer_mcp {
         let scope = ComposeScope::new(context.config.clone())
             .host()
             .map_err(Error::from)?;
-        let system = scope.host_log();
 
         let value = match request_type {
             PeerRequestType::AddPeer => {
-                PeerService::add(&system, &serde_json::from_str(params)?).await
+                PeerService::add(&scope, mailbox, &serde_json::from_str(params)?).await
             }
             PeerRequestType::GetPeer => {
-                PeerService::get(&system, &serde_json::from_str(params)?).await
+                PeerService::get(&scope, &serde_json::from_str(params)?).await
             }
             PeerRequestType::ListPeers => {
-                PeerService::list(&system, &serde_json::from_str(params)?).await
+                PeerService::list(&scope, &serde_json::from_str(params)?).await
             }
             PeerRequestType::RemovePeer => {
-                PeerService::remove(&system, &serde_json::from_str(params)?).await
+                PeerService::remove(&scope, mailbox, &serde_json::from_str(params)?).await
             }
         }
         .map_err(Error::from)?;

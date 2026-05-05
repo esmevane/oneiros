@@ -81,22 +81,25 @@ impl ContinuityRouter {
 }
 
 async fn emerge(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<EmergeAgent>,
 ) -> Result<(StatusCode, Json<ContinuityResponse>), ContinuityError> {
     Ok((
         StatusCode::CREATED,
-        Json(ContinuityService::emerge(&context, &body, &DreamOverrides::default()).await?),
+        Json(ContinuityService::emerge(&scope, &mailbox, &body, &DreamOverrides::default()).await?),
     ))
 }
 
 async fn recede(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::recede(
-            &context,
+            &scope,
+            &mailbox,
             &RecedeAgent::builder_v1().agent(agent).build().into(),
         )
         .await?,
@@ -104,20 +107,22 @@ async fn recede(
 }
 
 async fn status(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<StatusAgent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
-    Ok(Json(ContinuityService::status(&context, &params)?))
+    Ok(Json(ContinuityService::status(&scope, &params).await?))
 }
 
 async fn wake(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::wake(
-            &context,
+            &scope,
+            &mailbox,
             &WakeAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
@@ -126,13 +131,15 @@ async fn wake(
 }
 
 async fn dream(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::dream(
-            &context,
+            &scope,
+            &mailbox,
             &DreamAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
@@ -141,13 +148,15 @@ async fn dream(
 }
 
 async fn introspect(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::introspect(
-            &context,
+            &scope,
+            &mailbox,
             &IntrospectAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
@@ -156,13 +165,15 @@ async fn introspect(
 }
 
 async fn reflect(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::reflect(
-            &context,
+            &scope,
+            &mailbox,
             &ReflectAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
@@ -171,7 +182,8 @@ async fn reflect(
 }
 
 async fn sense(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
     Json(body): Json<SenseContent>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
@@ -182,18 +194,20 @@ async fn sense(
         .build()
         .into();
     Ok(Json(
-        ContinuityService::sense(&context, &request, &DreamOverrides::default()).await?,
+        ContinuityService::sense(&scope, &mailbox, &request, &DreamOverrides::default()).await?,
     ))
 }
 
 async fn sleep(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::sleep(
-            &context,
+            &scope,
+            &mailbox,
             &SleepAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )
@@ -202,13 +216,13 @@ async fn sleep(
 }
 
 async fn guidebook(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(agent): Path<AgentName>,
     Query(overrides): Query<DreamOverrides>,
 ) -> Result<Json<ContinuityResponse>, ContinuityError> {
     Ok(Json(
         ContinuityService::guidebook(
-            &context,
+            &scope,
             &GuidebookAgent::builder_v1().agent(agent).build().into(),
             &overrides,
         )

@@ -16,7 +16,8 @@ impl TextureMcp {
         context: &ProjectLog,
         request: &TextureRequest,
     ) -> Result<McpResponse, ToolError> {
-        texture_mcp::resource(context, request).await
+        let scope = context.scope().map_err(Error::from)?;
+        texture_mcp::resource(scope, request).await
     }
 }
 
@@ -24,20 +25,18 @@ mod texture_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &TextureRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {
             TextureRequest::ListTextures(list) => {
-                let response = TextureService::list(context, list)
+                let response = TextureService::list(scope, list)
                     .await
                     .map_err(Error::from)?;
                 Ok(TextureView::new(response).mcp())
             }
             TextureRequest::GetTexture(get) => {
-                let response = TextureService::get(context, get)
-                    .await
-                    .map_err(Error::from)?;
+                let response = TextureService::get(scope, get).await.map_err(Error::from)?;
                 Ok(TextureView::new(response).mcp())
             }
             TextureRequest::SetTexture(_) | TextureRequest::RemoveTexture(_) => Err(

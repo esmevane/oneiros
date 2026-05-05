@@ -16,7 +16,8 @@ impl ContinuityMcp {
         context: &ProjectLog,
         request: &ContinuityRequest,
     ) -> Result<McpResponse, ToolError> {
-        continuity_mcp::resource(context, request).await
+        let scope = context.scope().map_err(Error::from)?;
+        continuity_mcp::resource(scope, request).await
     }
 }
 
@@ -24,12 +25,14 @@ mod continuity_mcp {
     use crate::*;
 
     pub async fn resource(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ContinuityRequest,
     ) -> Result<McpResponse, ToolError> {
         match request {
             ContinuityRequest::StatusAgent(status) => {
-                let response = ContinuityService::status(context, status).map_err(Error::from)?;
+                let response = ContinuityService::status(scope, status)
+                    .await
+                    .map_err(Error::from)?;
                 Ok(ContinuityView::new(response).mcp())
             }
             _ => Err(ToolError::NotAResource(

@@ -39,7 +39,8 @@ impl NatureRouter {
 }
 
 async fn set(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<NatureName>,
     Json(body): Json<SetNature>,
 ) -> Result<(StatusCode, Json<NatureResponse>), NatureError> {
@@ -48,33 +49,35 @@ async fn set(
     let request = SetNature::V1(setting);
     Ok((
         StatusCode::OK,
-        Json(NatureService::set(&context, &request).await?),
+        Json(NatureService::set(&scope, &mailbox, &request).await?),
     ))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListNatures>,
 ) -> Result<Json<NatureResponse>, NatureError> {
-    Ok(Json(NatureService::list(&context, &params).await?))
+    Ok(Json(NatureService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(key): Path<ResourceKey<NatureName>>,
 ) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(
-        NatureService::get(&context, &GetNature::builder_v1().key(key).build().into()).await?,
+        NatureService::get(&scope, &GetNature::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(name): Path<NatureName>,
 ) -> Result<Json<NatureResponse>, NatureError> {
     Ok(Json(
         NatureService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveNature::builder_v1().name(name).build().into(),
         )
         .await?,

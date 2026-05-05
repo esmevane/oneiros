@@ -4,7 +4,8 @@ pub struct NatureService;
 
 impl NatureService {
     pub async fn set(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &SetNature,
     ) -> Result<NatureResponse, NatureError> {
         let SetNature::V1(set) = request;
@@ -13,31 +14,35 @@ impl NatureService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
+        let name = nature.name.clone();
 
-        context
-            .emit(NatureEvents::NatureSet(
-                NatureSet::builder_v1()
-                    .nature(nature.clone())
-                    .build()
-                    .into(),
-            ))
-            .await?;
+        let new_event = NewEvent::builder()
+            .data(Events::Nature(NatureEvents::NatureSet(
+                NatureSet::builder_v1().nature(nature).build().into(),
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        let projected = NatureRepo::new(scope)
+            .fetch(&name)
+            .await?
+            .ok_or(NatureError::NotFound(name))?;
 
         Ok(NatureResponse::NatureSet(
             NatureSetResponse::builder_v1()
-                .nature(nature)
+                .nature(projected)
                 .build()
                 .into(),
         ))
     }
 
     pub async fn get(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
         let GetNature::V1(lookup) = request;
         let name = lookup.key.resolve()?;
-        let nature = NatureRepo::new(context.scope()?)
+        let nature = NatureRepo::new(scope)
             .fetch(&name)
             .await?
             .ok_or(NatureError::NotFound(name))?;
@@ -50,13 +55,11 @@ impl NatureService {
     }
 
     pub async fn list(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
         request: &ListNatures,
     ) -> Result<NatureResponse, NatureError> {
         let ListNatures::V1(listing) = request;
-        let listed = NatureRepo::new(context.scope()?)
-            .list(&listing.filters)
-            .await?;
+        let listed = NatureRepo::new(scope).list(&listing.filters).await?;
         if listed.total == 0 {
             Ok(NatureResponse::NoNatures)
         } else {
@@ -71,21 +74,32 @@ impl NatureService {
     }
 
     pub async fn remove(
-        context: &ProjectLog,
+        scope: &Scope<AtBookmark>,
+        mailbox: &Mailbox,
         request: &RemoveNature,
     ) -> Result<NatureResponse, NatureError> {
         let RemoveNature::V1(removal) = request;
-        context
-            .emit(NatureEvents::NatureRemoved(
+        let name = removal.name.clone();
+
+        let new_event = NewEvent::builder()
+            .data(Events::Nature(NatureEvents::NatureRemoved(
                 NatureRemoved::builder_v1()
-                    .name(removal.name.clone())
+                    .name(name.clone())
                     .build()
                     .into(),
-            ))
+            )))
+            .build();
+        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        scope
+            .config()
+            .fetch
+            .until_absent(|| async { NatureRepo::new(scope).get(&name).await })
             .await?;
+
         Ok(NatureResponse::NatureRemoved(
             NatureRemovedResponse::builder_v1()
-                .name(removal.name.clone())
+                .name(name)
                 .build()
                 .into(),
         ))

@@ -39,22 +39,23 @@ impl StorageRouter {
 }
 
 async fn upload(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Json(body): Json<UploadStorage>,
 ) -> Result<(StatusCode, Json<StorageResponse>), StorageError> {
-    let response = StorageService::upload(&context, &body).await?;
+    let response = StorageService::upload(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 async fn list(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Query(params): Query<ListStorage>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    Ok(Json(StorageService::list(&context, &params).await?))
+    Ok(Json(StorageService::list(&scope, &params).await?))
 }
 
 async fn show(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
     Path(ref_key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     let key = if ref_key.starts_with("ref:") {
@@ -64,19 +65,21 @@ async fn show(
         ResourceKey::Key(storage_ref.decode().map_err(|_| StorageError::InvalidRef)?)
     };
     Ok(Json(
-        StorageService::show(&context, &GetStorage::builder_v1().key(key).build().into()).await?,
+        StorageService::show(&scope, &GetStorage::builder_v1().key(key).build().into()).await?,
     ))
 }
 
 async fn remove(
-    context: ProjectLog,
+    scope: Scope<AtBookmark>,
+    mailbox: Mailbox,
     Path(ref_key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
     let storage_ref = StorageRef(ref_key);
     let key = storage_ref.decode().map_err(|_| StorageError::InvalidRef)?;
     Ok(Json(
         StorageService::remove(
-            &context,
+            &scope,
+            &mailbox,
             &RemoveStorage::builder_v1().key(key).build().into(),
         )
         .await?,

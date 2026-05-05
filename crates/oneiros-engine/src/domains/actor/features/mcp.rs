@@ -10,10 +10,11 @@ impl ActorMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
-        actor_mcp::dispatch(context, tool_name, params).await
+        actor_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 }
 
@@ -39,6 +40,7 @@ mod actor_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &str,
         params: &str,
     ) -> Result<serde_json::Value, ToolError> {
@@ -49,17 +51,16 @@ mod actor_mcp {
         let scope = ComposeScope::new(context.config.clone())
             .host()
             .map_err(Error::from)?;
-        let system = scope.host_log();
 
         let value = match request_type {
             ActorRequestType::CreateActor => {
-                ActorService::create(&system, &serde_json::from_str(params)?).await
+                ActorService::create(&scope, mailbox, &serde_json::from_str(params)?).await
             }
             ActorRequestType::GetActor => {
-                ActorService::get(&system, &serde_json::from_str(params)?).await
+                ActorService::get(&scope, &serde_json::from_str(params)?).await
             }
             ActorRequestType::ListActors => {
-                ActorService::list(&system, &serde_json::from_str(params)?).await
+                ActorService::list(&scope, &serde_json::from_str(params)?).await
             }
         }
         .map_err(Error::from)?;

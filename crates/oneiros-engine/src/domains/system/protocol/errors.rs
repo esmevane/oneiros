@@ -32,6 +32,12 @@ pub enum SystemError {
 
     #[error(transparent)]
     Client(#[from] ClientError),
+
+    #[error(transparent)]
+    HostDb(#[from] HostDbError),
+
+    #[error("Unexpected service response: {0}")]
+    UnexpectedResponse(String),
 }
 
 resource_op_error!(SystemError);
@@ -47,7 +53,11 @@ impl IntoResponse for SystemError {
             | SystemError::Io(_)
             | SystemError::HostKey(_)
             | SystemError::Upcast(_)
-            | SystemError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | SystemError::Compose(_)
+            | SystemError::HostDb(_)
+            | SystemError::UnexpectedResponse(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
             SystemError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()

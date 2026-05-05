@@ -10,10 +10,11 @@ impl MemoryMcp {
     pub async fn dispatch(
         &self,
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
-        memory_mcp::dispatch(context, tool_name, params).await
+        memory_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
     pub fn resources(&self) -> Vec<ResourceDef> {
@@ -48,6 +49,7 @@ mod memory_mcp {
 
     pub async fn dispatch(
         context: &ProjectLog,
+        mailbox: &Mailbox,
         tool_name: &ToolName,
         params: &serde_json::Value,
     ) -> Result<McpResponse, ToolError> {
@@ -60,7 +62,8 @@ mod memory_mcp {
             MemoryRequestType::AddMemory => {
                 let addition: AddMemory = serde_json::from_value(params.clone())?;
                 let request = MemoryRequest::AddMemory(addition.clone());
-                let response = MemoryService::add(context, &addition)
+                let scope = context.scope().map_err(Error::from)?;
+                let response = MemoryService::add(scope, mailbox, &addition)
                     .await
                     .map_err(Error::from)?;
                 Ok(MemoryView::new(response, &request).mcp())
@@ -75,11 +78,12 @@ mod memory_mcp {
         context: &ProjectLog,
         request: &MemoryRequest,
     ) -> Result<McpResponse, ToolError> {
+        let scope = context.scope().map_err(Error::from)?;
         let response = match request {
-            MemoryRequest::GetMemory(get) => MemoryService::get(context, get)
-                .await
-                .map_err(Error::from)?,
-            MemoryRequest::ListMemories(listing) => MemoryService::list(context, listing)
+            MemoryRequest::GetMemory(get) => {
+                MemoryService::get(scope, get).await.map_err(Error::from)?
+            }
+            MemoryRequest::ListMemories(listing) => MemoryService::list(scope, listing)
                 .await
                 .map_err(Error::from)?,
             MemoryRequest::AddMemory(_) => {
