@@ -1,3 +1,4 @@
+mod actors;
 mod client;
 mod docs;
 mod features;
@@ -8,6 +9,7 @@ mod service;
 mod store;
 mod view;
 
+pub use actors::*;
 pub use client::*;
 pub use docs::*;
 pub use features::*;

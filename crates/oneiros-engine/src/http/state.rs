@@ -35,8 +35,7 @@ impl ServerState {
         let bridge = Bridge::bind(secret).await?;
 
         let canons = CanonIndex::new();
-        let (mailbox, rx) = Mailbox::open();
-        let _actor = HostActor::spawn(config.clone(), canons.clone(), rx);
+        let mailbox = Mailbox::spawn(canons.clone());
 
         Ok(Self {
             config,

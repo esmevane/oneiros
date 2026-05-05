@@ -69,7 +69,13 @@ impl TicketService {
                 TicketIssued::builder_v1().ticket(ticket).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = TicketRepo::new(scope)
             .fetch(&id)

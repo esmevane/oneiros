@@ -33,7 +33,13 @@ impl FollowService {
                 event.into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(follow)
     }
@@ -82,7 +88,14 @@ impl FollowService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
+
         Ok(())
     }
 
@@ -108,7 +121,13 @@ impl FollowService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(())
     }

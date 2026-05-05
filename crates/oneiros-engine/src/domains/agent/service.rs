@@ -39,7 +39,13 @@ impl AgentService {
                 AgentCreated::builder_v1().agent(agent).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = AgentRepo::new(scope)
             .fetch(&normalized_name)
@@ -149,7 +155,13 @@ impl AgentService {
                 AgentUpdated::builder_v1().agent(agent).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         // Read back the updated record. Filter on the fields we just
         // changed so fetch keeps polling until the projection reflects
@@ -196,7 +208,13 @@ impl AgentService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         scope
             .config()

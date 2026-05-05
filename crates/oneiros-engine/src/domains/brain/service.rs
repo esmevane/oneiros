@@ -23,7 +23,13 @@ impl BrainService {
                 BrainCreated::builder_v1().brain(brain).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = BrainRepo::new(scope)
             .fetch(&name)

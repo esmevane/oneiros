@@ -557,33 +557,33 @@ async fn experience_update_prompt() -> TestResult {
 // Lifecycle
 #[tokio::test]
 async fn lifecycle_wake() -> TestResult {
-    cases::lifecycle::wake::<EngineBackend>().await
+    cases::continuity::wake::<EngineBackend>().await
 }
 #[tokio::test]
 async fn lifecycle_dream() -> TestResult {
-    cases::lifecycle::dream::<EngineBackend>().await
+    cases::continuity::dream::<EngineBackend>().await
 }
 #[tokio::test]
 async fn lifecycle_introspect() -> TestResult {
-    cases::lifecycle::introspect::<EngineBackend>().await
+    cases::continuity::introspect::<EngineBackend>().await
 }
 #[tokio::test]
 async fn lifecycle_reflect() -> TestResult {
-    cases::lifecycle::reflect::<EngineBackend>().await
+    cases::continuity::reflect::<EngineBackend>().await
 }
 #[tokio::test]
 async fn lifecycle_sleep() -> TestResult {
-    cases::lifecycle::sleep::<EngineBackend>().await
+    cases::continuity::sleep::<EngineBackend>().await
 }
 #[tokio::test]
 async fn lifecycle_guidebook() -> TestResult {
-    cases::lifecycle::guidebook::<EngineBackend>().await
+    cases::continuity::guidebook::<EngineBackend>().await
 }
 
 // Lifecycle depth
 #[tokio::test]
 async fn dream_includes_vocabulary_and_connections() -> TestResult {
-    cases::lifecycle::dream_includes_vocabulary_and_connections::<EngineBackend>().await
+    cases::continuity::dream_includes_vocabulary_and_connections::<EngineBackend>().await
 }
 
 // Emerge / Recede
@@ -949,53 +949,53 @@ async fn urge_remove_prompt() -> TestResult {
 // Greeting rendering
 #[tokio::test]
 async fn prompt_dream_omits_vocabulary() -> TestResult {
-    cases::lifecycle::dream_prompt_omits_vocabulary::<EngineBackend>().await
+    cases::continuity::dream_prompt_omits_vocabulary::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_omits_non_core_memories() -> TestResult {
-    cases::lifecycle::dream_prompt_omits_non_core_memories::<EngineBackend>().await
+    cases::continuity::dream_prompt_omits_non_core_memories::<EngineBackend>().await
 }
 
 // Prompt output — lifecycle
 #[tokio::test]
 async fn prompt_dream_contains_identity() -> TestResult {
-    cases::lifecycle::dream_prompt_contains_identity::<EngineBackend>().await
+    cases::continuity::dream_prompt_contains_identity::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_continuity() -> TestResult {
-    cases::lifecycle::dream_prompt_contains_continuity::<EngineBackend>().await
+    cases::continuity::dream_prompt_contains_continuity::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_memories() -> TestResult {
-    cases::lifecycle::dream_prompt_contains_memories::<EngineBackend>().await
+    cases::continuity::dream_prompt_contains_memories::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_dream_contains_cognitions() -> TestResult {
-    cases::lifecycle::dream_prompt_contains_cognitions::<EngineBackend>().await
+    cases::continuity::dream_prompt_contains_cognitions::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_introspect_contains_agent() -> TestResult {
-    cases::lifecycle::introspect_prompt_contains_agent::<EngineBackend>().await
+    cases::continuity::introspect_prompt_contains_agent::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_reflect_contains_agent() -> TestResult {
-    cases::lifecycle::reflect_prompt_contains_agent::<EngineBackend>().await
+    cases::continuity::reflect_prompt_contains_agent::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_guidebook_contains_capabilities() -> TestResult {
-    cases::lifecycle::guidebook_prompt_contains_capabilities::<EngineBackend>().await
+    cases::continuity::guidebook_prompt_contains_capabilities::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_wake_contains_identity() -> TestResult {
-    cases::lifecycle::wake_prompt_contains_identity::<EngineBackend>().await
+    cases::continuity::wake_prompt_contains_identity::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_sleep_contains_agent() -> TestResult {
-    cases::lifecycle::sleep_prompt_contains_agent::<EngineBackend>().await
+    cases::continuity::sleep_prompt_contains_agent::<EngineBackend>().await
 }
 #[tokio::test]
 async fn prompt_sense_contains_agent() -> TestResult {
-    cases::lifecycle::sense_prompt_contains_agent::<EngineBackend>().await
+    cases::continuity::sense_prompt_contains_agent::<EngineBackend>().await
 }
 
 // Prompt output — emerge/recede

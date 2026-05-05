@@ -26,7 +26,13 @@ impl MemoryService {
                 MemoryAdded::builder_v1().memory(memory).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = MemoryRepo::new(scope)
             .fetch(&id)

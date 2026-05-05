@@ -58,7 +58,13 @@ impl PeerService {
         let new_event = NewEvent::builder()
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(PeerResponse::Added(PeerAddedResponse::V1(
             peer_to_added_v1(peer),
@@ -127,7 +133,13 @@ impl PeerService {
         let new_event = NewEvent::builder()
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(peer)
     }
@@ -148,7 +160,13 @@ impl PeerService {
                 PeerRemoved::builder_v1().id(existing.id).build().into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(PeerResponse::Removed(
             PeerRemovedResponse::builder_v1()

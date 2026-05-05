@@ -29,7 +29,13 @@ impl ExperienceService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let stored = ExperienceRepo::new(scope)
             .fetch(&id)
@@ -135,7 +141,13 @@ impl ExperienceService {
                 ),
             ))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         // Read back the updated record. Fetch polls until the projection
         // reflects the new description.
@@ -181,7 +193,13 @@ impl ExperienceService {
                 ),
             ))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(ProjectMessage::from(
+            AppendProjectLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         let updated = scope
             .config()

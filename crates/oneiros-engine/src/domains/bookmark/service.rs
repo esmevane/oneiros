@@ -31,7 +31,12 @@ impl BookmarkService {
                     .into(),
             )))
             .build();
-        state.mailbox().tell(Message::new(scope, new_event));
+        state.mailbox().tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope)
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(BookmarkResponse::Forked(
             BookmarkForkedResponse::builder_v1()
@@ -62,7 +67,12 @@ impl BookmarkService {
                 event.into(),
             )))
             .build();
-        state.mailbox().tell(Message::new(scope, new_event));
+        state.mailbox().tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope)
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(BookmarkResponse::Switched(
             BookmarkSwitchedResponse::builder_v1()
@@ -97,7 +107,12 @@ impl BookmarkService {
                 event.into(),
             )))
             .build();
-        state.mailbox().tell(Message::new(scope, new_event));
+        state.mailbox().tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope)
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(BookmarkResponse::Merged(
             BookmarkMergedResponse::builder_v1()
@@ -192,7 +207,12 @@ impl BookmarkService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope, new_event));
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope)
+                .event(new_event)
+                .build(),
+        ));
 
         Ok(BookmarkResponse::Shared(BookmarkShareResult {
             ticket,
@@ -238,7 +258,13 @@ impl BookmarkService {
                     .into(),
             )))
             .build();
-        mailbox.tell(Message::new(scope.clone(), new_event));
+
+        mailbox.tell(SystemMessage::from(
+            AppendSystemLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
 
         state.canons().fork_brain(brain, name)?;
 
@@ -351,7 +377,7 @@ impl BookmarkService {
             let events = bridge
                 .fetch_events(&peer_link.host, &fetch_request)
                 .await
-                .map_err(|e: BridgeError| BookmarkError::InvalidUri(e.to_string()))?;
+                .map_err(|error: BridgeError| BookmarkError::InvalidUri(error.to_string()))?;
 
             let bookmark_scope = ComposeScope::new(state.config().clone())
                 .bookmark(brain.clone(), follow.bookmark.clone())?;
@@ -363,11 +389,12 @@ impl BookmarkService {
                 events.iter().map(|event| event.id.to_string()).collect();
 
             for event in events {
-                let import_message = Message {
-                    scope: bookmark_scope.clone(),
-                    event: Event::Import(Box::new(event)),
-                };
-                mailbox.tell_import(import_message);
+                mailbox.tell(ProjectMessage::from(
+                    ImportProjectEvent::builder()
+                        .scope(bookmark_scope.clone())
+                        .stored(event)
+                        .build(),
+                ));
             }
 
             // Wait for every imported event id to appear in the
