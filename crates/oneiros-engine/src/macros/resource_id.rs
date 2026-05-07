@@ -19,6 +19,7 @@ macro_rules! resource_id {
                 Self(crate::Id::new())
             }
 
+            #[allow(dead_code)]
             pub(crate) fn is_empty(&self) -> bool {
                 self.0.is_empty()
             }

@@ -180,6 +180,7 @@ macro_rules! versioned {
             )*
 
             impl $name {
+                #[allow(dead_code)]
                 pub(crate) fn current(
                     &self,
                 ) -> ::std::result::Result<[<$name $latest_variant>], $crate::UpcastError> {
@@ -189,11 +190,13 @@ macro_rules! versioned {
                     })
                 }
 
+                #[allow(dead_code)]
                 pub(crate) fn [<builder_ $latest_variant:lower>]() -> [<$name $latest_variant Builder>] {
                     [<$name $latest_variant>]::builder()
                 }
 
                 $(
+                    #[allow(dead_code)]
                     pub(crate) fn [<builder_ $variant:lower>]() -> [<$name $variant Builder>] {
                         [<$name $variant>]::builder()
                     }
@@ -208,12 +211,14 @@ macro_rules! versioned {
 
             $crate::macros::__versioned_if_args!({
                 impl $name {
+                    #[allow(dead_code)]
                     pub(crate) fn clap_command(name: &'static str) -> ::clap::Command {
                         <[<$name $latest_variant>] as ::clap::Args>::augment_args(
                             ::clap::Command::new(name),
                         )
                     }
 
+                    #[allow(dead_code)]
                     pub(crate) fn to_invocation(&self, name: &str) -> String {
                         $crate::macros::render_invocation(name, self)
                     }
@@ -268,6 +273,7 @@ macro_rules! versioned {
         }
 
         impl $name {
+            #[allow(dead_code)]
             pub(crate) fn current(&self) -> ::std::result::Result<$v1_type, $crate::UpcastError> {
                 Ok(match self {
                     Self::V1(v) => v.clone(),

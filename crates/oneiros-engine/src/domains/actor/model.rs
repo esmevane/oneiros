@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -16,30 +15,13 @@ pub(crate) struct Actor {
     pub(crate) created_at: Timestamp,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Actors(HashMap<String, Actor>);
-
-impl Actors {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, id: ActorId) -> Option<&Actor> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, actor: &Actor) -> Option<Actor> {
-        self.0.insert(actor.id.to_string(), actor.clone())
-    }
-
-    pub(crate) fn remove(&mut self, actor_id: ActorId) -> Option<Actor> {
-        self.0.remove(&actor_id.to_string())
+impl Indexable<ActorId> for Actor {
+    fn id(&self) -> ActorId {
+        self.id
     }
 }
+
+pub(crate) type Actors = EntityIndex<ActorId, Actor>;
 
 resource_id!(ActorId);
 resource_name!(ActorName);

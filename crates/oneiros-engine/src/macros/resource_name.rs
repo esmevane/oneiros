@@ -18,6 +18,7 @@ macro_rules! resource_name {
                 Self(crate::Label::new(value))
             }
 
+            #[allow(dead_code)]
             pub(crate) fn as_str(&self) -> &str {
                 self.0.as_str()
             }
