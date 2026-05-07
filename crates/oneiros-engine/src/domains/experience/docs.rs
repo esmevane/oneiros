@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum ExperienceDocs {
+pub(crate) enum ExperienceDocs {
     Create,
     List,
     Show,
@@ -9,14 +9,14 @@ pub enum ExperienceDocs {
 }
 
 impl ExperienceDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("experiences")
             .description("Mark and revisit meaningful moments")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Create => ResourceDocs::builder()

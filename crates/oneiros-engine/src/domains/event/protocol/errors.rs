@@ -5,7 +5,7 @@ use crate::{
 
 /// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
-pub enum EventError {
+pub(crate) enum EventError {
     #[error(transparent)]
     Sqlite(#[from] rusqlite::Error),
 

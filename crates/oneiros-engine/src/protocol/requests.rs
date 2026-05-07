@@ -10,7 +10,7 @@ use crate::*;
 /// All known request types across every domain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Requests {
+pub(crate) enum Requests {
     Level(LevelRequest),
     Texture(TextureRequest),
     Sensation(SensationRequest),

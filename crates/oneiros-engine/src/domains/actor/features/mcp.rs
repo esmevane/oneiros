@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct ActorMcp;
+pub(crate) struct ActorMcp;
 
 impl ActorMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         actor_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -21,7 +21,7 @@ impl ActorMcp {
 mod actor_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateActor>::new(
                 ActorRequestType::CreateActor,
@@ -38,7 +38,7 @@ mod actor_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &str,

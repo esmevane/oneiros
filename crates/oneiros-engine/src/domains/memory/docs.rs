@@ -1,20 +1,20 @@
 use crate::*;
 
-pub enum MemoryDocs {
+pub(crate) enum MemoryDocs {
     Add,
     List,
     Show,
 }
 
 impl MemoryDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("memory")
             .description("Consolidate and review knowledge")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Add => ResourceDocs::builder()

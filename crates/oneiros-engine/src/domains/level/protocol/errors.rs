@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum LevelError {
+pub(crate) enum LevelError {
     #[error("Level not found: {0}")]
     NotFound(LevelName),
 

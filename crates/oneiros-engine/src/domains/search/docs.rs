@@ -1,18 +1,18 @@
 use crate::*;
 
-pub enum SearchDocs {
+pub(crate) enum SearchDocs {
     Search,
 }
 
 impl SearchDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("search")
             .description("Search across all entities in a brain")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Search => ResourceDocs::builder()

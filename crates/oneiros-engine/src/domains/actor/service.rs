@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ActorService;
+pub(crate) struct ActorService;
 
 impl ActorService {
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &CreateActor,
@@ -42,7 +42,7 @@ impl ActorService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtHost>,
         request: &GetActor,
     ) -> Result<ActorResponse, ActorError> {
@@ -57,7 +57,7 @@ impl ActorService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtHost>,
         request: &ListActors,
     ) -> Result<ActorResponse, ActorError> {

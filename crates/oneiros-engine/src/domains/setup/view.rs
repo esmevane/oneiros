@@ -2,16 +2,16 @@
 
 use crate::*;
 
-pub struct SetupView {
+pub(crate) struct SetupView {
     response: SetupResponse,
 }
 
 impl SetupView {
-    pub fn new(response: SetupResponse) -> Self {
+    pub(crate) fn new(response: SetupResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<SetupResponse> {
+    pub(crate) fn render(self) -> Rendered<SetupResponse> {
         match self.response {
             SetupResponse::SetupComplete(SetupCompleteResponse::V1(details)) => {
                 let prompt = Self::steps(&details.steps);

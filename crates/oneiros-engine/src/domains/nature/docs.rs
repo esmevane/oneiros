@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum NatureDocs {
+pub(crate) enum NatureDocs {
     List,
     Set,
     Show,
@@ -8,14 +8,14 @@ pub enum NatureDocs {
 }
 
 impl NatureDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("natures")
             .description("Define kinds of relationships")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::List => ResourceDocs::builder()

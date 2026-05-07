@@ -6,20 +6,20 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetFollow {
+    pub(crate) enum GetFollow {
         V1 => {
-            #[builder(into)] pub key: ResourceKey<FollowId>,
+            #[builder(into)] pub(crate) key: ResourceKey<FollowId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListFollows {
+    pub(crate) enum ListFollows {
         V1 => {
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -27,7 +27,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = FollowRequestType, display = "kebab-case")]
-pub enum FollowRequest {
+pub(crate) enum FollowRequest {
     GetFollow(GetFollow),
     ListFollows(ListFollows),
 }

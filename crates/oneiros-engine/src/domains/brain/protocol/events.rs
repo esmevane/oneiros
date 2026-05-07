@@ -6,12 +6,12 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = BrainEventsType, display = "kebab-case")]
-pub enum BrainEvents {
+pub(crate) enum BrainEvents {
     BrainCreated(BrainCreated),
 }
 
 impl BrainEvents {
-    pub fn maybe_brain(&self) -> Option<Brain> {
+    pub(crate) fn maybe_brain(&self) -> Option<Brain> {
         match self {
             BrainEvents::BrainCreated(event) => event.clone().current().ok().map(|v| v.brain),
         }
@@ -19,9 +19,9 @@ impl BrainEvents {
 }
 
 versioned! {
-    pub enum BrainCreated {
+    pub(crate) enum BrainCreated {
         V1 => {
-            #[serde(flatten)] pub brain: Brain,
+            #[serde(flatten)] pub(crate) brain: Brain,
         }
     }
 }

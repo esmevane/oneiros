@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SetupService;
+pub(crate) struct SetupService;
 
 impl SetupService {
-    pub async fn run(config: &Config, request: &SetupRequest) -> Result<SetupResponse, SetupError> {
+    pub(crate) async fn run(config: &Config, request: &SetupRequest) -> Result<SetupResponse, SetupError> {
         let details = request.current()?;
         let mut steps = Vec::new();
 

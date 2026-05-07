@@ -4,8 +4,8 @@ mod mcp;
 mod projections;
 mod state;
 
-pub use cli::*;
-pub use http::*;
-pub use mcp::*;
-pub use projections::*;
-pub use state::*;
+pub(crate) use cli::*;
+pub(crate) use http::*;
+pub(crate) use mcp::*;
+pub(crate) use projections::*;
+pub(crate) use state::*;

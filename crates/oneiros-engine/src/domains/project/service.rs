@@ -2,10 +2,10 @@ use std::io::BufRead;
 
 use crate::*;
 
-pub struct ProjectService;
+pub(crate) struct ProjectService;
 
 impl ProjectService {
-    pub async fn init(
+    pub(crate) async fn init(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &InitProject,
@@ -133,7 +133,7 @@ impl ProjectService {
     /// event is prepended carrying the binary content. This makes the export
     /// portable — the receiving brain materializes the blob at import time
     /// without persisting the ephemeral event to the log.
-    pub async fn export(
+    pub(crate) async fn export(
         scope: &Scope<AtBookmark>,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
@@ -194,7 +194,7 @@ impl ProjectService {
     /// can't compose a `Scope<AtBookmark>` here. Take the platform +
     /// brain + bookmark directly and open the bookmark DB via the
     /// underlying primitive.
-    pub async fn import(
+    pub(crate) async fn import(
         config: &Config,
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
@@ -275,7 +275,7 @@ impl ProjectService {
     /// Takes `&Config` rather than `&Scope<AtBookmark>` because the
     /// bookmark DB file may be deleted mid-call — composing a scope
     /// would fail the existence check.
-    pub async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
+    pub(crate) async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
         // Ensure a clean schema by deleting the old bookmark DB.
         // WAL sidecar files are silently cleaned up if present.
         let db_path = config.bookmark_db_path();

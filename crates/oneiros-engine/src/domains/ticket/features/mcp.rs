@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct TicketMcp;
+pub(crate) struct TicketMcp;
 
 impl TicketMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         ticket_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -21,7 +21,7 @@ impl TicketMcp {
 mod ticket_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateTicket>::new(
                 TicketRequestType::CreateTicket,
@@ -42,7 +42,7 @@ mod ticket_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &str,

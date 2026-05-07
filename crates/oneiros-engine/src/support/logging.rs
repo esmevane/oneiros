@@ -10,14 +10,14 @@ use tracing_subscriber::{
 
 use crate::*;
 
-pub struct Logging;
+pub(crate) struct Logging;
 
 impl Logging {
     /// Install the global tracing subscriber.
     ///
     /// Hold the returned guard until the process exits. Dropping it flushes
     /// any pending file writes. `RUST_LOG` overrides `Config::verbosity`.
-    pub fn install(&self, config: &Config) -> std::io::Result<WorkerGuard> {
+    pub(crate) fn install(&self, config: &Config) -> std::io::Result<WorkerGuard> {
         /// We flip off aide by default so it doesn't clog our logs with startup noise,
         /// even if we're set to higher levels of info.
         fn level(verbosity: &Verbosity) -> &'static str {
@@ -66,7 +66,7 @@ struct DailyLog {
 }
 
 impl DailyLog {
-    pub fn new(root: &Path) -> Result<Self, std::io::Error> {
+    pub(crate) fn new(root: &Path) -> Result<Self, std::io::Error> {
         let mut new_daily_log = Self {
             date: Timestamp::now(),
             logs: root.join("logs").clone(),

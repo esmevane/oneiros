@@ -2,13 +2,13 @@ use std::path::PathBuf;
 
 /// A detected project root with its name and filesystem path.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProjectRoot {
-    pub name: String,
-    pub path: PathBuf,
+pub(crate) struct ProjectRoot {
+    pub(crate) name: String,
+    pub(crate) path: PathBuf,
 }
 
 impl ProjectRoot {
-    pub fn new(name: impl Into<String>, path: impl Into<PathBuf>) -> Self {
+    pub(crate) fn new(name: impl Into<String>, path: impl Into<PathBuf>) -> Self {
         Self {
             name: name.into(),
             path: path.into(),

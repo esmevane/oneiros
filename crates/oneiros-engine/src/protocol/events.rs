@@ -19,7 +19,7 @@ use crate::*;
 /// held by `EventRecord::Unknown` at the envelope level, never here.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Events {
+pub(crate) enum Events {
     Level(LevelEvents),
     Texture(TextureEvents),
     Sensation(SensationEvents),
@@ -46,7 +46,7 @@ impl Events {
     ///
     /// This is the same string that appears in the JSON representation and
     /// is stored in the `event_type` column for query indexing.
-    pub fn event_type(&self) -> String {
+    pub(crate) fn event_type(&self) -> String {
         match self {
             Events::Level(e) => e.kind().to_string(),
             Events::Texture(e) => e.kind().to_string(),
@@ -101,7 +101,7 @@ collects_enum!(
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = EphemeralEventsType, display = "kebab-case")]
-pub enum EphemeralEvents {
+pub(crate) enum EphemeralEvents {
     /// Carries compressed blob binary for export/import portability.
     BlobStored(BlobContent),
 }

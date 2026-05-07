@@ -5,12 +5,12 @@ use rusqlite::{params, params_from_iter};
 use crate::*;
 
 /// Cognition read model — async queries over the projection read model.
-pub struct CognitionRepo<'a> {
+pub(crate) struct CognitionRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> CognitionRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -18,11 +18,11 @@ impl<'a> CognitionRepo<'a> {
     /// cognition appears or the configured patience window expires.
     ///
     /// [`get`]: CognitionRepo::get
-    pub async fn fetch(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
+    pub(crate) async fn fetch(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
+    pub(crate) async fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, texture, content, created_at
@@ -57,7 +57,7 @@ impl<'a> CognitionRepo<'a> {
 
     /// Hydrate many cognitions by id, preserving the input order. Used by
     /// list endpoints to bulk-fetch search hits in a single round trip.
-    pub async fn get_many(&self, ids: &[CognitionId]) -> Result<Vec<Cognition>, EventError> {
+    pub(crate) async fn get_many(&self, ids: &[CognitionId]) -> Result<Vec<Cognition>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -99,7 +99,7 @@ impl<'a> CognitionRepo<'a> {
     }
 
     /// Most recent cognitions for an agent, ordered newest-first.
-    pub async fn list_recent(
+    pub(crate) async fn list_recent(
         &self,
         agent_id: &AgentId,
         limit: usize,

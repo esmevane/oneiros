@@ -13,5 +13,5 @@
 mod host;
 mod project;
 
-pub use host::HostLog;
-pub use project::ProjectLog;
+pub(crate) use host::HostLog;
+pub(crate) use project::ProjectLog;

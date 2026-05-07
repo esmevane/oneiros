@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct TenantView {
+pub(crate) struct TenantView {
     response: TenantResponse,
 }
 
 impl TenantView {
-    pub fn new(response: TenantResponse) -> Self {
+    pub(crate) fn new(response: TenantResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<TenantResponse> {
+    pub(crate) fn render(self) -> Rendered<TenantResponse> {
         match self.response {
             TenantResponse::Created(TenantCreatedResponse::V1(created)) => {
                 let prompt =

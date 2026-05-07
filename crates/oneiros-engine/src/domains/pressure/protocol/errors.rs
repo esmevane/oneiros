@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{ErrorResponse, UpcastError, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum PressureError {
+pub(crate) enum PressureError {
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 

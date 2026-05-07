@@ -6,36 +6,36 @@ use std::collections::HashMap;
 use crate::*;
 
 #[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Persona {
+pub(crate) struct Persona {
     #[builder(into)]
-    pub name: PersonaName,
+    pub(crate) name: PersonaName,
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
     #[builder(into)]
-    pub prompt: Prompt,
+    pub(crate) prompt: Prompt,
 }
 
 #[derive(Clone, Default)]
-pub struct Personas(HashMap<String, Persona>);
+pub(crate) struct Personas(HashMap<String, Persona>);
 
 impl Personas {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn get(&self, name: &PersonaName) -> Option<&Persona> {
+    pub(crate) fn get(&self, name: &PersonaName) -> Option<&Persona> {
         self.0.get(&name.to_string())
     }
 
-    pub fn set(&mut self, persona: &Persona) -> Option<Persona> {
+    pub(crate) fn set(&mut self, persona: &Persona) -> Option<Persona> {
         self.0.insert(persona.name.to_string(), persona.clone())
     }
 
-    pub fn remove(&mut self, name: &PersonaName) -> Option<Persona> {
+    pub(crate) fn remove(&mut self, name: &PersonaName) -> Option<Persona> {
         self.0.remove(&name.to_string())
     }
 }

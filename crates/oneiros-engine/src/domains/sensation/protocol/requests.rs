@@ -6,49 +6,49 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetSensation {
+    pub(crate) enum SetSensation {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: SensationName,
+            #[builder(into)] pub(crate) name: SensationName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetSensation {
+    pub(crate) enum GetSensation {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<SensationName>,
+            #[builder(into)] pub(crate) key: ResourceKey<SensationName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveSensation {
+    pub(crate) enum RemoveSensation {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: SensationName,
+            #[builder(into)] pub(crate) name: SensationName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListSensations {
+    pub(crate) enum ListSensations {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -56,7 +56,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SensationRequestType, display = "kebab-case")]
-pub enum SensationRequest {
+pub(crate) enum SensationRequest {
     SetSensation(SetSensation),
     GetSensation(GetSensation),
     ListSensations(ListSensations),

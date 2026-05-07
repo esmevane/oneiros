@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct UrgeView {
+pub(crate) struct UrgeView {
     response: UrgeResponse,
 }
 
 impl UrgeView {
-    pub fn new(response: UrgeResponse) -> Self {
+    pub(crate) fn new(response: UrgeResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             UrgeResponse::Urges(UrgesResponse::V1(listed)) => {
                 let items: Vec<_> = listed
@@ -50,7 +50,7 @@ impl UrgeView {
         McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
     }
 
-    pub fn render(self) -> Rendered<UrgeResponse> {
+    pub(crate) fn render(self) -> Rendered<UrgeResponse> {
         match self.response {
             UrgeResponse::UrgeSet(UrgeSetResponse::V1(set)) => {
                 let prompt =

@@ -6,107 +6,107 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum WakeAgent {
+    pub(crate) enum WakeAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum DreamAgent {
+    pub(crate) enum DreamAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum IntrospectAgent {
+    pub(crate) enum IntrospectAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ReflectAgent {
+    pub(crate) enum ReflectAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SenseContent {
+    pub(crate) enum SenseContent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            #[builder(into)] pub content: Content,
+            #[builder(into)] pub(crate) agent: AgentName,
+            #[builder(into)] pub(crate) content: Content,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SleepAgent {
+    pub(crate) enum SleepAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GuidebookAgent {
+    pub(crate) enum GuidebookAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum EmergeAgent {
+    pub(crate) enum EmergeAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: AgentName,
-            #[builder(into)] pub persona: PersonaName,
+            #[builder(into)] pub(crate) name: AgentName,
+            #[builder(into)] pub(crate) persona: PersonaName,
             #[arg(long, default_value = "")]
-            #[builder(default, into)] pub description: Description,
+            #[builder(default, into)] pub(crate) description: Description,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RecedeAgent {
+    pub(crate) enum RecedeAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum StatusAgent {
+    pub(crate) enum StatusAgent {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -114,7 +114,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ContinuityRequestType, display = "kebab-case")]
-pub enum ContinuityRequest {
+pub(crate) enum ContinuityRequest {
     WakeAgent(WakeAgent),
     DreamAgent(DreamAgent),
     IntrospectAgent(IntrospectAgent),

@@ -8,10 +8,10 @@ use serde::Deserialize;
 
 use crate::*;
 
-pub struct ExperienceRouter;
+pub(crate) struct ExperienceRouter;
 
 impl ExperienceRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new().nest(
             "/experiences",
             ApiRouter::new()

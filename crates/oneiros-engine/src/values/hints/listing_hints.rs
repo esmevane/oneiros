@@ -4,14 +4,14 @@ use crate::*;
 
 /// Hints after listing — suggest search, note when there's more.
 #[derive(Builder)]
-pub struct ListingHints {
-    pub agent: AgentName,
+pub(crate) struct ListingHints {
+    pub(crate) agent: AgentName,
     #[builder(default)]
-    pub has_more: bool,
+    pub(crate) has_more: bool,
 }
 
 impl ListingHints {
-    pub fn hints(&self) -> Vec<Hint> {
+    pub(crate) fn hints(&self) -> Vec<Hint> {
         let agent = &self.agent;
         let mut hints = vec![Hint::inspect(
             format!("search {agent}"),

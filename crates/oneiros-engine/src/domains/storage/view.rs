@@ -2,16 +2,16 @@
 
 use crate::*;
 
-pub struct StorageView {
+pub(crate) struct StorageView {
     response: StorageResponse,
 }
 
 impl StorageView {
-    pub fn new(response: StorageResponse) -> Self {
+    pub(crate) fn new(response: StorageResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<StorageResponse> {
+    pub(crate) fn render(self) -> Rendered<StorageResponse> {
         match self.response {
             StorageResponse::StorageSet(StorageSetResponse::V1(set)) => {
                 let prompt =

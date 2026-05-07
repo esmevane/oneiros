@@ -7,16 +7,16 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = SystemResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SystemResponse {
+pub(crate) enum SystemResponse {
     SystemInitialized(SystemInitializedResponse),
     HostAlreadyInitialized,
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SystemInitializedResponse {
+    pub(crate) enum SystemInitializedResponse {
         V1 => {
-            #[builder(into)] pub tenant: TenantName,
+            #[builder(into)] pub(crate) tenant: TenantName,
         }
     }
 }

@@ -6,23 +6,23 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = UrgeEventsType, display = "kebab-case")]
-pub enum UrgeEvents {
+pub(crate) enum UrgeEvents {
     UrgeSet(UrgeSet),
     UrgeRemoved(UrgeRemoved),
 }
 
 versioned! {
-    pub enum UrgeSet {
+    pub(crate) enum UrgeSet {
         V1 => {
-            #[serde(flatten)] pub urge: Urge,
+            #[serde(flatten)] pub(crate) urge: Urge,
         }
     }
 }
 
 versioned! {
-    pub enum UrgeRemoved {
+    pub(crate) enum UrgeRemoved {
         V1 => {
-            #[builder(into)] pub name: UrgeName,
+            #[builder(into)] pub(crate) name: UrgeName,
         }
     }
 }

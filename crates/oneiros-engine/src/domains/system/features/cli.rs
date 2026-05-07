@@ -3,12 +3,12 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum SystemCommands {
+pub(crate) enum SystemCommands {
     Init(InitSystem),
 }
 
 impl SystemCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SystemError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SystemError> {
         let client = Client::new(config.base_url());
         let system_client = SystemClient::new(&client);
 

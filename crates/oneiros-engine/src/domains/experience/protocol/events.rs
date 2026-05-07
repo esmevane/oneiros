@@ -6,34 +6,34 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ExperienceEventsType, display = "kebab-case")]
-pub enum ExperienceEvents {
+pub(crate) enum ExperienceEvents {
     ExperienceCreated(ExperienceCreated),
     ExperienceDescriptionUpdated(ExperienceDescriptionUpdated),
     ExperienceSensationUpdated(ExperienceSensationUpdated),
 }
 
 versioned! {
-    pub enum ExperienceCreated {
+    pub(crate) enum ExperienceCreated {
         V1 => {
-            #[serde(flatten)] pub experience: Experience,
+            #[serde(flatten)] pub(crate) experience: Experience,
         }
     }
 }
 
 versioned! {
-    pub enum ExperienceDescriptionUpdated {
+    pub(crate) enum ExperienceDescriptionUpdated {
         V1 => {
-            pub id: ExperienceId,
-            #[builder(into)] pub description: Description,
+            pub(crate) id: ExperienceId,
+            #[builder(into)] pub(crate) description: Description,
         }
     }
 }
 
 versioned! {
-    pub enum ExperienceSensationUpdated {
+    pub(crate) enum ExperienceSensationUpdated {
         V1 => {
-            pub id: ExperienceId,
-            #[builder(into)] pub sensation: SensationName,
+            pub(crate) id: ExperienceId,
+            #[builder(into)] pub(crate) sensation: SensationName,
         }
     }
 }

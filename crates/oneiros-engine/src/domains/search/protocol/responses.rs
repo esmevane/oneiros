@@ -7,13 +7,13 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = SearchResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SearchResponse {
+pub(crate) enum SearchResponse {
     Results(ResultsResponse),
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ResultsResponse {
+    pub(crate) enum ResultsResponse {
         V1 => SearchResults,
     }
 }

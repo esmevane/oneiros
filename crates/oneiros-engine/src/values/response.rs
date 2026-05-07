@@ -10,39 +10,39 @@ use crate::*;
 
 /// A response envelope that wraps domain data with optional metadata.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct Response<T> {
+pub(crate) struct Response<T> {
     #[serde(flatten)]
-    pub data: T,
+    pub(crate) data: T,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta: Option<ResponseMeta>,
+    pub(crate) meta: Option<ResponseMeta>,
 }
 
 impl<T> Response<T> {
-    pub fn new(data: T) -> Self {
+    pub(crate) fn new(data: T) -> Self {
         Self { data, meta: None }
     }
 
-    pub fn with_meta(mut self, meta: ResponseMeta) -> Self {
+    pub(crate) fn with_meta(mut self, meta: ResponseMeta) -> Self {
         self.meta = Some(meta);
         self
     }
 
-    pub fn with_ref_token(mut self, ref_token: RefToken) -> Self {
+    pub(crate) fn with_ref_token(mut self, ref_token: RefToken) -> Self {
         self.meta
             .get_or_insert_with(ResponseMeta::default)
             .ref_token = Some(ref_token);
         self
     }
 
-    pub fn with_hints(mut self, hints: Vec<Hint>) -> Self {
+    pub(crate) fn with_hints(mut self, hints: Vec<Hint>) -> Self {
         if !hints.is_empty() {
             self.meta.get_or_insert_with(ResponseMeta::default).hints = hints;
         }
         self
     }
 
-    pub fn meta(&self) -> ResponseMeta {
+    pub(crate) fn meta(&self) -> ResponseMeta {
         self.meta.clone().unwrap_or_default()
     }
 }
@@ -55,23 +55,23 @@ impl<T> From<T> for Response<T> {
 
 /// Metadata attached to responses — pressure summaries, hints, etc.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
-pub struct ResponseMeta {
+pub(crate) struct ResponseMeta {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pressures: Vec<PressureSummary>,
+    pub(crate) pressures: Vec<PressureSummary>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub ref_token: Option<RefToken>,
+    pub(crate) ref_token: Option<RefToken>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub hints: Vec<Hint>,
+    pub(crate) hints: Vec<Hint>,
 }
 
 impl ResponseMeta {
-    pub fn ref_token(&self) -> Option<RefToken> {
+    pub(crate) fn ref_token(&self) -> Option<RefToken> {
         self.ref_token.clone()
     }
 
-    pub fn hints(&self) -> &[Hint] {
+    pub(crate) fn hints(&self) -> &[Hint] {
         &self.hints
     }
 }

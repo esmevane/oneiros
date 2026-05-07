@@ -8,10 +8,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// identity of a peer; the system-level `PeerId` is the domain handle used for
 /// internal lookup and references.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct PeerKey([u8; Self::LENGTH]);
+pub(crate) struct PeerKey([u8; Self::LENGTH]);
 
 #[derive(Debug, thiserror::Error)]
-pub enum PeerKeyError {
+pub(crate) enum PeerKeyError {
     #[error("invalid hex encoding: {0}")]
     Encoding(#[from] data_encoding::DecodeError),
     #[error("invalid peer key length: expected {expected} bytes, got {got}")]
@@ -19,13 +19,13 @@ pub enum PeerKeyError {
 }
 
 impl PeerKey {
-    pub const LENGTH: usize = 32;
+    pub(crate) const LENGTH: usize = 32;
 
-    pub fn from_bytes(bytes: [u8; Self::LENGTH]) -> Self {
+    pub(crate) fn from_bytes(bytes: [u8; Self::LENGTH]) -> Self {
         Self(bytes)
     }
 
-    pub fn as_bytes(&self) -> &[u8; Self::LENGTH] {
+    pub(crate) fn as_bytes(&self) -> &[u8; Self::LENGTH] {
         &self.0
     }
 }

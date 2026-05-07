@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = MemoryResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum MemoryResponse {
+pub(crate) enum MemoryResponse {
     MemoryAdded(MemoryAddedResponse),
     MemoryDetails(MemoryDetailsResponse),
     Memories(MemoriesResponse),
@@ -16,24 +16,24 @@ pub enum MemoryResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum MemoryAddedResponse {
-        V1 => { #[serde(flatten)] pub memory: Memory }
+    pub(crate) enum MemoryAddedResponse {
+        V1 => { #[serde(flatten)] pub(crate) memory: Memory }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum MemoryDetailsResponse {
-        V1 => { #[serde(flatten)] pub memory: Memory }
+    pub(crate) enum MemoryDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) memory: Memory }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum MemoriesResponse {
+    pub(crate) enum MemoriesResponse {
         V1 => {
-            pub items: Vec<Memory>,
-            pub total: usize,
+            pub(crate) items: Vec<Memory>,
+            pub(crate) total: usize,
         }
     }
 }

@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct PeerView {
+pub(crate) struct PeerView {
     response: PeerResponse,
 }
 
 impl PeerView {
-    pub fn new(response: PeerResponse) -> Self {
+    pub(crate) fn new(response: PeerResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<PeerResponse> {
+    pub(crate) fn render(self) -> Rendered<PeerResponse> {
         match self.response {
             PeerResponse::Added(PeerAddedResponse::V1(added)) => {
                 let prompt = Confirmation::new("Peer", added.name.to_string(), "added").to_string();

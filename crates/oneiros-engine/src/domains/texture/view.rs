@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct TextureView {
+pub(crate) struct TextureView {
     response: TextureResponse,
 }
 
 impl TextureView {
-    pub fn new(response: TextureResponse) -> Self {
+    pub(crate) fn new(response: TextureResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             TextureResponse::Textures(TexturesResponse::V1(listed)) => {
                 let items: Vec<_> = listed
@@ -50,7 +50,7 @@ impl TextureView {
         McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
     }
 
-    pub fn render(self) -> Rendered<TextureResponse> {
+    pub(crate) fn render(self) -> Rendered<TextureResponse> {
         match self.response {
             TextureResponse::TextureSet(TextureSetResponse::V1(set)) => {
                 let prompt =

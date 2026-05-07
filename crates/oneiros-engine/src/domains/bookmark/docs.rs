@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum BookmarkDocs {
+pub(crate) enum BookmarkDocs {
     Create,
     List,
     Switch,
@@ -12,14 +12,14 @@ pub enum BookmarkDocs {
 }
 
 impl BookmarkDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("bookmarks")
             .description("Manage timeline bookmarks")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Create => ResourceDocs::builder()

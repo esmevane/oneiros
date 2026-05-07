@@ -6,20 +6,20 @@
 use crate::*;
 
 /// A column definition for a table.
-pub struct Column {
+pub(crate) struct Column {
     /// Identifier — for selection, config, API references.
-    pub key: String,
+    pub(crate) key: String,
     /// Display header.
-    pub header: String,
+    pub(crate) header: String,
     /// Right-align values (useful for numbers).
-    pub right_align: bool,
+    pub(crate) right_align: bool,
     /// Maximum display width — longer values are truncated with "…".
-    pub max_width: Option<usize>,
+    pub(crate) max_width: Option<usize>,
 }
 
 impl Column {
     /// A column with matching key and header.
-    pub fn new(name: impl Into<String>) -> Self {
+    pub(crate) fn new(name: impl Into<String>) -> Self {
         let name = name.into();
         Self {
             key: name.to_lowercase(),
@@ -30,7 +30,7 @@ impl Column {
     }
 
     /// A column with an explicit key distinct from the header.
-    pub fn key(key: impl Into<String>, header: impl Into<String>) -> Self {
+    pub(crate) fn key(key: impl Into<String>, header: impl Into<String>) -> Self {
         Self {
             key: key.into(),
             header: header.into(),
@@ -40,7 +40,7 @@ impl Column {
     }
 
     /// Right-aligned column (numbers, counts).
-    pub fn right(name: impl Into<String>) -> Self {
+    pub(crate) fn right(name: impl Into<String>) -> Self {
         let name = name.into();
         Self {
             key: name.to_lowercase(),
@@ -51,7 +51,7 @@ impl Column {
     }
 
     /// Set a maximum display width for this column.
-    pub fn max(mut self, width: usize) -> Self {
+    pub(crate) fn max(mut self, width: usize) -> Self {
         self.max_width = Some(width);
         self
     }
@@ -62,13 +62,13 @@ impl Column {
 /// Columns are addressable by key for future selection support.
 /// Rendering uses `Paint` styles from the palette — `anstream`
 /// handles stripping ANSI codes when color is disabled.
-pub struct Table {
+pub(crate) struct Table {
     columns: Vec<Column>,
     rows: Vec<Vec<String>>,
 }
 
 impl Table {
-    pub fn new(columns: Vec<Column>) -> Self {
+    pub(crate) fn new(columns: Vec<Column>) -> Self {
         Self {
             columns,
             rows: Vec::new(),
@@ -76,18 +76,18 @@ impl Table {
     }
 
     /// Add a row (builder style).
-    pub fn row(mut self, cells: Vec<impl Into<String>>) -> Self {
+    pub(crate) fn row(mut self, cells: Vec<impl Into<String>>) -> Self {
         self.rows.push(cells.into_iter().map(Into::into).collect());
         self
     }
 
     /// Add a row (mutating).
-    pub fn push_row(&mut self, cells: Vec<impl Into<String>>) {
+    pub(crate) fn push_row(&mut self, cells: Vec<impl Into<String>>) {
         self.rows.push(cells.into_iter().map(Into::into).collect());
     }
 
     /// Whether the table has any data rows.
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.rows.is_empty()
     }
 

@@ -6,14 +6,14 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SeedCore {
+    pub(crate) enum SeedCore {
         V1 => {}
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SeedAgents {
+    pub(crate) enum SeedAgents {
         V1 => {}
     }
 }
@@ -21,7 +21,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SeedRequestType, display = "kebab-case")]
-pub enum SeedRequest {
+pub(crate) enum SeedRequest {
     SeedCore(SeedCore),
     SeedAgents(SeedAgents),
 }

@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{ErrorResponse, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum StorageError {
+pub(crate) enum StorageError {
     #[error("Storage key not found: {0}")]
     KeyNotFound(crate::StorageKey),
 

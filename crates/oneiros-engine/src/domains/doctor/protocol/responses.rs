@@ -6,10 +6,10 @@ use crate::*;
 /// The filename or path label identifying which database was checked.
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
-pub struct DatabaseLabel(pub String);
+pub(crate) struct DatabaseLabel(pub(crate) String);
 
 impl DatabaseLabel {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 }
@@ -23,10 +23,10 @@ impl core::fmt::Display for DatabaseLabel {
 /// The number of events present in the event log.
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
-pub struct LogEventCount(pub i64);
+pub(crate) struct LogEventCount(pub(crate) i64);
 
 impl LogEventCount {
-    pub fn new(value: i64) -> Self {
+    pub(crate) fn new(value: i64) -> Self {
         Self(value)
     }
 }
@@ -41,7 +41,7 @@ impl core::fmt::Display for LogEventCount {
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = DoctorCheckType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum DoctorCheck {
+pub(crate) enum DoctorCheck {
     Initialized,
     NotInitialized,
     DatabaseOk(DatabaseLabel),
@@ -65,15 +65,15 @@ pub enum DoctorCheck {
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = DoctorResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum DoctorResponse {
+pub(crate) enum DoctorResponse {
     CheckupStatus(CheckupStatusResponse),
 }
 
 versioned! {
     #[derive(schemars::JsonSchema)]
-    pub enum CheckupStatusResponse {
+    pub(crate) enum CheckupStatusResponse {
         V1 => {
-            pub checks: Vec<DoctorCheck>,
+            pub(crate) checks: Vec<DoctorCheck>,
         }
     }
 }

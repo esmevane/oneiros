@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ConnectionError {
+pub(crate) enum ConnectionError {
     #[error("Connection not found: {0}")]
     NotFound(ConnectionId),
 

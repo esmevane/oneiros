@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum NatureCommands {
+pub(crate) enum NatureCommands {
     Set(SetNature),
     Show(GetNature),
     List(ListNatures),
@@ -16,7 +16,7 @@ pub enum NatureCommands {
 }
 
 impl NatureCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, NatureError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, NatureError> {
         let client = Client::new(config.base_url());
         let nature_client = NatureClient::new(&client);
 

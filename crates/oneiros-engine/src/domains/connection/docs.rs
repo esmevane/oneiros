@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum ConnectionDocs {
+pub(crate) enum ConnectionDocs {
     Create,
     List,
     Show,
@@ -8,14 +8,14 @@ pub enum ConnectionDocs {
 }
 
 impl ConnectionDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("connections")
             .description("Draw and manage relationships between entities")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Create => ResourceDocs::builder()

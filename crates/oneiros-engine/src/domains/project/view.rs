@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct ProjectView {
+pub(crate) struct ProjectView {
     response: ProjectResponse,
 }
 
 impl ProjectView {
-    pub fn new(response: ProjectResponse) -> Self {
+    pub(crate) fn new(response: ProjectResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<ProjectResponse> {
+    pub(crate) fn render(self) -> Rendered<ProjectResponse> {
         match self.response {
             ProjectResponse::Initialized(InitializedResponse::V1(details)) => {
                 let prompt = Confirmation::new("Brain", details.brain_name.to_string(), "created")

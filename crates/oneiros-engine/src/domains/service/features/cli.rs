@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum ServiceCommands {
+pub(crate) enum ServiceCommands {
     /// Install oneiros as a managed system service.
     Install,
     /// Uninstall the managed service.
@@ -19,7 +19,7 @@ pub enum ServiceCommands {
 }
 
 impl ServiceCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ServiceError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ServiceError> {
         let response = match self {
             ServiceCommands::Install => ServiceService::install(config)?,
             ServiceCommands::Uninstall => ServiceService::uninstall(config)?,

@@ -1,9 +1,9 @@
 use crate::*;
 
 #[derive(Clone, serde::Serialize)]
-pub struct Dream {
+pub(crate) struct Dream {
     #[serde(flatten)]
-    pub context: DreamContext,
+    pub(crate) context: DreamContext,
     #[serde(skip)]
-    pub prompt: String,
+    pub(crate) prompt: String,
 }

@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct AgentView {
+pub(crate) struct AgentView {
     response: AgentResponse,
 }
 
 impl AgentView {
-    pub fn new(response: AgentResponse) -> Self {
+    pub(crate) fn new(response: AgentResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         let response = &self.response;
         match response {
             AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)) => {
@@ -80,7 +80,7 @@ impl AgentView {
         }
     }
 
-    pub fn render(self) -> Rendered<AgentResponse> {
+    pub(crate) fn render(self) -> Rendered<AgentResponse> {
         match self.response {
             AgentResponse::AgentCreated(AgentCreatedResponse::V1(created)) => {
                 let prompt = Confirmation::new("Agent", created.agent.name.to_string(), "created")

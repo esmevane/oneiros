@@ -6,23 +6,23 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = TextureEventsType, display = "kebab-case")]
-pub enum TextureEvents {
+pub(crate) enum TextureEvents {
     TextureSet(TextureSet),
     TextureRemoved(TextureRemoved),
 }
 
 versioned! {
-    pub enum TextureSet {
+    pub(crate) enum TextureSet {
         V1 => {
-            #[serde(flatten)] pub texture: Texture,
+            #[serde(flatten)] pub(crate) texture: Texture,
         }
     }
 }
 
 versioned! {
-    pub enum TextureRemoved {
+    pub(crate) enum TextureRemoved {
         V1 => {
-            #[builder(into)] pub name: TextureName,
+            #[builder(into)] pub(crate) name: TextureName,
         }
     }
 }

@@ -8,9 +8,9 @@ use crate::*;
 /// before any data is returned. The root hash is the requestor's
 /// chronicle state for the bookmark being collected.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BridgeDiff {
-    pub link: Link,
-    pub root_hash: Option<ContentHash>,
+pub(crate) struct BridgeDiff {
+    pub(crate) link: Link,
+    pub(crate) root_hash: Option<ContentHash>,
 }
 
 /// A resolve request — "give me these HAMT nodes by hash."
@@ -19,9 +19,9 @@ pub struct BridgeDiff {
 /// server node hashes it doesn't have locally. The server looks
 /// them up in its ChronicleStore and returns the nodes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BridgeResolve {
-    pub link: Link,
-    pub hashes: Vec<ContentHash>,
+pub(crate) struct BridgeResolve {
+    pub(crate) link: Link,
+    pub(crate) hashes: Vec<ContentHash>,
 }
 
 /// A fetch request — "give me these specific events by ID."
@@ -29,9 +29,9 @@ pub struct BridgeResolve {
 /// Issued after the Merkle diff has identified which events the
 /// client is missing. The server retrieves the full StoredEvents.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BridgeFetchEvents {
-    pub link: Link,
-    pub event_ids: Vec<String>,
+pub(crate) struct BridgeFetchEvents {
+    pub(crate) link: Link,
+    pub(crate) event_ids: Vec<String>,
 }
 
 /// A request issued over the oneiros sync protocol.
@@ -39,7 +39,7 @@ pub struct BridgeFetchEvents {
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum BridgeRequest {
+pub(crate) enum BridgeRequest {
     /// "Here's my chronicle root — tell me yours."
     ///
     /// Initiates the Merkle diff protocol. The server compares
@@ -60,12 +60,12 @@ pub enum BridgeRequest {
 
 impl BridgeRequest {
     /// Encode this request to JSON bytes for transport.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         serde_json::to_vec(self).expect("sync request serialization should not fail")
     }
 
     /// Decode a request from JSON bytes received over transport.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
         serde_json::from_slice(bytes)
     }
 }

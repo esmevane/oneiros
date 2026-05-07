@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct BookmarkRepo<'a> {
+pub(crate) struct BookmarkRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
 impl<'a> BookmarkRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         brain: &BrainName,
         filters: &SearchFilters,

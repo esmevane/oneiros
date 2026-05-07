@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct TicketView {
+pub(crate) struct TicketView {
     response: TicketResponse,
 }
 
 impl TicketView {
-    pub fn new(response: TicketResponse) -> Self {
+    pub(crate) fn new(response: TicketResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<TicketResponse> {
+    pub(crate) fn render(self) -> Rendered<TicketResponse> {
         match self.response {
             TicketResponse::Created(TicketCreatedResponse::V1(created)) => {
                 let prompt =

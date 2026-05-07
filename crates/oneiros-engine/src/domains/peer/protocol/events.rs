@@ -6,40 +6,40 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = PeerEventsType, display = "kebab-case")]
-pub enum PeerEvents {
+pub(crate) enum PeerEvents {
     PeerAdded(PeerAdded),
     PeerUpdated(PeerUpdated),
     PeerRemoved(PeerRemoved),
 }
 
 versioned! {
-    pub enum PeerAdded {
+    pub(crate) enum PeerAdded {
         V1 => {
-            #[builder(default)] pub id: PeerId,
-            pub key: PeerKey,
-            pub address: PeerAddress,
-            #[builder(into)] pub name: PeerName,
-            #[builder(default = Timestamp::now())] pub created_at: Timestamp,
+            #[builder(default)] pub(crate) id: PeerId,
+            pub(crate) key: PeerKey,
+            pub(crate) address: PeerAddress,
+            #[builder(into)] pub(crate) name: PeerName,
+            #[builder(default = Timestamp::now())] pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum PeerUpdated {
+    pub(crate) enum PeerUpdated {
         V1 => {
-            #[builder(default)] pub id: PeerId,
-            pub key: PeerKey,
-            pub address: PeerAddress,
-            #[builder(into)] pub name: PeerName,
-            #[builder(default = Timestamp::now())] pub created_at: Timestamp,
+            #[builder(default)] pub(crate) id: PeerId,
+            pub(crate) key: PeerKey,
+            pub(crate) address: PeerAddress,
+            #[builder(into)] pub(crate) name: PeerName,
+            #[builder(default = Timestamp::now())] pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum PeerRemoved {
+    pub(crate) enum PeerRemoved {
         V1 => {
-            pub id: PeerId,
+            pub(crate) id: PeerId,
         }
     }
 }

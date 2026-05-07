@@ -3,13 +3,13 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum SeedCommands {
+pub(crate) enum SeedCommands {
     Core,
     Agents,
 }
 
 impl SeedCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SeedError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SeedError> {
         let client = Client::new(config.base_url());
         let seed = SeedClient::new(&client);
         let response = match self {

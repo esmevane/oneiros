@@ -91,7 +91,7 @@ impl Engine {
     ///
     /// Returns the engine and the parsed CLI so the caller can execute
     /// and render. Tracing setup is the caller's responsibility.
-    pub fn from_cli() -> Result<(Self, Cli), Error> {
+    pub(crate) fn from_cli() -> Result<(Self, Cli), Error> {
         let cli = Cli::parse();
         let config = cli.config().clone().with_config_file();
 
@@ -99,12 +99,12 @@ impl Engine {
     }
 
     /// From explicit config — tests and programmatic consumers.
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         Self { config }
     }
 
     /// Execute a parsed CLI command against this engine's config.
-    pub async fn execute(&self, cli: &Cli) -> Result<Rendered<Responses>, Error> {
+    pub(crate) async fn execute(&self, cli: &Cli) -> Result<Rendered<Responses>, Error> {
         cli.execute(&self.config).await
     }
 
@@ -113,7 +113,7 @@ impl Engine {
     /// Binds to the address in config (use `127.0.0.1:0` for ephemeral ports),
     /// updates the config with the resolved address, and returns a handle.
     /// The server runs in a background task and stops when the handle is dropped.
-    pub async fn start(&mut self) -> Result<ServerHandle, ServerError> {
+    pub(crate) async fn start(&mut self) -> Result<ServerHandle, ServerError> {
         let listener = TcpListener::bind(self.config.service.address).await?;
         let address = listener.local_addr()?;
 
@@ -131,17 +131,8 @@ impl Engine {
         Ok(ServerHandle { address, handle })
     }
 
-    /// Emit skill package to a target directory.
-    ///
-    /// Static — no config or server needed. Writes all skill assets
-    /// (SKILL.md, plugin.json, hooks, agents, commands, resources)
-    /// to the target path.
-    pub fn package(target: &Path) -> Result<usize, std::io::Error> {
-        SkillPackage::install(target)
-    }
-
     /// The resolved configuration.
-    pub fn config(&self) -> &Config {
+    pub(crate) fn config(&self) -> &Config {
         &self.config
     }
 }
@@ -150,7 +141,7 @@ impl Engine {
 ///
 /// Holds the resolved address and a task handle. The server stops
 /// when the handle is dropped.
-pub struct ServerHandle {
+pub(crate) struct ServerHandle {
     address: SocketAddr,
     handle: tokio::task::JoinHandle<()>,
 }
@@ -159,7 +150,7 @@ impl ServerHandle {
     /// The address the server is actually listening on.
     ///
     /// When configured with port 0, this returns the OS-assigned port.
-    pub fn address(&self) -> SocketAddr {
+    pub(crate) fn address(&self) -> SocketAddr {
         self.address
     }
 }
@@ -173,15 +164,6 @@ impl Drop for ServerHandle {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn package_emits_assets() {
-        let temp = tempfile::TempDir::new().unwrap();
-        let count = Engine::package(temp.path()).unwrap();
-        assert!(count > 0, "should emit at least one file");
-        assert!(temp.path().join("skills/oneiros/SKILL.md").exists());
-        assert!(temp.path().join("commands/dream.md").exists());
-    }
 
     #[tokio::test]
     async fn start_binds_ephemeral_port() {

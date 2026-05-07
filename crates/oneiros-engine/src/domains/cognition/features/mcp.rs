@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct CognitionMcp;
+pub(crate) struct CognitionMcp;
 
 impl CognitionMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         cognition_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -17,15 +17,15 @@ impl CognitionMcp {
         cognition_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![ResourcePathKind::Cognition.into_template("A specific cognition")]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &CognitionRequest,
@@ -37,13 +37,13 @@ impl CognitionMcp {
 mod cognition_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<AddCognition>::new(CognitionRequestType::AddCognition, "Record a thought").def(),
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &ToolName,
@@ -70,7 +70,7 @@ mod cognition_mcp {
         }
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         context: &ProjectLog,
         request: &CognitionRequest,
     ) -> Result<McpResponse, ToolError> {

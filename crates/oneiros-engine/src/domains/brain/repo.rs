@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Brain read model — async queries against the system context.
-pub struct BrainRepo<'a> {
+pub(crate) struct BrainRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
 impl<'a> BrainRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
@@ -16,7 +16,7 @@ impl<'a> BrainRepo<'a> {
     /// brain appears or the configured patience window expires.
     ///
     /// [`get`]: BrainRepo::get
-    pub async fn fetch(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
+    pub(crate) async fn fetch(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
@@ -24,7 +24,7 @@ impl<'a> BrainRepo<'a> {
     /// brain appears or the configured patience window expires.
     ///
     /// [`get_by_id`]: BrainRepo::get_by_id
-    pub async fn fetch_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
+    pub(crate) async fn fetch_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
         self.scope
             .config()
             .fetch
@@ -32,7 +32,7 @@ impl<'a> BrainRepo<'a> {
             .await
     }
 
-    pub async fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
+    pub(crate) async fn get(&self, name: &BrainName) -> Result<Option<Brain>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare("select id, name, created_at from brains where name = ?1")?;
 
@@ -56,7 +56,7 @@ impl<'a> BrainRepo<'a> {
         }
     }
 
-    pub async fn get_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
+    pub(crate) async fn get_by_id(&self, id: &BrainId) -> Result<Option<Brain>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare("select id, name, created_at from brains where id = ?1")?;
 
@@ -80,7 +80,7 @@ impl<'a> BrainRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Brain>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Brain>, EventError> {
         let db = HostDb::open(self.scope).await?;
 
         let total = {
@@ -112,7 +112,7 @@ impl<'a> BrainRepo<'a> {
         Ok(Listed::new(brains, total))
     }
 
-    pub async fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
+    pub(crate) async fn name_exists(&self, name: &BrainName) -> Result<bool, EventError> {
         let db = HostDb::open(self.scope).await?;
         let count: i64 = db.query_row(
             "select count(*) from brains where name = ?1",

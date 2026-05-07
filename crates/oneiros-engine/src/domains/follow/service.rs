@@ -1,12 +1,12 @@
 use crate::*;
 
-pub struct FollowService;
+pub(crate) struct FollowService;
 
 impl FollowService {
     /// Create a Follow record and emit `BookmarkFollowed`. Used by
     /// `BookmarkService::follow` in Act 3; exposed here for direct
     /// service-layer construction and testing.
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         brain: BrainName,
@@ -44,14 +44,14 @@ impl FollowService {
         Ok(follow)
     }
 
-    pub async fn get(scope: &Scope<AtHost>, id: FollowId) -> Result<Follow, FollowError> {
+    pub(crate) async fn get(scope: &Scope<AtHost>, id: FollowId) -> Result<Follow, FollowError> {
         FollowRepo::new(scope)
             .fetch(id)
             .await?
             .ok_or(FollowError::NotFound(id))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtHost>,
         filters: &SearchFilters,
     ) -> Result<Listed<Follow>, FollowError> {
@@ -61,7 +61,7 @@ impl FollowService {
     /// Find the active Follow for a given brain/bookmark pair. Returns
     /// `None` when the bookmark isn't currently following anything.
     /// Used by `BookmarkService::collect` in Act 3.
-    pub async fn for_bookmark(
+    pub(crate) async fn for_bookmark(
         scope: &Scope<AtHost>,
         brain: &BrainName,
         bookmark: &BookmarkName,
@@ -71,7 +71,7 @@ impl FollowService {
 
     /// Advance the checkpoint on a follow after a successful collect.
     /// Emits `BookmarkCollected`. Used by `BookmarkService::collect`.
-    pub async fn advance(
+    pub(crate) async fn advance(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         follow_id: FollowId,
@@ -101,7 +101,7 @@ impl FollowService {
 
     /// Remove a follow. Emits `BookmarkUnfollowed`. Used by
     /// `BookmarkService::unfollow`.
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         id: FollowId,

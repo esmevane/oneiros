@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct BrainMcp;
+pub(crate) struct BrainMcp;
 
 impl BrainMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         brain_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -21,7 +21,7 @@ impl BrainMcp {
 mod brain_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateBrain>::new(BrainRequestType::CreateBrain, "Create a new brain").def(),
             Tool::<GetBrain>::new(
@@ -33,7 +33,7 @@ mod brain_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &str,

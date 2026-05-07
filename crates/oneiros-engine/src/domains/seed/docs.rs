@@ -1,19 +1,19 @@
 use crate::*;
 
-pub enum SeedDocs {
+pub(crate) enum SeedDocs {
     SeedCore,
     SeedAgents,
 }
 
 impl SeedDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("seed")
             .description("Plant initial vocabulary and agents")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::SeedCore => ResourceDocs::builder()

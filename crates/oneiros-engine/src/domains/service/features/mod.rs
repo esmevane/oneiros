@@ -1,5 +1,5 @@
 mod cli;
 mod skills;
 
-pub use cli::*;
-pub use skills::*;
+pub(crate) use cli::*;
+pub(crate) use skills::*;

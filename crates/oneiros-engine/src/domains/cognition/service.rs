@@ -1,6 +1,6 @@
 use crate::*;
 
-pub struct CognitionService;
+pub(crate) struct CognitionService;
 
 impl CognitionService {
     /// Record a cognition by dispatching `CognitionAdded` through the
@@ -10,7 +10,7 @@ impl CognitionService {
     /// has seen, never a synthesised record. If the fetch window
     /// expires before the projection catches up, this surfaces as
     /// `CognitionError::NotFound`.
-    pub async fn add(
+    pub(crate) async fn add(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &AddCognition,
@@ -57,7 +57,7 @@ impl CognitionService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetCognition,
     ) -> Result<CognitionResponse, CognitionError> {
@@ -75,7 +75,7 @@ impl CognitionService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListCognitions,
     ) -> Result<CognitionResponse, CognitionError> {

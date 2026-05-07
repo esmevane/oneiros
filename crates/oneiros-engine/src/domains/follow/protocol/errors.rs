@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{ErrorResponse, FollowId};
 
 #[derive(Debug, thiserror::Error)]
-pub enum FollowError {
+pub(crate) enum FollowError {
     #[error("Follow not found: {0}")]
     NotFound(FollowId),
 

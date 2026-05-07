@@ -4,12 +4,12 @@ use crate::*;
 
 /// Hints after setting vocabulary — suggest listing or guidebook.
 #[derive(Builder)]
-pub struct VocabularyHints {
-    pub kind: String,
+pub(crate) struct VocabularyHints {
+    pub(crate) kind: String,
 }
 
 impl VocabularyHints {
-    pub fn hints(&self) -> Vec<Hint> {
+    pub(crate) fn hints(&self) -> Vec<Hint> {
         let kind = &self.kind;
         vec![
             Hint::inspect(format!("{kind} list"), "See all defined {kind}s"),

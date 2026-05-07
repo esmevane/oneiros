@@ -3,7 +3,7 @@
     Debug, Clone, Default, PartialEq, Eq, clap::ValueEnum, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
-pub enum Verbosity {
+pub(crate) enum Verbosity {
     /// Minimal output — only errors and essential confirmations.
     Quiet,
     /// Standard output — confirmations, summaries, and warnings.
@@ -15,12 +15,12 @@ pub enum Verbosity {
 
 impl Verbosity {
     /// Whether output should be suppressed to essentials.
-    pub fn is_quiet(&self) -> bool {
+    pub(crate) fn is_quiet(&self) -> bool {
         matches!(self, Self::Quiet)
     }
 
     /// Whether extra detail should be included.
-    pub fn is_verbose(&self) -> bool {
+    pub(crate) fn is_verbose(&self) -> bool {
         matches!(self, Self::Verbose)
     }
 }

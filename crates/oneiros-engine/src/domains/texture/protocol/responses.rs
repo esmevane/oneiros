@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = TextureResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum TextureResponse {
+pub(crate) enum TextureResponse {
     TextureSet(TextureSetResponse),
     TextureDetails(TextureDetailsResponse),
     Textures(TexturesResponse),
@@ -17,33 +17,33 @@ pub enum TextureResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TextureSetResponse {
-        V1 => { #[serde(flatten)] pub texture: Texture }
+    pub(crate) enum TextureSetResponse {
+        V1 => { #[serde(flatten)] pub(crate) texture: Texture }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TextureDetailsResponse {
-        V1 => { #[serde(flatten)] pub texture: Texture }
+    pub(crate) enum TextureDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) texture: Texture }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TexturesResponse {
+    pub(crate) enum TexturesResponse {
         V1 => {
-            pub items: Vec<Texture>,
-            pub total: usize,
+            pub(crate) items: Vec<Texture>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TextureRemovedResponse {
+    pub(crate) enum TextureRemovedResponse {
         V1 => {
-            #[builder(into)] pub name: TextureName,
+            #[builder(into)] pub(crate) name: TextureName,
         }
     }
 }

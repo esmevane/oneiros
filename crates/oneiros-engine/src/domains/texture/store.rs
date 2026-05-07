@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct TextureStore<'a> {
+pub(crate) struct TextureStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> TextureStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Texture(texture_event)) = &event.data {
             match texture_event {
                 TextureEvents::TextureSet(setting) => self.set(setting)?,
@@ -21,12 +21,12 @@ impl<'a> TextureStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM textures", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS textures (
                 name TEXT PRIMARY KEY,
@@ -37,7 +37,7 @@ impl<'a> TextureStore<'a> {
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Texture>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Texture>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM textures ORDER BY name")?;

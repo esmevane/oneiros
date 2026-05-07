@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum AgentCommands {
+pub(crate) enum AgentCommands {
     Create(CreateAgent),
     Show(GetAgent),
     List(ListAgents),
@@ -17,7 +17,7 @@ pub enum AgentCommands {
 }
 
 impl AgentCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, AgentError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, AgentError> {
         let client = Client::new(config.base_url());
         let agent_client = AgentClient::new(&client);
 

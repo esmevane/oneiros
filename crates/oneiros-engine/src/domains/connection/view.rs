@@ -2,17 +2,17 @@
 
 use crate::*;
 
-pub struct ConnectionView<'a> {
+pub(crate) struct ConnectionView<'a> {
     response: ConnectionResponse,
     request: &'a ConnectionRequest,
 }
 
 impl<'a> ConnectionView<'a> {
-    pub fn new(response: ConnectionResponse, request: &'a ConnectionRequest) -> Self {
+    pub(crate) fn new(response: ConnectionResponse, request: &'a ConnectionRequest) -> Self {
         Self { response, request }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             ConnectionResponse::ConnectionCreated(ConnectionCreatedResponse::V1(created)) => {
                 let ref_token = RefToken::from(Ref::connection(created.connection.id));
@@ -70,7 +70,7 @@ impl<'a> ConnectionView<'a> {
         }
     }
 
-    pub fn render(self) -> Rendered<ConnectionResponse> {
+    pub(crate) fn render(self) -> Rendered<ConnectionResponse> {
         match self.response {
             ConnectionResponse::ConnectionCreated(ConnectionCreatedResponse::V1(created)) => {
                 let ref_token = RefToken::from(Ref::connection(created.connection.id));

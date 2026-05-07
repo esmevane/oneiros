@@ -7,17 +7,17 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct PressureStore<'a> {
+pub(crate) struct PressureStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> PressureStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
     /// Recompute pressure for the agent associated with this event.
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         let agents = self.resolve_agents(event)?;
 
         if agents.is_empty() {
@@ -37,13 +37,13 @@ impl<'a> PressureStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("delete from pressures", [])?;
 
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists pressures (
                 id         text primary key,
@@ -57,7 +57,7 @@ impl<'a> PressureStore<'a> {
         Ok(())
     }
 
-    pub fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
+    pub(crate) fn get(&self, agent_name: &AgentName) -> Result<Vec<Pressure>, EventError> {
         // Look up agent by name to get the ID
         let agent = match AgentStore::new(self.conn).get(agent_name)? {
             Some(a) => a,
@@ -101,7 +101,7 @@ impl<'a> PressureStore<'a> {
         Ok(pressures)
     }
 
-    pub fn upsert(
+    pub(crate) fn upsert(
         &self,
         agent_id: &AgentId,
         urge: &UrgeName,

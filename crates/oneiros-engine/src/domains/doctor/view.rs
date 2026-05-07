@@ -2,16 +2,16 @@
 
 use crate::*;
 
-pub struct DoctorView {
+pub(crate) struct DoctorView {
     response: DoctorResponse,
 }
 
 impl DoctorView {
-    pub fn new(response: DoctorResponse) -> Self {
+    pub(crate) fn new(response: DoctorResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<DoctorResponse> {
+    pub(crate) fn render(self) -> Rendered<DoctorResponse> {
         match self.response {
             DoctorResponse::CheckupStatus(CheckupStatusResponse::V1(details)) => {
                 let prompt = Self::checklist(&details.checks);

@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum PersonaError {
+pub(crate) enum PersonaError {
     #[error("Persona not found: {0}")]
     NotFound(PersonaName),
 

@@ -10,16 +10,16 @@ use crate::*;
 /// Accessed via `ServerState::host_identity()` when composing outgoing
 /// `oneiros://` URIs from shared bookmarks.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct HostIdentity {
+pub(crate) struct HostIdentity {
     /// The host's ed25519 public key — stable across restarts.
-    pub key: PeerKey,
+    pub(crate) key: PeerKey,
     /// The host's current iroh endpoint address — reachability info that may
     /// change over time as the host's network environment changes.
-    pub address: PeerAddress,
+    pub(crate) address: PeerAddress,
 }
 
 impl HostIdentity {
-    pub fn new(key: PeerKey, address: PeerAddress) -> Self {
+    pub(crate) fn new(key: PeerKey, address: PeerAddress) -> Self {
         Self { key, address }
     }
 }

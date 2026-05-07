@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct UrgeProjections;
+pub(crate) struct UrgeProjections;
 
 impl UrgeProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

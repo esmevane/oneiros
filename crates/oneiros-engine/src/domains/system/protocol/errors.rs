@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum SystemError {
+pub(crate) enum SystemError {
     #[error(transparent)]
     Tenant(#[from] TenantError),
 

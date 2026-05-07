@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = LevelResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum LevelResponse {
+pub(crate) enum LevelResponse {
     LevelSet(LevelSetResponse),
     LevelDetails(LevelDetailsResponse),
     Levels(LevelsResponse),
@@ -17,33 +17,33 @@ pub enum LevelResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum LevelSetResponse {
-        V1 => { #[serde(flatten)] pub level: Level }
+    pub(crate) enum LevelSetResponse {
+        V1 => { #[serde(flatten)] pub(crate) level: Level }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum LevelDetailsResponse {
-        V1 => { #[serde(flatten)] pub level: Level }
+    pub(crate) enum LevelDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) level: Level }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum LevelsResponse {
+    pub(crate) enum LevelsResponse {
         V1 => {
-            pub items: Vec<Level>,
-            pub total: usize,
+            pub(crate) items: Vec<Level>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum LevelRemovedResponse {
+    pub(crate) enum LevelRemovedResponse {
         V1 => {
-            #[builder(into)] pub name: LevelName,
+            #[builder(into)] pub(crate) name: LevelName,
         }
     }
 }

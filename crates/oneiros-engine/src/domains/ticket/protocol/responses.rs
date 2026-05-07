@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = TicketResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum TicketResponse {
+pub(crate) enum TicketResponse {
     Created(TicketCreatedResponse),
     Found(TicketFoundResponse),
     Listed(TicketsResponse),
@@ -16,31 +16,31 @@ pub enum TicketResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TicketCreatedResponse {
-        V1 => { #[serde(flatten)] pub ticket: Ticket }
+    pub(crate) enum TicketCreatedResponse {
+        V1 => { #[serde(flatten)] pub(crate) ticket: Ticket }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TicketFoundResponse {
-        V1 => { #[serde(flatten)] pub ticket: Ticket }
+    pub(crate) enum TicketFoundResponse {
+        V1 => { #[serde(flatten)] pub(crate) ticket: Ticket }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TicketsResponse {
+    pub(crate) enum TicketsResponse {
         V1 => {
-            pub items: Vec<Ticket>,
-            pub total: usize,
+            pub(crate) items: Vec<Ticket>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum TicketValidatedResponse {
-        V1 => { #[serde(flatten)] pub ticket: Ticket }
+    pub(crate) enum TicketValidatedResponse {
+        V1 => { #[serde(flatten)] pub(crate) ticket: Ticket }
     }
 }

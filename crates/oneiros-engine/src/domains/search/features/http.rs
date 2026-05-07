@@ -3,10 +3,10 @@ use axum::{Json, extract::Query};
 
 use crate::*;
 
-pub struct SearchRouter;
+pub(crate) struct SearchRouter;
 
 impl SearchRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new().nest(
             "/search",
             ApiRouter::new().api_route(

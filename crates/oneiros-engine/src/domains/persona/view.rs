@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct PersonaView {
+pub(crate) struct PersonaView {
     response: PersonaResponse,
 }
 
 impl PersonaView {
-    pub fn new(response: PersonaResponse) -> Self {
+    pub(crate) fn new(response: PersonaResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             PersonaResponse::Personas(PersonasResponse::V1(listed)) => {
                 let items: Vec<_> = listed
@@ -50,7 +50,7 @@ impl PersonaView {
         McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
     }
 
-    pub fn render(self) -> Rendered<PersonaResponse> {
+    pub(crate) fn render(self) -> Rendered<PersonaResponse> {
         match self.response {
             PersonaResponse::PersonaSet(PersonaSetResponse::V1(set)) => {
                 let prompt =

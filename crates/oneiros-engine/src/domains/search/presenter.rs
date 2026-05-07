@@ -1,11 +1,11 @@
 use crate::*;
 
-pub struct SearchPresenter {
+pub(crate) struct SearchPresenter {
     response: SearchResponse,
 }
 
 impl SearchPresenter {
-    pub fn new(response: SearchResponse) -> Self {
+    pub(crate) fn new(response: SearchResponse) -> Self {
         Self { response }
     }
 
@@ -13,7 +13,7 @@ impl SearchPresenter {
     /// orient by kind first, content second. Facets render as a final
     /// "palace map" section so the surrounding shape is visible without
     /// an extra round trip.
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             SearchResponse::Results(ResultsResponse::V1(results)) => {
                 let mut md = format!(
@@ -51,7 +51,7 @@ impl SearchPresenter {
         }
     }
 
-    pub fn render(self) -> Rendered<SearchResponse> {
+    pub(crate) fn render(self) -> Rendered<SearchResponse> {
         let prompt = self.render_prompt();
         let text = self.render_text();
 

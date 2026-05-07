@@ -6,49 +6,49 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetPersona {
+    pub(crate) enum SetPersona {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: PersonaName,
+            #[builder(into)] pub(crate) name: PersonaName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetPersona {
+    pub(crate) enum GetPersona {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<PersonaName>,
+            #[builder(into)] pub(crate) key: ResourceKey<PersonaName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemovePersona {
+    pub(crate) enum RemovePersona {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: PersonaName,
+            #[builder(into)] pub(crate) name: PersonaName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListPersonas {
+    pub(crate) enum ListPersonas {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -56,7 +56,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PersonaRequestType, display = "kebab-case")]
-pub enum PersonaRequest {
+pub(crate) enum PersonaRequest {
     SetPersona(SetPersona),
     GetPersona(GetPersona),
     ListPersonas(ListPersonas),

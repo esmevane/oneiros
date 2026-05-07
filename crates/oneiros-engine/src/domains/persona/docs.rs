@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum PersonaDocs {
+pub(crate) enum PersonaDocs {
     List,
     Set,
     Show,
@@ -8,14 +8,14 @@ pub enum PersonaDocs {
 }
 
 impl PersonaDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("personas")
             .description("Define categories of agents")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::List => ResourceDocs::builder()

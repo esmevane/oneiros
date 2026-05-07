@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ActorError {
+pub(crate) enum ActorError {
     #[error("Actor not found: {0}")]
     NotFound(ActorId),
 

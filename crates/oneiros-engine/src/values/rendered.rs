@@ -14,7 +14,7 @@ use crate::*;
 /// produced them. Empty strings indicate no presentation is available
 /// for that mode — the caller falls back to serializing `data`.
 #[derive(Debug)]
-pub struct Rendered<T> {
+pub(crate) struct Rendered<T> {
     data: T,
     prompt: String,
     text: String,
@@ -22,42 +22,42 @@ pub struct Rendered<T> {
 
 impl<T> Rendered<T> {
     /// Construct with all representations.
-    pub fn new(data: T, prompt: String, text: String) -> Self {
+    pub(crate) fn new(data: T, prompt: String, text: String) -> Self {
         Self { data, prompt, text }
     }
 
     /// The typed response — always available.
-    pub fn response(&self) -> &T {
+    pub(crate) fn response(&self) -> &T {
         &self.data
     }
 
     /// Consume into the typed response, discarding presentation.
-    pub fn into_response(self) -> T {
+    pub(crate) fn into_response(self) -> T {
         self.data
     }
 
     /// The rendered prompt, if a presenter produced one.
-    pub fn prompt(&self) -> &str {
+    pub(crate) fn prompt(&self) -> &str {
         &self.prompt
     }
 
     /// The text summary, if a presenter produced one.
-    pub fn text(&self) -> &str {
+    pub(crate) fn text(&self) -> &str {
         &self.text
     }
 
     /// Whether this has a richer representation than raw data.
-    pub fn has_prompt(&self) -> bool {
+    pub(crate) fn has_prompt(&self) -> bool {
         !self.prompt.is_empty()
     }
 
     /// Whether this has a text summary.
-    pub fn has_text(&self) -> bool {
+    pub(crate) fn has_text(&self) -> bool {
         !self.text.is_empty()
     }
 
     /// Transform the data while preserving prompt and text.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Rendered<U> {
+    pub(crate) fn map<U>(self, f: impl FnOnce(T) -> U) -> Rendered<U> {
         Rendered {
             data: f(self.data),
             prompt: self.prompt,
@@ -69,7 +69,7 @@ impl<T> Rendered<T> {
     ///
     /// The `HintSet` is rendered via the `HintTemplate` and appended
     /// to the existing prompt. No-op if the hint set produces no hints.
-    pub fn with_hints(mut self, hint_set: HintSet) -> Self {
+    pub(crate) fn with_hints(mut self, hint_set: HintSet) -> Self {
         let hints = hint_set.hints();
         if !hints.is_empty() {
             let section = HintTemplate { hints: &hints }.to_string();

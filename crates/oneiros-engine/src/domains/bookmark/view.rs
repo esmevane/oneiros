@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct BookmarkView {
+pub(crate) struct BookmarkView {
     response: BookmarkResponse,
 }
 
 impl BookmarkView {
-    pub fn new(response: BookmarkResponse) -> Self {
+    pub(crate) fn new(response: BookmarkResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<BookmarkResponse> {
+    pub(crate) fn render(self) -> Rendered<BookmarkResponse> {
         match self.response {
             BookmarkResponse::Created(BookmarkCreatedResponse::V1(created)) => {
                 let prompt =

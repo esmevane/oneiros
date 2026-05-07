@@ -12,22 +12,22 @@ use crate::{Error, Paint};
 /// and text modes, `ErrorView` carries a failed result with formatted
 /// text for terminal display. The CLI uses this to render errors
 /// through the same output pipeline as successful responses.
-pub struct ErrorView {
+pub(crate) struct ErrorView {
     error: Error,
 }
 
 impl ErrorView {
-    pub fn new(error: Error) -> Self {
+    pub(crate) fn new(error: Error) -> Self {
         Self { error }
     }
 
     /// The underlying error.
-    pub fn error(&self) -> &Error {
+    pub(crate) fn error(&self) -> &Error {
         &self.error
     }
 
     /// Formatted text for terminal output — styled with the error palette.
-    pub fn text(&self) -> String {
+    pub(crate) fn text(&self) -> String {
         format!("{}: {}", "error".error(), self.error)
     }
 }

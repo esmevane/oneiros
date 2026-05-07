@@ -6,12 +6,12 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = TenantEventsType, display = "kebab-case")]
-pub enum TenantEvents {
+pub(crate) enum TenantEvents {
     TenantCreated(TenantCreated),
 }
 
 impl TenantEvents {
-    pub fn maybe_tenant(&self) -> Option<Tenant> {
+    pub(crate) fn maybe_tenant(&self) -> Option<Tenant> {
         match self {
             TenantEvents::TenantCreated(event) => event.clone().current().ok().map(|v| v.tenant),
         }
@@ -19,9 +19,9 @@ impl TenantEvents {
 }
 
 versioned! {
-    pub enum TenantCreated {
+    pub(crate) enum TenantCreated {
         V1 => {
-            #[serde(flatten)] pub tenant: Tenant,
+            #[serde(flatten)] pub(crate) tenant: Tenant,
         }
     }
 }

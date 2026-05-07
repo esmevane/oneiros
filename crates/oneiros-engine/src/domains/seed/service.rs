@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SeedService;
+pub(crate) struct SeedService;
 
 impl SeedService {
-    pub async fn core(
+    pub(crate) async fn core(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
     ) -> Result<SeedResponse, SeedError> {
@@ -214,7 +214,7 @@ impl SeedService {
         Ok(SeedResponse::SeedComplete)
     }
 
-    pub async fn agents(
+    pub(crate) async fn agents(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
     ) -> Result<SeedResponse, SeedError> {

@@ -8,37 +8,37 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum InitProject {
+    pub(crate) enum InitProject {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
             #[builder(into)]
-            pub name: Option<BrainName>,
+            pub(crate) name: Option<BrainName>,
             #[arg(long, short)]
             #[serde(default)]
             #[builder(default)]
-            pub yes: bool,
+            pub(crate) yes: bool,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ExportProject {
+    pub(crate) enum ExportProject {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long, short)]
-            pub target: PathBuf,
+            pub(crate) target: PathBuf,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ImportProject {
+    pub(crate) enum ImportProject {
         #[derive(clap::Args)]
         V1 => {
-            pub file: PathBuf,
+            pub(crate) file: PathBuf,
         }
     }
 }
@@ -46,7 +46,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ProjectRequestType, display = "kebab-case")]
-pub enum ProjectRequest {
+pub(crate) enum ProjectRequest {
     InitProject(InitProject),
     ExportProject(ExportProject),
     ImportProject(ImportProject),

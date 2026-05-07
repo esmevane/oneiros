@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Connection read model — async queries over the projection read model.
-pub struct ConnectionRepo<'a> {
+pub(crate) struct ConnectionRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> ConnectionRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -16,11 +16,11 @@ impl<'a> ConnectionRepo<'a> {
     /// connection appears or the configured patience window expires.
     ///
     /// [`get`]: ConnectionRepo::get
-    pub async fn fetch(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
+    pub(crate) async fn fetch(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
+    pub(crate) async fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, from_ref, to_ref, nature, created_at
@@ -52,7 +52,7 @@ impl<'a> ConnectionRepo<'a> {
         }
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         &self,
         entity_ref: Option<&str>,
         filters: &SearchFilters,

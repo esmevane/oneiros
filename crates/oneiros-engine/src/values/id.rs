@@ -10,19 +10,19 @@
     schemars::JsonSchema,
 )]
 #[serde(transparent)]
-pub struct Id(pub uuid::Uuid);
+pub(crate) struct Id(pub(crate) uuid::Uuid);
 
 impl Id {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self(uuid::Uuid::now_v7())
     }
 
     #[deprecated]
-    pub fn parse(s: &str) -> Option<Self> {
+    pub(crate) fn parse(s: &str) -> Option<Self> {
         uuid::Uuid::parse_str(s).ok().map(Self)
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_nil()
     }
 }
@@ -41,7 +41,7 @@ impl core::fmt::Display for Id {
 
 #[derive(Debug, thiserror::Error)]
 #[error("Unable to parse id, invalid contents: {0}")]
-pub struct IdParseError(#[from] uuid::Error);
+pub(crate) struct IdParseError(#[from] uuid::Error);
 
 impl core::str::FromStr for Id {
     type Err = IdParseError;

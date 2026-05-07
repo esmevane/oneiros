@@ -6,45 +6,45 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum AddPeer {
+    pub(crate) enum AddPeer {
         #[derive(clap::Args)]
         V1 => {
-            pub address: String,
+            pub(crate) address: String,
             #[arg(long)]
-            pub name: Option<String>,
+            pub(crate) name: Option<String>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetPeer {
+    pub(crate) enum GetPeer {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<PeerId>,
+            #[builder(into)] pub(crate) key: ResourceKey<PeerId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemovePeer {
+    pub(crate) enum RemovePeer {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub id: PeerId,
+            #[builder(into)] pub(crate) id: PeerId,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListPeers {
+    pub(crate) enum ListPeers {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -52,7 +52,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PeerRequestType, display = "kebab-case")]
-pub enum PeerRequest {
+pub(crate) enum PeerRequest {
     AddPeer(AddPeer),
     GetPeer(GetPeer),
     RemovePeer(RemovePeer),

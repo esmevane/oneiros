@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct ConnectionMcp;
+pub(crate) struct ConnectionMcp;
 
 impl ConnectionMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         connection_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -17,15 +17,15 @@ impl ConnectionMcp {
         connection_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![ResourcePathKind::Connection.into_template("A specific connection")]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &ConnectionRequest,
@@ -37,7 +37,7 @@ impl ConnectionMcp {
 mod connection_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateConnection>::new(
                 ConnectionRequestType::CreateConnection,
@@ -47,7 +47,7 @@ mod connection_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &ToolName,
@@ -76,7 +76,7 @@ mod connection_mcp {
         }
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         context: &ProjectLog,
         request: &ConnectionRequest,
     ) -> Result<McpResponse, ToolError> {

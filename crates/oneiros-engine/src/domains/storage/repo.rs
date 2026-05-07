@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Storage repo — async read queries over the storage and blob projection tables.
-pub struct StorageRepo<'a> {
+pub(crate) struct StorageRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> StorageRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -16,7 +16,7 @@ impl<'a> StorageRepo<'a> {
     /// the entry appears or the configured patience window expires.
     ///
     /// [`get_storage`]: StorageRepo::get_storage
-    pub async fn fetch_storage(
+    pub(crate) async fn fetch_storage(
         &self,
         key: &StorageKey,
     ) -> Result<Option<StorageEntry>, EventError> {
@@ -27,7 +27,7 @@ impl<'a> StorageRepo<'a> {
             .await
     }
 
-    pub async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
+    pub(crate) async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
 
@@ -49,7 +49,7 @@ impl<'a> StorageRepo<'a> {
         }
     }
 
-    pub async fn list_storage(
+    pub(crate) async fn list_storage(
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<StorageEntry>, EventError> {
@@ -86,7 +86,7 @@ impl<'a> StorageRepo<'a> {
     /// blob appears or the configured patience window expires.
     ///
     /// [`get_blob`]: StorageRepo::get_blob
-    pub async fn fetch_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+    pub(crate) async fn fetch_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
         self.scope
             .config()
             .fetch
@@ -94,7 +94,7 @@ impl<'a> StorageRepo<'a> {
             .await
     }
 
-    pub async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+    pub(crate) async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
 

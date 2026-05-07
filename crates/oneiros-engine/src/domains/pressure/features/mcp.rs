@@ -1,17 +1,17 @@
 use crate::*;
 
-pub struct PressureMcp;
+pub(crate) struct PressureMcp;
 
 impl PressureMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Pressure.resource_def("All agents' pressure readings")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &PressureRequest,
@@ -23,7 +23,7 @@ impl PressureMcp {
 mod pressure_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         context: &ProjectLog,
         request: &PressureRequest,
     ) -> Result<McpResponse, ToolError> {

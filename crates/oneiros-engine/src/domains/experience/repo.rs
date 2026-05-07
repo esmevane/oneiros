@@ -5,12 +5,12 @@ use rusqlite::{params, params_from_iter};
 use crate::*;
 
 /// Experience read model — async queries over the projection read model.
-pub struct ExperienceRepo<'a> {
+pub(crate) struct ExperienceRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> ExperienceRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -18,11 +18,11 @@ impl<'a> ExperienceRepo<'a> {
     /// experience appears or the configured patience window expires.
     ///
     /// [`get`]: ExperienceRepo::get
-    pub async fn fetch(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
+    pub(crate) async fn fetch(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
+    pub(crate) async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, sensation, description, created_at
@@ -57,7 +57,7 @@ impl<'a> ExperienceRepo<'a> {
 
     /// Hydrate many experiences by id, preserving the input order. Used by
     /// list endpoints to bulk-fetch search hits in a single round trip.
-    pub async fn get_many(&self, ids: &[ExperienceId]) -> Result<Vec<Experience>, EventError> {
+    pub(crate) async fn get_many(&self, ids: &[ExperienceId]) -> Result<Vec<Experience>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -99,7 +99,7 @@ impl<'a> ExperienceRepo<'a> {
     }
 
     /// Most recent experiences for an agent, ordered newest-first.
-    pub async fn list_recent(
+    pub(crate) async fn list_recent(
         &self,
         agent_id: &str,
         limit: usize,

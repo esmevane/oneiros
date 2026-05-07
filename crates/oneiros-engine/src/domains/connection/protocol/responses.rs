@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = ConnectionResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ConnectionResponse {
+pub(crate) enum ConnectionResponse {
     ConnectionCreated(ConnectionCreatedResponse),
     ConnectionDetails(ConnectionDetailsResponse),
     Connections(ConnectionsResponse),
@@ -17,33 +17,33 @@ pub enum ConnectionResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ConnectionCreatedResponse {
-        V1 => { #[serde(flatten)] pub connection: Connection }
+    pub(crate) enum ConnectionCreatedResponse {
+        V1 => { #[serde(flatten)] pub(crate) connection: Connection }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ConnectionDetailsResponse {
-        V1 => { #[serde(flatten)] pub connection: Connection }
+    pub(crate) enum ConnectionDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) connection: Connection }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ConnectionsResponse {
+    pub(crate) enum ConnectionsResponse {
         V1 => {
-            pub items: Vec<Connection>,
-            pub total: usize,
+            pub(crate) items: Vec<Connection>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ConnectionRemovedResponse {
+    pub(crate) enum ConnectionRemovedResponse {
         V1 => {
-            pub id: ConnectionId,
+            pub(crate) id: ConnectionId,
         }
     }
 }

@@ -1,17 +1,17 @@
 use crate::*;
 
-pub struct TextureMcp;
+pub(crate) struct TextureMcp;
 
 impl TextureMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Textures.resource_def("Thought textures")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &TextureRequest,
@@ -24,7 +24,7 @@ impl TextureMcp {
 mod texture_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         scope: &Scope<AtBookmark>,
         request: &TextureRequest,
     ) -> Result<McpResponse, ToolError> {

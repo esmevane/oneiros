@@ -1,17 +1,17 @@
 use crate::*;
 
-pub struct PersonaMcp;
+pub(crate) struct PersonaMcp;
 
 impl PersonaMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Personas.resource_def("Agent personas")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &PersonaRequest,
@@ -24,7 +24,7 @@ impl PersonaMcp {
 mod persona_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         scope: &Scope<AtBookmark>,
         request: &PersonaRequest,
     ) -> Result<McpResponse, ToolError> {

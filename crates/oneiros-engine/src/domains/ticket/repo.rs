@@ -3,7 +3,7 @@ use rusqlite::params;
 use crate::*;
 
 /// Ticket read model — async queries against the system context.
-pub struct TicketRepo<'a> {
+pub(crate) struct TicketRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
@@ -93,7 +93,7 @@ fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TicketRow> {
 }
 
 impl<'a> TicketRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
@@ -101,11 +101,11 @@ impl<'a> TicketRepo<'a> {
     /// ticket appears or the configured patience window expires.
     ///
     /// [`get`]: TicketRepo::get
-    pub async fn fetch(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
+    pub(crate) async fn fetch(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
+    pub(crate) async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE id = ?1");
         let mut stmt = db.prepare(&sql)?;
@@ -119,7 +119,7 @@ impl<'a> TicketRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
         let db = HostDb::open(self.scope).await?;
 
         let total = {
@@ -148,7 +148,7 @@ impl<'a> TicketRepo<'a> {
         Ok(Listed::new(tickets, total))
     }
 
-    pub async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
+    pub(crate) async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE token = ?1");
         let mut stmt = db.prepare(&sql)?;

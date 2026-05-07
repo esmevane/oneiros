@@ -14,7 +14,7 @@ fn saturate(value: f64, midpoint: f64) -> f64 {
 /// complete audit trail of how urgency was derived.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-pub enum Gauge {
+pub(crate) enum Gauge {
     Introspect(IntrospectGauge),
     Catharsis(CatharsisGauge),
     Recollect(RecollectGauge),
@@ -23,7 +23,7 @@ pub enum Gauge {
 
 impl Gauge {
     /// Compute the urgency score from this gauge's factors.
-    pub fn urgency(&self) -> f64 {
+    pub(crate) fn urgency(&self) -> f64 {
         match self {
             Gauge::Introspect(g) => g.urgency(),
             Gauge::Catharsis(g) => g.urgency(),
@@ -41,19 +41,19 @@ impl Gauge {
 /// - memory_promotion_rate (0.20): inverted — low promotion = high pressure
 /// - session_cognition_count (0.20): cognitions since last wake
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct IntrospectGauge {
-    pub inputs: IntrospectInputs,
-    pub calculation: IntrospectCalculation,
+pub(crate) struct IntrospectGauge {
+    pub(crate) inputs: IntrospectInputs,
+    pub(crate) calculation: IntrospectCalculation,
     #[serde(default)]
-    pub config: IntrospectConfig,
+    pub(crate) config: IntrospectConfig,
 }
 
 impl IntrospectGauge {
-    pub fn from_inputs(inputs: IntrospectInputs) -> Self {
+    pub(crate) fn from_inputs(inputs: IntrospectInputs) -> Self {
         Self::from_inputs_with_config(inputs, IntrospectConfig::default())
     }
 
-    pub fn from_inputs_with_config(inputs: IntrospectInputs, config: IntrospectConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(inputs: IntrospectInputs, config: IntrospectConfig) -> Self {
         let time_factor = saturate(inputs.hours_since_last_introspect, config.time_midpoint);
 
         let working_factor = if inputs.total_cognitions > 0 {
@@ -88,7 +88,7 @@ impl IntrospectGauge {
         }
     }
 
-    pub fn urgency(&self) -> f64 {
+    pub(crate) fn urgency(&self) -> f64 {
         self.calculation.time_factor * self.config.time_weight
             + self.calculation.working_factor * self.config.working_weight
             + self.calculation.promotion_factor * self.config.promotion_weight
@@ -101,13 +101,13 @@ impl IntrospectGauge {
 /// TODO: Thread from runtime config (oneiros-config) through the projection
 /// stack so these can be adjusted without code changes.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct IntrospectConfig {
-    pub time_midpoint: f64,
-    pub session_midpoint: f64,
-    pub time_weight: f64,
-    pub working_weight: f64,
-    pub promotion_weight: f64,
-    pub session_weight: f64,
+pub(crate) struct IntrospectConfig {
+    pub(crate) time_midpoint: f64,
+    pub(crate) session_midpoint: f64,
+    pub(crate) time_weight: f64,
+    pub(crate) working_weight: f64,
+    pub(crate) promotion_weight: f64,
+    pub(crate) session_weight: f64,
 }
 
 impl Default for IntrospectConfig {
@@ -125,22 +125,22 @@ impl Default for IntrospectConfig {
 
 /// Raw inputs gathered by the projection for the introspect heuristic.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct IntrospectInputs {
-    pub hours_since_last_introspect: f64,
-    pub total_cognitions: u64,
-    pub working_cognitions: u64,
-    pub cognitions_since_introspect: u64,
-    pub memories_since_introspect: u64,
-    pub session_cognition_count: u64,
+pub(crate) struct IntrospectInputs {
+    pub(crate) hours_since_last_introspect: f64,
+    pub(crate) total_cognitions: u64,
+    pub(crate) working_cognitions: u64,
+    pub(crate) cognitions_since_introspect: u64,
+    pub(crate) memories_since_introspect: u64,
+    pub(crate) session_cognition_count: u64,
 }
 
 /// Computed factors derived from introspect inputs.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct IntrospectCalculation {
-    pub time_factor: f64,
-    pub working_factor: f64,
-    pub promotion_factor: f64,
-    pub session_factor: f64,
+pub(crate) struct IntrospectCalculation {
+    pub(crate) time_factor: f64,
+    pub(crate) working_factor: f64,
+    pub(crate) promotion_factor: f64,
+    pub(crate) session_factor: f64,
 }
 
 // ── Catharsis Gauge ──────────────────────────────────────────────
@@ -153,19 +153,19 @@ pub struct IntrospectCalculation {
 /// - time_since_reflect_factor (0.25): hours since last reflect event
 /// - orphaned_cognition_factor (0.15): cognitions not referenced by any experience
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct CatharsisGauge {
-    pub inputs: CatharsisInputs,
-    pub calculation: CatharsisCalculation,
+pub(crate) struct CatharsisGauge {
+    pub(crate) inputs: CatharsisInputs,
+    pub(crate) calculation: CatharsisCalculation,
     #[serde(default)]
-    pub config: CatharsisConfig,
+    pub(crate) config: CatharsisConfig,
 }
 
 impl CatharsisGauge {
-    pub fn from_inputs(inputs: CatharsisInputs) -> Self {
+    pub(crate) fn from_inputs(inputs: CatharsisInputs) -> Self {
         Self::from_inputs_with_config(inputs, CatharsisConfig::default())
     }
 
-    pub fn from_inputs_with_config(inputs: CatharsisInputs, config: CatharsisConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(inputs: CatharsisInputs, config: CatharsisConfig) -> Self {
         let tensions_factor = saturate(
             inputs.tensions_experience_count as f64,
             config.tensions_midpoint,
@@ -202,7 +202,7 @@ impl CatharsisGauge {
         }
     }
 
-    pub fn urgency(&self) -> f64 {
+    pub(crate) fn urgency(&self) -> f64 {
         self.calculation.tensions_factor * self.config.tensions_weight
             + self.calculation.stale_working_factor * self.config.stale_working_weight
             + self.calculation.time_since_reflect_factor * self.config.reflect_time_weight
@@ -211,13 +211,13 @@ impl CatharsisGauge {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct CatharsisConfig {
-    pub tensions_midpoint: f64,
-    pub reflect_time_midpoint: f64,
-    pub tensions_weight: f64,
-    pub stale_working_weight: f64,
-    pub reflect_time_weight: f64,
-    pub orphaned_weight: f64,
+pub(crate) struct CatharsisConfig {
+    pub(crate) tensions_midpoint: f64,
+    pub(crate) reflect_time_midpoint: f64,
+    pub(crate) tensions_weight: f64,
+    pub(crate) stale_working_weight: f64,
+    pub(crate) reflect_time_weight: f64,
+    pub(crate) orphaned_weight: f64,
 }
 
 impl Default for CatharsisConfig {
@@ -234,20 +234,20 @@ impl Default for CatharsisConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct CatharsisInputs {
-    pub tensions_experience_count: u64,
-    pub total_cognitions: u64,
-    pub working_cognitions: u64,
-    pub hours_since_last_reflect: f64,
-    pub orphaned_cognitions: u64,
+pub(crate) struct CatharsisInputs {
+    pub(crate) tensions_experience_count: u64,
+    pub(crate) total_cognitions: u64,
+    pub(crate) working_cognitions: u64,
+    pub(crate) hours_since_last_reflect: f64,
+    pub(crate) orphaned_cognitions: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct CatharsisCalculation {
-    pub tensions_factor: f64,
-    pub stale_working_factor: f64,
-    pub time_since_reflect_factor: f64,
-    pub orphaned_cognition_factor: f64,
+pub(crate) struct CatharsisCalculation {
+    pub(crate) tensions_factor: f64,
+    pub(crate) stale_working_factor: f64,
+    pub(crate) time_since_reflect_factor: f64,
+    pub(crate) orphaned_cognition_factor: f64,
 }
 
 // ── Recollect Gauge ─────────────────────────────────────────────
@@ -260,19 +260,19 @@ pub struct CatharsisCalculation {
 /// - time_since_memory_factor (0.30): hours since last memory was added
 /// - working_memory_factor (0.20): working-level memories (scratchpad overflow)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RecollectGauge {
-    pub inputs: RecollectInputs,
-    pub calculation: RecollectCalculation,
+pub(crate) struct RecollectGauge {
+    pub(crate) inputs: RecollectInputs,
+    pub(crate) calculation: RecollectCalculation,
     #[serde(default)]
-    pub config: RecollectConfig,
+    pub(crate) config: RecollectConfig,
 }
 
 impl RecollectGauge {
-    pub fn from_inputs(inputs: RecollectInputs) -> Self {
+    pub(crate) fn from_inputs(inputs: RecollectInputs) -> Self {
         Self::from_inputs_with_config(inputs, RecollectConfig::default())
     }
 
-    pub fn from_inputs_with_config(inputs: RecollectInputs, config: RecollectConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(inputs: RecollectInputs, config: RecollectConfig) -> Self {
         let session_memory_factor = saturate(
             inputs.session_memory_count as f64,
             config.session_memory_midpoint,
@@ -306,7 +306,7 @@ impl RecollectGauge {
         }
     }
 
-    pub fn urgency(&self) -> f64 {
+    pub(crate) fn urgency(&self) -> f64 {
         self.calculation.session_memory_factor * self.config.session_memory_weight
             + self.calculation.unconnected_experience_factor
                 * self.config.unconnected_experience_weight
@@ -316,14 +316,14 @@ impl RecollectGauge {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RecollectConfig {
-    pub session_memory_midpoint: f64,
-    pub memory_time_midpoint: f64,
-    pub working_memory_midpoint: f64,
-    pub session_memory_weight: f64,
-    pub unconnected_experience_weight: f64,
-    pub memory_time_weight: f64,
-    pub working_memory_weight: f64,
+pub(crate) struct RecollectConfig {
+    pub(crate) session_memory_midpoint: f64,
+    pub(crate) memory_time_midpoint: f64,
+    pub(crate) working_memory_midpoint: f64,
+    pub(crate) session_memory_weight: f64,
+    pub(crate) unconnected_experience_weight: f64,
+    pub(crate) memory_time_weight: f64,
+    pub(crate) working_memory_weight: f64,
 }
 
 impl Default for RecollectConfig {
@@ -341,20 +341,20 @@ impl Default for RecollectConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RecollectInputs {
-    pub session_memory_count: u64,
-    pub total_experiences: u64,
-    pub unconnected_experiences: u64,
-    pub hours_since_last_memory: f64,
-    pub working_memory_count: u64,
+pub(crate) struct RecollectInputs {
+    pub(crate) session_memory_count: u64,
+    pub(crate) total_experiences: u64,
+    pub(crate) unconnected_experiences: u64,
+    pub(crate) hours_since_last_memory: f64,
+    pub(crate) working_memory_count: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RecollectCalculation {
-    pub session_memory_factor: f64,
-    pub unconnected_experience_factor: f64,
-    pub time_since_memory_factor: f64,
-    pub working_memory_factor: f64,
+pub(crate) struct RecollectCalculation {
+    pub(crate) session_memory_factor: f64,
+    pub(crate) unconnected_experience_factor: f64,
+    pub(crate) time_since_memory_factor: f64,
+    pub(crate) working_memory_factor: f64,
 }
 
 // ── Retrospect Gauge ────────────────────────────────────────────
@@ -367,19 +367,19 @@ pub struct RecollectCalculation {
 /// - sessions_since_factor (0.25): wake events since last archival memory
 /// - experience_accumulation_factor (0.20): total experiences (arc material)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RetrospectGauge {
-    pub inputs: RetrospectInputs,
-    pub calculation: RetrospectCalculation,
+pub(crate) struct RetrospectGauge {
+    pub(crate) inputs: RetrospectInputs,
+    pub(crate) calculation: RetrospectCalculation,
     #[serde(default)]
-    pub config: RetrospectConfig,
+    pub(crate) config: RetrospectConfig,
 }
 
 impl RetrospectGauge {
-    pub fn from_inputs(inputs: RetrospectInputs) -> Self {
+    pub(crate) fn from_inputs(inputs: RetrospectInputs) -> Self {
         Self::from_inputs_with_config(inputs, RetrospectConfig::default())
     }
 
-    pub fn from_inputs_with_config(inputs: RetrospectInputs, config: RetrospectConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(inputs: RetrospectInputs, config: RetrospectConfig) -> Self {
         let time_since_archival_factor = saturate(
             inputs.hours_since_last_archival,
             config.archival_time_midpoint,
@@ -414,7 +414,7 @@ impl RetrospectGauge {
         }
     }
 
-    pub fn urgency(&self) -> f64 {
+    pub(crate) fn urgency(&self) -> f64 {
         self.calculation.time_since_archival_factor * self.config.archival_time_weight
             + self.calculation.project_staleness_factor * self.config.project_staleness_weight
             + self.calculation.sessions_since_factor * self.config.sessions_weight
@@ -423,15 +423,15 @@ impl RetrospectGauge {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RetrospectConfig {
-    pub archival_time_midpoint: f64,
-    pub project_time_midpoint: f64,
-    pub sessions_midpoint: f64,
-    pub experience_midpoint: f64,
-    pub archival_time_weight: f64,
-    pub project_staleness_weight: f64,
-    pub sessions_weight: f64,
-    pub experience_weight: f64,
+pub(crate) struct RetrospectConfig {
+    pub(crate) archival_time_midpoint: f64,
+    pub(crate) project_time_midpoint: f64,
+    pub(crate) sessions_midpoint: f64,
+    pub(crate) experience_midpoint: f64,
+    pub(crate) archival_time_weight: f64,
+    pub(crate) project_staleness_weight: f64,
+    pub(crate) sessions_weight: f64,
+    pub(crate) experience_weight: f64,
 }
 
 impl Default for RetrospectConfig {
@@ -450,19 +450,19 @@ impl Default for RetrospectConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RetrospectInputs {
-    pub hours_since_last_archival: f64,
-    pub hours_since_last_project_memory: f64,
-    pub sessions_since_retrospect: u64,
-    pub total_experience_count: u64,
+pub(crate) struct RetrospectInputs {
+    pub(crate) hours_since_last_archival: f64,
+    pub(crate) hours_since_last_project_memory: f64,
+    pub(crate) sessions_since_retrospect: u64,
+    pub(crate) total_experience_count: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, schemars::JsonSchema)]
-pub struct RetrospectCalculation {
-    pub time_since_archival_factor: f64,
-    pub project_staleness_factor: f64,
-    pub sessions_since_factor: f64,
-    pub experience_accumulation_factor: f64,
+pub(crate) struct RetrospectCalculation {
+    pub(crate) time_since_archival_factor: f64,
+    pub(crate) project_staleness_factor: f64,
+    pub(crate) sessions_since_factor: f64,
+    pub(crate) experience_accumulation_factor: f64,
 }
 
 #[cfg(test)]

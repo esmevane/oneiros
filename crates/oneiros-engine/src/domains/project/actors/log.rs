@@ -11,39 +11,39 @@ use tokio::sync::mpsc;
 use crate::*;
 
 #[derive(Clone)]
-pub struct ProjectLogMailbox {
+pub(crate) struct ProjectLogMailbox {
     tx: mpsc::UnboundedSender<ProjectMessage>,
 }
 
 impl ProjectLogMailbox {
-    pub fn open() -> (Self, ProjectLogInbox) {
+    pub(crate) fn open() -> (Self, ProjectLogInbox) {
         let (tx, rx) = mpsc::unbounded_channel();
         (Self { tx }, ProjectLogInbox { rx })
     }
 
-    pub fn tell(&self, message: ProjectMessage) {
+    pub(crate) fn tell(&self, message: ProjectMessage) {
         if let Err(error) = self.tx.send(message) {
             tracing::warn!(error = %error, "project log: receiver closed; message dropped");
         }
     }
 }
 
-pub struct ProjectLogInbox {
+pub(crate) struct ProjectLogInbox {
     rx: mpsc::UnboundedReceiver<ProjectMessage>,
 }
 
 impl ProjectLogInbox {
-    pub async fn recv(&mut self) -> Option<ProjectMessage> {
+    pub(crate) async fn recv(&mut self) -> Option<ProjectMessage> {
         self.rx.recv().await
     }
 }
 
-pub struct ProjectLogActor {
+pub(crate) struct ProjectLogActor {
     mailbox: Mailbox,
 }
 
 impl ProjectLogActor {
-    pub fn spawn(inbox: ProjectLogInbox, mailbox: Mailbox) {
+    pub(crate) fn spawn(inbox: ProjectLogInbox, mailbox: Mailbox) {
         tokio::spawn(Self { mailbox }.run(inbox));
     }
 

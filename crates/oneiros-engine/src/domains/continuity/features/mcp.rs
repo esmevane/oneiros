@@ -1,17 +1,17 @@
 use crate::*;
 
-pub struct ContinuityMcp;
+pub(crate) struct ContinuityMcp;
 
 impl ContinuityMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Status.resource_def("Cross-agent activity table")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &ContinuityRequest,
@@ -24,7 +24,7 @@ impl ContinuityMcp {
 mod continuity_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         scope: &Scope<AtBookmark>,
         request: &ContinuityRequest,
     ) -> Result<McpResponse, ToolError> {

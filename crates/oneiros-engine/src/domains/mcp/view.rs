@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct McpView {
+pub(crate) struct McpView {
     response: McpConfigResponse,
 }
 
 impl McpView {
-    pub fn new(response: McpConfigResponse) -> Self {
+    pub(crate) fn new(response: McpConfigResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<McpConfigResponse> {
+    pub(crate) fn render(self) -> Rendered<McpConfigResponse> {
         match self.response {
             McpConfigResponse::McpConfigWritten(McpConfigWrittenResponse::V1(details)) => {
                 let path = details.path;

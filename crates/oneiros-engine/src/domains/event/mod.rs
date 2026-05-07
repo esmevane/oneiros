@@ -1,5 +1,5 @@
 mod model;
 mod protocol;
 
-pub use model::*;
-pub use protocol::*;
+pub(crate) use model::*;
+pub(crate) use protocol::*;

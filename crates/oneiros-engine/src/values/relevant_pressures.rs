@@ -8,27 +8,27 @@ use crate::*;
 /// so that future work can filter by command, agent state, or other
 /// criteria without changing the display contract.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct RelevantPressures(pub Vec<PressureSummary>);
+pub(crate) struct RelevantPressures(pub(crate) Vec<PressureSummary>);
 
 impl RelevantPressures {
-    pub fn from_summaries(summaries: Vec<PressureSummary>) -> Self {
+    pub(crate) fn from_summaries(summaries: Vec<PressureSummary>) -> Self {
         Self(summaries)
     }
 
     /// Build from bare pressures. Used when urge prompts are
     /// unavailable — converts via PressureSummary.
-    pub fn from_pressures(pressures: Vec<Pressure>) -> Self {
+    pub(crate) fn from_pressures(pressures: Vec<Pressure>) -> Self {
         Self(pressures.iter().map(PressureSummary::from).collect())
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
     /// Compact single-line gauge for prompt attachment.
     ///
     /// Example: `[urges: introspect 72% | catharsis 12%]`
-    pub fn compact(&self) -> String {
+    pub(crate) fn compact(&self) -> String {
         if self.0.is_empty() {
             return String::new();
         }

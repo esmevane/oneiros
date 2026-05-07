@@ -3,13 +3,13 @@ use clap::Args;
 use crate::*;
 
 #[derive(Debug, Args)]
-pub struct PressureCommands {
+pub(crate) struct PressureCommands {
     #[command(flatten)]
-    pub command: GetPressure,
+    pub(crate) command: GetPressure,
 }
 
 impl PressureCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PressureError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PressureError> {
         let client = Client::new(config.base_url());
         let pressure_client = PressureClient::new(&client);
 

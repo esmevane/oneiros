@@ -7,16 +7,16 @@ use crate::*;
 /// Two-tier design (inspired by Fossil):
 /// - `blob` table: content-addressed by SHA256 hash, stores compressed binary
 /// - `storage` table: maps human-readable keys to blob hashes
-pub struct StorageStore<'a> {
+pub(crate) struct StorageStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> StorageStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Storage(storage_event)) = &event.data {
             match storage_event {
                 StorageEvents::StorageSet(set) => {
@@ -32,17 +32,17 @@ impl<'a> StorageStore<'a> {
         Ok(())
     }
 
-    pub fn reset_blobs(&self) -> Result<(), EventError> {
+    pub(crate) fn reset_blobs(&self) -> Result<(), EventError> {
         self.conn.execute_batch("DELETE FROM blob")?;
         Ok(())
     }
 
-    pub fn reset_storage(&self) -> Result<(), EventError> {
+    pub(crate) fn reset_storage(&self) -> Result<(), EventError> {
         self.conn.execute_batch("DELETE FROM storage")?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS blob (
                 hash TEXT PRIMARY KEY NOT NULL,
@@ -59,7 +59,7 @@ impl<'a> StorageStore<'a> {
     }
 
     #[tracing::instrument(skip_all, fields(hash = %content.hash, size = content.size.as_i64()), err(Display))]
-    pub fn put_blob(&self, content: &BlobContent) -> Result<(), EventError> {
+    pub(crate) fn put_blob(&self, content: &BlobContent) -> Result<(), EventError> {
         let bytes = content.data.decode()?;
         self.conn.execute(
             "INSERT OR IGNORE INTO blob (hash, data, size) VALUES (?1, ?2, ?3)",
@@ -69,7 +69,7 @@ impl<'a> StorageStore<'a> {
     }
 
     #[tracing::instrument(skip_all, fields(hash = %hash), err(Display))]
-    pub fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+    pub(crate) fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
@@ -92,7 +92,7 @@ impl<'a> StorageStore<'a> {
         }
     }
 
-    pub fn set_storage(&self, entry: &StorageEntry) -> Result<(), EventError> {
+    pub(crate) fn set_storage(&self, entry: &StorageEntry) -> Result<(), EventError> {
         self.conn.execute(
             "INSERT INTO storage (key, description, hash) VALUES (?1, ?2, ?3)
              ON CONFLICT(key) DO UPDATE SET description = excluded.description, hash = excluded.hash",
@@ -105,7 +105,7 @@ impl<'a> StorageStore<'a> {
         Ok(())
     }
 
-    pub fn remove_storage(&self, key: &StorageKey) -> Result<(), EventError> {
+    pub(crate) fn remove_storage(&self, key: &StorageKey) -> Result<(), EventError> {
         self.conn
             .execute("DELETE FROM storage WHERE key = ?1", params![key.as_str()])?;
         Ok(())

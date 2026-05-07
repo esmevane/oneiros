@@ -16,45 +16,45 @@ use crate::*;
 /// ticket (when authorization is needed) lives inside the
 /// `PeerLink.link` for the Peer variant.
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Follow {
+pub(crate) struct Follow {
     #[builder(default)]
-    pub id: FollowId,
+    pub(crate) id: FollowId,
     #[builder(into)]
-    pub brain: BrainName,
+    pub(crate) brain: BrainName,
     #[builder(into)]
-    pub bookmark: BookmarkName,
-    pub source: FollowSource,
+    pub(crate) bookmark: BookmarkName,
+    pub(crate) source: FollowSource,
     #[builder(default = Checkpoint::empty())]
-    pub checkpoint: Checkpoint,
+    pub(crate) checkpoint: Checkpoint,
     #[builder(default = Timestamp::now())]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
 #[derive(Clone, Default)]
-pub struct Follows(HashMap<String, Follow>);
+pub(crate) struct Follows(HashMap<String, Follow>);
 
 impl Follows {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &Follow> {
+    pub(crate) fn values(&self) -> impl Iterator<Item = &Follow> {
         self.0.values()
     }
 
-    pub fn get(&self, id: FollowId) -> Option<&Follow> {
+    pub(crate) fn get(&self, id: FollowId) -> Option<&Follow> {
         self.0.get(&id.to_string())
     }
 
-    pub fn set(&mut self, follow: &Follow) -> Option<Follow> {
+    pub(crate) fn set(&mut self, follow: &Follow) -> Option<Follow> {
         self.0.insert(follow.id.to_string(), follow.clone())
     }
 
-    pub fn remove(&mut self, follow_id: FollowId) -> Option<Follow> {
+    pub(crate) fn remove(&mut self, follow_id: FollowId) -> Option<Follow> {
         self.0.remove(&follow_id.to_string())
     }
 }

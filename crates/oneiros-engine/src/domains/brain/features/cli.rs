@@ -6,14 +6,14 @@ use crate::*;
 /// protocol request directly — clap derives parsing through the wrapper's
 /// `Args` impl, which delegates to the latest version's struct.
 #[derive(Debug, Subcommand)]
-pub enum BrainCommands {
+pub(crate) enum BrainCommands {
     Create(CreateBrain),
     Get(GetBrain),
     List(ListBrains),
 }
 
 impl BrainCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BrainError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BrainError> {
         let client = Client::new(config.base_url());
         let brain_client = BrainClient::new(&client);
 

@@ -6,16 +6,16 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum InitSystem {
+    pub(crate) enum InitSystem {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long, short)]
             #[builder(into)]
-            pub name: Option<String>,
+            pub(crate) name: Option<String>,
             #[arg(long, short)]
             #[serde(default)]
             #[builder(default)]
-            pub yes: bool,
+            pub(crate) yes: bool,
         }
     }
 }
@@ -23,7 +23,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SystemRequestType, display = "kebab-case")]
-pub enum SystemRequest {
+pub(crate) enum SystemRequest {
     InitSystem(InitSystem),
 }
 

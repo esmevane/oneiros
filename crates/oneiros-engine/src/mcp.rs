@@ -22,7 +22,7 @@ use crate::*;
 
 /// Errors that can occur during MCP tool dispatch or resource reading.
 #[derive(Debug, thiserror::Error)]
-pub enum ToolError {
+pub(crate) enum ToolError {
     /// An application-level error from the engine.
     #[error("Application error: {0}")]
     App(#[from] Error),
@@ -198,13 +198,13 @@ async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Opti
 }
 
 #[derive(Clone)]
-pub struct EngineToolBox {
+pub(crate) struct EngineToolBox {
     state: ServerState,
     session_config: OnceLock<Config>,
 }
 
 impl EngineToolBox {
-    pub fn new(state: ServerState) -> Self {
+    pub(crate) fn new(state: ServerState) -> Self {
         Self {
             state,
             session_config: OnceLock::new(),

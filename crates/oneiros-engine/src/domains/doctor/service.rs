@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct DoctorService;
+pub(crate) struct DoctorService;
 
 impl DoctorService {
-    pub async fn check(config: &Config) -> DoctorResponse {
+    pub(crate) async fn check(config: &Config) -> DoctorResponse {
         let mut checks = Vec::new();
 
         // Compose host-tier scope. Failure here means we don't have

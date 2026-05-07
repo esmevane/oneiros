@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use crate::*;
 
-pub struct McpConfigService;
+pub(crate) struct McpConfigService;
 
 impl McpConfigService {
-    pub fn init(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
+    pub(crate) fn init(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
         let details = request.current()?;
         let token = details
             .token
@@ -53,7 +53,7 @@ impl McpConfigService {
 
     /// Write the .mcp.json regardless of whether it exists.
     /// Used by setup after the user confirms.
-    pub fn write(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
+    pub(crate) fn write(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
         let details = request.current()?;
         let forced: InitMcp = InitMcp::builder_v1()
             .maybe_token(details.token.clone())
@@ -65,14 +65,14 @@ impl McpConfigService {
     }
 
     /// The path to .mcp.json in the current working directory.
-    pub fn mcp_json_path() -> PathBuf {
+    pub(crate) fn mcp_json_path() -> PathBuf {
         std::env::current_dir()
             .unwrap_or_default()
             .join(".mcp.json")
     }
 
     /// Check whether .mcp.json exists.
-    pub fn is_configured() -> bool {
+    pub(crate) fn is_configured() -> bool {
         Self::mcp_json_path().exists()
     }
 }

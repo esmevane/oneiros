@@ -8,13 +8,13 @@ use crate::*;
 /// `bookmark share` and what you hand to `bookmark follow`. Displays as an
 /// `oneiros://<host>/link:<payload>` URI.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct PeerLink {
-    pub host: PeerAddress,
-    pub link: Link,
+pub(crate) struct PeerLink {
+    pub(crate) host: PeerAddress,
+    pub(crate) link: Link,
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum PeerLinkError {
+pub(crate) enum PeerLinkError {
     #[error("missing oneiros:// scheme prefix")]
     MissingScheme,
     #[error("missing path separator after host segment")]
@@ -26,7 +26,7 @@ pub enum PeerLinkError {
 }
 
 impl PeerLink {
-    pub fn new(host: PeerAddress, link: Link) -> Self {
+    pub(crate) fn new(host: PeerAddress, link: Link) -> Self {
         Self { host, link }
     }
 }

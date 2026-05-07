@@ -1,19 +1,19 @@
 use crate::*;
 
-pub enum ProjectDocs {
+pub(crate) enum ProjectDocs {
     Init,
     Summary,
 }
 
 impl ProjectDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("project")
             .description("Project initialization and overview")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Init => ResourceDocs::builder()

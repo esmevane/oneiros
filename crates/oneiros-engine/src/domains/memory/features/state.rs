@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct MemoryState;
+pub(crate) struct MemoryState;
 
 impl MemoryState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Memory(MemoryEvents::MemoryAdded(added)) = event
             && let Ok(current) = added.current()
         {
@@ -13,7 +13,7 @@ impl MemoryState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

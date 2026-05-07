@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ContinuityEventsType, display = "kebab-case")]
-pub enum ContinuityEvents {
+pub(crate) enum ContinuityEvents {
     Dreamed(Dreamed),
     Introspected(Introspected),
     Reflected(Reflected),
@@ -15,47 +15,47 @@ pub enum ContinuityEvents {
 }
 
 versioned! {
-    pub enum Dreamed {
+    pub(crate) enum Dreamed {
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            pub created_at: Timestamp,
+            #[builder(into)] pub(crate) agent: AgentName,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum Introspected {
+    pub(crate) enum Introspected {
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            pub created_at: Timestamp,
+            #[builder(into)] pub(crate) agent: AgentName,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum Reflected {
+    pub(crate) enum Reflected {
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            pub created_at: Timestamp,
+            #[builder(into)] pub(crate) agent: AgentName,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum Sensed {
+    pub(crate) enum Sensed {
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            #[builder(into)] pub content: Content,
-            pub created_at: Timestamp,
+            #[builder(into)] pub(crate) agent: AgentName,
+            #[builder(into)] pub(crate) content: Content,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum Slept {
+    pub(crate) enum Slept {
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            pub created_at: Timestamp,
+            #[builder(into)] pub(crate) agent: AgentName,
+            pub(crate) created_at: Timestamp,
         }
     }
 }

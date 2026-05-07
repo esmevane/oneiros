@@ -11,39 +11,39 @@ use tokio::sync::mpsc;
 use crate::*;
 
 #[derive(Clone)]
-pub struct SystemLogMailbox {
+pub(crate) struct SystemLogMailbox {
     tx: mpsc::UnboundedSender<SystemMessage>,
 }
 
 impl SystemLogMailbox {
-    pub fn open() -> (Self, SystemLogInbox) {
+    pub(crate) fn open() -> (Self, SystemLogInbox) {
         let (tx, rx) = mpsc::unbounded_channel();
         (Self { tx }, SystemLogInbox { rx })
     }
 
-    pub fn tell(&self, message: SystemMessage) {
+    pub(crate) fn tell(&self, message: SystemMessage) {
         if let Err(error) = self.tx.send(message) {
             tracing::warn!(error = %error, "system log: receiver closed; message dropped");
         }
     }
 }
 
-pub struct SystemLogInbox {
+pub(crate) struct SystemLogInbox {
     rx: mpsc::UnboundedReceiver<SystemMessage>,
 }
 
 impl SystemLogInbox {
-    pub async fn recv(&mut self) -> Option<SystemMessage> {
+    pub(crate) async fn recv(&mut self) -> Option<SystemMessage> {
         self.rx.recv().await
     }
 }
 
-pub struct SystemLogActor {
+pub(crate) struct SystemLogActor {
     mailbox: Mailbox,
 }
 
 impl SystemLogActor {
-    pub fn spawn(inbox: SystemLogInbox, mailbox: Mailbox) {
+    pub(crate) fn spawn(inbox: SystemLogInbox, mailbox: Mailbox) {
         tokio::spawn(Self { mailbox }.run(inbox));
     }
 

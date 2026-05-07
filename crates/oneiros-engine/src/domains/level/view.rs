@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct LevelView {
+pub(crate) struct LevelView {
     response: LevelResponse,
 }
 
 impl LevelView {
-    pub fn new(response: LevelResponse) -> Self {
+    pub(crate) fn new(response: LevelResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             LevelResponse::Levels(LevelsResponse::V1(listed)) => {
                 let items: Vec<_> = listed
@@ -50,7 +50,7 @@ impl LevelView {
         McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
     }
 
-    pub fn render(self) -> Rendered<LevelResponse> {
+    pub(crate) fn render(self) -> Rendered<LevelResponse> {
         match self.response {
             LevelResponse::LevelSet(LevelSetResponse::V1(set)) => {
                 let prompt =

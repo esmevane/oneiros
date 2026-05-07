@@ -3,10 +3,10 @@ use axum::{Json, http::StatusCode};
 
 use crate::*;
 
-pub struct SeedRouter;
+pub(crate) struct SeedRouter;
 
 impl SeedRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new().nest(
             "/seed",
             ApiRouter::new()

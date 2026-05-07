@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum StorageCommands {
+pub(crate) enum StorageCommands {
     /// Upload a file to storage. Reads the bytes from `file` and
     /// constructs the protocol-level `UploadStorage` request.
     Set {
@@ -19,7 +19,7 @@ pub enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, StorageError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, StorageError> {
         let client = Client::new(config.base_url());
         let storage_client = StorageClient::new(&client);
 

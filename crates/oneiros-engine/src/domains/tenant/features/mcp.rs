@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct TenantMcp;
+pub(crate) struct TenantMcp;
 
 impl TenantMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         tenant_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -21,7 +21,7 @@ impl TenantMcp {
 mod tenant_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateTenant>::new(TenantRequestType::CreateTenant, "Create a new tenant").def(),
             Tool::<GetTenant>::new(
@@ -33,7 +33,7 @@ mod tenant_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &str,

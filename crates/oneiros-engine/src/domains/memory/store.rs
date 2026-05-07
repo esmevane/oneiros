@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Memory projection store — projection lifecycle, write operations, and sync read queries.
-pub struct MemoryStore<'a> {
+pub(crate) struct MemoryStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> MemoryStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Memory(memory_event)) = &event.data {
             match memory_event {
                 MemoryEvents::MemoryAdded(added) => {
@@ -25,12 +25,12 @@ impl<'a> MemoryStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM memories", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS memories (
                 id TEXT PRIMARY KEY,
@@ -43,7 +43,7 @@ impl<'a> MemoryStore<'a> {
         Ok(())
     }
 
-    pub fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
+    pub(crate) fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, level, content, created_at
              FROM memories WHERE id = ?1",
@@ -74,7 +74,7 @@ impl<'a> MemoryStore<'a> {
         }
     }
 
-    pub fn list(&self, agent: Option<&str>) -> Result<Vec<Memory>, EventError> {
+    pub(crate) fn list(&self, agent: Option<&str>) -> Result<Vec<Memory>, EventError> {
         let mut stmt = match agent {
             Some(_) => self.conn.prepare(
                 "SELECT id, agent_id, level, content, created_at

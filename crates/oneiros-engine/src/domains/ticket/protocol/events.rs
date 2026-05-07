@@ -6,14 +6,14 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = TicketEventsType, display = "kebab-case")]
-pub enum TicketEvents {
+pub(crate) enum TicketEvents {
     TicketIssued(TicketIssued),
     TicketUsed(TicketUsed),
     TicketRejected(TicketRejected),
 }
 
 impl TicketEvents {
-    pub fn maybe_ticket(&self) -> Option<Ticket> {
+    pub(crate) fn maybe_ticket(&self) -> Option<Ticket> {
         match self {
             TicketEvents::TicketIssued(event) => event.clone().current().ok().map(|v| v.ticket),
             TicketEvents::TicketUsed(_) | TicketEvents::TicketRejected(_) => None,
@@ -22,28 +22,28 @@ impl TicketEvents {
 }
 
 versioned! {
-    pub enum TicketIssued {
+    pub(crate) enum TicketIssued {
         V1 => {
-            #[serde(flatten)] pub ticket: Ticket,
+            #[serde(flatten)] pub(crate) ticket: Ticket,
         }
     }
 }
 
 versioned! {
-    pub enum TicketUsed {
+    pub(crate) enum TicketUsed {
         V1 => {
-            pub ticket_id: TicketId,
-            pub used_at: Timestamp,
+            pub(crate) ticket_id: TicketId,
+            pub(crate) used_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum TicketRejected {
+    pub(crate) enum TicketRejected {
         V1 => {
-            pub ticket_id: Option<TicketId>,
-            pub reason: String,
-            pub rejected_at: Timestamp,
+            pub(crate) ticket_id: Option<TicketId>,
+            pub(crate) reason: String,
+            pub(crate) rejected_at: Timestamp,
         }
     }
 }

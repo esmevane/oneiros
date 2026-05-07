@@ -3,14 +3,14 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum MemoryCommands {
+pub(crate) enum MemoryCommands {
     Add(AddMemory),
     Show(GetMemory),
     List(ListMemories),
 }
 
 impl MemoryCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, MemoryError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, MemoryError> {
         let client = Client::new(config.base_url());
         let memory_client = MemoryClient::new(&client);
 

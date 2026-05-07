@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = NatureResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum NatureResponse {
+pub(crate) enum NatureResponse {
     NatureSet(NatureSetResponse),
     NatureDetails(NatureDetailsResponse),
     Natures(NaturesResponse),
@@ -17,33 +17,33 @@ pub enum NatureResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum NatureSetResponse {
-        V1 => { #[serde(flatten)] pub nature: Nature }
+    pub(crate) enum NatureSetResponse {
+        V1 => { #[serde(flatten)] pub(crate) nature: Nature }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum NatureDetailsResponse {
-        V1 => { #[serde(flatten)] pub nature: Nature }
+    pub(crate) enum NatureDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) nature: Nature }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum NaturesResponse {
+    pub(crate) enum NaturesResponse {
         V1 => {
-            pub items: Vec<Nature>,
-            pub total: usize,
+            pub(crate) items: Vec<Nature>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum NatureRemovedResponse {
+    pub(crate) enum NatureRemovedResponse {
         V1 => {
-            #[builder(into)] pub name: NatureName,
+            #[builder(into)] pub(crate) name: NatureName,
         }
     }
 }

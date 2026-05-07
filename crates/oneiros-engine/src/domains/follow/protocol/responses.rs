@@ -11,31 +11,31 @@ use crate::*;
     clippy::large_enum_variant,
     reason = "We can reduce the size of the Follow later"
 )]
-pub enum FollowResponse {
+pub(crate) enum FollowResponse {
     Found(FollowFoundResponse),
     Listed(FollowsResponse),
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum FollowFoundResponse {
+    pub(crate) enum FollowFoundResponse {
         V1 => {
-            #[builder(default)] pub id: FollowId,
-            pub brain: BrainName,
-            pub bookmark: BookmarkName,
-            pub source: FollowSource,
-            pub checkpoint: Checkpoint,
-            pub created_at: Timestamp,
+            #[builder(default)] pub(crate) id: FollowId,
+            pub(crate) brain: BrainName,
+            pub(crate) bookmark: BookmarkName,
+            pub(crate) source: FollowSource,
+            pub(crate) checkpoint: Checkpoint,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum FollowsResponse {
+    pub(crate) enum FollowsResponse {
         V1 => {
-            pub items: Vec<FollowFoundResponseV1>,
-            pub total: usize,
+            pub(crate) items: Vec<FollowFoundResponseV1>,
+            pub(crate) total: usize,
         }
     }
 }

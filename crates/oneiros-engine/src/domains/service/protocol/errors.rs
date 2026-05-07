@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ServiceError {
+pub(crate) enum ServiceError {
     #[error("Service not initialized — run `oneiros system init` first")]
     NotInitialized,
 

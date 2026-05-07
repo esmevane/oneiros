@@ -18,7 +18,7 @@ use crate::*;
 /// receive one at spawn time so they can address other actors without
 /// holding sibling handles.
 #[derive(Clone)]
-pub struct Mailbox {
+pub(crate) struct Mailbox {
     system_log: SystemLogMailbox,
     system_projection: SystemProjectionMailbox,
     project_log: ProjectLogMailbox,
@@ -33,7 +33,7 @@ impl Mailbox {
     /// Each per-actor inbox is consumed by a singleton task; each actor
     /// receives a clone of the mailbox so it can emit follow-ups without
     /// holding handles to siblings.
-    pub fn spawn(canons: CanonIndex) -> Self {
+    pub(crate) fn spawn(canons: CanonIndex) -> Self {
         let (system_log, system_log_inbox) = SystemLogMailbox::open();
         let (system_projection, system_projection_inbox) = SystemProjectionMailbox::open();
         let (project_log, project_log_inbox) = ProjectLogMailbox::open();
@@ -63,7 +63,7 @@ impl Mailbox {
     /// Send a message into the bus. `Into<Message>` lets callers pass
     /// per-tier messages or action structs directly without wrapping
     /// at the call site.
-    pub fn tell(&self, message: impl Into<Message>) {
+    pub(crate) fn tell(&self, message: impl Into<Message>) {
         match message.into() {
             Message::System(message) => match message {
                 SystemMessage::LogAppend(_) | SystemMessage::LogReset(_) => {

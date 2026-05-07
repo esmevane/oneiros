@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct StorageState;
+pub(crate) struct StorageState;
 
 impl StorageState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Storage(storage_event) = event {
             match storage_event {
                 StorageEvents::StorageSet(set) => {
@@ -22,7 +22,7 @@ impl StorageState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

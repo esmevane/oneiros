@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Peer read model — async queries against the system context.
-pub struct PeerRepo<'a> {
+pub(crate) struct PeerRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
 impl<'a> PeerRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
@@ -16,11 +16,11 @@ impl<'a> PeerRepo<'a> {
     /// peer appears or the configured patience window expires.
     ///
     /// [`get`]: PeerRepo::get
-    pub async fn fetch(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
+    pub(crate) async fn fetch(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
+    pub(crate) async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut statement =
             db.prepare("select id, key, address, name, created_at from peers where id = ?1")?;
@@ -44,7 +44,7 @@ impl<'a> PeerRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
         let db = HostDb::open(self.scope).await?;
 
         let total = {

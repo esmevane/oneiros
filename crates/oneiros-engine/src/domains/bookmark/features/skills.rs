@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct BookmarkSkills;
+pub(crate) struct BookmarkSkills;
 
 impl BookmarkSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("bookmark-create", include_str!("skills/create.md")),
             Skill::new("bookmark-switch", include_str!("skills/switch.md")),

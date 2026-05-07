@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum ContinuityDocs {
+pub(crate) enum ContinuityDocs {
     Emerge,
     Status,
     Recede,
@@ -14,14 +14,14 @@ pub enum ContinuityDocs {
 }
 
 impl ContinuityDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("continuity")
             .description("Agent lifecycle and cognitive operations")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Emerge => ResourceDocs::builder()

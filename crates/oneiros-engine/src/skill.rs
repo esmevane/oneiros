@@ -6,15 +6,10 @@
 //! `SkillPackage` represents the installable artifact — everything Claude Code
 //! needs to use oneiros as a skill: the SKILL.md, plugin metadata, hooks,
 //! agent definitions, resources, and command documentation.
-
-use std::path::Path;
-
 use crate::*;
 
 /// The version of the package, stamped at compile time.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-// ── Package assets (embedded at compile time) ────────────────────
 
 const SKILL_MD: &str = include_str!("../templates/skills/oneiros/SKILL.md");
 const PLUGIN_JSON: &str = include_str!("../templates/skills/oneiros/plugin.json");
@@ -32,14 +27,12 @@ pub struct SkillAsset {
     pub content: String,
 }
 
-// ── SkillInventory ───────────────────────────────────────────────
-
 /// The complete skill inventory across all domains.
-pub struct SkillInventory;
+pub(crate) struct SkillInventory;
 
 impl SkillInventory {
     /// All command skill documents from every domain.
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         let mut skills = Vec::new();
 
         skills.extend(ActorSkills::all());
@@ -74,17 +67,10 @@ impl SkillInventory {
     }
 }
 
-// ── SkillPackage ─────────────────────────────────────────────────
-
 /// The installable skill package — everything Claude Code needs.
 pub struct SkillPackage;
 
 impl SkillPackage {
-    /// The package version.
-    pub fn version() -> &'static str {
-        VERSION
-    }
-
     /// All files in the package, ready to write to disk.
     ///
     /// Version placeholders (`{{VERSION}}`) are stamped at call time.
@@ -145,22 +131,6 @@ impl SkillPackage {
         }
 
         assets
-    }
-
-    /// Install the complete package to a target directory.
-    pub fn install(target: &Path) -> Result<usize, std::io::Error> {
-        let assets = Self::assets();
-        let count = assets.len();
-
-        for asset in assets {
-            let dest = target.join(asset.path);
-            if let Some(parent) = dest.parent() {
-                std::fs::create_dir_all(parent)?;
-            }
-            std::fs::write(&dest, &asset.content)?;
-        }
-
-        Ok(count)
     }
 
     /// Agent definition files.
@@ -337,18 +307,5 @@ mod tests {
             plugin.content.contains(VERSION),
             "plugin.json should contain the current version"
         );
-    }
-
-    #[test]
-    fn package_install_writes_files() {
-        let temp = tempfile::TempDir::new().unwrap();
-        let count = SkillPackage::install(temp.path()).unwrap();
-        assert!(count > 0, "should install at least one file");
-
-        // Verify a few key files exist
-        assert!(temp.path().join("skills/oneiros/SKILL.md").exists());
-        assert!(temp.path().join(".claude-plugin/plugin.json").exists());
-        assert!(temp.path().join("hooks/hooks.json").exists());
-        assert!(temp.path().join("commands/dream.md").exists());
     }
 }

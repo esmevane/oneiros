@@ -6,49 +6,49 @@ use std::collections::HashMap;
 use crate::*;
 
 #[derive(Debug, Clone, Builder, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Cognition {
+pub(crate) struct Cognition {
     #[builder(default)]
-    pub id: CognitionId,
-    pub agent_id: AgentId,
+    pub(crate) id: CognitionId,
+    pub(crate) agent_id: AgentId,
     #[builder(into)]
-    pub texture: TextureName,
+    pub(crate) texture: TextureName,
     #[builder(into)]
-    pub content: Content,
+    pub(crate) content: Content,
     #[builder(default = Timestamp::now())]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
 impl Cognition {
-    pub fn ref_token(&self) -> RefToken {
+    pub(crate) fn ref_token(&self) -> RefToken {
         RefToken::from(Ref::cognition(self.id))
     }
 }
 
 #[derive(Clone, Default)]
-pub struct Cognitions(HashMap<String, Cognition>);
+pub(crate) struct Cognitions(HashMap<String, Cognition>);
 
 impl Cognitions {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &Cognition> {
+    pub(crate) fn values(&self) -> impl Iterator<Item = &Cognition> {
         self.0.values()
     }
 
-    pub fn get(&self, id: CognitionId) -> Option<&Cognition> {
+    pub(crate) fn get(&self, id: CognitionId) -> Option<&Cognition> {
         self.0.get(&id.to_string())
     }
 
-    pub fn set(&mut self, cognition: &Cognition) -> Option<Cognition> {
+    pub(crate) fn set(&mut self, cognition: &Cognition) -> Option<Cognition> {
         self.0.insert(cognition.id.to_string(), cognition.clone())
     }
 
-    pub fn remove(&mut self, cognition_id: CognitionId) -> Option<Cognition> {
+    pub(crate) fn remove(&mut self, cognition_id: CognitionId) -> Option<Cognition> {
         self.0.remove(&cognition_id.to_string())
     }
 }

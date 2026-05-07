@@ -5,37 +5,37 @@ use crate::*;
 /// Append a fresh event to a project's events.db. The bookmark scope is
 /// preserved so post-storage downstream addresses the right bookmark.
 #[derive(Builder, Clone)]
-pub struct AppendProjectLog {
-    pub scope: Scope<AtBookmark>,
+pub(crate) struct AppendProjectLog {
+    pub(crate) scope: Scope<AtBookmark>,
     #[builder(into)]
-    pub event: Box<NewEvent>,
+    pub(crate) event: Box<NewEvent>,
 }
 
 /// Reset the project's events.db. (No-op stub for now — durable record.)
 #[derive(Builder, Clone)]
-pub struct ResetProjectLog {
-    pub scope: Scope<AtProject>,
+pub(crate) struct ResetProjectLog {
+    pub(crate) scope: Scope<AtProject>,
 }
 
 /// Insert-or-ignore a foreign stored event into the project's events.db.
 /// Bookmark scope is preserved so downstream addresses the right bookmark.
 #[derive(Builder, Clone)]
-pub struct ImportProjectEvent {
-    pub scope: Scope<AtBookmark>,
+pub(crate) struct ImportProjectEvent {
+    pub(crate) scope: Scope<AtBookmark>,
     #[builder(into)]
-    pub stored: Box<StoredEvent>,
+    pub(crate) stored: Box<StoredEvent>,
 }
 
 /// Reset the project's events.db ingest state. (No-op for now.)
 #[derive(Builder, Clone)]
-pub struct ResetProjectImport {
-    pub scope: Scope<AtProject>,
+pub(crate) struct ResetProjectImport {
+    pub(crate) scope: Scope<AtProject>,
 }
 
 /// All project-tier messages, flat. Routed per-brain by the router;
 /// actors handle their own variants and no-op the rest.
 #[derive(Clone)]
-pub enum ProjectMessage {
+pub(crate) enum ProjectMessage {
     LogAppend(AppendProjectLog),
     LogReset(ResetProjectLog),
     ImportEvent(ImportProjectEvent),
@@ -43,7 +43,7 @@ pub enum ProjectMessage {
 }
 
 impl ProjectMessage {
-    pub fn brain(&self) -> &BrainName {
+    pub(crate) fn brain(&self) -> &BrainName {
         match self {
             Self::LogAppend(message) => &message.scope.project().name,
             Self::LogReset(message) => &message.scope.project().name,

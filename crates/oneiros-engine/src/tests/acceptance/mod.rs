@@ -46,14 +46,14 @@ pub(crate) struct Harness<B> {
 
 impl<B: Backend> Harness<B> {
     /// Create a bare harness — no system, no project. System-scope tests start here.
-    pub async fn started() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn started() -> Result<Self, Box<dyn core::error::Error>> {
         let backend = B::start().await?;
         Ok(Self { backend })
     }
 
     /// Initialize the host system. After this, system-scoped commands work
     /// (actor, brain, tenant, ticket).
-    pub async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::started().await?;
         harness
             .backend
@@ -65,14 +65,14 @@ impl<B: Backend> Harness<B> {
     /// Start the backing service explicitly. Most tests don't need this —
     /// `setup_system` starts the service automatically. Use for tests that
     /// need fine-grained control over sequencing.
-    pub async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
         self.backend.start_service().await?;
         Ok(self)
     }
 
     /// Initialize a project brain. After this, brain-scoped commands work
     /// (agents, cognitions, memories, vocabulary, etc.)
-    pub async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::setup_system().await?.start_service().await?;
         harness
             .backend
@@ -83,7 +83,7 @@ impl<B: Backend> Harness<B> {
     }
 
     /// Initialize a project and seed it with core vocabulary.
-    pub async fn seed_project() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn seed_project() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::init_project().await?;
         harness
             .backend
@@ -97,12 +97,12 @@ impl<B: Backend> Harness<B> {
     ///
     /// Use for write operations where you assert on the immediate response,
     /// or for setup commands that don't need eventual-consistency handling.
-    pub async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
+    pub(crate) async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
         self.backend.exec_json(command).await
     }
 
     /// Execute in prompt mode — delegates to the backend.
-    pub async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
+    pub(crate) async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
         self.backend.exec_prompt(command).await
     }
 }

@@ -3,7 +3,7 @@
     Debug, Clone, Default, PartialEq, clap::ValueEnum, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
-pub enum OutputMode {
+pub(crate) enum OutputMode {
     /// Structured data — machines, acceptance tests, --output json.
     Json,
     /// Human-readable summary — terminal users.

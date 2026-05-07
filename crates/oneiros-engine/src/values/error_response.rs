@@ -9,18 +9,18 @@ use serde::{Deserialize, Serialize};
 /// Every `IntoResponse` impl for domain errors produces this type,
 /// giving clients a stable contract they can parse and extend.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct ErrorResponse {
-    pub error: String,
+pub(crate) struct ErrorResponse {
+    pub(crate) error: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub code: Option<String>,
+    pub(crate) code: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
+    pub(crate) detail: Option<String>,
 }
 
 impl ErrorResponse {
-    pub fn new(error: impl Into<String>) -> Self {
+    pub(crate) fn new(error: impl Into<String>) -> Self {
         Self {
             error: error.into(),
             code: None,
@@ -28,17 +28,17 @@ impl ErrorResponse {
         }
     }
 
-    pub fn with_code(mut self, code: impl Into<String>) -> Self {
+    pub(crate) fn with_code(mut self, code: impl Into<String>) -> Self {
         self.code = Some(code.into());
         self
     }
 
-    pub fn with_detail(mut self, detail: impl Into<String>) -> Self {
+    pub(crate) fn with_detail(mut self, detail: impl Into<String>) -> Self {
         self.detail = Some(detail.into());
         self
     }
 
-    pub fn openapi_schema(context: &mut aide::generate::GenContext) -> aide::openapi::Response {
+    pub(crate) fn openapi_schema(context: &mut aide::generate::GenContext) -> aide::openapi::Response {
         let json_schema = context.schema.subschema_for::<ErrorResponse>();
         aide::openapi::Response {
             description: "Error response".into(),

@@ -8,16 +8,16 @@ fn is_missing_table(e: &rusqlite::Error) -> bool {
     )
 }
 
-pub struct BookmarkStore<'a> {
+pub(crate) struct BookmarkStore<'a> {
     db: &'a rusqlite::Connection,
 }
 
 impl<'a> BookmarkStore<'a> {
-    pub fn new(db: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(db: &'a rusqlite::Connection) -> Self {
         Self { db }
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.db.execute_batch(
             "CREATE TABLE IF NOT EXISTS bookmarks (
                 id TEXT PRIMARY KEY,
@@ -30,7 +30,7 @@ impl<'a> BookmarkStore<'a> {
         Ok(())
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Bookmark(bookmark_event)) = &event.data
             && let Some(bookmark) = bookmark_event.maybe_bookmark()
         {
@@ -53,14 +53,14 @@ impl<'a> BookmarkStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.db.execute_batch("DELETE FROM bookmarks")?;
         Ok(())
     }
 
     /// List bookmark names for a specific brain. Returns an empty
     /// list if the projection has not been migrated yet (cold start).
-    pub fn list_for_brain(&self, brain: &BrainName) -> Result<Vec<BookmarkName>, rusqlite::Error> {
+    pub(crate) fn list_for_brain(&self, brain: &BrainName) -> Result<Vec<BookmarkName>, rusqlite::Error> {
         let mut stmt = match self
             .db
             .prepare("SELECT name FROM bookmarks WHERE brain = ?1")

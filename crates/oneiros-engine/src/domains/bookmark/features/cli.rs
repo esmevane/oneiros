@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum BookmarkCommands {
+pub(crate) enum BookmarkCommands {
     Create(CreateBookmark),
     Switch(SwitchBookmark),
     Merge(MergeBookmark),
@@ -15,7 +15,7 @@ pub enum BookmarkCommands {
 }
 
 impl BookmarkCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BookmarkError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BookmarkError> {
         let client = Client::new(config.base_url());
         let bookmark_client = BookmarkClient::new(&client);
 

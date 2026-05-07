@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct MemoryService;
+pub(crate) struct MemoryService;
 
 impl MemoryService {
-    pub async fn add(
+    pub(crate) async fn add(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &AddMemory,
@@ -47,7 +47,7 @@ impl MemoryService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetMemory,
     ) -> Result<MemoryResponse, MemoryError> {
@@ -65,7 +65,7 @@ impl MemoryService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListMemories,
     ) -> Result<MemoryResponse, MemoryError> {

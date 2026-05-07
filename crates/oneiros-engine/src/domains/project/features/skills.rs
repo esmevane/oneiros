@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct ProjectSkills;
+pub(crate) struct ProjectSkills;
 
 impl ProjectSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("project-init", include_str!("skills/init.md")),
             Skill::new("project-export", include_str!("skills/export.md")),

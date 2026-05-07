@@ -6,14 +6,14 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = AgentEventsType, display = "kebab-case")]
-pub enum AgentEvents {
+pub(crate) enum AgentEvents {
     AgentCreated(AgentCreated),
     AgentUpdated(AgentUpdated),
     AgentRemoved(AgentRemoved),
 }
 
 impl AgentEvents {
-    pub fn maybe_agent(&self) -> Option<Agent> {
+    pub(crate) fn maybe_agent(&self) -> Option<Agent> {
         match self {
             AgentEvents::AgentCreated(event) => event.clone().current().ok().map(|v| v.agent),
             AgentEvents::AgentUpdated(event) => event.clone().current().ok().map(|v| v.agent),
@@ -23,15 +23,15 @@ impl AgentEvents {
 }
 
 versioned! {
-    pub enum AgentCreated {
+    pub(crate) enum AgentCreated {
         V1 => {
-            #[serde(flatten)] pub agent: Agent,
+            #[serde(flatten)] pub(crate) agent: Agent,
         },
         V0 => {
-            #[builder(into)] pub name: AgentName,
-            #[builder(into)] pub persona: PersonaName,
-            #[builder(into)] pub description: Description,
-            #[builder(into)] pub prompt: Prompt,
+            #[builder(into)] pub(crate) name: AgentName,
+            #[builder(into)] pub(crate) persona: PersonaName,
+            #[builder(into)] pub(crate) description: Description,
+            #[builder(into)] pub(crate) prompt: Prompt,
         }
     }
 }
@@ -48,14 +48,14 @@ upcast_versions! {
 }
 
 versioned! {
-    pub enum AgentUpdated {
-        V1 => { #[serde(flatten)] pub agent: Agent },
+    pub(crate) enum AgentUpdated {
+        V1 => { #[serde(flatten)] pub(crate) agent: Agent },
     }
 }
 
 versioned! {
-    pub enum AgentRemoved {
-        V1 => { #[builder(into)] pub name: AgentName },
+    pub(crate) enum AgentRemoved {
+        V1 => { #[builder(into)] pub(crate) name: AgentName },
     }
 }
 

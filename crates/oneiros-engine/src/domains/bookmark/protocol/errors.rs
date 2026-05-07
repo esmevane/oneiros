@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum BookmarkError {
+pub(crate) enum BookmarkError {
     #[error("Bookmark not found: {0}")]
     NotFound(BookmarkName),
 

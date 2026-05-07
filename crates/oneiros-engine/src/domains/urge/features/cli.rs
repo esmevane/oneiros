@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum UrgeCommands {
+pub(crate) enum UrgeCommands {
     Set(SetUrge),
     Show(GetUrge),
     List(ListUrges),
@@ -16,7 +16,7 @@ pub enum UrgeCommands {
 }
 
 impl UrgeCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, UrgeError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, UrgeError> {
         let client = Client::new(config.base_url());
         let urge_client = UrgeClient::new(&client);
 

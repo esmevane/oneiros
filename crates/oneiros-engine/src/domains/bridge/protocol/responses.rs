@@ -8,9 +8,9 @@ use crate::*;
 /// HAMT node at that root. The client uses this to begin the
 /// Merkle tree walk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BridgeRootNode {
-    pub root_hash: ContentHash,
-    pub node: LedgerNode,
+pub(crate) struct BridgeRootNode {
+    pub(crate) root_hash: ContentHash,
+    pub(crate) node: LedgerNode,
 }
 
 /// Resolved HAMT nodes — the server's response to a resolve request.
@@ -18,20 +18,20 @@ pub struct BridgeRootNode {
 /// Each entry is a (hash, node) pair. The client caches these
 /// and continues walking the tree until all leaves are reached.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BridgeNodes {
-    pub nodes: Vec<(ContentHash, LedgerNode)>,
+pub(crate) struct BridgeNodes {
+    pub(crate) nodes: Vec<(ContentHash, LedgerNode)>,
 }
 
 /// The requested events, fetched by ID after a Merkle diff.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BridgeEvents {
-    pub events: Vec<StoredEvent>,
+pub(crate) struct BridgeEvents {
+    pub(crate) events: Vec<StoredEvent>,
 }
 
 /// A denial — the server rejected the request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BridgeDenied {
-    pub reason: String,
+pub(crate) struct BridgeDenied {
+    pub(crate) reason: String,
 }
 
 /// The response to a [`BridgeRequest`] over the oneiros sync protocol.
@@ -39,7 +39,7 @@ pub struct BridgeDenied {
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum BridgeResponse {
+pub(crate) enum BridgeResponse {
     /// The requestor is already up to date — no diff needed.
     BridgeCurrent,
 
@@ -58,17 +58,17 @@ pub enum BridgeResponse {
 
 impl BridgeResponse {
     /// Encode this response to JSON bytes for transport.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         serde_json::to_vec(self).expect("sync response serialization should not fail")
     }
 
     /// Decode a response from JSON bytes received over transport.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<Self, serde_json::Error> {
         serde_json::from_slice(bytes)
     }
 
     /// Whether this response indicates the request was denied.
-    pub fn is_denied(&self) -> bool {
+    pub(crate) fn is_denied(&self) -> bool {
         matches!(self, Self::BridgeDenied(_))
     }
 }

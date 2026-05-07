@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = StorageResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum StorageResponse {
+pub(crate) enum StorageResponse {
     StorageSet(StorageSetResponse),
     StorageDetails(StorageDetailsResponse),
     Entries(StorageEntriesResponse),
@@ -17,33 +17,33 @@ pub enum StorageResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum StorageSetResponse {
-        V1 => { #[serde(flatten)] pub entry: StorageEntry }
+    pub(crate) enum StorageSetResponse {
+        V1 => { #[serde(flatten)] pub(crate) entry: StorageEntry }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum StorageDetailsResponse {
-        V1 => { #[serde(flatten)] pub entry: StorageEntry }
+    pub(crate) enum StorageDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) entry: StorageEntry }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum StorageEntriesResponse {
+    pub(crate) enum StorageEntriesResponse {
         V1 => {
-            pub items: Vec<StorageEntry>,
-            pub total: usize,
+            pub(crate) items: Vec<StorageEntry>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum StorageRemovedResponse {
+    pub(crate) enum StorageRemovedResponse {
         V1 => {
-            pub key: StorageKey,
+            pub(crate) key: StorageKey,
         }
     }
 }

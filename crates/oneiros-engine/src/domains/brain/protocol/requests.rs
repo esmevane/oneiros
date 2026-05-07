@@ -6,33 +6,33 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CreateBrain {
+    pub(crate) enum CreateBrain {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: BrainName,
+            #[builder(into)] pub(crate) name: BrainName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetBrain {
+    pub(crate) enum GetBrain {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<BrainName>,
+            #[builder(into)] pub(crate) key: ResourceKey<BrainName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListBrains {
+    pub(crate) enum ListBrains {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -40,7 +40,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = BrainRequestType, display = "kebab-case")]
-pub enum BrainRequest {
+pub(crate) enum BrainRequest {
     CreateBrain(CreateBrain),
     GetBrain(GetBrain),
     ListBrains(ListBrains),

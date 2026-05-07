@@ -3,13 +3,13 @@ use clap::Args;
 use crate::*;
 
 #[derive(Debug, Args)]
-pub struct SearchCommands {
+pub(crate) struct SearchCommands {
     #[command(flatten)]
-    pub command: SearchQuery,
+    pub(crate) command: SearchQuery,
 }
 
 impl SearchCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SearchError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SearchError> {
         let client = Client::new(config.base_url());
         let search_client = SearchClient::new(&client);
 

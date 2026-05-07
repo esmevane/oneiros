@@ -2,12 +2,12 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct TextureRepo<'a> {
+pub(crate) struct TextureRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> TextureRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -15,11 +15,11 @@ impl<'a> TextureRepo<'a> {
     /// texture appears or the configured patience window expires.
     ///
     /// [`get`]: TextureRepo::get
-    pub async fn fetch(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
+    pub(crate) async fn fetch(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
-    pub async fn get(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
+    pub(crate) async fn get(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
@@ -45,7 +45,7 @@ impl<'a> TextureRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Texture>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Texture>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

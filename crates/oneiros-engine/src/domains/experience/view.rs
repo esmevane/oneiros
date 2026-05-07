@@ -2,17 +2,17 @@
 
 use crate::*;
 
-pub struct ExperienceView<'a> {
+pub(crate) struct ExperienceView<'a> {
     response: ExperienceResponse,
     request: &'a ExperienceRequest,
 }
 
 impl<'a> ExperienceView<'a> {
-    pub fn new(response: ExperienceResponse, request: &'a ExperienceRequest) -> Self {
+    pub(crate) fn new(response: ExperienceResponse, request: &'a ExperienceRequest) -> Self {
         Self { response, request }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
                 let ref_token = RefToken::from(Ref::experience(created.experience.id));
@@ -89,7 +89,7 @@ impl<'a> ExperienceView<'a> {
         }
     }
 
-    pub fn render(self) -> Rendered<ExperienceResponse> {
+    pub(crate) fn render(self) -> Rendered<ExperienceResponse> {
         match self.response {
             ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
                 let ref_token = RefToken::from(Ref::experience(created.experience.id));

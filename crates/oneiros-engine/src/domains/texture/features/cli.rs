@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum TextureCommands {
+pub(crate) enum TextureCommands {
     Set(SetTexture),
     Show(GetTexture),
     List(ListTextures),
@@ -16,7 +16,7 @@ pub enum TextureCommands {
 }
 
 impl TextureCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TextureError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TextureError> {
         let client = Client::new(config.base_url());
         let texture_client = TextureClient::new(&client);
 

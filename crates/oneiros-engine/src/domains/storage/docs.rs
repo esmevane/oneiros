@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum StorageDocs {
+pub(crate) enum StorageDocs {
     Upload,
     List,
     Show,
@@ -8,14 +8,14 @@ pub enum StorageDocs {
 }
 
 impl StorageDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("storage")
             .description("Archive and retrieve files")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Upload => ResourceDocs::builder()

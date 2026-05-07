@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct NatureService;
+pub(crate) struct NatureService;
 
 impl NatureService {
-    pub async fn set(
+    pub(crate) async fn set(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SetNature,
@@ -42,7 +42,7 @@ impl NatureService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetNature,
     ) -> Result<NatureResponse, NatureError> {
@@ -60,7 +60,7 @@ impl NatureService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListNatures,
     ) -> Result<NatureResponse, NatureError> {
@@ -79,7 +79,7 @@ impl NatureService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveNature,

@@ -6,49 +6,49 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetTexture {
+    pub(crate) enum SetTexture {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: TextureName,
+            #[builder(into)] pub(crate) name: TextureName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetTexture {
+    pub(crate) enum GetTexture {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<TextureName>,
+            #[builder(into)] pub(crate) key: ResourceKey<TextureName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveTexture {
+    pub(crate) enum RemoveTexture {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: TextureName,
+            #[builder(into)] pub(crate) name: TextureName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListTextures {
+    pub(crate) enum ListTextures {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -56,7 +56,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TextureRequestType, display = "kebab-case")]
-pub enum TextureRequest {
+pub(crate) enum TextureRequest {
     SetTexture(SetTexture),
     GetTexture(GetTexture),
     ListTextures(ListTextures),

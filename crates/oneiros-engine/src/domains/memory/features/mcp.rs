@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct MemoryMcp;
+pub(crate) struct MemoryMcp;
 
 impl MemoryMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         memory_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -17,15 +17,15 @@ impl MemoryMcp {
         memory_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![ResourcePathKind::Memory.into_template("A specific memory")]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &MemoryRequest,
@@ -37,7 +37,7 @@ impl MemoryMcp {
 mod memory_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<AddMemory>::new(
                 MemoryRequestType::AddMemory,
@@ -47,7 +47,7 @@ mod memory_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &ToolName,
@@ -74,7 +74,7 @@ mod memory_mcp {
         }
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         context: &ProjectLog,
         request: &MemoryRequest,
     ) -> Result<McpResponse, ToolError> {

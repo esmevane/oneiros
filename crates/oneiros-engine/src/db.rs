@@ -17,7 +17,7 @@ use crate::*;
 // ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, thiserror::Error)]
-pub enum HostDbError {
+pub(crate) enum HostDbError {
     #[error(transparent)]
     Connection(#[from] rusqlite::Error),
     #[error(transparent)]
@@ -25,7 +25,7 @@ pub enum HostDbError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum EventsDbError {
+pub(crate) enum EventsDbError {
     #[error(transparent)]
     Connection(#[from] rusqlite::Error),
     #[error(transparent)]
@@ -33,7 +33,7 @@ pub enum EventsDbError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum BookmarkDbError {
+pub(crate) enum BookmarkDbError {
     #[error(transparent)]
     Connection(#[from] rusqlite::Error),
     #[error(transparent)]
@@ -45,7 +45,7 @@ pub enum BookmarkDbError {
 // chronicle, tickets, tenants, actors, peers, follows).
 // ─────────────────────────────────────────────────────────────────────
 
-pub struct HostDb {
+pub(crate) struct HostDb {
     connection: rusqlite::Connection,
 }
 
@@ -53,14 +53,14 @@ impl HostDb {
     /// Open from any scope tier that carries host info. The primary
     /// public entry — services and actors at any tier reach the
     /// host db this way.
-    pub async fn open<S: HasHost>(scope: &S) -> Result<Self, HostDbError> {
+    pub(crate) async fn open<S: HasHost>(scope: &S) -> Result<Self, HostDbError> {
         Self::open_with(&scope.config().platform()).await
     }
 
     /// Open directly from a `Platform`. Underlying primitive — used by
     /// the scope-form above and by tests / hydration paths that don't
     /// have a scope handy.
-    pub async fn open_with(platform: &Platform) -> Result<Self, HostDbError> {
+    pub(crate) async fn open_with(platform: &Platform) -> Result<Self, HostDbError> {
         platform.ensure_data_dir()?;
         let connection = rusqlite::Connection::open(platform.system_db_path())?;
         connection.pragma_update(None, "journal_mode", "wal")?;
@@ -79,18 +79,18 @@ impl Deref for HostDb {
 // EventsDb — append-only event log per brain.
 // ─────────────────────────────────────────────────────────────────────
 
-pub struct EventsDb {
+pub(crate) struct EventsDb {
     connection: rusqlite::Connection,
 }
 
 impl EventsDb {
     /// Open from any scope tier that carries project info.
-    pub async fn open<S: HasProject>(scope: &S) -> Result<Self, EventsDbError> {
+    pub(crate) async fn open<S: HasProject>(scope: &S) -> Result<Self, EventsDbError> {
         Self::open_with(&scope.config().platform(), &scope.project().name).await
     }
 
     /// Open directly from a `Platform` + brain. Underlying primitive.
-    pub async fn open_with(platform: &Platform, brain: &BrainName) -> Result<Self, EventsDbError> {
+    pub(crate) async fn open_with(platform: &Platform, brain: &BrainName) -> Result<Self, EventsDbError> {
         platform.ensure_brain_dir(brain)?;
         let connection = rusqlite::Connection::open(platform.events_db_path(brain))?;
         connection.pragma_update(None, "journal_mode", "wal")?;
@@ -111,13 +111,13 @@ impl Deref for EventsDb {
 // the bookmark DB; event-log queries use the `events` schema.
 // ─────────────────────────────────────────────────────────────────────
 
-pub struct BookmarkDb {
+pub(crate) struct BookmarkDb {
     connection: rusqlite::Connection,
 }
 
 impl BookmarkDb {
     /// Open from a bookmark-tier scope.
-    pub async fn open<S: HasBookmark>(scope: &S) -> Result<Self, BookmarkDbError> {
+    pub(crate) async fn open<S: HasBookmark>(scope: &S) -> Result<Self, BookmarkDbError> {
         Self::open_with(
             &scope.config().platform(),
             &scope.project().name,
@@ -128,7 +128,7 @@ impl BookmarkDb {
 
     /// Open directly from a `Platform` + brain + bookmark. Underlying
     /// primitive — used by the scope-form above and by tests.
-    pub async fn open_with(
+    pub(crate) async fn open_with(
         platform: &Platform,
         brain: &BrainName,
         bookmark: &BookmarkName,

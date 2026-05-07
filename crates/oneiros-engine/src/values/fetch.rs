@@ -21,17 +21,17 @@ fn default_timeout() -> Duration {
 /// arrive when the request envelope is in place.
 #[derive(Args, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct Fetch {
+pub(crate) struct Fetch {
     /// How often to poll while waiting for an eventually-consistent read.
     #[arg(long, global = true, default_value = "16ms", value_parser = humantime::parse_duration)]
     #[serde(default = "default_interval", with = "humantime_serde")]
     #[schemars(with = "String")]
-    pub interval: Duration,
+    pub(crate) interval: Duration,
     /// Maximum time to wait before giving up.
     #[arg(long, global = true, default_value = "2s", value_parser = humantime::parse_duration)]
     #[serde(default = "default_timeout", with = "humantime_serde")]
     #[schemars(with = "String")]
-    pub timeout: Duration,
+    pub(crate) timeout: Duration,
 }
 
 impl Default for Fetch {
@@ -50,7 +50,7 @@ impl Fetch {
     /// Returns `Ok(Some(_))` when the closure produces a value within
     /// `timeout`, `Ok(None)` when the window expires without a value,
     /// and `Err(_)` if the closure errors.
-    pub async fn eventual<T, E, F, Fut>(&self, f: F) -> Result<Option<T>, E>
+    pub(crate) async fn eventual<T, E, F, Fut>(&self, f: F) -> Result<Option<T>, E>
     where
         F: Fn() -> Fut,
         Fut: Future<Output = Result<Option<T>, E>>,
@@ -77,7 +77,7 @@ impl Fetch {
     /// Returns `Ok(true)` if absence was observed within the window,
     /// `Ok(false)` if the timeout expired with the resource still
     /// present, and `Err(_)` if the closure errored.
-    pub async fn until_absent<T, E, F, Fut>(&self, f: F) -> Result<bool, E>
+    pub(crate) async fn until_absent<T, E, F, Fut>(&self, f: F) -> Result<bool, E>
     where
         F: Fn() -> Fut,
         Fut: Future<Output = Result<Option<T>, E>>,

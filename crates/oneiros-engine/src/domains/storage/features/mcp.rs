@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct StorageMcp;
+pub(crate) struct StorageMcp;
 
 impl StorageMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         storage_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -21,7 +21,7 @@ impl StorageMcp {
 mod storage_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<ListStorage>::new(StorageRequestType::ListStorage, "Browse your archive").def(),
             Tool::<GetStorage>::new(StorageRequestType::GetStorage, "Retrieve a stored artifact")
@@ -34,7 +34,7 @@ mod storage_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &str,

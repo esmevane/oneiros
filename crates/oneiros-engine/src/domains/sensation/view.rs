@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct SensationView {
+pub(crate) struct SensationView {
     response: SensationResponse,
 }
 
 impl SensationView {
-    pub fn new(response: SensationResponse) -> Self {
+    pub(crate) fn new(response: SensationResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             SensationResponse::Sensations(SensationsResponse::V1(listed)) => {
                 let items: Vec<_> = listed
@@ -50,7 +50,7 @@ impl SensationView {
         McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
     }
 
-    pub fn render(self) -> Rendered<SensationResponse> {
+    pub(crate) fn render(self) -> Rendered<SensationResponse> {
         match self.response {
             SensationResponse::SensationSet(SensationSetResponse::V1(set)) => {
                 let prompt = Confirmation::new("Sensation", set.sensation.name.to_string(), "set")

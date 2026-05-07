@@ -14,14 +14,12 @@
 //! callsite. Scope is the typed shape; ComposeScope is the plumbing
 //! that fills it.
 
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::*;
 
 #[derive(Clone)]
-pub struct Scope<T> {
+pub(crate) struct Scope<T> {
     inner: T,
 }
 
@@ -32,20 +30,20 @@ impl<T> Scope<T> {
 }
 
 #[derive(Clone, Default)]
-pub struct Empty;
+pub(crate) struct Empty;
 
 impl Scope<Empty> {
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self::wrap(Empty)
     }
 
-    pub fn with_config(self, config: Config) -> Scope<Configured> {
+    pub(crate) fn with_config(self, config: Config) -> Scope<Configured> {
         Scope::wrap(Configured { config })
     }
 }
 
 #[derive(Clone)]
-pub struct Configured {
+pub(crate) struct Configured {
     config: Config,
 }
 
@@ -54,83 +52,27 @@ impl Scope<Configured> {
     /// access to everything it needs to manage a host instance, and
     /// we've verified that the host instance can run.
     ///
-    pub fn verify_host(self) -> Result<Scope<AtHost>, ComposeError> {
-        let host = self.verify_host_setup()?;
-        Ok(Scope::empty()
-            .with_config(self.inner.config.clone())
-            .to_host(Arc::new(host)))
-    }
-
-    /// Advance to host tier with caller-built HostInfra. Caller is
-    /// responsible for validation and registry assembly — see
-    /// [`ComposeScope::host`].
-    pub fn to_host(self, host: Arc<HostInfra>) -> Scope<AtHost> {
+    pub(crate) fn verify_host(self, host: Arc<HostInfra>) -> Scope<AtHost> {
         let Configured { config } = self.inner;
         Scope::wrap(AtHost { config, host })
     }
-
-    fn verify_host_setup(&self) -> Result<HostInfra, ComposeError> {
-        let platform = self.inner.config.platform();
-
-        if !platform.data_dir().is_dir() {
-            return Err(ComposeError::HostHydrationFailed(format!(
-                "data_dir does not exist: {}",
-                platform.data_dir().display()
-            )));
-        }
-
-        // Authoritative source: the `brains` projection in system DB.
-        // System recognizes a brain when an event made it real; the
-        // filesystem is the underlying medium. Intersection means
-        // both must agree.
-        let conn = self.inner.config.system_db()?;
-        let projection_names = BrainStore::new(&conn).list()?;
-
-        let mut projects = HashMap::new();
-        for name in projection_names {
-            // System says the brain exists; verify it's actually
-            // reachable on disk. Mismatch = orphan, exclude.
-            if !platform.events_db_path(&name).exists() {
-                continue;
-            }
-
-            let project = ProjectInfra {
-                name: name.clone(),
-                brain_dir: platform.brain_dir(&name),
-                events_db_path: platform.events_db_path(&name),
-                bookmarks_dir: platform.bookmarks_dir(&name),
-                bookmarks: HashMap::new(),
-            };
-
-            projects.insert(name, Arc::new(project));
-        }
-
-        Ok(HostInfra {
-            data_dir: platform.data_dir().to_path_buf(),
-            system_db_path: platform.system_db_path(),
-            host_key_path: platform.host_key_path(),
-            projects,
-        })
-    }
 }
 
 #[derive(Clone)]
-pub struct AtHost {
+pub(crate) struct AtHost {
     config: Config,
     host: Arc<HostInfra>,
 }
 
 #[derive(Clone)]
-pub struct AtProject {
+pub(crate) struct AtProject {
     config: Config,
-    host: Arc<HostInfra>,
     project: Arc<ProjectInfra>,
 }
 
 #[derive(Clone)]
-pub struct AtBookmark {
+pub(crate) struct AtBookmark {
     config: Config,
-    host: Arc<HostInfra>,
     project: Arc<ProjectInfra>,
     bookmark: Arc<BookmarkInfra>,
 }
@@ -146,16 +88,15 @@ pub struct AtBookmark {
 // can open higher-tier resources for free.
 // ─────────────────────────────────────────────────────────────────────
 
-pub trait HasHost {
+pub(crate) trait HasHost {
     fn config(&self) -> &Config;
-    fn host(&self) -> &HostInfra;
 }
 
-pub trait HasProject: HasHost {
+pub(crate) trait HasProject: HasHost {
     fn project(&self) -> &ProjectInfra;
 }
 
-pub trait HasBookmark: HasProject {
+pub(crate) trait HasBookmark: HasProject {
     fn bookmark(&self) -> &BookmarkInfra;
 }
 
@@ -167,26 +108,19 @@ pub trait HasBookmark: HasProject {
 // ─────────────────────────────────────────────────────────────────────
 
 #[derive(Clone)]
-pub struct HostInfra {
-    pub data_dir: PathBuf,
-    pub system_db_path: PathBuf,
-    pub host_key_path: PathBuf,
-    pub projects: HashMap<BrainName, Arc<ProjectInfra>>,
+pub(crate) struct HostInfra {
+    pub(crate) projects: HashMap<BrainName, Arc<ProjectInfra>>,
 }
 
 #[derive(Clone)]
-pub struct ProjectInfra {
-    pub name: BrainName,
-    pub brain_dir: PathBuf,
-    pub events_db_path: PathBuf,
-    pub bookmarks_dir: PathBuf,
-    pub bookmarks: HashMap<BookmarkName, Arc<BookmarkInfra>>,
+pub(crate) struct ProjectInfra {
+    pub(crate) name: BrainName,
+    pub(crate) bookmarks: HashMap<BookmarkName, Arc<BookmarkInfra>>,
 }
 
 #[derive(Clone)]
-pub struct BookmarkInfra {
-    pub name: BookmarkName,
-    pub bookmark_db_path: PathBuf,
+pub(crate) struct BookmarkInfra {
+    pub(crate) name: BookmarkName,
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -194,7 +128,7 @@ pub struct BookmarkInfra {
 // ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, thiserror::Error)]
-pub enum ScopeError {
+pub(crate) enum ScopeError {
     #[error("project not found in registry: {0}")]
     ProjectNotFound(BrainName),
 
@@ -203,21 +137,9 @@ pub enum ScopeError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ComposeError {
+pub(crate) enum ComposeError {
     #[error("host hydration failed: {0}")]
     HostHydrationFailed(String),
-
-    #[error("could not enumerate projects: {0}")]
-    ProjectEnumerationFailed(String),
-
-    #[error("could not enumerate bookmarks: {0}")]
-    BookmarkEnumerationFailed(String),
-
-    #[error("no projects in registry")]
-    NoProjects,
-
-    #[error("no bookmarks in registry for brain: {0}")]
-    NoBookmarks(BrainName),
 
     #[error(transparent)]
     Scope(#[from] ScopeError),
@@ -234,30 +156,25 @@ impl Scope<AtHost> {
     /// Advance to a specific project, verifying its name is in the
     /// host's registry. Caller assembled the registry; scope just
     /// guarantees the named project is among them.
-    pub fn to_project(self, brain: BrainName) -> Result<Scope<AtProject>, ScopeError> {
+    pub(crate) fn verify_project(self, brain: BrainName) -> Result<Scope<AtProject>, ScopeError> {
         let AtHost { config, host } = self.inner;
         let project = host
             .projects
             .get(&brain)
             .cloned()
             .ok_or(ScopeError::ProjectNotFound(brain))?;
-        Ok(Scope::wrap(AtProject {
-            config,
-            host,
-            project,
-        }))
+        Ok(Scope::wrap(AtProject { config, project }))
     }
 }
 
 impl Scope<AtProject> {
     /// Advance to a specific bookmark, verifying its name is in the
     /// project's registry.
-    pub fn to_bookmark(self, name: BookmarkName) -> Result<Scope<AtBookmark>, ScopeError> {
-        let AtProject {
-            config,
-            host,
-            project,
-        } = self.inner;
+    pub(crate) fn verify_bookmark(
+        self,
+        name: BookmarkName,
+    ) -> Result<Scope<AtBookmark>, ScopeError> {
+        let AtProject { config, project } = self.inner;
         let bookmark = project
             .bookmarks
             .get(&name)
@@ -265,7 +182,6 @@ impl Scope<AtProject> {
             .ok_or(ScopeError::BookmarkNotFound(name))?;
         Ok(Scope::wrap(AtBookmark {
             config,
-            host,
             project,
             bookmark,
         }))
@@ -277,29 +193,15 @@ impl Scope<AtProject> {
 // no held resources.
 // ─────────────────────────────────────────────────────────────────────
 
-impl Scope<AtHost> {
-    /// Strangler bridge — produce a legacy `HostLog`. Shrinks as
-    /// consumers move to use Scope ops directly.
-    pub fn host_log(&self) -> HostLog {
-        HostLog::new(self.inner.config.clone())
-    }
-}
-
 impl HasHost for Scope<AtHost> {
     fn config(&self) -> &Config {
         &self.inner.config
-    }
-    fn host(&self) -> &HostInfra {
-        &self.inner.host
     }
 }
 
 impl HasHost for Scope<AtProject> {
     fn config(&self) -> &Config {
         &self.inner.config
-    }
-    fn host(&self) -> &HostInfra {
-        &self.inner.host
     }
 }
 
@@ -309,26 +211,9 @@ impl HasProject for Scope<AtProject> {
     }
 }
 
-impl Scope<AtBookmark> {
-    /// Strangler bridge — produce a legacy `ProjectLog` (CLI-shape).
-    /// HTTP construction handles its own behavior state (with_entry)
-    /// until the extractor migrates.
-    pub fn project_log(&self) -> ProjectLog {
-        ProjectLog::new(self.inner.config.clone())
-    }
-
-    /// Strangler bridge — produce a legacy `HostLog`.
-    pub fn host_log(&self) -> HostLog {
-        HostLog::new(self.inner.config.clone())
-    }
-}
-
 impl HasHost for Scope<AtBookmark> {
     fn config(&self) -> &Config {
         &self.inner.config
-    }
-    fn host(&self) -> &HostInfra {
-        &self.inner.host
     }
 }
 
@@ -354,29 +239,29 @@ impl HasBookmark for Scope<AtBookmark> {
 // capability.
 // ─────────────────────────────────────────────────────────────────────
 
-pub struct ComposeScope {
+pub(crate) struct ComposeScope {
     config: Config,
 }
 
 impl ComposeScope {
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         Self { config }
     }
 
     /// Build a host-tier scope: validate `data_dir`, enumerate brain
     /// directories, assemble HostInfra with each brain's resolved
     /// paths and (empty) bookmark map.
-    pub fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
+    pub(crate) fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
         let host = self.build_host_infra()?;
         Ok(Scope::empty()
             .with_config(self.config.clone())
-            .to_host(Arc::new(host)))
+            .verify_host(Arc::new(host)))
     }
 
     /// Build a project-tier scope for a specific brain. Climbs to
     /// host, verifies the brain exists, enumerates its bookmarks,
     /// and attaches the populated ProjectInfra.
-    pub fn project(&self, brain: BrainName) -> Result<Scope<AtProject>, ComposeError> {
+    pub(crate) fn project(&self, brain: BrainName) -> Result<Scope<AtProject>, ComposeError> {
         let mut host = self.build_host_infra()?;
         let project = host
             .projects
@@ -388,19 +273,19 @@ impl ComposeScope {
         let host_arc = Arc::new(host);
         let host_scope = Scope::empty()
             .with_config(self.config.clone())
-            .to_host(host_arc);
-        Ok(host_scope.to_project(brain)?)
+            .verify_host(host_arc);
+        Ok(host_scope.verify_project(brain)?)
     }
 
     /// Build a bookmark-tier scope. Climbs to project, verifies the
     /// bookmark exists, attaches.
-    pub fn bookmark(
+    pub(crate) fn bookmark(
         &self,
         brain: BrainName,
         name: BookmarkName,
     ) -> Result<Scope<AtBookmark>, ComposeError> {
         let project_scope = self.project(brain)?;
-        Ok(project_scope.to_bookmark(name)?)
+        Ok(project_scope.verify_bookmark(name)?)
     }
 
     fn build_host_infra(&self) -> Result<HostInfra, ComposeError> {
@@ -428,20 +313,12 @@ impl ComposeScope {
             }
             let project = ProjectInfra {
                 name: name.clone(),
-                brain_dir: platform.brain_dir(&name),
-                events_db_path: platform.events_db_path(&name),
-                bookmarks_dir: platform.bookmarks_dir(&name),
                 bookmarks: HashMap::new(),
             };
             projects.insert(name, Arc::new(project));
         }
 
-        Ok(HostInfra {
-            data_dir: platform.data_dir().to_path_buf(),
-            system_db_path: platform.system_db_path(),
-            host_key_path: platform.host_key_path(),
-            projects,
-        })
+        Ok(HostInfra { projects })
     }
 
     fn populate_bookmarks(&self, project: &ProjectInfra) -> Result<ProjectInfra, ComposeError> {
@@ -459,13 +336,7 @@ impl ComposeScope {
                 // disk. Exclude.
                 continue;
             }
-            bookmarks.insert(
-                name.clone(),
-                Arc::new(BookmarkInfra {
-                    name,
-                    bookmark_db_path,
-                }),
-            );
+            bookmarks.insert(name.clone(), Arc::new(BookmarkInfra { name }));
         }
 
         Ok(ProjectInfra {
@@ -481,8 +352,10 @@ impl ComposeScope {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::path::PathBuf;
     use tempfile::TempDir;
+
+    use super::*;
 
     fn test_config(dir: &TempDir) -> Config {
         Config::builder().data_dir(dir.path().to_path_buf()).build()
@@ -537,42 +410,6 @@ mod tests {
     }
 
     #[test]
-    fn host_compose_intersects_projection_and_filesystem() -> Result<(), ComposeError> {
-        let dir = TempDir::new().unwrap();
-        let config = test_config(&dir);
-        seed_brain(&config, "real-brain");
-
-        // Orphan in projection but no events.db on disk.
-        let conn = config.system_db().unwrap();
-        BrainStore::new(&conn).migrate().unwrap();
-        conn.execute(
-            "insert or replace into brains (id, name, created_at) values (?1, ?2, ?3)",
-            rusqlite::params!["brain-orphan", "orphan", "2026-04-28T00:00:00"],
-        )
-        .unwrap();
-
-        // Filesystem-only dir without a projection row.
-        std::fs::create_dir_all(dir.path().join("ghost")).unwrap();
-        std::fs::write(dir.path().join("ghost").join("events.db"), b"").unwrap();
-
-        let scope = ComposeScope::new(config).host()?;
-        let host = scope.host();
-        assert!(host.projects.contains_key(&BrainName::from("real-brain")));
-        assert!(!host.projects.contains_key(&BrainName::from("orphan")));
-        assert!(!host.projects.contains_key(&BrainName::from("ghost")));
-        Ok(())
-    }
-
-    #[test]
-    fn host_compose_with_uninitialized_system_db_returns_empty() -> Result<(), ComposeError> {
-        // data_dir exists but no projection migrated yet — cold start.
-        let dir = TempDir::new().unwrap();
-        let scope = ComposeScope::new(test_config(&dir)).host()?;
-        assert!(scope.host().projects.is_empty());
-        Ok(())
-    }
-
-    #[test]
     fn project_compose_unknown_brain_errors() {
         let dir = TempDir::new().unwrap();
         let result = ComposeScope::new(test_config(&dir)).project(BrainName::from("nope"));
@@ -590,7 +427,7 @@ mod tests {
 
         let scope = ComposeScope::new(config).project(BrainName::from("alpha"))?;
         assert_eq!(scope.project().name, BrainName::from("alpha"));
-        assert!(scope.project().events_db_path.starts_with(dir.path()));
+
         Ok(())
     }
 

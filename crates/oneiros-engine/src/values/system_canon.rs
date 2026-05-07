@@ -5,11 +5,11 @@ use crate::*;
 /// Reducers fold events into this struct as a pure function.
 /// No database, no Loro — just the state.
 #[derive(Default, Clone)]
-pub struct SystemCanon {
-    pub actors: Actors,
-    pub brains: Brains,
-    pub tenants: Tenants,
-    pub tickets: Tickets,
-    pub peers: Peers,
-    pub follows: Follows,
+pub(crate) struct SystemCanon {
+    pub(crate) actors: Actors,
+    pub(crate) brains: Brains,
+    pub(crate) tenants: Tenants,
+    pub(crate) tickets: Tickets,
+    pub(crate) peers: Peers,
+    pub(crate) follows: Follows,
 }

@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct AgentService;
+pub(crate) struct AgentService;
 
 impl AgentService {
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &CreateAgent,
@@ -60,7 +60,7 @@ impl AgentService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetAgent,
     ) -> Result<AgentResponse, AgentError> {
@@ -95,7 +95,7 @@ impl AgentService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListAgents,
     ) -> Result<AgentResponse, AgentError> {
@@ -131,7 +131,7 @@ impl AgentService {
         ))
     }
 
-    pub async fn update(
+    pub(crate) async fn update(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &UpdateAgent,
@@ -190,7 +190,7 @@ impl AgentService {
         ))
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveAgent,

@@ -16,7 +16,7 @@ use crate::*;
 /// message protocols.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
-pub enum Event {
+pub(crate) enum Event {
     Known(Events),
     Ephemeral(EphemeralEvents),
     Unknown(UnknownEvent),
@@ -25,7 +25,7 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn event_type(&self) -> String {
+    pub(crate) fn event_type(&self) -> String {
         match self {
             Self::Known(known) => known.event_type(),
             Self::Ephemeral(ephemeral) => ephemeral.kind().to_string(),

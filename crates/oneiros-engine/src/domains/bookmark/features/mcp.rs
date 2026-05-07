@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct BookmarkMcp;
+pub(crate) struct BookmarkMcp;
 
 impl BookmarkMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         bookmark_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         state: &ServerState,
@@ -21,7 +21,7 @@ impl BookmarkMcp {
 mod bookmark_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<ListBookmarks>::new(
                 BookmarkRequestType::ListBookmarks,
@@ -66,7 +66,7 @@ mod bookmark_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         state: &ServerState,
         tool_name: &str,
