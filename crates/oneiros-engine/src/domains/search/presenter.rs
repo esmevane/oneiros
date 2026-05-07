@@ -74,9 +74,9 @@ impl SearchPresenter {
                 }
 
                 let mut table = Table::new(vec![
-                    Column::key("kind", "Kind"),
-                    Column::key("content", "Content").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Kind"),
+                    Column::new("Content").max(60),
+                    Column::new("Ref"),
                 ]);
 
                 for hit in &results.hits {

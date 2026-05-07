@@ -80,8 +80,8 @@ impl NatureView {
             }
             NatureResponse::Natures(NaturesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("name", "Name"),
-                    Column::key("description", "Description").max(60),
+                    Column::new("Name"),
+                    Column::new("Description").max(60),
                 ]);
                 for item in &listed.items {
                     table.push_row(vec![item.name.to_string(), item.description.to_string()]);

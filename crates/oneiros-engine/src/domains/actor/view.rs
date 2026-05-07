@@ -32,8 +32,7 @@ impl ActorView {
                 )
             }
             ActorResponse::Listed(ActorsResponse::V1(listed)) => {
-                let mut table =
-                    Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
+                let mut table = Table::new(vec![Column::new("Name"), Column::new("ID")]);
                 for actor in &listed.items {
                     table.push_row(vec![actor.name.to_string(), actor.id.to_string()]);
                 }

@@ -111,9 +111,9 @@ impl AgentView {
             }
             AgentResponse::Agents(AgentsResponse::V1(agents)) => {
                 let mut table = Table::new(vec![
-                    Column::key("name", "Name"),
-                    Column::key("persona", "Persona"),
-                    Column::key("description", "Description").max(60),
+                    Column::new("Name"),
+                    Column::new("Persona"),
+                    Column::new("Description").max(60),
                 ]);
                 for agent in &agents.items {
                     table.push_row(vec![

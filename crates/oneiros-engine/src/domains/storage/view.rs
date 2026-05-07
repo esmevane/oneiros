@@ -39,9 +39,9 @@ impl StorageView {
             }
             StorageResponse::Entries(StorageEntriesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("key", "Key"),
-                    Column::key("description", "Description").max(40),
-                    Column::key("hash", "Hash"),
+                    Column::new("Key"),
+                    Column::new("Description").max(40),
+                    Column::new("Hash"),
                 ]);
                 for entry in &listed.items {
                     table.push_row(vec![

@@ -123,9 +123,9 @@ impl<'a> ExperienceView<'a> {
             }
             ExperienceResponse::Experiences(ExperiencesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("sensation", "Sensation"),
-                    Column::key("description", "Description").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Sensation"),
+                    Column::new("Description").max(60),
+                    Column::new("Ref"),
                 ]);
                 for item in &listed.items {
                     let ref_token = RefToken::from(Ref::experience(item.id));

@@ -34,9 +34,9 @@ impl PeerView {
             }
             PeerResponse::Listed(PeersResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("name", "Name"),
-                    Column::key("key", "Key"),
-                    Column::key("id", "ID"),
+                    Column::new("Name"),
+                    Column::new("Key"),
+                    Column::new("ID"),
                 ]);
                 for peer in &listed.items {
                     let key_display = peer.key.to_string();

@@ -29,7 +29,7 @@ impl BrainView {
                 )
             }
             BrainResponse::Listed(BrainsResponse::V1(listed)) => {
-                let mut table = Table::new(vec![Column::key("name", "Name")]);
+                let mut table = Table::new(vec![Column::new("Name")]);
                 for brain in &listed.items {
                     table.push_row(vec![brain.name.to_string()]);
                 }

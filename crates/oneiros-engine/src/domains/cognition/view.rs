@@ -121,9 +121,9 @@ impl<'a> CognitionView<'a> {
             }
             (CognitionResponse::Cognitions(CognitionsResponse::V1(listed)), _) => {
                 let mut table = Table::new(vec![
-                    Column::key("texture", "Texture"),
-                    Column::key("content", "Content").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Texture"),
+                    Column::new("Content").max(60),
+                    Column::new("Ref"),
                 ]);
 
                 for item in &listed.items {

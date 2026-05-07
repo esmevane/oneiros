@@ -45,10 +45,7 @@ impl TicketView {
                 )
             }
             TicketResponse::Listed(TicketsResponse::V1(listed)) => {
-                let mut table = Table::new(vec![
-                    Column::key("brain_name", "Brain"),
-                    Column::key("actor_id", "Actor"),
-                ]);
+                let mut table = Table::new(vec![Column::new("Brain"), Column::new("Actor")]);
                 for ticket in &listed.items {
                     table.push_row(vec![
                         ticket.brain_name.to_string(),

@@ -32,8 +32,7 @@ impl TenantView {
                 )
             }
             TenantResponse::Listed(TenantsResponse::V1(listed)) => {
-                let mut table =
-                    Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
+                let mut table = Table::new(vec![Column::new("Name"), Column::new("ID")]);
                 for tenant in &listed.items {
                     table.push_row(vec![tenant.name.to_string(), tenant.id.to_string()]);
                 }

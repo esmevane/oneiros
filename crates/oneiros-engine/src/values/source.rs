@@ -7,13 +7,3 @@ pub(crate) struct Source {
     pub(crate) actor_id: ActorId,
     pub(crate) tenant_id: TenantId,
 }
-
-impl Source {
-    /// Construct a Source from decoded token claims.
-    pub(crate) fn from_claims(claims: &TokenClaims) -> Self {
-        Self {
-            actor_id: claims.actor_id,
-            tenant_id: claims.tenant_id,
-        }
-    }
-}

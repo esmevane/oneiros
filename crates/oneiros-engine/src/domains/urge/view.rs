@@ -78,8 +78,8 @@ impl UrgeView {
             }
             UrgeResponse::Urges(UrgesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("name", "Name"),
-                    Column::key("description", "Description").max(60),
+                    Column::new("Name"),
+                    Column::new("Description").max(60),
                 ]);
                 for urge in &listed.items {
                     table.push_row(vec![urge.name.to_string(), urge.description.to_string()]);

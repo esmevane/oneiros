@@ -119,9 +119,9 @@ impl<'a> MemoryView<'a> {
                 MemoryRequest::ListMemories(ListMemories::V1(listing)),
             ) => {
                 let mut table = Table::new(vec![
-                    Column::key("level", "Level"),
-                    Column::key("content", "Content").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Level"),
+                    Column::new("Content").max(60),
+                    Column::new("Ref"),
                 ]);
 
                 for item in &listed.items {

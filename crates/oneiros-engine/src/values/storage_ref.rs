@@ -37,10 +37,6 @@ impl StorageRef {
         let StorageRefVersion::V0(key) = versioned;
         Ok(key)
     }
-
-    pub(crate) fn as_str(&self) -> &str {
-        &self.0
-    }
 }
 
 impl core::fmt::Display for StorageRef {

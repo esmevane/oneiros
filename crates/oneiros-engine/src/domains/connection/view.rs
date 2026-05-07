@@ -105,10 +105,10 @@ impl<'a> ConnectionView<'a> {
             }
             ConnectionResponse::Connections(ConnectionsResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("nature", "Nature"),
-                    Column::key("from_ref", "From"),
-                    Column::key("to_ref", "To"),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Nature"),
+                    Column::new("From"),
+                    Column::new("To"),
+                    Column::new("Ref"),
                 ]);
                 for item in &listed.items {
                     let ref_token = RefToken::from(Ref::connection(item.id));

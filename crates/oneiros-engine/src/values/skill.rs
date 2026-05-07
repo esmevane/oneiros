@@ -15,9 +15,4 @@ impl Skill {
     pub(crate) const fn new(name: &'static str, content: &'static str) -> Self {
         Self { name, content }
     }
-
-    /// The dist output path for this skill (e.g. "commands/level-set.md").
-    pub(crate) fn dist_path(&self) -> String {
-        format!("commands/{}.md", self.name)
-    }
 }

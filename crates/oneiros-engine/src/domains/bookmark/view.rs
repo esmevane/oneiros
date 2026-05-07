@@ -58,7 +58,7 @@ impl BookmarkView {
                 )
             }
             BookmarkResponse::Bookmarks(listed) => {
-                let mut table = Table::new(vec![Column::key("name", "Name")]);
+                let mut table = Table::new(vec![Column::new("Name")]);
                 for bookmark in &listed.items {
                     table.push_row(vec![bookmark.name.to_string()]);
                 }

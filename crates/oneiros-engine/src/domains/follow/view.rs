@@ -7,10 +7,10 @@ pub(crate) struct FollowView;
 impl FollowView {
     pub(crate) fn table(follows: &Listed<Response<Follow>>) -> Table {
         let mut table = Table::new(vec![
-            Column::key("bookmark", "Bookmark"),
-            Column::key("brain", "Brain"),
-            Column::key("source", "Source"),
-            Column::key("id", "ID"),
+            Column::new("Bookmark"),
+            Column::new("Brain"),
+            Column::new("Source"),
+            Column::new("ID"),
         ]);
 
         for wrapped in &follows.items {
