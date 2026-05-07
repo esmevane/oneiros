@@ -11,25 +11,25 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub(crate) enum Requests {
+    Actor(ActorRequest),
+    Agent(AgentRequest),
+    Brain(BrainRequest),
+    Cognition(CognitionRequest),
+    Connection(ConnectionRequest),
+    Continuity(ContinuityRequest),
+    Experience(ExperienceRequest),
     Level(LevelRequest),
-    Texture(TextureRequest),
-    Sensation(SensationRequest),
+    Memory(MemoryRequest),
     Nature(NatureRequest),
     Persona(PersonaRequest),
-    Urge(UrgeRequest),
-    Agent(AgentRequest),
-    Cognition(CognitionRequest),
-    Memory(MemoryRequest),
-    Experience(ExperienceRequest),
-    Connection(ConnectionRequest),
-    Storage(StorageRequest),
-    Continuity(ContinuityRequest),
     Pressure(PressureRequest),
     Search(SearchRequest),
+    Sensation(SensationRequest),
+    Storage(StorageRequest),
     Tenant(TenantRequest),
-    Actor(ActorRequest),
-    Brain(BrainRequest),
+    Texture(TextureRequest),
     Ticket(TicketRequest),
+    Urge(UrgeRequest),
 }
 
 collects_enum!(

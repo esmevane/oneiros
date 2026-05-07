@@ -122,7 +122,11 @@ impl CanonIndex {
     }
 
     /// Fork the active bookmark into a new bookmark.
-    pub(crate) fn fork_brain(&self, brain: &BrainName, bookmark: &BookmarkName) -> Result<(), EventError> {
+    pub(crate) fn fork_brain(
+        &self,
+        brain: &BrainName,
+        bookmark: &BookmarkName,
+    ) -> Result<(), EventError> {
         let mut write = self
             .brains
             .write()
@@ -199,7 +203,11 @@ impl CanonIndex {
     ///
     /// Opens events.db standalone for the event log, then the bookmark
     /// connection for projection migrations.
-    pub(crate) fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
+    pub(crate) fn hydrate_brain(
+        &self,
+        config: &Config,
+        name: &BrainName,
+    ) -> Result<(), EventError> {
         let mut brain_config = config.clone();
         brain_config.brain = name.clone();
 

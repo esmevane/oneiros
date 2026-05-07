@@ -78,23 +78,24 @@ impl Server {
             .route("/health", routing::get(async || "ok"))
             .route("/dashboard/config", routing::get(dashboard_config));
 
-        // MCP streamable HTTP transport — each session gets its own EngineToolBox
-        // backed by the shared ServerState for full access to canons, config,
-        // and per-request context resolution.
         state.hydrate();
-        let mcp_state = state.clone();
-        let mcp_service = StreamableHttpService::new(
-            move || Ok(EngineToolBox::new(mcp_state.clone())),
-            Arc::new(LocalSessionManager::default()),
-            Default::default(),
-        );
 
         let mut api = OpenApi::default();
         let app_docs = AppDocs;
 
         let router = ApiRouter::new()
             .merge(root)
-            .nest_service("/mcp", Router::new().route_service("/", mcp_service))
+            .nest_service(
+                "/mcp",
+                Router::new().route_service("/", {
+                    let mcp_state = state.clone();
+                    StreamableHttpService::new(
+                        move || Ok(EngineToolBox::new(mcp_state.clone())),
+                        Arc::new(LocalSessionManager::default()),
+                        Default::default(),
+                    )
+                }),
+            )
             .merge(ActorRouter.routes())
             .merge(AgentRouter.routes())
             .merge(BookmarkRouter.routes())
@@ -149,6 +150,7 @@ impl Server {
             });
 
         state.set_api(api);
+
         router.with_state(state).layer(
             TraceLayer::new_for_http()
                 .make_span_with(

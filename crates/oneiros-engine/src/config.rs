@@ -97,11 +97,6 @@ impl Config {
         Platform::new(&self.data_dir)
     }
 
-    /// Path to the brain's data directory.
-    pub(crate) fn brain_dir(&self) -> PathBuf {
-        self.platform().brain_dir(&self.brain)
-    }
-
     /// Path to the config file in the data directory.
     pub(crate) fn config_path(&self) -> PathBuf {
         self.platform().config_path()
@@ -257,11 +252,6 @@ impl Config {
         }
 
         self
-    }
-
-    /// Build a project context from this config.
-    pub(crate) fn project(&self) -> ProjectLog {
-        ProjectLog::new(self.clone())
     }
 }
 

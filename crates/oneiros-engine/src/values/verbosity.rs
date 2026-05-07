@@ -13,18 +13,6 @@ pub(crate) enum Verbosity {
     Verbose,
 }
 
-impl Verbosity {
-    /// Whether output should be suppressed to essentials.
-    pub(crate) fn is_quiet(&self) -> bool {
-        matches!(self, Self::Quiet)
-    }
-
-    /// Whether extra detail should be included.
-    pub(crate) fn is_verbose(&self) -> bool {
-        matches!(self, Self::Verbose)
-    }
-}
-
 impl std::fmt::Display for Verbosity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -13,7 +13,7 @@
 
 use anstream::{stderr, stdout};
 use clap::Parser;
-use std::{io::Write, net::SocketAddr, path::Path, process::ExitCode};
+use std::{io::Write, net::SocketAddr, process::ExitCode};
 use tokio::net::TcpListener;
 
 use crate::*;

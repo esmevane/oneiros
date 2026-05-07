@@ -87,11 +87,6 @@ impl ServerState {
         &self.config
     }
 
-    /// The token for the configured brain, if one exists.
-    pub(crate) fn token(&self) -> Option<Token> {
-        self.config.token()
-    }
-
     /// The brain name from the server config.
     pub(crate) fn brain_name(&self) -> &BrainName {
         &self.config.brain
