@@ -20,11 +20,8 @@ pub enum ExperienceCommands {
 }
 
 impl ExperienceCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectLog,
-    ) -> Result<Rendered<Responses>, ExperienceError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ExperienceError> {
+        let client = Client::new(config.base_url());
         let experience_client = ExperienceClient::new(&client);
 
         let (response, request) = match self {

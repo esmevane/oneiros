@@ -136,45 +136,35 @@ impl Command {
     /// - `Rendered::Data` is the default for domains without a presenter
     #[tracing::instrument(skip_all, err(Display))]
     pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
-        let system_ctx = || -> Result<HostLog, Error> {
-            Ok(ComposeScope::new(config.clone()).host()?.host_log())
-        };
-
-        let project_ctx = || -> Result<ProjectLog, Error> {
-            Ok(ComposeScope::new(config.clone())
-                .bookmark(config.brain.clone(), config.bookmark.clone())?
-                .project_log())
-        };
-
         Ok(match self {
-            Command::Actor(actor) => actor.execute(&system_ctx()?).await?,
-            Command::Agent(agent) => agent.execute(&project_ctx()?).await?,
-            Command::Bookmark(bookmark) => bookmark.execute(&project_ctx()?).await?,
-            Command::Brain(brain) => brain.execute(&system_ctx()?).await?,
-            Command::Cognition(cognition) => cognition.execute(&project_ctx()?).await?,
-            Command::Connection(connection) => connection.execute(&project_ctx()?).await?,
-            Command::Continuity(continuity) => continuity.execute(&project_ctx()?).await?,
+            Command::Actor(actor) => actor.execute(config).await?,
+            Command::Agent(agent) => agent.execute(config).await?,
+            Command::Bookmark(bookmark) => bookmark.execute(config).await?,
+            Command::Brain(brain) => brain.execute(config).await?,
+            Command::Cognition(cognition) => cognition.execute(config).await?,
+            Command::Connection(connection) => connection.execute(config).await?,
+            Command::Continuity(continuity) => continuity.execute(config).await?,
             Command::Doctor => DoctorCli::execute(config).await?,
-            Command::Experience(experience) => experience.execute(&project_ctx()?).await?,
-            Command::Level(level) => level.execute(&project_ctx()?).await?,
+            Command::Experience(experience) => experience.execute(config).await?,
+            Command::Level(level) => level.execute(config).await?,
             Command::Mcp(mcp) => mcp.execute(config)?,
-            Command::Memory(memory) => memory.execute(&project_ctx()?).await?,
-            Command::Nature(nature) => nature.execute(&project_ctx()?).await?,
-            Command::Peer(peer) => peer.execute(&system_ctx()?).await?,
-            Command::Persona(persona) => persona.execute(&project_ctx()?).await?,
-            Command::Pressure(pressure) => pressure.execute(&project_ctx()?).await?,
+            Command::Memory(memory) => memory.execute(config).await?,
+            Command::Nature(nature) => nature.execute(config).await?,
+            Command::Peer(peer) => peer.execute(config).await?,
+            Command::Persona(persona) => persona.execute(config).await?,
+            Command::Pressure(pressure) => pressure.execute(config).await?,
             Command::Project(project) => project.execute(config).await?,
-            Command::Search(search) => search.execute(&project_ctx()?).await?,
-            Command::Seed(seed) => seed.execute(&project_ctx()?).await?,
-            Command::Sensation(sensation) => sensation.execute(&project_ctx()?).await?,
+            Command::Search(search) => search.execute(config).await?,
+            Command::Seed(seed) => seed.execute(config).await?,
+            Command::Sensation(sensation) => sensation.execute(config).await?,
             Command::Service(service) => service.execute(config).await?,
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
-            Command::Storage(storage) => storage.execute(&project_ctx()?).await?,
-            Command::System(system) => system.execute(system_ctx()?).await?,
-            Command::Tenant(tenant) => tenant.execute(&system_ctx()?).await?,
-            Command::Texture(texture) => texture.execute(&project_ctx()?).await?,
-            Command::Ticket(ticket) => ticket.execute(&system_ctx()?).await?,
-            Command::Urge(urge) => urge.execute(&project_ctx()?).await?,
+            Command::Storage(storage) => storage.execute(config).await?,
+            Command::System(system) => system.execute(config).await?,
+            Command::Tenant(tenant) => tenant.execute(config).await?,
+            Command::Texture(texture) => texture.execute(config).await?,
+            Command::Ticket(ticket) => ticket.execute(config).await?,
+            Command::Urge(urge) => urge.execute(config).await?,
         })
     }
 }

@@ -10,8 +10,8 @@ pub enum MemoryCommands {
 }
 
 impl MemoryCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, MemoryError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, MemoryError> {
+        let client = Client::new(config.base_url());
         let memory_client = MemoryClient::new(&client);
 
         let (response, request) = match self {

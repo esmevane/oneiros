@@ -17,11 +17,8 @@ pub enum ContinuityCommands {
 }
 
 impl ContinuityCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectLog,
-    ) -> Result<Rendered<Responses>, ContinuityError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ContinuityError> {
+        let client = Client::new(config.base_url());
         let continuity_client = ContinuityClient::new(&client);
 
         let result = match self {

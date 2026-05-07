@@ -9,11 +9,8 @@ pub struct PressureCommands {
 }
 
 impl PressureCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectLog,
-    ) -> Result<Rendered<Responses>, PressureError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PressureError> {
+        let client = Client::new(config.base_url());
         let pressure_client = PressureClient::new(&client);
 
         let request = PressureRequest::GetPressure(self.command.clone());

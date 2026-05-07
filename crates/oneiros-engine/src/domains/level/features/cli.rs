@@ -16,8 +16,8 @@ pub enum LevelCommands {
 }
 
 impl LevelCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, LevelError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, LevelError> {
+        let client = Client::new(config.base_url());
         let level_client = LevelClient::new(&client);
 
         let response = match self {

@@ -16,8 +16,8 @@ pub enum PersonaCommands {
 }
 
 impl PersonaCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, PersonaError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PersonaError> {
+        let client = Client::new(config.base_url());
         let persona_client = PersonaClient::new(&client);
 
         let response = match self {

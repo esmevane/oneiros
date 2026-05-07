@@ -8,8 +8,8 @@ pub enum SystemCommands {
 }
 
 impl SystemCommands {
-    pub async fn execute(&self, context: HostLog) -> Result<Rendered<Responses>, SystemError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SystemError> {
+        let client = Client::new(config.base_url());
         let system_client = SystemClient::new(&client);
 
         let response = match self {

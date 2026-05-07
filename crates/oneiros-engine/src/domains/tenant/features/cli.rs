@@ -13,8 +13,8 @@ pub enum TenantCommands {
 }
 
 impl TenantCommands {
-    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, TenantError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TenantError> {
+        let client = Client::new(config.base_url());
         let tenant_client = TenantClient::new(&client);
 
         let response = match self {

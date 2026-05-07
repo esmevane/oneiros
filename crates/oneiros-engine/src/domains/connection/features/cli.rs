@@ -11,11 +11,8 @@ pub enum ConnectionCommands {
 }
 
 impl ConnectionCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectLog,
-    ) -> Result<Rendered<Responses>, ConnectionError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ConnectionError> {
+        let client = Client::new(config.base_url());
         let connection_client = ConnectionClient::new(&client);
 
         let (response, request) = match self {

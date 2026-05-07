@@ -17,8 +17,8 @@ pub enum AgentCommands {
 }
 
 impl AgentCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, AgentError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, AgentError> {
+        let client = Client::new(config.base_url());
         let agent_client = AgentClient::new(&client);
 
         let response = match self {

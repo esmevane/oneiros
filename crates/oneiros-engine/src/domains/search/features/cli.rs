@@ -9,8 +9,8 @@ pub struct SearchCommands {
 }
 
 impl SearchCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, SearchError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SearchError> {
+        let client = Client::new(config.base_url());
         let search_client = SearchClient::new(&client);
 
         let response = search_client.search(&self.command).await?;

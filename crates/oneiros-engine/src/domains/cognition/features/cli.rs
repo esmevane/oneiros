@@ -10,11 +10,8 @@ pub enum CognitionCommands {
 }
 
 impl CognitionCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectLog,
-    ) -> Result<Rendered<Responses>, CognitionError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, CognitionError> {
+        let client = Client::new(config.base_url());
         let cognition_client = CognitionClient::new(&client);
 
         let (response, request) = match self {

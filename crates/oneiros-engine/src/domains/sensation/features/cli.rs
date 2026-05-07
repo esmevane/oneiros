@@ -16,11 +16,8 @@ pub enum SensationCommands {
 }
 
 impl SensationCommands {
-    pub async fn execute(
-        &self,
-        context: &ProjectLog,
-    ) -> Result<Rendered<Responses>, SensationError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SensationError> {
+        let client = Client::new(config.base_url());
         let sensation_client = SensationClient::new(&client);
 
         let response = match self {

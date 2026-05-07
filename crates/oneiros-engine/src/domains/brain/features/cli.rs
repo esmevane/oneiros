@@ -13,8 +13,8 @@ pub enum BrainCommands {
 }
 
 impl BrainCommands {
-    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, BrainError> {
-        let client = context.client();
+    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BrainError> {
+        let client = Client::new(config.base_url());
         let brain_client = BrainClient::new(&client);
 
         let response = match self {
