@@ -45,19 +45,20 @@ impl Cli {
 /// dispatch routes to the right one.
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    // Workflow domains
     #[command(subcommand)]
     System(SystemCommands),
     #[command(subcommand)]
     Project(ProjectCommands),
+
+    /// Seed the given project with presets
     #[command(subcommand)]
     Seed(SeedCommands),
+    /// Manage MCP-related things
     #[command(subcommand)]
     Mcp(McpCommands),
     /// Guided first-run setup.
     Setup(#[command(flatten)] SetupRequest),
 
-    // System-scoped domains
     #[command(subcommand)]
     Tenant(TenantCommands),
     #[command(subcommand)]
@@ -69,90 +70,60 @@ pub enum Command {
     #[command(subcommand)]
     Peer(PeerCommands),
 
-    // Bookmark — canon navigation
+    /// Manage bookmarks
     #[command(subcommand)]
     Bookmark(BookmarkCommands),
 
-    // Service management
+    /// Install and start the service, or run it directly
     #[command(subcommand)]
     Service(ServiceCommands),
 
-    // Vocabulary domains (project-scoped)
-    #[command(subcommand)]
-    Level(LevelCommands),
-    #[command(subcommand)]
-    Texture(TextureCommands),
-    #[command(subcommand)]
-    Sensation(SensationCommands),
-    #[command(subcommand)]
-    Nature(NatureCommands),
-    #[command(subcommand)]
-    Persona(PersonaCommands),
-    #[command(subcommand)]
-    Urge(UrgeCommands),
-
-    // Entity domains (project-scoped)
+    /// Manage the agents within your continuity
     #[command(subcommand)]
     Agent(AgentCommands),
+    /// Record a thought you've had
     #[command(subcommand)]
     Cognition(CognitionCommands),
+    /// Track something you want to remember
     #[command(subcommand)]
     Memory(MemoryCommands),
+    /// Describe impressions and things that happened to you
     #[command(subcommand)]
     Experience(ExperienceCommands),
+    /// Draw links between continuity
     #[command(subcommand)]
     Connection(ConnectionCommands),
-
-    // Continuity / derived (project-scoped)
+    /// Manage levels for your memories
     #[command(subcommand)]
-    Continuity(ContinuityCommands),
+    Level(LevelCommands),
+    /// Manage texures for your cognitions
+    #[command(subcommand)]
+    Texture(TextureCommands),
+    /// Manage sensations for your experiences
+    #[command(subcommand)]
+    Sensation(SensationCommands),
+    /// Manage natures for your connections
+    #[command(subcommand)]
+    Nature(NatureCommands),
+    /// Manage personas for your agents
+    #[command(subcommand)]
+    Persona(PersonaCommands),
+    /// Search through continuity
+    Search(#[command(flatten)] SearchCommands),
+    /// Review current pressure gauges
+    Pressure(#[command(flatten)] PressureCommands),
+    /// Manage urges for your pressure gauges
+    #[command(subcommand)]
+    Urge(UrgeCommands),
+    /// Store files in an embedded file system
     #[command(subcommand)]
     Storage(StorageCommands),
 
-    // Flat arg commands — args appear directly under the command name
-    Search(#[command(flatten)] SearchCommands),
-    Pressure(#[command(flatten)] PressureCommands),
+    /// Continuity lifecycle commands
+    #[command(subcommand)]
+    Continuity(ContinuityCommands),
 
-    // Flat lifecycle commands — top-level shortcuts for the most common ops
-    Wake {
-        name: AgentName,
-    },
-    Dream {
-        name: AgentName,
-    },
-    Introspect {
-        name: AgentName,
-    },
-    Reflect {
-        name: AgentName,
-    },
-    Sense {
-        name: AgentName,
-        #[arg(default_value = "")]
-        content: Content,
-    },
-    Sleep {
-        name: AgentName,
-    },
-    Guidebook {
-        name: AgentName,
-    },
-
-    // Agent lifecycle — emerge creates then wakes; recede removes
-    Emerge {
-        name: AgentName,
-        persona: PersonaName,
-        #[arg(long, default_value = "")]
-        description: Description,
-    },
-    Recede {
-        name: AgentName,
-    },
-
-    // Status — cross-agent activity overview
-    Status,
-
-    // Diagnostics
+    /// Run diagnostics against the local host
     Doctor,
 }
 
@@ -165,11 +136,10 @@ impl Command {
     /// - `Rendered::Data` is the default for domains without a presenter
     #[tracing::instrument(skip_all, err(Display))]
     pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
-        // Strangler bridges — produce legacy Context types via Scope.
-        // Will simplify when consumers migrate to take Scope directly.
         let system_ctx = || -> Result<HostLog, Error> {
             Ok(ComposeScope::new(config.clone()).host()?.host_log())
         };
+
         let project_ctx = || -> Result<ProjectLog, Error> {
             Ok(ComposeScope::new(config.clone())
                 .bookmark(config.brain.clone(), config.bookmark.clone())?
@@ -177,147 +147,34 @@ impl Command {
         };
 
         Ok(match self {
-            // Service management — operates before/outside HTTP transport
-            Command::Service(service) => service.execute(config).await?,
-
-            // Workflow domains — each knows its context
-            Command::System(system) => system.execute(system_ctx()?).await?,
-            Command::Project(project) => project.execute(config).await?,
-            Command::Seed(seed) => seed.execute(&project_ctx()?).await?,
-            Command::Mcp(mcp) => mcp.execute(config)?,
-            Command::Setup(setup) => SetupCli::execute(config, setup).await?,
-
-            // Bookmark — canon navigation (routes through HTTP)
-            Command::Bookmark(bookmark) => bookmark.execute(&project_ctx()?).await?,
-
-            // System-scoped domains
-            Command::Tenant(tenant) => tenant.execute(&system_ctx()?).await?,
             Command::Actor(actor) => actor.execute(&system_ctx()?).await?,
-            Command::Brain(brain) => brain.execute(&system_ctx()?).await?,
-            Command::Ticket(ticket) => ticket.execute(&system_ctx()?).await?,
-            Command::Peer(peer) => peer.execute(&system_ctx()?).await?,
-
-            // Project-scoped domains — vocabulary
-            Command::Level(level) => level.execute(&project_ctx()?).await?,
-            Command::Texture(texture) => texture.execute(&project_ctx()?).await?,
-            Command::Sensation(sensation) => sensation.execute(&project_ctx()?).await?,
-            Command::Nature(nature) => nature.execute(&project_ctx()?).await?,
-            Command::Persona(persona) => persona.execute(&project_ctx()?).await?,
-            Command::Urge(urge) => urge.execute(&project_ctx()?).await?,
             Command::Agent(agent) => agent.execute(&project_ctx()?).await?,
-
-            // Entity domains — return Rendered with ref_token prompts on create
+            Command::Bookmark(bookmark) => bookmark.execute(&project_ctx()?).await?,
+            Command::Brain(brain) => brain.execute(&system_ctx()?).await?,
             Command::Cognition(cognition) => cognition.execute(&project_ctx()?).await?,
-            Command::Memory(memory) => memory.execute(&project_ctx()?).await?,
-            Command::Experience(experience) => experience.execute(&project_ctx()?).await?,
             Command::Connection(connection) => connection.execute(&project_ctx()?).await?,
-
-            Command::Storage(storage) => storage.execute(&project_ctx()?).await?,
-            Command::Search(search) => search.execute(&project_ctx()?).await?,
-            Command::Pressure(pressure) => pressure.execute(&project_ctx()?).await?,
-
-            // Doctor — system diagnostics
-            Command::Doctor => DoctorCli::execute(config).await?,
-
-            // Continuity — domain subcommands go through the presenter
             Command::Continuity(continuity) => continuity.execute(&project_ctx()?).await?,
-
-            // Flat lifecycle shortcuts — delegate to ContinuityCommands
-            Command::Wake { name } => {
-                ContinuityCommands::Wake(WakeAgent::builder_v1().agent(name.clone()).build().into())
-                    .execute(&project_ctx()?)
-                    .await?
-            }
-            Command::Dream { name } => {
-                ContinuityCommands::Dream(
-                    DreamAgent::builder_v1().agent(name.clone()).build().into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Introspect { name } => {
-                ContinuityCommands::Introspect(
-                    IntrospectAgent::builder_v1()
-                        .agent(name.clone())
-                        .build()
-                        .into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Reflect { name } => {
-                ContinuityCommands::Reflect(
-                    ReflectAgent::builder_v1()
-                        .agent(name.clone())
-                        .build()
-                        .into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Sense { name, content } => {
-                ContinuityCommands::Sense(
-                    SenseContent::builder_v1()
-                        .agent(name.clone())
-                        .content(content.clone())
-                        .build()
-                        .into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Sleep { name } => {
-                ContinuityCommands::Sleep(
-                    SleepAgent::builder_v1().agent(name.clone()).build().into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Guidebook { name } => {
-                ContinuityCommands::Guidebook(
-                    GuidebookAgent::builder_v1()
-                        .agent(name.clone())
-                        .build()
-                        .into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-
-            // Continuity lifecycle — emerge, recede, status
-            Command::Emerge {
-                name,
-                persona,
-                description,
-            } => {
-                ContinuityCommands::Emerge(
-                    EmergeAgent::builder_v1()
-                        .name(name.clone())
-                        .persona(persona.clone())
-                        .description(description.clone())
-                        .build()
-                        .into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Recede { name } => {
-                ContinuityCommands::Recede(
-                    RecedeAgent::builder_v1().agent(name.clone()).build().into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
-            Command::Status => {
-                ContinuityCommands::Status(
-                    StatusAgent::builder_v1()
-                        .filters(SearchFilters::default())
-                        .build()
-                        .into(),
-                )
-                .execute(&project_ctx()?)
-                .await?
-            }
+            Command::Doctor => DoctorCli::execute(config).await?,
+            Command::Experience(experience) => experience.execute(&project_ctx()?).await?,
+            Command::Level(level) => level.execute(&project_ctx()?).await?,
+            Command::Mcp(mcp) => mcp.execute(config)?,
+            Command::Memory(memory) => memory.execute(&project_ctx()?).await?,
+            Command::Nature(nature) => nature.execute(&project_ctx()?).await?,
+            Command::Peer(peer) => peer.execute(&system_ctx()?).await?,
+            Command::Persona(persona) => persona.execute(&project_ctx()?).await?,
+            Command::Pressure(pressure) => pressure.execute(&project_ctx()?).await?,
+            Command::Project(project) => project.execute(config).await?,
+            Command::Search(search) => search.execute(&project_ctx()?).await?,
+            Command::Seed(seed) => seed.execute(&project_ctx()?).await?,
+            Command::Sensation(sensation) => sensation.execute(&project_ctx()?).await?,
+            Command::Service(service) => service.execute(config).await?,
+            Command::Setup(setup) => SetupCli::execute(config, setup).await?,
+            Command::Storage(storage) => storage.execute(&project_ctx()?).await?,
+            Command::System(system) => system.execute(system_ctx()?).await?,
+            Command::Tenant(tenant) => tenant.execute(&system_ctx()?).await?,
+            Command::Texture(texture) => texture.execute(&project_ctx()?).await?,
+            Command::Ticket(ticket) => ticket.execute(&system_ctx()?).await?,
+            Command::Urge(urge) => urge.execute(&project_ctx()?).await?,
         })
     }
 }

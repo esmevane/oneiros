@@ -20,10 +20,6 @@ use std::sync::Arc;
 
 use crate::*;
 
-// ─────────────────────────────────────────────────────────────────────
-// Wrapper
-// ─────────────────────────────────────────────────────────────────────
-
 #[derive(Clone)]
 pub struct Scope<T> {
     inner: T,
@@ -35,16 +31,87 @@ impl<T> Scope<T> {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Tiers — five structs, one per stage. No phantom markers.
-// ─────────────────────────────────────────────────────────────────────
-
 #[derive(Clone, Default)]
 pub struct Empty;
 
+impl Scope<Empty> {
+    pub fn empty() -> Self {
+        Self::wrap(Empty)
+    }
+
+    pub fn with_config(self, config: Config) -> Scope<Configured> {
+        Scope::wrap(Configured { config })
+    }
+}
+
 #[derive(Clone)]
-pub struct Uninitialized {
+pub struct Configured {
     config: Config,
+}
+
+impl Scope<Configured> {
+    /// Transition scope to its [`AtHost`] tier, which means it has
+    /// access to everything it needs to manage a host instance, and
+    /// we've verified that the host instance can run.
+    ///
+    pub fn verify_host(self) -> Result<Scope<AtHost>, ComposeError> {
+        let host = self.verify_host_setup()?;
+        Ok(Scope::empty()
+            .with_config(self.inner.config.clone())
+            .to_host(Arc::new(host)))
+    }
+
+    /// Advance to host tier with caller-built HostInfra. Caller is
+    /// responsible for validation and registry assembly — see
+    /// [`ComposeScope::host`].
+    pub fn to_host(self, host: Arc<HostInfra>) -> Scope<AtHost> {
+        let Configured { config } = self.inner;
+        Scope::wrap(AtHost { config, host })
+    }
+
+    fn verify_host_setup(&self) -> Result<HostInfra, ComposeError> {
+        let platform = self.inner.config.platform();
+
+        if !platform.data_dir().is_dir() {
+            return Err(ComposeError::HostHydrationFailed(format!(
+                "data_dir does not exist: {}",
+                platform.data_dir().display()
+            )));
+        }
+
+        // Authoritative source: the `brains` projection in system DB.
+        // System recognizes a brain when an event made it real; the
+        // filesystem is the underlying medium. Intersection means
+        // both must agree.
+        let conn = self.inner.config.system_db()?;
+        let projection_names = BrainStore::new(&conn).list()?;
+
+        let mut projects = HashMap::new();
+        for name in projection_names {
+            // System says the brain exists; verify it's actually
+            // reachable on disk. Mismatch = orphan, exclude.
+            if !platform.events_db_path(&name).exists() {
+                continue;
+            }
+
+            let project = ProjectInfra {
+                name: name.clone(),
+                brain_dir: platform.brain_dir(&name),
+                events_db_path: platform.events_db_path(&name),
+                bookmarks_dir: platform.bookmarks_dir(&name),
+                bookmarks: HashMap::new(),
+            };
+
+            projects.insert(name, Arc::new(project));
+        }
+
+        Ok(HostInfra {
+            data_dir: platform.data_dir().to_path_buf(),
+            system_db_path: platform.system_db_path(),
+            host_key_path: platform.host_key_path(),
+            projects,
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -162,26 +229,6 @@ pub enum ComposeError {
 // ─────────────────────────────────────────────────────────────────────
 // Scope transitions — pure structural advances. No fetching.
 // ─────────────────────────────────────────────────────────────────────
-
-impl Scope<Empty> {
-    pub fn empty() -> Self {
-        Self::wrap(Empty)
-    }
-
-    pub fn load(self, config: Config) -> Scope<Uninitialized> {
-        Scope::wrap(Uninitialized { config })
-    }
-}
-
-impl Scope<Uninitialized> {
-    /// Advance to host tier with caller-built HostInfra. Caller is
-    /// responsible for validation and registry assembly — see
-    /// [`ComposeScope::host`].
-    pub fn to_host(self, host: Arc<HostInfra>) -> Scope<AtHost> {
-        let Uninitialized { config } = self.inner;
-        Scope::wrap(AtHost { config, host })
-    }
-}
 
 impl Scope<AtHost> {
     /// Advance to a specific project, verifying its name is in the
@@ -322,7 +369,7 @@ impl ComposeScope {
     pub fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
         let host = self.build_host_infra()?;
         Ok(Scope::empty()
-            .load(self.config.clone())
+            .with_config(self.config.clone())
             .to_host(Arc::new(host)))
     }
 
@@ -339,7 +386,9 @@ impl ComposeScope {
         host.projects.insert(brain.clone(), Arc::new(project));
 
         let host_arc = Arc::new(host);
-        let host_scope = Scope::empty().load(self.config.clone()).to_host(host_arc);
+        let host_scope = Scope::empty()
+            .with_config(self.config.clone())
+            .to_host(host_arc);
         Ok(host_scope.to_project(brain)?)
     }
 
