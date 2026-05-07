@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{ErrorResponse, UpcastError};
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum McpConfigError {

@@ -35,10 +35,6 @@ pub(crate) enum ToolError {
     #[error("Unknown tool: {0}")]
     UnknownTool(String),
 
-    /// A parameter could not be deserialized or was otherwise invalid.
-    #[error("Parameter error: {0}")]
-    Parameter(String),
-
     /// The requested entity was not found.
     #[error("Not found: {0}")]
     NotFound(String),
@@ -116,7 +112,7 @@ fn mcp_error_response(error: &ToolError) -> McpResponse {
             Hint::inspect(ResourcePath::Agents.uri(), "See available agents"),
             Hint::suggest("search-query", "Search across everything"),
         ],
-        ToolError::Parameter(_) | ToolError::Malformed(_) => vec![Hint::inspect(
+        ToolError::Malformed(_) => vec![Hint::inspect(
             ResourcePath::Agents.uri(),
             "See available agents",
         )],

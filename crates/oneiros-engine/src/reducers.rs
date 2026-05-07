@@ -34,13 +34,6 @@ impl<T: Clone + Default> ReducerPipeline<T> {
         Ok(())
     }
 
-    pub(crate) fn reduce(&self, events: &[Events]) -> Result<(), EventError> {
-        for event in events {
-            self.apply(event)?;
-        }
-        Ok(())
-    }
-
     pub(crate) fn reset(&self) -> Result<(), EventError> {
         let mut guard = self
             .state
@@ -101,78 +94,5 @@ impl ReducerPipeline<SystemCanon> {
             PeerState::reducer(),
             FollowState::reducer(),
         ])
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn brain_reducers_chain_through_full_pipeline() {
-        let reducers = ReducerPipeline::brain();
-
-        let agent = AgentCreated::builder_v1()
-            .agent(
-                Agent::builder()
-                    .name("test.agent")
-                    .persona("process")
-                    .description("A test")
-                    .prompt("You are a test")
-                    .build(),
-            )
-            .build()
-            .into();
-        let cognition: CognitionAdded = CognitionAdded::builder_v1()
-            .cognition(
-                Cognition::builder()
-                    .agent_id(AgentId::new())
-                    .texture("observation")
-                    .content("Something noticed")
-                    .build(),
-            )
-            .build()
-            .into();
-        let level: LevelSet = LevelSet::builder_v1()
-            .level(
-                Level::builder()
-                    .name("working")
-                    .description("Short-term")
-                    .prompt("")
-                    .build(),
-            )
-            .build()
-            .into();
-
-        let events = vec![
-            Events::Agent(AgentEvents::AgentCreated(agent)),
-            Events::Cognition(CognitionEvents::CognitionAdded(cognition)),
-            Events::Level(LevelEvents::LevelSet(level)),
-        ];
-
-        reducers.reduce(&events).unwrap();
-
-        let state = reducers.state().unwrap();
-
-        assert_eq!(state.agents.len(), 1);
-        assert_eq!(state.cognitions.len(), 1);
-        assert_eq!(state.levels.len(), 1);
-    }
-
-    #[test]
-    fn system_reducers_chain_through_full_pipeline() {
-        let reducers = ReducerPipeline::<SystemCanon>::system();
-
-        let tenant: TenantCreated = TenantCreated::builder_v1()
-            .tenant(Tenant::builder().name("test-tenant").build())
-            .build()
-            .into();
-        let events = vec![Events::Tenant(TenantEvents::TenantCreated(tenant))];
-
-        reducers.reduce(&events).unwrap();
-
-        let state = reducers.state().unwrap();
-
-        assert_eq!(state.tenants.len(), 1);
     }
 }

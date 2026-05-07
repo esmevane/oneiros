@@ -36,7 +36,7 @@ pub(crate) struct TestApp {
 
 impl TestApp {
     /// Boot a new test app: tempdir, config, server on a random port.
-    pub(crate) async fn new() -> Result<Self, Error> {
+    pub(crate) async fn new() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::tempdir().expect("create tempdir");
 
         let config = Config::builder()
@@ -58,10 +58,7 @@ impl TestApp {
             .build();
 
         let mut engine = Engine::new(config);
-        let handle = engine
-            .start()
-            .await
-            .map_err(|e| Error::Context(e.to_string()))?;
+        let handle = engine.start().await?;
 
         Ok(Self {
             engine,
@@ -71,13 +68,13 @@ impl TestApp {
     }
 
     /// Initialize the system database and default tenant/actor.
-    pub(crate) async fn init_system(self) -> Result<Self, Error> {
+    pub(crate) async fn init_system(self) -> Result<Self, Box<dyn core::error::Error>> {
         self.command("system init --name test").await?;
         Ok(self)
     }
 
     /// Initialize a project (brain) with the default name.
-    pub(crate) async fn init_project(self) -> Result<Self, Error> {
+    pub(crate) async fn init_project(self) -> Result<Self, Box<dyn core::error::Error>> {
         let brain = self.engine.config().brain.to_string();
         self.command(&format!("project init --name {brain}"))
             .await?;
@@ -85,7 +82,7 @@ impl TestApp {
     }
 
     /// Seed the core vocabulary (textures, levels, sensations, etc.).
-    pub(crate) async fn seed_core(self) -> Result<Self, Error> {
+    pub(crate) async fn seed_core(self) -> Result<Self, Box<dyn core::error::Error>> {
         self.command("seed core").await?;
         Ok(self)
     }
@@ -100,7 +97,10 @@ impl TestApp {
     /// app.command("agent create thinker process").await?;
     /// app.command("persona show process").await?;
     /// ```
-    pub(crate) async fn command(&self, input: &str) -> Result<Rendered<Responses>, Error> {
+    pub(crate) async fn command(
+        &self,
+        input: &str,
+    ) -> Result<Rendered<Responses>, Box<dyn core::error::Error>> {
         // Build the arg list: "oneiros" + the user's command tokens.
         // Prepend global flags so clap routes to the right config.
         let config = self.engine.config();
@@ -116,10 +116,10 @@ impl TestApp {
                 .unwrap_or_else(|| panic!("invalid shell words in command: {input}")),
         );
 
-        let cli = Cli::try_parse_from(&args).map_err(|e| Error::Context(e.to_string()))?;
+        let cli = Cli::try_parse_from(&args)?;
 
         // Execute against our engine's config (which has the correct port).
-        self.engine.execute(&cli).await
+        Ok(self.engine.execute(&cli).await?)
     }
 
     /// Get a typed HTTP client connected to this app's server.

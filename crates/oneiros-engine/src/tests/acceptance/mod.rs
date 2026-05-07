@@ -22,10 +22,16 @@ pub(crate) trait Backend: Sized {
     fn start_service(&mut self) -> impl Future<Output = Result<(), Box<dyn core::error::Error>>>;
 
     /// Execute in JSON mode — returns typed data for structural assertions.
-    fn exec_json(&self, command: &str) -> impl Future<Output = Result<Responses, Error>>;
+    fn exec_json(
+        &self,
+        command: &str,
+    ) -> impl Future<Output = Result<Responses, Box<dyn core::error::Error>>>;
 
     /// Execute in prompt mode — returns rendered text for content assertions.
-    fn exec_prompt(&self, command: &str) -> impl Future<Output = Result<String, Error>>;
+    fn exec_prompt(
+        &self,
+        command: &str,
+    ) -> impl Future<Output = Result<String, Box<dyn core::error::Error>>>;
 }
 
 // ── Harness ─────────────────────────────────────────────────────
@@ -97,12 +103,18 @@ impl<B: Backend> Harness<B> {
     ///
     /// Use for write operations where you assert on the immediate response,
     /// or for setup commands that don't need eventual-consistency handling.
-    pub(crate) async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
+    pub(crate) async fn exec_json(
+        &self,
+        command: &str,
+    ) -> Result<Responses, Box<dyn core::error::Error>> {
         self.backend.exec_json(command).await
     }
 
     /// Execute in prompt mode — delegates to the backend.
-    pub(crate) async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
+    pub(crate) async fn exec_prompt(
+        &self,
+        command: &str,
+    ) -> Result<String, Box<dyn core::error::Error>> {
         self.backend.exec_prompt(command).await
     }
 }
@@ -147,23 +159,23 @@ impl Backend for EngineBackend {
         })
     }
 
-    async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
+    async fn exec_json(&self, command: &str) -> Result<Responses, Box<dyn core::error::Error>> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
+        let cli = Cli::try_parse_from(&full_args)?;
         let rendered = cli.execute(self.engine.config()).await?;
 
         Ok(rendered.into_response())
     }
 
-    async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
+    async fn exec_prompt(&self, command: &str) -> Result<String, Box<dyn core::error::Error>> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
+        let cli = Cli::try_parse_from(&full_args)?;
         let rendered = cli.execute(self.engine.config()).await?;
 
         Ok(rendered.prompt().to_string())

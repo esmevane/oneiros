@@ -18,9 +18,6 @@ impl From<std::convert::Infallible> for UpcastError {
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum Error {
-    #[error("{0}")]
-    Context(String),
-
     #[error(transparent)]
     Agent(#[from] AgentError),
     #[error(transparent)]
