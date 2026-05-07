@@ -13,14 +13,14 @@ impl ExperienceState {
                 }
                 ExperienceEvents::ExperienceDescriptionUpdated(updated) => {
                     if let Ok(current) = updated.current()
-                        && let Some(experience) = canon.experiences.get_mut(current.id)
+                        && let Some(experience) = canon.experiences.get_mut(&current.id)
                     {
                         experience.description = current.description;
                     }
                 }
                 ExperienceEvents::ExperienceSensationUpdated(updated) => {
                     if let Ok(current) = updated.current()
-                        && let Some(experience) = canon.experiences.get_mut(current.id)
+                        && let Some(experience) = canon.experiences.get_mut(&current.id)
                     {
                         experience.sensation = current.sensation;
                     }
@@ -59,7 +59,7 @@ mod tests {
         ));
         let next = ExperienceState::reduce(canon, &event);
 
-        let updated = next.experiences.get(experience.id).unwrap();
+        let updated = next.experiences.get(&experience.id).unwrap();
         assert_eq!(updated.description, Description::new("Updated description"));
     }
 }

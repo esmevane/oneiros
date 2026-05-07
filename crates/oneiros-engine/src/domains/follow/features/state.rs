@@ -21,7 +21,7 @@ impl FollowState {
                 }
                 BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
                     if let Ok(current) = unfollowed.current() {
-                        canon.follows.remove(current.follow_id);
+                        canon.follows.remove(&current.follow_id);
                     }
                 }
                 BookmarkEvents::BookmarkCreated(_)

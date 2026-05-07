@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -27,33 +26,12 @@ impl Connection {
     }
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Connections(HashMap<String, Connection>);
-
-impl Connections {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Connection> {
-        self.0.values()
-    }
-
-    pub(crate) fn get(&self, id: ConnectionId) -> Option<&Connection> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, connection: &Connection) -> Option<Connection> {
-        self.0.insert(connection.id.to_string(), connection.clone())
-    }
-
-    pub(crate) fn remove(&mut self, connection_id: ConnectionId) -> Option<Connection> {
-        self.0.remove(&connection_id.to_string())
+impl Indexable<ConnectionId> for Connection {
+    fn id(&self) -> ConnectionId {
+        self.id
     }
 }
+
+pub(crate) type Connections = EntityIndex<ConnectionId, Connection>;
 
 resource_id!(ConnectionId);

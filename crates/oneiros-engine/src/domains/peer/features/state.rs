@@ -32,7 +32,7 @@ impl PeerState {
                 }
                 PeerEvents::PeerRemoved(removed) => {
                     if let Ok(current) = removed.current() {
-                        canon.peers.remove(current.id);
+                        canon.peers.remove(&current.id);
                     }
                 }
             };

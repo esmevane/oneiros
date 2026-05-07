@@ -1,6 +1,5 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -20,41 +19,20 @@ pub(crate) struct Pressure {
     pub(crate) updated_at: Timestamp,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Pressures(HashMap<String, Pressure>);
-
-impl Pressures {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Pressure> {
-        self.0.values()
-    }
-
-    pub(crate) fn get(&self, id: PressureId) -> Option<&Pressure> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, pressure: &Pressure) -> Option<Pressure> {
-        self.0.insert(pressure.id.to_string(), pressure.clone())
-    }
-
-    pub(crate) fn remove(&mut self, pressure_id: PressureId) -> Option<Pressure> {
-        self.0.remove(&pressure_id.to_string())
-    }
-}
-
 impl Pressure {
     /// Compute urgency as a 0.0-1.0 score from the stored gauge.
     pub(crate) fn urgency(&self) -> f64 {
         self.data.urgency()
     }
 }
+
+impl Indexable<PressureId> for Pressure {
+    fn id(&self) -> PressureId {
+        self.id
+    }
+}
+
+pub(crate) type Pressures = EntityIndex<PressureId, Pressure>;
 
 impl From<&Pressure> for PressureSummary {
     fn from(p: &Pressure) -> Self {

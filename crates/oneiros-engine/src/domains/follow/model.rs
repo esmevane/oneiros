@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -30,33 +29,12 @@ pub(crate) struct Follow {
     pub(crate) created_at: Timestamp,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Follows(HashMap<String, Follow>);
-
-impl Follows {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Follow> {
-        self.0.values()
-    }
-
-    pub(crate) fn get(&self, id: FollowId) -> Option<&Follow> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, follow: &Follow) -> Option<Follow> {
-        self.0.insert(follow.id.to_string(), follow.clone())
-    }
-
-    pub(crate) fn remove(&mut self, follow_id: FollowId) -> Option<Follow> {
-        self.0.remove(&follow_id.to_string())
+impl Indexable<FollowId> for Follow {
+    fn id(&self) -> FollowId {
+        self.id
     }
 }
+
+pub(crate) type Follows = EntityIndex<FollowId, Follow>;
 
 resource_id!(FollowId);

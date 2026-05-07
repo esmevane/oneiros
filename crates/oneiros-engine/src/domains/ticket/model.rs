@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -29,29 +28,12 @@ pub(crate) struct Ticket {
     pub(crate) created_at: Timestamp,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Tickets(HashMap<String, Ticket>);
-
-impl Tickets {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, id: TicketId) -> Option<&Ticket> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, ticket: &Ticket) -> Option<Ticket> {
-        self.0.insert(ticket.id.to_string(), ticket.clone())
-    }
-
-    pub(crate) fn remove(&mut self, ticket_id: TicketId) -> Option<Ticket> {
-        self.0.remove(&ticket_id.to_string())
+impl Indexable<TicketId> for Ticket {
+    fn id(&self) -> TicketId {
+        self.id
     }
 }
+
+pub(crate) type Tickets = EntityIndex<TicketId, Ticket>;
 
 resource_id!(TicketId);

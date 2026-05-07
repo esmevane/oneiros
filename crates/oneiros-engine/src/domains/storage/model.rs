@@ -1,6 +1,5 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -12,30 +11,13 @@ pub(crate) struct StorageEntry {
     pub(crate) hash: ContentHash,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct StorageEntries(HashMap<String, StorageEntry>);
-
-impl StorageEntries {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, key: &StorageKey) -> Option<&StorageEntry> {
-        self.0.get(&key.to_string())
-    }
-
-    pub(crate) fn set(&mut self, entry: &StorageEntry) -> Option<StorageEntry> {
-        self.0.insert(entry.key.to_string(), entry.clone())
-    }
-
-    pub(crate) fn remove(&mut self, key: &StorageKey) -> Option<StorageEntry> {
-        self.0.remove(&key.to_string())
+impl Indexable<StorageKey> for StorageEntry {
+    fn id(&self) -> StorageKey {
+        self.key.clone()
     }
 }
+
+pub(crate) type StorageEntries = EntityIndex<StorageKey, StorageEntry>;
 
 /// Binary content for transport — carries compressed blob data in the event stream.
 ///

@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -39,33 +38,12 @@ impl Memory {
     }
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Memories(HashMap<String, Memory>);
-
-impl Memories {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, id: MemoryId) -> Option<&Memory> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, memory: &Memory) -> Option<Memory> {
-        self.0.insert(memory.id.to_string(), memory.clone())
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Memory> {
-        self.0.values()
-    }
-
-    pub(crate) fn remove(&mut self, memory_id: MemoryId) -> Option<Memory> {
-        self.0.remove(&memory_id.to_string())
+impl Indexable<MemoryId> for Memory {
+    fn id(&self) -> MemoryId {
+        self.id
     }
 }
+
+pub(crate) type Memories = EntityIndex<MemoryId, Memory>;
 
 resource_id!(MemoryId);

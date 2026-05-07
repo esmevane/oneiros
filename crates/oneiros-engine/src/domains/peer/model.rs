@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -27,34 +26,13 @@ pub(crate) struct Peer {
     pub(crate) created_at: Timestamp,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Peers(HashMap<String, Peer>);
-
-impl Peers {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Peer> {
-        self.0.values()
-    }
-
-    pub(crate) fn get(&self, id: PeerId) -> Option<&Peer> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, peer: &Peer) -> Option<Peer> {
-        self.0.insert(peer.id.to_string(), peer.clone())
-    }
-
-    pub(crate) fn remove(&mut self, peer_id: PeerId) -> Option<Peer> {
-        self.0.remove(&peer_id.to_string())
+impl Indexable<PeerId> for Peer {
+    fn id(&self) -> PeerId {
+        self.id
     }
 }
+
+pub(crate) type Peers = EntityIndex<PeerId, Peer>;
 
 resource_id!(PeerId);
 resource_name!(PeerName);

@@ -20,16 +20,24 @@ where
         self.0.len()
     }
 
-    pub(crate) fn get(&self, key: K) -> Option<&V> {
-        self.0.get(&key)
+    pub(crate) fn get(&self, key: &K) -> Option<&V> {
+        self.0.get(key)
+    }
+
+    pub(crate) fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.0.get_mut(key)
     }
 
     pub(crate) fn set(&mut self, entity: &V) -> Option<V> {
         self.0.insert(entity.id(), entity.clone())
     }
 
-    pub(crate) fn remove(&mut self, key: K) -> Option<V> {
-        self.0.remove(&key)
+    pub(crate) fn remove(&mut self, key: &K) -> Option<V> {
+        self.0.remove(key)
+    }
+
+    pub(crate) fn values(&self) -> impl Iterator<Item = &V> {
+        self.0.values()
     }
 }
 

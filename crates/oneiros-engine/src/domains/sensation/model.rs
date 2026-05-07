@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -15,29 +14,12 @@ pub(crate) struct Sensation {
     pub(crate) prompt: Prompt,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Sensations(HashMap<String, Sensation>);
-
-impl Sensations {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, name: &SensationName) -> Option<&Sensation> {
-        self.0.get(&name.to_string())
-    }
-
-    pub(crate) fn set(&mut self, sensation: &Sensation) -> Option<Sensation> {
-        self.0.insert(sensation.name.to_string(), sensation.clone())
-    }
-
-    pub(crate) fn remove(&mut self, name: &SensationName) -> Option<Sensation> {
-        self.0.remove(&name.to_string())
+impl Indexable<SensationName> for Sensation {
+    fn id(&self) -> SensationName {
+        self.name.clone()
     }
 }
+
+pub(crate) type Sensations = EntityIndex<SensationName, Sensation>;
 
 resource_name!(SensationName);

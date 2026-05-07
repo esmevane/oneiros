@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -24,37 +23,12 @@ impl Experience {
     }
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Experiences(HashMap<String, Experience>);
-
-impl Experiences {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, id: ExperienceId) -> Option<&Experience> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Experience> {
-        self.0.values()
-    }
-
-    pub(crate) fn get_mut(&mut self, id: ExperienceId) -> Option<&mut Experience> {
-        self.0.get_mut(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, experience: &Experience) -> Option<Experience> {
-        self.0.insert(experience.id.to_string(), experience.clone())
-    }
-
-    pub(crate) fn remove(&mut self, experience_id: ExperienceId) -> Option<Experience> {
-        self.0.remove(&experience_id.to_string())
+impl Indexable<ExperienceId> for Experience {
+    fn id(&self) -> ExperienceId {
+        self.id
     }
 }
+
+pub(crate) type Experiences = EntityIndex<ExperienceId, Experience>;
 
 resource_id!(ExperienceId);

@@ -6,6 +6,10 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = AgentEventsType, display = "kebab-case")]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
 pub(crate) enum AgentEvents {
     AgentCreated(AgentCreated),
     AgentUpdated(AgentUpdated),

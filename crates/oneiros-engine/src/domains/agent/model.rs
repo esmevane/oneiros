@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -19,40 +18,24 @@ pub(crate) struct Agent {
     pub(crate) prompt: Prompt,
 }
 
-#[derive(Clone, Default)]
-pub(crate) struct Agents(HashMap<String, Agent>);
+impl Indexable<AgentId> for Agent {
+    fn id(&self) -> AgentId {
+        self.id
+    }
+}
+
+pub(crate) type Agents = EntityIndex<AgentId, Agent>;
 
 impl Agents {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn get(&self, id: AgentId) -> Option<&Agent> {
-        self.0.get(&id.to_string())
-    }
-
-    pub(crate) fn set(&mut self, agent: &Agent) -> Option<Agent> {
-        self.0.insert(agent.id.to_string(), agent.clone())
-    }
-
-    pub(crate) fn remove(&mut self, agent_id: AgentId) -> Option<Agent> {
-        self.0.remove(&agent_id.to_string())
-    }
-
     pub(crate) fn find_by_name(&self, name: &AgentName) -> Option<&Agent> {
-        self.0.values().find(|a| a.name == *name)
-    }
-
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Agent> {
-        self.0.values()
+        self.values().find(|a| a.name == *name)
     }
 
     pub(crate) fn remove_by_name(&mut self, name: &AgentName) {
-        self.0.retain(|_, a| a.name != *name);
+        if let Some(agent) = self.find_by_name(name) {
+            let id = agent.id;
+            self.remove(&id);
+        }
     }
 }
 

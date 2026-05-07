@@ -13,7 +13,7 @@ impl ConnectionState {
                 }
                 ConnectionEvents::ConnectionRemoved(removed) => {
                     if let Ok(current) = removed.current() {
-                        canon.connections.remove(current.id);
+                        canon.connections.remove(&current.id);
                     }
                 }
             };
