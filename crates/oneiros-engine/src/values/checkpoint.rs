@@ -35,6 +35,7 @@ impl Checkpoint {
     }
 
     /// Whether this checkpoint represents "no events seen."
+    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.sequence == 0 && self.head.is_none()
     }
