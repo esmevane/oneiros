@@ -61,8 +61,8 @@ impl<'a> CognitionView<'a> {
                         item.texture, item.created_at, item.content
                     ));
                 }
-                let mut response =
-                    McpResponse::new(md).hint(Hint::suggest("add-cognition", "Record a thought"));
+                let mut response = McpResponse::new(md).hint(
+                    Hint::suggest("add-cognition", "Record a thought"));
                 if let CognitionRequest::ListCognitions(ListCognitions::V1(listing)) = self.request
                     && let Some(agent) = &listing.agent
                 {

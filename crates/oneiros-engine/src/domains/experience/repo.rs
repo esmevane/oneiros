@@ -57,7 +57,10 @@ impl<'a> ExperienceRepo<'a> {
 
     /// Hydrate many experiences by id, preserving the input order. Used by
     /// list endpoints to bulk-fetch search hits in a single round trip.
-    pub(crate) async fn get_many(&self, ids: &[ExperienceId]) -> Result<Vec<Experience>, EventError> {
+    pub(crate) async fn get_many(
+        &self,
+        ids: &[ExperienceId],
+    ) -> Result<Vec<Experience>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -96,50 +99,5 @@ impl<'a> ExperienceRepo<'a> {
             by_id.insert(experience.id, experience);
         }
         Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
-    }
-
-    /// Most recent experiences for an agent, ordered newest-first.
-    pub(crate) async fn list_recent(
-        &self,
-        agent_id: &str,
-        limit: usize,
-    ) -> Result<Vec<Experience>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt = db.prepare(
-            "SELECT id, agent_id, sensation, description, created_at
-             FROM experiences
-             WHERE agent_id = ?1
-             ORDER BY created_at DESC
-             LIMIT ?2",
-        )?;
-
-        let map_row = |row: &rusqlite::Row<'_>| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        };
-
-        let raw = stmt
-            .query_map(params![agent_id, limit], map_row)?
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut experiences = vec![];
-        for (id, agent_id, sensation, description, created_at) in raw {
-            experiences.push(
-                Experience::builder()
-                    .id(id.parse()?)
-                    .agent_id(agent_id.parse()?)
-                    .sensation(sensation)
-                    .description(description)
-                    .created_at(Timestamp::parse_str(&created_at)?)
-                    .build(),
-            );
-        }
-
-        Ok(experiences)
     }
 }

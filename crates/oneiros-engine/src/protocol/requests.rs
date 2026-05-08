@@ -10,6 +10,7 @@ use crate::*;
 /// All known request types across every domain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
+#[expect(dead_code, reason = "This will be important to streaming")]
 pub(crate) enum Requests {
     Actor(ActorRequest),
     Agent(AgentRequest),
@@ -19,6 +20,7 @@ pub(crate) enum Requests {
     Connection(ConnectionRequest),
     Continuity(ContinuityRequest),
     Experience(ExperienceRequest),
+    Follow(FollowRequest),
     Level(LevelRequest),
     Memory(MemoryRequest),
     Nature(NatureRequest),
@@ -42,6 +44,7 @@ collects_enum!(
     Requests::Connection => ConnectionRequest,
     Requests::Continuity => ContinuityRequest,
     Requests::Experience => ExperienceRequest,
+    Requests::Follow => FollowRequest,
     Requests::Level => LevelRequest,
     Requests::Memory => MemoryRequest,
     Requests::Nature => NatureRequest,

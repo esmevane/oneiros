@@ -19,9 +19,4 @@ impl<'a> PressureClient<'a> {
             .get(&format!("/pressures/{}", details.agent))
             .await
     }
-
-    /// List pressure readings for all agents.
-    pub(crate) async fn list(&self) -> Result<PressureResponse, ClientError> {
-        self.client.get("/pressures").await
-    }
 }

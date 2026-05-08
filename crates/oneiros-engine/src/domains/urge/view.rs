@@ -47,7 +47,8 @@ impl UrgeView {
                 md.push_str(&format!("| {name} | {desc} |\n"));
             }
         }
-        McpResponse::new(md).hint(Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
+        McpResponse::new(md).hint(
+            Hint::inspect(ResourcePath::Agents.uri(), "View all agents"))
     }
 
     pub(crate) fn render(self) -> Rendered<UrgeResponse> {

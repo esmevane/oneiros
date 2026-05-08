@@ -39,6 +39,10 @@ pub(crate) struct BridgeDenied {
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
 pub(crate) enum BridgeResponse {
     /// The requestor is already up to date — no diff needed.
     BridgeCurrent,
@@ -68,6 +72,7 @@ impl BridgeResponse {
     }
 
     /// Whether this response indicates the request was denied.
+    #[cfg(test)]
     pub(crate) fn is_denied(&self) -> bool {
         matches!(self, Self::BridgeDenied(_))
     }

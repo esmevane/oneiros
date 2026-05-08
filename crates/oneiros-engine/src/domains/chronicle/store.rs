@@ -62,9 +62,4 @@ impl<'a> ChronicleStore<'a> {
     pub(crate) fn writer(&self) -> impl Fn(&LedgerNode) -> ContentHash + '_ {
         move |node| self.put(node)
     }
-
-    pub(crate) fn reset(&self) -> Result<(), EventError> {
-        self.db.execute_batch("DELETE FROM chronicle_objects")?;
-        Ok(())
-    }
 }

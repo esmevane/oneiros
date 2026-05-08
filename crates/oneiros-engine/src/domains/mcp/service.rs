@@ -5,7 +5,7 @@ use crate::*;
 pub(crate) struct McpConfigService;
 
 impl McpConfigService {
-    pub(crate) fn init(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
+    pub(crate) fn init(config: &Config, request: &InitMcp) -> Result<McpResponses, McpConfigError> {
         let details = request.current()?;
         let token = details
             .token
@@ -32,7 +32,7 @@ impl McpConfigService {
         if path.exists() && !details.yes {
             // In non-interactive contexts (like setup), the caller handles
             // the prompt. Here we just report the file exists.
-            return Ok(McpConfigResponse::McpConfigExists(
+            return Ok(McpResponses::McpConfigExists(
                 McpConfigExistsResponse::builder_v1()
                     .path(path)
                     .build()
@@ -43,7 +43,7 @@ impl McpConfigService {
         let content = serde_json::to_string_pretty(&mcp_json)?;
         std::fs::write(&path, content)?;
 
-        Ok(McpConfigResponse::McpConfigWritten(
+        Ok(McpResponses::McpConfigWritten(
             McpConfigWrittenResponse::builder_v1()
                 .path(path)
                 .build()
@@ -53,7 +53,10 @@ impl McpConfigService {
 
     /// Write the .mcp.json regardless of whether it exists.
     /// Used by setup after the user confirms.
-    pub(crate) fn write(config: &Config, request: &InitMcp) -> Result<McpConfigResponse, McpConfigError> {
+    pub(crate) fn write(
+        config: &Config,
+        request: &InitMcp,
+    ) -> Result<McpResponses, McpConfigError> {
         let details = request.current()?;
         let forced: InitMcp = InitMcp::builder_v1()
             .maybe_token(details.token.clone())

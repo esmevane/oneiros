@@ -9,7 +9,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = McpConfigResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub(crate) enum McpConfigResponse {
+pub(crate) enum McpResponses {
     McpConfigWritten(McpConfigWrittenResponse),
     McpConfigExists(McpConfigExistsResponse),
 }

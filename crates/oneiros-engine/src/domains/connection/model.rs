@@ -17,11 +17,11 @@ pub(crate) struct Connection {
 }
 
 impl Connection {
-    pub(crate) fn from_token(&self) -> RefToken {
+    pub(crate) fn get_from_token(&self) -> RefToken {
         RefToken::from(self.from_ref.clone())
     }
 
-    pub(crate) fn to_token(&self) -> RefToken {
+    pub(crate) fn get_to_token(&self) -> RefToken {
         RefToken::from(self.to_ref.clone())
     }
 }

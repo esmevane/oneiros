@@ -76,14 +76,6 @@ async fn pressure_builds_from_activity() -> Result<(), Box<dyn core::error::Erro
         other => panic!("expected Dreaming, got {other:?}"),
     }
 
-    // List all pressures
-    match client.pressure().list().await? {
-        PressureResponse::AllReadings(AllReadingsResponse::V1(all)) => {
-            assert!(!all.pressures.is_empty());
-        }
-        other => panic!("expected AllReadings, got {other:?}"),
-    }
-
     Ok(())
 }
 

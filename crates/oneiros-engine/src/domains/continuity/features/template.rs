@@ -11,7 +11,6 @@ const LATEST_LIMIT: usize = 3;
 pub(crate) struct DreamTemplate<'a> {
     pub(crate) context: &'a DreamContext,
     pub(crate) pressures: RelevantPressures,
-    pub(crate) readings: &'a [PressureReading],
 }
 
 impl<'a> DreamTemplate<'a> {
@@ -23,11 +22,7 @@ impl<'a> DreamTemplate<'a> {
                 .map(|r| r.pressure.clone())
                 .collect(),
         );
-        Self {
-            context,
-            pressures,
-            readings: &context.pressures,
-        }
+        Self { context, pressures }
     }
 
     pub(crate) fn today(&self) -> String {
@@ -93,16 +88,6 @@ pub(crate) struct SenseTemplate<'a> {
     pub(crate) agent: &'a Agent,
     pub(crate) event_data: &'a str,
     pub(crate) pressures: RelevantPressures,
-}
-
-impl<'a> SenseTemplate<'a> {
-    pub(crate) fn new(agent: &'a Agent, event_data: &'a str, pressures: RelevantPressures) -> Self {
-        Self {
-            agent,
-            event_data,
-            pressures,
-        }
-    }
 }
 
 #[derive(Template)]

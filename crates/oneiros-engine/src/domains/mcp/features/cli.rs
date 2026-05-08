@@ -15,10 +15,10 @@ impl McpCommands {
                 let InitMcp::V1(init) = initialization;
                 let result = McpConfigService::init(config, initialization)?;
 
-                if let McpConfigResponse::McpConfigExists(_) = &result {
+                if let McpResponses::McpConfigExists(_) = &result {
                     if !init.yes {
                         let path = match &result {
-                            McpConfigResponse::McpConfigExists(McpConfigExistsResponse::V1(d)) => {
+                            McpResponses::McpConfigExists(McpConfigExistsResponse::V1(d)) => {
                                 d.path.clone()
                             }
                             _ => unreachable!(),

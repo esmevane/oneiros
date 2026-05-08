@@ -39,6 +39,10 @@ pub(crate) struct BridgeFetchEvents {
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
 pub(crate) enum BridgeRequest {
     /// "Here's my chronicle root — tell me yours."
     ///

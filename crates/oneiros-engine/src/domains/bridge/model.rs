@@ -195,6 +195,7 @@ impl Bridge {
     }
 
     /// Shut down the bridge gracefully, closing the iroh endpoint.
+    #[cfg(test)]
     pub(crate) async fn shutdown(&self) {
         self.endpoint.close().await;
     }

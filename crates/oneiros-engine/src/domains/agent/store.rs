@@ -124,33 +124,6 @@ impl<'a> AgentStore<'a> {
         Ok(agents)
     }
 
-    /// Look up an agent's name by its ID.
-    ///
-    /// Used when only an `AgentId` is available (e.g. from a foreign-key reference
-    /// in an event payload) and we need to resolve it to an `AgentName`.
-    pub(crate) fn get_name_by_id(&self, id: &AgentId) -> Result<Option<AgentName>, EventError> {
-        let result = self.conn.query_row(
-            "SELECT name FROM agents WHERE id = ?1",
-            params![id.to_string()],
-            |row| row.get::<_, String>(0),
-        );
-
-        match result {
-            Ok(name) => Ok(Some(AgentName::new(name))),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
-    pub(crate) fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
-        let count: i64 = self.conn.query_row(
-            "select count(*) from agents where name = ?1",
-            params![name.to_string()],
-            |row| row.get(0),
-        )?;
-        Ok(count > 0)
-    }
-
     fn write_agent(&self, agent: &Agent) -> Result<(), EventError> {
         self.conn.execute(
             "insert or replace into agents (id, name, persona, description, prompt)
