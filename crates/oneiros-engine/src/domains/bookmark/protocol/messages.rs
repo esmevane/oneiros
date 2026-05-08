@@ -40,17 +40,6 @@ pub(crate) enum BookmarkMessage {
     ChronicleReset(ResetBookmarkChronicle),
 }
 
-impl BookmarkMessage {
-    pub(crate) fn scope(&self) -> &Scope<AtBookmark> {
-        match self {
-            Self::ProjectionApply(message) => &message.scope,
-            Self::ProjectionReset(message) => &message.scope,
-            Self::ChronicleRecord(message) => &message.scope,
-            Self::ChronicleReset(message) => &message.scope,
-        }
-    }
-}
-
 collects_enum!(
     BookmarkMessage::ProjectionApply => ApplyBookmarkProjection,
     BookmarkMessage::ProjectionReset => ResetBookmarkProjection,

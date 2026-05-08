@@ -5,7 +5,20 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-#[kinded(kind = BookmarkEventsType, display = "kebab-case")]
+#[kinded(
+    kind = BookmarkEventsType,
+    display = "kebab-case",
+    attrs(
+        expect(
+            clippy::enum_variant_names,
+            reason = "We use these for `type` notation in serde"
+        )
+    )
+)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
 pub(crate) enum BookmarkEvents {
     BookmarkCreated(BookmarkCreated),
     BookmarkForked(BookmarkForked),
