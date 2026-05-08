@@ -129,6 +129,7 @@ impl Server {
             .merge(ConnectionRouter.routes())
             .merge(ContinuityRouter.routes())
             .merge(ExperienceRouter.routes())
+            .merge(FollowRouter.routes())
             .merge(LevelRouter.routes())
             .merge(MemoryRouter.routes())
             .merge(NatureRouter.routes())
