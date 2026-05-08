@@ -66,6 +66,7 @@ impl Chronicle {
 
     /// Diff this chronicle against another.
     /// Returns changes needed to go from `self` to `other`.
+    #[cfg(test)]
     pub(crate) fn diff(
         &self,
         other: &Chronicle,
@@ -137,15 +138,6 @@ impl Chronicle {
         }
 
         Ok(())
-    }
-
-    /// Whether this chronicle has any events.
-    pub(crate) fn is_empty(&self) -> Result<bool, EventError> {
-        let guard = self
-            .root
-            .lock()
-            .map_err(|e| EventError::Lock(e.to_string()))?;
-        Ok(guard.is_none())
     }
 }
 

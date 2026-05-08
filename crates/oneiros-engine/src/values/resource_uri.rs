@@ -92,7 +92,7 @@ impl ResourcePathKind {
         ResourceDef::new(self.uri(), self.to_string(), description)
     }
 
-    pub(crate) fn into_template(&self, description: impl Into<Description>) -> ResourceTemplateDef {
+    pub(crate) fn template_def(&self, description: impl Into<Description>) -> ResourceTemplateDef {
         ResourceTemplateDef::new(self.uri_template(), self.to_string(), description)
     }
 }

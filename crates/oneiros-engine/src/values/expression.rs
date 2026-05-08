@@ -199,19 +199,11 @@ pub(crate) struct SearchHits {
 pub(crate) struct Facets(pub(crate) Vec<FacetGroup>);
 
 impl Facets {
-    pub(crate) fn new(groups: Vec<FacetGroup>) -> Self {
-        Self(
-            groups
-                .into_iter()
-                .filter(|g| !g.buckets.is_empty())
-                .collect(),
-        )
-    }
-
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    #[cfg(test)]
     pub(crate) fn find(&self, facet: FacetName) -> Option<&FacetGroup> {
         self.0.iter().find(|g| g.facet == facet)
     }

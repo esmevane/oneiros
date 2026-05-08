@@ -15,14 +15,6 @@ impl PressureReading {
         Self { pressure, cta }
     }
 
-    pub(crate) fn urgency(&self) -> f64 {
-        self.pressure.urgency()
-    }
-
-    pub(crate) fn urge_name(&self) -> &UrgeName {
-        &self.pressure.urge
-    }
-
     /// Pair pressures with their urge prompts (CTAs).
     ///
     /// Each pressure is matched to its urge by name. If the urge is missing

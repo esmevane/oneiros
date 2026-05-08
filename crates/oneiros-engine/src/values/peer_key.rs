@@ -25,6 +25,7 @@ impl PeerKey {
         Self(bytes)
     }
 
+    #[cfg(test)]
     pub(crate) fn as_bytes(&self) -> &[u8; Self::LENGTH] {
         &self.0
     }

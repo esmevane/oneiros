@@ -95,7 +95,7 @@ impl Engine {
         let cli = Cli::parse();
         let config = cli.config().clone().with_config_file();
 
-        Ok((Self { config }, cli))
+        Ok((Self::new(config), cli))
     }
 
     /// From explicit config — tests and programmatic consumers.

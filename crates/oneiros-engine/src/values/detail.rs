@@ -37,7 +37,7 @@ impl Detail {
 
     /// Add a field (builder style).
     pub(crate) fn field(mut self, label: impl Into<String>, value: impl Into<String>) -> Self {
-        self.fields.push(Field::new(label, value));
+        self.push_field(label, value);
         self
     }
 

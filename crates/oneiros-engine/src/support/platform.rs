@@ -9,7 +9,6 @@ const APP: &str = "oneiros";
 
 const CONFIG_FILE: &str = "config.toml";
 const SYSTEM_DB: &str = "system.db";
-const HOST_KEY_FILE: &str = "host.key";
 const TICKETS_DIR: &str = "tickets";
 const BOOKMARKS_DIR: &str = "bookmarks";
 const EVENTS_DB: &str = "events.db";
@@ -74,11 +73,6 @@ impl Platform {
         self.data_dir.join(SYSTEM_DB)
     }
 
-    /// Path to the host's persistent ed25519 secret key file.
-    pub(crate) fn host_key_path(&self) -> PathBuf {
-        self.data_dir.join(HOST_KEY_FILE)
-    }
-
     /// Directory where issued ticket tokens are persisted.
     pub(crate) fn tickets_dir(&self) -> PathBuf {
         self.data_dir.join(TICKETS_DIR)
@@ -127,12 +121,6 @@ impl Platform {
         Ok(())
     }
 
-    /// Ensure the tickets directory exists.
-    pub(crate) fn ensure_tickets_dir(&self) -> Result<(), PlatformError> {
-        std::fs::create_dir_all(self.tickets_dir())?;
-        Ok(())
-    }
-
     /// The service label for OS registration (e.g., `com.esmevane.oneiros`).
     pub(crate) fn service_label(&self) -> String {
         format!("{TLD}.{AUTHOR}.{APP}")
@@ -173,10 +161,6 @@ mod tests {
         assert_eq!(
             platform.system_db_path(),
             Path::new("/tmp/oneiros-test/system.db")
-        );
-        assert_eq!(
-            platform.host_key_path(),
-            Path::new("/tmp/oneiros-test/host.key")
         );
         assert_eq!(
             platform.brain_dir(&brain),

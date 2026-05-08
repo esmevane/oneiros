@@ -32,6 +32,7 @@ impl<T> Rendered<T> {
     }
 
     /// Consume into the typed response, discarding presentation.
+    #[cfg(test)]
     pub(crate) fn into_response(self) -> T {
         self.data
     }

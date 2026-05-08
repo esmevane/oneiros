@@ -18,7 +18,7 @@ impl ConnectionMcp {
     }
 
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![ResourcePathKind::Connection.into_template("A specific connection")]
+        vec![ResourcePathKind::Connection.template_def("A specific connection")]
     }
 
     pub(crate) async fn resource(

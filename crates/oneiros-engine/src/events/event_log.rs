@@ -214,16 +214,4 @@ impl<'a> EventLog<'a> {
 
         Ok(())
     }
-
-    /// Delete a single event by ID.
-    ///
-    /// Rarely needed — the event log is append-only by design.
-    /// Exists for administrative operations, not domain logic.
-    pub(crate) fn delete(&self, event_id: &str) -> Result<(), EventError> {
-        self.conn.execute(
-            &format!("DELETE FROM {} WHERE id = ?1", self.table),
-            params![event_id],
-        )?;
-        Ok(())
-    }
 }

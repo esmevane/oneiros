@@ -23,12 +23,12 @@ impl AgentMcp {
 
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![
-            ResourcePathKind::Agent.into_template("Agent details"),
-            ResourcePathKind::AgentCognitions.into_template("An agent's cognitions"),
-            ResourcePathKind::AgentMemories.into_template("An agent's memories"),
-            ResourcePathKind::AgentExperiences.into_template("An agent's experiences"),
-            ResourcePathKind::AgentConnections.into_template("An agent's connections"),
-            ResourcePathKind::AgentPressure.into_template("An agent's pressure readings"),
+            ResourcePathKind::Agent.template_def("Agent details"),
+            ResourcePathKind::AgentCognitions.template_def("An agent's cognitions"),
+            ResourcePathKind::AgentMemories.template_def("An agent's memories"),
+            ResourcePathKind::AgentExperiences.template_def("An agent's experiences"),
+            ResourcePathKind::AgentConnections.template_def("An agent's connections"),
+            ResourcePathKind::AgentPressure.template_def("An agent's pressure readings"),
         ]
     }
 

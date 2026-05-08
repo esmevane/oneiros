@@ -18,7 +18,7 @@ impl MemoryMcp {
     }
 
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![ResourcePathKind::Memory.into_template("A specific memory")]
+        vec![ResourcePathKind::Memory.template_def("A specific memory")]
     }
 
     pub(crate) async fn resource(

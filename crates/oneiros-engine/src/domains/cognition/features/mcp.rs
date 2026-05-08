@@ -18,7 +18,7 @@ impl CognitionMcp {
     }
 
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![ResourcePathKind::Cognition.into_template("A specific cognition")]
+        vec![ResourcePathKind::Cognition.template_def("A specific cognition")]
     }
 
     pub(crate) async fn resource(

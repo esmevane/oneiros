@@ -17,11 +17,6 @@ impl Id {
         Self(uuid::Uuid::now_v7())
     }
 
-    #[deprecated]
-    pub(crate) fn parse(s: &str) -> Option<Self> {
-        uuid::Uuid::parse_str(s).ok().map(Self)
-    }
-
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_nil()
     }

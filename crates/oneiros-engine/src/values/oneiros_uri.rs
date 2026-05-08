@@ -36,6 +36,7 @@ pub(crate) enum OneirosUriError {
 
 impl OneirosUri {
     /// Returns true if this URI references a resource on another host.
+    #[cfg(test)]
     pub(crate) fn is_external(&self) -> bool {
         matches!(self, Self::Peer(_))
     }

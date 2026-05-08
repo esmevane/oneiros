@@ -12,10 +12,12 @@ where
     K: Eq + std::hash::Hash,
     V: Clone + Indexable<K>,
 {
+    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.0.len()
     }

@@ -23,16 +23,6 @@ pub(crate) enum FollowSource {
     Peer(PeerLink),
 }
 
-impl FollowSource {
-    pub(crate) fn is_local(&self) -> bool {
-        matches!(self, Self::Local(_))
-    }
-
-    pub(crate) fn is_peer(&self) -> bool {
-        matches!(self, Self::Peer(_))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,20 +34,6 @@ mod tests {
         let host = PeerAddress::new(iroh::EndpointAddr::new(endpoint_id));
         let link = Link::new(Ref::bookmark(BookmarkId::new()), Token::from("testtoken"));
         PeerLink::new(host, link)
-    }
-
-    #[test]
-    fn local_source_is_local_not_peer() {
-        let src = FollowSource::Local(Ref::bookmark(BookmarkId::new()));
-        assert!(src.is_local());
-        assert!(!src.is_peer());
-    }
-
-    #[test]
-    fn peer_source_is_peer_not_local() {
-        let src = FollowSource::Peer(sample_peer_link());
-        assert!(src.is_peer());
-        assert!(!src.is_local());
     }
 
     #[test]

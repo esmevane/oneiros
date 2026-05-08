@@ -33,10 +33,6 @@ impl PeerAddress {
         &self.0
     }
 
-    pub(crate) fn into_inner(self) -> iroh::EndpointAddr {
-        self.0
-    }
-
     /// Serialize to postcard bytes. Used when composing URIs.
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         postcard::to_allocvec(&self.0).expect("EndpointAddr serialization should not fail")

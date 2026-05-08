@@ -31,7 +31,8 @@ impl Palette {
         .bold();
 
     /// Muted text — secondary info, metadata, ref tokens.
-    pub(crate) const MUTED: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
+    pub(crate) const MUTED: Style =
+        Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
 
     /// Labels in key-value pairs.
     pub(crate) const LABEL: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Cyan)));
@@ -67,11 +68,6 @@ impl<T: std::fmt::Display> std::fmt::Display for Styled<T> {
             self.style.render_reset()
         )
     }
-}
-
-/// Apply a style to a displayable value — standalone function.
-pub(crate) fn painted<T: std::fmt::Display>(value: T, style: Style) -> Styled<T> {
-    Styled::new(style, value)
 }
 
 /// Extension trait for applying styles to any `Display` value.

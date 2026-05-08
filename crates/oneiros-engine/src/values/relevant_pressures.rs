@@ -11,6 +11,7 @@ use crate::*;
 pub(crate) struct RelevantPressures(pub(crate) Vec<PressureSummary>);
 
 impl RelevantPressures {
+    #[cfg(test)]
     pub(crate) fn from_summaries(summaries: Vec<PressureSummary>) -> Self {
         Self(summaries)
     }

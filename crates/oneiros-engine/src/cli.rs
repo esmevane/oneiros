@@ -31,11 +31,6 @@ impl Cli {
     pub(crate) fn config(&self) -> &Config {
         &self.config
     }
-
-    /// The selected output mode.
-    pub(crate) fn output_mode(&self) -> &OutputMode {
-        &self.config.output
-    }
 }
 
 /// All CLI commands, unified under one tree.

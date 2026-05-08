@@ -19,18 +19,7 @@ impl<T> Listed<T> {
         Self { items, total }
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
     pub(crate) fn len(&self) -> usize {
         self.items.len()
-    }
-
-    pub(crate) fn map<U>(self, f: impl FnMut(T) -> U) -> Listed<U> {
-        Listed {
-            items: self.items.into_iter().map(f).collect(),
-            total: self.total,
-        }
     }
 }

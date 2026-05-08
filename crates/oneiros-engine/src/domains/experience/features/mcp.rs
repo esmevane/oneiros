@@ -18,7 +18,7 @@ impl ExperienceMcp {
     }
 
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![ResourcePathKind::Experience.into_template("A specific experience")]
+        vec![ResourcePathKind::Experience.template_def("A specific experience")]
     }
 
     pub(crate) async fn resource(

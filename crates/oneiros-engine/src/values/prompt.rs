@@ -9,6 +9,7 @@ impl Prompt {
         Self(value.as_ref().into())
     }
 
+    #[cfg(test)]
     pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
