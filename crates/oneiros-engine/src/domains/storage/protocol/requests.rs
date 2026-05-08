@@ -54,7 +54,20 @@ versioned! {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-#[kinded(kind = StorageRequestType, display = "kebab-case")]
+#[kinded(
+    kind = StorageRequestType,
+    display = "kebab-case",
+    attrs(
+        expect(
+            clippy::enum_variant_names,
+            reason = "We use these for `type` notation in serde"
+        )
+    )
+)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
 pub(crate) enum StorageRequest {
     UploadStorage(UploadStorage),
     GetStorage(GetStorage),

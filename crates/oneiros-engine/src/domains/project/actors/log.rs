@@ -49,16 +49,10 @@ impl ProjectLogActor {
 
     async fn run(self, mut inbox: ProjectLogInbox) {
         while let Some(message) = inbox.recv().await {
-            match message {
-                ProjectMessage::LogAppend(append) => {
-                    if let Err(error) = self.append(append).await {
-                        tracing::error!(?error, "project log: append failed");
-                    }
-                }
-                ProjectMessage::LogReset(_) => {
-                    // Durable record — no-op.
-                }
-                _ => {}
+            if let ProjectMessage::LogAppend(append) = message
+                && let Err(error) = self.append(append).await
+            {
+                tracing::error!(?error, "project log: append failed");
             }
         }
     }

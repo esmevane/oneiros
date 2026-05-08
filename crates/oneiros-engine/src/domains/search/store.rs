@@ -103,12 +103,4 @@ impl<'a> SearchStore<'a> {
         )?;
         Ok(())
     }
-
-    pub(crate) fn remove_by_agent_id(&self, agent_id: &AgentId) -> Result<(), EventError> {
-        self.conn.execute(
-            "delete from search_index where agent_id = ?1 and kind = 'agent'",
-            params![agent_id.to_string()],
-        )?;
-        Ok(())
-    }
 }

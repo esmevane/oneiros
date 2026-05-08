@@ -2,24 +2,24 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{ErrorResponse, resource_op_error};
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum StorageError {
     #[error("Storage key not found: {0}")]
-    KeyNotFound(crate::StorageKey),
+    KeyNotFound(StorageKey),
 
     #[error("Invalid storage reference")]
     InvalidRef,
 
     #[error(transparent)]
-    Resolve(#[from] crate::ResolveError),
+    Resolve(#[from] ResolveError),
 
     #[error("Blob missing for hash: {0}")]
-    BlobMissing(crate::ContentHash),
+    BlobMissing(ContentHash),
 
     #[error("Blob error: {0}")]
-    BlobError(#[from] crate::BlobError),
+    BlobError(#[from] BlobError),
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -28,16 +28,16 @@ pub(crate) enum StorageError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    Compose(#[from] crate::ComposeError),
+    Compose(#[from] ComposeError),
 
     #[error(transparent)]
-    BookmarkDb(#[from] crate::BookmarkDbError),
+    BookmarkDb(#[from] BookmarkDbError),
 
     #[error(transparent)]
-    Event(#[from] crate::EventError),
+    Event(#[from] EventError),
 
     #[error(transparent)]
-    Client(#[from] crate::ClientError),
+    Client(#[from] ClientError),
 }
 
 resource_op_error!(StorageError);

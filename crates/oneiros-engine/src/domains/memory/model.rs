@@ -22,20 +22,6 @@ impl Memory {
     pub(crate) fn ref_token(&self) -> RefToken {
         RefToken::from(Ref::memory(self.id))
     }
-
-    /// Truncate content to the given byte length, appending "…" if truncated.
-    pub(crate) fn summary(&self, max_len: usize) -> String {
-        let s = self.content.as_str();
-        if s.len() <= max_len {
-            s.to_string()
-        } else {
-            let mut end = max_len;
-            while end > 0 && !s.is_char_boundary(end) {
-                end -= 1;
-            }
-            format!("{}…", &s[..end])
-        }
-    }
 }
 
 impl Indexable<MemoryId> for Memory {

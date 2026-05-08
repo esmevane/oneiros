@@ -49,16 +49,10 @@ impl ProjectImportActor {
 
     async fn run(self, mut inbox: ProjectImportInbox) {
         while let Some(message) = inbox.recv().await {
-            match message {
-                ProjectMessage::ImportEvent(import) => {
-                    if let Err(error) = self.import(import).await {
-                        tracing::error!(?error, "project import: ingest failed");
-                    }
-                }
-                ProjectMessage::ImportReset(_) => {
-                    // No actor-local state to reset.
-                }
-                _ => {}
+            if let ProjectMessage::ImportEvent(import) = message
+                && let Err(error) = self.import(import).await
+            {
+                tracing::error!(?error, "project import: ingest failed");
             }
         }
     }

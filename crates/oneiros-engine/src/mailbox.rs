@@ -66,7 +66,7 @@ impl Mailbox {
     pub(crate) fn tell(&self, message: impl Into<Message>) {
         match message.into() {
             Message::System(message) => match message {
-                SystemMessage::LogAppend(_) | SystemMessage::LogReset(_) => {
+                SystemMessage::LogAppend(_) => {
                     self.system_log.tell(message);
                 }
                 SystemMessage::ProjectionApply(_)
@@ -74,10 +74,10 @@ impl Mailbox {
                 | SystemMessage::ProjectionReset(_) => self.system_projection.tell(message),
             },
             Message::Project(message) => match message {
-                ProjectMessage::LogAppend(_) | ProjectMessage::LogReset(_) => {
+                ProjectMessage::LogAppend(_) => {
                     self.project_log.tell(message);
                 }
-                ProjectMessage::ImportEvent(_) | ProjectMessage::ImportReset(_) => {
+                ProjectMessage::ImportEvent(_) => {
                     self.project_import.tell(message);
                 }
             },

@@ -13,11 +13,15 @@ impl<'a> TicketClient<'a> {
     }
 
     /// Issue a new ticket for the given actor and brain.
-    pub(crate) async fn issue(&self, issuance: &CreateTicket) -> Result<TicketResponse, ClientError> {
+    pub(crate) async fn issue(
+        &self,
+        issuance: &CreateTicket,
+    ) -> Result<TicketResponse, ClientError> {
         self.client.post("/tickets", issuance).await
     }
 
     /// Retrieve a single ticket by key.
+    #[cfg(test)]
     pub(crate) async fn get(&self, lookup: &GetTicket) -> Result<TicketResponse, ClientError> {
         let GetTicket::V1(lookup) = lookup;
         self.client.get(&format!("/tickets/{}", lookup.key)).await

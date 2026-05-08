@@ -49,16 +49,10 @@ impl SystemLogActor {
 
     async fn run(self, mut inbox: SystemLogInbox) {
         while let Some(message) = inbox.recv().await {
-            match message {
-                SystemMessage::LogAppend(append) => {
-                    if let Err(error) = self.append(append).await {
-                        tracing::error!(?error, "system log: append failed");
-                    }
-                }
-                SystemMessage::LogReset(_) => {
-                    // Durable record — no-op for now.
-                }
-                _ => {}
+            if let SystemMessage::LogAppend(append) = message
+                && let Err(error) = self.append(append).await
+            {
+                tracing::error!(?error, "system log: append failed");
             }
         }
     }

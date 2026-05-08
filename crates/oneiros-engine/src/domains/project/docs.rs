@@ -2,7 +2,6 @@ use crate::*;
 
 pub(crate) enum ProjectDocs {
     Init,
-    Summary,
 }
 
 impl ProjectDocs {
@@ -21,12 +20,6 @@ impl ProjectDocs {
                 .nickname("init-project")
                 .summary("Initialize project")
                 .description("Set up the brain's project database and default projections.")
-                .build(),
-            Self::Summary => ResourceDocs::builder()
-                .tag(tag)
-                .nickname("project-summary")
-                .summary("Project summary")
-                .description("Retrieve an overview of the current brain's project state.")
                 .build(),
         }
     }
