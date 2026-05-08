@@ -148,7 +148,7 @@ impl ServiceService {
 
     /// Run the HTTP server directly in the foreground.
     pub(crate) async fn run(config: &Config) -> Result<ServiceResponse, ServiceError> {
-        Server::new(config.clone()).start().await?;
+        Server::new(config.clone()).serve().await?;
 
         Ok(ServiceResponse::ServiceStopped)
     }

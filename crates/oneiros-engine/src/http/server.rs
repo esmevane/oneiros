@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
 use aide::{
     axum::{ApiRouter, routing as api_routing},
@@ -37,10 +37,35 @@ impl Server {
         Self { config }
     }
 
+    /// Bind the configured address and serve until the server stops.
+    /// The caller's task becomes the server.
+    pub(crate) async fn serve(self) -> Result<(), ServerError> {
+        let listener = TcpListener::bind(self.config.service.address).await?;
+        self.serve_on(listener).await
+    }
+
+    /// Bind the configured address and spawn the server into a background
+    /// task. Returns a handle carrying the resolved address (useful when
+    /// the configured port is `0`) and the task. The server stops when the
+    /// handle is dropped.
+    pub(crate) async fn spawn(self) -> Result<ServerHandle, ServerError> {
+        let listener = TcpListener::bind(self.config.service.address).await?;
+        let address = listener.local_addr()?;
+
+        let handle = tokio::spawn(async move {
+            if let Err(err) = self.serve_on(listener).await {
+                eprintln!("server exited with error: {err}");
+            }
+        });
+
+        Ok(ServerHandle { address, handle })
+    }
+
     /// Serve on a pre-bound TCP listener. Loads/generates the host secret
     /// key, binds an iroh Bridge, registers the sync protocol handler
-    /// against it, then assembles the router.
-    pub(crate) async fn serve(self, listener: TcpListener) -> Result<(), ServerError> {
+    /// against it, then assembles the router. Shared inner used by both
+    /// `serve` and `spawn`.
+    async fn serve_on(self, listener: TcpListener) -> Result<(), ServerError> {
         let state = ServerState::bind(self.config.clone()).await?;
 
         // Register the sync handler on the bridge so incoming
@@ -54,13 +79,6 @@ impl Server {
         axum::serve(listener, app.into_make_service()).await?;
 
         Ok(())
-    }
-
-    /// Start the server
-    pub(crate) async fn start(self) -> Result<(), ServerError> {
-        let listener = TcpListener::bind(self.config.service.address).await?;
-
-        self.serve(listener).await
     }
 
     /// Build a router from an already-constructed state. Used by `serve`
@@ -160,5 +178,51 @@ impl Server {
                 )
                 .on_response(DefaultOnResponse::new().level(Level::INFO)),
         )
+    }
+}
+
+/// A handle to a server running in a background task.
+///
+/// Holds the resolved address (the actual bound port — useful when the
+/// configured address used port `0`) and the task. The server is aborted
+/// when the handle is dropped.
+pub(crate) struct ServerHandle {
+    address: SocketAddr,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+impl ServerHandle {
+    /// The address the server is actually listening on.
+    pub(crate) fn address(&self) -> SocketAddr {
+        self.address
+    }
+}
+
+impl Drop for ServerHandle {
+    fn drop(&mut self) {
+        self.handle.abort();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn spawn_binds_ephemeral_port() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let config = Config::builder()
+            .data_dir(dir.path().to_path_buf())
+            .brain(BrainName::new("test"))
+            .service(
+                ServiceConfig::builder()
+                    .address("127.0.0.1:0".parse().unwrap())
+                    .build(),
+            )
+            .build();
+
+        let handle = Server::new(config).spawn().await.unwrap();
+
+        assert_ne!(handle.address().port(), 0, "should resolve to a real port");
     }
 }

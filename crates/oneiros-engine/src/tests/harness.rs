@@ -39,7 +39,7 @@ impl TestApp {
     pub(crate) async fn new() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::tempdir().expect("create tempdir");
 
-        let config = Config::builder()
+        let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .brain(BrainName::new("test"))
             .output(OutputMode::Json)
@@ -57,8 +57,9 @@ impl TestApp {
             })
             .build();
 
-        let mut engine = Engine::new(config);
-        let handle = engine.start().await?;
+        let handle = Server::new(config.clone()).spawn().await?;
+        config.service.address = handle.address();
+        let engine = Engine::new(config);
 
         Ok(Self {
             engine,

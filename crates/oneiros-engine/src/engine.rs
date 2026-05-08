@@ -8,13 +8,15 @@
 //! - `from_cli()` — parse CLI args and merge config file
 //! - `new(config)` — explicit config (tests, programmatic use)
 //! - `execute(cli)` — run a parsed CLI command
-//! - `start()` — bind and serve HTTP/MCP
-//! - `package(target)` — emit skill assets to a directory
+//!
+//! Server lifetime is owned by `Server` (`http::server`), not `Engine`.
+//! Consumers that need to serve HTTP/MCP construct a `Server` directly:
+//! `Server::new(config).serve()` blocks the calling task; `spawn()`
+//! returns a handle.
 
 use anstream::{stderr, stdout};
 use clap::Parser;
-use std::{io::Write, net::SocketAddr, process::ExitCode};
-use tokio::net::TcpListener;
+use std::{io::Write, process::ExitCode};
 
 use crate::*;
 
@@ -108,79 +110,8 @@ impl Engine {
         cli.execute(&self.config).await
     }
 
-    /// Start the HTTP server on the configured address.
-    ///
-    /// Binds to the address in config (use `127.0.0.1:0` for ephemeral ports),
-    /// updates the config with the resolved address, and returns a handle.
-    /// The server runs in a background task and stops when the handle is dropped.
-    pub(crate) async fn start(&mut self) -> Result<ServerHandle, ServerError> {
-        let listener = TcpListener::bind(self.config.service.address).await?;
-        let address = listener.local_addr()?;
-
-        // Update config so subsequent operations (CLI commands, clients)
-        // connect to the actual bound address.
-        self.config.service.address = address;
-
-        let server = Server::new(self.config.clone());
-        let handle = tokio::spawn(async move {
-            if let Err(err) = server.serve(listener).await {
-                eprintln!("server exited with error: {err}");
-            }
-        });
-
-        Ok(ServerHandle { address, handle })
-    }
-
     /// The resolved configuration.
     pub(crate) fn config(&self) -> &Config {
         &self.config
-    }
-}
-
-/// A handle to a running server.
-///
-/// Holds the resolved address and a task handle. The server stops
-/// when the handle is dropped.
-pub(crate) struct ServerHandle {
-    address: SocketAddr,
-    handle: tokio::task::JoinHandle<()>,
-}
-
-impl ServerHandle {
-    /// The address the server is actually listening on.
-    ///
-    /// When configured with port 0, this returns the OS-assigned port.
-    pub(crate) fn address(&self) -> SocketAddr {
-        self.address
-    }
-}
-
-impl Drop for ServerHandle {
-    fn drop(&mut self) {
-        self.handle.abort();
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn start_binds_ephemeral_port() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let config = Config::builder()
-            .data_dir(dir.path().to_path_buf())
-            .brain(BrainName::new("test"))
-            .service(
-                ServiceConfig::builder()
-                    .address("127.0.0.1:0".parse().unwrap())
-                    .build(),
-            )
-            .build();
-
-        let mut engine = Engine::new(config);
-        let handle = engine.start().await.unwrap();
-
-        assert_ne!(handle.address().port(), 0, "should resolve to a real port");
     }
 }

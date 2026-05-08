@@ -134,7 +134,7 @@ struct EngineBackend {
 impl Backend for EngineBackend {
     async fn start() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::TempDir::new()?;
-        let config = Config::builder()
+        let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .brain(BrainName::new("test-project"))
             .service(
@@ -144,13 +144,14 @@ impl Backend for EngineBackend {
             )
             .build();
 
-        let mut engine = Engine::new(config);
-
         // Start the HTTP server eagerly — the engine CLI routes all
         // commands through HTTP clients, so the service must be running
-        // before any commands execute. start() resolves the ephemeral
-        // port and updates the engine's config automatically.
-        let handle = engine.start().await?;
+        // before any commands execute. `Server::spawn` resolves the
+        // ephemeral port; we feed that back into config before constructing
+        // the engine so its clients connect to the right port.
+        let handle = Server::new(config.clone()).spawn().await?;
+        config.service.address = handle.address();
+        let engine = Engine::new(config);
 
         Ok(Self {
             engine,
