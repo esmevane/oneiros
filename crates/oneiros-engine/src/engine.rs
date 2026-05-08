@@ -59,6 +59,13 @@ impl Engine {
             }
         };
 
+        // Silent results have already produced their output (e.g. binary
+        // bytes streamed to stdout by `storage get`). Skip the render
+        // dispatch entirely so we don't append JSON to the stream.
+        if result.is_silent() {
+            return ExitCode::SUCCESS;
+        }
+
         let as_json = match serde_json::to_string(result.response()) {
             Ok(json) => json,
             Err(error) => {

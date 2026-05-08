@@ -31,6 +31,13 @@ impl<'a> StorageClient<'a> {
         self.client.get(&format!("/storage/{path}")).await
     }
 
+    pub(crate) async fn get_content(&self, key: &StorageKey) -> Result<Vec<u8>, ClientError> {
+        let ref_key = StorageRef::encode(key);
+        self.client
+            .get_bytes(&format!("/storage/{ref_key}/content"))
+            .await
+    }
+
     pub(crate) async fn remove(&self, removal: &RemoveStorage) -> Result<StorageResponse, ClientError> {
         let RemoveStorage::V1(removal) = removal;
         let ref_key = StorageRef::encode(&removal.key);

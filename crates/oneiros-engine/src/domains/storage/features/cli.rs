@@ -1,4 +1,5 @@
 use clap::Subcommand;
+use std::io::Write;
 use std::path::PathBuf;
 
 use crate::*;
@@ -14,6 +15,13 @@ pub(crate) enum StorageCommands {
         description: String,
     },
     Show(GetStorage),
+    /// Download the raw bytes for a stored key. Writes to `--out` when
+    /// provided, otherwise to stdout.
+    Get {
+        key: String,
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
     List(ListStorage),
     Remove(RemoveStorage),
 }
@@ -42,6 +50,24 @@ impl StorageCommands {
                     .await?
             }
             Self::Show(lookup) => storage_client.show(lookup).await?,
+            Self::Get { key, out } => {
+                let bytes = storage_client.get_content(&StorageKey::new(key)).await?;
+                match out {
+                    Some(path) => {
+                        let len = bytes.len();
+                        std::fs::write(path, &bytes)?;
+                        return Ok(Rendered::new(
+                            Responses::Storage(StorageResponse::NoEntries),
+                            format!("Wrote {} bytes to {}", len, path.display()),
+                            String::new(),
+                        ));
+                    }
+                    None => {
+                        std::io::stdout().write_all(&bytes)?;
+                        return Ok(Rendered::silent(Responses::Storage(StorageResponse::NoEntries)));
+                    }
+                }
+            }
             Self::List(listing) => storage_client.list(listing).await?,
             Self::Remove(removal) => storage_client.remove(removal).await?,
         };

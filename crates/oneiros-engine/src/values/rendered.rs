@@ -18,12 +18,35 @@ pub(crate) struct Rendered<T> {
     data: T,
     prompt: String,
     text: String,
+    silent: bool,
 }
 
 impl<T> Rendered<T> {
     /// Construct with all representations.
     pub(crate) fn new(data: T, prompt: String, text: String) -> Self {
-        Self { data, prompt, text }
+        Self {
+            data,
+            prompt,
+            text,
+            silent: false,
+        }
+    }
+
+    /// Construct a silent result — engine renders nothing. For commands
+    /// that have already written their output (e.g. binary download to
+    /// stdout) and don't want the render dispatch to follow up.
+    pub(crate) fn silent(data: T) -> Self {
+        Self {
+            data,
+            prompt: String::new(),
+            text: String::new(),
+            silent: true,
+        }
+    }
+
+    /// Whether the engine should skip writing this result.
+    pub(crate) fn is_silent(&self) -> bool {
+        self.silent
     }
 
     /// The typed response — always available.
@@ -57,12 +80,13 @@ impl<T> Rendered<T> {
         !self.text.is_empty()
     }
 
-    /// Transform the data while preserving prompt and text.
+    /// Transform the data while preserving prompt, text, and silent flag.
     pub(crate) fn map<U>(self, f: impl FnOnce(T) -> U) -> Rendered<U> {
         Rendered {
             data: f(self.data),
             prompt: self.prompt,
             text: self.text,
+            silent: self.silent,
         }
     }
 
@@ -87,6 +111,7 @@ impl From<Responses> for Rendered<Responses> {
             data,
             prompt: String::new(),
             text: String::new(),
+            silent: false,
         }
     }
 }

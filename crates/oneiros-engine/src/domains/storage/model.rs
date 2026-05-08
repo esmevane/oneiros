@@ -45,10 +45,4 @@ impl BlobContent {
     }
 }
 
-/// Selector for storage removal by key.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub(crate) struct SelectStorageByKey {
-    pub(crate) key: StorageKey,
-}
-
 resource_name!(StorageKey);

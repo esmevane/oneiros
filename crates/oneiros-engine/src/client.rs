@@ -82,6 +82,29 @@ impl Client {
         Self::handle_response(resp).await
     }
 
+    /// Send a GET and return the raw response body as bytes. Used for
+    /// content endpoints that don't return JSON (e.g. blob downloads).
+    #[tracing::instrument(skip(self), fields(path = %path))]
+    pub(crate) async fn get_bytes(&self, path: &str) -> Result<Vec<u8>, ClientError> {
+        let resp = self.http.get(self.url(path)).send().await?;
+        let status = resp.status();
+
+        if status == StatusCode::NOT_FOUND {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(ClientError::NotFound(body));
+        }
+
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(ClientError::Server {
+                status: status.as_u16(),
+                body,
+            });
+        }
+
+        Ok(resp.bytes().await?.to_vec())
+    }
+
     /// Send a POST with JSON body and deserialize the response.
     #[tracing::instrument(skip(self, body), fields(path = %path))]
     pub(crate) async fn post<B: serde::Serialize, T: serde::de::DeserializeOwned>(
