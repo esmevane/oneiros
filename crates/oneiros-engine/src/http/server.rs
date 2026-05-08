@@ -48,6 +48,10 @@ impl Server {
     /// task. Returns a handle carrying the resolved address (useful when
     /// the configured port is `0`) and the task. The server stops when the
     /// handle is dropped.
+    #[expect(
+        dead_code,
+        reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+    )]
     pub(crate) async fn spawn(self) -> Result<ServerHandle, ServerError> {
         let listener = TcpListener::bind(self.config.service.address).await?;
         let address = listener.local_addr()?;
@@ -187,12 +191,20 @@ impl Server {
 /// configured address used port `0`) and the task. The server is aborted
 /// when the handle is dropped.
 pub(crate) struct ServerHandle {
+    #[expect(
+        dead_code,
+        reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+    )]
     address: SocketAddr,
     handle: tokio::task::JoinHandle<()>,
 }
 
 impl ServerHandle {
     /// The address the server is actually listening on.
+    #[expect(
+        dead_code,
+        reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+    )]
     pub(crate) fn address(&self) -> SocketAddr {
         self.address
     }
