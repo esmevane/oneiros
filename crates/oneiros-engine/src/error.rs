@@ -2,6 +2,13 @@ use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum UpcastError {
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Construction site lands when the first V2 needs an upcast that can't be lossless. Tests construct it to lock down the formatting."
+        )
+    )]
     #[error("discontinuity {from} -> {to}: {reason}")]
     Discontinuity {
         from: &'static str,
@@ -87,4 +94,23 @@ pub(crate) enum Error {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn discontinuity_renders_from_to_and_reason() {
+        let error = UpcastError::Discontinuity {
+            from: "FooV1",
+            to: "FooV2",
+            reason: "field `kind` removed without migration path",
+        };
+
+        let rendered = error.to_string();
+        assert!(rendered.contains("FooV1"));
+        assert!(rendered.contains("FooV2"));
+        assert!(rendered.contains("field `kind` removed without migration path"));
+    }
 }

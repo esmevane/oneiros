@@ -48,9 +48,12 @@ impl Server {
     /// task. Returns a handle carrying the resolved address (useful when
     /// the configured port is `0`) and the task. The server stops when the
     /// handle is dropped.
-    #[expect(
-        dead_code,
-        reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+        )
     )]
     pub(crate) async fn spawn(self) -> Result<ServerHandle, ServerError> {
         let listener = TcpListener::bind(self.config.service.address).await?;
@@ -126,7 +129,6 @@ impl Server {
             .merge(ConnectionRouter.routes())
             .merge(ContinuityRouter.routes())
             .merge(ExperienceRouter.routes())
-            .merge(FollowRouter.routes())
             .merge(LevelRouter.routes())
             .merge(MemoryRouter.routes())
             .merge(NatureRouter.routes())
@@ -198,6 +200,13 @@ pub(crate) struct ServerHandle {
 
 impl ServerHandle {
     /// The address the server is actually listening on.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+        )
+    )]
     pub(crate) fn address(&self) -> SocketAddr {
         self.address
     }

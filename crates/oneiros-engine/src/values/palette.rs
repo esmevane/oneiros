@@ -104,6 +104,10 @@ pub(crate) trait Paint: std::fmt::Display {
         self.paint(Palette::LABEL)
     }
 
+    fn emphasis(&self) -> Styled<&Self> {
+        self.paint(Palette::EMPHASIS)
+    }
+
     fn hint(&self) -> Styled<&Self> {
         self.paint(Palette::HINT)
     }
