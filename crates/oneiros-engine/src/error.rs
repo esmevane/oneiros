@@ -6,7 +6,7 @@ pub(crate) enum UpcastError {
         not(test),
         expect(
             dead_code,
-            reason = "Construction site lands when the first V2 needs an upcast that can't be lossless. Tests construct it to lock down the formatting."
+            reason = "Part of our versioning system, but we haven't versioned yet"
         )
     )]
     #[error("discontinuity {from} -> {to}: {reason}")]

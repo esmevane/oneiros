@@ -22,14 +22,15 @@ impl<K> ResourceKey<K> {
         Self::Key(key)
     }
 
-    pub(crate) fn from_ref(r: Ref) -> Self {
-        Self::Ref(RefToken::new(r))
+    #[cfg(test)]
+    pub(crate) fn from_ref(given_ref: Ref) -> Self {
+        Self::Ref(RefToken::new(given_ref))
     }
 }
 
 impl<K> From<K> for ResourceKey<K> {
     fn from(key: K) -> Self {
-        Self::Key(key)
+        Self::from_key(key)
     }
 }
 

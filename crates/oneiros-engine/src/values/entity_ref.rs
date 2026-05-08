@@ -21,13 +21,62 @@ pub(crate) enum Ref {
     V0(Resource),
 }
 
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "These methods are meant to be kept, but only exist in tests for now"
+    )
+)]
+impl Ref {
+    pub(crate) fn actor(id: ActorId) -> Self {
+        Self::V0(Resource::Actor(id))
+    }
+
+    pub(crate) fn follow(id: FollowId) -> Self {
+        Self::V0(Resource::Follow(id))
+    }
+
+    pub(crate) fn level(name: LevelName) -> Self {
+        Self::V0(Resource::Level(name))
+    }
+
+    pub(crate) fn nature(name: NatureName) -> Self {
+        Self::V0(Resource::Nature(name))
+    }
+
+    pub(crate) fn peer(id: PeerId) -> Self {
+        Self::V0(Resource::Peer(id))
+    }
+
+    pub(crate) fn persona(name: PersonaName) -> Self {
+        Self::V0(Resource::Persona(name))
+    }
+
+    pub(crate) fn sensation(name: SensationName) -> Self {
+        Self::V0(Resource::Sensation(name))
+    }
+
+    pub(crate) fn tenant(id: TenantId) -> Self {
+        Self::V0(Resource::Tenant(id))
+    }
+
+    pub(crate) fn texture(name: TextureName) -> Self {
+        Self::V0(Resource::Texture(name))
+    }
+
+    pub(crate) fn ticket(id: TicketId) -> Self {
+        Self::V0(Resource::Ticket(id))
+    }
+
+    pub(crate) fn urge(name: UrgeName) -> Self {
+        Self::V0(Resource::Urge(name))
+    }
+}
+
 impl Ref {
     pub(crate) fn agent(id: AgentId) -> Self {
         Self::V0(Resource::Agent(id))
-    }
-
-    pub(crate) fn actor(id: ActorId) -> Self {
-        Self::V0(Resource::Actor(id))
     }
 
     pub(crate) fn bookmark(id: BookmarkId) -> Self {
@@ -50,52 +99,12 @@ impl Ref {
         Self::V0(Resource::Experience(id))
     }
 
-    pub(crate) fn follow(id: FollowId) -> Self {
-        Self::V0(Resource::Follow(id))
-    }
-
-    pub(crate) fn level(name: LevelName) -> Self {
-        Self::V0(Resource::Level(name))
-    }
-
     pub(crate) fn memory(id: MemoryId) -> Self {
         Self::V0(Resource::Memory(id))
     }
 
-    pub(crate) fn nature(name: NatureName) -> Self {
-        Self::V0(Resource::Nature(name))
-    }
-
-    pub(crate) fn peer(id: PeerId) -> Self {
-        Self::V0(Resource::Peer(id))
-    }
-
-    pub(crate) fn persona(name: PersonaName) -> Self {
-        Self::V0(Resource::Persona(name))
-    }
-
-    pub(crate) fn sensation(name: SensationName) -> Self {
-        Self::V0(Resource::Sensation(name))
-    }
-
     pub(crate) fn storage(key: StorageKey) -> Self {
         Self::V0(Resource::Storage(key))
-    }
-
-    pub(crate) fn tenant(id: TenantId) -> Self {
-        Self::V0(Resource::Tenant(id))
-    }
-
-    pub(crate) fn texture(name: TextureName) -> Self {
-        Self::V0(Resource::Texture(name))
-    }
-
-    pub(crate) fn ticket(id: TicketId) -> Self {
-        Self::V0(Resource::Ticket(id))
-    }
-
-    pub(crate) fn urge(name: UrgeName) -> Self {
-        Self::V0(Resource::Urge(name))
     }
 
     /// The resource this ref points to.

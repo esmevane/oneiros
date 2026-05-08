@@ -21,10 +21,6 @@ impl ResourceUri {
     pub(crate) fn path(&self) -> &ResourcePath {
         &self.path
     }
-
-    pub(crate) fn raw(&self) -> &str {
-        &self.raw
-    }
 }
 
 impl fmt::Display for ResourceUri {
@@ -373,7 +369,6 @@ mod tests {
     fn preserves_raw_uri() {
         let raw = "oneiros-mcp://agent/governor.process/memories";
         let uri: ResourceUri = raw.parse().unwrap();
-        assert_eq!(uri.raw(), raw);
         assert_eq!(uri.to_string(), raw);
     }
 
