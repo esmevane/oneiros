@@ -19,6 +19,8 @@ impl<T: Clone + Default> Projections<T> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.migrate", name = projection.name).entered();
                     (projection.migrate)(db)?;
                 }
             }
@@ -33,6 +35,8 @@ impl<T: Clone + Default> Projections<T> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.apply", name = projection.name).entered();
                     (projection.apply)(db, event)?;
                 }
             }
@@ -56,6 +60,8 @@ impl<T: Clone + Default> Projections<T> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.apply", name = projection.name).entered();
                     (projection.apply)(db, event)?;
                 }
             }
@@ -68,6 +74,8 @@ impl<T: Clone + Default> Projections<T> {
         for frame_set in self.frames.iter().rev() {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.reset", name = projection.name).entered();
                     (projection.reset)(db)?;
                 }
             }

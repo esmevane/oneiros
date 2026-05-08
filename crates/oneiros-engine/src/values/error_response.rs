@@ -38,7 +38,9 @@ impl ErrorResponse {
         self
     }
 
-    pub(crate) fn openapi_schema(context: &mut aide::generate::GenContext) -> aide::openapi::Response {
+    pub(crate) fn openapi_schema(
+        context: &mut aide::generate::GenContext,
+    ) -> aide::openapi::Response {
         let json_schema = context.schema.subschema_for::<ErrorResponse>();
         aide::openapi::Response {
             description: "Error response".into(),

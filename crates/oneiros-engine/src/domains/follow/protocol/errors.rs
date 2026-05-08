@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{ErrorResponse, FollowId, resource_op_error};
+use crate::{ErrorResponse, FollowId, ResolveError, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum FollowError {
@@ -30,16 +30,29 @@ pub(crate) enum FollowError {
 
 impl IntoResponse for FollowError {
     fn into_response(self) -> Response {
-        let (status, message) = match &self {
-            FollowError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
-            FollowError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            FollowError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+        let (status, body) = match &self {
+            FollowError::NotFound(_) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(self.to_string()).with_code("not_found"),
+            ),
+            FollowError::InvalidId(_) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                ErrorResponse::new(self.to_string()).with_code("invalid_id"),
+            ),
+            FollowError::Resolve(ResolveError::WrongKind { expected, got }) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                ErrorResponse::new(self.to_string())
+                    .with_code("wrong_kind")
+                    .with_detail(format!("expected a {expected} ref, got a {got} ref")),
+            ),
             FollowError::Database(_) | FollowError::Event(_) | FollowError::Client(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+                (StatusCode::INTERNAL_SERVER_ERROR, ErrorResponse::new(self.to_string()))
             }
-            FollowError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            FollowError::Compose(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, ErrorResponse::new(self.to_string()))
+            }
         };
-        (status, Json(ErrorResponse::new(message))).into_response()
+        (status, Json(body)).into_response()
     }
 }
 
