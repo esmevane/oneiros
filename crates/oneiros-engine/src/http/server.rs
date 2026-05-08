@@ -191,20 +191,12 @@ impl Server {
 /// configured address used port `0`) and the task. The server is aborted
 /// when the handle is dropped.
 pub(crate) struct ServerHandle {
-    #[expect(
-        dead_code,
-        reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
-    )]
     address: SocketAddr,
     handle: tokio::task::JoinHandle<()>,
 }
 
 impl ServerHandle {
     /// The address the server is actually listening on.
-    #[expect(
-        dead_code,
-        reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
-    )]
     pub(crate) fn address(&self) -> SocketAddr {
         self.address
     }
