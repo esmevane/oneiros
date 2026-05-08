@@ -7,10 +7,6 @@ impl NatureMcp {
         vec![ResourcePathKind::Natures.resource_def("Connection natures")]
     }
 
-    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![]
-    }
-
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

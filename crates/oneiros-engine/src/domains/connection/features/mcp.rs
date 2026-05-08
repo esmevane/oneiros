@@ -17,10 +17,6 @@ impl ConnectionMcp {
         connection_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
-        vec![]
-    }
-
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![ResourcePathKind::Connection.into_template("A specific connection")]
     }

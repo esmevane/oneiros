@@ -7,10 +7,6 @@ impl PersonaMcp {
         vec![ResourcePathKind::Personas.resource_def("Agent personas")]
     }
 
-    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![]
-    }
-
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

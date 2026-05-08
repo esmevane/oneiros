@@ -17,10 +17,6 @@ impl CognitionMcp {
         cognition_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
-        vec![]
-    }
-
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![ResourcePathKind::Cognition.into_template("A specific cognition")]
     }
