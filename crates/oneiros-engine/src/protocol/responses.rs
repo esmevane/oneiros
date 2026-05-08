@@ -52,6 +52,7 @@ collects_enum!(
     Responses::Continuity => ContinuityResponse,
     Responses::Doctor => DoctorResponse,
     Responses::Experience => ExperienceResponse,
+    Responses::Follow => FollowResponse,
     Responses::Level => LevelResponse,
     Responses::Mcp => McpResponses,
     Responses::Memory => MemoryResponse,

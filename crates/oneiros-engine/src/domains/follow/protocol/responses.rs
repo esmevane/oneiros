@@ -20,12 +20,7 @@ versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum FollowFoundResponse {
         V1 => {
-            #[builder(default)] pub(crate) id: FollowId,
-            pub(crate) brain: BrainName,
-            pub(crate) bookmark: BookmarkName,
-            pub(crate) source: FollowSource,
-            pub(crate) checkpoint: Checkpoint,
-            pub(crate) created_at: Timestamp,
+            #[serde(flatten)] pub(crate) follow: Follow,
         }
     }
 }
@@ -34,8 +29,7 @@ versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum FollowsResponse {
         V1 => {
-            pub(crate) items: Vec<FollowFoundResponseV1>,
-            pub(crate) total: usize,
+            #[serde(flatten)] pub(crate) follows: Listed<Response<FollowFoundResponse>>,
         }
     }
 }

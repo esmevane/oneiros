@@ -2,10 +2,46 @@
 
 use crate::*;
 
-pub(crate) struct FollowView;
+pub(crate) struct FollowView {
+    response: FollowResponse,
+}
 
 impl FollowView {
-    pub(crate) fn table(follows: &Listed<Response<Follow>>) -> Table {
+    pub(crate) fn new(response: FollowResponse) -> Self {
+        Self { response }
+    }
+
+    pub(crate) fn render(self) -> Rendered<FollowResponse> {
+        match self.response {
+            FollowResponse::Found(FollowFoundResponse::V1(found)) => {
+                let prompt = Self::detail(&found.follow).to_string();
+                Rendered::new(
+                    FollowResponse::Found(FollowFoundResponse::V1(found)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            FollowResponse::Listed(FollowsResponse::V1(listed)) => {
+                let prompt = format!(
+                    "{}\n\n{}",
+                    format_args!(
+                        "{} of {} total",
+                        listed.follows.items.len(),
+                        listed.follows.total
+                    )
+                    .muted(),
+                    Self::table(&listed.follows),
+                );
+                Rendered::new(
+                    FollowResponse::Listed(FollowsResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
+            }
+        }
+    }
+
+    fn table(follows: &Listed<Response<FollowFoundResponse>>) -> Table {
         let mut table = Table::new(vec![
             Column::new("Bookmark"),
             Column::new("Brain"),
@@ -14,7 +50,8 @@ impl FollowView {
         ]);
 
         for wrapped in &follows.items {
-            let follow = &wrapped.data;
+            let FollowFoundResponse::V1(found) = &wrapped.data;
+            let follow = &found.follow;
             let source_label = match &follow.source {
                 FollowSource::Local(_) => "local",
                 FollowSource::Peer(_) => "peer",
@@ -30,7 +67,7 @@ impl FollowView {
         table
     }
 
-    pub(crate) fn detail(follow: &Follow) -> Detail {
+    fn detail(follow: &Follow) -> Detail {
         let source_label = match &follow.source {
             FollowSource::Local(_) => "local",
             FollowSource::Peer(_) => "peer",

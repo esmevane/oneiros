@@ -69,6 +69,10 @@ pub(crate) enum Command {
     #[command(subcommand)]
     Bookmark(BookmarkCommands),
 
+    /// Inspect follow records — bookmark/source links
+    #[command(subcommand)]
+    Follow(FollowCommands),
+
     /// Install and start the service, or run it directly
     #[command(subcommand)]
     Service(ServiceCommands),
@@ -135,6 +139,7 @@ impl Command {
             Command::Actor(actor) => actor.execute(config).await?,
             Command::Agent(agent) => agent.execute(config).await?,
             Command::Bookmark(bookmark) => bookmark.execute(config).await?,
+            Command::Follow(follow) => follow.execute(config).await?,
             Command::Brain(brain) => brain.execute(config).await?,
             Command::Cognition(cognition) => cognition.execute(config).await?,
             Command::Connection(connection) => connection.execute(config).await?,

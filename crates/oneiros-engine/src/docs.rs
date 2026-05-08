@@ -33,6 +33,7 @@ impl AppDocs {
             ConnectionDocs::Create.tag(),
             ContinuityDocs::Emerge.tag(),
             ExperienceDocs::Create.tag(),
+            FollowDocs::List.tag(),
             LevelDocs::List.tag(),
             MemoryDocs::Add.tag(),
             NatureDocs::List.tag(),

@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{ErrorResponse, FollowId};
+use crate::{ErrorResponse, FollowId, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum FollowError {
@@ -42,3 +42,5 @@ impl IntoResponse for FollowError {
         (status, Json(ErrorResponse::new(message))).into_response()
     }
 }
+
+resource_op_error!(FollowError);

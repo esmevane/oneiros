@@ -7,6 +7,7 @@ use crate::*;
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetFollow {
+        #[derive(clap::Args)]
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<FollowId>,
         }
@@ -16,8 +17,10 @@ versioned! {
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListFollows {
+        #[derive(clap::Args)]
         V1 => {
             #[serde(flatten)]
+            #[clap(flatten)]
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
