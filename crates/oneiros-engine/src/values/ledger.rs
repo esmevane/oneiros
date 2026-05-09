@@ -36,7 +36,10 @@ pub(crate) enum LedgerChange {
     Added(EventId),
     #[cfg_attr(
         not(test),
-        expect(dead_code, reason = "EventId identifies which event a peer no longer has; consumers don't act on it yet")
+        expect(
+            dead_code,
+            reason = "EventId identifies which event a peer no longer has; consumers don't act on it yet"
+        )
     )]
     Removed(EventId),
 }

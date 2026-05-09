@@ -13,7 +13,10 @@ pub(crate) enum TicketCommands {
 }
 
 impl TicketCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TicketError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, TicketError> {
         let client = Client::from_config(config)?;
         let ticket_client = TicketClient::new(&client);
 

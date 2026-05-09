@@ -16,7 +16,10 @@ impl<'a> ConnectionClient<'a> {
         self.client.post("/connections", creation).await
     }
 
-    pub(crate) async fn list(&self, listing: &ListConnections) -> Result<ConnectionResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListConnections,
+    ) -> Result<ConnectionResponse, ClientError> {
         let ListConnections::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
@@ -36,7 +39,10 @@ impl<'a> ConnectionClient<'a> {
         self.client.get(&format!("/connections?{query}")).await
     }
 
-    pub(crate) async fn get(&self, lookup: &GetConnection) -> Result<ConnectionResponse, ClientError> {
+    pub(crate) async fn get(
+        &self,
+        lookup: &GetConnection,
+    ) -> Result<ConnectionResponse, ClientError> {
         let GetConnection::V1(lookup) = lookup;
         self.client
             .get(&format!("/connections/{}", lookup.key))

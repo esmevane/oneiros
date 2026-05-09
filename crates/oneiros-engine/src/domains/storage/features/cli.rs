@@ -27,7 +27,10 @@ pub(crate) enum StorageCommands {
 }
 
 impl StorageCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, StorageError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, StorageError> {
         let client = Client::from_config(config)?;
         let storage_client = StorageClient::new(&client);
 
@@ -64,7 +67,9 @@ impl StorageCommands {
                     }
                     None => {
                         std::io::stdout().write_all(&bytes)?;
-                        return Ok(Rendered::silent(Responses::Storage(StorageResponse::NoEntries)));
+                        return Ok(Rendered::silent(Responses::Storage(
+                            StorageResponse::NoEntries,
+                        )));
                     }
                 }
             }

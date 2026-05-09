@@ -20,7 +20,10 @@ pub(crate) enum ExperienceCommands {
 }
 
 impl ExperienceCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ExperienceError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, ExperienceError> {
         let client = Client::from_config(config)?;
         let experience_client = ExperienceClient::new(&client);
 

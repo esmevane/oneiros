@@ -10,7 +10,10 @@ pub(crate) enum CognitionCommands {
 }
 
 impl CognitionCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, CognitionError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, CognitionError> {
         let client = Client::from_config(config)?;
         let cognition_client = CognitionClient::new(&client);
 

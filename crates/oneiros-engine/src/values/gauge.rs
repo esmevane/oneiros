@@ -53,7 +53,10 @@ impl IntrospectGauge {
         Self::from_inputs_with_config(inputs, IntrospectConfig::default())
     }
 
-    pub(crate) fn from_inputs_with_config(inputs: IntrospectInputs, config: IntrospectConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(
+        inputs: IntrospectInputs,
+        config: IntrospectConfig,
+    ) -> Self {
         let time_factor = saturate(inputs.hours_since_last_introspect, config.time_midpoint);
 
         let working_factor = if inputs.total_cognitions > 0 {
@@ -165,7 +168,10 @@ impl CatharsisGauge {
         Self::from_inputs_with_config(inputs, CatharsisConfig::default())
     }
 
-    pub(crate) fn from_inputs_with_config(inputs: CatharsisInputs, config: CatharsisConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(
+        inputs: CatharsisInputs,
+        config: CatharsisConfig,
+    ) -> Self {
         let tensions_factor = saturate(
             inputs.tensions_experience_count as f64,
             config.tensions_midpoint,
@@ -272,7 +278,10 @@ impl RecollectGauge {
         Self::from_inputs_with_config(inputs, RecollectConfig::default())
     }
 
-    pub(crate) fn from_inputs_with_config(inputs: RecollectInputs, config: RecollectConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(
+        inputs: RecollectInputs,
+        config: RecollectConfig,
+    ) -> Self {
         let session_memory_factor = saturate(
             inputs.session_memory_count as f64,
             config.session_memory_midpoint,
@@ -379,7 +388,10 @@ impl RetrospectGauge {
         Self::from_inputs_with_config(inputs, RetrospectConfig::default())
     }
 
-    pub(crate) fn from_inputs_with_config(inputs: RetrospectInputs, config: RetrospectConfig) -> Self {
+    pub(crate) fn from_inputs_with_config(
+        inputs: RetrospectInputs,
+        config: RetrospectConfig,
+    ) -> Self {
         let time_since_archival_factor = saturate(
             inputs.hours_since_last_archival,
             config.archival_time_midpoint,

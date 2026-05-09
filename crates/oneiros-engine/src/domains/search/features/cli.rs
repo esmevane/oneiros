@@ -9,7 +9,10 @@ pub(crate) struct SearchCommands {
 }
 
 impl SearchCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SearchError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, SearchError> {
         let client = Client::from_config(config)?;
         let search_client = SearchClient::new(&client);
 

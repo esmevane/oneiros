@@ -9,7 +9,9 @@ impl FollowDocs {
     pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("follows")
-            .description("Inspect follow records — links between local bookmarks and the sources they track")
+            .description(
+                "Inspect follow records — links between local bookmarks and the sources they track",
+            )
             .build()
     }
 

@@ -365,7 +365,11 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     );
 
     assert!(app.command("continuity dream nobody.nobody").await.is_err());
-    assert!(app.command("continuity introspect nobody.nobody").await.is_err());
+    assert!(
+        app.command("continuity introspect nobody.nobody")
+            .await
+            .is_err()
+    );
     assert!(app.command("continuity sleep nobody.nobody").await.is_err());
 
     Ok(())

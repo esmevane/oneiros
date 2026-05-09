@@ -15,7 +15,10 @@ pub(crate) enum BookmarkCommands {
 }
 
 impl BookmarkCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BookmarkError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, BookmarkError> {
         let client = Client::from_config(config)?;
         let bookmark_client = BookmarkClient::new(&client);
 

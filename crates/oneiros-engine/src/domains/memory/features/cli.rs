@@ -10,7 +10,10 @@ pub(crate) enum MemoryCommands {
 }
 
 impl MemoryCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, MemoryError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, MemoryError> {
         let client = Client::from_config(config)?;
         let memory_client = MemoryClient::new(&client);
 

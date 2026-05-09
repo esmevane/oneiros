@@ -21,7 +21,10 @@ impl<'a> PersonaClient<'a> {
         self.client.get(&format!("/personas/{}", lookup.key)).await
     }
 
-    pub(crate) async fn list(&self, listing: &ListPersonas) -> Result<PersonaResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListPersonas,
+    ) -> Result<PersonaResponse, ClientError> {
         let ListPersonas::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
@@ -30,7 +33,10 @@ impl<'a> PersonaClient<'a> {
         self.client.get(&format!("/personas?{query}")).await
     }
 
-    pub(crate) async fn remove(&self, removal: &RemovePersona) -> Result<PersonaResponse, ClientError> {
+    pub(crate) async fn remove(
+        &self,
+        removal: &RemovePersona,
+    ) -> Result<PersonaResponse, ClientError> {
         let RemovePersona::V1(removal) = removal;
         self.client
             .delete(&format!("/personas/{}", removal.name))

@@ -23,13 +23,19 @@ impl<T> Response<T> {
         Self { data, meta: None }
     }
 
-    #[expect(dead_code, reason = "envelope can attach arbitrary meta; only hints wired today")]
+    #[expect(
+        dead_code,
+        reason = "envelope can attach arbitrary meta; only hints wired today"
+    )]
     pub(crate) fn with_meta(mut self, meta: ResponseMeta) -> Self {
         self.meta = Some(meta);
         self
     }
 
-    #[expect(dead_code, reason = "ref_token plumbing reserved for handlers that return references")]
+    #[expect(
+        dead_code,
+        reason = "ref_token plumbing reserved for handlers that return references"
+    )]
     pub(crate) fn with_ref_token(mut self, ref_token: RefToken) -> Self {
         self.meta
             .get_or_insert_with(ResponseMeta::default)
@@ -37,7 +43,13 @@ impl<T> Response<T> {
         self
     }
 
-    #[cfg_attr(not(test), expect(dead_code, reason = "envelope hints reserved; live path uses Rendered::with_hints"))]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "envelope hints reserved; live path uses Rendered::with_hints"
+        )
+    )]
     pub(crate) fn with_hints(mut self, hints: Vec<Hint>) -> Self {
         if !hints.is_empty() {
             self.meta.get_or_insert_with(ResponseMeta::default).hints = hints;
@@ -45,7 +57,10 @@ impl<T> Response<T> {
         self
     }
 
-    #[cfg_attr(not(test), expect(dead_code, reason = "getter reserved for handlers reading meta"))]
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "getter reserved for handlers reading meta")
+    )]
     pub(crate) fn meta(&self) -> ResponseMeta {
         self.meta.clone().unwrap_or_default()
     }
@@ -71,12 +86,18 @@ pub(crate) struct ResponseMeta {
 }
 
 impl ResponseMeta {
-    #[expect(dead_code, reason = "ref_token getter pairs with with_ref_token plumbing")]
+    #[expect(
+        dead_code,
+        reason = "ref_token getter pairs with with_ref_token plumbing"
+    )]
     pub(crate) fn ref_token(&self) -> Option<RefToken> {
         self.ref_token.clone()
     }
 
-    #[cfg_attr(not(test), expect(dead_code, reason = "getter reserved for handlers reading hints"))]
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "getter reserved for handlers reading hints")
+    )]
     pub(crate) fn hints(&self) -> &[Hint] {
         &self.hints
     }

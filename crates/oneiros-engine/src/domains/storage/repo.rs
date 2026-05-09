@@ -27,7 +27,10 @@ impl<'a> StorageRepo<'a> {
             .await
     }
 
-    pub(crate) async fn get_storage(&self, key: &StorageKey) -> Result<Option<StorageEntry>, EventError> {
+    pub(crate) async fn get_storage(
+        &self,
+        key: &StorageKey,
+    ) -> Result<Option<StorageEntry>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
 
@@ -86,7 +89,10 @@ impl<'a> StorageRepo<'a> {
     /// blob appears or the configured patience window expires.
     ///
     /// [`get_blob`]: StorageRepo::get_blob
-    pub(crate) async fn fetch_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+    pub(crate) async fn fetch_blob(
+        &self,
+        hash: &ContentHash,
+    ) -> Result<Option<BlobContent>, EventError> {
         self.scope
             .config()
             .fetch
@@ -94,7 +100,10 @@ impl<'a> StorageRepo<'a> {
             .await
     }
 
-    pub(crate) async fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
+    pub(crate) async fn get_blob(
+        &self,
+        hash: &ContentHash,
+    ) -> Result<Option<BlobContent>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
 

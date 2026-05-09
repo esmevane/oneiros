@@ -71,7 +71,10 @@ impl PeerService {
         )))
     }
 
-    pub(crate) async fn get(scope: &Scope<AtHost>, request: &GetPeer) -> Result<PeerResponse, PeerError> {
+    pub(crate) async fn get(
+        scope: &Scope<AtHost>,
+        request: &GetPeer,
+    ) -> Result<PeerResponse, PeerError> {
         let GetPeer::V1(get) = request;
         let id = get.key.resolve()?;
         let peer = PeerRepo::new(scope)

@@ -55,7 +55,9 @@ pub(crate) async fn recede_prompt_contains_agent<B: Backend>() -> TestResult {
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let prompt = harness.exec_prompt("continuity recede thinker.process").await?;
+    let prompt = harness
+        .exec_prompt("continuity recede thinker.process")
+        .await?;
 
     assert!(
         !prompt.is_empty(),
@@ -76,7 +78,9 @@ pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
         .exec_json("agent create retiring process --description 'Will retire'")
         .await?;
 
-    let response = harness.exec_json("continuity recede retiring.process").await?;
+    let response = harness
+        .exec_json("continuity recede retiring.process")
+        .await?;
 
     match &response {
         // Engine: typed continuity response

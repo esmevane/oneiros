@@ -16,7 +16,10 @@ pub(crate) enum PersonaCommands {
 }
 
 impl PersonaCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PersonaError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, PersonaError> {
         let client = Client::from_config(config)?;
         let persona_client = PersonaClient::new(&client);
 

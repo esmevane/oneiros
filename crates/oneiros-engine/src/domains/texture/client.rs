@@ -21,7 +21,10 @@ impl<'a> TextureClient<'a> {
         self.client.get(&format!("/textures/{}", lookup.key)).await
     }
 
-    pub(crate) async fn list(&self, listing: &ListTextures) -> Result<TextureResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListTextures,
+    ) -> Result<TextureResponse, ClientError> {
         let ListTextures::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
@@ -30,7 +33,10 @@ impl<'a> TextureClient<'a> {
         self.client.get(&format!("/textures?{query}")).await
     }
 
-    pub(crate) async fn remove(&self, removal: &RemoveTexture) -> Result<TextureResponse, ClientError> {
+    pub(crate) async fn remove(
+        &self,
+        removal: &RemoveTexture,
+    ) -> Result<TextureResponse, ClientError> {
         let RemoveTexture::V1(removal) = removal;
         self.client
             .delete(&format!("/textures/{}", removal.name))

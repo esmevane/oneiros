@@ -9,19 +9,31 @@ impl<'a> BookmarkClient<'a> {
         Self { client }
     }
 
-    pub(crate) async fn create(&self, creation: &CreateBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn create(
+        &self,
+        creation: &CreateBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks", creation).await
     }
 
-    pub(crate) async fn switch(&self, switch: &SwitchBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn switch(
+        &self,
+        switch: &SwitchBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/switch", switch).await
     }
 
-    pub(crate) async fn merge(&self, merge: &MergeBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn merge(
+        &self,
+        merge: &MergeBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/merge", merge).await
     }
 
-    pub(crate) async fn list(&self, listing: &ListBookmarks) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListBookmarks,
+    ) -> Result<BookmarkResponse, ClientError> {
         let ListBookmarks::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
@@ -30,11 +42,17 @@ impl<'a> BookmarkClient<'a> {
         self.client.get(&format!("/bookmarks?{query}")).await
     }
 
-    pub(crate) async fn share(&self, share: &ShareBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn share(
+        &self,
+        share: &ShareBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/share", share).await
     }
 
-    pub(crate) async fn follow(&self, follow: &FollowBookmark) -> Result<BookmarkResponse, ClientError> {
+    pub(crate) async fn follow(
+        &self,
+        follow: &FollowBookmark,
+    ) -> Result<BookmarkResponse, ClientError> {
         self.client.post("/bookmarks/follow", follow).await
     }
 

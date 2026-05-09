@@ -39,7 +39,9 @@ pub(crate) enum ClientError {
 
 impl IntoResponse for ClientError {
     fn into_response(self) -> axum::response::Response {
-        todo!("this isn't unreachable - the client can be leveraged by a server, we need to impl this")
+        todo!(
+            "this isn't unreachable - the client can be leveraged by a server, we need to impl this"
+        )
     }
 }
 

@@ -30,7 +30,10 @@ impl<'a> NatureClient<'a> {
         self.client.get(&format!("/natures?{query}")).await
     }
 
-    pub(crate) async fn remove(&self, removal: &RemoveNature) -> Result<NatureResponse, ClientError> {
+    pub(crate) async fn remove(
+        &self,
+        removal: &RemoveNature,
+    ) -> Result<NatureResponse, ClientError> {
         let RemoveNature::V1(removal) = removal;
         self.client
             .delete(&format!("/natures/{}", removal.name))

@@ -45,7 +45,10 @@ impl<'a> TextureRepo<'a> {
         }
     }
 
-    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Texture>, EventError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Texture>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

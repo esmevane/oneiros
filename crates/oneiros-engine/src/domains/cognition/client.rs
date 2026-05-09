@@ -9,11 +9,17 @@ impl<'a> CognitionClient<'a> {
         Self { client }
     }
 
-    pub(crate) async fn add(&self, addition: &AddCognition) -> Result<CognitionResponse, ClientError> {
+    pub(crate) async fn add(
+        &self,
+        addition: &AddCognition,
+    ) -> Result<CognitionResponse, ClientError> {
         self.client.post("/cognitions", addition).await
     }
 
-    pub(crate) async fn list(&self, listing: &ListCognitions) -> Result<CognitionResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListCognitions,
+    ) -> Result<CognitionResponse, ClientError> {
         let ListCognitions::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
@@ -41,7 +47,10 @@ impl<'a> CognitionClient<'a> {
         self.client.get(&format!("/cognitions?{query}")).await
     }
 
-    pub(crate) async fn get(&self, lookup: &GetCognition) -> Result<CognitionResponse, ClientError> {
+    pub(crate) async fn get(
+        &self,
+        lookup: &GetCognition,
+    ) -> Result<CognitionResponse, ClientError> {
         let GetCognition::V1(lookup) = lookup;
         self.client
             .get(&format!("/cognitions/{}", lookup.key))

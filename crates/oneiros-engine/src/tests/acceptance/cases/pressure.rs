@@ -82,7 +82,9 @@ pub(crate) async fn introspect_pressure_decreases_after_introspecting<B: Backend
     let before_urgency = before_introspect.urgency();
 
     // Perform the mitigation: introspect
-    harness.exec_json("continuity introspect thinker.process").await?;
+    harness
+        .exec_json("continuity introspect thinker.process")
+        .await?;
 
     // Read pressure AFTER introspecting
     let after_response = harness.exec_json("pressure thinker.process").await?;
@@ -119,7 +121,9 @@ pub(crate) async fn catharsis_pressure_decreases_after_reflecting<B: Backend>() 
     let before_urgency = before_catharsis.urgency();
 
     // Perform the mitigation: reflect
-    harness.exec_json("continuity reflect thinker.process").await?;
+    harness
+        .exec_json("continuity reflect thinker.process")
+        .await?;
 
     // Read pressure AFTER reflecting
     let after_response = harness.exec_json("pressure thinker.process").await?;

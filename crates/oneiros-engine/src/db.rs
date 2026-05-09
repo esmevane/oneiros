@@ -90,7 +90,10 @@ impl EventsDb {
     }
 
     /// Open directly from a `Platform` + brain. Underlying primitive.
-    pub(crate) async fn open_with(platform: &Platform, brain: &BrainName) -> Result<Self, EventsDbError> {
+    pub(crate) async fn open_with(
+        platform: &Platform,
+        brain: &BrainName,
+    ) -> Result<Self, EventsDbError> {
         platform.ensure_brain_dir(brain)?;
         let connection = rusqlite::Connection::open(platform.events_db_path(brain))?;
         connection.pragma_update(None, "journal_mode", "wal")?;

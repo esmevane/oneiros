@@ -42,7 +42,10 @@ impl<'a> TenantRepo<'a> {
         }
     }
 
-    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Tenant>, TenantError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Tenant>, TenantError> {
         let db = HostDb::open(self.scope).await?;
 
         let count_sql = "SELECT COUNT(*) FROM tenants";

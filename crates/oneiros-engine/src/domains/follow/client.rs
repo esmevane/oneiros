@@ -16,10 +16,7 @@ impl<'a> FollowClient<'a> {
         self.client.get(&format!("/follows/{}", lookup.key)).await
     }
 
-    pub(crate) async fn list(
-        &self,
-        listing: &ListFollows,
-    ) -> Result<FollowResponse, ClientError> {
+    pub(crate) async fn list(&self, listing: &ListFollows) -> Result<FollowResponse, ClientError> {
         let ListFollows::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",

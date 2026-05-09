@@ -13,7 +13,10 @@ impl<'a> TenantClient<'a> {
     }
 
     /// Create a new tenant with the given name.
-    pub(crate) async fn create(&self, creation: &CreateTenant) -> Result<TenantResponse, ClientError> {
+    pub(crate) async fn create(
+        &self,
+        creation: &CreateTenant,
+    ) -> Result<TenantResponse, ClientError> {
         self.client.post("/tenants", creation).await
     }
 

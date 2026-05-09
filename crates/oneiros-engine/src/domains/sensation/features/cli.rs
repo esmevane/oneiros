@@ -16,7 +16,10 @@ pub(crate) enum SensationCommands {
 }
 
 impl SensationCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SensationError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, SensationError> {
         let client = Client::from_config(config)?;
         let sensation_client = SensationClient::new(&client);
 

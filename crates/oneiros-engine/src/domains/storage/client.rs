@@ -9,7 +9,10 @@ impl<'a> StorageClient<'a> {
         Self { client }
     }
 
-    pub(crate) async fn upload(&self, upload: &UploadStorage) -> Result<StorageResponse, ClientError> {
+    pub(crate) async fn upload(
+        &self,
+        upload: &UploadStorage,
+    ) -> Result<StorageResponse, ClientError> {
         self.client.post("/storage", upload).await
     }
 
@@ -38,7 +41,10 @@ impl<'a> StorageClient<'a> {
             .await
     }
 
-    pub(crate) async fn remove(&self, removal: &RemoveStorage) -> Result<StorageResponse, ClientError> {
+    pub(crate) async fn remove(
+        &self,
+        removal: &RemoveStorage,
+    ) -> Result<StorageResponse, ClientError> {
         let RemoveStorage::V1(removal) = removal;
         let ref_key = StorageRef::encode(&removal.key);
         self.client.delete(&format!("/storage/{ref_key}")).await

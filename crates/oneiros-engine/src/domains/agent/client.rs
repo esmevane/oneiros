@@ -9,7 +9,10 @@ impl<'a> AgentClient<'a> {
         Self { client }
     }
 
-    pub(crate) async fn create(&self, creation: &CreateAgent) -> Result<AgentResponse, ClientError> {
+    pub(crate) async fn create(
+        &self,
+        creation: &CreateAgent,
+    ) -> Result<AgentResponse, ClientError> {
         self.client.post("/agents", creation).await
     }
 

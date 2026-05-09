@@ -9,21 +9,30 @@ impl<'a> SensationClient<'a> {
         Self { client }
     }
 
-    pub(crate) async fn set(&self, setting: &SetSensation) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn set(
+        &self,
+        setting: &SetSensation,
+    ) -> Result<SensationResponse, ClientError> {
         let SetSensation::V1(body) = setting;
         self.client
             .put(&format!("/sensations/{}", body.name), setting)
             .await
     }
 
-    pub(crate) async fn get(&self, lookup: &GetSensation) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn get(
+        &self,
+        lookup: &GetSensation,
+    ) -> Result<SensationResponse, ClientError> {
         let GetSensation::V1(lookup) = lookup;
         self.client
             .get(&format!("/sensations/{}", lookup.key))
             .await
     }
 
-    pub(crate) async fn list(&self, listing: &ListSensations) -> Result<SensationResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListSensations,
+    ) -> Result<SensationResponse, ClientError> {
         let ListSensations::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",

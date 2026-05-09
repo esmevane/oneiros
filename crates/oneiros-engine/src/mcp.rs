@@ -150,10 +150,7 @@ fn all_resource_templates() -> Vec<ResourceTemplateDef> {
     .collect()
 }
 
-async fn read_resource(
-    context: &ProjectLog,
-    uri: &ResourceUri,
-) -> Result<McpResponse, ToolError> {
+async fn read_resource(context: &ProjectLog, uri: &ResourceUri) -> Result<McpResponse, ToolError> {
     let path = uri.path();
 
     let Some(request) = path.as_request() else {

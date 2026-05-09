@@ -19,8 +19,8 @@ impl<T: Clone + Default> Projections<T> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
-                    let _span =
-                        tracing::trace_span!("projection.migrate", name = projection.name).entered();
+                    let _span = tracing::trace_span!("projection.migrate", name = projection.name)
+                        .entered();
                     (projection.migrate)(db)?;
                 }
             }
@@ -31,7 +31,11 @@ impl<T: Clone + Default> Projections<T> {
 
     /// Apply a single event through all frames in order.
     #[tracing::instrument(skip_all, fields(event_type = event.data.event_type(), sequence = event.sequence), err(Display))]
-    pub(crate) fn apply(&self, db: &rusqlite::Connection, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn apply(
+        &self,
+        db: &rusqlite::Connection,
+        event: &StoredEvent,
+    ) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
@@ -88,7 +92,11 @@ impl<T: Clone + Default> Projections<T> {
 
     /// Replay all events through frames and reducers.
     #[tracing::instrument(skip_all, err(Display))]
-    pub(crate) fn replay(&self, db: &rusqlite::Connection, log: &EventLog) -> Result<usize, EventError> {
+    pub(crate) fn replay(
+        &self,
+        db: &rusqlite::Connection,
+        log: &EventLog,
+    ) -> Result<usize, EventError> {
         let events = log.load_all()?;
 
         self.reset(db)?;

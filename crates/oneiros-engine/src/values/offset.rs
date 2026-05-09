@@ -24,7 +24,10 @@ impl<'de> Deserialize<'de> for Offset {
                 Ok(Offset(value as usize))
             }
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Offset, E> {
-                value.parse::<usize>().map(Offset).map_err(de::Error::custom)
+                value
+                    .parse::<usize>()
+                    .map(Offset)
+                    .map_err(de::Error::custom)
             }
         }
         deserializer.deserialize_any(OffsetVisitor)

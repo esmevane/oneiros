@@ -45,12 +45,14 @@ impl IntoResponse for FollowError {
                     .with_code("wrong_kind")
                     .with_detail(format!("expected a {expected} ref, got a {got} ref")),
             ),
-            FollowError::Database(_) | FollowError::Event(_) | FollowError::Client(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, ErrorResponse::new(self.to_string()))
-            }
-            FollowError::Compose(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, ErrorResponse::new(self.to_string()))
-            }
+            FollowError::Database(_) | FollowError::Event(_) | FollowError::Client(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new(self.to_string()),
+            ),
+            FollowError::Compose(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new(self.to_string()),
+            ),
         };
         (status, Json(body)).into_response()
     }

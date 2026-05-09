@@ -15,7 +15,10 @@ impl<'a> SensationRepo<'a> {
     /// sensation appears or the configured patience window expires.
     ///
     /// [`get`]: SensationRepo::get
-    pub(crate) async fn fetch(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
+    pub(crate) async fn fetch(
+        &self,
+        name: &SensationName,
+    ) -> Result<Option<Sensation>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
@@ -45,7 +48,10 @@ impl<'a> SensationRepo<'a> {
         }
     }
 
-    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Sensation>, EventError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Sensation>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

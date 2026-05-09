@@ -19,7 +19,10 @@ pub(crate) enum ServiceCommands {
 }
 
 impl ServiceCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ServiceError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, ServiceError> {
         let response = match self {
             ServiceCommands::Install => ServiceService::install(config)?,
             ServiceCommands::Uninstall => ServiceService::uninstall(config)?,

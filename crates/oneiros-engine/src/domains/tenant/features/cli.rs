@@ -13,7 +13,10 @@ pub(crate) enum TenantCommands {
 }
 
 impl TenantCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TenantError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, TenantError> {
         let client = Client::from_config(config)?;
         let tenant_client = TenantClient::new(&client);
 

@@ -60,7 +60,10 @@ impl<'a> BookmarkStore<'a> {
 
     /// List bookmark names for a specific brain. Returns an empty
     /// list if the projection has not been migrated yet (cold start).
-    pub(crate) fn list_for_brain(&self, brain: &BrainName) -> Result<Vec<BookmarkName>, rusqlite::Error> {
+    pub(crate) fn list_for_brain(
+        &self,
+        brain: &BrainName,
+    ) -> Result<Vec<BookmarkName>, rusqlite::Error> {
         let mut stmt = match self
             .db
             .prepare("SELECT name FROM bookmarks WHERE brain = ?1")

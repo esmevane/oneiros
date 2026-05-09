@@ -13,7 +13,10 @@ impl<'a> ActorClient<'a> {
     }
 
     /// Create a new actor belonging to the given tenant.
-    pub(crate) async fn create(&self, creation: &CreateActor) -> Result<ActorResponse, ClientError> {
+    pub(crate) async fn create(
+        &self,
+        creation: &CreateActor,
+    ) -> Result<ActorResponse, ClientError> {
         self.client.post("/actors", creation).await
     }
 

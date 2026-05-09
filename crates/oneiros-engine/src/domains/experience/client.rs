@@ -16,7 +16,10 @@ impl<'a> ExperienceClient<'a> {
         self.client.post("/experiences", creation).await
     }
 
-    pub(crate) async fn list(&self, listing: &ListExperiences) -> Result<ExperienceResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListExperiences,
+    ) -> Result<ExperienceResponse, ClientError> {
         let ListExperiences::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
@@ -44,7 +47,10 @@ impl<'a> ExperienceClient<'a> {
         self.client.get(&format!("/experiences?{query}")).await
     }
 
-    pub(crate) async fn get(&self, lookup: &GetExperience) -> Result<ExperienceResponse, ClientError> {
+    pub(crate) async fn get(
+        &self,
+        lookup: &GetExperience,
+    ) -> Result<ExperienceResponse, ClientError> {
         let GetExperience::V1(lookup) = lookup;
         self.client
             .get(&format!("/experiences/{}", lookup.key))

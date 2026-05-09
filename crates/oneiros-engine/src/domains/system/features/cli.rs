@@ -8,7 +8,10 @@ pub(crate) enum SystemCommands {
 }
 
 impl SystemCommands {
-    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SystemError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, SystemError> {
         let client = Client::from_config(config)?;
         let system_client = SystemClient::new(&client);
 

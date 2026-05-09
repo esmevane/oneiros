@@ -45,7 +45,10 @@ impl<'a> PersonaRepo<'a> {
         }
     }
 
-    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Persona>, EventError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Persona>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

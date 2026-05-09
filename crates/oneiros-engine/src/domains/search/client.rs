@@ -9,7 +9,10 @@ impl<'a> SearchClient<'a> {
         Self { client }
     }
 
-    pub(crate) async fn search(&self, request: &SearchQuery) -> Result<SearchResponse, ClientError> {
+    pub(crate) async fn search(
+        &self,
+        request: &SearchQuery,
+    ) -> Result<SearchResponse, ClientError> {
         let query = request.current()?;
         let mut parts: Vec<String> = Vec::new();
         if let Some(q) = &query.query {

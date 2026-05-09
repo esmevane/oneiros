@@ -138,7 +138,11 @@ impl<'a> ExperienceStore<'a> {
     }
 
     /// Most recent experiences for an agent, ordered newest-first.
-    pub(crate) fn list_recent(&self, agent_id: &str, limit: usize) -> Result<Vec<Experience>, EventError> {
+    pub(crate) fn list_recent(
+        &self,
+        agent_id: &str,
+        limit: usize,
+    ) -> Result<Vec<Experience>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences

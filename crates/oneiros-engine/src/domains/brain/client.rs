@@ -13,7 +13,10 @@ impl<'a> BrainClient<'a> {
     }
 
     /// Create a new brain with the given name.
-    pub(crate) async fn create(&self, creation: &CreateBrain) -> Result<BrainResponse, ClientError> {
+    pub(crate) async fn create(
+        &self,
+        creation: &CreateBrain,
+    ) -> Result<BrainResponse, ClientError> {
         self.client.post("/brains", creation).await
     }
 
