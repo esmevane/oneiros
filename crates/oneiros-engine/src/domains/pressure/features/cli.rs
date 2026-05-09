@@ -10,7 +10,7 @@ pub(crate) struct PressureCommands {
 
 impl PressureCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PressureError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let pressure_client = PressureClient::new(&client);
 
         let request = PressureRequest::GetPressure(self.command.clone());

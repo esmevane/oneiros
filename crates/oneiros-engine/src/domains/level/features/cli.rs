@@ -17,7 +17,7 @@ pub(crate) enum LevelCommands {
 
 impl LevelCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, LevelError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let level_client = LevelClient::new(&client);
 
         let response = match self {

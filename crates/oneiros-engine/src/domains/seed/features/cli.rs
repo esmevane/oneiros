@@ -10,7 +10,7 @@ pub(crate) enum SeedCommands {
 
 impl SeedCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, SeedError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let seed = SeedClient::new(&client);
         let response = match self {
             SeedCommands::Core => seed.core().await?,

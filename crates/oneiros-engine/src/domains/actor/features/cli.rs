@@ -14,7 +14,7 @@ pub(crate) enum ActorCommands {
 
 impl ActorCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ActorError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let actor_client = ActorClient::new(&client);
 
         let response = match self {

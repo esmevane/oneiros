@@ -17,7 +17,7 @@ pub(crate) enum NatureCommands {
 
 impl NatureCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, NatureError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let nature_client = NatureClient::new(&client);
 
         let response = match self {

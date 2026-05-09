@@ -14,7 +14,7 @@ pub(crate) enum BrainCommands {
 
 impl BrainCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, BrainError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let brain_client = BrainClient::new(&client);
 
         let response = match self {

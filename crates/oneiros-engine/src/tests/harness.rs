@@ -129,12 +129,7 @@ impl TestApp {
     /// `init_project`). Domain-specific clients are available via methods
     /// like `.persona()`, `.agent()`, etc.
     pub(crate) fn client(&self) -> TestClient {
-        let config = self.engine.config();
-        let client = match config.token() {
-            Some(token) => Client::with_token(config.base_url(), token).expect("test token"),
-            None => Client::new(config.base_url()),
-        };
-
+        let client = Client::from_config(self.engine.config()).expect("test client");
         TestClient { client }
     }
 

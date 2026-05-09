@@ -17,7 +17,7 @@ pub(crate) enum TextureCommands {
 
 impl TextureCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TextureError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let texture_client = TextureClient::new(&client);
 
         let response = match self {

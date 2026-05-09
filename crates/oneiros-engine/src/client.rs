@@ -51,6 +51,15 @@ impl Client {
         }
     }
 
+    /// Build a client from a config — token-aware. Returns an authenticated
+    /// client when the brain has a token on disk, an anonymous one otherwise.
+    pub(crate) fn from_config(config: &Config) -> Result<Self, ClientError> {
+        match config.token() {
+            Some(token) => Self::with_token(config.base_url(), token),
+            None => Ok(Self::new(config.base_url())),
+        }
+    }
+
     pub(crate) fn with_token(base_url: impl Into<String>, token: Token) -> Result<Self, ClientError> {
         let mut headers = reqwest::header::HeaderMap::new();
         let value = format!("Bearer {token}").parse().map_err(|_| {

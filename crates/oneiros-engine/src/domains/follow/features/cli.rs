@@ -13,7 +13,7 @@ impl FollowCommands {
         &self,
         config: &Config,
     ) -> Result<Rendered<Responses>, FollowError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let follow_client = FollowClient::new(&client);
 
         let response = match self {

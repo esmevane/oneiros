@@ -17,7 +17,7 @@ pub(crate) enum PersonaCommands {
 
 impl PersonaCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PersonaError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let persona_client = PersonaClient::new(&client);
 
         let response = match self {

@@ -12,7 +12,7 @@ pub(crate) enum ConnectionCommands {
 
 impl ConnectionCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ConnectionError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let connection_client = ConnectionClient::new(&client);
 
         let (response, request) = match self {

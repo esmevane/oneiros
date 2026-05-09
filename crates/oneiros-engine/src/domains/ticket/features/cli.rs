@@ -14,7 +14,7 @@ pub(crate) enum TicketCommands {
 
 impl TicketCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, TicketError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let ticket_client = TicketClient::new(&client);
 
         let response = match self {

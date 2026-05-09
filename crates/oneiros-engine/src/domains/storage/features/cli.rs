@@ -28,7 +28,7 @@ pub(crate) enum StorageCommands {
 
 impl StorageCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, StorageError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let storage_client = StorageClient::new(&client);
 
         let response = match self {

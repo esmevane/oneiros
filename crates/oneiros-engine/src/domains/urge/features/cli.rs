@@ -17,7 +17,7 @@ pub(crate) enum UrgeCommands {
 
 impl UrgeCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, UrgeError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let urge_client = UrgeClient::new(&client);
 
         let response = match self {

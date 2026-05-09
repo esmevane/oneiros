@@ -11,7 +11,7 @@ pub(crate) enum CognitionCommands {
 
 impl CognitionCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, CognitionError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let cognition_client = CognitionClient::new(&client);
 
         let (response, request) = match self {

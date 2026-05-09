@@ -17,7 +17,7 @@ impl ProjectCommands {
     ) -> Result<Rendered<Responses>, ProjectError> {
         let response: ProjectResponse = match self {
             ProjectCommands::Init(initialization) => {
-                let client = Client::new(config.base_url());
+                let client = Client::from_config(config)?;
                 ProjectClient::new(&client).init(initialization).await?
             }
             ProjectCommands::Export(exporting) => {

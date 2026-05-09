@@ -18,7 +18,7 @@ pub(crate) enum ContinuityCommands {
 
 impl ContinuityCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ContinuityError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let continuity_client = ContinuityClient::new(&client);
 
         let result = match self {

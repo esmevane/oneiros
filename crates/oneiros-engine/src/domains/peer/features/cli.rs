@@ -12,7 +12,7 @@ pub(crate) enum PeerCommands {
 
 impl PeerCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PeerError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let peer_client = PeerClient::new(&client);
 
         let response = match self {

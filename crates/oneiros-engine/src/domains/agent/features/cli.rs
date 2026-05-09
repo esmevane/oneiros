@@ -18,7 +18,7 @@ pub(crate) enum AgentCommands {
 
 impl AgentCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, AgentError> {
-        let client = Client::new(config.base_url());
+        let client = Client::from_config(config)?;
         let agent_client = AgentClient::new(&client);
 
         let response = match self {
