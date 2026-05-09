@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ExperienceService;
+pub(crate) struct ExperienceService;
 
 impl ExperienceService {
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &CreateExperience,
@@ -50,7 +50,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetExperience,
     ) -> Result<ExperienceResponse, ExperienceError> {
@@ -68,7 +68,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListExperiences,
     ) -> Result<ExperienceResponse, ExperienceError> {
@@ -118,7 +118,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn update_description(
+    pub(crate) async fn update_description(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &UpdateExperienceDescription,
@@ -171,7 +171,7 @@ impl ExperienceService {
         ))
     }
 
-    pub async fn update_sensation(
+    pub(crate) async fn update_sensation(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &UpdateExperienceSensation,

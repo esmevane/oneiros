@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Tenant read model — async queries against the host-tier scope.
-pub struct TenantRepo<'a> {
+pub(crate) struct TenantRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
 impl<'a> TenantRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
@@ -16,11 +16,11 @@ impl<'a> TenantRepo<'a> {
     /// tenant appears or the configured patience window expires.
     ///
     /// [`get`]: TenantRepo::get
-    pub async fn fetch(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
+    pub(crate) async fn fetch(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
+    pub(crate) async fn get(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare("select id, name, created_at from tenants where id = ?1")?;
 
@@ -42,7 +42,10 @@ impl<'a> TenantRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Tenant>, TenantError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Tenant>, TenantError> {
         let db = HostDb::open(self.scope).await?;
 
         let count_sql = "SELECT COUNT(*) FROM tenants";

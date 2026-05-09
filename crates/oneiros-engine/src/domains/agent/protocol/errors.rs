@@ -6,7 +6,7 @@ use axum::{
 };
 
 #[derive(Debug, thiserror::Error)]
-pub enum AgentError {
+pub(crate) enum AgentError {
     #[error("Agent not found: {0}")]
     NotFound(AgentName),
 

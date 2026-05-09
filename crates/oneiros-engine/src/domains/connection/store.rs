@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Connection projection store — projection lifecycle, write operations, and sync read queries.
-pub struct ConnectionStore<'a> {
+pub(crate) struct ConnectionStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> ConnectionStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Connection(connection_event)) = &event.data {
             match connection_event {
                 ConnectionEvents::ConnectionCreated(created) => {
@@ -28,12 +28,12 @@ impl<'a> ConnectionStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM connections", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS connections (
                 id TEXT PRIMARY KEY,
@@ -46,38 +46,7 @@ impl<'a> ConnectionStore<'a> {
         Ok(())
     }
 
-    pub fn get(&self, id: &ConnectionId) -> Result<Option<Connection>, EventError> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, from_ref, to_ref, nature, created_at
-             FROM connections WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
-
-        match result {
-            Ok((id, from_ref, to_ref, nature, created_at)) => Ok(Some(
-                Connection::builder()
-                    .id(id.parse()?)
-                    .from_ref(serde_json::from_str(&from_ref)?)
-                    .to_ref(serde_json::from_str(&to_ref)?)
-                    .nature(nature)
-                    .created_at(Timestamp::parse_str(&created_at)?)
-                    .build(),
-            )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
-    pub fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
+    pub(crate) fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
         let mut stmt = match entity_ref {
             Some(_) => self.conn.prepare(
                 "SELECT id, from_ref, to_ref, nature, created_at

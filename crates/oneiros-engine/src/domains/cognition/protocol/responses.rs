@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = CognitionResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum CognitionResponse {
+pub(crate) enum CognitionResponse {
     CognitionAdded(CognitionAddedResponse),
     CognitionDetails(CognitionDetailsResponse),
     Cognitions(CognitionsResponse),
@@ -16,24 +16,24 @@ pub enum CognitionResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CognitionAddedResponse {
-        V1 => { #[serde(flatten)] pub cognition: Cognition }
+    pub(crate) enum CognitionAddedResponse {
+        V1 => { #[serde(flatten)] pub(crate) cognition: Cognition }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CognitionDetailsResponse {
-        V1 => { #[serde(flatten)] pub cognition: Cognition }
+    pub(crate) enum CognitionDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) cognition: Cognition }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CognitionsResponse {
+    pub(crate) enum CognitionsResponse {
         V1 => {
-            pub items: Vec<Cognition>,
-            pub total: usize,
+            pub(crate) items: Vec<Cognition>,
+            pub(crate) total: usize,
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
 use aide::{
     axum::{ApiRouter, routing as api_routing},
@@ -16,7 +16,7 @@ use tracing::Level;
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ServerError {
+pub(crate) enum ServerError {
     #[error(transparent)]
     Listener(#[from] std::io::Error),
     #[error(transparent)]
@@ -27,20 +27,52 @@ pub enum ServerError {
 const DASHBOARD_HTML: &str = include_str!("../../templates/dashboard/index.html");
 
 /// An HTTP server backed by a `ServerState`.
-pub struct Server {
+pub(crate) struct Server {
     config: Config,
 }
 
 impl Server {
     /// Create a server from an engine.
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         Self { config }
+    }
+
+    /// Bind the configured address and serve until the server stops.
+    /// The caller's task becomes the server.
+    pub(crate) async fn serve(self) -> Result<(), ServerError> {
+        let listener = TcpListener::bind(self.config.service.address).await?;
+        self.serve_on(listener).await
+    }
+
+    /// Bind the configured address and spawn the server into a background
+    /// task. Returns a handle carrying the resolved address (useful when
+    /// the configured port is `0`) and the task. The server stops when the
+    /// handle is dropped.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+        )
+    )]
+    pub(crate) async fn spawn(self) -> Result<ServerHandle, ServerError> {
+        let listener = TcpListener::bind(self.config.service.address).await?;
+        let address = listener.local_addr()?;
+
+        let handle = tokio::spawn(async move {
+            if let Err(err) = self.serve_on(listener).await {
+                eprintln!("server exited with error: {err}");
+            }
+        });
+
+        Ok(ServerHandle { address, handle })
     }
 
     /// Serve on a pre-bound TCP listener. Loads/generates the host secret
     /// key, binds an iroh Bridge, registers the sync protocol handler
-    /// against it, then assembles the router.
-    pub async fn serve(self, listener: TcpListener) -> Result<(), ServerError> {
+    /// against it, then assembles the router. Shared inner used by both
+    /// `serve` and `spawn`.
+    async fn serve_on(self, listener: TcpListener) -> Result<(), ServerError> {
         let state = ServerState::bind(self.config.clone()).await?;
 
         // Register the sync handler on the bridge so incoming
@@ -56,16 +88,9 @@ impl Server {
         Ok(())
     }
 
-    /// Start the server
-    pub async fn start(self) -> Result<(), ServerError> {
-        let listener = TcpListener::bind(self.config.service.address).await?;
-
-        self.serve(listener).await
-    }
-
     /// Build a router from an already-constructed state. Used by `serve`
     /// once the async bridge binding has completed.
-    pub fn router_from_state(state: ServerState) -> Router {
+    pub(crate) fn router_from_state(state: ServerState) -> Router {
         /// Serves the OpenAPI spec as JSON. Pulled from state — populated
         /// once after router assembly to avoid a global `.layer(Extension)`
         /// walk over every route on each server build.
@@ -78,23 +103,24 @@ impl Server {
             .route("/health", routing::get(async || "ok"))
             .route("/dashboard/config", routing::get(dashboard_config));
 
-        // MCP streamable HTTP transport — each session gets its own EngineToolBox
-        // backed by the shared ServerState for full access to canons, config,
-        // and per-request context resolution.
         state.hydrate();
-        let mcp_state = state.clone();
-        let mcp_service = StreamableHttpService::new(
-            move || Ok(EngineToolBox::new(mcp_state.clone())),
-            Arc::new(LocalSessionManager::default()),
-            Default::default(),
-        );
 
         let mut api = OpenApi::default();
         let app_docs = AppDocs;
 
         let router = ApiRouter::new()
             .merge(root)
-            .nest_service("/mcp", Router::new().route_service("/", mcp_service))
+            .nest_service(
+                "/mcp",
+                Router::new().route_service("/", {
+                    let mcp_state = state.clone();
+                    StreamableHttpService::new(
+                        move || Ok(EngineToolBox::new(mcp_state.clone())),
+                        Arc::new(LocalSessionManager::default()),
+                        Default::default(),
+                    )
+                }),
+            )
             .merge(ActorRouter.routes())
             .merge(AgentRouter.routes())
             .merge(BookmarkRouter.routes())
@@ -103,6 +129,7 @@ impl Server {
             .merge(ConnectionRouter.routes())
             .merge(ContinuityRouter.routes())
             .merge(ExperienceRouter.routes())
+            .merge(FollowRouter.routes())
             .merge(LevelRouter.routes())
             .merge(MemoryRouter.routes())
             .merge(NatureRouter.routes())
@@ -149,6 +176,7 @@ impl Server {
             });
 
         state.set_api(api);
+
         router.with_state(state).layer(
             TraceLayer::new_for_http()
                 .make_span_with(
@@ -158,5 +186,58 @@ impl Server {
                 )
                 .on_response(DefaultOnResponse::new().level(Level::INFO)),
         )
+    }
+}
+
+/// A handle to a server running in a background task.
+///
+/// Holds the resolved address (the actual bound port — useful when the
+/// configured address used port `0`) and the task. The server is aborted
+/// when the handle is dropped.
+pub(crate) struct ServerHandle {
+    address: SocketAddr,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+impl ServerHandle {
+    /// The address the server is actually listening on.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "We're using this in tests only, now - but might expand later to provide embedded paths"
+        )
+    )]
+    pub(crate) fn address(&self) -> SocketAddr {
+        self.address
+    }
+}
+
+impl Drop for ServerHandle {
+    fn drop(&mut self) {
+        self.handle.abort();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn spawn_binds_ephemeral_port() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let config = Config::builder()
+            .data_dir(dir.path().to_path_buf())
+            .brain(BrainName::new("test"))
+            .service(
+                ServiceConfig::builder()
+                    .address("127.0.0.1:0".parse().unwrap())
+                    .build(),
+            )
+            .build();
+
+        let handle = Server::new(config).spawn().await.unwrap();
+
+        assert_ne!(handle.address().port(), 0, "should resolve to a real port");
     }
 }

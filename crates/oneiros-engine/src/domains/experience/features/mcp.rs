@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct ExperienceMcp;
+pub(crate) struct ExperienceMcp;
 
 impl ExperienceMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         experience_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -17,15 +17,11 @@ impl ExperienceMcp {
         experience_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub fn resources(&self) -> Vec<ResourceDef> {
-        vec![]
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+        vec![ResourcePathKind::Experience.template_def("A specific experience")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![ResourcePathKind::Experience.into_template("A specific experience")]
-    }
-
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &ExperienceRequest,
@@ -37,7 +33,7 @@ impl ExperienceMcp {
 mod experience_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateExperience>::new(
                 ExperienceRequestType::CreateExperience,
@@ -47,7 +43,7 @@ mod experience_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &ToolName,
@@ -77,7 +73,7 @@ mod experience_mcp {
         }
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         context: &ProjectLog,
         request: &ExperienceRequest,
     ) -> Result<McpResponse, ToolError> {

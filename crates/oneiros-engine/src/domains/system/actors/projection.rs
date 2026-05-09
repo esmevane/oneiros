@@ -9,37 +9,37 @@ use tokio::sync::mpsc;
 use crate::*;
 
 #[derive(Clone)]
-pub struct SystemProjectionMailbox {
+pub(crate) struct SystemProjectionMailbox {
     tx: mpsc::UnboundedSender<SystemMessage>,
 }
 
 impl SystemProjectionMailbox {
-    pub fn open() -> (Self, SystemProjectionInbox) {
+    pub(crate) fn open() -> (Self, SystemProjectionInbox) {
         let (tx, rx) = mpsc::unbounded_channel();
         (Self { tx }, SystemProjectionInbox { rx })
     }
 
-    pub fn tell(&self, message: SystemMessage) {
+    pub(crate) fn tell(&self, message: SystemMessage) {
         if let Err(error) = self.tx.send(message) {
             tracing::warn!(error = %error, "system projection: receiver closed; message dropped");
         }
     }
 }
 
-pub struct SystemProjectionInbox {
+pub(crate) struct SystemProjectionInbox {
     rx: mpsc::UnboundedReceiver<SystemMessage>,
 }
 
 impl SystemProjectionInbox {
-    pub async fn recv(&mut self) -> Option<SystemMessage> {
+    pub(crate) async fn recv(&mut self) -> Option<SystemMessage> {
         self.rx.recv().await
     }
 }
 
-pub struct SystemProjectionActor;
+pub(crate) struct SystemProjectionActor;
 
 impl SystemProjectionActor {
-    pub fn spawn(inbox: SystemProjectionInbox) {
+    pub(crate) fn spawn(inbox: SystemProjectionInbox) {
         tokio::spawn(Self.run(inbox));
     }
 

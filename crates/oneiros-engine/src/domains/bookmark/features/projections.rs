@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct BookmarkProjections;
+pub(crate) struct BookmarkProjections;
 
 impl BookmarkProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

@@ -5,7 +5,7 @@ use crate::*;
 /// Composed hierarchically: top → tier → per-actor protocol. The router
 /// dispatches by matching the variant chain.
 #[derive(Clone)]
-pub enum Message {
+pub(crate) enum Message {
     System(SystemMessage),
     Project(ProjectMessage),
     Bookmark(BookmarkMessage),

@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum NatureError {
+pub(crate) enum NatureError {
     #[error("Nature not found: {0}")]
     NotFound(NatureName),
 

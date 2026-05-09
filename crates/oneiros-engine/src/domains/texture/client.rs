@@ -1,27 +1,30 @@
 use crate::*;
 
-pub struct TextureClient<'a> {
+pub(crate) struct TextureClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> TextureClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn set(&self, setting: &SetTexture) -> Result<TextureResponse, ClientError> {
+    pub(crate) async fn set(&self, setting: &SetTexture) -> Result<TextureResponse, ClientError> {
         let SetTexture::V1(body) = setting;
         self.client
             .put(&format!("/textures/{}", body.name), setting)
             .await
     }
 
-    pub async fn get(&self, lookup: &GetTexture) -> Result<TextureResponse, ClientError> {
+    pub(crate) async fn get(&self, lookup: &GetTexture) -> Result<TextureResponse, ClientError> {
         let GetTexture::V1(lookup) = lookup;
         self.client.get(&format!("/textures/{}", lookup.key)).await
     }
 
-    pub async fn list(&self, listing: &ListTextures) -> Result<TextureResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListTextures,
+    ) -> Result<TextureResponse, ClientError> {
         let ListTextures::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
@@ -30,7 +33,10 @@ impl<'a> TextureClient<'a> {
         self.client.get(&format!("/textures?{query}")).await
     }
 
-    pub async fn remove(&self, removal: &RemoveTexture) -> Result<TextureResponse, ClientError> {
+    pub(crate) async fn remove(
+        &self,
+        removal: &RemoveTexture,
+    ) -> Result<TextureResponse, ClientError> {
         let RemoveTexture::V1(removal) = removal;
         self.client
             .delete(&format!("/textures/{}", removal.name))

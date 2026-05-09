@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Persona projection store — projection lifecycle, write operations, and sync read queries.
-pub struct PersonaStore<'a> {
+pub(crate) struct PersonaStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> PersonaStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Persona(persona_event)) = &event.data {
             match persona_event {
                 PersonaEvents::PersonaSet(setting) => self.set(setting)?,
@@ -22,12 +22,12 @@ impl<'a> PersonaStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM personas", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS personas (
                 name TEXT PRIMARY KEY,
@@ -38,7 +38,7 @@ impl<'a> PersonaStore<'a> {
         Ok(())
     }
 
-    pub fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
+    pub(crate) fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;

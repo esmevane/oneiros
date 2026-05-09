@@ -2,12 +2,12 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct PersonaRepo<'a> {
+pub(crate) struct PersonaRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> PersonaRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -15,11 +15,11 @@ impl<'a> PersonaRepo<'a> {
     /// persona appears or the configured patience window expires.
     ///
     /// [`get`]: PersonaRepo::get
-    pub async fn fetch(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
+    pub(crate) async fn fetch(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
-    pub async fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
+    pub(crate) async fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
@@ -45,7 +45,10 @@ impl<'a> PersonaRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Persona>, EventError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Persona>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

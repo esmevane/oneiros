@@ -2,17 +2,17 @@
 
 use crate::*;
 
-pub struct ExperienceView<'a> {
+pub(crate) struct ExperienceView<'a> {
     response: ExperienceResponse,
     request: &'a ExperienceRequest,
 }
 
 impl<'a> ExperienceView<'a> {
-    pub fn new(response: ExperienceResponse, request: &'a ExperienceRequest) -> Self {
+    pub(crate) fn new(response: ExperienceResponse, request: &'a ExperienceRequest) -> Self {
         Self { response, request }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
                 let ref_token = RefToken::from(Ref::experience(created.experience.id));
@@ -89,7 +89,7 @@ impl<'a> ExperienceView<'a> {
         }
     }
 
-    pub fn render(self) -> Rendered<ExperienceResponse> {
+    pub(crate) fn render(self) -> Rendered<ExperienceResponse> {
         match self.response {
             ExperienceResponse::ExperienceCreated(ExperienceCreatedResponse::V1(created)) => {
                 let ref_token = RefToken::from(Ref::experience(created.experience.id));
@@ -123,9 +123,9 @@ impl<'a> ExperienceView<'a> {
             }
             ExperienceResponse::Experiences(ExperiencesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("sensation", "Sensation"),
-                    Column::key("description", "Description").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Sensation"),
+                    Column::new("Description").max(60),
+                    Column::new("Ref"),
                 ]);
                 for item in &listed.items {
                     let ref_token = RefToken::from(Ref::experience(item.id));

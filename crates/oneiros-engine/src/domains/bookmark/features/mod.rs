@@ -1,11 +1,9 @@
 mod cli;
 mod http;
-mod mcp;
 mod projections;
 mod skills;
 
-pub use cli::*;
-pub use http::*;
-pub use mcp::*;
-pub use projections::*;
-pub use skills::*;
+pub(crate) use cli::*;
+pub(crate) use http::*;
+pub(crate) use projections::*;
+pub(crate) use skills::*;

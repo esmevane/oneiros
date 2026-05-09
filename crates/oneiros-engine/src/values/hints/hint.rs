@@ -5,14 +5,14 @@ use crate::*;
 /// A navigational breadcrumb — tells a consuming agent what it can do
 /// next from where it is.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct Hint {
-    pub level: HintLevel,
-    pub action: String,
-    pub intent: String,
+pub(crate) struct Hint {
+    pub(crate) level: HintLevel,
+    pub(crate) action: String,
+    pub(crate) intent: String,
 }
 
 impl Hint {
-    pub fn suggest(action: impl Into<String>, intent: impl Into<String>) -> Self {
+    pub(crate) fn suggest(action: impl Into<String>, intent: impl Into<String>) -> Self {
         Self {
             level: HintLevel::Suggest,
             action: action.into(),
@@ -20,7 +20,7 @@ impl Hint {
         }
     }
 
-    pub fn inspect(action: impl Into<String>, intent: impl Into<String>) -> Self {
+    pub(crate) fn inspect(action: impl Into<String>, intent: impl Into<String>) -> Self {
         Self {
             level: HintLevel::Inspect,
             action: action.into(),
@@ -28,7 +28,7 @@ impl Hint {
         }
     }
 
-    pub fn follow_up(action: impl Into<String>, intent: impl Into<String>) -> Self {
+    pub(crate) fn follow_up(action: impl Into<String>, intent: impl Into<String>) -> Self {
         Self {
             level: HintLevel::FollowUp,
             action: action.into(),

@@ -7,7 +7,7 @@ use axum::{
 use crate::{ErrorResponse, TenantId, TimestampParseError, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum TenantError {
+pub(crate) enum TenantError {
     #[error("Tenant not found: {0}")]
     NotFound(TenantId),
 

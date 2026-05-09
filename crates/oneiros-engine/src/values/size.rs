@@ -2,14 +2,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(transparent)]
-pub struct Size(usize);
+pub(crate) struct Size(usize);
 
 impl Size {
-    pub fn new(arg: usize) -> Self {
+    pub(crate) fn new(arg: usize) -> Self {
         Self(arg)
     }
 
-    pub fn as_i64(self) -> i64 {
+    pub(crate) fn as_i64(self) -> i64 {
         self.0 as i64
     }
 }

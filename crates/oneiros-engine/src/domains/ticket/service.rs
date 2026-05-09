@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TicketService;
+pub(crate) struct TicketService;
 
 impl TicketService {
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &CreateTicket,
@@ -34,7 +34,7 @@ impl TicketService {
 
     /// Issue a ticket scoped to a specific target ref. Used by both
     /// `create` (brain-scoped) and `bookmark share` (bookmark-scoped).
-    pub async fn issue(
+    pub(crate) async fn issue(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         brain_name: &BrainName,
@@ -85,7 +85,7 @@ impl TicketService {
         Ok(stored)
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtHost>,
         request: &GetTicket,
     ) -> Result<TicketResponse, TicketError> {
@@ -103,7 +103,7 @@ impl TicketService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtHost>,
         request: &ListTickets,
     ) -> Result<TicketResponse, TicketError> {
@@ -118,7 +118,7 @@ impl TicketService {
         ))
     }
 
-    pub async fn validate(
+    pub(crate) async fn validate(
         scope: &Scope<AtHost>,
         request: &ValidateTicket,
     ) -> Result<TicketResponse, TicketError> {

@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum TextureDocs {
+pub(crate) enum TextureDocs {
     List,
     Set,
     Show,
@@ -8,14 +8,14 @@ pub enum TextureDocs {
 }
 
 impl TextureDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("textures")
             .description("Define qualities of thought")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::List => ResourceDocs::builder()

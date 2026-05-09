@@ -13,7 +13,7 @@ use crate::*;
 /// Diffing two chronicles produces the minimal set of event
 /// changes between them.
 #[derive(Clone, Debug)]
-pub struct Chronicle {
+pub(crate) struct Chronicle {
     root: Arc<Mutex<Option<ContentHash>>>,
 }
 
@@ -24,14 +24,14 @@ impl Default for Chronicle {
 }
 
 impl Chronicle {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             root: Arc::new(Mutex::new(None)),
         }
     }
 
     /// The current root hash, if any events have been recorded.
-    pub fn root(&self) -> Result<Option<ContentHash>, EventError> {
+    pub(crate) fn root(&self) -> Result<Option<ContentHash>, EventError> {
         let guard = self
             .root
             .lock()
@@ -40,7 +40,7 @@ impl Chronicle {
     }
 
     /// Record an event in this chronicle.
-    pub fn record(
+    pub(crate) fn record(
         &self,
         event: &StoredEvent,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
@@ -66,7 +66,8 @@ impl Chronicle {
 
     /// Diff this chronicle against another.
     /// Returns changes needed to go from `self` to `other`.
-    pub fn diff(
+    #[cfg(test)]
+    pub(crate) fn diff(
         &self,
         other: &Chronicle,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
@@ -91,7 +92,7 @@ impl Chronicle {
     /// Fork this chronicle — snapshots the current root hash.
     /// The forked chronicle is independent from this point forward,
     /// but shares all HAMT structure up to the fork point.
-    pub fn fork(&self) -> Result<Self, EventError> {
+    pub(crate) fn fork(&self) -> Result<Self, EventError> {
         let root = self
             .root
             .lock()
@@ -104,7 +105,7 @@ impl Chronicle {
 
     /// Merge another chronicle's events into this one.
     /// Records all event IDs from the other chronicle that aren't already present.
-    pub fn merge(
+    pub(crate) fn merge(
         &self,
         other: &Chronicle,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
@@ -137,15 +138,6 @@ impl Chronicle {
         }
 
         Ok(())
-    }
-
-    /// Whether this chronicle has any events.
-    pub fn is_empty(&self) -> Result<bool, EventError> {
-        let guard = self
-            .root
-            .lock()
-            .map_err(|e| EventError::Lock(e.to_string()))?;
-        Ok(guard.is_none())
     }
 }
 

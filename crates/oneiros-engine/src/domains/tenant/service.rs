@@ -1,6 +1,6 @@
 use crate::*;
 
-pub struct TenantService;
+pub(crate) struct TenantService;
 
 impl TenantService {
     /// Create a tenant by dispatching `TenantCreated` through the bus
@@ -10,7 +10,7 @@ impl TenantService {
     /// has seen, never a synthesized record. If the fetch window
     /// expires before the projection catches up, this surfaces as
     /// `TenantError::NotFound`.
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &CreateTenant,
@@ -46,7 +46,7 @@ impl TenantService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtHost>,
         request: &GetTenant,
     ) -> Result<TenantResponse, TenantError> {
@@ -64,7 +64,7 @@ impl TenantService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtHost>,
         request: &ListTenants,
     ) -> Result<TenantResponse, TenantError> {

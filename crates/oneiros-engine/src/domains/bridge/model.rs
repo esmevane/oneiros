@@ -5,7 +5,7 @@ use crate::*;
 
 /// The ALPN string advertised and required by the oneiros sync protocol.
 /// Only clients explicitly negotiating this ALPN can reach the sync handler.
-pub const SYNC_ALPN: &[u8] = b"/oneiros/sync/1";
+pub(crate) const SYNC_ALPN: &[u8] = b"/oneiros/sync/1";
 
 /// Maximum message size on the sync wire, in bytes. Guards against
 /// absurdly large payloads.
@@ -13,9 +13,9 @@ pub(crate) const MAX_MESSAGE_SIZE: usize = 64 * 1024 * 1024;
 
 /// The result of a Merkle diff — the server's chronicle root hash
 /// and the event IDs the client is missing.
-pub struct DiffResult {
-    pub server_root: Option<ContentHash>,
-    pub missing: Vec<EventId>,
+pub(crate) struct DiffResult {
+    pub(crate) server_root: Option<ContentHash>,
+    pub(crate) missing: Vec<EventId>,
 }
 
 /// The bridge to other oneiros hosts — the runtime value that owns the bound
@@ -25,7 +25,7 @@ pub struct DiffResult {
 /// keypair, lives on `ServerState`, and produces connections on demand
 /// when the system needs to talk to a peer.
 #[derive(Clone)]
-pub struct Bridge {
+pub(crate) struct Bridge {
     endpoint: iroh::Endpoint,
     public_key: PeerKey,
     router: Arc<OnceLock<iroh::protocol::Router>>,
@@ -34,7 +34,7 @@ pub struct Bridge {
 impl Bridge {
     /// Bind a Bridge using the given iroh secret key. Advertises the
     /// `/oneiros/sync/1` ALPN so peers can negotiate the sync protocol.
-    pub async fn bind(secret: iroh::SecretKey) -> Result<Self, BridgeError> {
+    pub(crate) async fn bind(secret: iroh::SecretKey) -> Result<Self, BridgeError> {
         let public = secret.public();
         let endpoint = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .secret_key(secret)
@@ -54,7 +54,7 @@ impl Bridge {
 
     /// Register the sync protocol handler on this bridge's endpoint.
     /// Idempotent: calling it multiple times has no effect after the first.
-    pub fn serve(&self, config: Config, canons: CanonIndex) {
+    pub(crate) fn serve(&self, config: Config, canons: CanonIndex) {
         if self.router.get().is_some() {
             return;
         }
@@ -71,7 +71,7 @@ impl Bridge {
     ///
     /// Returns the server's root hash (for checkpoint storage) and
     /// the event IDs the local side is missing.
-    pub async fn diff(
+    pub(crate) async fn diff(
         &self,
         address: &PeerAddress,
         link: &Link,
@@ -157,7 +157,7 @@ impl Bridge {
 
     /// Fetch specific events by ID from a peer. Issued after the Merkle
     /// diff has identified which events the local side is missing.
-    pub async fn fetch_events(
+    pub(crate) async fn fetch_events(
         &self,
         address: &PeerAddress,
         request: &BridgeRequest,
@@ -176,12 +176,12 @@ impl Bridge {
 
     /// The host's public key — stable across restarts if the caller binds
     /// with the same secret key.
-    pub fn key(&self) -> PeerKey {
+    pub(crate) fn key(&self) -> PeerKey {
         self.public_key
     }
 
     /// The host's current reachability information.
-    pub fn address(&self) -> PeerAddress {
+    pub(crate) fn address(&self) -> PeerAddress {
         let mut addr = iroh::EndpointAddr::new(self.endpoint.id());
         for socket in self.endpoint.bound_sockets() {
             addr = addr.with_ip_addr(socket);
@@ -190,12 +190,13 @@ impl Bridge {
     }
 
     /// Compose the host's current identity (key + address).
-    pub fn host_identity(&self) -> HostIdentity {
+    pub(crate) fn host_identity(&self) -> HostIdentity {
         HostIdentity::new(self.key(), self.address())
     }
 
     /// Shut down the bridge gracefully, closing the iroh endpoint.
-    pub async fn shutdown(&self) {
+    #[cfg(test)]
+    pub(crate) async fn shutdown(&self) {
         self.endpoint.close().await;
     }
 

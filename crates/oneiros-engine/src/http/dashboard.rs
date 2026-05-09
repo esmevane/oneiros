@@ -15,7 +15,7 @@ use crate::*;
 /// posture as `HostLog`-scoped endpoints like `/brains`).
 /// The tokens returned in `tickets` are the same tokens anyone
 /// with local access to the ticket DB can already read.
-pub async fn dashboard_config(State(state): State<ServerState>) -> Json<DashboardBootstrap> {
+pub(crate) async fn dashboard_config(State(state): State<ServerState>) -> Json<DashboardBootstrap> {
     let scope = ComposeScope::new(state.config().clone()).host().ok();
 
     let tenants = match scope.as_ref() {

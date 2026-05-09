@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum TicketError {
+pub(crate) enum TicketError {
     #[error("Ticket not found: {0}")]
     NotFound(TicketId),
 

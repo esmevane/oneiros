@@ -12,14 +12,14 @@ use sha2::{Digest, Sha256};
     schemars::JsonSchema,
 )]
 #[serde(transparent)]
-pub struct ContentHash(pub String);
+pub(crate) struct ContentHash(pub(crate) String);
 
 impl ContentHash {
-    pub fn new(value: impl AsRef<str>) -> Self {
+    pub(crate) fn new(value: impl AsRef<str>) -> Self {
         Self(value.as_ref().into())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 

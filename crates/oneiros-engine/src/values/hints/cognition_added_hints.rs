@@ -4,13 +4,13 @@ use crate::*;
 
 /// Hints after adding a cognition — suggest reflecting or browsing.
 #[derive(Builder)]
-pub struct CognitionAddedHints {
-    pub agent: AgentName,
-    pub ref_token: RefToken,
+pub(crate) struct CognitionAddedHints {
+    pub(crate) agent: AgentName,
+    pub(crate) ref_token: RefToken,
 }
 
 impl CognitionAddedHints {
-    pub fn hints(&self) -> Vec<Hint> {
+    pub(crate) fn hints(&self) -> Vec<Hint> {
         let agent = &self.agent;
         let ref_token = &self.ref_token;
         vec![

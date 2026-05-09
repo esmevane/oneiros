@@ -9,13 +9,12 @@ const APP: &str = "oneiros";
 
 const CONFIG_FILE: &str = "config.toml";
 const SYSTEM_DB: &str = "system.db";
-const HOST_KEY_FILE: &str = "host.key";
 const TICKETS_DIR: &str = "tickets";
 const BOOKMARKS_DIR: &str = "bookmarks";
 const EVENTS_DB: &str = "events.db";
 
 #[derive(Debug, thiserror::Error)]
-pub enum PlatformError {
+pub(crate) enum PlatformError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }
@@ -32,20 +31,20 @@ pub enum PlatformError {
 /// Construct explicitly with [`Platform::new`] or via OS detection
 /// with [`Platform::resolve`] / [`Platform::default`].
 #[derive(Clone, Debug)]
-pub struct Platform {
+pub(crate) struct Platform {
     data_dir: PathBuf,
 }
 
 impl Platform {
     /// Construct a Platform bound to an explicit data directory.
-    pub fn new(data_dir: impl Into<PathBuf>) -> Self {
+    pub(crate) fn new(data_dir: impl Into<PathBuf>) -> Self {
         Self {
             data_dir: data_dir.into(),
         }
     }
 
     /// Resolve a Platform from OS conventions (XDG / Apple / Windows).
-    pub fn resolve() -> Self {
+    pub(crate) fn resolve() -> Self {
         let args = AppStrategyArgs {
             top_level_domain: TLD.into(),
             author: AUTHOR.into(),
@@ -60,81 +59,70 @@ impl Platform {
     }
 
     /// The application's data directory.
-    pub fn data_dir(&self) -> &Path {
+    pub(crate) fn data_dir(&self) -> &Path {
         &self.data_dir
     }
 
     /// Path to the user-editable config file.
-    pub fn config_path(&self) -> PathBuf {
+    pub(crate) fn config_path(&self) -> PathBuf {
         self.data_dir.join(CONFIG_FILE)
     }
 
     /// Path to the host's projection database.
-    pub fn system_db_path(&self) -> PathBuf {
+    pub(crate) fn system_db_path(&self) -> PathBuf {
         self.data_dir.join(SYSTEM_DB)
     }
 
-    /// Path to the host's persistent ed25519 secret key file.
-    pub fn host_key_path(&self) -> PathBuf {
-        self.data_dir.join(HOST_KEY_FILE)
-    }
-
     /// Directory where issued ticket tokens are persisted.
-    pub fn tickets_dir(&self) -> PathBuf {
+    pub(crate) fn tickets_dir(&self) -> PathBuf {
         self.data_dir.join(TICKETS_DIR)
     }
 
     /// Path to the cached token for a given brain.
-    pub fn token_path(&self, brain: &BrainName) -> PathBuf {
+    pub(crate) fn token_path(&self, brain: &BrainName) -> PathBuf {
         self.tickets_dir().join(format!("{brain}.token"))
     }
 
     /// Directory holding all data for a given brain.
-    pub fn brain_dir(&self, brain: &BrainName) -> PathBuf {
+    pub(crate) fn brain_dir(&self, brain: &BrainName) -> PathBuf {
         self.data_dir.join(brain.as_str())
     }
 
     /// Path to a brain's append-only event log database.
-    pub fn events_db_path(&self, brain: &BrainName) -> PathBuf {
+    pub(crate) fn events_db_path(&self, brain: &BrainName) -> PathBuf {
         self.brain_dir(brain).join(EVENTS_DB)
     }
 
     /// Directory holding all bookmark databases for a given brain.
-    pub fn bookmarks_dir(&self, brain: &BrainName) -> PathBuf {
+    pub(crate) fn bookmarks_dir(&self, brain: &BrainName) -> PathBuf {
         self.brain_dir(brain).join(BOOKMARKS_DIR)
     }
 
     /// Path to a specific bookmark's projection database.
-    pub fn bookmark_db_path(&self, brain: &BrainName, bookmark: &BookmarkName) -> PathBuf {
+    pub(crate) fn bookmark_db_path(&self, brain: &BrainName, bookmark: &BookmarkName) -> PathBuf {
         self.bookmarks_dir(brain).join(format!("{bookmark}.db"))
     }
 
     /// Ensure the data directory exists.
-    pub fn ensure_data_dir(&self) -> Result<(), PlatformError> {
+    pub(crate) fn ensure_data_dir(&self) -> Result<(), PlatformError> {
         std::fs::create_dir_all(&self.data_dir)?;
         Ok(())
     }
 
     /// Ensure a brain's directory exists.
-    pub fn ensure_brain_dir(&self, brain: &BrainName) -> Result<(), PlatformError> {
+    pub(crate) fn ensure_brain_dir(&self, brain: &BrainName) -> Result<(), PlatformError> {
         std::fs::create_dir_all(self.brain_dir(brain))?;
         Ok(())
     }
 
     /// Ensure a brain's bookmarks directory exists.
-    pub fn ensure_bookmarks_dir(&self, brain: &BrainName) -> Result<(), PlatformError> {
+    pub(crate) fn ensure_bookmarks_dir(&self, brain: &BrainName) -> Result<(), PlatformError> {
         std::fs::create_dir_all(self.bookmarks_dir(brain))?;
         Ok(())
     }
 
-    /// Ensure the tickets directory exists.
-    pub fn ensure_tickets_dir(&self) -> Result<(), PlatformError> {
-        std::fs::create_dir_all(self.tickets_dir())?;
-        Ok(())
-    }
-
     /// The service label for OS registration (e.g., `com.esmevane.oneiros`).
-    pub fn service_label(&self) -> String {
+    pub(crate) fn service_label(&self) -> String {
         format!("{TLD}.{AUTHOR}.{APP}")
     }
 }
@@ -173,10 +161,6 @@ mod tests {
         assert_eq!(
             platform.system_db_path(),
             Path::new("/tmp/oneiros-test/system.db")
-        );
-        assert_eq!(
-            platform.host_key_path(),
-            Path::new("/tmp/oneiros-test/host.key")
         );
         assert_eq!(
             platform.brain_dir(&brain),

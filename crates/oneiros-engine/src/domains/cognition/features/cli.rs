@@ -3,18 +3,18 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum CognitionCommands {
+pub(crate) enum CognitionCommands {
     Add(AddCognition),
     Show(GetCognition),
     List(ListCognitions),
 }
 
 impl CognitionCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
-        context: &ProjectLog,
+        config: &Config,
     ) -> Result<Rendered<Responses>, CognitionError> {
-        let client = context.client();
+        let client = Client::from_config(config)?;
         let cognition_client = CognitionClient::new(&client);
 
         let (response, request) = match self {

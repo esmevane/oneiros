@@ -1,13 +1,13 @@
 use crate::*;
 
 #[derive(Clone)]
-pub struct Projections<T> {
+pub(crate) struct Projections<T> {
     frames: Vec<Frames>,
     reducers: ReducerPipeline<T>,
 }
 
 impl<T: Clone + Default> Projections<T> {
-    pub fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
+    pub(crate) fn new(frames: &[Frames], reducers: ReducerPipeline<T>) -> Self {
         Self {
             frames: frames.to_vec(),
             reducers,
@@ -15,10 +15,12 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Run all projection migrations.
-    pub fn migrate(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span = tracing::trace_span!("projection.migrate", name = projection.name)
+                        .entered();
                     (projection.migrate)(db)?;
                 }
             }
@@ -29,10 +31,16 @@ impl<T: Clone + Default> Projections<T> {
 
     /// Apply a single event through all frames in order.
     #[tracing::instrument(skip_all, fields(event_type = event.data.event_type(), sequence = event.sequence), err(Display))]
-    pub fn apply(&self, db: &rusqlite::Connection, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn apply(
+        &self,
+        db: &rusqlite::Connection,
+        event: &StoredEvent,
+    ) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.apply", name = projection.name).entered();
                     (projection.apply)(db, event)?;
                 }
             }
@@ -48,7 +56,7 @@ impl<T: Clone + Default> Projections<T> {
     /// Apply a single event through SQLite frame projections only.
     /// Skips the reducer — used during bookmark switch when only
     /// SQLite needs rebuilding.
-    pub fn apply_frames(
+    pub(crate) fn apply_frames(
         &self,
         db: &rusqlite::Connection,
         event: &StoredEvent,
@@ -56,6 +64,8 @@ impl<T: Clone + Default> Projections<T> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.apply", name = projection.name).entered();
                     (projection.apply)(db, event)?;
                 }
             }
@@ -64,10 +74,12 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Reset all projections across all frames.
-    pub fn reset(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    pub(crate) fn reset(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
         for frame_set in self.frames.iter().rev() {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
+                    let _span =
+                        tracing::trace_span!("projection.reset", name = projection.name).entered();
                     (projection.reset)(db)?;
                 }
             }
@@ -80,7 +92,11 @@ impl<T: Clone + Default> Projections<T> {
 
     /// Replay all events through frames and reducers.
     #[tracing::instrument(skip_all, err(Display))]
-    pub fn replay(&self, db: &rusqlite::Connection, log: &EventLog) -> Result<usize, EventError> {
+    pub(crate) fn replay(
+        &self,
+        db: &rusqlite::Connection,
+        log: &EventLog,
+    ) -> Result<usize, EventError> {
         let events = log.load_all()?;
 
         self.reset(db)?;
@@ -113,7 +129,7 @@ impl<T: Clone + Default> Projections<T> {
 impl Projections<BrainCanon> {
     /// Apply a single event — projections, reducer, then sync
     /// reducer-computed pressures to SQLite.
-    pub fn apply_brain(
+    pub(crate) fn apply_brain(
         &self,
         db: &rusqlite::Connection,
         event: &StoredEvent,
@@ -141,7 +157,7 @@ impl Projections<BrainCanon> {
     }
 
     /// Replay for brain projections — includes pressure sync at the end.
-    pub fn replay_brain(
+    pub(crate) fn replay_brain(
         &self,
         db: &rusqlite::Connection,
         log: &EventLog,
@@ -151,11 +167,11 @@ impl Projections<BrainCanon> {
         Ok(count)
     }
 
-    pub fn project() -> Self {
+    pub(crate) fn project() -> Self {
         Self::project_with_pipeline(ReducerPipeline::brain())
     }
 
-    pub fn project_with_pipeline(pipeline: ReducerPipeline<BrainCanon>) -> Self {
+    pub(crate) fn project_with_pipeline(pipeline: ReducerPipeline<BrainCanon>) -> Self {
         Self::new(
             &[
                 Frames::new(&[
@@ -185,7 +201,7 @@ impl Projections<BrainCanon> {
 }
 
 impl Projections<SystemCanon> {
-    pub fn system() -> Self {
+    pub(crate) fn system() -> Self {
         Self::new(
             &[Frames::new(&[
                 Frame::new(TenantProjections.all()),

@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ProjectError {
+pub(crate) enum ProjectError {
     #[error("project context required — call start_service first")]
     Missing,
 

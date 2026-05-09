@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct SystemView {
+pub(crate) struct SystemView {
     response: SystemResponse,
 }
 
 impl SystemView {
-    pub fn new(response: SystemResponse) -> Self {
+    pub(crate) fn new(response: SystemResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<SystemResponse> {
+    pub(crate) fn render(self) -> Rendered<SystemResponse> {
         match self.response {
             SystemResponse::SystemInitialized(SystemInitializedResponse::V1(details)) => {
                 let prompt = Confirmation::new("System", details.tenant.to_string(), "initialized")

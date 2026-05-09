@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{ErrorResponse, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum MemoryError {
+pub(crate) enum MemoryError {
     #[error("Agent not found: {0}")]
     AgentNotFound(crate::AgentName),
 

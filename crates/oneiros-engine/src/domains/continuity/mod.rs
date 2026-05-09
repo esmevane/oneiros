@@ -7,17 +7,15 @@
 mod client;
 mod docs;
 mod features;
-mod model;
 mod presenter;
 mod protocol;
 mod service;
 mod view;
 
-pub use client::*;
-pub use docs::*;
-pub use features::*;
-pub use model::*;
-pub use presenter::*;
-pub use protocol::*;
-pub use service::*;
-pub use view::*;
+pub(crate) use client::*;
+pub(crate) use docs::*;
+pub(crate) use features::*;
+pub(crate) use presenter::*;
+pub(crate) use protocol::*;
+pub(crate) use service::*;
+pub(crate) use view::*;

@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Follow read model — async queries against the system context.
-pub struct FollowRepo<'a> {
+pub(crate) struct FollowRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
 impl<'a> FollowRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
@@ -16,11 +16,11 @@ impl<'a> FollowRepo<'a> {
     /// follow appears or the configured patience window expires.
     ///
     /// [`get`]: FollowRepo::get
-    pub async fn fetch(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
+    pub(crate) async fn fetch(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
+    pub(crate) async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "select id, brain, bookmark, source, checkpoint, created_at \
@@ -36,7 +36,7 @@ impl<'a> FollowRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
         let db = HostDb::open(self.scope).await?;
 
         let total = {
@@ -61,7 +61,7 @@ impl<'a> FollowRepo<'a> {
         Ok(Listed::new(follows, total))
     }
 
-    pub async fn for_bookmark(
+    pub(crate) async fn for_bookmark(
         &self,
         brain: &BrainName,
         bookmark: &BookmarkName,

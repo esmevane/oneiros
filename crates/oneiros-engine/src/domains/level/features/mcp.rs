@@ -1,17 +1,13 @@
 use crate::*;
 
-pub struct LevelMcp;
+pub(crate) struct LevelMcp;
 
 impl LevelMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Levels.resource_def("Memory retention tiers")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![]
-    }
-
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &LevelRequest,
@@ -24,7 +20,7 @@ impl LevelMcp {
 mod level_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         scope: &Scope<AtBookmark>,
         request: &LevelRequest,
     ) -> Result<McpResponse, ToolError> {

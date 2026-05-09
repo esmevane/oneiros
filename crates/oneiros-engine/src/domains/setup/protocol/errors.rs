@@ -7,7 +7,7 @@ use axum::{
 use crate::ErrorResponse;
 
 #[derive(Debug, thiserror::Error)]
-pub enum SetupError {
+pub(crate) enum SetupError {
     #[error(transparent)]
     System(#[from] crate::SystemError),
 

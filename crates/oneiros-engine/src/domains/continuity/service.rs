@@ -18,11 +18,11 @@ fn level_priority(name: &LevelName) -> usize {
     }
 }
 
-pub struct ContinuityService;
+pub(crate) struct ContinuityService;
 
 impl ContinuityService {
     /// Emerge — create an agent and immediately activate its continuity.
-    pub async fn emerge(
+    pub(crate) async fn emerge(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &EmergeAgent,
@@ -69,7 +69,7 @@ impl ContinuityService {
     }
 
     /// Recede — retire an agent, ending its continuity.
-    pub async fn recede(
+    pub(crate) async fn recede(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RecedeAgent,
@@ -93,7 +93,7 @@ impl ContinuityService {
     }
 
     /// Status — cross-agent activity overview.
-    pub async fn status(
+    pub(crate) async fn status(
         scope: &Scope<AtBookmark>,
         _request: &StatusAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
@@ -167,7 +167,7 @@ impl ContinuityService {
     }
 
     /// Wake — restore an agent's full cognitive context (initial session start).
-    pub async fn wake(
+    pub(crate) async fn wake(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &WakeAgent,
@@ -199,7 +199,7 @@ impl ContinuityService {
     }
 
     /// Dream — restore an agent's full cognitive context.
-    pub async fn dream(
+    pub(crate) async fn dream(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &DreamAgent,
@@ -231,7 +231,7 @@ impl ContinuityService {
     }
 
     /// Introspect — look inward, consolidate cognitive state.
-    pub async fn introspect(
+    pub(crate) async fn introspect(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &IntrospectAgent,
@@ -266,7 +266,7 @@ impl ContinuityService {
     }
 
     /// Reflect — pause on something significant.
-    pub async fn reflect(
+    pub(crate) async fn reflect(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &ReflectAgent,
@@ -301,7 +301,7 @@ impl ContinuityService {
     }
 
     /// Sense — receive and interpret something from outside.
-    pub async fn sense(
+    pub(crate) async fn sense(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SenseContent,
@@ -334,7 +334,7 @@ impl ContinuityService {
     }
 
     /// Sleep — end a session, capture continuity.
-    pub async fn sleep(
+    pub(crate) async fn sleep(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SleepAgent,
@@ -369,7 +369,7 @@ impl ContinuityService {
     ///
     /// Used to display the agent's full operational context (textures,
     /// sensations, levels, urges) without marking a continuity transition.
-    pub async fn guidebook(
+    pub(crate) async fn guidebook(
         scope: &Scope<AtBookmark>,
         request: &GuidebookAgent,
         overrides: &DreamOverrides,
@@ -390,7 +390,7 @@ impl ContinuityService {
     /// delegates to [`gather_context_for`].
     ///
     /// [`gather_context_for`]: ContinuityService::gather_context_for
-    pub async fn gather_context(
+    pub(crate) async fn gather_context(
         scope: &Scope<AtBookmark>,
         agent_name: &AgentName,
         overrides: &DreamOverrides,
@@ -410,7 +410,7 @@ impl ContinuityService {
     /// hold an owned Connection.
     ///
     /// [`emerge`]: ContinuityService::emerge
-    pub async fn gather_context_for(
+    pub(crate) async fn gather_context_for(
         scope: &Scope<AtBookmark>,
         agent: &Agent,
         overrides: &DreamOverrides,

@@ -6,14 +6,14 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = CognitionEventsType, display = "kebab-case")]
-pub enum CognitionEvents {
+pub(crate) enum CognitionEvents {
     CognitionAdded(CognitionAdded),
 }
 
 versioned! {
-    pub enum CognitionAdded {
+    pub(crate) enum CognitionAdded {
         V1 => {
-            #[serde(flatten)] pub cognition: Cognition,
+            #[serde(flatten)] pub(crate) cognition: Cognition,
         }
     }
 }

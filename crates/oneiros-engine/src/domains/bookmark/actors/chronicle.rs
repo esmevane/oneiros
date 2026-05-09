@@ -16,40 +16,40 @@ use tokio::sync::mpsc;
 use crate::*;
 
 #[derive(Clone)]
-pub struct BookmarkChronicleMailbox {
+pub(crate) struct BookmarkChronicleMailbox {
     tx: mpsc::UnboundedSender<BookmarkMessage>,
 }
 
 impl BookmarkChronicleMailbox {
-    pub fn open() -> (Self, BookmarkChronicleInbox) {
+    pub(crate) fn open() -> (Self, BookmarkChronicleInbox) {
         let (tx, rx) = mpsc::unbounded_channel();
         (Self { tx }, BookmarkChronicleInbox { rx })
     }
 
-    pub fn tell(&self, message: BookmarkMessage) {
+    pub(crate) fn tell(&self, message: BookmarkMessage) {
         if let Err(error) = self.tx.send(message) {
             tracing::warn!(error = %error, "bookmark chronicle: receiver closed; message dropped");
         }
     }
 }
 
-pub struct BookmarkChronicleInbox {
+pub(crate) struct BookmarkChronicleInbox {
     rx: mpsc::UnboundedReceiver<BookmarkMessage>,
 }
 
 impl BookmarkChronicleInbox {
-    pub async fn recv(&mut self) -> Option<BookmarkMessage> {
+    pub(crate) async fn recv(&mut self) -> Option<BookmarkMessage> {
         self.rx.recv().await
     }
 }
 
-pub struct BookmarkChronicleActor {
+pub(crate) struct BookmarkChronicleActor {
     canons: CanonIndex,
     caught_up: HashSet<(BrainName, BookmarkName)>,
 }
 
 impl BookmarkChronicleActor {
-    pub fn spawn(inbox: BookmarkChronicleInbox, canons: CanonIndex) {
+    pub(crate) fn spawn(inbox: BookmarkChronicleInbox, canons: CanonIndex) {
         tokio::spawn(
             Self {
                 canons,

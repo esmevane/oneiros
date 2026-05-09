@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum SensationCommands {
+pub(crate) enum SensationCommands {
     Set(SetSensation),
     Show(GetSensation),
     List(ListSensations),
@@ -16,11 +16,11 @@ pub enum SensationCommands {
 }
 
 impl SensationCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
-        context: &ProjectLog,
+        config: &Config,
     ) -> Result<Rendered<Responses>, SensationError> {
-        let client = context.client();
+        let client = Client::from_config(config)?;
         let sensation_client = SensationClient::new(&client);
 
         let response = match self {

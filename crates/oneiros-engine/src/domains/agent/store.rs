@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Agent projection store — projection lifecycle, write operations, and sync read queries.
-pub struct AgentStore<'a> {
+pub(crate) struct AgentStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> AgentStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Agent(agent_event)) = &event.data {
             match agent_event {
                 AgentEvents::AgentCreated(created) => {
@@ -43,12 +43,12 @@ impl<'a> AgentStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM agents", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists agents (
                 id          text primary key,
@@ -61,7 +61,7 @@ impl<'a> AgentStore<'a> {
         Ok(())
     }
 
-    pub fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
+    pub(crate) fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
@@ -91,7 +91,7 @@ impl<'a> AgentStore<'a> {
         }
     }
 
-    pub fn list(&self) -> Result<Vec<Agent>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Agent>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
@@ -122,33 +122,6 @@ impl<'a> AgentStore<'a> {
         }
 
         Ok(agents)
-    }
-
-    /// Look up an agent's name by its ID.
-    ///
-    /// Used when only an `AgentId` is available (e.g. from a foreign-key reference
-    /// in an event payload) and we need to resolve it to an `AgentName`.
-    pub fn get_name_by_id(&self, id: &AgentId) -> Result<Option<AgentName>, EventError> {
-        let result = self.conn.query_row(
-            "SELECT name FROM agents WHERE id = ?1",
-            params![id.to_string()],
-            |row| row.get::<_, String>(0),
-        );
-
-        match result {
-            Ok(name) => Ok(Some(AgentName::new(name))),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
-    }
-
-    pub fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
-        let count: i64 = self.conn.query_row(
-            "select count(*) from agents where name = ?1",
-            params![name.to_string()],
-            |row| row.get(0),
-        )?;
-        Ok(count > 0)
     }
 
     fn write_agent(&self, agent: &Agent) -> Result<(), EventError> {

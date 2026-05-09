@@ -1,22 +1,25 @@
 use crate::*;
 
-pub struct ExperienceClient<'a> {
+pub(crate) struct ExperienceClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> ExperienceClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn create(
+    pub(crate) async fn create(
         &self,
         creation: &CreateExperience,
     ) -> Result<ExperienceResponse, ClientError> {
         self.client.post("/experiences", creation).await
     }
 
-    pub async fn list(&self, listing: &ListExperiences) -> Result<ExperienceResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListExperiences,
+    ) -> Result<ExperienceResponse, ClientError> {
         let ListExperiences::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
@@ -44,14 +47,17 @@ impl<'a> ExperienceClient<'a> {
         self.client.get(&format!("/experiences?{query}")).await
     }
 
-    pub async fn get(&self, lookup: &GetExperience) -> Result<ExperienceResponse, ClientError> {
+    pub(crate) async fn get(
+        &self,
+        lookup: &GetExperience,
+    ) -> Result<ExperienceResponse, ClientError> {
         let GetExperience::V1(lookup) = lookup;
         self.client
             .get(&format!("/experiences/{}", lookup.key))
             .await
     }
 
-    pub async fn update_description(
+    pub(crate) async fn update_description(
         &self,
         update: &UpdateExperienceDescription,
     ) -> Result<ExperienceResponse, ClientError> {
@@ -64,7 +70,7 @@ impl<'a> ExperienceClient<'a> {
             .await
     }
 
-    pub async fn update_sensation(
+    pub(crate) async fn update_sensation(
         &self,
         update: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ClientError> {

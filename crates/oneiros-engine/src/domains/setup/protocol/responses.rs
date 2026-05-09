@@ -8,7 +8,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = SetupStepType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SetupStep {
+pub(crate) enum SetupStep {
     SystemInitialized,
     SystemAlreadyInitialized,
     ProjectInitialized(BrainName),
@@ -27,15 +27,15 @@ pub enum SetupStep {
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = SetupResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SetupResponse {
+pub(crate) enum SetupResponse {
     SetupComplete(SetupCompleteResponse),
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetupCompleteResponse {
+    pub(crate) enum SetupCompleteResponse {
         V1 => {
-            pub steps: Vec<SetupStep>,
+            pub(crate) steps: Vec<SetupStep>,
         }
     }
 }

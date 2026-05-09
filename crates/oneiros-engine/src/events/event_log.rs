@@ -20,14 +20,14 @@ use crate::*;
 /// - `attached(conn)` — the bookmark DB is the base connection and
 ///   the events DB is ATTACHed as `events`. Table references use
 ///   the `events.` schema qualifier.
-pub struct EventLog<'a> {
+pub(crate) struct EventLog<'a> {
     conn: &'a rusqlite::Connection,
     table: &'static str,
 }
 
 impl<'a> EventLog<'a> {
     /// Standalone mode — events DB is the base connection.
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self {
             conn,
             table: "events",
@@ -35,7 +35,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// ATTACH mode — bookmark DB is the base, events DB ATTACHed as `events`.
-    pub fn attached(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn attached(conn: &'a rusqlite::Connection) -> Self {
         Self {
             conn,
             table: "events.events",
@@ -43,7 +43,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// Create the events table.
-    pub fn init(&self) -> Result<(), EventError> {
+    pub(crate) fn init(&self) -> Result<(), EventError> {
         self.conn.execute_batch(&format!(
             "create table if not exists {} (
                 id         text primary key,
@@ -60,7 +60,7 @@ impl<'a> EventLog<'a> {
 
     /// Append a single event. Returns the stored form with sequence.
     #[tracing::instrument(skip_all, fields(event_type = event.data.event_type()), err(Display))]
-    pub fn append(&self, event: &NewEvent) -> Result<StoredEvent, EventError> {
+    pub(crate) fn append(&self, event: &NewEvent) -> Result<StoredEvent, EventError> {
         let id = EventId::new();
         let data_json = serde_json::to_string(&event.data)?;
         let source_json = serde_json::to_string(&event.source)?;
@@ -88,7 +88,7 @@ impl<'a> EventLog<'a> {
 
     /// Load all events in sequence order. Rows whose event type is not
     /// recognized are logged at warn and filtered out of the result.
-    pub fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
+    pub(crate) fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
         let mut stmt = self.conn.prepare(&format!(
             "SELECT id, rowid, data, source, created_at FROM {} ORDER BY rowid",
             self.table,
@@ -135,7 +135,7 @@ impl<'a> EventLog<'a> {
 
     /// Fetch events by ID. Returns all found events in sequence order;
     ///
-    pub fn get_batch(&self, ids: &[EventId]) -> Result<Vec<StoredEvent>, EventError> {
+    pub(crate) fn get_batch(&self, ids: &[EventId]) -> Result<Vec<StoredEvent>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -193,7 +193,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// Import a single event without running projections. Idempotent.
-    pub fn import(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn import(&self, event: &StoredEvent) -> Result<(), EventError> {
         let event_type = event.data.event_type();
         let data_json = serde_json::to_string(&event.data)?;
         let source_json = serde_json::to_string(&event.source)?;
@@ -212,18 +212,6 @@ impl<'a> EventLog<'a> {
             ],
         )?;
 
-        Ok(())
-    }
-
-    /// Delete a single event by ID.
-    ///
-    /// Rarely needed — the event log is append-only by design.
-    /// Exists for administrative operations, not domain logic.
-    pub fn delete(&self, event_id: &str) -> Result<(), EventError> {
-        self.conn.execute(
-            &format!("DELETE FROM {} WHERE id = ?1", self.table),
-            params![event_id],
-        )?;
         Ok(())
     }
 }

@@ -7,10 +7,10 @@ use axum::{
 
 use crate::*;
 
-pub struct UrgeRouter;
+pub(crate) struct UrgeRouter;
 
 impl UrgeRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new().nest(
             "/urges",
             ApiRouter::new()

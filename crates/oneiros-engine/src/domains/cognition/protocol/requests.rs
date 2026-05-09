@@ -6,44 +6,44 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum AddCognition {
+    pub(crate) enum AddCognition {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            #[builder(into)] pub texture: TextureName,
-            #[builder(into)] pub content: Content,
+            #[builder(into)] pub(crate) agent: AgentName,
+            #[builder(into)] pub(crate) texture: TextureName,
+            #[builder(into)] pub(crate) content: Content,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetCognition {
+    pub(crate) enum GetCognition {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<CognitionId>,
+            #[builder(into)] pub(crate) key: ResourceKey<CognitionId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListCognitions {
+    pub(crate) enum ListCognitions {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
-            pub agent: Option<AgentName>,
+            pub(crate) agent: Option<AgentName>,
             #[arg(long)]
-            pub texture: Option<TextureName>,
+            pub(crate) texture: Option<TextureName>,
             /// Full-text query against cognition content. When present, hits
             /// are FTS5-ranked; absent, the listing browses by filters alone.
             #[arg(long)]
             #[builder(into)]
-            pub query: Option<String>,
+            pub(crate) query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -51,7 +51,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = CognitionRequestType, display = "kebab-case")]
-pub enum CognitionRequest {
+pub(crate) enum CognitionRequest {
     AddCognition(AddCognition),
     GetCognition(GetCognition),
     ListCognitions(ListCognitions),

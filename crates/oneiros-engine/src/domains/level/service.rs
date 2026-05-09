@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct LevelService;
+pub(crate) struct LevelService;
 
 impl LevelService {
-    pub async fn set(
+    pub(crate) async fn set(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SetLevel,
@@ -42,7 +42,7 @@ impl LevelService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetLevel,
     ) -> Result<LevelResponse, LevelError> {
@@ -60,7 +60,7 @@ impl LevelService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListLevels,
     ) -> Result<LevelResponse, LevelError> {
@@ -79,7 +79,7 @@ impl LevelService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveLevel,

@@ -3,10 +3,10 @@ use axum::{Json, extract::State, http::StatusCode};
 
 use crate::*;
 
-pub struct SystemRouter;
+pub(crate) struct SystemRouter;
 
 impl SystemRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new().api_route(
             "/system",
             routing::post_with(init, |op| {

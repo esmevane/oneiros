@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct BrainView {
+pub(crate) struct BrainView {
     response: BrainResponse,
 }
 
 impl BrainView {
-    pub fn new(response: BrainResponse) -> Self {
+    pub(crate) fn new(response: BrainResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<BrainResponse> {
+    pub(crate) fn render(self) -> Rendered<BrainResponse> {
         match self.response {
             BrainResponse::Created(BrainCreatedResponse::V1(created)) => {
                 let prompt = Confirmation::new("Brain", created.brain.name.to_string(), "created")
@@ -29,7 +29,7 @@ impl BrainView {
                 )
             }
             BrainResponse::Listed(BrainsResponse::V1(listed)) => {
-                let mut table = Table::new(vec![Column::key("name", "Name")]);
+                let mut table = Table::new(vec![Column::new("Name")]);
                 for brain in &listed.items {
                     table.push_row(vec![brain.name.to_string()]);
                 }

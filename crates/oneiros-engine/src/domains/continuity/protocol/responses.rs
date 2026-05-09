@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = ContinuityResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ContinuityResponse {
+pub(crate) enum ContinuityResponse {
     Emerged(EmergedResponse),
     Waking(WakingResponse),
     Dreaming(DreamingResponse),
@@ -21,81 +21,81 @@ pub enum ContinuityResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum EmergedResponse {
+    pub(crate) enum EmergedResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum WakingResponse {
+    pub(crate) enum WakingResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum DreamingResponse {
+    pub(crate) enum DreamingResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum IntrospectingResponse {
+    pub(crate) enum IntrospectingResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ReflectingResponse {
+    pub(crate) enum ReflectingResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SleepingResponse {
+    pub(crate) enum SleepingResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GuidebookResponse {
+    pub(crate) enum GuidebookResponse {
         V1 => {
-            pub context: DreamContext,
+            pub(crate) context: DreamContext,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RecededResponse {
+    pub(crate) enum RecededResponse {
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum StatusResponse {
+    pub(crate) enum StatusResponse {
         V1 => {
-            pub table: AgentActivityTable,
+            pub(crate) table: AgentActivityTable,
         }
     }
 }

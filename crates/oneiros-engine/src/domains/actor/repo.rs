@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::*;
 
 /// Actor read model — queries, projection handling, and lifecycle.
-pub struct ActorRepo<'a> {
+pub(crate) struct ActorRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
 
 impl<'a> ActorRepo<'a> {
-    pub fn new(scope: &'a Scope<AtHost>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
@@ -16,11 +16,11 @@ impl<'a> ActorRepo<'a> {
     /// actor appears or the configured patience window expires.
     ///
     /// [`get`]: ActorRepo::get
-    pub async fn fetch(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
+    pub(crate) async fn fetch(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
+    pub(crate) async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut statement =
             db.prepare("select id, tenant_id, name, created_at from actors where id = ?1")?;
@@ -48,7 +48,7 @@ impl<'a> ActorRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
         let db = HostDb::open(self.scope).await?;
 
         let total = {

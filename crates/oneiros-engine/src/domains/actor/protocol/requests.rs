@@ -6,35 +6,35 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CreateActor {
+    pub(crate) enum CreateActor {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
-            #[builder(into)] pub tenant_id: TenantId,
-            #[builder(into)] pub name: ActorName,
+            #[builder(into)] pub(crate) tenant_id: TenantId,
+            #[builder(into)] pub(crate) name: ActorName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetActor {
+    pub(crate) enum GetActor {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<ActorId>,
+            #[builder(into)] pub(crate) key: ResourceKey<ActorId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListActors {
+    pub(crate) enum ListActors {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -42,7 +42,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ActorRequestType, display = "kebab-case")]
-pub enum ActorRequest {
+pub(crate) enum ActorRequest {
     CreateActor(CreateActor),
     GetActor(GetActor),
     ListActors(ListActors),

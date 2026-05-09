@@ -9,21 +9,21 @@ use crate::*;
 /// Each bookmark points to a forked LoroDoc — an independent
 /// line of development. The default bookmark is "main".
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Bookmark {
+pub(crate) struct Bookmark {
     #[builder(default)]
-    pub id: BookmarkId,
-    pub brain: BrainName,
+    pub(crate) id: BookmarkId,
+    pub(crate) brain: BrainName,
     #[builder(into)]
-    pub name: BookmarkName,
+    pub(crate) name: BookmarkName,
     #[builder(default = Timestamp::now())]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
 resource_id!(BookmarkId);
 resource_name!(BookmarkName);
 
 impl BookmarkName {
-    pub fn main() -> Self {
+    pub(crate) fn main() -> Self {
         Self::new("main")
     }
 }

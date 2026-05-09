@@ -1,3 +1,5 @@
+mod client;
+mod docs;
 mod features;
 mod model;
 mod protocol;
@@ -6,10 +8,12 @@ mod service;
 mod store;
 mod view;
 
-pub use features::*;
-pub use model::*;
-pub use protocol::*;
-pub use repo::*;
-pub use service::*;
-pub use store::*;
-pub use view::*;
+pub(crate) use client::*;
+pub(crate) use docs::*;
+pub(crate) use features::*;
+pub(crate) use model::*;
+pub(crate) use protocol::*;
+pub(crate) use repo::*;
+pub(crate) use service::*;
+pub(crate) use store::*;
+pub(crate) use view::*;

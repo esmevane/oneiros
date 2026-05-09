@@ -10,30 +10,30 @@ use std::path::{Path, PathBuf};
 const HOST_KEY_FILE: &str = "host.key";
 
 #[derive(Debug, thiserror::Error)]
-pub enum HostKeyError {
+pub(crate) enum HostKeyError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }
 
-pub struct HostKey {
+pub(crate) struct HostKey {
     data_dir: PathBuf,
 }
 
 impl HostKey {
-    pub fn new(data_dir: impl Into<PathBuf>) -> Self {
+    pub(crate) fn new(data_dir: impl Into<PathBuf>) -> Self {
         Self {
             data_dir: data_dir.into(),
         }
     }
 
     /// Path where the host's secret key is persisted.
-    pub fn path(&self) -> PathBuf {
+    pub(crate) fn path(&self) -> PathBuf {
         self.data_dir.join(HOST_KEY_FILE)
     }
 
     /// Load the persisted host secret key, if one exists. Returns
     /// `None` when the file is missing (first run, not yet generated).
-    pub fn load(&self) -> Result<Option<iroh::SecretKey>, HostKeyError> {
+    pub(crate) fn load(&self) -> Result<Option<iroh::SecretKey>, HostKeyError> {
         let path = self.path();
         if !path.exists() {
             return Ok(None);
@@ -61,7 +61,7 @@ impl HostKey {
     /// On Unix, the key file is written with mode `0o600` (owner-only
     /// read/write). On other platforms, file permissions are left at
     /// the OS default.
-    pub fn ensure(&self) -> Result<iroh::SecretKey, HostKeyError> {
+    pub(crate) fn ensure(&self) -> Result<iroh::SecretKey, HostKeyError> {
         if let Some(existing) = self.load()? {
             return Ok(existing);
         }

@@ -36,12 +36,12 @@
 //! ```ignore
 //! versioned! {
 //!     #[derive(JsonSchema)]
-//!     pub enum CreateAgent {
+//!     pub(crate) enum CreateAgent {
 //!         #[derive(Args)]
 //!         V1 => {
-//!             #[builder(into)] pub name: AgentName,
+//!             #[builder(into)] pub(crate) name: AgentName,
 //!             #[arg(long, default_value = "")]
-//!             #[builder(default, into)] pub description: Description,
+//!             #[builder(default, into)] pub(crate) description: Description,
 //!         }
 //!     }
 //! }
@@ -56,13 +56,13 @@
 //!
 //! ```ignore
 //! versioned! {
-//!     pub enum AgentCreated {
+//!     pub(crate) enum AgentCreated {
 //!         V1 => {
-//!             #[builder(default)] pub id: AgentId,
-//!             #[builder(into)] pub name: AgentName,
+//!             #[builder(default)] pub(crate) id: AgentId,
+//!             #[builder(into)] pub(crate) name: AgentName,
 //!         },
 //!         V0 => {
-//!             #[builder(into)] pub name: AgentName,
+//!             #[builder(into)] pub(crate) name: AgentName,
 //!         },
 //!     }
 //! }
@@ -180,7 +180,8 @@ macro_rules! versioned {
             )*
 
             impl $name {
-                pub fn current(
+                #[allow(dead_code)]
+                pub(crate) fn current(
                     &self,
                 ) -> ::std::result::Result<[<$name $latest_variant>], $crate::UpcastError> {
                     Ok(match self {
@@ -189,12 +190,14 @@ macro_rules! versioned {
                     })
                 }
 
-                pub fn [<builder_ $latest_variant:lower>]() -> [<$name $latest_variant Builder>] {
+                #[allow(dead_code)]
+                pub(crate) fn [<builder_ $latest_variant:lower>]() -> [<$name $latest_variant Builder>] {
                     [<$name $latest_variant>]::builder()
                 }
 
                 $(
-                    pub fn [<builder_ $variant:lower>]() -> [<$name $variant Builder>] {
+                    #[allow(dead_code)]
+                    pub(crate) fn [<builder_ $variant:lower>]() -> [<$name $variant Builder>] {
                         [<$name $variant>]::builder()
                     }
                 )*
@@ -208,13 +211,15 @@ macro_rules! versioned {
 
             $crate::macros::__versioned_if_args!({
                 impl $name {
-                    pub fn clap_command(name: &'static str) -> ::clap::Command {
+                    #[allow(dead_code)]
+                    pub(crate) fn clap_command(name: &'static str) -> ::clap::Command {
                         <[<$name $latest_variant>] as ::clap::Args>::augment_args(
                             ::clap::Command::new(name),
                         )
                     }
 
-                    pub fn to_invocation(&self, name: &str) -> String {
+                    #[allow(dead_code)]
+                    pub(crate) fn to_invocation(&self, name: &str) -> String {
                         $crate::macros::render_invocation(name, self)
                     }
                 }
@@ -268,7 +273,8 @@ macro_rules! versioned {
         }
 
         impl $name {
-            pub fn current(&self) -> ::std::result::Result<$v1_type, $crate::UpcastError> {
+            #[allow(dead_code)]
+            pub(crate) fn current(&self) -> ::std::result::Result<$v1_type, $crate::UpcastError> {
                 Ok(match self {
                     Self::V1(v) => v.clone(),
                 })

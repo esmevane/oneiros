@@ -5,16 +5,16 @@ use rusqlite::{params, params_from_iter};
 use crate::*;
 
 /// Agent read model — async queries over the projection read model.
-pub struct AgentRepo<'a> {
+pub(crate) struct AgentRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> AgentRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
-    pub async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
+    pub(crate) async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db
             .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
@@ -46,7 +46,7 @@ impl<'a> AgentRepo<'a> {
         }
     }
 
-    pub async fn get_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
+    pub(crate) async fn get_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt =
             db.prepare("select id, name, persona, description, prompt from agents where id = ?1")?;
@@ -80,7 +80,7 @@ impl<'a> AgentRepo<'a> {
 
     /// Hydrate many agents by id, preserving the input order. Used by list
     /// endpoints to bulk-fetch search hits in a single round trip.
-    pub async fn get_many(&self, ids: &[AgentId]) -> Result<Vec<Agent>, EventError> {
+    pub(crate) async fn get_many(&self, ids: &[AgentId]) -> Result<Vec<Agent>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -121,7 +121,7 @@ impl<'a> AgentRepo<'a> {
         Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
     }
 
-    pub async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
+    pub(crate) async fn name_exists(&self, name: &AgentName) -> Result<bool, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let count: i64 = db.query_row(
             "select count(*) from agents where name = ?1",
@@ -135,7 +135,7 @@ impl<'a> AgentRepo<'a> {
     /// appears or the configured patience window expires.
     ///
     /// [`get`]: AgentRepo::get
-    pub async fn fetch(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
+    pub(crate) async fn fetch(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
@@ -143,7 +143,7 @@ impl<'a> AgentRepo<'a> {
     /// agent appears or the configured patience window expires.
     ///
     /// [`get_by_id`]: AgentRepo::get_by_id
-    pub async fn fetch_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
+    pub(crate) async fn fetch_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
         self.scope
             .config()
             .fetch

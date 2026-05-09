@@ -6,35 +6,35 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SearchQuery {
+    pub(crate) enum SearchQuery {
         #[derive(clap::Args)]
         V1 => {
             /// Full-text query. When absent, the search browses by filters alone,
             /// ordered by creation time.
-            #[builder(into)] pub query: Option<String>,
-            #[arg(long)] pub agent: Option<AgentName>,
-            #[arg(long)] pub kind: Option<SearchKind>,
-            #[arg(long)] pub texture: Option<TextureName>,
-            #[arg(long)] pub level: Option<LevelName>,
-            #[arg(long)] pub sensation: Option<SensationName>,
+            #[builder(into)] pub(crate) query: Option<String>,
+            #[arg(long)] pub(crate) agent: Option<AgentName>,
+            #[arg(long)] pub(crate) kind: Option<SearchKind>,
+            #[arg(long)] pub(crate) texture: Option<TextureName>,
+            #[arg(long)] pub(crate) level: Option<LevelName>,
+            #[arg(long)] pub(crate) sensation: Option<SensationName>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
             /// Whether to compute facet aggregations alongside hits. Internal —
             /// flipped on by [`SearchService`] for explicit search; left off by
             /// list endpoints that don't render the palace map.
             #[arg(skip)]
             #[serde(skip)]
             #[builder(default)]
-            pub with_facets: bool,
+            pub(crate) with_facets: bool,
         }
     }
 }
 
 impl SearchQueryV1 {
     /// Return a clone of this query with facet aggregations enabled.
-    pub fn with_facets(&self) -> Self {
+    pub(crate) fn with_facets(&self) -> Self {
         Self {
             with_facets: true,
             ..self.clone()
@@ -45,7 +45,7 @@ impl SearchQueryV1 {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SearchRequestType, display = "kebab-case")]
-pub enum SearchRequest {
+pub(crate) enum SearchRequest {
     SearchQuery(SearchQuery),
 }
 

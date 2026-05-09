@@ -1,11 +1,8 @@
-use crate::{
-    BlobError, BookmarkDbError, EventsDbError, HostDbError, IdParseError, TimestampParseError,
-    UpcastError,
-};
+use crate::*;
 
 /// Event infrastructure errors.
 #[derive(Debug, thiserror::Error)]
-pub enum EventError {
+pub(crate) enum EventError {
     #[error(transparent)]
     Sqlite(#[from] rusqlite::Error),
 

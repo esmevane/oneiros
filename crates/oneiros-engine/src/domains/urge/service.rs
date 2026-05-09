@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct UrgeService;
+pub(crate) struct UrgeService;
 
 impl UrgeService {
-    pub async fn set(
+    pub(crate) async fn set(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SetUrge,
@@ -39,7 +39,7 @@ impl UrgeService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetUrge,
     ) -> Result<UrgeResponse, UrgeError> {
@@ -54,7 +54,7 @@ impl UrgeService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListUrges,
     ) -> Result<UrgeResponse, UrgeError> {
@@ -73,7 +73,7 @@ impl UrgeService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveUrge,

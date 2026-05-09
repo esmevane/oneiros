@@ -112,7 +112,7 @@ fn hint_template_renders_empty_as_empty() {
 }
 
 #[test]
-fn hint_template_renders_markdown() {
+fn hint_template_renders_with_palette_styling() {
     let hints = vec![
         Hint::follow_up(
             "introspect governor.process",
@@ -122,7 +122,15 @@ fn hint_template_renders_markdown() {
     ];
     let template = HintTemplate { hints: &hints };
     let rendered = template.to_string();
+    // The template emits ANSI-styled level/action — anstream strips the
+    // codes when output isn't a terminal, so consumers see plain text.
     assert!(rendered.contains("## Hints"));
-    assert!(rendered.contains("**follow-up** `introspect governor.process`"));
-    assert!(rendered.contains("**suggest** `reflect governor.process`"));
+    assert!(rendered.contains("follow-up"));
+    assert!(rendered.contains("`"));
+    assert!(rendered.contains("introspect governor.process"));
+    assert!(rendered.contains("Cognitive pressure is building"));
+    assert!(rendered.contains("suggest"));
+    assert!(rendered.contains("reflect governor.process"));
+    // Confirm the styling is actually being applied (ANSI escape introducer).
+    assert!(rendered.contains("\x1b["));
 }

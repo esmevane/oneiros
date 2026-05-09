@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = SensationResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum SensationResponse {
+pub(crate) enum SensationResponse {
     SensationSet(SensationSetResponse),
     SensationDetails(SensationDetailsResponse),
     Sensations(SensationsResponse),
@@ -17,33 +17,33 @@ pub enum SensationResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SensationSetResponse {
-        V1 => { #[serde(flatten)] pub sensation: Sensation }
+    pub(crate) enum SensationSetResponse {
+        V1 => { #[serde(flatten)] pub(crate) sensation: Sensation }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SensationDetailsResponse {
-        V1 => { #[serde(flatten)] pub sensation: Sensation }
+    pub(crate) enum SensationDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) sensation: Sensation }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SensationsResponse {
+    pub(crate) enum SensationsResponse {
         V1 => {
-            pub items: Vec<Sensation>,
-            pub total: usize,
+            pub(crate) items: Vec<Sensation>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SensationRemovedResponse {
+    pub(crate) enum SensationRemovedResponse {
         V1 => {
-            #[builder(into)] pub name: SensationName,
+            #[builder(into)] pub(crate) name: SensationName,
         }
     }
 }

@@ -31,33 +31,33 @@ fn default_experience_size() -> usize {
 /// unspecified overrides inherit the server default.
 #[derive(Args, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct DreamConfig {
+pub(crate) struct DreamConfig {
     /// Number of recent cognitions and experiences to include
     /// in the orientation window.
     #[arg(long, global = true, default_value_t = default_recent_window())]
     #[serde(default = "default_recent_window")]
-    pub recent_window: usize,
+    pub(crate) recent_window: usize,
     /// Maximum BFS traversal depth from the seed set.
     #[arg(long, global = true, default_value_t = default_dream_depth())]
     #[serde(default = "default_dream_depth")]
-    pub dream_depth: usize,
+    pub(crate) dream_depth: usize,
     /// Maximum number of cognitions in the dream.
     #[arg(long, global = true, default_value_t = default_cognition_size())]
     #[serde(default = "default_cognition_size")]
-    pub cognition_size: usize,
+    pub(crate) cognition_size: usize,
     /// Minimum memory level to include (log-level semantics).
     /// Core memories are always included regardless of this setting.
     #[arg(long, global = true, default_value_t = default_recollection_level())]
     #[serde(default = "default_recollection_level")]
-    pub recollection_level: LevelName,
+    pub(crate) recollection_level: LevelName,
     /// Maximum number of non-core memories in the dream.
     #[arg(long, global = true, default_value_t = default_recollection_size())]
     #[serde(default = "default_recollection_size")]
-    pub recollection_size: usize,
+    pub(crate) recollection_size: usize,
     /// Maximum number of experiences in the dream.
     #[arg(long, global = true, default_value_t = default_experience_size())]
     #[serde(default = "default_experience_size")]
-    pub experience_size: usize,
+    pub(crate) experience_size: usize,
 }
 
 impl Default for DreamConfig {
@@ -78,7 +78,7 @@ impl DreamConfig {
     ///
     /// Override fields that are `Some` replace the corresponding default;
     /// `None` fields inherit from self.
-    pub fn merge(&self, overrides: &DreamOverrides) -> Self {
+    pub(crate) fn merge(&self, overrides: &DreamOverrides) -> Self {
         Self {
             recent_window: overrides.recent_window.unwrap_or(self.recent_window),
             dream_depth: overrides.dream_depth.unwrap_or(self.dream_depth),
@@ -101,13 +101,13 @@ impl DreamConfig {
 /// default from `DreamConfig`. Arrives via query params, request body,
 /// or CLI flags.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct DreamOverrides {
-    pub recent_window: Option<usize>,
-    pub dream_depth: Option<usize>,
-    pub cognition_size: Option<usize>,
-    pub recollection_level: Option<LevelName>,
-    pub recollection_size: Option<usize>,
-    pub experience_size: Option<usize>,
+pub(crate) struct DreamOverrides {
+    pub(crate) recent_window: Option<usize>,
+    pub(crate) dream_depth: Option<usize>,
+    pub(crate) cognition_size: Option<usize>,
+    pub(crate) recollection_level: Option<LevelName>,
+    pub(crate) recollection_size: Option<usize>,
+    pub(crate) experience_size: Option<usize>,
 }
 
 #[cfg(test)]

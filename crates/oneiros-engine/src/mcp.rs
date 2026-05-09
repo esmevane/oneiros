@@ -22,7 +22,7 @@ use crate::*;
 
 /// Errors that can occur during MCP tool dispatch or resource reading.
 #[derive(Debug, thiserror::Error)]
-pub enum ToolError {
+pub(crate) enum ToolError {
     /// An application-level error from the engine.
     #[error("Application error: {0}")]
     App(#[from] Error),
@@ -34,10 +34,6 @@ pub enum ToolError {
     /// The requested tool name is not handled by any domain.
     #[error("Unknown tool: {0}")]
     UnknownTool(String),
-
-    /// A parameter could not be deserialized or was otherwise invalid.
-    #[error("Parameter error: {0}")]
-    Parameter(String),
 
     /// The requested entity was not found.
     #[error("Not found: {0}")]
@@ -116,7 +112,7 @@ fn mcp_error_response(error: &ToolError) -> McpResponse {
             Hint::inspect(ResourcePath::Agents.uri(), "See available agents"),
             Hint::suggest("search-query", "Search across everything"),
         ],
-        ToolError::Parameter(_) | ToolError::Malformed(_) => vec![Hint::inspect(
+        ToolError::Malformed(_) => vec![Hint::inspect(
             ResourcePath::Agents.uri(),
             "See available agents",
         )],
@@ -198,13 +194,13 @@ async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Opti
 }
 
 #[derive(Clone)]
-pub struct EngineToolBox {
+pub(crate) struct EngineToolBox {
     state: ServerState,
     session_config: OnceLock<Config>,
 }
 
 impl EngineToolBox {
-    pub fn new(state: ServerState) -> Self {
+    pub(crate) fn new(state: ServerState) -> Self {
         Self {
             state,
             session_config: OnceLock::new(),

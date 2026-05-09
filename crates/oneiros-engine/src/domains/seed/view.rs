@@ -5,16 +5,16 @@
 
 use crate::*;
 
-pub struct SeedView {
+pub(crate) struct SeedView {
     response: SeedResponse,
 }
 
 impl SeedView {
-    pub fn new(response: SeedResponse) -> Self {
+    pub(crate) fn new(response: SeedResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<SeedResponse> {
+    pub(crate) fn render(self) -> Rendered<SeedResponse> {
         match self.response {
             SeedResponse::SeedComplete => {
                 let prompt = Confirmation::new("Core", "vocabulary", "seeded").to_string();

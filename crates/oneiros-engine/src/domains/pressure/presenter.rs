@@ -1,16 +1,16 @@
 use crate::*;
 
-pub struct PressurePresenter<'a> {
+pub(crate) struct PressurePresenter<'a> {
     response: PressureResponse,
     request: &'a PressureRequest,
 }
 
 impl<'a> PressurePresenter<'a> {
-    pub fn new(response: PressureResponse, request: &'a PressureRequest) -> Self {
+    pub(crate) fn new(response: PressureResponse, request: &'a PressureRequest) -> Self {
         Self { response, request }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             PressureResponse::Readings(ReadingsResponse::V1(result)) => {
                 let title = match self.request {
@@ -45,7 +45,7 @@ impl<'a> PressurePresenter<'a> {
         }
     }
 
-    pub fn render(self) -> Rendered<PressureResponse> {
+    pub(crate) fn render(self) -> Rendered<PressureResponse> {
         let prompt = self.render_prompt();
         let text = self.render_text();
 

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// How strongly a hint recommends the action.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-pub enum HintLevel {
+pub(crate) enum HintLevel {
     /// A gentle suggestion — might be useful.
     Suggest,
     /// Worth looking at — inspect current state.

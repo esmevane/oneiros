@@ -1,29 +1,29 @@
 use crate::*;
 
-pub struct AppDocs;
+pub(crate) struct AppDocs;
 
 impl AppDocs {
-    pub fn title(&self) -> Label {
+    pub(crate) fn title(&self) -> Label {
         Label::new("Oneiros")
     }
 
-    pub fn version(&self) -> Label {
+    pub(crate) fn version(&self) -> Label {
         Label::new(env!("CARGO_PKG_VERSION"))
     }
 
-    pub fn description(&self) -> Description {
+    pub(crate) fn description(&self) -> Description {
         Description::new("Continuous cognition for AI agents")
     }
 
-    pub fn security_scheme_name(&self) -> Label {
+    pub(crate) fn security_scheme_name(&self) -> Label {
         Label::new("BearerToken")
     }
 
-    pub fn security_scheme_description(&self) -> Description {
+    pub(crate) fn security_scheme_description(&self) -> Description {
         Description::new("A brain access ticket issued via `oneiros ticket issue`")
     }
 
-    pub fn tags(&self) -> Vec<Tag> {
+    pub(crate) fn tags(&self) -> Vec<Tag> {
         vec![
             ActorDocs::Create.tag(),
             AgentDocs::Create.tag(),
@@ -33,6 +33,7 @@ impl AppDocs {
             ConnectionDocs::Create.tag(),
             ContinuityDocs::Emerge.tag(),
             ExperienceDocs::Create.tag(),
+            FollowDocs::List.tag(),
             LevelDocs::List.tag(),
             MemoryDocs::Add.tag(),
             NatureDocs::List.tag(),

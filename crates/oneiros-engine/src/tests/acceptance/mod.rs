@@ -22,10 +22,16 @@ pub(crate) trait Backend: Sized {
     fn start_service(&mut self) -> impl Future<Output = Result<(), Box<dyn core::error::Error>>>;
 
     /// Execute in JSON mode — returns typed data for structural assertions.
-    fn exec_json(&self, command: &str) -> impl Future<Output = Result<Responses, Error>>;
+    fn exec_json(
+        &self,
+        command: &str,
+    ) -> impl Future<Output = Result<Responses, Box<dyn core::error::Error>>>;
 
     /// Execute in prompt mode — returns rendered text for content assertions.
-    fn exec_prompt(&self, command: &str) -> impl Future<Output = Result<String, Error>>;
+    fn exec_prompt(
+        &self,
+        command: &str,
+    ) -> impl Future<Output = Result<String, Box<dyn core::error::Error>>>;
 }
 
 // ── Harness ─────────────────────────────────────────────────────
@@ -46,14 +52,14 @@ pub(crate) struct Harness<B> {
 
 impl<B: Backend> Harness<B> {
     /// Create a bare harness — no system, no project. System-scope tests start here.
-    pub async fn started() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn started() -> Result<Self, Box<dyn core::error::Error>> {
         let backend = B::start().await?;
         Ok(Self { backend })
     }
 
     /// Initialize the host system. After this, system-scoped commands work
     /// (actor, brain, tenant, ticket).
-    pub async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::started().await?;
         harness
             .backend
@@ -65,14 +71,14 @@ impl<B: Backend> Harness<B> {
     /// Start the backing service explicitly. Most tests don't need this —
     /// `setup_system` starts the service automatically. Use for tests that
     /// need fine-grained control over sequencing.
-    pub async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
         self.backend.start_service().await?;
         Ok(self)
     }
 
     /// Initialize a project brain. After this, brain-scoped commands work
     /// (agents, cognitions, memories, vocabulary, etc.)
-    pub async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::setup_system().await?.start_service().await?;
         harness
             .backend
@@ -83,7 +89,7 @@ impl<B: Backend> Harness<B> {
     }
 
     /// Initialize a project and seed it with core vocabulary.
-    pub async fn seed_project() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) async fn seed_project() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::init_project().await?;
         harness
             .backend
@@ -97,12 +103,18 @@ impl<B: Backend> Harness<B> {
     ///
     /// Use for write operations where you assert on the immediate response,
     /// or for setup commands that don't need eventual-consistency handling.
-    pub async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
+    pub(crate) async fn exec_json(
+        &self,
+        command: &str,
+    ) -> Result<Responses, Box<dyn core::error::Error>> {
         self.backend.exec_json(command).await
     }
 
     /// Execute in prompt mode — delegates to the backend.
-    pub async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
+    pub(crate) async fn exec_prompt(
+        &self,
+        command: &str,
+    ) -> Result<String, Box<dyn core::error::Error>> {
         self.backend.exec_prompt(command).await
     }
 }
@@ -122,7 +134,7 @@ struct EngineBackend {
 impl Backend for EngineBackend {
     async fn start() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::TempDir::new()?;
-        let config = Config::builder()
+        let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .brain(BrainName::new("test-project"))
             .service(
@@ -132,13 +144,14 @@ impl Backend for EngineBackend {
             )
             .build();
 
-        let mut engine = Engine::new(config);
-
         // Start the HTTP server eagerly — the engine CLI routes all
         // commands through HTTP clients, so the service must be running
-        // before any commands execute. start() resolves the ephemeral
-        // port and updates the engine's config automatically.
-        let handle = engine.start().await?;
+        // before any commands execute. `Server::spawn` resolves the
+        // ephemeral port; we feed that back into config before constructing
+        // the engine so its clients connect to the right port.
+        let handle = Server::new(config.clone()).spawn().await?;
+        config.service.address = handle.address();
+        let engine = Engine::new(config);
 
         Ok(Self {
             engine,
@@ -147,23 +160,23 @@ impl Backend for EngineBackend {
         })
     }
 
-    async fn exec_json(&self, command: &str) -> Result<Responses, Error> {
+    async fn exec_json(&self, command: &str) -> Result<Responses, Box<dyn core::error::Error>> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
+        let cli = Cli::try_parse_from(&full_args)?;
         let rendered = cli.execute(self.engine.config()).await?;
 
         Ok(rendered.into_response())
     }
 
-    async fn exec_prompt(&self, command: &str) -> Result<String, Error> {
+    async fn exec_prompt(&self, command: &str) -> Result<String, Box<dyn core::error::Error>> {
         let args = shell_words(command);
         let mut full_args = vec!["oneiros".to_string()];
         full_args.extend(args);
 
-        let cli = Cli::try_parse_from(&full_args).map_err(|e| Error::Context(e.to_string()))?;
+        let cli = Cli::try_parse_from(&full_args)?;
         let rendered = cli.execute(self.engine.config()).await?;
 
         Ok(rendered.prompt().to_string())

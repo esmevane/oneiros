@@ -2,6 +2,6 @@
 
 ## Hints
 {% for hint in hints %}
-- **{{ hint.level }}** `{{ hint.action }}` — {{ hint.intent }}
+- {{ hint.level.emphasis() }} `{{ hint.action.hint() }}` — {{ hint.intent }}
 {% endfor %}
 {% endif %}

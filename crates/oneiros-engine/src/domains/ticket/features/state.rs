@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TicketState;
+pub(crate) struct TicketState;
 
 impl TicketState {
-    pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Ticket(ticket_event) = event
             && let Some(ticket) = ticket_event.maybe_ticket()
         {
@@ -13,7 +13,7 @@ impl TicketState {
         canon
     }
 
-    pub fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<SystemCanon> {
         Reducer::new(Self::reduce)
     }
 }

@@ -5,8 +5,21 @@ use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
-#[kinded(kind = BookmarkEventsType, display = "kebab-case")]
-pub enum BookmarkEvents {
+#[kinded(
+    kind = BookmarkEventsType,
+    display = "kebab-case",
+    attrs(
+        expect(
+            clippy::enum_variant_names,
+            reason = "We use these for `type` notation in serde"
+        )
+    )
+)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
+pub(crate) enum BookmarkEvents {
     BookmarkCreated(BookmarkCreated),
     BookmarkForked(BookmarkForked),
     BookmarkSwitched(BookmarkSwitched),
@@ -25,7 +38,7 @@ impl BookmarkEvents {
     /// The full `Bookmark` carried by creation-style events. `Forked`
     /// also carries one (the new fork) — its `from` is a reference, not
     /// a full record.
-    pub fn maybe_bookmark(&self) -> Option<Bookmark> {
+    pub(crate) fn maybe_bookmark(&self) -> Option<Bookmark> {
         match self {
             BookmarkEvents::BookmarkCreated(event) => {
                 event.clone().current().ok().map(|v| v.bookmark)
@@ -44,81 +57,81 @@ impl BookmarkEvents {
 }
 
 versioned! {
-    pub enum BookmarkCreated {
+    pub(crate) enum BookmarkCreated {
         V1 => {
-            #[serde(flatten)] pub bookmark: Bookmark,
+            #[serde(flatten)] pub(crate) bookmark: Bookmark,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkForked {
+    pub(crate) enum BookmarkForked {
         V1 => {
-            #[serde(flatten)] pub bookmark: Bookmark,
-            pub from: BookmarkName,
+            #[serde(flatten)] pub(crate) bookmark: Bookmark,
+            pub(crate) from: BookmarkName,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkSwitched {
+    pub(crate) enum BookmarkSwitched {
         V1 => {
-            pub brain: BrainName,
-            pub name: BookmarkName,
+            pub(crate) brain: BrainName,
+            pub(crate) name: BookmarkName,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkMerged {
+    pub(crate) enum BookmarkMerged {
         V1 => {
-            pub brain: BrainName,
-            pub source: BookmarkName,
-            pub target: BookmarkName,
+            pub(crate) brain: BrainName,
+            pub(crate) source: BookmarkName,
+            pub(crate) target: BookmarkName,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkShared {
+    pub(crate) enum BookmarkShared {
         V1 => {
-            pub brain: BrainName,
-            pub bookmark: BookmarkName,
-            pub ticket_id: TicketId,
-            pub shared_by: ActorId,
+            pub(crate) brain: BrainName,
+            pub(crate) bookmark: BookmarkName,
+            pub(crate) ticket_id: TicketId,
+            pub(crate) shared_by: ActorId,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkFollowed {
+    pub(crate) enum BookmarkFollowed {
         V1 => {
-            #[builder(default)] pub id: FollowId,
-            pub brain: BrainName,
-            pub bookmark: BookmarkName,
-            pub source: FollowSource,
-            #[builder(default = Checkpoint::empty())] pub checkpoint: Checkpoint,
-            #[builder(default = Timestamp::now())] pub created_at: Timestamp,
+            #[builder(default)] pub(crate) id: FollowId,
+            pub(crate) brain: BrainName,
+            pub(crate) bookmark: BookmarkName,
+            pub(crate) source: FollowSource,
+            #[builder(default = Checkpoint::empty())] pub(crate) checkpoint: Checkpoint,
+            #[builder(default = Timestamp::now())] pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkCollected {
+    pub(crate) enum BookmarkCollected {
         V1 => {
-            pub follow_id: FollowId,
-            pub checkpoint: Checkpoint,
-            pub events_received: u64,
+            pub(crate) follow_id: FollowId,
+            pub(crate) checkpoint: Checkpoint,
+            pub(crate) events_received: u64,
         }
     }
 }
 
 versioned! {
-    pub enum BookmarkUnfollowed {
+    pub(crate) enum BookmarkUnfollowed {
         V1 => {
-            pub follow_id: FollowId,
-            pub brain: BrainName,
-            pub bookmark: BookmarkName,
+            pub(crate) follow_id: FollowId,
+            pub(crate) brain: BrainName,
+            pub(crate) bookmark: BookmarkName,
         }
     }
 }

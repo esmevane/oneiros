@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct PeerView {
+pub(crate) struct PeerView {
     response: PeerResponse,
 }
 
 impl PeerView {
-    pub fn new(response: PeerResponse) -> Self {
+    pub(crate) fn new(response: PeerResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<PeerResponse> {
+    pub(crate) fn render(self) -> Rendered<PeerResponse> {
         match self.response {
             PeerResponse::Added(PeerAddedResponse::V1(added)) => {
                 let prompt = Confirmation::new("Peer", added.name.to_string(), "added").to_string();
@@ -34,9 +34,9 @@ impl PeerView {
             }
             PeerResponse::Listed(PeersResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("name", "Name"),
-                    Column::key("key", "Key"),
-                    Column::key("id", "ID"),
+                    Column::new("Name"),
+                    Column::new("Key"),
+                    Column::new("ID"),
                 ]);
                 for peer in &listed.items {
                     let key_display = peer.key.to_string();

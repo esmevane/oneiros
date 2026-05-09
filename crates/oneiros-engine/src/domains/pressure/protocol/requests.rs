@@ -6,10 +6,10 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetPressure {
+    pub(crate) enum GetPressure {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
+            #[builder(into)] pub(crate) agent: AgentName,
         }
     }
 }
@@ -17,7 +17,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PressureRequestType, display = "kebab-case")]
-pub enum PressureRequest {
+pub(crate) enum PressureRequest {
     GetPressure(GetPressure),
     ListPressures,
 }

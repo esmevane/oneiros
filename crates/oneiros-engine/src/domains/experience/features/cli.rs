@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum ExperienceCommands {
+pub(crate) enum ExperienceCommands {
     Create(CreateExperience),
     Show(GetExperience),
     List(ListExperiences),
@@ -20,11 +20,11 @@ pub enum ExperienceCommands {
 }
 
 impl ExperienceCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
-        context: &ProjectLog,
+        config: &Config,
     ) -> Result<Rendered<Responses>, ExperienceError> {
-        let client = context.client();
+        let client = Client::from_config(config)?;
         let experience_client = ExperienceClient::new(&client);
 
         let (response, request) = match self {

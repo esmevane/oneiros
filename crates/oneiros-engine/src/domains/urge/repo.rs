@@ -2,12 +2,12 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct UrgeRepo<'a> {
+pub(crate) struct UrgeRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> UrgeRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -15,11 +15,11 @@ impl<'a> UrgeRepo<'a> {
     /// urge appears or the configured patience window expires.
     ///
     /// [`get`]: UrgeRepo::get
-    pub async fn fetch(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
+    pub(crate) async fn fetch(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
-    pub async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
+    pub(crate) async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
@@ -44,7 +44,7 @@ impl<'a> UrgeRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

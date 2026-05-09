@@ -6,12 +6,12 @@ use crate::*;
 /// new state. Only clones internally if the event touches data that
 /// needs it — most events mutate a single table in place.
 #[derive(Clone)]
-pub struct Reducer<T> {
-    pub reduce: fn(T, &Events) -> T,
+pub(crate) struct Reducer<T> {
+    pub(crate) reduce: fn(T, &Events) -> T,
 }
 
 impl<T> Reducer<T> {
-    pub const fn new(reduce: fn(T, &Events) -> T) -> Self {
+    pub(crate) const fn new(reduce: fn(T, &Events) -> T) -> Self {
         Self { reduce }
     }
 }

@@ -6,47 +6,47 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CreateConnection {
+    pub(crate) enum CreateConnection {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub nature: NatureName,
-            pub from_ref: RefToken,
-            pub to_ref: RefToken,
+            #[builder(into)] pub(crate) nature: NatureName,
+            pub(crate) from_ref: RefToken,
+            pub(crate) to_ref: RefToken,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetConnection {
+    pub(crate) enum GetConnection {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<ConnectionId>,
+            #[builder(into)] pub(crate) key: ResourceKey<ConnectionId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListConnections {
+    pub(crate) enum ListConnections {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
-            pub entity: Option<RefToken>,
+            pub(crate) entity: Option<RefToken>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveConnection {
+    pub(crate) enum RemoveConnection {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub id: ConnectionId,
+            #[builder(into)] pub(crate) id: ConnectionId,
         }
     }
 }
@@ -54,7 +54,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ConnectionRequestType, display = "kebab-case")]
-pub enum ConnectionRequest {
+pub(crate) enum ConnectionRequest {
     CreateConnection(CreateConnection),
     GetConnection(GetConnection),
     ListConnections(ListConnections),

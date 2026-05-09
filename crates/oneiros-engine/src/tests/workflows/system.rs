@@ -222,7 +222,7 @@ async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::E
     let keys = HostKey::new(&app.config().data_dir);
 
     // The server's bind path generates the host key (see `ServerState::bind`),
-    // but `Engine::start` returns before that bind completes. Wait for the
+    // but `Server::spawn` returns before that bind completes. Wait for the
     // server to handle a request — that synchronizes against bind — so the
     // key file is guaranteed to be on disk.
     let _ = ServiceService::status(app.config()).await;

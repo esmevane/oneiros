@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct TenantView {
+pub(crate) struct TenantView {
     response: TenantResponse,
 }
 
 impl TenantView {
-    pub fn new(response: TenantResponse) -> Self {
+    pub(crate) fn new(response: TenantResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<TenantResponse> {
+    pub(crate) fn render(self) -> Rendered<TenantResponse> {
         match self.response {
             TenantResponse::Created(TenantCreatedResponse::V1(created)) => {
                 let prompt =
@@ -32,8 +32,7 @@ impl TenantView {
                 )
             }
             TenantResponse::Listed(TenantsResponse::V1(listed)) => {
-                let mut table =
-                    Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
+                let mut table = Table::new(vec![Column::new("Name"), Column::new("ID")]);
                 for tenant in &listed.items {
                     table.push_row(vec![tenant.name.to_string(), tenant.id.to_string()]);
                 }

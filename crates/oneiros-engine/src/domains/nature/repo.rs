@@ -2,12 +2,12 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct NatureRepo<'a> {
+pub(crate) struct NatureRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> NatureRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -15,11 +15,11 @@ impl<'a> NatureRepo<'a> {
     /// nature appears or the configured patience window expires.
     ///
     /// [`get`]: NatureRepo::get
-    pub async fn fetch(&self, name: &NatureName) -> Result<Option<Nature>, EventError> {
+    pub(crate) async fn fetch(&self, name: &NatureName) -> Result<Option<Nature>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
-    pub async fn get(&self, name: &NatureName) -> Result<Option<Nature>, EventError> {
+    pub(crate) async fn get(&self, name: &NatureName) -> Result<Option<Nature>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM natures WHERE name = ?1")?;
@@ -45,7 +45,7 @@ impl<'a> NatureRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Nature>, EventError> {
+    pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Nature>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

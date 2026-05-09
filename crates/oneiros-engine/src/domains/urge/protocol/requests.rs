@@ -6,49 +6,49 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetUrge {
+    pub(crate) enum SetUrge {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: UrgeName,
+            #[builder(into)] pub(crate) name: UrgeName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetUrge {
+    pub(crate) enum GetUrge {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<UrgeName>,
+            #[builder(into)] pub(crate) key: ResourceKey<UrgeName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveUrge {
+    pub(crate) enum RemoveUrge {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: UrgeName,
+            #[builder(into)] pub(crate) name: UrgeName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListUrges {
+    pub(crate) enum ListUrges {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -56,7 +56,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = UrgeRequestType, display = "kebab-case")]
-pub enum UrgeRequest {
+pub(crate) enum UrgeRequest {
     SetUrge(SetUrge),
     GetUrge(GetUrge),
     ListUrges(ListUrges),

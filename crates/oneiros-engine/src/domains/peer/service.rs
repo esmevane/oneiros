@@ -1,6 +1,6 @@
 use crate::*;
 
-pub struct PeerService;
+pub(crate) struct PeerService;
 
 fn peer_to_added_v1(peer: Peer) -> PeerAddedResponseV1 {
     PeerAddedResponseV1 {
@@ -23,7 +23,7 @@ fn peer_to_found_v1(peer: Peer) -> PeerFoundResponseV1 {
 }
 
 impl PeerService {
-    pub async fn add(
+    pub(crate) async fn add(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &AddPeer,
@@ -71,7 +71,10 @@ impl PeerService {
         )))
     }
 
-    pub async fn get(scope: &Scope<AtHost>, request: &GetPeer) -> Result<PeerResponse, PeerError> {
+    pub(crate) async fn get(
+        scope: &Scope<AtHost>,
+        request: &GetPeer,
+    ) -> Result<PeerResponse, PeerError> {
         let GetPeer::V1(get) = request;
         let id = get.key.resolve()?;
         let peer = PeerRepo::new(scope)
@@ -83,7 +86,7 @@ impl PeerService {
         )))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtHost>,
         request: &ListPeers,
     ) -> Result<PeerResponse, PeerError> {
@@ -104,7 +107,7 @@ impl PeerService {
     /// Ensure a peer with the given key is known. If one already exists,
     /// return it without emitting an event. Otherwise add it and return
     /// the newly-created record.
-    pub async fn ensure(
+    pub(crate) async fn ensure(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         key: PeerKey,
@@ -144,7 +147,7 @@ impl PeerService {
         Ok(peer)
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &RemovePeer,

@@ -2,10 +2,10 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-use crate::{ErrorResponse, UpcastError, resource_op_error};
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum SearchError {
+pub(crate) enum SearchError {
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 

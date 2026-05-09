@@ -1,17 +1,13 @@
 use crate::*;
 
-pub struct SensationMcp;
+pub(crate) struct SensationMcp;
 
 impl SensationMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Sensations.resource_def("Experience sensations")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![]
-    }
-
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &SensationRequest,
@@ -24,7 +20,7 @@ impl SensationMcp {
 mod sensation_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         scope: &Scope<AtBookmark>,
         request: &SensationRequest,
     ) -> Result<McpResponse, ToolError> {

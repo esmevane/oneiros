@@ -6,33 +6,33 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CreateTenant {
+    pub(crate) enum CreateTenant {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: TenantName,
+            #[builder(into)] pub(crate) name: TenantName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetTenant {
+    pub(crate) enum GetTenant {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<TenantId>,
+            #[builder(into)] pub(crate) key: ResourceKey<TenantId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListTenants {
+    pub(crate) enum ListTenants {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -40,7 +40,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = TenantRequestType, display = "kebab-case")]
-pub enum TenantRequest {
+pub(crate) enum TenantRequest {
     CreateTenant(CreateTenant),
     GetTenant(GetTenant),
     ListTenants(ListTenants),

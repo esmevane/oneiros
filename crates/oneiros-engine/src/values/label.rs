@@ -1,13 +1,13 @@
 #[derive(Clone, Default, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
-pub struct Label(String);
+pub(crate) struct Label(String);
 
 impl Label {
-    pub fn new(label: impl AsRef<str>) -> Self {
+    pub(crate) fn new(label: impl AsRef<str>) -> Self {
         Self(label.as_ref().into())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }

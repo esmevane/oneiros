@@ -4,35 +4,35 @@ use crate::*;
 ///
 /// Every tool call and resource read produces one of these.
 /// `into_text()` renders it for the MCP protocol.
-pub struct McpResponse {
+pub(crate) struct McpResponse {
     body: String,
     hints: Vec<Hint>,
 }
 
 impl McpResponse {
-    pub fn new(body: impl Into<String>) -> Self {
+    pub(crate) fn new(body: impl Into<String>) -> Self {
         Self {
             body: body.into(),
             hints: Vec::new(),
         }
     }
 
-    pub fn hint(mut self, hint: Hint) -> Self {
+    pub(crate) fn hint(mut self, hint: Hint) -> Self {
         self.hints.push(hint);
         self
     }
 
-    pub fn hints(mut self, hints: Vec<Hint>) -> Self {
+    pub(crate) fn hints(mut self, hints: Vec<Hint>) -> Self {
         self.hints.extend(hints);
         self
     }
 
-    pub fn hint_set(self, set: HintSet) -> Self {
+    pub(crate) fn hint_set(self, set: HintSet) -> Self {
         self.hints(set.hints())
     }
 
     /// Render into MCP text content.
-    pub fn into_text(self) -> String {
+    pub(crate) fn into_text(self) -> String {
         let mut text = self.body;
         if !self.hints.is_empty() {
             let section = HintTemplate { hints: &self.hints }.to_string();

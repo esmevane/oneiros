@@ -3,12 +3,12 @@ use bon::Builder;
 use crate::*;
 
 #[derive(Debug, Clone, Builder)]
-pub struct ResourceDocs {
-    pub tag: Tag,
+pub(crate) struct ResourceDocs {
+    pub(crate) tag: Tag,
     #[builder(into)]
-    pub nickname: Label,
+    pub(crate) nickname: Label,
     #[builder(into)]
-    pub summary: Description,
+    pub(crate) summary: Description,
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
 }

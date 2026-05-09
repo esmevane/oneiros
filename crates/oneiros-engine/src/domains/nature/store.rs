@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct NatureStore<'a> {
+pub(crate) struct NatureStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> NatureStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Nature(nature_event)) = &event.data {
             match nature_event {
                 NatureEvents::NatureSet(setting) => self.set(setting)?,
@@ -21,12 +21,12 @@ impl<'a> NatureStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM natures", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS natures (
                 name TEXT PRIMARY KEY,
@@ -37,7 +37,7 @@ impl<'a> NatureStore<'a> {
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Nature>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Nature>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM natures ORDER BY name")?;

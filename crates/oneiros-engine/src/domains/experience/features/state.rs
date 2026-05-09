@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ExperienceState;
+pub(crate) struct ExperienceState;
 
 impl ExperienceState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Experience(experience_event) = event {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(created) => {
@@ -13,14 +13,14 @@ impl ExperienceState {
                 }
                 ExperienceEvents::ExperienceDescriptionUpdated(updated) => {
                     if let Ok(current) = updated.current()
-                        && let Some(experience) = canon.experiences.get_mut(current.id)
+                        && let Some(experience) = canon.experiences.get_mut(&current.id)
                     {
                         experience.description = current.description;
                     }
                 }
                 ExperienceEvents::ExperienceSensationUpdated(updated) => {
                     if let Ok(current) = updated.current()
-                        && let Some(experience) = canon.experiences.get_mut(current.id)
+                        && let Some(experience) = canon.experiences.get_mut(&current.id)
                     {
                         experience.sensation = current.sensation;
                     }
@@ -31,7 +31,7 @@ impl ExperienceState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }
@@ -59,7 +59,7 @@ mod tests {
         ));
         let next = ExperienceState::reduce(canon, &event);
 
-        let updated = next.experiences.get(experience.id).unwrap();
+        let updated = next.experiences.get(&experience.id).unwrap();
         assert_eq!(updated.description, Description::new("Updated description"));
     }
 }

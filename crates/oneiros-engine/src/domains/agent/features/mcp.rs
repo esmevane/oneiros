@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct AgentMcp;
+pub(crate) struct AgentMcp;
 
 impl AgentMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         agent_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -17,22 +17,22 @@ impl AgentMcp {
         agent_mcp::dispatch(context, mailbox, tool_name, params).await
     }
 
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Agents.resource_def("All agents in the brain")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
+    pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
         vec![
-            ResourcePathKind::Agent.into_template("Agent details"),
-            ResourcePathKind::AgentCognitions.into_template("An agent's cognitions"),
-            ResourcePathKind::AgentMemories.into_template("An agent's memories"),
-            ResourcePathKind::AgentExperiences.into_template("An agent's experiences"),
-            ResourcePathKind::AgentConnections.into_template("An agent's connections"),
-            ResourcePathKind::AgentPressure.into_template("An agent's pressure readings"),
+            ResourcePathKind::Agent.template_def("Agent details"),
+            ResourcePathKind::AgentCognitions.template_def("An agent's cognitions"),
+            ResourcePathKind::AgentMemories.template_def("An agent's memories"),
+            ResourcePathKind::AgentExperiences.template_def("An agent's experiences"),
+            ResourcePathKind::AgentConnections.template_def("An agent's connections"),
+            ResourcePathKind::AgentPressure.template_def("An agent's pressure readings"),
         ]
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &AgentRequest,
@@ -44,7 +44,7 @@ impl AgentMcp {
     /// without I/O. Currently only `AgentConnections`, which requires an
     /// agent lookup to resolve a `RefToken` before building a
     /// `ConnectionRequest`.
-    pub async fn read_resource_special(
+    pub(crate) async fn read_resource_special(
         &self,
         context: &ProjectLog,
         path: &ResourcePath,
@@ -64,7 +64,7 @@ impl AgentMcp {
 mod agent_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<CreateAgent>::new(
                 AgentRequestType::CreateAgent,
@@ -81,7 +81,7 @@ mod agent_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
         tool_name: &ToolName,
@@ -122,7 +122,7 @@ mod agent_mcp {
         }
     }
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         context: &ProjectLog,
         request: &AgentRequest,
     ) -> Result<McpResponse, ToolError> {
@@ -151,7 +151,7 @@ mod agent_mcp {
         }
     }
 
-    pub async fn read_agent_connections(
+    pub(crate) async fn read_agent_connections(
         context: &ProjectLog,
         name: &AgentName,
     ) -> Result<McpResponse, ToolError> {

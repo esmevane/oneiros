@@ -9,25 +9,25 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = McpConfigResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum McpConfigResponse {
+pub(crate) enum McpResponses {
     McpConfigWritten(McpConfigWrittenResponse),
     McpConfigExists(McpConfigExistsResponse),
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum McpConfigWrittenResponse {
+    pub(crate) enum McpConfigWrittenResponse {
         V1 => {
-            pub path: PathBuf,
+            pub(crate) path: PathBuf,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum McpConfigExistsResponse {
+    pub(crate) enum McpConfigExistsResponse {
         V1 => {
-            pub path: PathBuf,
+            pub(crate) path: PathBuf,
         }
     }
 }

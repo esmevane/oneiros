@@ -4,10 +4,10 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{ErrorResponse, UpcastError};
+use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum McpConfigError {
+pub(crate) enum McpConfigError {
     #[error("No token available. Run `oneiros project init` first, or pass --token.")]
     NoToken,
 

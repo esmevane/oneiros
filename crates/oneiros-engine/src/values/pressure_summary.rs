@@ -9,9 +9,9 @@ use crate::*;
 /// for ambient awareness without the full gauge audit trail.
 /// Full detail is available via `get_pressure` / `list_pressures`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-pub struct PressureSummary {
-    pub urge: UrgeName,
-    pub percent: u8,
+pub(crate) struct PressureSummary {
+    pub(crate) urge: UrgeName,
+    pub(crate) percent: u8,
 }
 
 #[cfg(test)]

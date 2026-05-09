@@ -26,43 +26,43 @@ fn default_data_dir() -> PathBuf {
 /// Server (which binds to the address) and Client (which connects to it).
 #[derive(Builder, Debug, Clone, Parser, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-pub struct Config {
+pub(crate) struct Config {
     /// Root directory for brain data (blobs, exports, etc.)
     #[arg(long, short, global = true, default_value_os_t = default_data_dir())]
     #[builder(default = default_data_dir())]
-    pub data_dir: PathBuf,
+    pub(crate) data_dir: PathBuf,
     /// The brain (project) name. Auto-detected from cwd if not specified.
     #[arg(long, short, global = true, default_value_t = detect_brain_name())]
     #[builder(into, default = detect_brain_name())]
-    pub brain: BrainName,
+    pub(crate) brain: BrainName,
     /// The bookmark (lens) to operate through. Defaults to main.
     #[arg(long, global = true, default_value_t = BookmarkName::main())]
     #[builder(into, default = BookmarkName::main())]
-    pub bookmark: BookmarkName,
+    pub(crate) bookmark: BookmarkName,
     /// Service management configuration.
     #[command(flatten)]
     #[builder(default)]
-    pub service: ServiceConfig,
+    pub(crate) service: ServiceConfig,
     /// Default dream assembly configuration.
     #[command(flatten)]
     #[builder(default)]
-    pub dream: DreamConfig,
+    pub(crate) dream: DreamConfig,
     /// Default patience window for eventually-consistent reads.
     #[command(flatten)]
     #[builder(default)]
-    pub fetch: Fetch,
+    pub(crate) fetch: Fetch,
     /// Output format: prompt (default), json, or text.
     #[arg(long, short, default_value_t, global = true)]
     #[builder(default)]
-    pub output: OutputMode,
+    pub(crate) output: OutputMode,
     /// When to use colored output: auto (default), always, or never.
     #[arg(long, default_value_t, global = true)]
     #[builder(default)]
-    pub color: ColorChoice,
+    pub(crate) color: ColorChoice,
     /// How much detail to show: quiet, normal (default), or verbose.
     #[arg(long, default_value_t, global = true)]
     #[builder(default)]
-    pub verbosity: Verbosity,
+    pub(crate) verbosity: Verbosity,
 }
 
 impl Default for Config {
@@ -83,50 +83,45 @@ impl Default for Config {
 
 impl Config {
     /// The service address (convenience accessor).
-    pub fn service_addr(&self) -> SocketAddr {
+    pub(crate) fn service_addr(&self) -> SocketAddr {
         self.service.address
     }
 
     /// The base URL for HTTP clients to connect to the service.
-    pub fn base_url(&self) -> String {
+    pub(crate) fn base_url(&self) -> String {
         format!("http://{}", self.service.address)
     }
 
     /// A Platform bound to this config's data directory.
-    pub fn platform(&self) -> Platform {
+    pub(crate) fn platform(&self) -> Platform {
         Platform::new(&self.data_dir)
     }
 
-    /// Path to the brain's data directory.
-    pub fn brain_dir(&self) -> PathBuf {
-        self.platform().brain_dir(&self.brain)
-    }
-
     /// Path to the config file in the data directory.
-    pub fn config_path(&self) -> PathBuf {
+    pub(crate) fn config_path(&self) -> PathBuf {
         self.platform().config_path()
     }
 
     /// Open the system database.
-    pub fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+    pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         let conn = rusqlite::Connection::open(self.platform().system_db_path())?;
         conn.pragma_update(None, "journal_mode", "wal")?;
         Ok(conn)
     }
 
     /// Path to the brain's event log database.
-    pub fn events_db_path(&self) -> PathBuf {
+    pub(crate) fn events_db_path(&self) -> PathBuf {
         self.platform().events_db_path(&self.brain)
     }
 
     /// Path to the bookmark's projection database.
-    pub fn bookmark_db_path(&self) -> PathBuf {
+    pub(crate) fn bookmark_db_path(&self) -> PathBuf {
         self.platform()
             .bookmark_db_path(&self.brain, &self.bookmark)
     }
 
     /// Directory containing all bookmark databases for this brain.
-    pub fn bookmarks_dir(&self) -> PathBuf {
+    pub(crate) fn bookmarks_dir(&self) -> PathBuf {
         self.platform().bookmarks_dir(&self.brain)
     }
 
@@ -135,7 +130,7 @@ impl Config {
     /// Unqualified table names resolve to the bookmark DB (projections).
     /// Event log operations use the `events` schema qualifier.
     /// Both share one connection and transaction for atomicity.
-    pub fn bookmark_conn(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+    pub(crate) fn bookmark_conn(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         let platform = self.platform();
         let _ = platform.ensure_bookmarks_dir(&self.brain);
 
@@ -153,12 +148,12 @@ impl Config {
     }
 
     /// Path to the token file for the current brain.
-    pub fn token_path(&self) -> PathBuf {
+    pub(crate) fn token_path(&self) -> PathBuf {
         self.platform().token_path(&self.brain)
     }
 
     /// Read the token for the current brain, if one exists.
-    pub fn token(&self) -> Option<Token> {
+    pub(crate) fn token(&self) -> Option<Token> {
         std::fs::read_to_string(self.token_path())
             .ok()
             .map(|s| Token::from(s.trim()))
@@ -169,7 +164,7 @@ impl Config {
     ///
     /// File values provide the base; CLI-provided values override them.
     /// If no file exists or is empty, returns self unchanged.
-    pub fn with_config_file(mut self) -> Self {
+    pub(crate) fn with_config_file(mut self) -> Self {
         let path = self.config_path();
 
         let file_config = match std::fs::read_to_string(&path) {
@@ -257,16 +252,6 @@ impl Config {
         }
 
         self
-    }
-
-    /// Build a system context from this config.
-    pub fn system(&self) -> HostLog {
-        HostLog::new(self.clone())
-    }
-
-    /// Build a project context from this config.
-    pub fn project(&self) -> ProjectLog {
-        ProjectLog::new(self.clone())
     }
 }
 

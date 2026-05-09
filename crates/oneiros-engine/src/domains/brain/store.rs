@@ -10,16 +10,16 @@ fn is_missing_table(e: &rusqlite::Error) -> bool {
     )
 }
 
-pub struct BrainStore<'a> {
+pub(crate) struct BrainStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> BrainStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Brain(BrainEvents::BrainCreated(creation))) = &event.data {
             let brain = creation.current()?.brain;
             self.write_brain(&brain)?;
@@ -27,12 +27,12 @@ impl<'a> BrainStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM brains", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "create table if not exists brains (
                 id text primary key,
@@ -45,7 +45,7 @@ impl<'a> BrainStore<'a> {
 
     /// List all brain names known to the system DB. Returns an empty
     /// list if the projection has not been migrated yet (cold start).
-    pub fn list(&self) -> Result<Vec<BrainName>, rusqlite::Error> {
+    pub(crate) fn list(&self) -> Result<Vec<BrainName>, rusqlite::Error> {
         let mut stmt = match self.conn.prepare("select name from brains") {
             Ok(stmt) => stmt,
             Err(e) if is_missing_table(&e) => return Ok(Vec::new()),

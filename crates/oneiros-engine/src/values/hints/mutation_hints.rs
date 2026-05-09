@@ -4,12 +4,12 @@ use crate::*;
 
 /// Hints after a mutation (create/update) — suggest connecting or searching.
 #[derive(Builder)]
-pub struct MutationHints {
-    pub ref_token: RefToken,
+pub(crate) struct MutationHints {
+    pub(crate) ref_token: RefToken,
 }
 
 impl MutationHints {
-    pub fn hints(&self) -> Vec<Hint> {
+    pub(crate) fn hints(&self) -> Vec<Hint> {
         let ref_token = &self.ref_token;
         vec![
             Hint::suggest(
