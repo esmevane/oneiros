@@ -13,7 +13,7 @@ async fn with_seeded_agent<B: Backend>() -> Result<Harness<B>, Box<dyn core::err
 pub(crate) async fn wake<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let response = harness.exec_json("wake thinker.process").await?;
+    let response = harness.exec_json("continuity wake thinker.process").await?;
 
     assert!(
         matches!(
@@ -29,7 +29,7 @@ pub(crate) async fn wake<B: Backend>() -> TestResult {
 pub(crate) async fn dream<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let response = harness.exec_json("dream thinker.process").await?;
+    let response = harness.exec_json("continuity dream thinker.process").await?;
 
     assert!(
         matches!(
@@ -45,7 +45,7 @@ pub(crate) async fn dream<B: Backend>() -> TestResult {
 pub(crate) async fn introspect<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let response = harness.exec_json("introspect thinker.process").await?;
+    let response = harness.exec_json("continuity introspect thinker.process").await?;
 
     assert!(
         matches!(
@@ -61,7 +61,7 @@ pub(crate) async fn introspect<B: Backend>() -> TestResult {
 pub(crate) async fn reflect<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let response = harness.exec_json("reflect thinker.process").await?;
+    let response = harness.exec_json("continuity reflect thinker.process").await?;
 
     assert!(
         matches!(
@@ -77,7 +77,7 @@ pub(crate) async fn reflect<B: Backend>() -> TestResult {
 pub(crate) async fn sleep<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let response = harness.exec_json("sleep thinker.process").await?;
+    let response = harness.exec_json("continuity sleep thinker.process").await?;
 
     assert!(
         matches!(
@@ -100,7 +100,7 @@ pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> T
         .exec_json("cognition add thinker.process observation 'First thought'")
         .await?;
 
-    let response = harness.exec_json("dream thinker.process").await?;
+    let response = harness.exec_json("continuity dream thinker.process").await?;
 
     match response {
         Responses::Continuity(ContinuityResponse::Dreaming(DreamingResponse::V1(details))) => {
@@ -141,7 +141,7 @@ pub(crate) async fn dream_includes_vocabulary_and_connections<B: Backend>() -> T
 pub(crate) async fn guidebook<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let response = harness.exec_json("guidebook thinker.process").await?;
+    let response = harness.exec_json("continuity guidebook thinker.process").await?;
 
     assert!(
         matches!(
@@ -163,7 +163,7 @@ pub(crate) async fn dream_prompt_omits_vocabulary<B: Backend>() -> TestResult {
         .exec_json("texture set observation --description 'Noticing things' --prompt 'When you notice something interesting about the code, architecture, or process, capture it as an observation.'")
         .await?;
 
-    let prompt = harness.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity dream thinker.process").await?;
 
     // Vocabulary lives in the guidebook, not the greeting.
     assert!(
@@ -193,7 +193,7 @@ pub(crate) async fn dream_prompt_omits_non_core_memories<B: Backend>() -> TestRe
         .exec_json("memory add thinker.process project 'A detailed project memory that should remain in the substrate, not the greeting'")
         .await?;
 
-    let prompt = harness.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity dream thinker.process").await?;
 
     assert!(
         prompt.contains("I am the core of all things"),
@@ -216,7 +216,7 @@ pub(crate) async fn dream_prompt_omits_non_core_memories<B: Backend>() -> TestRe
 pub(crate) async fn dream_prompt_contains_identity<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity dream thinker.process").await?;
 
     assert!(
         prompt.starts_with("You are waking as thinker.process. Today is "),
@@ -238,7 +238,7 @@ pub(crate) async fn dream_prompt_contains_identity<B: Backend>() -> TestResult {
 pub(crate) async fn dream_prompt_contains_continuity<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity dream thinker.process").await?;
 
     assert!(
         prompt.contains("## Continuity"),
@@ -255,7 +255,7 @@ pub(crate) async fn dream_prompt_contains_memories<B: Backend>() -> TestResult {
         .exec_json("memory add thinker.process core 'I remember everything'")
         .await?;
 
-    let prompt = harness.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity dream thinker.process").await?;
 
     assert!(
         prompt.contains("### Your core memories"),
@@ -276,7 +276,7 @@ pub(crate) async fn dream_prompt_contains_cognitions<B: Backend>() -> TestResult
         .exec_json("cognition add thinker.process observation 'Something interesting happened'")
         .await?;
 
-    let prompt = harness.exec_prompt("dream thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity dream thinker.process").await?;
 
     assert!(
         prompt.contains("### Latest cognitions"),
@@ -293,7 +293,7 @@ pub(crate) async fn dream_prompt_contains_cognitions<B: Backend>() -> TestResult
 pub(crate) async fn introspect_prompt_contains_agent<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("introspect thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity introspect thinker.process").await?;
 
     assert!(
         prompt.contains("thinker.process"),
@@ -310,7 +310,7 @@ pub(crate) async fn introspect_prompt_contains_agent<B: Backend>() -> TestResult
 pub(crate) async fn reflect_prompt_contains_agent<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("reflect thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity reflect thinker.process").await?;
 
     assert!(
         prompt.contains("thinker.process"),
@@ -327,7 +327,7 @@ pub(crate) async fn reflect_prompt_contains_agent<B: Backend>() -> TestResult {
 pub(crate) async fn guidebook_prompt_contains_capabilities<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("guidebook thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity guidebook thinker.process").await?;
 
     assert!(
         prompt.contains("Cognitive Guidebook"),
@@ -352,7 +352,7 @@ pub(crate) async fn guidebook_prompt_contains_capabilities<B: Backend>() -> Test
 pub(crate) async fn wake_prompt_contains_identity<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("wake thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity wake thinker.process").await?;
 
     assert!(
         prompt.starts_with("You are waking as thinker.process. Today is "),
@@ -369,7 +369,7 @@ pub(crate) async fn wake_prompt_contains_identity<B: Backend>() -> TestResult {
 pub(crate) async fn sleep_prompt_contains_agent<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("sleep thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity sleep thinker.process").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -386,7 +386,9 @@ pub(crate) async fn sleep_prompt_contains_agent<B: Backend>() -> TestResult {
 pub(crate) async fn sense_prompt_contains_agent<B: Backend>() -> TestResult {
     let harness = with_seeded_agent::<B>().await?;
 
-    let prompt = harness.exec_prompt("sense thinker.process").await?;
+    let prompt = harness
+        .exec_prompt("continuity sense thinker.process 'a test signal'")
+        .await?;
 
     assert!(!prompt.is_empty(), "sense prompt should not be empty");
     assert!(

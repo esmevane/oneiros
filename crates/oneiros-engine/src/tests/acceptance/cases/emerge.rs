@@ -4,7 +4,7 @@ pub(crate) async fn creates_and_wakes_agent<B: Backend>() -> TestResult {
     let harness = Harness::<B>::seed_project().await?;
 
     let response = harness
-        .exec_json("emerge newborn process --description 'A new agent'")
+        .exec_json("continuity emerge newborn process --description 'A new agent'")
         .await?;
 
     match &response {
@@ -33,7 +33,7 @@ pub(crate) async fn emerge_prompt_contains_identity<B: Backend>() -> TestResult 
     let harness = Harness::<B>::seed_project().await?;
 
     let prompt = harness
-        .exec_prompt("emerge thinker process --description 'A thinking agent'")
+        .exec_prompt("continuity emerge thinker process --description 'A thinking agent'")
         .await?;
 
     assert!(
@@ -55,7 +55,7 @@ pub(crate) async fn recede_prompt_contains_agent<B: Backend>() -> TestResult {
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let prompt = harness.exec_prompt("recede thinker.process").await?;
+    let prompt = harness.exec_prompt("continuity recede thinker.process").await?;
 
     assert!(
         !prompt.is_empty(),
@@ -76,7 +76,7 @@ pub(crate) async fn recede_retires_agent<B: Backend>() -> TestResult {
         .exec_json("agent create retiring process --description 'Will retire'")
         .await?;
 
-    let response = harness.exec_json("recede retiring.process").await?;
+    let response = harness.exec_json("continuity recede retiring.process").await?;
 
     match &response {
         // Engine: typed continuity response

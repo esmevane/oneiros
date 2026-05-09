@@ -6,7 +6,7 @@ pub(crate) async fn status_shows_agents<B: Backend>() -> TestResult {
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let prompt = harness.exec_prompt("status").await?;
+    let prompt = harness.exec_prompt("continuity status").await?;
 
     assert!(!prompt.is_empty(), "status prompt should not be empty");
     assert!(
@@ -27,7 +27,7 @@ pub(crate) async fn returns_activity_table<B: Backend>() -> TestResult {
         .exec_json("agent create thinker process --description 'A thinking agent'")
         .await?;
 
-    let response = harness.exec_json("status").await?;
+    let response = harness.exec_json("continuity status").await?;
 
     match &response {
         Responses::Continuity(ContinuityResponse::Status(StatusResponse::V1(details))) => {

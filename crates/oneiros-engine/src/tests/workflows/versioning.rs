@@ -24,7 +24,7 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = app.client();
 
-    app.command("emerge thinker process").await?;
+    app.command("continuity emerge thinker process").await?;
     app.command("cognition add thinker.process observation 'thought on main'")
         .await?;
 

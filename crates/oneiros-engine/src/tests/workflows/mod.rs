@@ -7,6 +7,7 @@ mod mcp;
 mod portability;
 mod pressure;
 mod search;
+mod skills;
 mod storage;
 mod system;
 mod versioning;
