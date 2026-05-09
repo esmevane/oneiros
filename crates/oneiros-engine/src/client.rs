@@ -43,6 +43,10 @@ impl IntoResponse for ClientError {
     }
 }
 
+pub(crate) trait ConfigurableClient {
+    fn from_config(config: &Config) -> Result<Self, ClientError>;
+}
+
 impl Client {
     pub(crate) fn new(base_url: impl AsRef<str>) -> Self {
         Self {
@@ -60,7 +64,10 @@ impl Client {
         }
     }
 
-    pub(crate) fn with_token(base_url: impl Into<String>, token: Token) -> Result<Self, ClientError> {
+    pub(crate) fn with_token(
+        base_url: impl Into<String>,
+        token: Token,
+    ) -> Result<Self, ClientError> {
         let mut headers = reqwest::header::HeaderMap::new();
         let value = format!("Bearer {token}").parse().map_err(|_| {
             ClientError::InvalidRequest("token contains invalid header characters".into())

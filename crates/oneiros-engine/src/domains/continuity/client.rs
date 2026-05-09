@@ -13,12 +13,18 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Emerge — create and activate an agent's continuity.
-    pub(crate) async fn emerge(&self, body: &EmergeAgent) -> Result<ContinuityResponse, ClientError> {
+    pub(crate) async fn emerge(
+        &self,
+        body: &EmergeAgent,
+    ) -> Result<ContinuityResponse, ClientError> {
         self.client.post("/continuity", body).await
     }
 
     /// Recede — end an agent's continuity.
-    pub(crate) async fn recede(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
+    pub(crate) async fn recede(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
         self.client.delete(&format!("/continuity/{agent}")).await
     }
 
@@ -38,7 +44,10 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Retrieve the guidebook for an agent.
-    pub(crate) async fn guidebook(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
+    pub(crate) async fn guidebook(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
         self.client
             .get(&format!("/continuity/{agent}/guidebook"))
             .await
@@ -69,7 +78,10 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Run the introspect continuity operation for the given agent.
-    pub(crate) async fn introspect(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
+    pub(crate) async fn introspect(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
         self.client
             .post(
                 &format!("/continuity/{agent}/introspect"),
@@ -79,7 +91,10 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Run the reflect continuity operation for the given agent.
-    pub(crate) async fn reflect(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
+    pub(crate) async fn reflect(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
         self.client
             .post(
                 &format!("/continuity/{agent}/reflect"),
@@ -89,7 +104,10 @@ impl<'a> ContinuityClient<'a> {
     }
 
     /// Run the sense continuity operation for the given agent with the provided content.
-    pub(crate) async fn sense(&self, sensing: &SenseContent) -> Result<ContinuityResponse, ClientError> {
+    pub(crate) async fn sense(
+        &self,
+        sensing: &SenseContent,
+    ) -> Result<ContinuityResponse, ClientError> {
         let SenseContent::V1(sense) = sensing;
         self.client
             .post(

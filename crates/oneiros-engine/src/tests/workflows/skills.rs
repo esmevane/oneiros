@@ -1,11 +1,13 @@
-//! Skill documentation references valid CLI commands.
+//! Skill documentation references valid CLI commands, and every CLI
+//! command has a skill reference.
 //!
-//! Every `` `oneiros …` `` invocation that ships in skill markdown must
-//! resolve to a live subcommand. When a command path moves or gets
-//! removed, this test aggregates every stale reference into one report
-//! so doc drift is fixed in one pass instead of N flaky CI runs.
+//! `skill_docs_reference_valid_commands` catches docs pointing at vapor
+//! (the path moved or got removed). `cli_commands_have_skill_docs` walks
+//! the live CLI tree and catches commands with no shipped doc reference
+//! (new or moved surface area without a corresponding skill update).
+//! Together they keep the docs↔code link bidirectional.
 
-use clap::{Parser, error::ErrorKind};
+use clap::{CommandFactory, Parser, error::ErrorKind};
 
 use crate::*;
 
@@ -52,6 +54,63 @@ fn skill_docs_reference_valid_commands() {
 struct StaleRef {
     skill: &'static str,
     invocation: String,
+}
+
+#[test]
+fn cli_commands_have_skill_docs() {
+    let skills: Vec<Skill> = SkillInventory::all();
+    let mut leaves: Vec<Vec<String>> = Vec::new();
+    collect_leaves(&Cli::command(), Vec::new(), &mut leaves);
+
+    let mut undocumented: Vec<String> = Vec::new();
+    for path in &leaves {
+        let invocation = format!("oneiros {}", path.join(" "));
+        // A doc reference is either `` `oneiros foo bar ` `` (args follow)
+        // or `` `oneiros foo bar` `` (no args). Either form counts.
+        let with_args = format!("`{invocation} ");
+        let bare = format!("`{invocation}`");
+        let documented = skills
+            .iter()
+            .any(|skill| skill.content.contains(&with_args) || skill.content.contains(&bare));
+        if !documented {
+            undocumented.push(invocation);
+        }
+    }
+
+    if !undocumented.is_empty() {
+        let report: String = undocumented
+            .iter()
+            .map(|invocation| format!("  `{invocation}`"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        panic!(
+            "{} CLI command(s) without skill documentation:\n{report}",
+            undocumented.len()
+        );
+    }
+}
+
+/// Recurse the clap command tree, emitting one path per leaf subcommand.
+/// The auto-generated `help` subcommand is skipped — it isn't part of the
+/// authored surface.
+fn collect_leaves(command: &clap::Command, prefix: Vec<String>, out: &mut Vec<Vec<String>>) {
+    let subcommands: Vec<_> = command
+        .get_subcommands()
+        .filter(|sub| sub.get_name() != "help")
+        .collect();
+
+    if subcommands.is_empty() {
+        if !prefix.is_empty() {
+            out.push(prefix);
+        }
+        return;
+    }
+
+    for subcommand in subcommands {
+        let mut next = prefix.clone();
+        next.push(subcommand.get_name().to_string());
+        collect_leaves(subcommand, next, out);
+    }
 }
 
 /// Extract `oneiros …` invocations bounded by inline backticks.
