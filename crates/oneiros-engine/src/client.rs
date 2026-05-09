@@ -39,12 +39,8 @@ pub(crate) enum ClientError {
 
 impl IntoResponse for ClientError {
     fn into_response(self) -> axum::response::Response {
-        unreachable!()
+        todo!("this isn't unreachable - the client can be leveraged by a server, we need to impl this")
     }
-}
-
-pub(crate) trait ConfigurableClient {
-    fn from_config(config: &Config) -> Result<Self, ClientError>;
 }
 
 impl Client {

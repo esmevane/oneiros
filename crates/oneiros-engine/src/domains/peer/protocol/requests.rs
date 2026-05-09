@@ -9,6 +9,7 @@ versioned! {
     pub(crate) enum AddPeer {
         #[derive(clap::Args)]
         V1 => {
+            #[arg(id = "peer_address")]
             pub(crate) address: String,
             #[arg(long)]
             pub(crate) name: Option<String>,

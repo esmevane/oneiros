@@ -44,10 +44,12 @@ impl SkillInventory {
         skills.extend(ContinuitySkills::all());
         skills.extend(DoctorSkills::all());
         skills.extend(ExperienceSkills::all());
+        skills.extend(FollowSkills::all());
         skills.extend(LevelSkills::all());
         skills.extend(McpConfigSkills::all());
         skills.extend(MemorySkills::all());
         skills.extend(NatureSkills::all());
+        skills.extend(PeerSkills::all());
         skills.extend(PersonaSkills::all());
         skills.extend(PressureSkills::all());
         skills.extend(ProjectSkills::all());
