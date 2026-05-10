@@ -5,17 +5,17 @@
 
 use crate::*;
 
-pub struct MemoryView<'a> {
+pub(crate) struct MemoryView<'a> {
     response: MemoryResponse,
     request: &'a MemoryRequest,
 }
 
 impl<'a> MemoryView<'a> {
-    pub fn new(response: MemoryResponse, request: &'a MemoryRequest) -> Self {
+    pub(crate) fn new(response: MemoryResponse, request: &'a MemoryRequest) -> Self {
         Self { response, request }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)) => {
                 let ref_token = RefToken::new(Ref::memory(added.memory.id));
@@ -80,7 +80,7 @@ impl<'a> MemoryView<'a> {
         }
     }
 
-    pub fn render(self) -> Rendered<MemoryResponse> {
+    pub(crate) fn render(self) -> Rendered<MemoryResponse> {
         match (self.response, self.request) {
             (MemoryResponse::MemoryAdded(MemoryAddedResponse::V1(added)), _) => {
                 let ref_token = RefToken::new(Ref::memory(added.memory.id));
@@ -119,9 +119,9 @@ impl<'a> MemoryView<'a> {
                 MemoryRequest::ListMemories(ListMemories::V1(listing)),
             ) => {
                 let mut table = Table::new(vec![
-                    Column::key("level", "Level"),
-                    Column::key("content", "Content").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Level"),
+                    Column::new("Content").max(60),
+                    Column::new("Ref"),
                 ]);
 
                 for item in &listed.items {

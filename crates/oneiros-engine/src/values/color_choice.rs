@@ -3,7 +3,7 @@
     Debug, Clone, Default, PartialEq, Eq, clap::ValueEnum, serde::Serialize, serde::Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
-pub enum ColorChoice {
+pub(crate) enum ColorChoice {
     /// Detect terminal capabilities automatically.
     #[default]
     Auto,
@@ -18,7 +18,7 @@ impl ColorChoice {
     ///
     /// Good to call once, and early — before any colored output is written.
     ///
-    pub fn apply_global(&self) {
+    pub(crate) fn apply_global(&self) {
         let choice = match self {
             Self::Auto => anstream::ColorChoice::Auto,
             Self::Always => anstream::ColorChoice::Always,

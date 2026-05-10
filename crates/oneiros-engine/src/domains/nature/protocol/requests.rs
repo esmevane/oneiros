@@ -6,49 +6,49 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetNature {
+    pub(crate) enum SetNature {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: NatureName,
+            #[builder(into)] pub(crate) name: NatureName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetNature {
+    pub(crate) enum GetNature {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<NatureName>,
+            #[builder(into)] pub(crate) key: ResourceKey<NatureName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveNature {
+    pub(crate) enum RemoveNature {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: NatureName,
+            #[builder(into)] pub(crate) name: NatureName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListNatures {
+    pub(crate) enum ListNatures {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -56,7 +56,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = NatureRequestType, display = "kebab-case")]
-pub enum NatureRequest {
+pub(crate) enum NatureRequest {
     SetNature(SetNature),
     GetNature(GetNature),
     ListNatures(ListNatures),

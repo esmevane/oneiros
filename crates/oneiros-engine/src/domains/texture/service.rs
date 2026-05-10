@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TextureService;
+pub(crate) struct TextureService;
 
 impl TextureService {
-    pub async fn set(
+    pub(crate) async fn set(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SetTexture,
@@ -42,7 +42,7 @@ impl TextureService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetTexture,
     ) -> Result<TextureResponse, TextureError> {
@@ -60,7 +60,7 @@ impl TextureService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListTextures,
     ) -> Result<TextureResponse, TextureError> {
@@ -79,7 +79,7 @@ impl TextureService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveTexture,

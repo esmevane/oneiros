@@ -8,9 +8,22 @@ use crate::*;
 
 /// All responses the service domain can produce.
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
-#[kinded(kind = ServiceResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ServiceResponse {
+#[kinded(
+    kind = ServiceResponseType,
+    display = "kebab-case",
+    attrs(
+        expect(
+            clippy::enum_variant_names,
+            reason = "We use these for `type` notation in serde"
+        )
+    )
+)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
+pub(crate) enum ServiceResponse {
     ServiceInstalled(ServiceInstalledResponse),
     ServiceUninstalled,
     ServiceStarted,
@@ -22,36 +35,36 @@ pub enum ServiceResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ServiceInstalledResponse {
+    pub(crate) enum ServiceInstalledResponse {
         V1 => {
-            #[builder(into)] pub name: String,
+            #[builder(into)] pub(crate) name: String,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ServiceHealthyResponse {
+    pub(crate) enum ServiceHealthyResponse {
         V1 => {
-            #[builder(into)] pub address: String,
+            #[builder(into)] pub(crate) address: String,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ServiceRunningResponse {
+    pub(crate) enum ServiceRunningResponse {
         V1 => {
-            #[builder(into)] pub address: String,
+            #[builder(into)] pub(crate) address: String,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ServiceNotRunningResponse {
+    pub(crate) enum ServiceNotRunningResponse {
         V1 => {
-            #[builder(into)] pub reason: String,
+            #[builder(into)] pub(crate) reason: String,
         }
     }
 }

@@ -1,19 +1,22 @@
 use crate::*;
 
-pub struct StorageClient<'a> {
+pub(crate) struct StorageClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> StorageClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn upload(&self, upload: &UploadStorage) -> Result<StorageResponse, ClientError> {
+    pub(crate) async fn upload(
+        &self,
+        upload: &UploadStorage,
+    ) -> Result<StorageResponse, ClientError> {
         self.client.post("/storage", upload).await
     }
 
-    pub async fn list(&self, listing: &ListStorage) -> Result<StorageResponse, ClientError> {
+    pub(crate) async fn list(&self, listing: &ListStorage) -> Result<StorageResponse, ClientError> {
         let ListStorage::V1(listing) = listing;
         let query = format!(
             "limit={}&offset={}",
@@ -22,7 +25,7 @@ impl<'a> StorageClient<'a> {
         self.client.get(&format!("/storage?{query}")).await
     }
 
-    pub async fn show(&self, lookup: &GetStorage) -> Result<StorageResponse, ClientError> {
+    pub(crate) async fn show(&self, lookup: &GetStorage) -> Result<StorageResponse, ClientError> {
         let GetStorage::V1(lookup) = lookup;
         let path = match &lookup.key {
             ResourceKey::Key(key) => StorageRef::encode(key).to_string(),
@@ -31,7 +34,17 @@ impl<'a> StorageClient<'a> {
         self.client.get(&format!("/storage/{path}")).await
     }
 
-    pub async fn remove(&self, removal: &RemoveStorage) -> Result<StorageResponse, ClientError> {
+    pub(crate) async fn get_content(&self, key: &StorageKey) -> Result<Vec<u8>, ClientError> {
+        let ref_key = StorageRef::encode(key);
+        self.client
+            .get_bytes(&format!("/storage/{ref_key}/content"))
+            .await
+    }
+
+    pub(crate) async fn remove(
+        &self,
+        removal: &RemoveStorage,
+    ) -> Result<StorageResponse, ClientError> {
         let RemoveStorage::V1(removal) = removal;
         let ref_key = StorageRef::encode(&removal.key);
         self.client.delete(&format!("/storage/{ref_key}")).await

@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum PeerDocs {
+pub(crate) enum PeerDocs {
     Add,
     List,
     Show,
@@ -8,14 +8,14 @@ pub enum PeerDocs {
 }
 
 impl PeerDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("peers")
             .description("Manage peer connections for distribution")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Add => ResourceDocs::builder()

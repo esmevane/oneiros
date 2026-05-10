@@ -6,49 +6,49 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum SetLevel {
+    pub(crate) enum SetLevel {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: LevelName,
+            #[builder(into)] pub(crate) name: LevelName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetLevel {
+    pub(crate) enum GetLevel {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<LevelName>,
+            #[builder(into)] pub(crate) key: ResourceKey<LevelName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveLevel {
+    pub(crate) enum RemoveLevel {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: LevelName,
+            #[builder(into)] pub(crate) name: LevelName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListLevels {
+    pub(crate) enum ListLevels {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -56,7 +56,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = LevelRequestType, display = "kebab-case")]
-pub enum LevelRequest {
+pub(crate) enum LevelRequest {
     SetLevel(SetLevel),
     GetLevel(GetLevel),
     ListLevels(ListLevels),

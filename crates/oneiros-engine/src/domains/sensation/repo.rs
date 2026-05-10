@@ -2,12 +2,12 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct SensationRepo<'a> {
+pub(crate) struct SensationRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> SensationRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -15,11 +15,14 @@ impl<'a> SensationRepo<'a> {
     /// sensation appears or the configured patience window expires.
     ///
     /// [`get`]: SensationRepo::get
-    pub async fn fetch(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
+    pub(crate) async fn fetch(
+        &self,
+        name: &SensationName,
+    ) -> Result<Option<Sensation>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
-    pub async fn get(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
+    pub(crate) async fn get(&self, name: &SensationName) -> Result<Option<Sensation>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM sensations WHERE name = ?1")?;
@@ -45,7 +48,10 @@ impl<'a> SensationRepo<'a> {
         }
     }
 
-    pub async fn list(&self, filters: &SearchFilters) -> Result<Listed<Sensation>, EventError> {
+    pub(crate) async fn list(
+        &self,
+        filters: &SearchFilters,
+    ) -> Result<Listed<Sensation>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
 
         let total = {

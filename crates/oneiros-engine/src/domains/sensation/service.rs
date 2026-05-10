@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SensationService;
+pub(crate) struct SensationService;
 
 impl SensationService {
-    pub async fn set(
+    pub(crate) async fn set(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &SetSensation,
@@ -45,7 +45,7 @@ impl SensationService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetSensation,
     ) -> Result<SensationResponse, SensationError> {
@@ -63,7 +63,7 @@ impl SensationService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListSensations,
     ) -> Result<SensationResponse, SensationError> {
@@ -82,7 +82,7 @@ impl SensationService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveSensation,

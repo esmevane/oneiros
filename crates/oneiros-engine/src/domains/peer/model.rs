@@ -1,7 +1,6 @@
 use bon::Builder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -16,45 +15,24 @@ use crate::*;
 /// label for display, defaulting to a short hex prefix of the key when no
 /// explicit name is provided.
 #[derive(Builder, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct Peer {
+pub(crate) struct Peer {
     #[builder(default)]
-    pub id: PeerId,
-    pub key: PeerKey,
-    pub address: PeerAddress,
+    pub(crate) id: PeerId,
+    pub(crate) key: PeerKey,
+    pub(crate) address: PeerAddress,
     #[builder(into)]
-    pub name: PeerName,
+    pub(crate) name: PeerName,
     #[builder(default = Timestamp::now())]
-    pub created_at: Timestamp,
+    pub(crate) created_at: Timestamp,
 }
 
-#[derive(Clone, Default)]
-pub struct Peers(HashMap<String, Peer>);
-
-impl Peers {
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn values(&self) -> impl Iterator<Item = &Peer> {
-        self.0.values()
-    }
-
-    pub fn get(&self, id: PeerId) -> Option<&Peer> {
-        self.0.get(&id.to_string())
-    }
-
-    pub fn set(&mut self, peer: &Peer) -> Option<Peer> {
-        self.0.insert(peer.id.to_string(), peer.clone())
-    }
-
-    pub fn remove(&mut self, peer_id: PeerId) -> Option<Peer> {
-        self.0.remove(&peer_id.to_string())
+impl Indexable<PeerId> for Peer {
+    fn id(&self) -> PeerId {
+        self.id
     }
 }
+
+pub(crate) type Peers = EntityIndex<PeerId, Peer>;
 
 resource_id!(PeerId);
 resource_name!(PeerName);

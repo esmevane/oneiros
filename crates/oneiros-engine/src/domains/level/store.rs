@@ -2,16 +2,16 @@ use rusqlite::params;
 
 use crate::*;
 
-pub struct LevelStore<'a> {
+pub(crate) struct LevelStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> LevelStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Level(level_event)) = &event.data {
             match level_event {
                 LevelEvents::LevelSet(setting) => self.set(setting)?,
@@ -21,12 +21,12 @@ impl<'a> LevelStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM levels", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS levels (
                 name TEXT PRIMARY KEY,
@@ -37,7 +37,7 @@ impl<'a> LevelStore<'a> {
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Level>, EventError> {
+    pub(crate) fn list(&self) -> Result<Vec<Level>, EventError> {
         let mut stmt = self
             .conn
             .prepare("SELECT name, description, prompt FROM levels ORDER BY name")?;

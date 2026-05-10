@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum ContinuityCommands {
+pub(crate) enum ContinuityCommands {
     Wake(WakeAgent),
     Dream(DreamAgent),
     Introspect(IntrospectAgent),
@@ -17,11 +17,11 @@ pub enum ContinuityCommands {
 }
 
 impl ContinuityCommands {
-    pub async fn execute(
+    pub(crate) async fn execute(
         &self,
-        context: &ProjectLog,
+        config: &Config,
     ) -> Result<Rendered<Responses>, ContinuityError> {
-        let client = context.client();
+        let client = Client::from_config(config)?;
         let continuity_client = ContinuityClient::new(&client);
 
         let result = match self {

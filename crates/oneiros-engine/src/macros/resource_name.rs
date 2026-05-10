@@ -11,14 +11,15 @@ macro_rules! resource_name {
             schemars::JsonSchema,
         )]
         #[serde(transparent)]
-        pub struct $name(pub crate::Label);
+        pub(crate) struct $name(pub(crate) crate::Label);
 
         impl $name {
-            pub fn new(value: impl AsRef<str>) -> Self {
+            pub(crate) fn new(value: impl AsRef<str>) -> Self {
                 Self(crate::Label::new(value))
             }
 
-            pub fn as_str(&self) -> &str {
+            #[allow(dead_code)]
+            pub(crate) fn as_str(&self) -> &str {
                 self.0.as_str()
             }
         }

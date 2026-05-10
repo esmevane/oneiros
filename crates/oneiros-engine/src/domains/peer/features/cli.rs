@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum PeerCommands {
+pub(crate) enum PeerCommands {
     Add(AddPeer),
     Get(GetPeer),
     List(ListPeers),
@@ -11,8 +11,8 @@ pub enum PeerCommands {
 }
 
 impl PeerCommands {
-    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, PeerError> {
-        let client = context.client();
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PeerError> {
+        let client = Client::from_config(config)?;
         let peer_client = PeerClient::new(&client);
 
         let response = match self {

@@ -6,12 +6,12 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ActorEventsType, display = "kebab-case")]
-pub enum ActorEvents {
+pub(crate) enum ActorEvents {
     ActorCreated(ActorCreated),
 }
 
 impl ActorEvents {
-    pub fn maybe_actor(&self) -> Option<Actor> {
+    pub(crate) fn maybe_actor(&self) -> Option<Actor> {
         match self {
             ActorEvents::ActorCreated(event) => event.clone().current().ok().map(|v| v.actor),
         }
@@ -19,9 +19,9 @@ impl ActorEvents {
 }
 
 versioned! {
-    pub enum ActorCreated {
+    pub(crate) enum ActorCreated {
         V1 => {
-            #[serde(flatten)] pub actor: Actor,
+            #[serde(flatten)] pub(crate) actor: Actor,
         }
     }
 }

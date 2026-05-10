@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct BrainState;
+pub(crate) struct BrainState;
 
 impl BrainState {
-    pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Brain(brain_event) = event
             && let Some(brain) = brain_event.maybe_brain()
         {
@@ -13,7 +13,7 @@ impl BrainState {
         canon
     }
 
-    pub fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<SystemCanon> {
         Reducer::new(Self::reduce)
     }
 }

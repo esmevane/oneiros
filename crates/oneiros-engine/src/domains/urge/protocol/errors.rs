@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum UrgeError {
+pub(crate) enum UrgeError {
     #[error("Urge not found: {0}")]
     NotFound(UrgeName),
 

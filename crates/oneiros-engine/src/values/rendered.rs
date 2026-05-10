@@ -14,54 +14,79 @@ use crate::*;
 /// produced them. Empty strings indicate no presentation is available
 /// for that mode — the caller falls back to serializing `data`.
 #[derive(Debug)]
-pub struct Rendered<T> {
+pub(crate) struct Rendered<T> {
     data: T,
     prompt: String,
     text: String,
+    silent: bool,
 }
 
 impl<T> Rendered<T> {
     /// Construct with all representations.
-    pub fn new(data: T, prompt: String, text: String) -> Self {
-        Self { data, prompt, text }
+    pub(crate) fn new(data: T, prompt: String, text: String) -> Self {
+        Self {
+            data,
+            prompt,
+            text,
+            silent: false,
+        }
+    }
+
+    /// Construct a silent result — engine renders nothing. For commands
+    /// that have already written their output (e.g. binary download to
+    /// stdout) and don't want the render dispatch to follow up.
+    pub(crate) fn silent(data: T) -> Self {
+        Self {
+            data,
+            prompt: String::new(),
+            text: String::new(),
+            silent: true,
+        }
+    }
+
+    /// Whether the engine should skip writing this result.
+    pub(crate) fn is_silent(&self) -> bool {
+        self.silent
     }
 
     /// The typed response — always available.
-    pub fn response(&self) -> &T {
+    pub(crate) fn response(&self) -> &T {
         &self.data
     }
 
     /// Consume into the typed response, discarding presentation.
-    pub fn into_response(self) -> T {
+    #[cfg(test)]
+    pub(crate) fn into_response(self) -> T {
         self.data
     }
 
     /// The rendered prompt, if a presenter produced one.
-    pub fn prompt(&self) -> &str {
+    pub(crate) fn prompt(&self) -> &str {
         &self.prompt
     }
 
     /// The text summary, if a presenter produced one.
-    pub fn text(&self) -> &str {
+    pub(crate) fn text(&self) -> &str {
         &self.text
     }
 
     /// Whether this has a richer representation than raw data.
-    pub fn has_prompt(&self) -> bool {
+    pub(crate) fn has_prompt(&self) -> bool {
         !self.prompt.is_empty()
     }
 
     /// Whether this has a text summary.
-    pub fn has_text(&self) -> bool {
+    pub(crate) fn has_text(&self) -> bool {
         !self.text.is_empty()
     }
 
-    /// Transform the data while preserving prompt and text.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Rendered<U> {
+    /// Transform the data while preserving prompt, text, and silent flag.
+    pub(crate) fn map<U>(self, f: impl FnOnce(T) -> U) -> Rendered<U> {
         Rendered {
             data: f(self.data),
             prompt: self.prompt,
             text: self.text,
+            silent: self.silent,
         }
     }
 
@@ -69,7 +94,7 @@ impl<T> Rendered<T> {
     ///
     /// The `HintSet` is rendered via the `HintTemplate` and appended
     /// to the existing prompt. No-op if the hint set produces no hints.
-    pub fn with_hints(mut self, hint_set: HintSet) -> Self {
+    pub(crate) fn with_hints(mut self, hint_set: HintSet) -> Self {
         let hints = hint_set.hints();
         if !hints.is_empty() {
             let section = HintTemplate { hints: &hints }.to_string();
@@ -86,6 +111,7 @@ impl From<Responses> for Rendered<Responses> {
             data,
             prompt: String::new(),
             text: String::new(),
+            silent: false,
         }
     }
 }

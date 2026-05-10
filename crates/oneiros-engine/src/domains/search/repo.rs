@@ -11,12 +11,12 @@ use crate::*;
 /// With a text query, hits are ranked by FTS5 relevance. Without one, the
 /// repo browses by filters alone, ordered by `created_at` descending — the
 /// shape list endpoints consume.
-pub struct SearchRepo<'a> {
+pub(crate) struct SearchRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> SearchRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -133,12 +133,12 @@ impl<'a> SearchRepo<'a> {
 /// owned parameter bindings. Kept together so the same scope drives both the
 /// hit query and facet aggregations.
 pub(crate) struct WhereClause {
-    pub sql: String,
-    pub bindings: Vec<Box<dyn ToSql>>,
+    pub(crate) sql: String,
+    pub(crate) bindings: Vec<Box<dyn ToSql>>,
 }
 
 impl WhereClause {
-    pub fn params(&self) -> Vec<&dyn ToSql> {
+    pub(crate) fn params(&self) -> Vec<&dyn ToSql> {
         self.bindings
             .iter()
             .map(|b| b.as_ref() as &dyn ToSql)

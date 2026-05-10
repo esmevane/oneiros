@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum TextureError {
+pub(crate) enum TextureError {
     #[error("Texture not found: {0}")]
     NotFound(TextureName),
 

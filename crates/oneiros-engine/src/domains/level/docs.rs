@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum LevelDocs {
+pub(crate) enum LevelDocs {
     List,
     Set,
     Show,
@@ -8,14 +8,14 @@ pub enum LevelDocs {
 }
 
 impl LevelDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("levels")
             .description("Define memory retention tiers")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::List => ResourceDocs::builder()

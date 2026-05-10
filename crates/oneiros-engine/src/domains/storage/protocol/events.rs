@@ -6,7 +6,7 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = StorageEventsType, display = "kebab-case")]
-pub enum StorageEvents {
+pub(crate) enum StorageEvents {
     /// Persistent: projects to storage metadata table (upsert).
     StorageSet(StorageSet),
     /// Persistent: removes storage metadata by key.
@@ -14,17 +14,17 @@ pub enum StorageEvents {
 }
 
 versioned! {
-    pub enum StorageSet {
+    pub(crate) enum StorageSet {
         V1 => {
-            #[serde(flatten)] pub entry: StorageEntry,
+            #[serde(flatten)] pub(crate) entry: StorageEntry,
         }
     }
 }
 
 versioned! {
-    pub enum StorageRemoved {
+    pub(crate) enum StorageRemoved {
         V1 => {
-            pub key: StorageKey,
+            pub(crate) key: StorageKey,
         }
     }
 }

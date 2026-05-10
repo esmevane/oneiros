@@ -3,7 +3,7 @@ use clap::Subcommand;
 use crate::*;
 
 #[derive(Debug, Subcommand)]
-pub enum ProjectCommands {
+pub(crate) enum ProjectCommands {
     Init(InitProject),
     Export(ExportProject),
     Import(ImportProject),
@@ -11,10 +11,13 @@ pub enum ProjectCommands {
 }
 
 impl ProjectCommands {
-    pub async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ProjectError> {
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, ProjectError> {
         let response: ProjectResponse = match self {
             ProjectCommands::Init(initialization) => {
-                let client = config.system().client();
+                let client = Client::from_config(config)?;
                 ProjectClient::new(&client).init(initialization).await?
             }
             ProjectCommands::Export(exporting) => {

@@ -11,54 +11,48 @@ use tokio::sync::mpsc;
 use crate::*;
 
 #[derive(Clone)]
-pub struct ProjectImportMailbox {
+pub(crate) struct ProjectImportMailbox {
     tx: mpsc::UnboundedSender<ProjectMessage>,
 }
 
 impl ProjectImportMailbox {
-    pub fn open() -> (Self, ProjectImportInbox) {
+    pub(crate) fn open() -> (Self, ProjectImportInbox) {
         let (tx, rx) = mpsc::unbounded_channel();
         (Self { tx }, ProjectImportInbox { rx })
     }
 
-    pub fn tell(&self, message: ProjectMessage) {
+    pub(crate) fn tell(&self, message: ProjectMessage) {
         if let Err(error) = self.tx.send(message) {
             tracing::warn!(error = %error, "project import: receiver closed; message dropped");
         }
     }
 }
 
-pub struct ProjectImportInbox {
+pub(crate) struct ProjectImportInbox {
     rx: mpsc::UnboundedReceiver<ProjectMessage>,
 }
 
 impl ProjectImportInbox {
-    pub async fn recv(&mut self) -> Option<ProjectMessage> {
+    pub(crate) async fn recv(&mut self) -> Option<ProjectMessage> {
         self.rx.recv().await
     }
 }
 
-pub struct ProjectImportActor {
+pub(crate) struct ProjectImportActor {
     mailbox: Mailbox,
 }
 
 impl ProjectImportActor {
-    pub fn spawn(inbox: ProjectImportInbox, mailbox: Mailbox) {
+    pub(crate) fn spawn(inbox: ProjectImportInbox, mailbox: Mailbox) {
         tokio::spawn(Self { mailbox }.run(inbox));
     }
 
     async fn run(self, mut inbox: ProjectImportInbox) {
         while let Some(message) = inbox.recv().await {
-            match message {
-                ProjectMessage::ImportEvent(import) => {
-                    if let Err(error) = self.import(import).await {
-                        tracing::error!(?error, "project import: ingest failed");
-                    }
-                }
-                ProjectMessage::ImportReset(_) => {
-                    // No actor-local state to reset.
-                }
-                _ => {}
+            if let ProjectMessage::ImportEvent(import) = message
+                && let Err(error) = self.import(import).await
+            {
+                tracing::error!(?error, "project import: ingest failed");
             }
         }
     }

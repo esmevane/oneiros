@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = PeerResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum PeerResponse {
+pub(crate) enum PeerResponse {
     Added(PeerAddedResponse),
     Found(PeerFoundResponse),
     Listed(PeersResponse),
@@ -16,45 +16,45 @@ pub enum PeerResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum PeerAddedResponse {
+    pub(crate) enum PeerAddedResponse {
         V1 => {
-            #[builder(default)] pub id: PeerId,
-            pub key: PeerKey,
-            pub address: PeerAddress,
-            #[builder(into)] pub name: PeerName,
-            pub created_at: Timestamp,
+            #[builder(default)] pub(crate) id: PeerId,
+            pub(crate) key: PeerKey,
+            pub(crate) address: PeerAddress,
+            #[builder(into)] pub(crate) name: PeerName,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum PeerFoundResponse {
+    pub(crate) enum PeerFoundResponse {
         V1 => {
-            #[builder(default)] pub id: PeerId,
-            pub key: PeerKey,
-            pub address: PeerAddress,
-            #[builder(into)] pub name: PeerName,
-            pub created_at: Timestamp,
+            #[builder(default)] pub(crate) id: PeerId,
+            pub(crate) key: PeerKey,
+            pub(crate) address: PeerAddress,
+            #[builder(into)] pub(crate) name: PeerName,
+            pub(crate) created_at: Timestamp,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum PeersResponse {
+    pub(crate) enum PeersResponse {
         V1 => {
-            pub items: Vec<PeerFoundResponseV1>,
-            pub total: usize,
+            pub(crate) items: Vec<PeerFoundResponseV1>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum PeerRemovedResponse {
+    pub(crate) enum PeerRemovedResponse {
         V1 => {
-            pub id: PeerId,
+            pub(crate) id: PeerId,
         }
     }
 }

@@ -6,14 +6,14 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = MemoryEventsType, display = "kebab-case")]
-pub enum MemoryEvents {
+pub(crate) enum MemoryEvents {
     MemoryAdded(MemoryAdded),
 }
 
 versioned! {
-    pub enum MemoryAdded {
+    pub(crate) enum MemoryAdded {
         V1 => {
-            #[serde(flatten)] pub memory: Memory,
+            #[serde(flatten)] pub(crate) memory: Memory,
         }
     }
 }

@@ -1,19 +1,19 @@
 use crate::*;
 
-pub enum PressureDocs {
+pub(crate) enum PressureDocs {
     List,
     Get,
 }
 
 impl PressureDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("pressure")
             .description("Monitor cognitive pressure levels")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::List => ResourceDocs::builder()

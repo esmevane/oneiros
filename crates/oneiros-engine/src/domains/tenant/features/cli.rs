@@ -6,15 +6,18 @@ use crate::*;
 /// protocol request directly — clap derives parsing through the wrapper's
 /// `Args` impl, which delegates to the latest version's struct.
 #[derive(Debug, Subcommand)]
-pub enum TenantCommands {
+pub(crate) enum TenantCommands {
     Create(CreateTenant),
     Get(GetTenant),
     List(ListTenants),
 }
 
 impl TenantCommands {
-    pub async fn execute(&self, context: &HostLog) -> Result<Rendered<Responses>, TenantError> {
-        let client = context.client();
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, TenantError> {
+        let client = Client::from_config(config)?;
         let tenant_client = TenantClient::new(&client);
 
         let response = match self {

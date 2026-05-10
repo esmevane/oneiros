@@ -12,24 +12,25 @@ use crate::*;
 /// [`ResourceKey::Key`] via `K::from_str`. Resolves to `K` by destructuring
 /// a `Ref` and enforcing it points at the expected resource kind.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ResourceKey<K> {
+pub(crate) enum ResourceKey<K> {
     Key(K),
     Ref(RefToken),
 }
 
 impl<K> ResourceKey<K> {
-    pub fn from_key(key: K) -> Self {
+    pub(crate) fn from_key(key: K) -> Self {
         Self::Key(key)
     }
 
-    pub fn from_ref(r: Ref) -> Self {
-        Self::Ref(RefToken::new(r))
+    #[cfg(test)]
+    pub(crate) fn from_ref(given_ref: Ref) -> Self {
+        Self::Ref(RefToken::new(given_ref))
     }
 }
 
 impl<K> From<K> for ResourceKey<K> {
     fn from(key: K) -> Self {
-        Self::Key(key)
+        Self::from_key(key)
     }
 }
 
@@ -39,7 +40,7 @@ where
 {
     /// Collapse either variant into the native key, returning a
     /// [`ResolveError::WrongKind`] when a ref points at the wrong resource.
-    pub fn resolve(&self) -> Result<K, ResolveError> {
+    pub(crate) fn resolve(&self) -> Result<K, ResolveError> {
         match self {
             Self::Key(k) => Ok(k.clone()),
             Self::Ref(token) => K::try_from(token.inner().clone()),
@@ -50,7 +51,7 @@ where
 /// Error raised when a [`ResourceKey::Ref`] cannot be turned into the native
 /// key the caller expected.
 #[derive(Debug, thiserror::Error)]
-pub enum ResolveError {
+pub(crate) enum ResolveError {
     #[error("expected a {expected} ref, got a {got} ref")]
     WrongKind {
         expected: &'static str,
@@ -59,7 +60,7 @@ pub enum ResolveError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ResourceKeyParseError<E: fmt::Debug + fmt::Display> {
+pub(crate) enum ResourceKeyParseError<E: fmt::Debug + fmt::Display> {
     #[error("{0}")]
     Key(E),
     #[error(transparent)]

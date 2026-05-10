@@ -28,7 +28,7 @@ You are waking as {{ context.agent.name }}. Today is {{ self.today() }}.
 ### Latest threads
 
 {% for connection in self.latest_threads() -%}
-- {{ connection.from_token() }} [{{ connection.nature }}] {{ connection.to_token() }}
+- {{ connection.get_from_token() }} [{{ connection.nature }}] {{ connection.get_to_token() }}
 {% endfor %}
 **Hint:** Inspect the from-ref and the to-ref, consider the connection.
 {% endif %}

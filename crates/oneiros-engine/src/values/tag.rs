@@ -3,9 +3,9 @@ use bon::Builder;
 use crate::*;
 
 #[derive(Debug, Clone, Builder)]
-pub struct Tag {
+pub(crate) struct Tag {
     #[builder(into)]
-    pub name: Label,
+    pub(crate) name: Label,
     #[builder(into)]
-    pub description: Description,
+    pub(crate) description: Description,
 }

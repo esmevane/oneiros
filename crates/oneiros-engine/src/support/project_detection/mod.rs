@@ -5,7 +5,7 @@ mod package;
 mod project_root;
 mod workspace;
 
-pub use project_root::ProjectRoot;
+pub(crate) use project_root::ProjectRoot;
 
 use detection_strategy::DetectionStrategy;
 use directory::Directory;
@@ -16,7 +16,7 @@ use workspace::Workspace;
 /// Detects project roots using an ordered chain of strategies.
 ///
 /// Strategies are evaluated in order. The first one that returns `Some` wins.
-pub struct ProjectDetector {
+pub(crate) struct ProjectDetector {
     strategies: Vec<Box<dyn DetectionStrategy>>,
 }
 
@@ -26,7 +26,7 @@ impl ProjectDetector {
     /// 2. Package (topmost Cargo.toml with [package])
     /// 3. Git (.git/ directory)
     /// 4. Directory (current directory name)
-    pub fn default_chain() -> Self {
+    pub(crate) fn default_chain() -> Self {
         Self::with_strategies(vec![
             Box::new(Workspace),
             Box::new(Package),
@@ -41,7 +41,7 @@ impl ProjectDetector {
     }
 
     /// Detect a project root starting from the given path.
-    pub fn detect(&self, start: &std::path::Path) -> Option<ProjectRoot> {
+    pub(crate) fn detect(&self, start: &std::path::Path) -> Option<ProjectRoot> {
         self.strategies.iter().find_map(|s| s.detect(start))
     }
 }

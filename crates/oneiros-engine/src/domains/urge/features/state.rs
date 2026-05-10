@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct UrgeState;
+pub(crate) struct UrgeState;
 
 impl UrgeState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         if let Events::Urge(urge_event) = event {
             match urge_event {
                 UrgeEvents::UrgeSet(setting) => {
@@ -22,7 +22,7 @@ impl UrgeState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 }

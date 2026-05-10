@@ -38,7 +38,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
 
     alice
         .command(r#"cognition add thinker.process observation "The architecture is clean""#)
@@ -73,7 +73,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
-    bob.command("emerge listener process").await?;
+    bob.command("continuity emerge listener process").await?;
     bob.command(r#"cognition add listener.process observation "Bob's own thought""#)
         .await?;
 
@@ -167,7 +167,7 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
     alice
         .command(r#"cognition add thinker.process observation "The sky is vast""#)
         .await?;
@@ -197,7 +197,7 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
-    bob.command("emerge listener process").await?;
+    bob.command("continuity emerge listener process").await?;
 
     // Follow creates the bookmark — no events move yet.
     // The peer is auto-discovered from the URI.
@@ -278,7 +278,7 @@ async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Erro
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
     alice
         .command(r#"cognition add thinker.process observation "This is visible""#)
         .await?;
@@ -353,7 +353,7 @@ async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
 
     for i in 0..5 {
         alice
@@ -450,7 +450,7 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
     alice
         .command(r#"cognition add thinker.process observation "Alice's insight""#)
         .await?;
@@ -469,7 +469,7 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
         .seed_core()
         .await?;
 
-    bob.command("emerge listener process").await?;
+    bob.command("continuity emerge listener process").await?;
     bob.command(r#"cognition add listener.process observation "Bob's own thought""#)
         .await?;
 
@@ -571,7 +571,7 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
         .seed_core()
         .await?;
 
-    alice.command("emerge architect process").await?;
+    alice.command("continuity emerge architect process").await?;
     alice
         .command(r#"cognition add architect.process assessment "Use event sourcing""#)
         .await?;
@@ -637,7 +637,7 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
     alice
         .command(r#"cognition add thinker.process observation "Before unfollow""#)
         .await?;
@@ -731,7 +731,7 @@ async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
     alice
         .command(r#"cognition add thinker.process observation "Only thought""#)
         .await?;
@@ -824,7 +824,7 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
 
     // Add enough events to force HAMT splits. The HAMT splits leaves
     // at 16 entries, so 30+ cognitions on top of seed events should
@@ -914,7 +914,7 @@ async fn peer_list_reflects_follow() -> Result<(), Box<dyn core::error::Error>> 
         .seed_core()
         .await?;
 
-    alice.command("emerge thinker process").await?;
+    alice.command("continuity emerge thinker process").await?;
     let link = alice.command("bookmark share main").await?;
 
     let bob = TestApp::new()

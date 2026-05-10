@@ -4,7 +4,7 @@ use crate::*;
 
 /// All addressable resource types in the system.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
-pub enum Resource {
+pub(crate) enum Resource {
     Agent(AgentId),
     Actor(ActorId),
     Bookmark(BookmarkId),
@@ -27,33 +27,8 @@ pub enum Resource {
 }
 
 impl Resource {
-    /// The underlying UUID for ID-keyed resources, or `None` for name-keyed ones.
-    pub fn id(&self) -> Option<Id> {
-        match self {
-            Self::Agent(id) => Some(id.0),
-            Self::Actor(id) => Some(id.0),
-            Self::Bookmark(id) => Some(id.0),
-            Self::Brain(id) => Some(id.0),
-            Self::Cognition(id) => Some(id.0),
-            Self::Connection(id) => Some(id.0),
-            Self::Experience(id) => Some(id.0),
-            Self::Follow(id) => Some(id.0),
-            Self::Memory(id) => Some(id.0),
-            Self::Peer(id) => Some(id.0),
-            Self::Tenant(id) => Some(id.0),
-            Self::Ticket(id) => Some(id.0),
-            Self::Level(_)
-            | Self::Nature(_)
-            | Self::Persona(_)
-            | Self::Sensation(_)
-            | Self::Storage(_)
-            | Self::Texture(_)
-            | Self::Urge(_) => None,
-        }
-    }
-
     /// A human-readable label for this resource type.
-    pub fn label(&self) -> &'static str {
+    pub(crate) fn label(&self) -> &'static str {
         match self {
             Self::Agent(_) => "agent",
             Self::Actor(_) => "actor",

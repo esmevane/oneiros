@@ -3,7 +3,11 @@ mod message;
 mod requests;
 mod responses;
 
-pub use events::*;
-pub use message::*;
-pub use requests::*;
-pub use responses::*;
+pub(crate) use events::*;
+pub(crate) use message::*;
+#[expect(
+    unused_imports,
+    reason = "flat re-export of request types reserved for callers"
+)]
+pub(crate) use requests::*;
+pub(crate) use responses::*;

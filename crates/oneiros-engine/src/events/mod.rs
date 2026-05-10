@@ -4,6 +4,6 @@ mod event_log;
 mod tests;
 mod unknown;
 
-pub use event::*;
-pub use event_log::*;
-pub use unknown::*;
+pub(crate) use event::*;
+pub(crate) use event_log::*;
+pub(crate) use unknown::*;

@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{ErrorResponse, PeerId, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum PeerError {
+pub(crate) enum PeerError {
     #[error("Peer not found: {0}")]
     NotFound(PeerId),
 

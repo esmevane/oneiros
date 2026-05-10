@@ -6,23 +6,23 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = ConnectionEventsType, display = "kebab-case")]
-pub enum ConnectionEvents {
+pub(crate) enum ConnectionEvents {
     ConnectionCreated(ConnectionCreated),
     ConnectionRemoved(ConnectionRemoved),
 }
 
 versioned! {
-    pub enum ConnectionCreated {
+    pub(crate) enum ConnectionCreated {
         V1 => {
-            #[serde(flatten)] pub connection: Connection,
+            #[serde(flatten)] pub(crate) connection: Connection,
         }
     }
 }
 
 versioned! {
-    pub enum ConnectionRemoved {
+    pub(crate) enum ConnectionRemoved {
         V1 => {
-            pub id: ConnectionId,
+            pub(crate) id: ConnectionId,
         }
     }
 }

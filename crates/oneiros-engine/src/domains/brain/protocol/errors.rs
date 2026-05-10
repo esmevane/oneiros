@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{BrainName, ErrorResponse, resource_op_error};
 
 #[derive(Debug, thiserror::Error)]
-pub enum BrainError {
+pub(crate) enum BrainError {
     #[error("Brain not found: {0}")]
     NotFound(BrainName),
 

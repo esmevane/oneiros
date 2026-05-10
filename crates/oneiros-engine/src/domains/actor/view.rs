@@ -1,15 +1,15 @@
 use crate::*;
 
-pub struct ActorView {
+pub(crate) struct ActorView {
     response: ActorResponse,
 }
 
 impl ActorView {
-    pub fn new(response: ActorResponse) -> Self {
+    pub(crate) fn new(response: ActorResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<ActorResponse> {
+    pub(crate) fn render(self) -> Rendered<ActorResponse> {
         match self.response {
             ActorResponse::Created(ActorCreatedResponse::V1(created)) => {
                 let prompt = Confirmation::new("Actor", created.actor.name.to_string(), "created")
@@ -32,8 +32,7 @@ impl ActorView {
                 )
             }
             ActorResponse::Listed(ActorsResponse::V1(listed)) => {
-                let mut table =
-                    Table::new(vec![Column::key("name", "Name"), Column::key("id", "ID")]);
+                let mut table = Table::new(vec![Column::new("Name"), Column::new("ID")]);
                 for actor in &listed.items {
                     table.push_row(vec![actor.name.to_string(), actor.id.to_string()]);
                 }

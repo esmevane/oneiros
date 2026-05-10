@@ -6,52 +6,28 @@
 use crate::*;
 
 /// A column definition for a table.
-pub struct Column {
-    /// Identifier — for selection, config, API references.
-    pub key: String,
+pub(crate) struct Column {
     /// Display header.
-    pub header: String,
+    pub(crate) header: String,
     /// Right-align values (useful for numbers).
-    pub right_align: bool,
+    pub(crate) right_align: bool,
     /// Maximum display width — longer values are truncated with "…".
-    pub max_width: Option<usize>,
+    pub(crate) max_width: Option<usize>,
 }
 
 impl Column {
     /// A column with matching key and header.
-    pub fn new(name: impl Into<String>) -> Self {
+    pub(crate) fn new(name: impl Into<String>) -> Self {
         let name = name.into();
         Self {
-            key: name.to_lowercase(),
             header: name,
             right_align: false,
-            max_width: None,
-        }
-    }
-
-    /// A column with an explicit key distinct from the header.
-    pub fn key(key: impl Into<String>, header: impl Into<String>) -> Self {
-        Self {
-            key: key.into(),
-            header: header.into(),
-            right_align: false,
-            max_width: None,
-        }
-    }
-
-    /// Right-aligned column (numbers, counts).
-    pub fn right(name: impl Into<String>) -> Self {
-        let name = name.into();
-        Self {
-            key: name.to_lowercase(),
-            header: name,
-            right_align: true,
             max_width: None,
         }
     }
 
     /// Set a maximum display width for this column.
-    pub fn max(mut self, width: usize) -> Self {
+    pub(crate) fn max(mut self, width: usize) -> Self {
         self.max_width = Some(width);
         self
     }
@@ -62,13 +38,13 @@ impl Column {
 /// Columns are addressable by key for future selection support.
 /// Rendering uses `Paint` styles from the palette — `anstream`
 /// handles stripping ANSI codes when color is disabled.
-pub struct Table {
+pub(crate) struct Table {
     columns: Vec<Column>,
     rows: Vec<Vec<String>>,
 }
 
 impl Table {
-    pub fn new(columns: Vec<Column>) -> Self {
+    pub(crate) fn new(columns: Vec<Column>) -> Self {
         Self {
             columns,
             rows: Vec::new(),
@@ -76,18 +52,20 @@ impl Table {
     }
 
     /// Add a row (builder style).
-    pub fn row(mut self, cells: Vec<impl Into<String>>) -> Self {
+    #[cfg(test)]
+    pub(crate) fn row(mut self, cells: Vec<impl Into<String>>) -> Self {
         self.rows.push(cells.into_iter().map(Into::into).collect());
         self
     }
 
     /// Add a row (mutating).
-    pub fn push_row(&mut self, cells: Vec<impl Into<String>>) {
+    pub(crate) fn push_row(&mut self, cells: Vec<impl Into<String>>) {
         self.rows.push(cells.into_iter().map(Into::into).collect());
     }
 
     /// Whether the table has any data rows.
-    pub fn is_empty(&self) -> bool {
+    #[cfg(test)]
+    pub(crate) fn is_empty(&self) -> bool {
         self.rows.is_empty()
     }
 
@@ -199,7 +177,7 @@ mod tests {
 
     #[test]
     fn table_auto_sizes_columns() {
-        let table = Table::new(vec![Column::new("Name"), Column::right("Count")])
+        let table = Table::new(vec![Column::new("Name"), Column::new("Count")])
             .row(vec!["alice", "42"])
             .row(vec!["bob", "7"]);
 
@@ -214,7 +192,7 @@ mod tests {
 
     #[test]
     fn right_aligned_column_pads_left() {
-        let table = Table::new(vec![Column::right("N")])
+        let table = Table::new(vec![Column::new("N")])
             .row(vec!["1"])
             .row(vec!["100"]);
 
@@ -235,14 +213,6 @@ mod tests {
     #[test]
     fn column_key_defaults_to_lowercase_header() {
         let col = Column::new("Name");
-        assert_eq!(col.key, "name");
-        assert_eq!(col.header, "Name");
-    }
-
-    #[test]
-    fn column_key_can_differ_from_header() {
-        let col = Column::key("agent_name", "Name");
-        assert_eq!(col.key, "agent_name");
         assert_eq!(col.header, "Name");
     }
 
@@ -253,8 +223,10 @@ mod tests {
             .row(vec!["this is a long string that should be truncated"]);
 
         let output = table.to_string();
+
         assert!(output.contains("short"));
         assert!(output.contains("…"));
+
         // The long string should not appear in full
         assert!(!output.contains("truncated"));
     }

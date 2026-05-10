@@ -6,20 +6,20 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetStorage {
+    pub(crate) enum GetStorage {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<StorageKey>,
+            #[builder(into)] pub(crate) key: ResourceKey<StorageKey>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveStorage {
+    pub(crate) enum RemoveStorage {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: StorageKey,
+            #[builder(into)] pub(crate) key: StorageKey,
         }
     }
 }
@@ -29,33 +29,46 @@ versioned! {
 // and reads the bytes before constructing the request.
 versioned! {
     #[derive(JsonSchema)]
-    pub enum UploadStorage {
+    pub(crate) enum UploadStorage {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: StorageKey,
-            #[builder(default, into)] pub description: Description,
-            pub data: Vec<u8>,
+            #[builder(into)] pub(crate) key: StorageKey,
+            #[builder(default, into)] pub(crate) description: Description,
+            pub(crate) data: Vec<u8>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListStorage {
+    pub(crate) enum ListStorage {
         #[derive(clap::Args)]
         V1 => {
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-#[kinded(kind = StorageRequestType, display = "kebab-case")]
-pub enum StorageRequest {
+#[kinded(
+    kind = StorageRequestType,
+    display = "kebab-case",
+    attrs(
+        expect(
+            clippy::enum_variant_names,
+            reason = "We use these for `type` notation in serde"
+        )
+    )
+)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "We use these for `type` notation in serde"
+)]
+pub(crate) enum StorageRequest {
     UploadStorage(UploadStorage),
     GetStorage(GetStorage),
     ListStorage(ListStorage),

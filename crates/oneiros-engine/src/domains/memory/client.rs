@@ -1,19 +1,19 @@
 use crate::*;
 
-pub struct MemoryClient<'a> {
+pub(crate) struct MemoryClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> MemoryClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn add(&self, addition: &AddMemory) -> Result<MemoryResponse, ClientError> {
+    pub(crate) async fn add(&self, addition: &AddMemory) -> Result<MemoryResponse, ClientError> {
         self.client.post("/memories", addition).await
     }
 
-    pub async fn list(&self, listing: &ListMemories) -> Result<MemoryResponse, ClientError> {
+    pub(crate) async fn list(&self, listing: &ListMemories) -> Result<MemoryResponse, ClientError> {
         let ListMemories::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
@@ -41,7 +41,7 @@ impl<'a> MemoryClient<'a> {
         self.client.get(&format!("/memories?{query}")).await
     }
 
-    pub async fn get(&self, lookup: &GetMemory) -> Result<MemoryResponse, ClientError> {
+    pub(crate) async fn get(&self, lookup: &GetMemory) -> Result<MemoryResponse, ClientError> {
         let GetMemory::V1(lookup) = lookup;
         self.client.get(&format!("/memories/{}", lookup.key)).await
     }

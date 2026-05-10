@@ -6,23 +6,23 @@ use crate::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]
 #[serde(rename_all = "kebab-case", tag = "type", content = "data")]
 #[kinded(kind = LevelEventsType, display = "kebab-case")]
-pub enum LevelEvents {
+pub(crate) enum LevelEvents {
     LevelSet(LevelSet),
     LevelRemoved(LevelRemoved),
 }
 
 versioned! {
-    pub enum LevelSet {
+    pub(crate) enum LevelSet {
         V1 => {
-            #[serde(flatten)] pub level: Level,
+            #[serde(flatten)] pub(crate) level: Level,
         }
     }
 }
 
 versioned! {
-    pub enum LevelRemoved {
+    pub(crate) enum LevelRemoved {
         V1 => {
-            #[builder(into)] pub name: LevelName,
+            #[builder(into)] pub(crate) name: LevelName,
         }
     }
 }

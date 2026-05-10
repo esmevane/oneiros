@@ -2,16 +2,16 @@
 
 use crate::*;
 
-pub struct StorageView {
+pub(crate) struct StorageView {
     response: StorageResponse,
 }
 
 impl StorageView {
-    pub fn new(response: StorageResponse) -> Self {
+    pub(crate) fn new(response: StorageResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<StorageResponse> {
+    pub(crate) fn render(self) -> Rendered<StorageResponse> {
         match self.response {
             StorageResponse::StorageSet(StorageSetResponse::V1(set)) => {
                 let prompt =
@@ -39,9 +39,9 @@ impl StorageView {
             }
             StorageResponse::Entries(StorageEntriesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
-                    Column::key("key", "Key"),
-                    Column::key("description", "Description").max(40),
-                    Column::key("hash", "Hash"),
+                    Column::new("Key"),
+                    Column::new("Description").max(40),
+                    Column::new("Hash"),
                 ]);
                 for entry in &listed.items {
                     table.push_row(vec![

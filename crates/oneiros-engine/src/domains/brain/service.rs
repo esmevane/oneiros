@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct BrainService;
+pub(crate) struct BrainService;
 
 impl BrainService {
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         request: &CreateBrain,
@@ -44,7 +44,7 @@ impl BrainService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtHost>,
         request: &GetBrain,
     ) -> Result<BrainResponse, BrainError> {
@@ -76,7 +76,7 @@ impl BrainService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtHost>,
         request: &ListBrains,
     ) -> Result<BrainResponse, BrainError> {

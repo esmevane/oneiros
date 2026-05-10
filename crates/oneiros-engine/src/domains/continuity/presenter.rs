@@ -6,16 +6,16 @@
 
 use crate::*;
 
-pub struct ContinuityPresenter {
+pub(crate) struct ContinuityPresenter {
     response: ContinuityResponse,
 }
 
 impl ContinuityPresenter {
-    pub fn new(response: ContinuityResponse) -> Self {
+    pub(crate) fn new(response: ContinuityResponse) -> Self {
         Self { response }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             ContinuityResponse::Status(StatusResponse::V1(details)) => {
                 let table = &details.table;
@@ -40,7 +40,7 @@ impl ContinuityPresenter {
     }
 
     /// Render this continuity response into all available forms.
-    pub fn render(self) -> Rendered<ContinuityResponse> {
+    pub(crate) fn render(self) -> Rendered<ContinuityResponse> {
         let (prompt, text, hints) = match &self.response {
             ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
                 let context = &details.context;

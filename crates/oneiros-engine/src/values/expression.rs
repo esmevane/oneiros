@@ -12,7 +12,7 @@ use crate::*;
 /// extracting the matching variant from a search result.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(tag = "kind", content = "data", rename_all = "kebab-case")]
-pub enum Hit {
+pub(crate) enum Hit {
     Cognition(Cognition),
     Memory(Memory),
     Experience(Experience),
@@ -20,7 +20,7 @@ pub enum Hit {
 }
 
 impl Hit {
-    pub fn kind(&self) -> SearchKind {
+    pub(crate) fn kind(&self) -> SearchKind {
         match self {
             Self::Cognition(_) => SearchKind::Cognition,
             Self::Memory(_) => SearchKind::Memory,
@@ -29,7 +29,7 @@ impl Hit {
         }
     }
 
-    pub fn resource_ref(&self) -> Ref {
+    pub(crate) fn resource_ref(&self) -> Ref {
         match self {
             Self::Cognition(c) => Ref::cognition(c.id),
             Self::Memory(m) => Ref::memory(m.id),
@@ -38,7 +38,7 @@ impl Hit {
         }
     }
 
-    pub fn content(&self) -> Content {
+    pub(crate) fn content(&self) -> Content {
         match self {
             Self::Cognition(c) => c.content.clone(),
             Self::Memory(m) => m.content.clone(),
@@ -55,19 +55,19 @@ impl Hit {
 /// kind-specific facet (texture/level/sensation/persona) into the right
 /// column; absent dimensions are empty strings.
 pub(crate) struct IndexEntry {
-    pub resource_ref: Ref,
-    pub kind: SearchKind,
-    pub content: Content,
-    pub agent_id: AgentId,
-    pub texture: Option<TextureName>,
-    pub level: Option<LevelName>,
-    pub sensation: Option<SensationName>,
-    pub persona: Option<PersonaName>,
-    pub created_at: Option<Timestamp>,
+    pub(crate) resource_ref: Ref,
+    pub(crate) kind: SearchKind,
+    pub(crate) content: Content,
+    pub(crate) agent_id: AgentId,
+    pub(crate) texture: Option<TextureName>,
+    pub(crate) level: Option<LevelName>,
+    pub(crate) sensation: Option<SensationName>,
+    pub(crate) persona: Option<PersonaName>,
+    pub(crate) created_at: Option<Timestamp>,
 }
 
 impl IndexEntry {
-    pub fn cognition(cognition: &Cognition) -> Self {
+    pub(crate) fn cognition(cognition: &Cognition) -> Self {
         Self {
             resource_ref: Ref::cognition(cognition.id),
             kind: SearchKind::Cognition,
@@ -81,7 +81,7 @@ impl IndexEntry {
         }
     }
 
-    pub fn memory(memory: &Memory) -> Self {
+    pub(crate) fn memory(memory: &Memory) -> Self {
         Self {
             resource_ref: Ref::memory(memory.id),
             kind: SearchKind::Memory,
@@ -95,7 +95,7 @@ impl IndexEntry {
         }
     }
 
-    pub fn experience(experience: &Experience) -> Self {
+    pub(crate) fn experience(experience: &Experience) -> Self {
         Self {
             resource_ref: Ref::experience(experience.id),
             kind: SearchKind::Experience,
@@ -109,7 +109,7 @@ impl IndexEntry {
         }
     }
 
-    pub fn agent(agent: &Agent) -> Self {
+    pub(crate) fn agent(agent: &Agent) -> Self {
         Self {
             resource_ref: Ref::agent(agent.id),
             kind: SearchKind::Agent,
@@ -132,7 +132,7 @@ impl IndexEntry {
 /// separate discriminator needed.
 #[derive(Debug, Clone)]
 pub(crate) struct RankedHit {
-    pub resource_ref: Ref,
+    pub(crate) resource_ref: Ref,
 }
 
 impl RankedHit {
@@ -151,14 +151,14 @@ fn decode_ref(raw: String, col: usize) -> rusqlite::Result<Ref> {
 /// The raw text submitted as a search query.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
-pub struct QueryText(pub String);
+pub(crate) struct QueryText(pub(crate) String);
 
 impl QueryText {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }
@@ -172,21 +172,21 @@ impl core::fmt::Display for QueryText {
 /// Envelope for search results, pairing the original query with matches
 /// and faceted aggregations.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct SearchResults {
-    pub query: QueryText,
-    pub total: usize,
-    pub hits: Vec<Hit>,
+pub(crate) struct SearchResults {
+    pub(crate) query: QueryText,
+    pub(crate) total: usize,
+    pub(crate) hits: Vec<Hit>,
     #[serde(default, skip_serializing_if = "Facets::is_empty")]
-    pub facets: Facets,
+    pub(crate) facets: Facets,
 }
 
 /// Internal repo-layer result — ranked refs awaiting per-domain
 /// hydration. Service layer turns this into [`SearchResults`].
 #[derive(Debug)]
 pub(crate) struct SearchHits {
-    pub total: usize,
-    pub hits: Vec<RankedHit>,
-    pub facets: Facets,
+    pub(crate) total: usize,
+    pub(crate) hits: Vec<RankedHit>,
+    pub(crate) facets: Facets,
 }
 
 /// Ordered collection of faceted aggregations — the palace map.
@@ -196,43 +196,35 @@ pub(crate) struct SearchHits {
 /// omitted so callers only see wings of the palace that actually have doors.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
-pub struct Facets(pub Vec<FacetGroup>);
+pub(crate) struct Facets(pub(crate) Vec<FacetGroup>);
 
 impl Facets {
-    pub fn new(groups: Vec<FacetGroup>) -> Self {
-        Self(
-            groups
-                .into_iter()
-                .filter(|g| !g.buckets.is_empty())
-                .collect(),
-        )
-    }
-
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
-    pub fn find(&self, facet: FacetName) -> Option<&FacetGroup> {
+    #[cfg(test)]
+    pub(crate) fn find(&self, facet: FacetName) -> Option<&FacetGroup> {
         self.0.iter().find(|g| g.facet == facet)
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct FacetGroup {
-    pub facet: FacetName,
-    pub buckets: Vec<FacetBucket>,
+pub(crate) struct FacetGroup {
+    pub(crate) facet: FacetName,
+    pub(crate) buckets: Vec<FacetBucket>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq)]
-pub struct FacetBucket {
-    pub value: String,
-    pub count: usize,
+pub(crate) struct FacetBucket {
+    pub(crate) value: String,
+    pub(crate) count: usize,
 }
 
 /// The named dimensions a search response can aggregate on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-pub enum FacetName {
+pub(crate) enum FacetName {
     Kind,
     Agent,
     Texture,
@@ -242,7 +234,7 @@ pub enum FacetName {
 }
 
 impl FacetName {
-    pub fn column(self) -> &'static str {
+    pub(crate) fn column(self) -> &'static str {
         match self {
             FacetName::Kind => "kind",
             FacetName::Agent => "agent_id",
@@ -260,7 +252,7 @@ impl FacetName {
 /// on queries and as a label on hits.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
-pub enum SearchKind {
+pub(crate) enum SearchKind {
     Cognition,
     Memory,
     Experience,
@@ -268,7 +260,7 @@ pub enum SearchKind {
 }
 
 impl SearchKind {
-    pub fn as_str(self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             SearchKind::Cognition => "cognition",
             SearchKind::Memory => "memory",
@@ -300,4 +292,4 @@ impl core::str::FromStr for SearchKind {
 
 #[derive(Debug, thiserror::Error)]
 #[error("unknown search kind: {0}")]
-pub struct SearchKindParseError(pub String);
+pub(crate) struct SearchKindParseError(pub(crate) String);

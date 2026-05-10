@@ -5,12 +5,12 @@ use rusqlite::{params, params_from_iter};
 use crate::*;
 
 /// Memory read model — async queries over the projection read model.
-pub struct MemoryRepo<'a> {
+pub(crate) struct MemoryRepo<'a> {
     scope: &'a Scope<AtBookmark>,
 }
 
 impl<'a> MemoryRepo<'a> {
-    pub fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
         Self { scope }
     }
 
@@ -18,11 +18,11 @@ impl<'a> MemoryRepo<'a> {
     /// memory appears or the configured patience window expires.
     ///
     /// [`get`]: MemoryRepo::get
-    pub async fn fetch(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
+    pub(crate) async fn fetch(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         self.scope.config().fetch.eventual(|| self.get(id)).await
     }
 
-    pub async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
+    pub(crate) async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let db = BookmarkDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT id, agent_id, level, content, created_at
@@ -57,7 +57,7 @@ impl<'a> MemoryRepo<'a> {
 
     /// Hydrate many memories by id, preserving the input order. Used by
     /// list endpoints to bulk-fetch search hits in a single round trip.
-    pub async fn get_many(&self, ids: &[MemoryId]) -> Result<Vec<Memory>, EventError> {
+    pub(crate) async fn get_many(&self, ids: &[MemoryId]) -> Result<Vec<Memory>, EventError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }

@@ -7,14 +7,14 @@ use crate::*;
 /// Pressure-aware: promotes Suggest to FollowUp when any pressure
 /// exceeds the threshold.
 #[derive(Builder)]
-pub struct WakeHints {
-    pub agent: AgentName,
+pub(crate) struct WakeHints {
+    pub(crate) agent: AgentName,
     #[builder(default)]
-    pub pressures: Vec<PressureSummary>,
+    pub(crate) pressures: Vec<PressureSummary>,
 }
 
 impl WakeHints {
-    pub fn hints(&self) -> Vec<Hint> {
+    pub(crate) fn hints(&self) -> Vec<Hint> {
         let agent = &self.agent;
         let mut hints = vec![
             Hint::follow_up(

@@ -3,15 +3,15 @@ use crate::Description;
 /// A concrete MCP resource — fixed URI, no parameters.
 ///
 /// Listed in `resources/list`. The agent reads it directly.
-pub struct ResourceDef {
-    pub uri: String,
-    pub name: String,
-    pub description: Description,
-    pub mime_type: String,
+pub(crate) struct ResourceDef {
+    pub(crate) uri: String,
+    pub(crate) name: String,
+    pub(crate) description: Description,
+    pub(crate) mime_type: String,
 }
 
 impl ResourceDef {
-    pub fn new(
+    pub(crate) fn new(
         uri: impl Into<String>,
         name: impl Into<String>,
         description: impl Into<Description>,
@@ -29,15 +29,15 @@ impl ResourceDef {
 ///
 /// Listed in `resources/templates/list`. The agent fills in
 /// parameters to form a concrete URI for `resources/read`.
-pub struct ResourceTemplateDef {
-    pub uri_template: String,
-    pub name: String,
-    pub description: Description,
-    pub mime_type: String,
+pub(crate) struct ResourceTemplateDef {
+    pub(crate) uri_template: String,
+    pub(crate) name: String,
+    pub(crate) description: Description,
+    pub(crate) mime_type: String,
 }
 
 impl ResourceTemplateDef {
-    pub fn new(
+    pub(crate) fn new(
         uri_template: impl Into<String>,
         name: impl Into<String>,
         description: impl Into<Description>,

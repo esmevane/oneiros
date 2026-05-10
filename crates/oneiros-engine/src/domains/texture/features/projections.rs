@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct TextureProjections;
+pub(crate) struct TextureProjections;
 
 impl TextureProjections {
-    pub const fn all(&self) -> &'static [Projection] {
+    pub(crate) const fn all(&self) -> &'static [Projection] {
         PROJECTIONS
     }
 }

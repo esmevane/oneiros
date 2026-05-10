@@ -12,18 +12,14 @@ const SCHEME: &str = "oneiros-mcp://";
 /// Converts `oneiros-mcp://agent/governor.process/cognitions` into a
 /// structured `ResourcePath` that carries typed parameters.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResourceUri {
+pub(crate) struct ResourceUri {
     raw: String,
     path: ResourcePath,
 }
 
 impl ResourceUri {
-    pub fn path(&self) -> &ResourcePath {
+    pub(crate) fn path(&self) -> &ResourcePath {
         &self.path
-    }
-
-    pub fn raw(&self) -> &str {
-        &self.raw
     }
 }
 
@@ -36,7 +32,7 @@ impl fmt::Display for ResourceUri {
 /// The structured content of a resource URI after parsing.
 #[derive(Debug, Clone, PartialEq, Eq, Kinded)]
 #[kinded(kind = ResourcePathKind, display = "kebab-case")]
-pub enum ResourcePath {
+pub(crate) enum ResourcePath {
     Agents,
     Levels,
     Textures,
@@ -59,11 +55,11 @@ pub enum ResourcePath {
 }
 
 impl ResourcePathKind {
-    pub fn uri(&self) -> String {
+    pub(crate) fn uri(&self) -> String {
         format!("{SCHEME}{self}")
     }
 
-    pub fn uri_template(&self) -> String {
+    pub(crate) fn uri_template(&self) -> String {
         let path = match self {
             kind @ Self::Agents
             | kind @ Self::Levels
@@ -88,17 +84,17 @@ impl ResourcePathKind {
         format!("{SCHEME}{path}")
     }
 
-    pub fn resource_def(&self, description: impl Into<Description>) -> ResourceDef {
+    pub(crate) fn resource_def(&self, description: impl Into<Description>) -> ResourceDef {
         ResourceDef::new(self.uri(), self.to_string(), description)
     }
 
-    pub fn into_template(&self, description: impl Into<Description>) -> ResourceTemplateDef {
+    pub(crate) fn template_def(&self, description: impl Into<Description>) -> ResourceTemplateDef {
         ResourceTemplateDef::new(self.uri_template(), self.to_string(), description)
     }
 }
 
 impl ResourcePath {
-    pub fn uri(&self) -> String {
+    pub(crate) fn uri(&self) -> String {
         let path = match self {
             this @ Self::Agents
             | this @ Self::Levels
@@ -130,7 +126,7 @@ impl ResourcePath {
 /// cleanly to a domain read operation. Paths that need I/O to construct
 /// a request (like `AgentConnections`, which needs an agent lookup to
 /// resolve a `RefToken`) return `None`.
-pub enum ResourceRequest {
+pub(crate) enum ResourceRequest {
     Agent(AgentRequest),
     Cognition(CognitionRequest),
     Memory(MemoryRequest),
@@ -147,7 +143,7 @@ pub enum ResourceRequest {
 }
 
 impl ResourcePath {
-    pub fn as_request(&self) -> Option<ResourceRequest> {
+    pub(crate) fn as_request(&self) -> Option<ResourceRequest> {
         match self {
             ResourcePath::Agents => Some(ResourceRequest::Agent(AgentRequest::ListAgents(
                 ListAgents::builder_v1().build().into(),
@@ -247,7 +243,7 @@ impl ResourcePath {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ResourceUriError {
+pub(crate) enum ResourceUriError {
     #[error("Unknown URI scheme: {0}")]
     UnknownScheme(String),
 
@@ -373,7 +369,6 @@ mod tests {
     fn preserves_raw_uri() {
         let raw = "oneiros-mcp://agent/governor.process/memories";
         let uri: ResourceUri = raw.parse().unwrap();
-        assert_eq!(uri.raw(), raw);
         assert_eq!(uri.to_string(), raw);
     }
 

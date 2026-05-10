@@ -1,18 +1,18 @@
 use crate::*;
 
-pub enum SystemDocs {
+pub(crate) enum SystemDocs {
     Init,
 }
 
 impl SystemDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("system")
             .description("Host-level initialization and bootstrap")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Init => ResourceDocs::builder()

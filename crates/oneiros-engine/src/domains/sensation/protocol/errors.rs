@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum SensationError {
+pub(crate) enum SensationError {
     #[error("Sensation not found: {0}")]
     NotFound(SensationName),
 

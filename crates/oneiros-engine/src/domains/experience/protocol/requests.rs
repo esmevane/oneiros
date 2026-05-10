@@ -6,67 +6,67 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CreateExperience {
+    pub(crate) enum CreateExperience {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            #[builder(into)] pub sensation: SensationName,
-            #[builder(into)] pub description: Description,
+            #[builder(into)] pub(crate) agent: AgentName,
+            #[builder(into)] pub(crate) sensation: SensationName,
+            #[builder(into)] pub(crate) description: Description,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetExperience {
+    pub(crate) enum GetExperience {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<ExperienceId>,
+            #[builder(into)] pub(crate) key: ResourceKey<ExperienceId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListExperiences {
+    pub(crate) enum ListExperiences {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
-            pub agent: Option<AgentName>,
+            pub(crate) agent: Option<AgentName>,
             #[arg(long)]
-            pub sensation: Option<SensationName>,
+            pub(crate) sensation: Option<SensationName>,
             /// Full-text query against experience description. When present,
             /// hits are FTS5-ranked; absent, the listing browses by filters
             /// alone.
             #[arg(long)]
             #[builder(into)]
-            pub query: Option<String>,
+            pub(crate) query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum UpdateExperienceDescription {
+    pub(crate) enum UpdateExperienceDescription {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub id: ExperienceId,
-            #[builder(into)] pub description: Description,
+            #[builder(into)] pub(crate) id: ExperienceId,
+            #[builder(into)] pub(crate) description: Description,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum UpdateExperienceSensation {
+    pub(crate) enum UpdateExperienceSensation {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub id: ExperienceId,
-            #[builder(into)] pub sensation: SensationName,
+            #[builder(into)] pub(crate) id: ExperienceId,
+            #[builder(into)] pub(crate) sensation: SensationName,
         }
     }
 }
@@ -74,7 +74,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = ExperienceRequestType, display = "kebab-case")]
-pub enum ExperienceRequest {
+pub(crate) enum ExperienceRequest {
     CreateExperience(CreateExperience),
     GetExperience(GetExperience),
     ListExperiences(ListExperiences),

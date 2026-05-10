@@ -50,7 +50,7 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
     }
 
     // Emerge an agent — this creates the agent and wakes them
-    app.command("emerge thinker process").await?;
+    app.command("continuity emerge thinker process").await?;
 
     // The agent exists
     match client
@@ -70,7 +70,7 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
     }
 
     // Dream them — assembles identity, vocabulary, and instructions
-    let result = app.command("dream thinker.process").await?;
+    let result = app.command("continuity dream thinker.process").await?;
     let rendered = serde_json::to_value(result.response())?;
     let dream_text = rendered.to_string();
 

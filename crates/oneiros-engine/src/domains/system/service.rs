@@ -1,6 +1,6 @@
 use crate::*;
 
-pub struct SystemService;
+pub(crate) struct SystemService;
 
 impl SystemService {
     /// Initialize the host system. Bootstrapping order:
@@ -11,7 +11,7 @@ impl SystemService {
     /// 3. idempotency check via `TenantRepo::list`
     /// 4. dispatch the bootstrap tenant via the bus
     /// 5. dispatch the bootstrap actor via the bus
-    pub async fn init(
+    pub(crate) async fn init(
         config: &Config,
         mailbox: &Mailbox,
         request: &InitSystem,

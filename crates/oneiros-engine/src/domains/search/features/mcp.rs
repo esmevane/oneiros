@@ -1,13 +1,13 @@
 use crate::*;
 
-pub struct SearchMcp;
+pub(crate) struct SearchMcp;
 
 impl SearchMcp {
-    pub fn defs(&self) -> Vec<ToolDef> {
+    pub(crate) fn defs(&self) -> Vec<ToolDef> {
         search_mcp::tool_defs()
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
         tool_name: &ToolName,
@@ -20,7 +20,7 @@ impl SearchMcp {
 mod search_mcp {
     use crate::*;
 
-    pub fn tool_defs() -> Vec<ToolDef> {
+    pub(crate) fn tool_defs() -> Vec<ToolDef> {
         vec![
             Tool::<SearchQuery>::new(
                 SearchRequestType::SearchQuery,
@@ -30,7 +30,7 @@ mod search_mcp {
         ]
     }
 
-    pub async fn dispatch(
+    pub(crate) async fn dispatch(
         context: &ProjectLog,
         tool_name: &ToolName,
         params: &serde_json::Value,

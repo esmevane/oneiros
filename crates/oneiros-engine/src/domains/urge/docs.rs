@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum UrgeDocs {
+pub(crate) enum UrgeDocs {
     List,
     Set,
     Show,
@@ -8,14 +8,14 @@ pub enum UrgeDocs {
 }
 
 impl UrgeDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("urges")
             .description("Define cognitive drives")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::List => ResourceDocs::builder()

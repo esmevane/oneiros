@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct PeerState;
+pub(crate) struct PeerState;
 
 impl PeerState {
-    pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Peer(peer_event) = event {
             match peer_event {
                 PeerEvents::PeerAdded(added) => {
@@ -32,7 +32,7 @@ impl PeerState {
                 }
                 PeerEvents::PeerRemoved(removed) => {
                     if let Ok(current) = removed.current() {
-                        canon.peers.remove(current.id);
+                        canon.peers.remove(&current.id);
                     }
                 }
             };
@@ -41,7 +41,7 @@ impl PeerState {
         canon
     }
 
-    pub fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<SystemCanon> {
         Reducer::new(Self::reduce)
     }
 }

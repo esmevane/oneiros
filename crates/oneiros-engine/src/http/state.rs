@@ -10,7 +10,7 @@ use crate::*;
 /// Carries the system context (always available) and resolves brain
 /// context per-request via Bearer token.
 #[derive(Clone)]
-pub struct ServerState {
+pub(crate) struct ServerState {
     config: Config,
     canons: CanonIndex,
     bridge: Bridge,
@@ -19,7 +19,7 @@ pub struct ServerState {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ServerStateError {
+pub(crate) enum ServerStateError {
     #[error("failed to read or generate host secret key: {0}")]
     HostKey(#[from] HostKeyError),
     #[error("failed to bind iroh bridge: {0}")]
@@ -30,7 +30,7 @@ impl ServerState {
     /// Construct a server state with a bound iroh bridge. Loads (or
     /// generates) the host secret key from disk, binds a `Bridge`, and
     /// spawns the host actor that consumes the bus.
-    pub async fn bind(config: Config) -> Result<Self, ServerStateError> {
+    pub(crate) async fn bind(config: Config) -> Result<Self, ServerStateError> {
         let secret = HostKey::new(&config.data_dir).ensure()?;
         let bridge = Bridge::bind(secret).await?;
 
@@ -47,76 +47,55 @@ impl ServerState {
     }
 
     /// The bus mailbox — services dispatch events through this handle.
-    pub fn mailbox(&self) -> &Mailbox {
+    pub(crate) fn mailbox(&self) -> &Mailbox {
         &self.mailbox
     }
 
     /// Install the OpenAPI spec. Called once after the router is assembled.
-    pub fn set_api(&self, api: OpenApi) {
+    pub(crate) fn set_api(&self, api: OpenApi) {
         let _ = self.api.set(api);
     }
 
     /// The installed OpenAPI spec, if set.
-    pub fn api(&self) -> Option<&OpenApi> {
+    pub(crate) fn api(&self) -> Option<&OpenApi> {
         self.api.get()
     }
 
     /// The bound bridge.
-    pub fn bridge(&self) -> &Bridge {
+    pub(crate) fn bridge(&self) -> &Bridge {
         &self.bridge
     }
 
     /// The host's identity (key + address).
-    pub fn host_identity(&self) -> HostIdentity {
+    pub(crate) fn host_identity(&self) -> HostIdentity {
         self.bridge.host_identity()
     }
 
     /// The bookmark registry — shared state for all brains.
-    pub fn canons(&self) -> &CanonIndex {
+    pub(crate) fn canons(&self) -> &CanonIndex {
         &self.canons
     }
 
     /// Hydrate reducer pipelines and chronicles from event logs.
     /// Best-effort — skips databases that don't exist yet (pre-init).
-    pub fn hydrate(&self) {
+    pub(crate) fn hydrate(&self) {
         let _ = self.canons.hydrate_brain(&self.config, &self.config.brain);
     }
 
     /// The server configuration.
-    pub fn config(&self) -> &Config {
+    pub(crate) fn config(&self) -> &Config {
         &self.config
     }
 
-    /// The token for the configured brain, if one exists.
-    pub fn token(&self) -> Option<Token> {
-        self.config.token()
-    }
-
     /// The brain name from the server config.
-    pub fn brain_name(&self) -> &BrainName {
+    pub(crate) fn brain_name(&self) -> &BrainName {
         &self.config.brain
     }
 
     /// Build a project context for a request. Strangler — used by the
     /// `ProjectLog` extractor for legacy CLI/MCP dispatchers.
-    pub fn project_log(&self, config: Config) -> ProjectLog {
+    pub(crate) fn project_log(&self, config: Config) -> ProjectLog {
         ProjectLog::new(config)
-    }
-
-    /// Build a system context.
-    pub fn host_log(&self) -> HostLog {
-        HostLog::new(self.config.clone())
-    }
-}
-
-impl FromRequestParts<ServerState> for HostLog {
-    type Rejection = std::convert::Infallible;
-
-    async fn from_request_parts(
-        _parts: &mut Parts,
-        state: &ServerState,
-    ) -> Result<Self, Self::Rejection> {
-        Ok(state.host_log())
     }
 }
 
@@ -149,7 +128,7 @@ impl FromRequestParts<ServerState> for Scope<AtHost> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ScopeExtractError {
+pub(crate) enum ScopeExtractError {
     #[error("{0}")]
     Other(String),
 }

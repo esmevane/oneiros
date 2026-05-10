@@ -2,14 +2,14 @@
     Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(transparent)]
-pub struct Content(pub String);
+pub(crate) struct Content(pub(crate) String);
 
 impl Content {
-    pub fn new(value: impl AsRef<str>) -> Self {
+    pub(crate) fn new(value: impl AsRef<str>) -> Self {
         Self(value.as_ref().into())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }

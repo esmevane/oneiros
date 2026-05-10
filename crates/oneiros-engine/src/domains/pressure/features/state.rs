@@ -8,10 +8,10 @@ use crate::*;
 /// memories, experiences, connections, urges) are already up-to-date
 /// for the current event. Cross-references them to produce pressure
 /// readings without any SQLite queries.
-pub struct PressureState;
+pub(crate) struct PressureState;
 
 impl PressureState {
-    pub fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
         // Track continuity timestamps before computing pressure
         Self::track_continuity(&mut canon, event);
 
@@ -33,7 +33,7 @@ impl PressureState {
         let mut updates: Vec<Pressure> = vec![];
 
         for (agent_id, _agent_name) in &agents {
-            if let Some(agent) = canon.agents.get(*agent_id) {
+            if let Some(agent) = canon.agents.get(agent_id) {
                 for urge_name in &urge_names {
                     let gauge = Self::compute_gauge(&canon, &referenced, urge_name, agent);
 
@@ -62,7 +62,7 @@ impl PressureState {
         canon
     }
 
-    pub fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<BrainCanon> {
         Reducer::new(Self::reduce)
     }
 
@@ -103,20 +103,20 @@ impl PressureState {
             Events::Cognition(CognitionEvents::CognitionAdded(CognitionAdded::V1(addition))) => {
                 canon
                     .agents
-                    .get(addition.cognition.agent_id)
+                    .get(&addition.cognition.agent_id)
                     .into_iter()
                     .collect()
             }
             Events::Memory(MemoryEvents::MemoryAdded(MemoryAdded::V1(addition))) => canon
                 .agents
-                .get(addition.memory.agent_id)
+                .get(&addition.memory.agent_id)
                 .into_iter()
                 .collect(),
             Events::Experience(ExperienceEvents::ExperienceCreated(ExperienceCreated::V1(
                 creation,
             ))) => canon
                 .agents
-                .get(creation.experience.agent_id)
+                .get(&creation.experience.agent_id)
                 .into_iter()
                 .collect(),
             Events::Continuity(ContinuityEvents::Introspected(Introspected::V1(e))) => {

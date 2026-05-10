@@ -3,10 +3,10 @@ use axum::{Json, http::StatusCode};
 
 use crate::*;
 
-pub struct ProjectRouter;
+pub(crate) struct ProjectRouter;
 
 impl ProjectRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new()
             // System-scoped — no auth needed (creating a brain is how you get a token)
             .api_route(

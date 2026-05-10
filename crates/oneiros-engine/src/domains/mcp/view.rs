@@ -5,18 +5,18 @@
 
 use crate::*;
 
-pub struct McpView {
-    response: McpConfigResponse,
+pub(crate) struct McpView {
+    response: McpResponses,
 }
 
 impl McpView {
-    pub fn new(response: McpConfigResponse) -> Self {
+    pub(crate) fn new(response: McpResponses) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<McpConfigResponse> {
+    pub(crate) fn render(self) -> Rendered<McpResponses> {
         match self.response {
-            McpConfigResponse::McpConfigWritten(McpConfigWrittenResponse::V1(details)) => {
+            McpResponses::McpConfigWritten(McpConfigWrittenResponse::V1(details)) => {
                 let path = details.path;
                 let prompt = format!(
                     "{} MCP config written to {}.",
@@ -24,7 +24,7 @@ impl McpView {
                     path.display()
                 );
                 Rendered::new(
-                    McpConfigResponse::McpConfigWritten(
+                    McpResponses::McpConfigWritten(
                         McpConfigWrittenResponse::builder_v1()
                             .path(path)
                             .build()
@@ -34,14 +34,14 @@ impl McpView {
                     String::new(),
                 )
             }
-            McpConfigResponse::McpConfigExists(McpConfigExistsResponse::V1(details)) => {
+            McpResponses::McpConfigExists(McpConfigExistsResponse::V1(details)) => {
                 let path = details.path;
                 let prompt = format!(
                     "{}",
                     format!("MCP config already exists at {}. Skipped.", path.display()).muted()
                 );
                 Rendered::new(
-                    McpConfigResponse::McpConfigExists(
+                    McpResponses::McpConfigExists(
                         McpConfigExistsResponse::builder_v1()
                             .path(path)
                             .build()

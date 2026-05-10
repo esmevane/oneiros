@@ -7,14 +7,14 @@ use crate::*;
 
 /// A configured HTTP client for communicating with the engine service.
 #[derive(Debug, Clone)]
-pub struct Client {
+pub(crate) struct Client {
     http: reqwest::Client,
     base_url: String,
 }
 
 /// Client errors.
 #[derive(Debug, thiserror::Error)]
-pub enum ClientError {
+pub(crate) enum ClientError {
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
 
@@ -39,19 +39,33 @@ pub enum ClientError {
 
 impl IntoResponse for ClientError {
     fn into_response(self) -> axum::response::Response {
-        unreachable!()
+        todo!(
+            "this isn't unreachable - the client can be leveraged by a server, we need to impl this"
+        )
     }
 }
 
 impl Client {
-    pub fn new(base_url: impl AsRef<str>) -> Self {
+    pub(crate) fn new(base_url: impl AsRef<str>) -> Self {
         Self {
             http: reqwest::Client::new(),
             base_url: base_url.as_ref().into(),
         }
     }
 
-    pub fn with_token(base_url: impl Into<String>, token: Token) -> Result<Self, ClientError> {
+    /// Build a client from a config — token-aware. Returns an authenticated
+    /// client when the brain has a token on disk, an anonymous one otherwise.
+    pub(crate) fn from_config(config: &Config) -> Result<Self, ClientError> {
+        match config.token() {
+            Some(token) => Self::with_token(config.base_url(), token),
+            None => Ok(Self::new(config.base_url())),
+        }
+    }
+
+    pub(crate) fn with_token(
+        base_url: impl Into<String>,
+        token: Token,
+    ) -> Result<Self, ClientError> {
         let mut headers = reqwest::header::HeaderMap::new();
         let value = format!("Bearer {token}").parse().map_err(|_| {
             ClientError::InvalidRequest("token contains invalid header characters".into())
@@ -80,6 +94,29 @@ impl Client {
     ) -> Result<T, ClientError> {
         let resp = self.http.get(self.url(path)).send().await?;
         Self::handle_response(resp).await
+    }
+
+    /// Send a GET and return the raw response body as bytes. Used for
+    /// content endpoints that don't return JSON (e.g. blob downloads).
+    #[tracing::instrument(skip(self), fields(path = %path))]
+    pub(crate) async fn get_bytes(&self, path: &str) -> Result<Vec<u8>, ClientError> {
+        let resp = self.http.get(self.url(path)).send().await?;
+        let status = resp.status();
+
+        if status == StatusCode::NOT_FOUND {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(ClientError::NotFound(body));
+        }
+
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(ClientError::Server {
+                status: status.as_u16(),
+                body,
+            });
+        }
+
+        Ok(resp.bytes().await?.to_vec())
     }
 
     /// Send a POST with JSON body and deserialize the response.

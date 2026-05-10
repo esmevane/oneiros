@@ -3,7 +3,7 @@ use crate::*;
 /// Iroh transport errors — contained within the bridge domain so iroh
 /// types don't leak across the API boundary.
 #[derive(Debug, thiserror::Error)]
-pub enum IrohError {
+pub(crate) enum IrohError {
     #[error("bind failed: {0}")]
     Bind(#[from] iroh::endpoint::BindError),
 
@@ -25,7 +25,7 @@ pub enum IrohError {
 
 /// Errors from bridge operations.
 #[derive(Debug, thiserror::Error)]
-pub enum BridgeError {
+pub(crate) enum BridgeError {
     /// An iroh transport error.
     #[error(transparent)]
     Iroh(#[from] IrohError),

@@ -6,16 +6,16 @@
 
 use crate::*;
 
-pub struct ServiceView {
+pub(crate) struct ServiceView {
     response: ServiceResponse,
 }
 
 impl ServiceView {
-    pub fn new(response: ServiceResponse) -> Self {
+    pub(crate) fn new(response: ServiceResponse) -> Self {
         Self { response }
     }
 
-    pub fn render(self) -> Rendered<ServiceResponse> {
+    pub(crate) fn render(self) -> Rendered<ServiceResponse> {
         match self.response {
             ServiceResponse::ServiceInstalled(ServiceInstalledResponse::V1(details)) => {
                 let response = ServiceResponse::ServiceInstalled(

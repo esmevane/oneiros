@@ -1,9 +1,12 @@
 use crate::*;
 
-pub struct SetupService;
+pub(crate) struct SetupService;
 
 impl SetupService {
-    pub async fn run(config: &Config, request: &SetupRequest) -> Result<SetupResponse, SetupError> {
+    pub(crate) async fn run(
+        config: &Config,
+        request: &SetupRequest,
+    ) -> Result<SetupResponse, SetupError> {
         let details = request.current()?;
         let mut steps = Vec::new();
 
@@ -192,10 +195,10 @@ impl SetupService {
         if do_mcp {
             let mcp_request: InitMcp = InitMcp::builder_v1().yes(true).build().into();
             match McpConfigService::init(config, &mcp_request) {
-                Ok(McpConfigResponse::McpConfigWritten(_)) => {
+                Ok(McpResponses::McpConfigWritten(_)) => {
                     steps.push(SetupStep::McpConfigured);
                 }
-                Ok(McpConfigResponse::McpConfigExists(_)) => {
+                Ok(McpResponses::McpConfigExists(_)) => {
                     steps.push(SetupStep::McpConfigured);
                 }
                 Err(e) => {

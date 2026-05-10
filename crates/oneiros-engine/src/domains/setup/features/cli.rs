@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct SetupCli;
+pub(crate) struct SetupCli;
 
 impl SetupCli {
-    pub async fn execute(
+    pub(crate) async fn execute(
         config: &Config,
         request: &SetupRequest,
     ) -> Result<Rendered<Responses>, SetupError> {

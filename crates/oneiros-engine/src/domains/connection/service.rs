@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct ConnectionService;
+pub(crate) struct ConnectionService;
 
 impl ConnectionService {
-    pub async fn create(
+    pub(crate) async fn create(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &CreateConnection,
@@ -46,7 +46,7 @@ impl ConnectionService {
         ))
     }
 
-    pub async fn get(
+    pub(crate) async fn get(
         scope: &Scope<AtBookmark>,
         request: &GetConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
@@ -64,7 +64,7 @@ impl ConnectionService {
         ))
     }
 
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListConnections,
     ) -> Result<ConnectionResponse, ConnectionError> {
@@ -94,7 +94,7 @@ impl ConnectionService {
         }
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveConnection,

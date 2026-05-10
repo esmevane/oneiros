@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum PersonaCommands {
+pub(crate) enum PersonaCommands {
     Set(SetPersona),
     Show(GetPersona),
     List(ListPersonas),
@@ -16,8 +16,11 @@ pub enum PersonaCommands {
 }
 
 impl PersonaCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, PersonaError> {
-        let client = context.client();
+    pub(crate) async fn execute(
+        &self,
+        config: &Config,
+    ) -> Result<Rendered<Responses>, PersonaError> {
+        let client = Client::from_config(config)?;
         let persona_client = PersonaClient::new(&client);
 
         let response = match self {

@@ -7,7 +7,7 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum SeedError {
+pub(crate) enum SeedError {
     #[error(transparent)]
     Level(#[from] LevelError),
 

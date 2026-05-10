@@ -6,44 +6,44 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum AddMemory {
+    pub(crate) enum AddMemory {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub agent: AgentName,
-            #[builder(into)] pub level: LevelName,
-            #[builder(into)] pub content: Content,
+            #[builder(into)] pub(crate) agent: AgentName,
+            #[builder(into)] pub(crate) level: LevelName,
+            #[builder(into)] pub(crate) content: Content,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetMemory {
+    pub(crate) enum GetMemory {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<MemoryId>,
+            #[builder(into)] pub(crate) key: ResourceKey<MemoryId>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListMemories {
+    pub(crate) enum ListMemories {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
-            pub agent: Option<AgentName>,
+            pub(crate) agent: Option<AgentName>,
             #[arg(long)]
-            pub level: Option<LevelName>,
+            pub(crate) level: Option<LevelName>,
             /// Full-text query against memory content. When present, hits
             /// are FTS5-ranked; absent, the listing browses by filters alone.
             #[arg(long)]
             #[builder(into)]
-            pub query: Option<String>,
+            pub(crate) query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -51,7 +51,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = MemoryRequestType, display = "kebab-case")]
-pub enum MemoryRequest {
+pub(crate) enum MemoryRequest {
     AddMemory(AddMemory),
     GetMemory(GetMemory),
     ListMemories(ListMemories),

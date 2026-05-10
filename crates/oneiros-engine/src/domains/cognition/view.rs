@@ -1,16 +1,16 @@
 use crate::*;
 
-pub struct CognitionView<'a> {
+pub(crate) struct CognitionView<'a> {
     response: CognitionResponse,
     request: &'a CognitionRequest,
 }
 
 impl<'a> CognitionView<'a> {
-    pub fn new(response: CognitionResponse, request: &'a CognitionRequest) -> Self {
+    pub(crate) fn new(response: CognitionResponse, request: &'a CognitionRequest) -> Self {
         Self { response, request }
     }
 
-    pub fn mcp(&self) -> McpResponse {
+    pub(crate) fn mcp(&self) -> McpResponse {
         match &self.response {
             CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(added)) => {
                 let ref_token = RefToken::from(Ref::cognition(added.cognition.id));
@@ -78,7 +78,7 @@ impl<'a> CognitionView<'a> {
         }
     }
 
-    pub fn render(self) -> Rendered<CognitionResponse> {
+    pub(crate) fn render(self) -> Rendered<CognitionResponse> {
         match (self.response, self.request) {
             (
                 CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(added)),
@@ -121,9 +121,9 @@ impl<'a> CognitionView<'a> {
             }
             (CognitionResponse::Cognitions(CognitionsResponse::V1(listed)), _) => {
                 let mut table = Table::new(vec![
-                    Column::key("texture", "Texture"),
-                    Column::key("content", "Content").max(60),
-                    Column::key("ref_token", "Ref"),
+                    Column::new("Texture"),
+                    Column::new("Content").max(60),
+                    Column::new("Ref"),
                 ]);
 
                 for item in &listed.items {

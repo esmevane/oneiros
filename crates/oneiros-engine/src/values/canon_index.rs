@@ -5,9 +5,9 @@ use crate::*;
 
 /// A bookmark entry — a reducer pipeline paired with its chronicle.
 #[derive(Clone)]
-pub struct BookmarkEntry {
-    pub pipeline: ReducerPipeline<BrainCanon>,
-    pub chronicle: Chronicle,
+pub(crate) struct BookmarkEntry {
+    pub(crate) pipeline: ReducerPipeline<BrainCanon>,
+    pub(crate) chronicle: Chronicle,
 }
 
 impl Default for BookmarkEntry {
@@ -24,9 +24,9 @@ impl Default for BookmarkEntry {
 /// Tracks which bookmarks exist (each with its own reducer pipeline
 /// and chronicle) and which is currently active.
 #[derive(Clone)]
-pub struct Shelf {
-    pub active: BookmarkName,
-    pub branches: HashMap<BookmarkName, BookmarkEntry>,
+pub(crate) struct Shelf {
+    pub(crate) active: BookmarkName,
+    pub(crate) branches: HashMap<BookmarkName, BookmarkEntry>,
 }
 
 impl Default for Shelf {
@@ -43,7 +43,7 @@ impl Default for Shelf {
 
 impl Shelf {
     /// The active bookmark entry for this brain.
-    pub fn active_entry(&self) -> BookmarkEntry {
+    pub(crate) fn active_entry(&self) -> BookmarkEntry {
         self.branches.get(&self.active).cloned().unwrap_or_default()
     }
 }
@@ -53,19 +53,19 @@ impl Shelf {
 /// Shared across all request handlers via `ServerState`. Each brain
 /// gets a `Shelf` that tracks bookmarks and the active branch.
 #[derive(Clone, Default)]
-pub struct CanonIndex {
+pub(crate) struct CanonIndex {
     brains: Arc<RwLock<HashMap<BrainName, Shelf>>>,
 }
 
 impl CanonIndex {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             brains: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     /// Get or create the active bookmark entry for a brain.
-    pub fn brain_entry(&self, name: &BrainName) -> Result<BookmarkEntry, EventError> {
+    pub(crate) fn brain_entry(&self, name: &BrainName) -> Result<BookmarkEntry, EventError> {
         {
             let read = self
                 .brains
@@ -86,12 +86,12 @@ impl CanonIndex {
     }
 
     /// Get the active bookmark's chronicle for a brain.
-    pub fn chronicle(&self, brain: &BrainName) -> Result<Chronicle, EventError> {
+    pub(crate) fn chronicle(&self, brain: &BrainName) -> Result<Chronicle, EventError> {
         Ok(self.brain_entry(brain)?.chronicle)
     }
 
     /// Get a specific bookmark's chronicle for a brain.
-    pub fn bookmark_chronicle(
+    pub(crate) fn bookmark_chronicle(
         &self,
         brain: &BrainName,
         bookmark: &BookmarkName,
@@ -109,7 +109,7 @@ impl CanonIndex {
     }
 
     /// Get the active bookmark name for a brain.
-    pub fn active_bookmark(&self, brain: &BrainName) -> Result<BookmarkName, EventError> {
+    pub(crate) fn active_bookmark(&self, brain: &BrainName) -> Result<BookmarkName, EventError> {
         let read = self
             .brains
             .read()
@@ -122,7 +122,11 @@ impl CanonIndex {
     }
 
     /// Fork the active bookmark into a new bookmark.
-    pub fn fork_brain(&self, brain: &BrainName, bookmark: &BookmarkName) -> Result<(), EventError> {
+    pub(crate) fn fork_brain(
+        &self,
+        brain: &BrainName,
+        bookmark: &BookmarkName,
+    ) -> Result<(), EventError> {
         let mut write = self
             .brains
             .write()
@@ -142,7 +146,7 @@ impl CanonIndex {
     }
 
     /// Switch the active bookmark for a brain.
-    pub fn switch_brain(
+    pub(crate) fn switch_brain(
         &self,
         brain: &BrainName,
         bookmark: &BookmarkName,
@@ -160,7 +164,7 @@ impl CanonIndex {
     }
 
     /// Merge source bookmark's chronicle into target bookmark.
-    pub fn merge_brain(
+    pub(crate) fn merge_brain(
         &self,
         brain: &BrainName,
         source: &BookmarkName,
@@ -199,7 +203,11 @@ impl CanonIndex {
     ///
     /// Opens events.db standalone for the event log, then the bookmark
     /// connection for projection migrations.
-    pub fn hydrate_brain(&self, config: &Config, name: &BrainName) -> Result<(), EventError> {
+    pub(crate) fn hydrate_brain(
+        &self,
+        config: &Config,
+        name: &BrainName,
+    ) -> Result<(), EventError> {
         let mut brain_config = config.clone();
         brain_config.brain = name.clone();
 

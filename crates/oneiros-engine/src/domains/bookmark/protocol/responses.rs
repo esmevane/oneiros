@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = BookmarkResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum BookmarkResponse {
+pub(crate) enum BookmarkResponse {
     Created(BookmarkCreatedResponse),
     Forked(BookmarkForkedResponse),
     Switched(BookmarkSwitchedResponse),
@@ -21,49 +21,49 @@ pub enum BookmarkResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum BookmarkCreatedResponse {
-        V1 => { #[serde(flatten)] pub bookmark: Bookmark }
+    pub(crate) enum BookmarkCreatedResponse {
+        V1 => { #[serde(flatten)] pub(crate) bookmark: Bookmark }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum BookmarkForkedResponse {
+    pub(crate) enum BookmarkForkedResponse {
         V1 => {
-            #[serde(flatten)] pub bookmark: Bookmark,
-            pub from: BookmarkName,
+            #[serde(flatten)] pub(crate) bookmark: Bookmark,
+            pub(crate) from: BookmarkName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum BookmarkSwitchedResponse {
+    pub(crate) enum BookmarkSwitchedResponse {
         V1 => {
-            pub brain: BrainName,
-            pub name: BookmarkName,
+            pub(crate) brain: BrainName,
+            pub(crate) name: BookmarkName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum BookmarkMergedResponse {
+    pub(crate) enum BookmarkMergedResponse {
         V1 => {
-            pub brain: BrainName,
-            pub source: BookmarkName,
-            pub target: BookmarkName,
+            pub(crate) brain: BrainName,
+            pub(crate) source: BookmarkName,
+            pub(crate) target: BookmarkName,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum BookmarkUnfollowedResponse {
+    pub(crate) enum BookmarkUnfollowedResponse {
         V1 => {
-            pub follow_id: FollowId,
-            pub brain: BrainName,
-            pub bookmark: BookmarkName,
+            pub(crate) follow_id: FollowId,
+            pub(crate) brain: BrainName,
+            pub(crate) bookmark: BookmarkName,
         }
     }
 }
@@ -73,16 +73,16 @@ versioned! {
 /// host identity, but it's convenient to return it alongside so callers
 /// don't need to reconstruct it.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct BookmarkShareResult {
-    pub ticket: Ticket,
-    pub uri: String,
+pub(crate) struct BookmarkShareResult {
+    pub(crate) ticket: Ticket,
+    pub(crate) uri: String,
 }
 
 /// The outcome of a successful `bookmark collect` — how many events were
 /// received and the new checkpoint after applying them.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct BookmarkCollectResult {
-    pub follow_id: FollowId,
-    pub events_received: u64,
-    pub checkpoint: Checkpoint,
+pub(crate) struct BookmarkCollectResult {
+    pub(crate) follow_id: FollowId,
+    pub(crate) events_received: u64,
+    pub(crate) checkpoint: Checkpoint,
 }

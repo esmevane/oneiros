@@ -3,16 +3,16 @@ use rusqlite::params;
 use crate::*;
 
 /// Experience projection store — projection lifecycle, write operations, and sync read queries.
-pub struct ExperienceStore<'a> {
+pub(crate) struct ExperienceStore<'a> {
     conn: &'a rusqlite::Connection,
 }
 
 impl<'a> ExperienceStore<'a> {
-    pub fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
         Self { conn }
     }
 
-    pub fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
+    pub(crate) fn handle(&self, event: &StoredEvent) -> Result<(), EventError> {
         if let Event::Known(Events::Experience(experience_event)) = &event.data {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(created) => {
@@ -44,12 +44,12 @@ impl<'a> ExperienceStore<'a> {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<(), EventError> {
+    pub(crate) fn reset(&self) -> Result<(), EventError> {
         self.conn.execute("DELETE FROM experiences", [])?;
         Ok(())
     }
 
-    pub fn migrate(&self) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self) -> Result<(), EventError> {
         self.conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS experiences (
                 id TEXT PRIMARY KEY,
@@ -62,7 +62,7 @@ impl<'a> ExperienceStore<'a> {
         Ok(())
     }
 
-    pub fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
+    pub(crate) fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences WHERE id = ?1",
@@ -93,7 +93,7 @@ impl<'a> ExperienceStore<'a> {
         }
     }
 
-    pub fn list(&self, agent: Option<&str>) -> Result<Vec<Experience>, EventError> {
+    pub(crate) fn list(&self, agent: Option<&str>) -> Result<Vec<Experience>, EventError> {
         let mut stmt = match agent {
             Some(_) => self.conn.prepare(
                 "SELECT id, agent_id, sensation, description, created_at
@@ -138,7 +138,11 @@ impl<'a> ExperienceStore<'a> {
     }
 
     /// Most recent experiences for an agent, ordered newest-first.
-    pub fn list_recent(&self, agent_id: &str, limit: usize) -> Result<Vec<Experience>, EventError> {
+    pub(crate) fn list_recent(
+        &self,
+        agent_id: &str,
+        limit: usize,
+    ) -> Result<Vec<Experience>, EventError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences

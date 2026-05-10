@@ -28,7 +28,7 @@ use crate::*;
 ///
 /// Every `TestApp` gets its own tempdir and ephemeral-port server.
 /// Commands and client calls go through the full HTTP stack.
-pub struct TestApp {
+pub(crate) struct TestApp {
     engine: Engine,
     _dir: tempfile::TempDir,
     _handle: ServerHandle,
@@ -36,10 +36,10 @@ pub struct TestApp {
 
 impl TestApp {
     /// Boot a new test app: tempdir, config, server on a random port.
-    pub async fn new() -> Result<Self, Error> {
+    pub(crate) async fn new() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::tempdir().expect("create tempdir");
 
-        let config = Config::builder()
+        let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .brain(BrainName::new("test"))
             .output(OutputMode::Json)
@@ -57,11 +57,9 @@ impl TestApp {
             })
             .build();
 
-        let mut engine = Engine::new(config);
-        let handle = engine
-            .start()
-            .await
-            .map_err(|e| Error::Context(e.to_string()))?;
+        let handle = Server::new(config.clone()).spawn().await?;
+        config.service.address = handle.address();
+        let engine = Engine::new(config);
 
         Ok(Self {
             engine,
@@ -71,13 +69,13 @@ impl TestApp {
     }
 
     /// Initialize the system database and default tenant/actor.
-    pub async fn init_system(self) -> Result<Self, Error> {
+    pub(crate) async fn init_system(self) -> Result<Self, Box<dyn core::error::Error>> {
         self.command("system init --name test").await?;
         Ok(self)
     }
 
     /// Initialize a project (brain) with the default name.
-    pub async fn init_project(self) -> Result<Self, Error> {
+    pub(crate) async fn init_project(self) -> Result<Self, Box<dyn core::error::Error>> {
         let brain = self.engine.config().brain.to_string();
         self.command(&format!("project init --name {brain}"))
             .await?;
@@ -85,7 +83,7 @@ impl TestApp {
     }
 
     /// Seed the core vocabulary (textures, levels, sensations, etc.).
-    pub async fn seed_core(self) -> Result<Self, Error> {
+    pub(crate) async fn seed_core(self) -> Result<Self, Box<dyn core::error::Error>> {
         self.command("seed core").await?;
         Ok(self)
     }
@@ -100,7 +98,10 @@ impl TestApp {
     /// app.command("agent create thinker process").await?;
     /// app.command("persona show process").await?;
     /// ```
-    pub async fn command(&self, input: &str) -> Result<Rendered<Responses>, Error> {
+    pub(crate) async fn command(
+        &self,
+        input: &str,
+    ) -> Result<Rendered<Responses>, Box<dyn core::error::Error>> {
         // Build the arg list: "oneiros" + the user's command tokens.
         // Prepend global flags so clap routes to the right config.
         let config = self.engine.config();
@@ -116,10 +117,10 @@ impl TestApp {
                 .unwrap_or_else(|| panic!("invalid shell words in command: {input}")),
         );
 
-        let cli = Cli::try_parse_from(&args).map_err(|e| Error::Context(e.to_string()))?;
+        let cli = Cli::try_parse_from(&args)?;
 
         // Execute against our engine's config (which has the correct port).
-        self.engine.execute(&cli).await
+        Ok(self.engine.execute(&cli).await?)
     }
 
     /// Get a typed HTTP client connected to this app's server.
@@ -127,34 +128,29 @@ impl TestApp {
     /// The client authenticates with the project's token (written during
     /// `init_project`). Domain-specific clients are available via methods
     /// like `.persona()`, `.agent()`, etc.
-    pub fn client(&self) -> TestClient {
-        let config = self.engine.config();
-        let client = match config.token() {
-            Some(token) => Client::with_token(config.base_url(), token).expect("test token"),
-            None => Client::new(config.base_url()),
-        };
-
+    pub(crate) fn client(&self) -> TestClient {
+        let client = Client::from_config(self.engine.config()).expect("test client");
         TestClient { client }
     }
 
     /// The engine config — useful for tests that need the underlying
     /// ProjectLog alongside the HTTP stack.
-    pub fn config(&self) -> &Config {
+    pub(crate) fn config(&self) -> &Config {
         self.engine.config()
     }
 
     /// The base URL of the running server (e.g. `http://127.0.0.1:PORT`).
-    pub fn base_url(&self) -> String {
+    pub(crate) fn base_url(&self) -> String {
         self.engine.config().base_url()
     }
 
     /// The MCP endpoint URL (e.g. `http://127.0.0.1:PORT/mcp`).
-    pub fn mcp_url(&self) -> String {
+    pub(crate) fn mcp_url(&self) -> String {
         format!("{}/mcp", self.base_url())
     }
 
     /// The project token, if one exists (written during `init_project`).
-    pub fn token(&self) -> Option<Token> {
+    pub(crate) fn token(&self) -> Option<Token> {
         self.engine.config().token()
     }
 }
@@ -163,88 +159,88 @@ impl TestApp {
 ///
 /// Wraps the existing domain clients behind a fluent API.
 /// Each method returns the production domain client — no test doubles.
-pub struct TestClient {
+pub(crate) struct TestClient {
     client: Client,
 }
 
 impl TestClient {
-    pub fn persona(&self) -> PersonaClient<'_> {
+    pub(crate) fn persona(&self) -> PersonaClient<'_> {
         PersonaClient::new(&self.client)
     }
 
-    pub fn agent(&self) -> AgentClient<'_> {
+    pub(crate) fn agent(&self) -> AgentClient<'_> {
         AgentClient::new(&self.client)
     }
 
-    pub fn level(&self) -> LevelClient<'_> {
+    pub(crate) fn level(&self) -> LevelClient<'_> {
         LevelClient::new(&self.client)
     }
 
-    pub fn texture(&self) -> TextureClient<'_> {
+    pub(crate) fn texture(&self) -> TextureClient<'_> {
         TextureClient::new(&self.client)
     }
 
-    pub fn sensation(&self) -> SensationClient<'_> {
+    pub(crate) fn sensation(&self) -> SensationClient<'_> {
         SensationClient::new(&self.client)
     }
 
-    pub fn nature(&self) -> NatureClient<'_> {
+    pub(crate) fn nature(&self) -> NatureClient<'_> {
         NatureClient::new(&self.client)
     }
 
-    pub fn urge(&self) -> UrgeClient<'_> {
+    pub(crate) fn urge(&self) -> UrgeClient<'_> {
         UrgeClient::new(&self.client)
     }
 
-    pub fn cognition(&self) -> CognitionClient<'_> {
+    pub(crate) fn cognition(&self) -> CognitionClient<'_> {
         CognitionClient::new(&self.client)
     }
 
-    pub fn memory(&self) -> MemoryClient<'_> {
+    pub(crate) fn memory(&self) -> MemoryClient<'_> {
         MemoryClient::new(&self.client)
     }
 
-    pub fn experience(&self) -> ExperienceClient<'_> {
+    pub(crate) fn experience(&self) -> ExperienceClient<'_> {
         ExperienceClient::new(&self.client)
     }
 
-    pub fn connection(&self) -> ConnectionClient<'_> {
+    pub(crate) fn connection(&self) -> ConnectionClient<'_> {
         ConnectionClient::new(&self.client)
     }
 
-    pub fn storage(&self) -> StorageClient<'_> {
+    pub(crate) fn storage(&self) -> StorageClient<'_> {
         StorageClient::new(&self.client)
     }
 
-    pub fn continuity(&self) -> ContinuityClient<'_> {
+    pub(crate) fn continuity(&self) -> ContinuityClient<'_> {
         ContinuityClient::new(&self.client)
     }
 
-    pub fn search(&self) -> SearchClient<'_> {
+    pub(crate) fn search(&self) -> SearchClient<'_> {
         SearchClient::new(&self.client)
     }
 
-    pub fn pressure(&self) -> PressureClient<'_> {
+    pub(crate) fn pressure(&self) -> PressureClient<'_> {
         PressureClient::new(&self.client)
     }
 
-    pub fn tenant(&self) -> TenantClient<'_> {
+    pub(crate) fn tenant(&self) -> TenantClient<'_> {
         TenantClient::new(&self.client)
     }
 
-    pub fn actor(&self) -> ActorClient<'_> {
+    pub(crate) fn actor(&self) -> ActorClient<'_> {
         ActorClient::new(&self.client)
     }
 
-    pub fn brain(&self) -> BrainClient<'_> {
+    pub(crate) fn brain(&self) -> BrainClient<'_> {
         BrainClient::new(&self.client)
     }
 
-    pub fn ticket(&self) -> TicketClient<'_> {
+    pub(crate) fn ticket(&self) -> TicketClient<'_> {
         TicketClient::new(&self.client)
     }
 
-    pub fn bookmark(&self) -> BookmarkClient<'_> {
+    pub(crate) fn bookmark(&self) -> BookmarkClient<'_> {
         BookmarkClient::new(&self.client)
     }
 }

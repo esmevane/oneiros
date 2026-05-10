@@ -1,7 +1,14 @@
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum UpcastError {
+pub(crate) enum UpcastError {
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Part of our versioning system, but we haven't versioned yet"
+        )
+    )]
     #[error("discontinuity {from} -> {to}: {reason}")]
     Discontinuity {
         from: &'static str,
@@ -17,10 +24,7 @@ impl From<std::convert::Infallible> for UpcastError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("{0}")]
-    Context(String),
-
+pub(crate) enum Error {
     #[error(transparent)]
     Agent(#[from] AgentError),
     #[error(transparent)]
@@ -90,4 +94,23 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn discontinuity_renders_from_to_and_reason() {
+        let error = UpcastError::Discontinuity {
+            from: "FooV1",
+            to: "FooV2",
+            reason: "field `kind` removed without migration path",
+        };
+
+        let rendered = error.to_string();
+        assert!(rendered.contains("FooV1"));
+        assert!(rendered.contains("FooV2"));
+        assert!(rendered.contains("field `kind` removed without migration path"));
+    }
 }

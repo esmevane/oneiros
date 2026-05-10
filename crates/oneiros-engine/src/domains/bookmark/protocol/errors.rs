@@ -7,18 +7,12 @@ use axum::{
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum BookmarkError {
+pub(crate) enum BookmarkError {
     #[error("Bookmark not found: {0}")]
     NotFound(BookmarkName),
 
-    #[error("Bookmark already exists: {0}")]
-    AlreadyExists(BookmarkName),
-
     #[error("Brain not found: {0}")]
     BrainNotFound(BrainName),
-
-    #[error("Actor not found: {0}")]
-    ActorNotFound(ActorId),
 
     #[error("No actor available — provide an actor_id or initialize the system first")]
     NoActor,
@@ -70,9 +64,7 @@ impl IntoResponse for BookmarkError {
         let (status, message) = match &self {
             BookmarkError::NotFound(_)
             | BookmarkError::BrainNotFound(_)
-            | BookmarkError::ActorNotFound(_)
             | BookmarkError::FollowNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
-            BookmarkError::AlreadyExists(_) => (StatusCode::CONFLICT, self.to_string()),
             BookmarkError::InvalidUri(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             BookmarkError::NoActor
             | BookmarkError::Database(_)

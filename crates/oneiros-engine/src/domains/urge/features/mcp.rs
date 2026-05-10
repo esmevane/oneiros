@@ -1,17 +1,13 @@
 use crate::*;
 
-pub struct UrgeMcp;
+pub(crate) struct UrgeMcp;
 
 impl UrgeMcp {
-    pub fn resources(&self) -> Vec<ResourceDef> {
+    pub(crate) fn resources(&self) -> Vec<ResourceDef> {
         vec![ResourcePathKind::Urges.resource_def("Cognitive drives")]
     }
 
-    pub fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
-        vec![]
-    }
-
-    pub async fn resource(
+    pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
         request: &UrgeRequest,
@@ -24,7 +20,7 @@ impl UrgeMcp {
 mod urge_mcp {
     use crate::*;
 
-    pub async fn resource(
+    pub(crate) async fn resource(
         scope: &Scope<AtBookmark>,
         request: &UrgeRequest,
     ) -> Result<McpResponse, ToolError> {

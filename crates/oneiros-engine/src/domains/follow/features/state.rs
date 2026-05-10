@@ -1,9 +1,9 @@
 use crate::*;
 
-pub struct FollowState;
+pub(crate) struct FollowState;
 
 impl FollowState {
-    pub fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
         if let Events::Bookmark(bookmark_event) = event {
             match bookmark_event {
                 BookmarkEvents::BookmarkFollowed(followed) => {
@@ -21,7 +21,7 @@ impl FollowState {
                 }
                 BookmarkEvents::BookmarkUnfollowed(unfollowed) => {
                     if let Ok(current) = unfollowed.current() {
-                        canon.follows.remove(current.follow_id);
+                        canon.follows.remove(&current.follow_id);
                     }
                 }
                 BookmarkEvents::BookmarkCreated(_)
@@ -35,7 +35,7 @@ impl FollowState {
         canon
     }
 
-    pub fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<SystemCanon> {
         Reducer::new(Self::reduce)
     }
 }

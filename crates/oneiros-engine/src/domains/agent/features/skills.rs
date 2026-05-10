@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct AgentSkills;
+pub(crate) struct AgentSkills;
 
 impl AgentSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("agent-create", include_str!("skills/create.md")),
             Skill::new("agent-show", include_str!("skills/show.md")),

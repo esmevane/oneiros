@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct TextureSkills;
+pub(crate) struct TextureSkills;
 
 impl TextureSkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("texture-set", include_str!("skills/set.md")),
             Skill::new("texture-show", include_str!("skills/show.md")),

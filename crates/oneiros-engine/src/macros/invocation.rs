@@ -8,7 +8,7 @@
 
 use serde::Serialize;
 
-pub fn render_invocation<T: Serialize>(name: &str, value: &T) -> String {
+pub(crate) fn render_invocation<T: Serialize>(name: &str, value: &T) -> String {
     let json = match serde_json::to_value(value) {
         Ok(json) => json,
         Err(_) => return name.to_string(),

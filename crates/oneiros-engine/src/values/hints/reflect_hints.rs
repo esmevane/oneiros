@@ -4,12 +4,12 @@ use crate::*;
 
 /// Hints after reflecting — consolidate or deepen.
 #[derive(Builder)]
-pub struct ReflectHints {
-    pub agent: AgentName,
+pub(crate) struct ReflectHints {
+    pub(crate) agent: AgentName,
 }
 
 impl ReflectHints {
-    pub fn hints(&self) -> Vec<Hint> {
+    pub(crate) fn hints(&self) -> Vec<Hint> {
         let agent = &self.agent;
         vec![
             Hint::suggest(

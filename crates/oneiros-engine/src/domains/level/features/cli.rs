@@ -8,7 +8,7 @@ use crate::*;
 /// dispatcher passes the wrapper through to the client without rebuilding,
 /// since the operation type *is* the domain command.
 #[derive(Debug, Subcommand)]
-pub enum LevelCommands {
+pub(crate) enum LevelCommands {
     Set(SetLevel),
     Show(GetLevel),
     List(ListLevels),
@@ -16,8 +16,8 @@ pub enum LevelCommands {
 }
 
 impl LevelCommands {
-    pub async fn execute(&self, context: &ProjectLog) -> Result<Rendered<Responses>, LevelError> {
-        let client = context.client();
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, LevelError> {
+        let client = Client::from_config(config)?;
         let level_client = LevelClient::new(&client);
 
         let response = match self {

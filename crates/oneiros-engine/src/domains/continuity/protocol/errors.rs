@@ -5,7 +5,7 @@ use axum::response::{IntoResponse, Response};
 use crate::*;
 
 #[derive(Debug, thiserror::Error)]
-pub enum ContinuityError {
+pub(crate) enum ContinuityError {
     #[error("Agent not found: {0}")]
     AgentNotFound(AgentName),
 

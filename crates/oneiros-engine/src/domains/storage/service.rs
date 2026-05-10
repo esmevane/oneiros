@@ -1,6 +1,6 @@
 use crate::*;
 
-pub struct StorageService;
+pub(crate) struct StorageService;
 
 impl StorageService {
     /// Upload content — hash it, store the blob, dispatch the metadata
@@ -9,7 +9,7 @@ impl StorageService {
     /// The blob table is the durable store, not a projection — the put
     /// happens here directly, outside the bus. The metadata event is
     /// the projection-driving signal that the bookmark actor materializes.
-    pub async fn upload(
+    pub(crate) async fn upload(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &UploadStorage,
@@ -57,7 +57,7 @@ impl StorageService {
     }
 
     /// Show storage metadata by key.
-    pub async fn show(
+    pub(crate) async fn show(
         scope: &Scope<AtBookmark>,
         request: &GetStorage,
     ) -> Result<StorageResponse, StorageError> {
@@ -76,7 +76,7 @@ impl StorageService {
     }
 
     /// List all storage entries.
-    pub async fn list(
+    pub(crate) async fn list(
         scope: &Scope<AtBookmark>,
         request: &ListStorage,
     ) -> Result<StorageResponse, StorageError> {
@@ -99,7 +99,7 @@ impl StorageService {
     }
 
     /// Remove storage metadata by key. The blob is NOT deleted (dedup preservation).
-    pub async fn remove(
+    pub(crate) async fn remove(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         request: &RemoveStorage,
@@ -141,7 +141,7 @@ impl StorageService {
     }
 
     /// Retrieve the raw binary content for a storage key.
-    pub async fn get_content(
+    pub(crate) async fn get_content(
         scope: &Scope<AtBookmark>,
         key: &StorageKey,
     ) -> Result<Vec<u8>, StorageError> {

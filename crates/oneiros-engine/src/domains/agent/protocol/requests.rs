@@ -6,34 +6,34 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum CreateAgent {
+    pub(crate) enum CreateAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: AgentName,
-            #[builder(into)] pub persona: PersonaName,
+            #[builder(into)] pub(crate) name: AgentName,
+            #[builder(into)] pub(crate) persona: PersonaName,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(default, into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum GetAgent {
+    pub(crate) enum GetAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub key: ResourceKey<AgentName>,
+            #[builder(into)] pub(crate) key: ResourceKey<AgentName>,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ListAgents {
+    pub(crate) enum ListAgents {
         #[derive(clap::Args)]
         V1 => {
             /// Full-text query against agent name + description. When present,
@@ -41,38 +41,38 @@ versioned! {
             /// alone.
             #[arg(long)]
             #[builder(into)]
-            pub query: Option<String>,
+            pub(crate) query: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
-            pub filters: SearchFilters,
+            pub(crate) filters: SearchFilters,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum UpdateAgent {
+    pub(crate) enum UpdateAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: AgentName,
-            #[builder(into)] pub persona: PersonaName,
+            #[builder(into)] pub(crate) name: AgentName,
+            #[builder(into)] pub(crate) persona: PersonaName,
             #[arg(long, default_value = "")]
             #[builder(into)]
-            pub description: Description,
+            pub(crate) description: Description,
             #[arg(long, default_value = "")]
             #[builder(into)]
-            pub prompt: Prompt,
+            pub(crate) prompt: Prompt,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum RemoveAgent {
+    pub(crate) enum RemoveAgent {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub name: AgentName,
+            #[builder(into)] pub(crate) name: AgentName,
         }
     }
 }
@@ -80,7 +80,7 @@ versioned! {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = AgentRequestType, display = "kebab-case")]
-pub enum AgentRequest {
+pub(crate) enum AgentRequest {
     CreateAgent(CreateAgent),
     GetAgent(GetAgent),
     ListAgents(ListAgents),

@@ -1,9 +1,9 @@
 use crate::Skill;
 
-pub struct ContinuitySkills;
+pub(crate) struct ContinuitySkills;
 
 impl ContinuitySkills {
-    pub fn all() -> Vec<Skill> {
+    pub(crate) fn all() -> Vec<Skill> {
         vec![
             Skill::new("wake", include_str!("skills/wake.md")),
             Skill::new("dream", include_str!("skills/dream.md")),

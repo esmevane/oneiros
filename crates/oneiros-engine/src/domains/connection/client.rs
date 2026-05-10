@@ -1,22 +1,25 @@
 use crate::*;
 
-pub struct ConnectionClient<'a> {
+pub(crate) struct ConnectionClient<'a> {
     client: &'a Client,
 }
 
 impl<'a> ConnectionClient<'a> {
-    pub fn new(client: &'a Client) -> Self {
+    pub(crate) fn new(client: &'a Client) -> Self {
         Self { client }
     }
 
-    pub async fn create(
+    pub(crate) async fn create(
         &self,
         creation: &CreateConnection,
     ) -> Result<ConnectionResponse, ClientError> {
         self.client.post("/connections", creation).await
     }
 
-    pub async fn list(&self, listing: &ListConnections) -> Result<ConnectionResponse, ClientError> {
+    pub(crate) async fn list(
+        &self,
+        listing: &ListConnections,
+    ) -> Result<ConnectionResponse, ClientError> {
         let ListConnections::V1(listing) = listing;
         let mut params: Vec<(&str, String)> = Vec::new();
 
@@ -36,14 +39,17 @@ impl<'a> ConnectionClient<'a> {
         self.client.get(&format!("/connections?{query}")).await
     }
 
-    pub async fn get(&self, lookup: &GetConnection) -> Result<ConnectionResponse, ClientError> {
+    pub(crate) async fn get(
+        &self,
+        lookup: &GetConnection,
+    ) -> Result<ConnectionResponse, ClientError> {
         let GetConnection::V1(lookup) = lookup;
         self.client
             .get(&format!("/connections/{}", lookup.key))
             .await
     }
 
-    pub async fn remove(
+    pub(crate) async fn remove(
         &self,
         removal: &RemoveConnection,
     ) -> Result<ConnectionResponse, ClientError> {

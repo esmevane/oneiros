@@ -2,15 +2,16 @@ use aide::axum::{ApiRouter, routing};
 use axum::{
     Json,
     extract::{Path, Query},
-    http::StatusCode,
+    http::{StatusCode, header},
+    response::IntoResponse,
 };
 
 use crate::*;
 
-pub struct StorageRouter;
+pub(crate) struct StorageRouter;
 
 impl StorageRouter {
-    pub fn routes(&self) -> ApiRouter<ServerState> {
+    pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new().nest(
             "/storage",
             ApiRouter::new()
@@ -33,7 +34,10 @@ impl StorageRouter {
                     .delete_with(remove, |op| {
                         resource_op!(op, StorageDocs::Remove).security_requirement("BearerToken")
                     }),
-                ),
+                )
+                // Raw blob bytes — application/octet-stream, not JSON, so
+                // it lives outside aide's typed routing.
+                .route("/{ref_key}/content", axum::routing::get(content)),
         )
     }
 }
@@ -83,5 +87,19 @@ async fn remove(
             &RemoveStorage::builder_v1().key(key).build().into(),
         )
         .await?,
+    ))
+}
+
+async fn content(
+    scope: Scope<AtBookmark>,
+    Path(ref_key): Path<String>,
+) -> Result<impl IntoResponse, StorageError> {
+    let storage_ref = StorageRef(ref_key);
+    let key = storage_ref.decode().map_err(|_| StorageError::InvalidRef)?;
+    let bytes = StorageService::get_content(&scope, &key).await?;
+    Ok((
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/octet-stream")],
+        bytes,
     ))
 }

@@ -1,6 +1,6 @@
 use crate::*;
 
-pub enum TicketDocs {
+pub(crate) enum TicketDocs {
     Create,
     List,
     Show,
@@ -8,14 +8,14 @@ pub enum TicketDocs {
 }
 
 impl TicketDocs {
-    pub fn tag(&self) -> Tag {
+    pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("tickets")
             .description("Issue and manage brain access tickets")
             .build()
     }
 
-    pub fn resource_docs(&self) -> ResourceDocs {
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let tag = self.tag();
         match self {
             Self::Create => ResourceDocs::builder()

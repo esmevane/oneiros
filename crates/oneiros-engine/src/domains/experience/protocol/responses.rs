@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, JsonSchema)]
 #[kinded(kind = ExperienceResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-pub enum ExperienceResponse {
+pub(crate) enum ExperienceResponse {
     ExperienceCreated(ExperienceCreatedResponse),
     ExperienceDetails(ExperienceDetailsResponse),
     Experiences(ExperiencesResponse),
@@ -17,31 +17,31 @@ pub enum ExperienceResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ExperienceCreatedResponse {
-        V1 => { #[serde(flatten)] pub experience: Experience }
+    pub(crate) enum ExperienceCreatedResponse {
+        V1 => { #[serde(flatten)] pub(crate) experience: Experience }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ExperienceDetailsResponse {
-        V1 => { #[serde(flatten)] pub experience: Experience }
+    pub(crate) enum ExperienceDetailsResponse {
+        V1 => { #[serde(flatten)] pub(crate) experience: Experience }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ExperiencesResponse {
+    pub(crate) enum ExperiencesResponse {
         V1 => {
-            pub items: Vec<Experience>,
-            pub total: usize,
+            pub(crate) items: Vec<Experience>,
+            pub(crate) total: usize,
         }
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
-    pub enum ExperienceUpdatedResponse {
-        V1 => { #[serde(flatten)] pub experience: Experience }
+    pub(crate) enum ExperienceUpdatedResponse {
+        V1 => { #[serde(flatten)] pub(crate) experience: Experience }
     }
 }
