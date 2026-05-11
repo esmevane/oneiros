@@ -33,6 +33,8 @@ pub(crate) enum Error {
     Bookmark(#[from] BookmarkError),
     #[error(transparent)]
     Brain(#[from] BrainError),
+    #[error("configuration: {0}")]
+    Config(String),
     #[error(transparent)]
     Cognition(#[from] CognitionError),
     #[error(transparent)]

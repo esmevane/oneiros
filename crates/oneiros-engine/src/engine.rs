@@ -96,13 +96,14 @@ impl Engine {
         ExitCode::SUCCESS
     }
 
-    /// From CLI args — parses arguments and merges config file.
+    /// From CLI args — parses arguments and resolves configuration.
     ///
+    /// Layers config from defaults, config file, env vars, and CLI flags.
     /// Returns the engine and the parsed CLI so the caller can execute
     /// and render. Tracing setup is the caller's responsibility.
     pub(crate) fn from_cli() -> Result<(Self, Cli), Error> {
         let cli = Cli::parse();
-        let config = cli.config().clone().with_config_file();
+        let config = Config::resolve(&cli.overrides).map_err(|e| Error::Config(e.to_string()))?;
 
         Ok((Self::new(config), cli))
     }

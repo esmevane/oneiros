@@ -10,26 +10,22 @@ use crate::*;
 
 /// Top-level CLI entry point for the engine.
 ///
-/// Carries the global `--output` flag and delegates to `Command` for dispatch.
-/// No binary entrypoint required — tests and future binaries construct this directly.
+/// Carries global flags (via [`CliOverrides`]) and delegates to
+/// [`Command`] for dispatch. No binary entrypoint required — tests
+/// and future binaries construct this directly.
 #[derive(Debug, Parser)]
 #[command(name = "oneiros", version)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     pub(crate) command: Command,
     #[command(flatten)]
-    config: Config,
+    pub(crate) overrides: CliOverrides,
 }
 
 impl Cli {
     /// Execute the command and return the rendered result.
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, Error> {
         self.command.execute(config).await
-    }
-
-    /// The parsed config (from CLI flags).
-    pub(crate) fn config(&self) -> &Config {
-        &self.config
     }
 }
 

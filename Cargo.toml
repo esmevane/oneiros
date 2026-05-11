@@ -34,6 +34,7 @@ data-encoding = "2"
 # three pins together when ed25519 ships a release targeting current pkcs8.
 der = "=0.8.0-rc.10"
 etcetera = "0.11.0"
+figment = { version = "0.10", features = ["toml", "env"] }
 flate2 = "1"
 futures = "0.3"
 humantime = "2"
