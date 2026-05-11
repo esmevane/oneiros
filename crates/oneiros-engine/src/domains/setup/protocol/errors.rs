@@ -24,6 +24,12 @@ pub(crate) enum SetupError {
     Service(#[from] crate::ServiceError),
 
     #[error(transparent)]
+    HostKey(#[from] crate::HostKeyError),
+
+    #[error(transparent)]
+    Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
     Upcast(#[from] crate::UpcastError),
 }
 

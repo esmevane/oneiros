@@ -59,6 +59,12 @@ impl TestApp {
 
         let handle = Server::new(config.clone()).spawn().await?;
         config.service.address = handle.address();
+
+        // Wait for the server to finish booting (HostKey::ensure, DB setup)
+        // before any test makes requests. Otherwise Client::from_config
+        // races against HostKey creation and falls back to anonymous auth.
+        wait_for_server(&config).await?;
+
         let engine = Engine::new(config);
 
         Ok(Self {
@@ -243,4 +249,26 @@ impl TestClient {
     pub(crate) fn bookmark(&self) -> BookmarkClient<'_> {
         BookmarkClient::new(&self.client)
     }
+}
+
+/// Poll the server's `/health` endpoint until it responds, then wait
+/// one extra tick so that `HostKey::ensure()` has completed inside
+/// the spawned server task. Without this, tests that create clients
+/// with `Client::from_config` race against host key generation and
+/// fall back to anonymous auth — which the new middleware rejects.
+async fn wait_for_server(config: &Config) -> Result<(), Box<dyn core::error::Error>> {
+    let health_url = format!("{}/health", config.base_url());
+    let client = reqwest::Client::new();
+    for _ in 0..100 {
+        if client.get(&health_url).send().await.is_ok() {
+            // Server is responding — but HostKey::ensure() may not have
+            // written the key file to disk yet (it runs inside the spawned
+            // task just before the listener starts accepting). Give the
+            // filesystem one more tick.
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            return Ok(());
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    Err("server did not become healthy within timeout".into())
 }

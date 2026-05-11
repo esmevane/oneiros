@@ -95,7 +95,11 @@ async fn system_init_twice_returns_already_initialized() -> Result<(), Box<dyn c
 {
     let app = TestApp::new().await?;
 
-    let host_client = Client::new(app.base_url());
+    let secret = HostKey::new(app.config().platform())
+        .load()?
+        .expect("host key should exist");
+    let host_token = HostToken::generate(&secret);
+    let host_client = Client::with_bearer(app.base_url(), &host_token.to_string())?;
     let system = SystemClient::new(&host_client);
     let request: InitSystem = InitSystem::builder_v1().name("test").build().into();
 

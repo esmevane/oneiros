@@ -53,21 +53,34 @@ impl Client {
         }
     }
 
-    /// Build a client from a config — token-aware. Returns an authenticated
-    /// client when the brain has a token on disk, an anonymous one otherwise.
+    /// Build a client from a config — token-aware. Uses the project token
+    /// from disk when available; falls back to a host token (derived from
+    /// the host key) so that bootstrap operations (system init, project
+    /// init) can authenticate before any brain exists.
     pub(crate) fn from_config(config: &Config) -> Result<Self, ClientError> {
-        match config.token() {
-            Some(token) => Self::with_token(config.base_url(), token),
-            None => Ok(Self::new(config.base_url())),
-        }
+        let bearer = match config.token() {
+            Some(token) => token.to_string(),
+            None => {
+                let secret = HostKey::new(config.platform())
+                    .load()
+                    .ok()
+                    .flatten()
+                    .map(|secret| HostToken::generate(&secret).to_string());
+                let Some(host_token) = secret else {
+                    return Ok(Self::new(config.base_url()));
+                };
+                host_token
+            }
+        };
+        Self::with_bearer(config.base_url(), &bearer)
     }
 
-    pub(crate) fn with_token(
+    pub(crate) fn with_bearer(
         base_url: impl Into<String>,
-        token: Token,
+        bearer: &str,
     ) -> Result<Self, ClientError> {
         let mut headers = reqwest::header::HeaderMap::new();
-        let value = format!("Bearer {token}").parse().map_err(|_| {
+        let value = format!("Bearer {bearer}").parse().map_err(|_| {
             ClientError::InvalidRequest("token contains invalid header characters".into())
         })?;
         headers.insert(reqwest::header::AUTHORIZATION, value);
@@ -80,6 +93,13 @@ impl Client {
             http,
             base_url: base_url.into(),
         })
+    }
+
+    pub(crate) fn with_token(
+        base_url: impl Into<String>,
+        token: Token,
+    ) -> Result<Self, ClientError> {
+        Self::with_bearer(base_url, &token.to_string())
     }
 
     pub(crate) fn url(&self, path: &str) -> String {

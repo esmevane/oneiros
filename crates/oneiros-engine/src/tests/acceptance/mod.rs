@@ -151,6 +151,10 @@ impl Backend for EngineBackend {
         // the engine so its clients connect to the right port.
         let handle = Server::new(config.clone()).spawn().await?;
         config.service.address = handle.address();
+
+        // Wait for the server to finish booting (HostKey::ensure, DB setup).
+        wait_for_server(&config).await?;
+
         let engine = Engine::new(config);
 
         Ok(Self {
@@ -1042,6 +1046,22 @@ async fn prompt_pressure_contains_readings() -> TestResult {
 #[tokio::test]
 async fn prompt_search_contains_results() -> TestResult {
     cases::search::search_prompt_contains_results::<EngineBackend>().await
+}
+
+/// Poll the server's `/health` endpoint until it responds. Ensures
+/// `HostKey::ensure()` has completed inside the spawned server task
+/// before any test creates clients via `Client::from_config`.
+async fn wait_for_server(config: &Config) -> Result<(), Box<dyn core::error::Error>> {
+    let health_url = format!("{}/health", config.base_url());
+    let client = reqwest::Client::new();
+    for _ in 0..100 {
+        if client.get(&health_url).send().await.is_ok() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            return Ok(());
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    Err("server did not become healthy within timeout".into())
 }
 #[tokio::test]
 async fn prompt_search_empty_results() -> TestResult {

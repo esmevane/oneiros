@@ -127,6 +127,11 @@ impl TicketService {
             .get_by_token(validate.token.as_str())
             .await?
             .ok_or(TicketError::InvalidToken)?;
+
+        ticket
+            .check_validity()
+            .map_err(|_| TicketError::InvalidToken)?;
+
         Ok(TicketResponse::Validated(
             TicketValidatedResponse::builder_v1()
                 .ticket(ticket)

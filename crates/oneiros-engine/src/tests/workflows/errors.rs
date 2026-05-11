@@ -56,8 +56,8 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
         tenant_client
             .list(&ListTenants::builder_v1().build().into())
             .await
-            .is_ok(),
-        "system routes should not require auth"
+            .is_err(),
+        "system routes should reject unauthenticated requests"
     );
 
     Ok(())

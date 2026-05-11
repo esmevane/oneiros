@@ -20,6 +20,7 @@ der.workspace = true
 etcetera.workspace = true
 figment.workspace = true
 flate2.workspace = true
+hmac.workspace = true
 humantime.workspace = true
 humantime-serde.workspace = true
 inquire.workspace = true
