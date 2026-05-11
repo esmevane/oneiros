@@ -18,8 +18,8 @@ impl SystemService {
     ) -> Result<SystemResponse, SystemError> {
         let details = request.current()?;
 
-        std::fs::create_dir_all(&config.data_dir)?;
-        HostKey::new(&config.data_dir).ensure()?;
+        config.platform().ensure_dir(&config.data_dir)?;
+        HostKey::new(config.platform()).ensure()?;
         let host_db = HostDb::open_with(&config.platform()).await?;
         EventLog::new(&host_db).init()?;
         Projections::system().migrate(&host_db)?;

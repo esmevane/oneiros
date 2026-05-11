@@ -31,7 +31,7 @@ impl ServerState {
     /// generates) the host secret key from disk, binds a `Bridge`, and
     /// spawns the host actor that consumes the bus.
     pub(crate) async fn bind(config: Config) -> Result<Self, ServerStateError> {
-        let secret = HostKey::new(&config.data_dir).ensure()?;
+        let secret = HostKey::new(config.platform()).ensure()?;
         let bridge = Bridge::bind(secret).await?;
 
         let canons = CanonIndex::new();

@@ -202,9 +202,10 @@ async fn replay_recovers_from_deleted_bookmark_db() {
 
     // Simulate schema-change / corruption: delete the bookmark DB file
     let db_path = app.config().bookmark_db_path();
-    std::fs::remove_file(&db_path).unwrap();
-    let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
-    let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
+    let platform = app.config().platform();
+    platform.remove_file(&db_path).unwrap();
+    let _ = platform.remove_file(db_path.with_extension("db-wal"));
+    let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
     // Replay through the CLI should recreate the DB and restore all data.
     app.command("project replay")

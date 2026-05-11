@@ -35,7 +35,7 @@ impl ServiceService {
         let label = Self::parse_label(&config.service.label)?;
 
         // Ensure log directory exists.
-        std::fs::create_dir_all(config.data_dir.join("logs"))?;
+        config.platform().ensure_dir(config.data_dir.join("logs"))?;
 
         manager
             .install(ServiceInstallCtx {

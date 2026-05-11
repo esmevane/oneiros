@@ -67,9 +67,10 @@ impl ProjectService {
         // Create the brain's database layout:
         //   {brain_dir}/events.db         — event log (append-only)
         //   {brain_dir}/bookmarks/main.db — projection tables for the default bookmark
+        let platform = scope.config().platform();
         let brain_dir = scope.config().data_dir.join(brain_name.as_str());
         let bookmarks_dir = brain_dir.join("bookmarks");
-        std::fs::create_dir_all(&bookmarks_dir)?;
+        platform.ensure_dir(&bookmarks_dir)?;
 
         // Event log — standalone, no ATTACH needed during init.
         let events_db = rusqlite::Connection::open(brain_dir.join("events.db"))?;
@@ -112,11 +113,11 @@ impl ProjectService {
 
         let tickets_dir = scope.config().data_dir.join("tickets");
 
-        std::fs::create_dir_all(&tickets_dir)?;
+        platform.ensure_dir(&tickets_dir)?;
 
         let token_path = tickets_dir.join(format!("{brain_name}.token"));
 
-        std::fs::write(&token_path, format!("{token}"))?;
+        platform.write(&token_path, format!("{token}"))?;
 
         Ok(ProjectResponse::Initialized(
             InitializedResponse::builder_v1()
@@ -167,13 +168,14 @@ impl ProjectService {
             buffer.push('\n');
         }
 
-        std::fs::create_dir_all(target_dir)?;
+        let platform = scope.config().platform();
+        platform.ensure_dir(target_dir)?;
 
         let date = chrono::Utc::now().format("%Y-%m-%d");
         let file_name = format!("{project_name}-{date}-export.jsonl");
         let file_path = target_dir.join(file_name);
 
-        std::fs::write(&file_path, buffer)?;
+        platform.write(&file_path, buffer)?;
 
         Ok(ProjectResponse::WroteExport(
             WroteExportResponse::builder_v1()
@@ -199,7 +201,8 @@ impl ProjectService {
         request: &ImportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
-        let file = std::fs::File::open(&details.file)?;
+        let platform = config.platform();
+        let file = platform.open_file(&details.file)?;
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
@@ -278,12 +281,13 @@ impl ProjectService {
     pub(crate) async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
         // Ensure a clean schema by deleting the old bookmark DB.
         // WAL sidecar files are silently cleaned up if present.
+        let platform = config.platform();
         let db_path = config.bookmark_db_path();
         if db_path.exists() {
-            std::fs::remove_file(&db_path)?;
+            platform.remove_file(&db_path)?;
         }
-        let _ = std::fs::remove_file(db_path.with_extension("db-wal"));
-        let _ = std::fs::remove_file(db_path.with_extension("db-shm"));
+        let _ = platform.remove_file(db_path.with_extension("db-wal"));
+        let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
         // Open a fresh DB, create tables with current schema, then replay.
         let db = BookmarkDb::open_with(&config.platform(), &config.brain, &config.bookmark).await?;

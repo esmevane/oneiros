@@ -40,7 +40,7 @@ impl StorageCommands {
                 file,
                 description,
             } => {
-                let data = std::fs::read(file)?;
+                let data = config.platform().read(file)?;
                 storage_client
                     .upload(
                         &UploadStorage::builder_v1()
@@ -58,7 +58,7 @@ impl StorageCommands {
                 match out {
                     Some(path) => {
                         let len = bytes.len();
-                        std::fs::write(path, &bytes)?;
+                        config.platform().write(path, &bytes)?;
                         return Ok(Rendered::new(
                             Responses::Storage(StorageResponse::NoEntries),
                             format!("Wrote {} bytes to {}", len, path.display()),

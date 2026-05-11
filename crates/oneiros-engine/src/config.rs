@@ -97,11 +97,6 @@ impl Config {
         Platform::new(&self.data_dir)
     }
 
-    /// Path to the config file in the data directory.
-    pub(crate) fn config_path(&self) -> PathBuf {
-        self.platform().config_path()
-    }
-
     /// Open the system database.
     pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         let conn = rusqlite::Connection::open(self.platform().system_db_path())?;
@@ -147,14 +142,11 @@ impl Config {
         Ok(conn)
     }
 
-    /// Path to the token file for the current brain.
-    pub(crate) fn token_path(&self) -> PathBuf {
-        self.platform().token_path(&self.brain)
-    }
-
     /// Read the token for the current brain, if one exists.
     pub(crate) fn token(&self) -> Option<Token> {
-        std::fs::read_to_string(self.token_path())
+        let platform = self.platform();
+        platform
+            .read_to_string(platform.token_path(&self.brain))
             .ok()
             .map(|s| Token::from(s.trim()))
     }
@@ -165,16 +157,16 @@ impl Config {
     /// File values provide the base; CLI-provided values override them.
     /// If no file exists or is empty, returns self unchanged.
     pub(crate) fn with_config_file(mut self) -> Self {
-        let path = self.config_path();
+        let platform = self.platform();
 
-        let file_config = match std::fs::read_to_string(&path) {
+        let file_config = match platform.read_to_string(platform.config_path()) {
             Ok(contents) if !contents.trim().is_empty() => {
                 match toml::from_str::<Config>(&contents) {
                     Ok(config) => config,
                     Err(err) => {
                         eprintln!(
                             "warning: ignoring malformed config file {}: {err}",
-                            path.display()
+                            platform.config_path().display()
                         );
                         return self;
                     }
@@ -268,8 +260,9 @@ mod tests {
     }
 
     fn write_config(dir: &std::path::Path, contents: &str) {
-        std::fs::create_dir_all(dir).unwrap();
-        std::fs::write(dir.join("config.toml"), contents).unwrap();
+        let platform = Platform::new(dir);
+        platform.ensure_dir(platform.data_dir()).unwrap();
+        platform.write(platform.config_path(), contents).unwrap();
     }
 
     #[test]

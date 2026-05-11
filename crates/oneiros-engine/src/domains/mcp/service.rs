@@ -41,7 +41,7 @@ impl McpConfigService {
         }
 
         let content = serde_json::to_string_pretty(&mcp_json)?;
-        std::fs::write(&path, content)?;
+        config.platform().write(&path, content)?;
 
         Ok(McpResponses::McpConfigWritten(
             McpConfigWrittenResponse::builder_v1()

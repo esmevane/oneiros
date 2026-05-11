@@ -108,7 +108,8 @@ async fn storage_via_cli() -> Result<(), Box<dyn core::error::Error>> {
 
     // Storage CLI takes a file path
     let temp = tempfile::NamedTempFile::new()?;
-    std::fs::write(temp.path(), b"Hello from a temp file")?;
+    crate::Platform::new(temp.path().parent().unwrap_or(std::path::Path::new(".")))
+        .write(temp.path(), b"Hello from a temp file")?;
 
     let path = temp.path().display();
     app.command(&format!(
@@ -186,7 +187,8 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
         ))
         .await?;
 
-    let export_file = std::fs::read_dir(export_dir.path())?
+    let export_file = crate::Platform::new(export_dir.path())
+        .read_dir(export_dir.path())?
         .filter_map(|e| e.ok())
         .find(|e| e.path().extension().is_some_and(|ext| ext == "jsonl"))
         .expect("export should produce a .jsonl file");

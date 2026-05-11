@@ -24,7 +24,8 @@ pub(crate) async fn export_produces_file<B: Backend>() -> TestResult {
 
     // Verify file was created and is not empty
     assert!(export_path.exists(), "export file should exist");
-    let content = std::fs::read_to_string(&export_path)?;
+    let content = crate::Platform::new(export_path.parent().unwrap_or(std::path::Path::new(".")))
+        .read_to_string(&export_path)?;
     assert!(!content.is_empty(), "export file should not be empty");
 
     // Count lines — should have at least a few events
@@ -97,7 +98,7 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
     // Create a temp file and store it on brain A
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("test.txt");
-    std::fs::write(&file_path, "Portable blob content")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "Portable blob content")?;
 
     let cmd = format!(
         "storage set portable-doc {} --description 'A portable document'",

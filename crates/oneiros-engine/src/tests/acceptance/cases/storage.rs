@@ -6,7 +6,7 @@ pub(crate) async fn set_and_show<B: Backend>() -> TestResult {
     // Create a temp file to upload
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("test-doc.txt");
-    std::fs::write(&file_path, "Hello, storage!")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "Hello, storage!")?;
 
     let set_cmd = format!(
         "storage set test-doc {} --description 'A test document'",
@@ -53,7 +53,7 @@ pub(crate) async fn list_populated<B: Backend>() -> TestResult {
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
-    std::fs::write(&file_path, "content")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "content")?;
 
     let cmd = format!("storage set my-doc {}", file_path.display());
     harness.exec_json(&cmd).await?;
@@ -75,7 +75,7 @@ pub(crate) async fn set_prompt<B: Backend>() -> TestResult {
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
-    std::fs::write(&file_path, "content")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "content")?;
 
     let prompt = harness
         .exec_prompt(&format!("storage set my-doc {}", file_path.display()))
@@ -91,7 +91,7 @@ pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
-    std::fs::write(&file_path, "content")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "content")?;
 
     harness
         .exec_json(&format!("storage set my-doc {}", file_path.display()))
@@ -116,7 +116,7 @@ pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
-    std::fs::write(&file_path, "content")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "content")?;
 
     harness
         .exec_json(&format!("storage set my-doc {}", file_path.display()))
@@ -137,7 +137,7 @@ pub(crate) async fn remove_prompt<B: Backend>() -> TestResult {
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("doc.txt");
-    std::fs::write(&file_path, "content")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "content")?;
 
     harness
         .exec_json(&format!("storage set removable {}", file_path.display()))
@@ -158,7 +158,7 @@ pub(crate) async fn remove<B: Backend>() -> TestResult {
 
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("removable.txt");
-    std::fs::write(&file_path, "temporary")?;
+    crate::Platform::new(temp_dir.path()).write(&file_path, "temporary")?;
 
     let cmd = format!("storage set removable {}", file_path.display());
     harness.exec_json(&cmd).await?;

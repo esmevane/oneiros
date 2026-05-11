@@ -12,13 +12,14 @@ pub(crate) struct Workspace;
 impl DetectionStrategy for Workspace {
     fn detect(&self, start: &Path) -> Option<ProjectRoot> {
         let mut current = start.canonicalize().ok()?;
+        let platform = crate::Platform::new(start);
 
         loop {
             let cargo_toml = current.join("Cargo.toml");
 
             if cargo_toml.exists() {
                 let maybe_workspace = {
-                    let contents = std::fs::read_to_string(cargo_toml).ok()?;
+                    let contents = platform.read_to_string(cargo_toml).ok()?;
                     let parsed: toml::Table = contents.parse().ok()?;
 
                     let workspace = parsed.get("workspace")?.as_table()?;
@@ -61,18 +62,20 @@ mod tests {
     fn detects_workspace_with_package_name() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let cargo_toml = dir.path().join("Cargo.toml");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            &cargo_toml,
-            r#"
+        platform
+            .write(
+                &cargo_toml,
+                r#"
     [workspace]
     members = ["crates/*"]
 
     [workspace.package]
     name = "my-workspace"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
         let root = Workspace.detect(dir.path()).unwrap();
 
@@ -84,15 +87,17 @@ mod tests {
     fn detects_workspace_falls_back_to_dir_name() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let cargo_toml = dir.path().join("Cargo.toml");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            &cargo_toml,
-            r#"
+        platform
+            .write(
+                &cargo_toml,
+                r#"
     [workspace]
     members = ["crates/*"]
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
         let root = Workspace.detect(dir.path()).unwrap();
 
@@ -113,20 +118,22 @@ mod tests {
     fn walks_up_to_find_workspace() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let nested = dir.path().join("crates").join("sub-crate");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            dir.path().join("Cargo.toml"),
-            r#"
+        platform
+            .write(
+                dir.path().join("Cargo.toml"),
+                r#"
     [workspace]
     members = ["crates/*"]
 
     [workspace.package]
     name = "root-workspace"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
-        std::fs::create_dir_all(&nested).unwrap();
+        platform.ensure_dir(&nested).unwrap();
 
         let root = Workspace.detect(&nested).unwrap();
 
@@ -138,16 +145,18 @@ mod tests {
     fn ignores_package_only_cargo_toml() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let cargo_toml = dir.path().join("Cargo.toml");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            &cargo_toml,
-            r#"
+        platform
+            .write(
+                &cargo_toml,
+                r#"
     [package]
     name = "just-a-package"
     version = "0.1.0"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
         let result = Workspace.detect(dir.path());
 

@@ -35,15 +35,14 @@ impl DetectionStrategy for Git {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use super::*;
 
     #[test]
     fn detects_git_repo() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let platform = crate::Platform::new(dir.path());
 
-        fs::create_dir(dir.path().join(".git")).unwrap();
+        platform.create_dir(dir.path().join(".git")).unwrap();
 
         let root = Git.detect(dir.path()).unwrap();
 
@@ -54,9 +53,10 @@ mod tests {
     fn walks_up_to_find_git() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let nested = dir.path().join("src").join("deep");
+        let platform = crate::Platform::new(dir.path());
 
-        fs::create_dir(dir.path().join(".git")).unwrap();
-        fs::create_dir_all(&nested).unwrap();
+        platform.create_dir(dir.path().join(".git")).unwrap();
+        platform.ensure_dir(&nested).unwrap();
 
         let root = Git.detect(&nested).unwrap();
 

@@ -69,6 +69,7 @@ impl Logging {
 /// append-mode file opens so restarts during the same day continue an
 /// existing file rather than truncating.
 struct DailyLog {
+    platform: Platform,
     date: Timestamp,
     path: PathBuf,
     logs: PathBuf,
@@ -77,14 +78,16 @@ struct DailyLog {
 
 impl DailyLog {
     pub(crate) fn new(root: &Path) -> Result<Self, std::io::Error> {
+        let platform = Platform::new(root);
         let mut new_daily_log = Self {
+            platform,
             date: Timestamp::now(),
             logs: root.join("logs").clone(),
             path: PathBuf::default(),
             file: None,
         };
 
-        std::fs::create_dir_all(&new_daily_log.logs)?;
+        new_daily_log.platform.ensure_dir(&new_daily_log.logs)?;
 
         new_daily_log.construct_path();
         new_daily_log.set_file()?;
@@ -100,12 +103,9 @@ impl DailyLog {
     }
 
     fn set_file(&mut self) -> Result<(), std::io::Error> {
-        self.file = Some(
-            std::fs::OpenOptions::new()
-                .append(true)
-                .create(true)
-                .open(&self.path)?,
-        );
+        let mut options = std::fs::OpenOptions::new();
+        options.append(true).create(true);
+        self.file = Some(self.platform.open_with(&self.path, &options)?);
 
         Ok(())
     }
@@ -174,8 +174,9 @@ mod tests {
     fn file_layer_writes_json_lines_to_dated_file() -> Result<(), Box<dyn core::error::Error>> {
         let tmp = tempfile::TempDir::new()?;
         let log_dir = tmp.path().join("logs");
+        let platform = Platform::new(tmp.path());
 
-        std::fs::create_dir_all(&log_dir).unwrap();
+        platform.ensure_dir(&log_dir).unwrap();
 
         let writer = DailyLog::new(&log_dir)?;
         let path = writer.path.clone();
@@ -193,7 +194,7 @@ mod tests {
 
         drop(guard);
 
-        let content = std::fs::read_to_string(&path)?;
+        let content = platform.read_to_string(&path)?;
 
         assert!(
             content.contains("hello"),

@@ -7,6 +7,8 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::*;
+
 const HOST_KEY_FILE: &str = "host.key";
 
 #[derive(Debug, thiserror::Error)]
@@ -16,19 +18,17 @@ pub(crate) enum HostKeyError {
 }
 
 pub(crate) struct HostKey {
-    data_dir: PathBuf,
+    platform: Platform,
 }
 
 impl HostKey {
-    pub(crate) fn new(data_dir: impl Into<PathBuf>) -> Self {
-        Self {
-            data_dir: data_dir.into(),
-        }
+    pub(crate) fn new(platform: Platform) -> Self {
+        Self { platform }
     }
 
     /// Path where the host's secret key is persisted.
     pub(crate) fn path(&self) -> PathBuf {
-        self.data_dir.join(HOST_KEY_FILE)
+        self.platform.data_dir().join(HOST_KEY_FILE)
     }
 
     /// Load the persisted host secret key, if one exists. Returns
@@ -39,7 +39,7 @@ impl HostKey {
             return Ok(None);
         }
 
-        let bytes = std::fs::read(&path)?;
+        let bytes = self.platform.read(&path)?;
         let bytes: [u8; 32] = bytes.try_into().map_err(|byte_error: Vec<u8>| {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
@@ -68,41 +68,40 @@ impl HostKey {
 
         let path = self.path();
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
+            self.platform.ensure_dir(parent)?;
         }
 
         let secret = iroh::SecretKey::generate();
         let bytes = secret.to_bytes();
 
-        write_with_owner_only_perms(&path, &bytes)?;
+        write_with_owner_only_perms(&self.platform, &path, &bytes)?;
 
         Ok(secret)
     }
 }
 
-/// Borrowing constructor for transient use.
-impl<'a> From<&'a Path> for HostKey {
-    fn from(data_dir: &'a Path) -> Self {
-        Self::new(data_dir.to_path_buf())
-    }
-}
-
 #[cfg(unix)]
-fn write_with_owner_only_perms(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+fn write_with_owner_only_perms(
+    platform: &Platform,
+    path: &Path,
+    bytes: &[u8],
+) -> std::io::Result<()> {
     use std::io::Write;
     use std::os::unix::fs::OpenOptionsExt;
 
-    let mut file = std::fs::OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .mode(0o600)
-        .open(path)?;
+    let mut options = std::fs::OpenOptions::new();
+    options.create_new(true).write(true).mode(0o600);
+    let mut file = platform.open_with(path, &options)?;
     file.write_all(bytes)
 }
 
 #[cfg(not(unix))]
-fn write_with_owner_only_perms(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    std::fs::write(path, bytes)
+fn write_with_owner_only_perms(
+    platform: &Platform,
+    path: &Path,
+    bytes: &[u8],
+) -> std::io::Result<()> {
+    platform.write(path, bytes)
 }
 
 #[cfg(test)]
@@ -112,7 +111,7 @@ mod tests {
     #[test]
     fn ensure_generates_when_missing() {
         let dir = tempfile::tempdir().unwrap();
-        let keys = HostKey::new(dir.path());
+        let keys = HostKey::new(Platform::new(dir.path()));
 
         assert!(!keys.path().exists());
 
@@ -132,7 +131,7 @@ mod tests {
     #[test]
     fn ensure_is_idempotent() {
         let dir = tempfile::tempdir().unwrap();
-        let keys = HostKey::new(dir.path());
+        let keys = HostKey::new(Platform::new(dir.path()));
 
         let first = keys.ensure().unwrap();
         let second = keys.ensure().unwrap();
@@ -147,7 +146,7 @@ mod tests {
     #[test]
     fn load_returns_none_when_missing() {
         let dir = tempfile::tempdir().unwrap();
-        let keys = HostKey::new(dir.path());
+        let keys = HostKey::new(Platform::new(dir.path()));
 
         let result = keys.load().unwrap();
         assert!(result.is_none());
@@ -159,11 +158,11 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let dir = tempfile::tempdir().unwrap();
-        let keys = HostKey::new(dir.path());
+        let keys = HostKey::new(Platform::new(dir.path()));
 
         keys.ensure().unwrap();
 
-        let metadata = std::fs::metadata(keys.path()).unwrap();
+        let metadata = Platform::new(dir.path()).metadata(keys.path()).unwrap();
         let mode = metadata.permissions().mode() & 0o777;
         assert_eq!(mode, 0o600, "host key file should be owner-only (0o600)");
     }

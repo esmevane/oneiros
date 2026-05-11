@@ -59,19 +59,21 @@ mod tests {
     #[test]
     fn workspace_wins_over_git() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            dir.path().join("Cargo.toml"),
-            r#"
+        platform
+            .write(
+                dir.path().join("Cargo.toml"),
+                r#"
     [workspace]
     members = []
 
     [workspace.package]
     name = "workspace-name"
     "#,
-        )
-        .unwrap();
-        std::fs::create_dir(dir.path().join(".git")).unwrap();
+            )
+            .unwrap();
+        platform.create_dir(dir.path().join(".git")).unwrap();
 
         let root = ProjectDetector::default_chain().detect(dir.path()).unwrap();
 
@@ -81,18 +83,20 @@ mod tests {
     #[test]
     fn package_wins_over_git() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            dir.path().join("Cargo.toml"),
-            r#"
+        platform
+            .write(
+                dir.path().join("Cargo.toml"),
+                r#"
     [package]
     name = "package-name"
     version = "0.1.0"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
-        std::fs::create_dir(dir.path().join(".git")).unwrap();
+        platform.create_dir(dir.path().join(".git")).unwrap();
 
         assert_eq!(
             ProjectDetector::default_chain()
@@ -107,9 +111,10 @@ mod tests {
     fn git_wins_over_directory() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let nested = dir.path().join("some-subdir");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::create_dir(dir.path().join(".git")).unwrap();
-        std::fs::create_dir(&nested).unwrap();
+        platform.create_dir(dir.path().join(".git")).unwrap();
+        platform.create_dir(&nested).unwrap();
 
         assert_eq!(
             ProjectDetector::default_chain()
