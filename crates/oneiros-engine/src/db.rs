@@ -121,10 +121,12 @@ pub(crate) struct BookmarkDb {
 impl BookmarkDb {
     /// Open from a bookmark-tier scope.
     pub(crate) async fn open<S: HasBookmark>(scope: &S) -> Result<Self, BookmarkDbError> {
+        let config = scope.config();
         Self::open_with(
-            &scope.config().platform(),
+            &config.platform(),
             &scope.project().name,
             &scope.bookmark().name,
+            config.database.limit_attached,
         )
         .await
     }
@@ -135,11 +137,12 @@ impl BookmarkDb {
         platform: &Platform,
         brain: &BrainName,
         bookmark: &BookmarkName,
+        limit_attached: u32,
     ) -> Result<Self, BookmarkDbError> {
         platform.ensure_bookmarks_dir(brain)?;
         let connection = rusqlite::Connection::open(platform.bookmark_db_path(brain, bookmark))?;
         connection.pragma_update(None, "journal_mode", "wal")?;
-        connection.pragma_update(None, "limit_attached", "125")?;
+        connection.pragma_update(None, "limit_attached", limit_attached.to_string())?;
         connection.execute_batch(&format!(
             "ATTACH DATABASE '{}' AS events",
             platform.events_db_path(brain).display(),
@@ -189,7 +192,7 @@ mod tests {
 
         // Pre-create events db so ATTACH points at a real file.
         let _events = EventsDb::open_with(&platform, &brain).await.unwrap();
-        let db = BookmarkDb::open_with(&platform, &brain, &bookmark)
+        let db = BookmarkDb::open_with(&platform, &brain, &bookmark, 125)
             .await
             .unwrap();
 

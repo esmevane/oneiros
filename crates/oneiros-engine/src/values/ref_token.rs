@@ -26,7 +26,11 @@ impl RefToken {
 
 impl core::fmt::Display for RefToken {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ref:{}", BASE64URL_NOPAD.encode(&self.0.to_bytes()))
+        write!(
+            f,
+            "{REF_PREFIX}{}",
+            BASE64URL_NOPAD.encode(&self.0.to_bytes())
+        )
     }
 }
 
@@ -34,7 +38,7 @@ impl core::str::FromStr for RefToken {
     type Err = RefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let encoded = s.strip_prefix("ref:").unwrap_or(s);
+        let encoded = s.strip_prefix(REF_PREFIX).unwrap_or(s);
         let bytes = BASE64URL_NOPAD.decode(encoded.as_bytes())?;
         Ok(Self(Ref::from_bytes(&bytes)?))
     }

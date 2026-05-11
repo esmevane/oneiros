@@ -56,11 +56,11 @@ impl core::str::FromStr for OneirosUri {
     type Err = OneirosUriError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("oneiros://") {
+        if s.starts_with(ONEIROS_SCHEME) {
             Ok(Self::Peer(s.parse::<PeerLink>()?))
-        } else if s.starts_with("link:") {
+        } else if s.starts_with(LINK_PREFIX) {
             Ok(Self::Link(s.parse::<Link>()?))
-        } else if s.starts_with("ref:") {
+        } else if s.starts_with(REF_PREFIX) {
             let token: RefToken = s.parse()?;
             Ok(Self::Ref(token.into_inner()))
         } else {

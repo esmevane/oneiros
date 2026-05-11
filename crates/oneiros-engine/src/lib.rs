@@ -1,6 +1,7 @@
 mod cli;
 mod client;
 mod config;
+mod constants;
 mod db;
 mod docs;
 mod domains;
@@ -26,6 +27,7 @@ mod values;
 pub(crate) use cli::*;
 pub(crate) use client::*;
 pub(crate) use config::*;
+pub(crate) use constants::*;
 pub(crate) use db::*;
 pub(crate) use docs::*;
 pub(crate) use domains::*;

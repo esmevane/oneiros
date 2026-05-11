@@ -20,6 +20,10 @@ fn default_delays() -> Vec<u64> {
     DEFAULT_DELAYS_MS.to_vec()
 }
 
+fn default_scheme() -> String {
+    "http".into()
+}
+
 fn default_restart_delay() -> u32 {
     5
 }
@@ -41,6 +45,11 @@ pub(crate) struct ServiceConfig {
     #[builder(default = default_address())]
     #[serde(default = "default_address")]
     pub(crate) address: SocketAddr,
+    /// URL scheme for HTTP clients: `"http"` or `"https"`.
+    #[arg(long, global = true, default_value_t = default_scheme())]
+    #[builder(default = default_scheme())]
+    #[serde(default = "default_scheme")]
+    pub(crate) scheme: String,
     /// Health check retry delays after starting (milliseconds).
     #[arg(skip = default_delays())]
     #[builder(default = default_delays())]

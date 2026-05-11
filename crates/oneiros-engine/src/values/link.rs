@@ -44,7 +44,11 @@ impl Link {
 
 impl core::fmt::Display for Link {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "link:{}", BASE64URL_NOPAD.encode(&self.to_bytes()))
+        write!(
+            f,
+            "{LINK_PREFIX}{}",
+            BASE64URL_NOPAD.encode(&self.to_bytes())
+        )
     }
 }
 
@@ -52,7 +56,7 @@ impl core::str::FromStr for Link {
     type Err = LinkError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let encoded = s.strip_prefix("link:").unwrap_or(s);
+        let encoded = s.strip_prefix(LINK_PREFIX).unwrap_or(s);
         let bytes = BASE64URL_NOPAD.decode(encoded.as_bytes())?;
         Self::from_bytes(&bytes)
     }
