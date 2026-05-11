@@ -127,6 +127,16 @@ pub(crate) enum Command {
 }
 
 impl Command {
+    /// Whether this command runs the long-lived HTTP server in-process.
+    ///
+    /// Only `service run` boots the server here; every other command is a
+    /// short-lived CLI client that issues HTTP requests to a running
+    /// service. The two surfaces want different tracing defaults — see
+    /// `support::logging::level`.
+    pub(crate) fn is_server(&self) -> bool {
+        matches!(self, Command::Service(ServiceCommands::Run))
+    }
+
     /// Execute a CLI command against the engine.
     ///
     /// Returns `Rendered` — the caller decides how to consume it:
@@ -166,5 +176,34 @@ impl Command {
             Command::Ticket(ticket) => ticket.execute(config).await?,
             Command::Urge(urge) => urge.execute(config).await?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn service_run_is_the_server() {
+        let command = Command::Service(ServiceCommands::Run);
+        assert!(command.is_server());
+    }
+
+    #[test]
+    fn other_service_subcommands_are_clients() {
+        for command in [
+            Command::Service(ServiceCommands::Install),
+            Command::Service(ServiceCommands::Uninstall),
+            Command::Service(ServiceCommands::Start),
+            Command::Service(ServiceCommands::Stop),
+            Command::Service(ServiceCommands::Status),
+        ] {
+            assert!(!command.is_server(), "{command:?} should be a CLI client");
+        }
+    }
+
+    #[test]
+    fn doctor_is_a_client() {
+        assert!(!Command::Doctor.is_server());
     }
 }
