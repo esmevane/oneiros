@@ -1,3 +1,5 @@
+#![allow(clippy::disallowed_methods)]
+
 use etcetera::app_strategy::{AppStrategy, AppStrategyArgs, choose_app_strategy};
 use std::path::{Path, PathBuf};
 
@@ -107,6 +109,79 @@ impl Platform {
     pub(crate) fn ensure_data_dir(&self) -> Result<(), PlatformError> {
         std::fs::create_dir_all(&self.data_dir)?;
         Ok(())
+    }
+
+    /// Read a UTF-8 file at the given path.
+    pub(crate) fn read_to_string(&self, path: impl AsRef<Path>) -> std::io::Result<String> {
+        std::fs::read_to_string(path)
+    }
+
+    /// Read the raw bytes of a file at the given path.
+    pub(crate) fn read(&self, path: impl AsRef<Path>) -> std::io::Result<Vec<u8>> {
+        std::fs::read(path)
+    }
+
+    /// Write bytes (or a string) to a file at the given path, creating or truncating it.
+    pub(crate) fn write(
+        &self,
+        path: impl AsRef<Path>,
+        contents: impl AsRef<[u8]>,
+    ) -> std::io::Result<()> {
+        std::fs::write(path, contents)
+    }
+
+    /// Ensure a directory exists at the given path, creating parents as needed.
+    pub(crate) fn ensure_dir(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
+        std::fs::create_dir_all(path)
+    }
+
+    /// Create a directory at the given path (parents must already exist).
+    #[allow(dead_code)]
+    pub(crate) fn create_dir(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
+        std::fs::create_dir(path)
+    }
+
+    /// Remove a file at the given path.
+    pub(crate) fn remove_file(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
+        std::fs::remove_file(path)
+    }
+
+    /// Recursively remove a directory and its contents.
+    #[allow(dead_code)]
+    pub(crate) fn remove_dir_all(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
+        std::fs::remove_dir_all(path)
+    }
+
+    /// Iterate the entries of a directory.
+    #[allow(dead_code)]
+    pub(crate) fn read_dir(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::ReadDir> {
+        std::fs::read_dir(path)
+    }
+
+    /// Fetch metadata for the entry at the given path.
+    #[allow(dead_code)]
+    pub(crate) fn metadata(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::Metadata> {
+        std::fs::metadata(path)
+    }
+
+    /// Open a file for reading.
+    pub(crate) fn open_file(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::File> {
+        std::fs::File::open(path)
+    }
+
+    /// Create (or truncate) a file for writing.
+    #[allow(dead_code)]
+    pub(crate) fn create_file(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::File> {
+        std::fs::File::create(path)
+    }
+
+    /// Open a file with custom [`std::fs::OpenOptions`].
+    pub(crate) fn open_with(
+        &self,
+        path: impl AsRef<Path>,
+        options: &std::fs::OpenOptions,
+    ) -> std::io::Result<std::fs::File> {
+        options.open(path)
     }
 
     /// Ensure a brain's directory exists.

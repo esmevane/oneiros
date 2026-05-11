@@ -59,7 +59,8 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         ))
         .await?;
 
-    let export_file = std::fs::read_dir(export_dir.path())?
+    let export_file = crate::Platform::new(export_dir.path())
+        .read_dir(export_dir.path())?
         .filter_map(|e| e.ok())
         .find(|e| e.path().extension().is_some_and(|ext| ext == "jsonl"))
         .expect("export should produce a .jsonl file");

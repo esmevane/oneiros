@@ -44,8 +44,9 @@ mod tests {
     fn does_not_walk_up() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let nested = dir.path().join("nested");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::create_dir(&nested).unwrap();
+        platform.create_dir(&nested).unwrap();
 
         let root = Directory.detect(&nested).unwrap();
 

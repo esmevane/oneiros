@@ -506,7 +506,9 @@ impl BookmarkService {
         brain_config.bookmark = bookmark.clone();
 
         let bookmarks_dir = brain_config.bookmarks_dir();
-        std::fs::create_dir_all(&bookmarks_dir)
+        brain_config
+            .platform()
+            .ensure_dir(&bookmarks_dir)
             .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
 
         // Open the new bookmark DB with events ATTACHed and replay.

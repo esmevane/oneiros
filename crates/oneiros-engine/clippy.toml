@@ -1,0 +1,14 @@
+disallowed-methods = [
+  { path = "std::fs::read", reason = "use Platform instead" },
+  { path = "std::fs::read_to_string", reason = "use Platform instead" },
+  { path = "std::fs::write", reason = "use Platform instead" },
+  { path = "std::fs::read_dir", reason = "use Platform instead" },
+  { path = "std::fs::create_dir", reason = "use Platform instead" },
+  { path = "std::fs::create_dir_all", reason = "use Platform instead" },
+  { path = "std::fs::remove_file", reason = "use Platform instead" },
+  { path = "std::fs::remove_dir_all", reason = "use Platform instead" },
+  { path = "std::fs::metadata", reason = "use Platform instead" },
+  { path = "std::fs::File::open", reason = "use Platform instead" },
+  { path = "std::fs::File::create", reason = "use Platform instead" },
+  { path = "std::fs::OpenOptions::open", reason = "use Platform instead" },
+]

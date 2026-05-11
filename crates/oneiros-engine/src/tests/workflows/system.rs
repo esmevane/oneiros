@@ -219,7 +219,7 @@ async fn system_administration() -> Result<(), Box<dyn core::error::Error>> {
 #[tokio::test]
 async fn system_init_creates_host_keypair() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new().await?;
-    let keys = HostKey::new(&app.config().data_dir);
+    let keys = HostKey::new(app.config().platform());
 
     // The server's bind path generates the host key (see `ServerState::bind`),
     // but `Server::spawn` returns before that bind completes. Wait for the

@@ -364,9 +364,10 @@ mod tests {
     /// Seed a brain on both sides of the intersection: filesystem
     /// (brain dir + events.db) AND projection (`brains` row).
     fn seed_brain(config: &Config, name: &str) -> PathBuf {
+        let platform = config.platform();
         let brain_dir = config.data_dir.join(name);
-        std::fs::create_dir_all(&brain_dir).unwrap();
-        std::fs::write(brain_dir.join("events.db"), b"").unwrap();
+        platform.ensure_dir(&brain_dir).unwrap();
+        platform.write(brain_dir.join("events.db"), b"").unwrap();
 
         let conn = config.system_db().unwrap();
         BrainStore::new(&conn).migrate().unwrap();
@@ -382,9 +383,12 @@ mod tests {
     /// Seed a bookmark on both sides: filesystem (`bookmarks/{name}.db`)
     /// AND projection (`bookmarks` row scoped to brain).
     fn seed_bookmark(config: &Config, brain: &str, name: &str) {
+        let platform = config.platform();
         let bookmarks_dir = config.data_dir.join(brain).join("bookmarks");
-        std::fs::create_dir_all(&bookmarks_dir).unwrap();
-        std::fs::write(bookmarks_dir.join(format!("{name}.db")), b"").unwrap();
+        platform.ensure_dir(&bookmarks_dir).unwrap();
+        platform
+            .write(bookmarks_dir.join(format!("{name}.db")), b"")
+            .unwrap();
 
         let conn = config.system_db().unwrap();
         BookmarkStore::new(&conn).migrate().unwrap();

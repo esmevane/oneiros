@@ -13,13 +13,14 @@ impl DetectionStrategy for Package {
     fn detect(&self, start: &Path) -> Option<ProjectRoot> {
         let mut current = start.canonicalize().ok()?;
         let mut topmost: Option<ProjectRoot> = None;
+        let platform = crate::Platform::new(start);
 
         loop {
             let cargo_toml = current.join("Cargo.toml");
 
             if cargo_toml.exists() {
                 let maybe_package = {
-                    let contents = std::fs::read_to_string(cargo_toml).ok()?;
+                    let contents = platform.read_to_string(cargo_toml).ok()?;
                     let parsed: toml::Table = contents.parse().ok()?;
 
                     let package = parsed.get("package")?.as_table()?;
@@ -50,16 +51,18 @@ mod tests {
     fn detects_package() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let cargo_toml = dir.path().join("Cargo.toml");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            &cargo_toml,
-            r#"
+        platform
+            .write(
+                &cargo_toml,
+                r#"
     [package]
     name = "my-package"
     version = "0.1.0"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
         let root = Package.detect(dir.path()).unwrap();
 
@@ -70,27 +73,30 @@ mod tests {
     fn finds_topmost_package() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let nested = dir.path().join("crates").join("nested");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            dir.path().join("Cargo.toml"),
-            r#"
+        platform
+            .write(
+                dir.path().join("Cargo.toml"),
+                r#"
     [package]
     name = "root-package"
     version = "0.1.0"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
-        std::fs::create_dir_all(&nested).unwrap();
-        std::fs::write(
-            nested.join("Cargo.toml"),
-            r#"
+        platform.ensure_dir(&nested).unwrap();
+        platform
+            .write(
+                nested.join("Cargo.toml"),
+                r#"
     [package]
     name = "nested-package"
     version = "0.1.0"
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
         let root = Package.detect(&nested).unwrap();
 
@@ -102,15 +108,17 @@ mod tests {
     fn ignores_workspace_only_cargo_toml() {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let cargo_toml = dir.path().join("Cargo.toml");
+        let platform = crate::Platform::new(dir.path());
 
-        std::fs::write(
-            &cargo_toml,
-            r#"
+        platform
+            .write(
+                &cargo_toml,
+                r#"
     [workspace]
     members = ["crates/*"]
     "#,
-        )
-        .unwrap();
+            )
+            .unwrap();
 
         let result = Package.detect(dir.path());
 
