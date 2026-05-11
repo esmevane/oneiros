@@ -10,28 +10,38 @@ use tracing_subscriber::{
 
 use crate::*;
 
+/// Resolve the tracing filter directives for a given verbosity and surface.
+///
+/// Surfaces differ in what counts as "default noise." The server is a
+/// long-running process where info-level spans are the expected audit
+/// trail; the CLI is a short-lived client where the same spans are pure
+/// noise to the human at the terminal.
+///
+/// `aide` is muted off-info regardless because its startup chatter is
+/// never useful in either surface.
+pub(crate) fn level(verbosity: &Verbosity, is_server: bool) -> &'static str {
+    match (verbosity, is_server) {
+        (Verbosity::Quiet, true) => "warn,aide=warn",
+        (Verbosity::Normal, true) => "info,aide=warn",
+        (Verbosity::Verbose, true) => "debug,aide=warn",
+        (Verbosity::Quiet, false) => "off",
+        (Verbosity::Normal, false) => "off",
+        (Verbosity::Verbose, false) => "info,aide=warn",
+    }
+}
+
 pub(crate) struct Logging;
 
 impl Logging {
     /// Install the global tracing subscriber.
     ///
     /// Hold the returned guard until the process exits. Dropping it flushes
-    /// any pending file writes. `RUST_LOG` overrides `Config::verbosity`.
-    pub(crate) fn install(&self, config: &Config) -> std::io::Result<WorkerGuard> {
-        /// We flip off aide by default so it doesn't clog our logs with startup noise,
-        /// even if we're set to higher levels of info.
-        fn level(verbosity: &Verbosity) -> &'static str {
-            match verbosity {
-                Verbosity::Quiet => "warn,aide=warn",
-                Verbosity::Normal => "info,aide=warn",
-                Verbosity::Verbose => "debug,aide=warn",
-            }
-        }
-
+    /// any pending file writes. `RUST_LOG` overrides the surface default.
+    pub(crate) fn install(&self, config: &Config, is_server: bool) -> std::io::Result<WorkerGuard> {
         let (file_writer, guard) = tracing_appender::non_blocking(DailyLog::new(&config.data_dir)?);
 
         let filter = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new(level(&config.verbosity)));
+            .unwrap_or_else(|_| EnvFilter::new(level(&config.verbosity, is_server)));
 
         let stderr_layer = tracing_subscriber::fmt::layer()
             .with_writer(std::io::stderr)
@@ -129,6 +139,36 @@ impl Write for DailyLog {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn server_default_emits_info() {
+        assert_eq!(level(&Verbosity::Normal, true), "info,aide=warn");
+    }
+
+    #[test]
+    fn server_quiet_drops_to_warn() {
+        assert_eq!(level(&Verbosity::Quiet, true), "warn,aide=warn");
+    }
+
+    #[test]
+    fn server_verbose_opens_to_debug() {
+        assert_eq!(level(&Verbosity::Verbose, true), "debug,aide=warn");
+    }
+
+    #[test]
+    fn cli_default_is_silent() {
+        assert_eq!(level(&Verbosity::Normal, false), "off");
+    }
+
+    #[test]
+    fn cli_quiet_is_silent() {
+        assert_eq!(level(&Verbosity::Quiet, false), "off");
+    }
+
+    #[test]
+    fn cli_verbose_restores_operational_trace() {
+        assert_eq!(level(&Verbosity::Verbose, false), "info,aide=warn");
+    }
 
     #[test]
     fn file_layer_writes_json_lines_to_dated_file() -> Result<(), Box<dyn core::error::Error>> {

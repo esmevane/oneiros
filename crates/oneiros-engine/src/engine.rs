@@ -43,7 +43,7 @@ impl Engine {
 
         engine.config().color.apply_global();
 
-        let _logging_guard = match Logging.install(engine.config()) {
+        let _logging_guard = match Logging.install(engine.config(), cli.command.is_server()) {
             Ok(guard) => guard,
             Err(error) => {
                 let _ = writeln!(stderr().lock(), "{}", ErrorView::new(error.into()));
