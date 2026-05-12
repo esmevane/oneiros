@@ -206,7 +206,13 @@ impl ProjectService {
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
-        let db = BookmarkDb::open_with(&config.platform(), &config.brain, &config.bookmark).await?;
+        let db = BookmarkDb::open_with(
+            &config.platform(),
+            &config.brain,
+            &config.bookmark,
+            config.database.limit_attached,
+        )
+        .await?;
         let log = EventLog::attached(&db);
         let projections = Projections::<BrainCanon>::project();
 
@@ -290,7 +296,13 @@ impl ProjectService {
         let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
         // Open a fresh DB, create tables with current schema, then replay.
-        let db = BookmarkDb::open_with(&config.platform(), &config.brain, &config.bookmark).await?;
+        let db = BookmarkDb::open_with(
+            &config.platform(),
+            &config.brain,
+            &config.bookmark,
+            config.database.limit_attached,
+        )
+        .await?;
         let projections = Projections::<BrainCanon>::project();
         projections.migrate(&db)?;
         let log = EventLog::attached(&db);

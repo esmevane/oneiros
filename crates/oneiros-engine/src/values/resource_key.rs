@@ -75,7 +75,7 @@ where
     type Err = ResourceKeyParseError<K::Err>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("ref:") {
+        if s.starts_with(REF_PREFIX) {
             Ok(Self::Ref(s.parse::<RefToken>()?))
         } else {
             s.parse::<K>()

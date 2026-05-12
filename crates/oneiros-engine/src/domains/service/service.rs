@@ -89,7 +89,7 @@ impl ServiceService {
             .map_err(manager_err)?;
 
         let client = reqwest::Client::new();
-        let health_url = format!("http://{}/health", config.service.address);
+        let health_url = format!("{}/health", config.base_url());
 
         for delay in &config.service.health_check_delays() {
             tokio::time::sleep(*delay).await;
@@ -122,7 +122,7 @@ impl ServiceService {
     /// Check if the service is running via health endpoint.
     pub(crate) async fn status(config: &Config) -> ServiceResponse {
         let client = reqwest::Client::new();
-        let health_url = format!("http://{}/health", config.service.address);
+        let health_url = format!("{}/health", config.base_url());
 
         match client.get(&health_url).send().await {
             Ok(resp) if resp.status().is_success() => ServiceResponse::ServiceRunning(

@@ -33,7 +33,7 @@ impl PeerLink {
 
 impl core::fmt::Display for PeerLink {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "oneiros://{}/{}", self.host, self.link)
+        write!(f, "{ONEIROS_SCHEME}{}/{}", self.host, self.link)
     }
 }
 
@@ -42,7 +42,7 @@ impl core::str::FromStr for PeerLink {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let rest = s
-            .strip_prefix("oneiros://")
+            .strip_prefix(ONEIROS_SCHEME)
             .ok_or(PeerLinkError::MissingScheme)?;
         let (host_part, link_part) = rest.split_once('/').ok_or(PeerLinkError::MissingPath)?;
         let host = host_part.parse::<PeerAddress>()?;

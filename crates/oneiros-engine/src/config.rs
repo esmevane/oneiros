@@ -41,6 +41,10 @@ pub(crate) struct ServiceCli {
     #[arg(long, global = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) address: Option<SocketAddr>,
+    /// URL scheme for HTTP clients: "http" or "https".
+    #[arg(long, global = true)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) scheme: Option<String>,
     /// Health check retry delays after starting (milliseconds).
     #[arg(skip)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -118,6 +122,37 @@ fn serialize_duration_option<S: serde::Serializer>(
     }
 }
 
+/// CLI overrides for database tuning.
+#[derive(Args, Debug, Clone, Serialize, Default)]
+pub(crate) struct DatabaseCli {
+    /// Maximum concurrently-attached databases (SQLite pragma).
+    #[arg(long, global = true)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) limit_attached: Option<u32>,
+}
+
+impl DatabaseCli {
+    fn is_empty(&self) -> bool {
+        self.limit_attached.is_none()
+    }
+}
+
+/// CLI overrides for general system configuration.
+#[derive(Args, Debug, Clone, Serialize, Default)]
+pub(crate) struct GeneralCli {
+    /// Default page size for paginated lists.
+    /// Not exposed as a CLI flag — config file / env var only.
+    #[arg(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) default_page_size: Option<usize>,
+}
+
+impl GeneralCli {
+    fn is_empty(&self) -> bool {
+        self.default_page_size.is_none()
+    }
+}
+
 /// CLI overrides — captures only explicitly-set flags.
 ///
 /// Fields are `Option<T>`: `None` means "not set on CLI", `Some` means
@@ -153,6 +188,14 @@ pub(crate) struct CliOverrides {
     #[command(flatten)]
     #[serde(skip_serializing_if = "FetchCli::is_empty")]
     pub(crate) fetch: FetchCli,
+    /// Database tuning overrides.
+    #[command(flatten)]
+    #[serde(skip_serializing_if = "DatabaseCli::is_empty")]
+    pub(crate) database: DatabaseCli,
+    /// General system configuration overrides.
+    #[command(flatten)]
+    #[serde(skip_serializing_if = "GeneralCli::is_empty")]
+    pub(crate) general: GeneralCli,
     /// Output format: prompt, json, or text.
     #[arg(long, short, global = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -171,6 +214,7 @@ impl ServiceCli {
     fn is_empty(&self) -> bool {
         self.label.is_none()
             && self.address.is_none()
+            && self.scheme.is_none()
             && self.health_check_delays_ms.is_none()
             && self.restart_delay_secs.is_none()
     }
@@ -223,6 +267,12 @@ pub(crate) struct Config {
     /// Default patience window for eventually-consistent reads.
     #[builder(default)]
     pub(crate) fetch: Fetch,
+    /// Database tuning knobs.
+    #[builder(default)]
+    pub(crate) database: DatabaseConfig,
+    /// General system configuration.
+    #[builder(default)]
+    pub(crate) general: GeneralConfig,
     /// Output format: prompt (default), json, or text.
     #[builder(default)]
     pub(crate) output: OutputMode,
@@ -243,6 +293,8 @@ impl Default for Config {
             service: ServiceConfig::default(),
             dream: DreamConfig::default(),
             fetch: Fetch::default(),
+            database: DatabaseConfig::default(),
+            general: GeneralConfig::default(),
             output: OutputMode::default(),
             color: ColorChoice::default(),
             verbosity: Verbosity::default(),
@@ -258,7 +310,7 @@ impl Config {
 
     /// The base URL for HTTP clients to connect to the service.
     pub(crate) fn base_url(&self) -> String {
-        format!("http://{}", self.service.address)
+        format!("{}://{}", self.service.scheme, self.service.address)
     }
 
     /// A Platform bound to this config's data directory.
@@ -301,7 +353,11 @@ impl Config {
         let conn =
             rusqlite::Connection::open(platform.bookmark_db_path(&self.brain, &self.bookmark))?;
         conn.pragma_update(None, "journal_mode", "wal")?;
-        conn.pragma_update(None, "limit_attached", "125")?;
+        conn.pragma_update(
+            None,
+            "limit_attached",
+            self.database.limit_attached.to_string(),
+        )?;
 
         conn.execute_batch(&format!(
             "ATTACH DATABASE '{}' AS events",
@@ -714,6 +770,7 @@ address = "127.0.0.1:4000"
             service: ServiceCli {
                 label: Some("com.test.coverage".into()),
                 address: Some("127.0.0.1:7777".parse().unwrap()),
+                scheme: Some("https".into()),
                 health_check_delays_ms: Some(vec![50, 100]),
                 restart_delay_secs: Some(10),
             },
@@ -728,6 +785,12 @@ address = "127.0.0.1:4000"
             fetch: FetchCli {
                 interval: Some(std::time::Duration::from_millis(123)),
                 timeout: Some(std::time::Duration::from_secs(456)),
+            },
+            database: DatabaseCli {
+                limit_attached: Some(256),
+            },
+            general: GeneralCli {
+                default_page_size: Some(50),
             },
             output: Some(OutputMode::Text),
             color: Some(ColorChoice::Always),
@@ -747,6 +810,7 @@ address = "127.0.0.1:4000"
         );
         assert_eq!(config.service.health_check_delays_ms, vec![50, 100]);
         assert_eq!(config.service.restart_delay_secs, 10);
+        assert_eq!(config.service.scheme, "https");
         assert_eq!(config.dream.recent_window, 42);
         assert_eq!(config.dream.dream_depth, 7);
         assert_eq!(config.dream.cognition_size, 99);
@@ -755,6 +819,8 @@ address = "127.0.0.1:4000"
         assert_eq!(config.dream.experience_size, 77);
         assert_eq!(config.fetch.interval, std::time::Duration::from_millis(123));
         assert_eq!(config.fetch.timeout, std::time::Duration::from_secs(456));
+        assert_eq!(config.database.limit_attached, 256);
+        assert_eq!(config.general.default_page_size, 50);
         assert_eq!(config.output, OutputMode::Text);
         assert_eq!(config.color, ColorChoice::Always);
         assert_eq!(config.verbosity, Verbosity::Verbose);

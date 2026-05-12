@@ -62,7 +62,7 @@ async fn show(
     scope: Scope<AtBookmark>,
     Path(ref_key): Path<String>,
 ) -> Result<Json<StorageResponse>, StorageError> {
-    let key = if ref_key.starts_with("ref:") {
+    let key = if ref_key.starts_with(REF_PREFIX) {
         ResourceKey::Ref(ref_key.parse().map_err(|_| StorageError::InvalidRef)?)
     } else {
         let storage_ref = StorageRef(ref_key);

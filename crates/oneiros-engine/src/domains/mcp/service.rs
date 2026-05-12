@@ -14,12 +14,13 @@ impl McpConfigService {
             .ok_or(McpConfigError::NoToken)?;
 
         let address = details.address.unwrap_or(config.service_addr());
+        let scheme = &config.service.scheme;
 
         let mcp_json = serde_json::json!({
             "mcpServers": {
                 "oneiros-local": {
                     "type": "http",
-                    "url": format!("http://{address}/mcp"),
+                    "url": format!("{scheme}://{address}/mcp"),
                     "headers": {
                         "Authorization": format!("Bearer {token}")
                     }
