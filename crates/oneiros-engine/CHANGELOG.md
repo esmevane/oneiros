@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.10...oneiros-engine-v0.0.11) - 2026-05-12
+
+### Other
+
+- Host-level auth ([#257](https://github.com/esmevane/oneiros/pull/257))
+- Configuration wrap-up ([#259](https://github.com/esmevane/oneiros/pull/259))
+- Configuration through figment. ([#254](https://github.com/esmevane/oneiros/pull/254))
+- Oh, Clipford. ([#255](https://github.com/esmevane/oneiros/pull/255))
+- CLI doesn't spit out log traces. ([#256](https://github.com/esmevane/oneiros/pull/256))
+- Pub(crate) refactor. ([#251](https://github.com/esmevane/oneiros/pull/251))
+
 ## [0.0.10](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.9...oneiros-engine-v0.0.10) - 2026-05-05
 
 ### Other
