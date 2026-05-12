@@ -1,0 +1,12 @@
+#!/bin/sh
+# Warn (not block) when no Release-Type trailer is present.
+# Run `git commit --no-verify` to bypass.
+set -eu
+
+COMMIT_MSG="$1"
+
+if ! grep -q "^Release-Type: " "$COMMIT_MSG"; then
+    echo "⚠️  No Release-Type trailer — this commit defaults to patch."
+    echo "   Add one of: Release-Type: fix | feature | deprecation | chore"
+    echo "   (Use --no-verify to skip this warning)"
+fi

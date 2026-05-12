@@ -1,9 +1,55 @@
 [workspace]
 git_tag_enable = false
 git_release_enable = false
+# Match synthesized subject prefixes from the commit preprocessor.
+# For non-conventional-form commits, the regex is matched against
+# the entire commit message, so the prefix arrives at position 0.
+custom_minor_increment_regex = "^\\[minor\\]"
+custom_major_increment_regex = "^\\[major\\]"
 
 [[package]]
 name = "oneiros"
 git_tag_enable = true
 git_release_enable = false
 git_tag_name = "v{{ version }}"
+
+[changelog]
+commit_parsers = [
+    { message = "^\\[major\\]", group = "⚠️ Breaking Changes" },
+    { message = "^\\[minor\\]", group = "🚀 Features" },
+    { message = "^\\[patch\\]", group = "🐛 Fixes" },
+    { message = "^\\[chore\\]", group = "🧹 Chores" },
+]
+
+[[changelog.commit_preprocessors]]
+pattern = ".*"
+replace_command = '''
+set -eu
+
+SHA="${1:-$COMMIT_SHA}"
+SUBJECT=$(git show -s --format=%s "$SHA")
+BODY=$(git show -s --format=%b "$SHA")
+
+# Parse trailers from the full commit message
+FULL=$(git show -s --format=%B "$SHA")
+TRAILERS=$(echo "$FULL" | git interpret-trailers --parse 2>/dev/null || true)
+
+# Breaking-Change overrides everything to major
+if echo "$TRAILERS" | grep -qx "Breaking-Change: true"; then
+    echo "[major] $SUBJECT"
+    [ -n "$BODY" ] && echo "" && echo "$BODY"
+    exit 0
+fi
+
+# Extract first Release-Type, map to semver prefix
+TYPE=$(echo "$TRAILERS" | sed -n 's/^Release-Type: //p' | head -1)
+
+case "${TYPE:-}" in
+    feature|deprecation) echo "[minor] $SUBJECT" ;;
+    fix)                echo "[patch] $SUBJECT" ;;
+    chore)              echo "[chore] $SUBJECT" ;;
+    *)                  echo "[patch] $SUBJECT" ;;
+esac
+
+[ -n "$BODY" ] && echo "" && echo "$BODY"
+'''

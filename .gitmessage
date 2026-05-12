@@ -1,0 +1,6 @@
+# <subject> — natural, for humans reading git log
+# 
+# <why, not what — the rich narrative you already write>
+#
+# Release-Type: fix | feature | deprecation | chore
+# Breaking-Change: true
