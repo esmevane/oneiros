@@ -175,22 +175,15 @@ async fn read_resource(context: &ProjectLog, uri: &ResourceUri) -> Result<McpRes
 }
 
 async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Option<Config> {
-    let token = Token::from(token_str).decode().ok()?;
-
-    let scope = ComposeScope::new(state.config().clone()).host().ok()?;
-    let ticket = TicketRepo::new(&scope)
-        .get_by_token(token_str)
-        .await
-        .ok()
-        .flatten()?;
-
-    if ticket.actor_id != token.actor_id || ticket.brain_id != token.brain_id {
-        return None;
+    let verifier = state.ticket_verifier();
+    match verifier.verify(token_str).await {
+        Ok(VerifiedSession::Project { brain_name }) => {
+            let mut config = state.config().clone();
+            config.brain = brain_name;
+            Some(config)
+        }
+        _ => None,
     }
-
-    let mut config = state.config().clone();
-    config.brain = ticket.brain_name;
-    Some(config)
 }
 
 #[derive(Clone)]
@@ -207,8 +200,12 @@ impl EngineToolBox {
         }
     }
 
-    fn config(&self) -> &Config {
-        self.session_config.get().unwrap_or(self.state.config())
+    /// Return the session config if `initialize()` has completed
+    /// successfully. Returns `None` if no session has been established
+    /// — callers should reject the request rather than falling back to
+    /// an unauthenticated server-level config.
+    fn session_config(&self) -> Option<&Config> {
+        self.session_config.get()
     }
 }
 
@@ -306,7 +303,13 @@ impl ServerHandler for EngineToolBox {
         let params = serde_json::to_value(request.arguments.unwrap_or_default())
             .unwrap_or_else(|_| serde_json::json!({}));
 
-        match dispatch(&self.state, self.config(), &tool_name, &params).await {
+        let Some(config) = self.session_config() else {
+            return Err(ErrorData::internal_error(
+                "Session not initialized. Call initialize with a valid Bearer token first.",
+                None,
+            ));
+        };
+        match dispatch(&self.state, config, &tool_name, &params).await {
             Ok(response) => Ok(CallToolResult::success(vec![Content::text(
                 response.into_text(),
             )])),
@@ -376,7 +379,13 @@ impl ServerHandler for EngineToolBox {
         request: rmcp::model::ReadResourceRequestParams,
         _context: rmcp::service::RequestContext<rmcp::RoleServer>,
     ) -> Result<ReadResourceResult, ErrorData> {
-        let context = self.state.project_log(self.config().clone());
+        let Some(config) = self.session_config() else {
+            return Err(ErrorData::internal_error(
+                "Session not initialized. Call initialize with a valid Bearer token first.",
+                None,
+            ));
+        };
+        let context = self.state.project_log(config.clone());
 
         let uri: ResourceUri = request
             .uri
@@ -434,8 +443,14 @@ impl ServerHandler for EngineToolBox {
                         ErrorData::invalid_params("Missing required argument: agent", None)
                     })?;
 
-                let scope = ComposeScope::new(self.config().clone())
-                    .bookmark(self.config().brain.clone(), self.config().bookmark.clone())
+                let Some(config) = self.session_config() else {
+                    return Err(ErrorData::internal_error(
+                        "Session not initialized. Call initialize with a valid Bearer token first.",
+                        None,
+                    ));
+                };
+                let scope = ComposeScope::new(config.clone())
+                    .bookmark(config.brain.clone(), config.bookmark.clone())
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 let request: DreamAgent = DreamAgent::builder_v1()

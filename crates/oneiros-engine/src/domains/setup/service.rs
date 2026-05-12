@@ -69,8 +69,21 @@ impl SetupService {
             }
         }
 
-        // 2. System init (always, idempotent) — over HTTP.
-        let host_client = Client::new(config.base_url());
+        // 2. System init (always, idempotent) — over HTTP with a host
+        //    token. The host key was created at server startup.
+        let host_secret = HostKey::new(config.platform()).load()?;
+        let host_client = match host_secret {
+            Some(secret) => {
+                let host_token = HostToken::generate(&secret);
+                Client::with_bearer(config.base_url(), &host_token.to_string())
+            }
+            None => {
+                // Host key not yet generated — server may not have
+                // started. Use anonymous client; the request will fail
+                // with a clear 401 if auth is required.
+                Ok(Client::new(config.base_url()))
+            }
+        }?;
         let system_request: InitSystem = InitSystem::builder_v1()
             .maybe_name(details.name.clone())
             .yes(true)

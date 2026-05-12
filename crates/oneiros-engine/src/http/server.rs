@@ -5,7 +5,7 @@ use aide::{
     openapi::OpenApi,
     scalar::Scalar,
 };
-use axum::{Json, Router, extract::State, response::Html, routing};
+use axum::{Json, Router, extract::State, middleware, response::Html, routing};
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
@@ -177,15 +177,18 @@ impl Server {
 
         state.set_api(api);
 
-        router.with_state(state).layer(
-            TraceLayer::new_for_http()
-                .make_span_with(
-                    DefaultMakeSpan::new()
-                        .level(Level::INFO)
-                        .include_headers(false),
-                )
-                .on_response(DefaultOnResponse::new().level(Level::INFO)),
-        )
+        router
+            .with_state(state.clone())
+            .layer(middleware::from_fn_with_state(state, auth_middleware))
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(
+                        DefaultMakeSpan::new()
+                            .level(Level::INFO)
+                            .include_headers(false),
+                    )
+                    .on_response(DefaultOnResponse::new().level(Level::INFO)),
+            )
     }
 }
 

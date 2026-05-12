@@ -36,6 +36,10 @@ impl SyncHandler {
             ));
         }
 
+        ticket
+            .check_validity()
+            .map_err(|reason| BridgeError::Denied(reason.into()))?;
+
         Ok(ticket)
     }
 

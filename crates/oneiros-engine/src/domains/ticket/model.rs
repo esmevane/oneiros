@@ -34,6 +34,28 @@ impl Indexable<TicketId> for Ticket {
     }
 }
 
+impl Ticket {
+    /// Check whether this ticket is still valid for use. Returns `Ok(())` if
+    /// the ticket is neither revoked, expired, nor exhausted. Returns `Err`
+    /// with a human-readable reason otherwise.
+    pub(crate) fn check_validity(&self) -> Result<(), &'static str> {
+        if self.revoked_at.is_some() {
+            return Err("ticket has been revoked");
+        }
+        if let Some(ref expires_at) = self.expires_at
+            && *expires_at <= Timestamp::now()
+        {
+            return Err("ticket has expired");
+        }
+        if let Some(max_uses) = self.max_uses
+            && self.uses >= max_uses
+        {
+            return Err("ticket use limit reached");
+        }
+        Ok(())
+    }
+}
+
 pub(crate) type Tickets = EntityIndex<TicketId, Ticket>;
 
 resource_id!(TicketId);

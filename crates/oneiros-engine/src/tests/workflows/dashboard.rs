@@ -19,8 +19,21 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
         .init_project()
         .await?;
 
-    // Act: hit /dashboard/config without auth — it's a HostLog route.
-    let http = reqwest::Client::new();
+    // Act: hit /dashboard/config with a host token.
+    let secret = HostKey::new(app.config().platform())
+        .load()?
+        .expect("host key should exist");
+    let host_token = HostToken::generate(&secret);
+    let http = reqwest::Client::builder()
+        .default_headers({
+            let mut headers = reqwest::header::HeaderMap::new();
+            headers.insert(
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {host_token}").parse().unwrap(),
+            );
+            headers
+        })
+        .build()?;
     let url = format!("{}/dashboard/config", app.base_url());
     let bootstrap: DashboardBootstrap = http
         .get(&url)

@@ -16,6 +16,7 @@ pub(crate) struct ServerState {
     bridge: Bridge,
     api: Arc<OnceLock<OpenApi>>,
     mailbox: Mailbox,
+    host_secret: iroh::SecretKey,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -32,7 +33,7 @@ impl ServerState {
     /// spawns the host actor that consumes the bus.
     pub(crate) async fn bind(config: Config) -> Result<Self, ServerStateError> {
         let secret = HostKey::new(config.platform()).ensure()?;
-        let bridge = Bridge::bind(secret).await?;
+        let bridge = Bridge::bind(secret.clone()).await?;
 
         let canons = CanonIndex::new();
         let mailbox = Mailbox::spawn(canons.clone());
@@ -43,6 +44,7 @@ impl ServerState {
             bridge,
             api: Arc::new(OnceLock::new()),
             mailbox,
+            host_secret: secret,
         })
     }
 
@@ -97,6 +99,16 @@ impl ServerState {
     pub(crate) fn project_log(&self, config: Config) -> ProjectLog {
         ProjectLog::new(config)
     }
+
+    /// Construct a ticket verifier backed by this server's config,
+    /// canon registry, and host secret key.
+    pub(crate) fn ticket_verifier(&self) -> TicketVerifier {
+        TicketVerifier::new(
+            self.config.clone(),
+            self.canons.clone(),
+            self.host_secret.clone(),
+        )
+    }
 }
 
 impl aide::operation::OperationInput for Mailbox {}
@@ -121,6 +133,9 @@ impl FromRequestParts<ServerState> for Scope<AtHost> {
         _parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
+        // The auth middleware already injected VerifiedSession into
+        // extensions. For AtHost, we accept both host and project
+        // sessions — all we need is a valid config to compose from.
         ComposeScope::new(state.config.clone())
             .host()
             .map_err(|e| ScopeExtractError::Other(e.to_string()))
@@ -143,50 +158,11 @@ impl axum::response::IntoResponse for ScopeExtractError {
     }
 }
 
-/// Resolve the bookmark-tier capability for a request: validate the
-/// Bearer token against the ticket store, pick the bookmark (active by
-/// default; `X-Bookmark` header / `?bookmark=` query overrides), and
-/// return both the request-shaped `Config` and the composed scope.
-///
-/// Standalone helper — not built on top of `ProjectLog`. Both the new
-/// `Scope<AtBookmark>` extractor and the legacy `ProjectLog` extractor
-/// share this resolution.
-async fn resolve_request(
-    parts: &Parts,
-    state: &ServerState,
-) -> Result<(Config, Scope<AtBookmark>), AuthError> {
-    let token_str = parts
-        .headers
-        .get("authorization")
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.strip_prefix("Bearer "))
-        .ok_or(AuthError::NoAuthHeader)?;
-
-    let token = Token::from(token_str)
-        .decode()
-        .map_err(|_| AuthError::InvalidToken)?;
-
-    let host_scope = ComposeScope::new(state.config.clone())
-        .host()
-        .map_err(|_| AuthError::InvalidToken)?;
-    let ticket = TicketRepo::new(&host_scope)
-        .get_by_token(token_str)
-        .await
-        .map_err(|_| AuthError::InvalidToken)?
-        .ok_or(AuthError::InvalidToken)?;
-
-    if ticket.actor_id != token.actor_id || ticket.brain_id != token.brain_id {
-        return Err(AuthError::InvalidToken);
-    }
-
-    let mut config = state.config.clone();
-    config.brain = ticket.brain_name.clone();
-    config.bookmark = state
-        .canons()
-        .active_bookmark(&ticket.brain_name)
-        .unwrap_or_else(|_| BookmarkName::main());
-
-    if let Some(bookmark) = parts
+/// Resolve the bookmark for a request from the `X-Bookmark` header or
+/// `?bookmark=` query parameter. Falls back to the active bookmark for
+/// the given brain, or `main` if none is active.
+fn resolve_bookmark(parts: &Parts, state: &ServerState, brain_name: &BrainName) -> BookmarkName {
+    let from_header_or_query = parts
         .headers
         .get("x-bookmark")
         .and_then(|v| v.to_str().ok())
@@ -195,15 +171,16 @@ async fn resolve_request(
                 .uri
                 .query()
                 .and_then(|q| q.split('&').find_map(|pair| pair.strip_prefix("bookmark=")))
-        })
-    {
-        config.bookmark = BookmarkName::new(bookmark);
+        });
+
+    if let Some(bookmark) = from_header_or_query {
+        return BookmarkName::new(bookmark);
     }
 
-    let scope = ComposeScope::new(config.clone())
-        .bookmark(config.brain.clone(), config.bookmark.clone())
-        .map_err(|_| AuthError::InvalidToken)?;
-    Ok((config, scope))
+    state
+        .canons()
+        .active_bookmark(brain_name)
+        .unwrap_or_else(|_| BookmarkName::main())
 }
 
 impl aide::operation::OperationInput for Scope<AtBookmark> {}
@@ -215,7 +192,27 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
         parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        let (_config, scope) = resolve_request(parts, state).await?;
+        // The auth middleware already validated the token and injected a
+        // VerifiedSession into request extensions. Bookmark-scoped routes
+        // require a project token (not just a host token).
+        let session = parts
+            .extensions
+            .get::<VerifiedSession>()
+            .ok_or(AuthError::NoAuthHeader)?;
+
+        let brain_name = match session {
+            VerifiedSession::Host => return Err(AuthError::InvalidToken),
+            VerifiedSession::Project { brain_name } => brain_name.clone(),
+        };
+
+        let bookmark = resolve_bookmark(parts, state, &brain_name);
+        let mut config = state.config().clone();
+        config.brain = brain_name;
+        config.bookmark = bookmark;
+
+        let scope = ComposeScope::new(config.clone())
+            .bookmark(config.brain.clone(), config.bookmark.clone())
+            .map_err(|_| AuthError::InvalidToken)?;
         Ok(scope)
     }
 }
@@ -227,7 +224,25 @@ impl FromRequestParts<ServerState> for ProjectLog {
         parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        let (config, _scope) = resolve_request(parts, state).await?;
+        // Read the verified session from extensions (set by auth middleware).
+        // ProjectLog requires a project token — it carries the brain-scoped
+        // config that MCP dispatch and HTTP handlers use.
+        let session = parts
+            .extensions
+            .get::<VerifiedSession>()
+            .ok_or(AuthError::NoAuthHeader)?;
+
+        let config = match session {
+            VerifiedSession::Host => return Err(AuthError::InvalidToken),
+            VerifiedSession::Project { brain_name } => {
+                let bookmark = resolve_bookmark(parts, state, brain_name);
+                let mut c = state.config().clone();
+                c.brain = brain_name.clone();
+                c.bookmark = bookmark;
+                c
+            }
+        };
+
         Ok(state.project_log(config))
     }
 }
