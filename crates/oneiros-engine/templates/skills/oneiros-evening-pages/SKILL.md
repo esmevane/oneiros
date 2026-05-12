@@ -10,7 +10,7 @@ compatibility: Requires oneiros CLI and an initialized brain with at least one a
 allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
 metadata:
-  version: "0.0.9"
+  version: "{{VERSION}}"
   author: "JC McCormick <https://github.com/esmevane>"
 ---
 
@@ -52,6 +52,8 @@ Some things from this session want to outlast it. Tend them:
 - `oneiros memory` for knowledge that crystallized
 - `oneiros experience` for moments that connected
 - `oneiros connection` for threads worth marking
+
+Before promoting, look at what's already there. `oneiros memory list --agent <agent>`, `oneiros experience list --agent <agent>`, or `oneiros search <term>`. Not to deduplicate — to deliberately connect. Otherwise the substrate grows islands.
 
 Don't promote everything. The working level is designed to fade — that's a feature, not waste.
 
