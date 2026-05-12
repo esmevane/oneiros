@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 
+- Host-level auth ([#257](https://github.com/esmevane/oneiros/pull/257))
 - Configuration wrap-up ([#259](https://github.com/esmevane/oneiros/pull/259))
 - Configuration through figment. ([#254](https://github.com/esmevane/oneiros/pull/254))
 - Oh, Clipford. ([#255](https://github.com/esmevane/oneiros/pull/255))
