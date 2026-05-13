@@ -38,7 +38,7 @@ impl SyncHandler {
 
         ticket
             .check_validity()
-            .map_err(|reason| BridgeError::Denied(reason.into()))?;
+            .map_err(|reason| BridgeError::Denied(reason.to_string()))?;
 
         Ok(ticket)
     }

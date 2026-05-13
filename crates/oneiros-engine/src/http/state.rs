@@ -138,17 +138,13 @@ impl FromRequestParts<ServerState> for Scope<AtHost> {
         // The auth middleware already injected VerifiedSession into
         // extensions. For AtHost, we accept both host and project
         // sessions — all we need is a valid config to compose from.
-        ComposeScope::new(state.config.clone())
-            .host()
-            .map_err(|e| ScopeExtractError::Other(e.to_string()))
+        Ok(ComposeScope::new(state.config.clone()).host()?)
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum ScopeExtractError {
-    #[error("{0}")]
-    Other(String),
-}
+#[error(transparent)]
+pub(crate) struct ScopeExtractError(#[from] ComposeError);
 
 impl axum::response::IntoResponse for ScopeExtractError {
     fn into_response(self) -> axum::response::Response {
@@ -208,7 +204,7 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
 
         let project_name = match session {
             VerifiedSession::Host => return Err(AuthError::InvalidToken),
-            VerifiedSession::Project { project_name } => project_name.clone(),
+            VerifiedSession::Project(project_name) => project_name.clone(),
         };
 
         let bookmark = resolve_bookmark(parts, state, &project_name);
@@ -217,8 +213,7 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
         config.bookmark = bookmark;
 
         let scope = ComposeScope::new(config.clone())
-            .bookmark(config.project.clone(), config.bookmark.clone())
-            .map_err(|_| AuthError::InvalidToken)?;
+            .bookmark(config.project.clone(), config.bookmark.clone())?;
         Ok(scope)
     }
 }
@@ -240,7 +235,7 @@ impl FromRequestParts<ServerState> for ProjectLog {
 
         let config = match session {
             VerifiedSession::Host => return Err(AuthError::InvalidToken),
-            VerifiedSession::Project { project_name } => {
+            VerifiedSession::Project(project_name) => {
                 let bookmark = resolve_bookmark(parts, state, project_name);
                 let mut c = state.config().clone();
                 c.project = project_name.clone();

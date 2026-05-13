@@ -14,7 +14,7 @@ pub(crate) enum AuthError {
     #[error("Invalid or expired token")]
     InvalidToken,
     #[error(transparent)]
-    Database(#[from] rusqlite::Error),
+    Compose(#[from] ComposeError),
     #[error(transparent)]
     Event(#[from] EventError),
 }
@@ -23,7 +23,7 @@ impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let status = match &self {
             AuthError::NoAuthHeader | AuthError::InvalidToken => StatusCode::UNAUTHORIZED,
-            AuthError::Database(_) | AuthError::Event(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::Compose(_) | AuthError::Event(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, axum::Json(ErrorResponse::new(self.to_string()))).into_response()
     }
@@ -36,12 +36,10 @@ pub(crate) enum VerifiedSession {
     /// routes (dashboard, host management, project CRUD).
     Host,
     /// Authenticated with a project-scoped project token. Grants access to
-    /// project-scoped routes and (by implication) host-scoped routes.
-    Project {
-        /// The project this token grants access to — resolved from the
-        /// ticket. Callers derive the full config from `ServerState`.
-        project_name: ProjectName,
-    },
+    /// project-scoped routes and (by implication) host-scoped routes. The
+    /// project is resolved from the ticket; callers derive the full config
+    /// from `ServerState`.
+    Project(ProjectName),
 }
 
 /// Unified token verifier for both host and project tokens.
@@ -77,18 +75,19 @@ impl TicketVerifier {
 
     /// Validate a project-scoped project token against the ticket store.
     async fn verify_project_token(&self, token_str: &str) -> Result<VerifiedSession, AuthError> {
+        // Token decode failure and ticket mismatch/missing/invalid all
+        // collapse to `InvalidToken` — the auth boundary deliberately does
+        // not leak which check failed. Infrastructure failures (compose,
+        // db) propagate as their own variants and render as 500s.
         let token = Token::from(token_str)
             .decode()
             .map_err(|_| AuthError::InvalidToken)?;
 
-        let host_scope = ComposeScope::new(self.config.clone())
-            .host()
-            .map_err(|_| AuthError::InvalidToken)?;
+        let host_scope = ComposeScope::new(self.config.clone()).host()?;
 
         let ticket = TicketRepo::new(&host_scope)
             .get_by_token(token_str)
-            .await
-            .map_err(|_| AuthError::InvalidToken)?
+            .await?
             .ok_or(AuthError::InvalidToken)?;
 
         if ticket.actor_id != token.actor_id || ticket.project_id != token.project_id {
@@ -99,9 +98,7 @@ impl TicketVerifier {
             .check_validity()
             .map_err(|_| AuthError::InvalidToken)?;
 
-        Ok(VerifiedSession::Project {
-            project_name: ticket.project_name,
-        })
+        Ok(VerifiedSession::Project(ticket.project_name))
     }
 }
 

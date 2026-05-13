@@ -36,23 +36,32 @@ impl Indexable<TicketId> for Ticket {
     }
 }
 
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub(crate) enum TicketInvalid {
+    #[error("ticket has been revoked")]
+    Revoked,
+    #[error("ticket has expired")]
+    Expired,
+    #[error("ticket use limit reached")]
+    Exhausted,
+}
+
 impl Ticket {
     /// Check whether this ticket is still valid for use. Returns `Ok(())` if
-    /// the ticket is neither revoked, expired, nor exhausted. Returns `Err`
-    /// with a human-readable reason otherwise.
-    pub(crate) fn check_validity(&self) -> Result<(), &'static str> {
+    /// the ticket is neither revoked, expired, nor exhausted.
+    pub(crate) fn check_validity(&self) -> Result<(), TicketInvalid> {
         if self.revoked_at.is_some() {
-            return Err("ticket has been revoked");
+            return Err(TicketInvalid::Revoked);
         }
         if let Some(ref expires_at) = self.expires_at
             && *expires_at <= Timestamp::now()
         {
-            return Err("ticket has expired");
+            return Err(TicketInvalid::Expired);
         }
         if let Some(max_uses) = self.max_uses
             && self.uses >= max_uses
         {
-            return Err("ticket use limit reached");
+            return Err(TicketInvalid::Exhausted);
         }
         Ok(())
     }
