@@ -28,17 +28,13 @@ impl SyncHandler {
         let ticket = TicketRepo::new(scope)
             .get_by_token(link.token.as_str())
             .await?
-            .ok_or_else(|| BridgeError::Denied("ticket not found".into()))?;
+            .ok_or(DenyReason::TicketNotFound)?;
 
         if link.target != ticket.link.target {
-            return Err(BridgeError::Denied(
-                "link target does not match ticket target".into(),
-            ));
+            return Err(DenyReason::TargetMismatch.into());
         }
 
-        ticket
-            .check_validity()
-            .map_err(|reason| BridgeError::Denied(reason.to_string()))?;
+        ticket.check_validity()?;
 
         Ok(ticket)
     }
@@ -64,9 +60,7 @@ impl SyncHandler {
         let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
-        let node = resolve(&root_hash).ok_or_else(|| {
-            BridgeError::Protocol("chronicle root node not found in store".into())
-        })?;
+        let node = resolve(&root_hash).ok_or(BridgeProtocolError::ChronicleRootMissing)?;
 
         Ok(BridgeResponse::BridgeRootNode(BridgeRootNode {
             root_hash,

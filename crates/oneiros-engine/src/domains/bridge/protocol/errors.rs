@@ -23,6 +23,77 @@ pub(crate) enum IrohError {
     Closed(#[from] iroh::endpoint::ClosedStream),
 }
 
+/// Which bridge operation a protocol error pertains to.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum BridgeOp {
+    Diff,
+    Resolve,
+    FetchEvents,
+}
+
+impl core::fmt::Display for BridgeOp {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Diff => f.write_str("bridge-diff"),
+            Self::Resolve => f.write_str("bridge-resolve"),
+            Self::FetchEvents => f.write_str("bridge-fetch-events"),
+        }
+    }
+}
+
+/// A violation of the sync wire protocol — malformed or unexpected
+/// messages, oversized responses, decode failures.
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum BridgeProtocolError {
+    #[error("chronicle root node not found in store")]
+    ChronicleRootMissing,
+
+    #[error("unexpected response to {0} request")]
+    UnexpectedResponse(BridgeOp),
+
+    #[error("response too large: {0} bytes")]
+    ResponseTooLarge(usize),
+
+    #[error("malformed response: {0}")]
+    Decode(#[from] serde_json::Error),
+}
+
+/// An opaque human-readable message received from a peer. We don't
+/// interpret the contents — the peer chose this text and we preserve
+/// it verbatim for surfacing in logs and error responses.
+#[derive(Debug, Clone)]
+pub(crate) struct OpaquePeer(String);
+
+impl From<String> for OpaquePeer {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl core::fmt::Display for OpaquePeer {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// Why a sync request was denied. Internal-typed; renders to the
+/// human-readable `reason` carried by the wire-level `BridgeDenied`.
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum DenyReason {
+    #[error("ticket not found")]
+    TicketNotFound,
+
+    #[error("link target does not match ticket target")]
+    TargetMismatch,
+
+    #[error(transparent)]
+    Invalid(#[from] TicketInvalid),
+
+    /// A denial received over the wire from a peer.
+    #[error("{0}")]
+    Remote(OpaquePeer),
+}
+
 /// Errors from bridge operations.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum BridgeError {
@@ -32,11 +103,11 @@ pub(crate) enum BridgeError {
 
     /// The sync protocol encountered a malformed or unexpected message.
     #[error("protocol error: {0}")]
-    Protocol(String),
+    Protocol(#[from] BridgeProtocolError),
 
     /// The peer denied the sync request.
     #[error("sync denied: {0}")]
-    Denied(String),
+    Denied(#[from] DenyReason),
 
     /// An event infrastructure error during sync handling.
     #[error(transparent)]
@@ -63,4 +134,10 @@ pub(crate) enum BridgeError {
     /// A scope composition error during sync handling.
     #[error(transparent)]
     Compose(#[from] ComposeError),
+}
+
+impl From<TicketInvalid> for BridgeError {
+    fn from(value: TicketInvalid) -> Self {
+        BridgeError::Denied(DenyReason::Invalid(value))
+    }
 }
