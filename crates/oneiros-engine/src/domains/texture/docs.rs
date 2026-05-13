@@ -28,7 +28,7 @@ impl TextureDocs {
                 .tag(tag)
                 .nickname("set-texture")
                 .summary("Define a texture")
-                .description("Create or update a quality of thought in the brain's vocabulary.")
+                .description("Create or update a quality of thought in the project's vocabulary.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
@@ -40,7 +40,7 @@ impl TextureDocs {
                 .tag(tag)
                 .nickname("remove-texture")
                 .summary("Remove a texture")
-                .description("Delete a quality of thought from the brain's vocabulary.")
+                .description("Delete a quality of thought from the project's vocabulary.")
                 .build(),
         }
     }

@@ -22,7 +22,7 @@ impl NatureDocs {
                 .tag(tag)
                 .nickname("list-natures")
                 .summary("List natures")
-                .description("List all relationship kinds defined for the current brain.")
+                .description("List all relationship kinds defined for the current project.")
                 .build(),
             Self::Set => ResourceDocs::builder()
                 .tag(tag)

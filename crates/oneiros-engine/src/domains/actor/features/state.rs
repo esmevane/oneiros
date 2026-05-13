@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct ActorState;
 
 impl ActorState {
-    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: HostCanon, event: &Events) -> HostCanon {
         if let Events::Actor(actor_event) = event
             && let Some(actor) = actor_event.maybe_actor()
         {
@@ -13,7 +13,7 @@ impl ActorState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<HostCanon> {
         Reducer::new(Self::reduce)
     }
 }

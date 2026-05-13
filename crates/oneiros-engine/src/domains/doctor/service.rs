@@ -56,7 +56,7 @@ impl DoctorService {
         }
 
         checks.push(DoctorCheck::Initialized);
-        checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("system.db")));
+        checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("host.db")));
 
         // Host keypair check — identity for distribution
         if HostKey::new(config.platform()).path().exists() {
@@ -73,23 +73,23 @@ impl DoctorService {
 
         checks.push(DoctorCheck::EventLogReady(LogEventCount::new(event_count)));
 
-        // Brain check
-        let brain_name = config.brain.clone();
+        // Project check
+        let project_name = config.project.clone();
 
         match config.bookmark_conn() {
-            Ok(brain_db) => {
-                let brain_events = brain_db
+            Ok(project_db) => {
+                let project_events = project_db
                     .query_row("select count(*) from events.events", [], |row| {
                         row.get::<_, i64>(0)
                     })
                     .unwrap_or(-1);
 
-                if brain_events >= 0 {
-                    checks.push(DoctorCheck::BrainExists(brain_name.clone()));
+                if project_events >= 0 {
+                    checks.push(DoctorCheck::ProjectExists(project_name.clone()));
                     checks.push(DoctorCheck::DatabaseOk(DatabaseLabel::new("events.db")));
 
                     // Vocabulary check — look for any levels
-                    let has_levels = brain_db
+                    let has_levels = project_db
                         .query_row("select count(*) from levels", [], |row| {
                             row.get::<_, i64>(0)
                         })
@@ -102,7 +102,7 @@ impl DoctorService {
                     }
 
                     // Agent check — look for governor.process
-                    let has_governor = brain_db
+                    let has_governor = project_db
                         .query_row(
                             "select count(*) from agents where name = 'governor.process'",
                             [],
@@ -116,11 +116,11 @@ impl DoctorService {
                         checks.push(DoctorCheck::AgentsMissing);
                     }
                 } else {
-                    checks.push(DoctorCheck::BrainMissing(brain_name));
+                    checks.push(DoctorCheck::ProjectMissing(project_name));
                 }
             }
             Err(_) => {
-                checks.push(DoctorCheck::BrainMissing(brain_name));
+                checks.push(DoctorCheck::ProjectMissing(project_name));
             }
         }
 
@@ -132,11 +132,11 @@ impl DoctorService {
         }
 
         // Service check
-        match ServiceService::status(config).await {
-            ServiceResponse::ServiceRunning(_) => {
+        match HostService::status(config).await {
+            HostResponse::ServiceRunning(_) => {
                 checks.push(DoctorCheck::ServiceRunning);
             }
-            ServiceResponse::ServiceStopped => {
+            HostResponse::ServiceStopped => {
                 checks.push(DoctorCheck::ServiceStopped);
             }
             _ => {

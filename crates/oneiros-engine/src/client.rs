@@ -55,8 +55,8 @@ impl Client {
 
     /// Build a client from a config — token-aware. Uses the project token
     /// from disk when available; falls back to a host token (derived from
-    /// the host key) so that bootstrap operations (system init, project
-    /// init) can authenticate before any brain exists.
+    /// the host key) so that bootstrap operations (host init, project
+    /// create) can authenticate before any project exists.
     pub(crate) fn from_config(config: &Config) -> Result<Self, ClientError> {
         let bearer = match config.token() {
             Some(token) => token.to_string(),

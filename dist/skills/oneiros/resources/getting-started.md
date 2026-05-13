@@ -10,10 +10,10 @@
 ### 1. Initialize the Host
 
 ```bash
-oneiros system init
+oneiros host init
 ```
 
-This creates the system database at `~/.local/share/oneiros/` and registers a default tenant. Run once per machine.
+This creates the host database at `~/.local/share/oneiros/` and registers a default tenant. Run once per machine.
 
 ### 2. Start the Service
 
@@ -33,18 +33,18 @@ oneiros service start
 Navigate to your project directory and run:
 
 ```bash
-oneiros project init
+oneiros project create
 ```
 
-This creates a brain for the project. The project name is auto-detected from Cargo.toml, package.json, git remote, or directory name.
+This creates a project for the current working directory. The project name is auto-detected from Cargo.toml, package.json, git remote, or directory name.
 
-### 4. Seed the Brain
+### 4. Seed the Project
 
 ```bash
 oneiros seed core
 ```
 
-This populates the brain with standard textures (cognitive categories), levels (memory tiers), the process persona (agent category), and the governor.process agent.
+This populates the project with standard textures (cognitive categories), levels (memory tiers), the process persona (agent category), and the governor.process agent.
 
 ### 5. Install the Skill
 
@@ -60,7 +60,7 @@ This writes the SKILL.md, plugin.json, and command files to `~/.claude/` so Clau
 oneiros doctor
 ```
 
-Check that system, service, and project are all healthy.
+Check that host, service, and project are all healthy.
 
 ## First Cognitive Loop
 

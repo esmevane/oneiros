@@ -21,10 +21,10 @@ impl<'a> BookmarkStore<'a> {
         self.db.execute_batch(
             "CREATE TABLE IF NOT EXISTS bookmarks (
                 id TEXT PRIMARY KEY,
-                brain TEXT NOT NULL,
+                project TEXT NOT NULL,
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                UNIQUE(brain, name)
+                UNIQUE(project, name)
             )",
         )?;
         Ok(())
@@ -41,11 +41,11 @@ impl<'a> BookmarkStore<'a> {
 
     fn write_bookmark(&self, bookmark: &Bookmark) -> Result<(), EventError> {
         self.db.execute(
-            "INSERT OR REPLACE INTO bookmarks (id, brain, name, created_at)
+            "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at)
              VALUES (?1, ?2, ?3, ?4)",
             rusqlite::params![
                 bookmark.id.to_string(),
-                bookmark.brain.to_string(),
+                bookmark.project.to_string(),
                 bookmark.name.to_string(),
                 bookmark.created_at.to_string(),
             ],
@@ -58,22 +58,22 @@ impl<'a> BookmarkStore<'a> {
         Ok(())
     }
 
-    /// List bookmark names for a specific brain. Returns an empty
+    /// List bookmark names for a specific project. Returns an empty
     /// list if the projection has not been migrated yet (cold start).
-    pub(crate) fn list_for_brain(
+    pub(crate) fn list_for_project(
         &self,
-        brain: &BrainName,
+        project: &ProjectName,
     ) -> Result<Vec<BookmarkName>, rusqlite::Error> {
         let mut stmt = match self
             .db
-            .prepare("SELECT name FROM bookmarks WHERE brain = ?1")
+            .prepare("SELECT name FROM bookmarks WHERE project = ?1")
         {
             Ok(stmt) => stmt,
             Err(e) if is_missing_table(&e) => return Ok(Vec::new()),
             Err(e) => return Err(e),
         };
         let rows = stmt
-            .query_map([brain.to_string()], |row| row.get::<_, String>(0))?
+            .query_map([project.to_string()], |row| row.get::<_, String>(0))?
             .collect::<Result<Vec<_>, _>>()?;
         Ok(rows.into_iter().map(BookmarkName::from).collect())
     }

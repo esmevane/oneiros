@@ -20,7 +20,7 @@ pub(crate) struct ImportProjectEvent {
     pub(crate) stored: Box<StoredEvent>,
 }
 
-/// All project-tier messages, flat. Routed per-brain by the router;
+/// All project-tier messages, flat. Routed per-project by the router;
 /// actors handle their own variants and no-op the rest.
 #[derive(Clone)]
 pub(crate) enum ProjectMessage {

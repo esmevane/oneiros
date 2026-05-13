@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct TenantState;
 
 impl TenantState {
-    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: HostCanon, event: &Events) -> HostCanon {
         if let Events::Tenant(tenant_event) = event
             && let Some(tenant) = tenant_event.maybe_tenant()
         {
@@ -13,7 +13,7 @@ impl TenantState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<HostCanon> {
         Reducer::new(Self::reduce)
     }
 }
@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn creates_tenant() {
-        let canon = SystemCanon::default();
+        let canon = HostCanon::default();
         let tenant = Tenant::builder()
             .name(TenantName::new("test-tenant"))
             .build();

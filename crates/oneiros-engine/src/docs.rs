@@ -20,7 +20,7 @@ impl AppDocs {
     }
 
     pub(crate) fn security_scheme_description(&self) -> Description {
-        Description::new("A brain access ticket issued via `oneiros ticket issue`")
+        Description::new("A project access ticket issued via `oneiros ticket issue`")
     }
 
     pub(crate) fn tags(&self) -> Vec<Tag> {
@@ -28,7 +28,7 @@ impl AppDocs {
             ActorDocs::Create.tag(),
             AgentDocs::Create.tag(),
             BookmarkDocs::Create.tag(),
-            BrainDocs::Create.tag(),
+            ProjectDocs::Create.tag(),
             CognitionDocs::Add.tag(),
             ConnectionDocs::Create.tag(),
             ContinuityDocs::Emerge.tag(),
@@ -40,12 +40,12 @@ impl AppDocs {
             PeerDocs::Add.tag(),
             PersonaDocs::List.tag(),
             PressureDocs::List.tag(),
-            ProjectDocs::Init.tag(),
+            ProjectDocs::Create.tag(),
             SearchDocs::Search.tag(),
             SeedDocs::SeedCore.tag(),
             SensationDocs::List.tag(),
             StorageDocs::Upload.tag(),
-            SystemDocs::Init.tag(),
+            HostDocs::Init.tag(),
             TenantDocs::Create.tag(),
             TextureDocs::List.tag(),
             TicketDocs::Create.tag(),

@@ -1,13 +1,13 @@
 //! Test harness — a first-class testing surface for the engine.
 //!
 //! `TestApp` owns the full lifecycle: config, server, and teardown.
-//! Tests interact through the same layers the real system uses:
+//! Tests interact through the same layers the real host uses:
 //! CLI commands go through clap → client → HTTP → service → event log.
 //!
 //! ```rust,ignore
 //! let app = TestApp::new()
 //!     .await?
-//!     .init_system()
+//!     .init_host()
 //!     .await?
 //!     .init_project()
 //!     .await?
@@ -38,10 +38,19 @@ impl TestApp {
     /// Boot a new test app: tempdir, config, server on a random port.
     pub(crate) async fn new() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::tempdir().expect("create tempdir");
+        Self::with_data_dir(dir).await
+    }
 
+    /// Boot a test app reusing an externally-staged tempdir. Used by
+    /// migration tests that pre-write old-layout files into the data-dir
+    /// and need the server to boot against that exact directory (so the
+    /// production migration hook runs).
+    pub(crate) async fn with_data_dir(
+        dir: tempfile::TempDir,
+    ) -> Result<Self, Box<dyn core::error::Error>> {
         let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
-            .brain(BrainName::new("test"))
+            .project(ProjectName::new("test"))
             .output(OutputMode::Json)
             .service(
                 ServiceConfig::builder()
@@ -74,16 +83,16 @@ impl TestApp {
         })
     }
 
-    /// Initialize the system database and default tenant/actor.
-    pub(crate) async fn init_system(self) -> Result<Self, Box<dyn core::error::Error>> {
-        self.command("system init --name test").await?;
+    /// Initialize the host database and default tenant/actor.
+    pub(crate) async fn init_host(self) -> Result<Self, Box<dyn core::error::Error>> {
+        self.command("host init --name test").await?;
         Ok(self)
     }
 
-    /// Initialize a project (brain) with the default name.
+    /// Create a project with the default name.
     pub(crate) async fn init_project(self) -> Result<Self, Box<dyn core::error::Error>> {
-        let brain = self.engine.config().brain.to_string();
-        self.command(&format!("project init --name {brain}"))
+        let project = self.engine.config().project.to_string();
+        self.command(&format!("project create --name {project}"))
             .await?;
         Ok(self)
     }
@@ -115,8 +124,8 @@ impl TestApp {
             "oneiros".into(),
             "--data-dir".into(),
             config.data_dir.display().to_string(),
-            "--brain".into(),
-            config.brain.to_string(),
+            "--project".into(),
+            config.project.to_string(),
         ];
         args.extend(
             shlex::split(input)
@@ -238,8 +247,8 @@ impl TestClient {
         ActorClient::new(&self.client)
     }
 
-    pub(crate) fn brain(&self) -> BrainClient<'_> {
-        BrainClient::new(&self.client)
+    pub(crate) fn project(&self) -> ProjectClient<'_> {
+        ProjectClient::new(&self.client)
     }
 
     pub(crate) fn ticket(&self) -> TicketClient<'_> {

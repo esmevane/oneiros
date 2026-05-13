@@ -60,7 +60,7 @@ mod tests {
         let def = ResourceDef::new(
             "oneiros-mcp://agents",
             "agents",
-            "All agents in the current brain",
+            "All agents in the current project",
         );
         assert_eq!(def.mime_type, "text/markdown");
         assert_eq!(def.uri, "oneiros-mcp://agents");

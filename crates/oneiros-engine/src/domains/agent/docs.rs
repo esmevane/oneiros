@@ -23,13 +23,13 @@ impl AgentDocs {
                 .tag(tag)
                 .nickname("create-agent")
                 .summary("Create an agent")
-                .description("Register a new cognitive agent under the current brain.")
+                .description("Register a new cognitive agent under the current project.")
                 .build(),
             Self::List => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("list-agents")
                 .summary("List agents")
-                .description("List all cognitive agents registered in the current brain.")
+                .description("List all cognitive agents registered in the current project.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
@@ -47,7 +47,7 @@ impl AgentDocs {
                 .tag(tag)
                 .nickname("remove-agent")
                 .summary("Remove an agent")
-                .description("Permanently remove a cognitive agent and all associated records from the brain.")
+                .description("Permanently remove a cognitive agent and all associated records from the project.")
                 .build(),
         }
     }

@@ -2,7 +2,7 @@ use bon::Builder;
 
 use crate::*;
 
-/// Apply a stored event to a bookmark's brain DB projections.
+/// Apply a stored event to a bookmark's project DB projections.
 #[derive(Builder, Clone)]
 pub(crate) struct ApplyBookmarkProjection {
     pub(crate) scope: Scope<AtBookmark>,
@@ -10,7 +10,7 @@ pub(crate) struct ApplyBookmarkProjection {
     pub(crate) stored: Box<StoredEvent>,
 }
 
-/// Clear and replay a bookmark's brain DB projections.
+/// Clear and replay a bookmark's project DB projections.
 #[derive(Builder, Clone)]
 pub(crate) struct ResetBookmarkProjection {
     pub(crate) scope: Scope<AtBookmark>,
@@ -30,7 +30,7 @@ pub(crate) struct ResetBookmarkChronicle {
     pub(crate) scope: Scope<AtBookmark>,
 }
 
-/// All bookmark-tier messages, flat. Routed per (brain, bookmark) by
+/// All bookmark-tier messages, flat. Routed per (project, bookmark) by
 /// the router; actors handle their own variants and no-op the rest.
 #[derive(Clone)]
 pub(crate) enum BookmarkMessage {

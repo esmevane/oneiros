@@ -1,7 +1,4 @@
 //! Project view — presentation authority for the project domain.
-//!
-//! Maps project responses into formatted strings using shared view primitives.
-//! The domain knows its own shape; the rendering layer decides how to display it.
 
 use crate::*;
 
@@ -16,30 +13,47 @@ impl ProjectView {
 
     pub(crate) fn render(self) -> Rendered<ProjectResponse> {
         match self.response {
-            ProjectResponse::Initialized(InitializedResponse::V1(details)) => {
-                let prompt = Confirmation::new("Brain", details.brain_name.to_string(), "created")
-                    .to_string();
+            ProjectResponse::Created(ProjectCreatedResponse::V1(created)) => {
+                let prompt =
+                    Confirmation::new("Project", created.project.name.to_string(), "created")
+                        .to_string();
                 Rendered::new(
-                    ProjectResponse::Initialized(
-                        InitializedResponse::builder_v1()
-                            .brain_name(details.brain_name)
-                            .token(details.token)
-                            .build()
-                            .into(),
-                    ),
+                    ProjectResponse::Created(ProjectCreatedResponse::V1(created)),
                     prompt,
                     String::new(),
                 )
             }
-            ProjectResponse::BrainAlreadyExists(BrainAlreadyExistsResponse::V1(details)) => {
+            ProjectResponse::Found(ProjectFoundResponse::V1(found)) => {
+                let prompt = Detail::new(found.project.name.to_string()).to_string();
+                Rendered::new(
+                    ProjectResponse::Found(ProjectFoundResponse::V1(found)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            ProjectResponse::Listed(ProjectsResponse::V1(listed)) => {
+                let mut table = Table::new(vec![Column::new("Name")]);
+                for project in &listed.items {
+                    table.push_row(vec![project.name.to_string()]);
+                }
                 let prompt = format!(
-                    "{}",
-                    format!("Brain '{}' already exists.", details.brain_name).muted()
+                    "{}\n\n{table}",
+                    format_args!("{} of {} total", listed.items.len(), listed.total).muted(),
                 );
                 Rendered::new(
-                    ProjectResponse::BrainAlreadyExists(
-                        BrainAlreadyExistsResponse::builder_v1()
-                            .brain_name(details.brain_name)
+                    ProjectResponse::Listed(ProjectsResponse::V1(listed)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            ProjectResponse::ProjectAlreadyExists(ProjectAlreadyExistsResponse::V1(details)) => {
+                let prompt = format!("Project '{}' already exists.", details.project_name)
+                    .muted()
+                    .to_string();
+                Rendered::new(
+                    ProjectResponse::ProjectAlreadyExists(
+                        ProjectAlreadyExistsResponse::builder_v1()
+                            .project_name(details.project_name)
                             .build()
                             .into(),
                     ),

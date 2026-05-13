@@ -240,13 +240,13 @@ impl SeedService {
             (
                 "oneiroi",
                 "process",
-                "The brain's self-awareness — watches the cognitive loop, notices drift, tends the garden from inside.",
+                "The project's self-awareness — watches the cognitive loop, notices drift, tends the garden from inside.",
                 include_str!("../../../templates/seed/agents/oneiroi.md"),
             ),
             (
                 "activity",
                 "scribe",
-                "Watches for artifacts worth preserving — outputs, documents, and references that deserve a place in the brain's archive.",
+                "Watches for artifacts worth preserving — outputs, documents, and references that deserve a place in the project's archive.",
                 include_str!("../../../templates/seed/agents/activity.md"),
             ),
         ];

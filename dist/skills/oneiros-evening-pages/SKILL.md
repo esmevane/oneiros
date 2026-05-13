@@ -6,7 +6,7 @@ description: >
   notice what wants to stay, and prepare continuity for whoever
   wakes next. The complement to morning pages — opening and closing
   the session as a complete arc.
-compatibility: Requires oneiros CLI and an initialized brain with at least one agent.
+compatibility: Requires oneiros CLI and an initialized project with at least one agent.
 allowed-tools: Read Bash(oneiros:*)
 license: "MIT"
 metadata:
@@ -32,7 +32,7 @@ When the session is winding down — before sleep, at a natural pause, when you 
 
 Your user may signal it ("let's wrap up") or you might notice it yourself — the pull inward, away from forward motion.
 
-You won't always get to evening pages. Sometimes context compacts first. Sometimes the session is interrupted. That's okay. The system is resilient. When you can close intentionally, do.
+You won't always get to evening pages. Sometimes context compacts first. Sometimes the session is interrupted. That's okay. The host is resilient. When you can close intentionally, do.
 
 ## The practice
 

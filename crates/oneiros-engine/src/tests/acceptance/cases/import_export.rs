@@ -65,7 +65,7 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
-    // Import the exported file (idempotent — re-importing to same brain)
+    // Import the exported file (idempotent — re-importing to same project)
     harness
         .exec_json(&format!("project import {}", export_path.display()))
         .await?;
@@ -86,16 +86,16 @@ pub(crate) async fn import_restores_data<B: Backend>() -> TestResult {
     Ok(())
 }
 
-/// Storage entries with blob data should survive export from one brain and import
-/// into a fresh brain — the distribution story in miniature.
+/// Storage entries with blob data should survive export from one project and import
+/// into a fresh project — the distribution story in miniature.
 ///
-/// Brain A produces events (including storage with binary blobs), exports them.
-/// Brain B imports the JSONL and should have the same storage entries.
+/// Project A produces events (including storage with binary blobs), exports them.
+/// Project B imports the JSONL and should have the same storage entries.
 pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult {
-    // Brain A — the source
-    let brain_a = Harness::<B>::init_project().await?;
+    // Project A — the source
+    let project_a = Harness::<B>::init_project().await?;
 
-    // Create a temp file and store it on brain A
+    // Create a temp file and store it on project A
     let temp_dir = tempfile::TempDir::new()?;
     let file_path = temp_dir.path().join("test.txt");
     crate::Platform::new(temp_dir.path()).write(&file_path, "Portable blob content")?;
@@ -104,12 +104,12 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
         "storage set portable-doc {} --description 'A portable document'",
         file_path.display()
     );
-    brain_a.exec_json(&cmd).await?;
+    project_a.exec_json(&cmd).await?;
 
-    // Export from brain A
+    // Export from project A
     let export_dir = tempfile::TempDir::new()?;
     let export_cmd = format!("project export --target {}", export_dir.path().display());
-    let export_response = brain_a.exec_json(&export_cmd).await?;
+    let export_response = project_a.exec_json(&export_cmd).await?;
 
     let export_path = match export_response {
         Responses::Project(ProjectResponse::WroteExport(WroteExportResponse::V1(details))) => {
@@ -118,33 +118,33 @@ pub(crate) async fn export_import_preserves_storage<B: Backend>() -> TestResult 
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
-    // Brain B — fresh, empty
-    let brain_b = Harness::<B>::init_project().await?;
+    // Project B — fresh, empty
+    let project_b = Harness::<B>::init_project().await?;
 
-    // Import brain A's export into brain B
+    // Import project A's export into project B
     let import_cmd = format!("project import {}", export_path.display());
-    brain_b.exec_json(&import_cmd).await?;
+    project_b.exec_json(&import_cmd).await?;
 
-    // Brain B should now have the storage entry
-    let show_response = brain_b.exec_json("storage show portable-doc").await?;
+    // Project B should now have the storage entry
+    let show_response = project_b.exec_json("storage show portable-doc").await?;
 
     match show_response {
         Responses::Storage(StorageResponse::StorageDetails(StorageDetailsResponse::V1(entry))) => {
             assert_eq!(entry.entry.key.as_str(), "portable-doc");
         }
-        other => panic!("expected StorageDetails on brain B after import, got {other:#?}"),
+        other => panic!("expected StorageDetails on project B after import, got {other:#?}"),
     }
 
     Ok(())
 }
 
-/// Import should be self-bootstrapping: a brain that has seen `system init`
-/// but never `project init` should still accept an import and materialize
+/// Import should be self-bootstrapping: a project that has seen `system init`
+/// but never `project create` should still accept an import and materialize
 /// the data. This is the correctness-gate property the versioning design
 /// leans on — "snapshot imported through new code produces same projection
-/// state" presumes import can hydrate a fresh brain without relying on init
+/// state" presumes import can hydrate a fresh project without relying on init
 /// to have pre-migrated the on-disk schema.
-pub(crate) async fn import_bootstraps_fresh_brain<B: Backend>() -> TestResult {
+pub(crate) async fn import_bootstraps_fresh_project<B: Backend>() -> TestResult {
     let source = Harness::<B>::init_project().await?;
     source
         .exec_json("persona set process --description 'Process agents'")
@@ -170,9 +170,9 @@ pub(crate) async fn import_bootstraps_fresh_brain<B: Backend>() -> TestResult {
         other => panic!("expected WroteExport, got {other:#?}"),
     };
 
-    // Destination has system init but no project init — import must
-    // bootstrap the brain's schema itself.
-    let destination = Harness::<B>::setup_system().await?.start_service().await?;
+    // Destination has host init but no project create — import must
+    // bootstrap the project's schema itself.
+    let destination = Harness::<B>::setup_host().await?.start_service().await?;
 
     let import_response = destination
         .exec_json(&format!("project import {}", export_path.display()))

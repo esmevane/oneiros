@@ -28,7 +28,9 @@ impl SensationDocs {
                 .tag(tag)
                 .nickname("set-sensation")
                 .summary("Define a sensation")
-                .description("Create or update a quality of experience in the brain's vocabulary.")
+                .description(
+                    "Create or update a quality of experience in the project's vocabulary.",
+                )
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
@@ -40,7 +42,7 @@ impl SensationDocs {
                 .tag(tag)
                 .nickname("remove-sensation")
                 .summary("Remove a sensation")
-                .description("Delete a quality of experience from the brain's vocabulary.")
+                .description("Delete a quality of experience from the project's vocabulary.")
                 .build(),
         }
     }

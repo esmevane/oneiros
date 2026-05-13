@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct CognitionState;
 
 impl CognitionState {
-    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: ProjectCanon, event: &Events) -> ProjectCanon {
         if let Events::Cognition(CognitionEvents::CognitionAdded(added)) = event
             && let Ok(current) = added.current()
         {
@@ -13,7 +13,7 @@ impl CognitionState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<ProjectCanon> {
         Reducer::new(Self::reduce)
     }
 }
@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn adds_cognition() {
-        let canon = BrainCanon::default();
+        let canon = ProjectCanon::default();
         let cognition = Cognition::builder()
             .agent_id(AgentId::new())
             .texture("observation")

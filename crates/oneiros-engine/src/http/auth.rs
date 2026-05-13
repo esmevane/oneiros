@@ -33,14 +33,14 @@ impl IntoResponse for AuthError {
 #[derive(Clone, Debug)]
 pub(crate) enum VerifiedSession {
     /// Authenticated with a host-level token. Grants access to host-scoped
-    /// routes (dashboard, system management, brain CRUD).
+    /// routes (dashboard, host management, project CRUD).
     Host,
-    /// Authenticated with a brain-scoped project token. Grants access to
-    /// brain-scoped routes and (by implication) host-scoped routes.
+    /// Authenticated with a project-scoped project token. Grants access to
+    /// project-scoped routes and (by implication) host-scoped routes.
     Project {
-        /// The brain this token grants access to — resolved from the
+        /// The project this token grants access to — resolved from the
         /// ticket. Callers derive the full config from `ServerState`.
-        brain_name: BrainName,
+        project_name: ProjectName,
     },
 }
 
@@ -75,7 +75,7 @@ impl TicketVerifier {
         self.verify_project_token(token_str).await
     }
 
-    /// Validate a brain-scoped project token against the ticket store.
+    /// Validate a project-scoped project token against the ticket store.
     async fn verify_project_token(&self, token_str: &str) -> Result<VerifiedSession, AuthError> {
         let token = Token::from(token_str)
             .decode()
@@ -91,7 +91,7 @@ impl TicketVerifier {
             .map_err(|_| AuthError::InvalidToken)?
             .ok_or(AuthError::InvalidToken)?;
 
-        if ticket.actor_id != token.actor_id || ticket.brain_id != token.brain_id {
+        if ticket.actor_id != token.actor_id || ticket.project_id != token.project_id {
             return Err(AuthError::InvalidToken);
         }
 
@@ -100,7 +100,7 @@ impl TicketVerifier {
             .map_err(|_| AuthError::InvalidToken)?;
 
         Ok(VerifiedSession::Project {
-            brain_name: ticket.brain_name,
+            project_name: ticket.project_name,
         })
     }
 }
@@ -151,7 +151,7 @@ mod tests {
     fn test_config(dir: &std::path::Path) -> Config {
         Config::builder()
             .data_dir(dir.to_path_buf())
-            .brain(BrainName::new("test"))
+            .project(ProjectName::new("test"))
             .build()
     }
 
@@ -206,6 +206,6 @@ mod tests {
         );
     }
 
-    // Project token tests require a running system with tickets.
+    // Project token tests require a running host with tickets.
     // Those are exercised via integration tests in tests/acceptance/.
 }

@@ -32,7 +32,7 @@ impl BookmarkDocs {
                 .tag(tag)
                 .nickname("list-bookmarks")
                 .summary("List bookmarks")
-                .description("List all bookmarks known to the current brain.")
+                .description("List all bookmarks known to the current project.")
                 .build(),
             Self::Switch => ResourceDocs::builder()
                 .tag(tag)

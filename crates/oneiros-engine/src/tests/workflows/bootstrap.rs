@@ -1,4 +1,4 @@
-//! Bootstrap workflow — from nothing to a functioning brain.
+//! Bootstrap workflow — from nothing to a functioning project.
 //!
 //! This is the "hello world" of oneiros: initialize a system, create a
 //! project, seed the vocabulary, emerge an agent, and dream them into
@@ -12,7 +12,7 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
     // Start fresh — initialize the system, create a project, seed the vocabulary
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -91,8 +91,7 @@ async fn from_nothing_to_a_dreaming_agent() -> Result<(), Box<dyn core::error::E
 /// re-emitting events. The route is unauthenticated by design — this is the
 /// invariant that protects it from being usable as a takeover vector.
 #[tokio::test]
-async fn system_init_twice_returns_already_initialized() -> Result<(), Box<dyn core::error::Error>>
-{
+async fn host_init_twice_returns_already_initialized() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new().await?;
 
     let secret = HostKey::new(app.config().platform())
@@ -100,16 +99,16 @@ async fn system_init_twice_returns_already_initialized() -> Result<(), Box<dyn c
         .expect("host key should exist");
     let host_token = HostToken::generate(&secret);
     let host_client = Client::with_bearer(app.base_url(), &host_token.to_string())?;
-    let system = SystemClient::new(&host_client);
-    let request: InitSystem = InitSystem::builder_v1().name("test").build().into();
+    let host = HostClient::new(&host_client);
+    let request: InitHost = InitHost::builder_v1().name("test").build().into();
 
-    match system.init(&request).await? {
-        SystemResponse::SystemInitialized(_) => {}
+    match host.init(&request).await? {
+        HostResponse::HostInitialized(_) => {}
         other => panic!("first init should succeed, got {other:?}"),
     }
 
-    match system.init(&request).await? {
-        SystemResponse::HostAlreadyInitialized => {}
+    match host.init(&request).await? {
+        HostResponse::HostAlreadyInitialized => {}
         other => panic!("second init should refuse, got {other:?}"),
     }
 
@@ -118,7 +117,7 @@ async fn system_init_twice_returns_already_initialized() -> Result<(), Box<dyn c
 
 /// Setup orchestrates the full bootstrap through HTTP. With the server
 /// already running, setup discovers it (no install prompt), drives the
-/// init / seed sequence over HTTP, and the token issued by project init
+/// init / seed sequence over HTTP, and the token issued by project create
 /// authenticates the subsequent seed calls. The MCP step prompts in an
 /// interactive shell; in a non-interactive test it falls through to
 /// McpSkipped, leaving no `.mcp.json` side-effect.
@@ -148,8 +147,8 @@ async fn setup_drives_bootstrap_through_http() -> Result<(), Box<dyn core::error
     assert!(
         steps
             .iter()
-            .any(|s| matches!(s, SetupStep::SystemInitialized)),
-        "setup should report SystemInitialized, steps: {steps:?}"
+            .any(|s| matches!(s, SetupStep::HostInitialized)),
+        "setup should report HostInitialized, steps: {steps:?}"
     );
     assert!(
         steps
@@ -188,7 +187,7 @@ async fn setup_drives_bootstrap_through_http() -> Result<(), Box<dyn core::error
         LevelResponse::Levels(LevelsResponse::V1(levels)) => {
             assert!(
                 levels.items.len() >= 4,
-                "post-setup brain should have the seeded levels"
+                "post-setup project should have the seeded levels"
             );
         }
         other => panic!("expected Levels post-setup, got {other:?}"),
@@ -197,7 +196,7 @@ async fn setup_drives_bootstrap_through_http() -> Result<(), Box<dyn core::error
     Ok(())
 }
 
-/// Project init should produce a "main" bookmark in the system DB.
+/// Project init should produce a "main" bookmark in the host DB.
 ///
 /// Nothing implicit: if a resource exists, an event brought it into being
 /// and a projection row reflects it. The default bookmark is no exception.
@@ -205,7 +204,7 @@ async fn setup_drives_bootstrap_through_http() -> Result<(), Box<dyn core::error
 async fn project_init_creates_main_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;

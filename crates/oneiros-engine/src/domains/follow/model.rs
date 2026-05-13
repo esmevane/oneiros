@@ -19,7 +19,7 @@ pub(crate) struct Follow {
     #[builder(default)]
     pub(crate) id: FollowId,
     #[builder(into)]
-    pub(crate) brain: BrainName,
+    pub(crate) project: ProjectName,
     #[builder(into)]
     pub(crate) bookmark: BookmarkName,
     pub(crate) source: FollowSource,

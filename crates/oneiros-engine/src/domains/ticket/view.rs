@@ -13,7 +13,7 @@ impl TicketView {
         match self.response {
             TicketResponse::Created(TicketCreatedResponse::V1(created)) => {
                 let prompt =
-                    Confirmation::new("Ticket", created.ticket.brain_name.to_string(), "issued")
+                    Confirmation::new("Ticket", created.ticket.project_name.to_string(), "issued")
                         .to_string();
                 Rendered::new(
                     TicketResponse::Created(TicketCreatedResponse::V1(created)),
@@ -22,7 +22,7 @@ impl TicketView {
                 )
             }
             TicketResponse::Found(TicketFoundResponse::V1(found)) => {
-                let prompt = Detail::new(found.ticket.brain_name.to_string())
+                let prompt = Detail::new(found.ticket.project_name.to_string())
                     .field("actor_id:", found.ticket.actor_id.to_string())
                     .to_string();
                 Rendered::new(
@@ -34,7 +34,7 @@ impl TicketView {
             TicketResponse::Validated(TicketValidatedResponse::V1(validated)) => {
                 let prompt = Confirmation::new(
                     "Ticket",
-                    validated.ticket.brain_name.to_string(),
+                    validated.ticket.project_name.to_string(),
                     "validated",
                 )
                 .to_string();
@@ -45,10 +45,10 @@ impl TicketView {
                 )
             }
             TicketResponse::Listed(TicketsResponse::V1(listed)) => {
-                let mut table = Table::new(vec![Column::new("Brain"), Column::new("Actor")]);
+                let mut table = Table::new(vec![Column::new("Project"), Column::new("Actor")]);
                 for ticket in &listed.items {
                     table.push_row(vec![
-                        ticket.brain_name.to_string(),
+                        ticket.project_name.to_string(),
                         ticket.actor_id.to_string(),
                     ]);
                 }

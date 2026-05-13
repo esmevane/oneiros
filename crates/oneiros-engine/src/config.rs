@@ -9,13 +9,13 @@ use std::{net::SocketAddr, path::PathBuf};
 
 use crate::*;
 
-/// Detect the default brain name from the current working directory.
-fn detect_brain_name() -> BrainName {
+/// Detect the default project name from the current working directory.
+fn detect_project_name() -> ProjectName {
     let cwd = std::env::current_dir().unwrap_or_default();
 
     ProjectDetector::default()
         .detect(&cwd)
-        .map(|root| BrainName::new(root.name))
+        .map(|root| ProjectName::new(root.name))
         .unwrap_or_default()
 }
 
@@ -137,7 +137,7 @@ impl DatabaseCli {
     }
 }
 
-/// CLI overrides for general system configuration.
+/// CLI overrides for general host configuration.
 #[derive(Args, Debug, Clone, Serialize, Default)]
 pub(crate) struct GeneralCli {
     /// Default page size for paginated lists.
@@ -164,14 +164,14 @@ impl GeneralCli {
 /// "can't distinguish user default from clap default" limitation.
 #[derive(Parser, Debug, Clone, Serialize, Default)]
 pub(crate) struct CliOverrides {
-    /// Root directory for brain data.
+    /// Root directory for project data.
     #[arg(long, short, global = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) data_dir: Option<PathBuf>,
-    /// The brain (project) name.
+    /// The project name.
     #[arg(long, short, global = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) brain: Option<BrainName>,
+    pub(crate) project: Option<ProjectName>,
     /// The bookmark (lens) to operate through.
     #[arg(long, global = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -192,7 +192,7 @@ pub(crate) struct CliOverrides {
     #[command(flatten)]
     #[serde(skip_serializing_if = "DatabaseCli::is_empty")]
     pub(crate) database: DatabaseCli,
-    /// General system configuration overrides.
+    /// General host configuration overrides.
     #[command(flatten)]
     #[serde(skip_serializing_if = "GeneralCli::is_empty")]
     pub(crate) general: GeneralCli,
@@ -249,12 +249,12 @@ impl FetchCli {
 #[derive(Builder, Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub(crate) struct Config {
-    /// Root directory for brain data (blobs, exports, etc.)
+    /// Root directory for project data (blobs, exports, etc.)
     #[builder(default = default_data_dir())]
     pub(crate) data_dir: PathBuf,
-    /// The brain (project) name. Auto-detected from cwd if not specified.
-    #[builder(into, default = detect_brain_name())]
-    pub(crate) brain: BrainName,
+    /// The project name. Auto-detected from cwd if not specified.
+    #[builder(into, default = detect_project_name())]
+    pub(crate) project: ProjectName,
     /// The bookmark (lens) to operate through. Defaults to main.
     #[builder(into, default = BookmarkName::main())]
     pub(crate) bookmark: BookmarkName,
@@ -270,7 +270,7 @@ pub(crate) struct Config {
     /// Database tuning knobs.
     #[builder(default)]
     pub(crate) database: DatabaseConfig,
-    /// General system configuration.
+    /// General host configuration.
     #[builder(default)]
     pub(crate) general: GeneralConfig,
     /// Output format: prompt (default), json, or text.
@@ -288,7 +288,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             data_dir: default_data_dir(),
-            brain: detect_brain_name(),
+            project: detect_project_name(),
             bookmark: BookmarkName::main(),
             service: ServiceConfig::default(),
             dream: DreamConfig::default(),
@@ -318,27 +318,27 @@ impl Config {
         Platform::new(&self.data_dir)
     }
 
-    /// Open the system database.
-    pub(crate) fn system_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let conn = rusqlite::Connection::open(self.platform().system_db_path())?;
+    /// Open the host database.
+    pub(crate) fn host_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+        let conn = rusqlite::Connection::open(self.platform().host_db_path())?;
         conn.pragma_update(None, "journal_mode", "wal")?;
         Ok(conn)
     }
 
-    /// Path to the brain's event log database.
+    /// Path to the project's event log database.
     pub(crate) fn events_db_path(&self) -> PathBuf {
-        self.platform().events_db_path(&self.brain)
+        self.platform().events_db_path(&self.project)
     }
 
     /// Path to the bookmark's projection database.
     pub(crate) fn bookmark_db_path(&self) -> PathBuf {
         self.platform()
-            .bookmark_db_path(&self.brain, &self.bookmark)
+            .bookmark_db_path(&self.project, &self.bookmark)
     }
 
-    /// Directory containing all bookmark databases for this brain.
+    /// Directory containing all bookmark databases for this project.
     pub(crate) fn bookmarks_dir(&self) -> PathBuf {
-        self.platform().bookmarks_dir(&self.brain)
+        self.platform().bookmarks_dir(&self.project)
     }
 
     /// Open the bookmark DB as base with the events DB ATTACHed.
@@ -348,10 +348,10 @@ impl Config {
     /// Both share one connection and transaction for atomicity.
     pub(crate) fn bookmark_conn(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
         let platform = self.platform();
-        let _ = platform.ensure_bookmarks_dir(&self.brain);
+        let _ = platform.ensure_bookmarks_dir(&self.project);
 
         let conn =
-            rusqlite::Connection::open(platform.bookmark_db_path(&self.brain, &self.bookmark))?;
+            rusqlite::Connection::open(platform.bookmark_db_path(&self.project, &self.bookmark))?;
         conn.pragma_update(None, "journal_mode", "wal")?;
         conn.pragma_update(
             None,
@@ -361,17 +361,17 @@ impl Config {
 
         conn.execute_batch(&format!(
             "ATTACH DATABASE '{}' AS events",
-            platform.events_db_path(&self.brain).display(),
+            platform.events_db_path(&self.project).display(),
         ))?;
 
         Ok(conn)
     }
 
-    /// Read the token for the current brain, if one exists.
+    /// Read the token for the current project, if one exists.
     pub(crate) fn token(&self) -> Option<Token> {
         let platform = self.platform();
         platform
-            .read_to_string(platform.token_path(&self.brain))
+            .read_to_string(platform.token_path(&self.project))
             .ok()
             .map(|s| Token::from(s.trim()))
     }
@@ -454,7 +454,7 @@ mod tests {
     fn config_in(dir: &std::path::Path) -> Config {
         Config::builder()
             .data_dir(dir.to_path_buf())
-            .brain(BrainName::new("test"))
+            .project(ProjectName::new("test"))
             .build()
     }
 
@@ -765,7 +765,7 @@ address = "127.0.0.1:4000"
 
         let overrides = CliOverrides {
             data_dir: Some(dir.path().to_path_buf()),
-            brain: Some(BrainName::new("coverage-brain")),
+            project: Some(ProjectName::new("coverage-project")),
             bookmark: Some(BookmarkName::new("coverage-lens")),
             service: ServiceCli {
                 label: Some("com.test.coverage".into()),
@@ -801,7 +801,7 @@ address = "127.0.0.1:4000"
 
         // Every field from overrides should land in the resolved config
         assert_eq!(config.data_dir, dir.path().to_path_buf());
-        assert_eq!(config.brain, BrainName::new("coverage-brain"));
+        assert_eq!(config.project, ProjectName::new("coverage-project"));
         assert_eq!(config.bookmark, BookmarkName::new("coverage-lens"));
         assert_eq!(config.service.label, "com.test.coverage");
         assert_eq!(

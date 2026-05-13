@@ -69,9 +69,12 @@ mod tests {
         let actor_id = ActorId::new();
         Ticket::builder()
             .actor_id(actor_id)
-            .brain_name(BrainName::new("test-brain"))
-            .brain_id(BrainId::new())
-            .link(Link::new(Ref::brain(BrainId::new()), Token::from("token")))
+            .project_name(ProjectName::new("test-project"))
+            .project_id(ProjectId::new())
+            .link(Link::new(
+                Ref::project(ProjectId::new()),
+                Token::from("token"),
+            ))
             .granted_by(actor_id)
             .build()
     }
@@ -84,6 +87,30 @@ mod tests {
             &TicketEventsType::TicketRejected.to_string(),
             "ticket-rejected"
         );
+    }
+
+    #[test]
+    fn legacy_ticket_issued_with_brain_fields_decodes_via_v1() {
+        // Construct the legacy wire by serializing a current ticket and renaming
+        // `project_name`/`project_id` to `brain_name`/`brain_id`. Keeps the rest of
+        // the payload (`link`, `granted_by`, etc.) in whatever shape the current
+        // serde impl produces, so we're only testing the renamed-field path.
+        let ticket = sample_ticket();
+        let mut data = serde_json::to_value(&ticket).unwrap();
+        let obj = data.as_object_mut().unwrap();
+        let project_name = obj.remove("project_name").unwrap();
+        let project_id = obj.remove("project_id").unwrap();
+        obj.insert("brain_name".into(), project_name);
+        obj.insert("brain_id".into(), project_id);
+
+        let json = serde_json::json!({ "type": "ticket-issued", "data": data });
+        let event: TicketEvents = serde_json::from_value(json).expect("legacy decode");
+        let issued = match event {
+            TicketEvents::TicketIssued(inner) => inner.current().unwrap(),
+            other => panic!("expected TicketIssued, got {other:?}"),
+        };
+        assert_eq!(issued.ticket.project_name, ticket.project_name);
+        assert_eq!(issued.ticket.project_id, ticket.project_id);
     }
 
     #[test]
@@ -100,7 +127,7 @@ mod tests {
             "flatten must elide the ticket envelope on the wire"
         );
         assert_eq!(json["data"]["id"], ticket.id.to_string());
-        assert_eq!(json["data"]["brain_name"], "test-brain");
+        assert_eq!(json["data"]["project_name"], "test-project");
         assert!(json["data"].get("created_at").is_some());
     }
 }

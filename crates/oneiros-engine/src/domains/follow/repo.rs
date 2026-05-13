@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use crate::*;
 
-/// Follow read model — async queries against the system context.
+/// Follow read model — async queries against the host context.
 pub(crate) struct FollowRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
@@ -23,7 +23,7 @@ impl<'a> FollowRepo<'a> {
     pub(crate) async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare(
-            "select id, brain, bookmark, source, checkpoint, created_at \
+            "select id, project, bookmark, source, checkpoint, created_at \
              from follows where id = ?1",
         )?;
 
@@ -45,7 +45,7 @@ impl<'a> FollowRepo<'a> {
         };
 
         let mut stmt = db.prepare(
-            "SELECT id, brain, bookmark, source, checkpoint, created_at \
+            "SELECT id, project, bookmark, source, checkpoint, created_at \
              FROM follows ORDER BY created_at DESC LIMIT ?1 OFFSET ?2",
         )?;
 
@@ -63,16 +63,16 @@ impl<'a> FollowRepo<'a> {
 
     pub(crate) async fn for_bookmark(
         &self,
-        brain: &BrainName,
+        project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<Option<Follow>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare(
-            "select id, brain, bookmark, source, checkpoint, created_at \
-             from follows where brain = ?1 and bookmark = ?2",
+            "select id, project, bookmark, source, checkpoint, created_at \
+             from follows where project = ?1 and bookmark = ?2",
         )?;
 
-        let raw = stmt.query_row(params![brain.to_string(), bookmark.to_string()], read_row);
+        let raw = stmt.query_row(params![project.to_string(), bookmark.to_string()], read_row);
 
         match raw {
             Ok(row) => Ok(Some(follow_from_row(row)?)),
@@ -96,14 +96,14 @@ fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FollowRow> {
 }
 
 fn follow_from_row(
-    (id, brain, bookmark, source, checkpoint, created_at): FollowRow,
+    (id, project, bookmark, source, checkpoint, created_at): FollowRow,
 ) -> Result<Follow, EventError> {
     let source: FollowSource = serde_json::from_str(&source)?;
     let checkpoint: Checkpoint = serde_json::from_str(&checkpoint)?;
 
     Ok(Follow::builder()
         .id(id.parse::<FollowId>()?)
-        .brain(BrainName::new(brain))
+        .project(ProjectName::new(project))
         .bookmark(BookmarkName::new(bookmark))
         .source(source)
         .checkpoint(checkpoint)

@@ -12,7 +12,7 @@ impl<'a> TicketClient<'a> {
         Self { client }
     }
 
-    /// Issue a new ticket for the given actor and brain.
+    /// Issue a new ticket for the given actor and project.
     pub(crate) async fn issue(
         &self,
         issuance: &CreateTicket,

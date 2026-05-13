@@ -4,7 +4,9 @@ use crate::*;
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum ProjectCommands {
-    Init(InitProject),
+    Create(CreateProject),
+    Get(GetProject),
+    List(ListProjects),
     Export(ExportProject),
     Import(ImportProject),
     Replay,
@@ -15,14 +17,16 @@ impl ProjectCommands {
         &self,
         config: &Config,
     ) -> Result<Rendered<Responses>, ProjectError> {
+        let client = Client::from_config(config)?;
+        let project_client = ProjectClient::new(&client);
+
         let response: ProjectResponse = match self {
-            ProjectCommands::Init(initialization) => {
-                let client = Client::from_config(config)?;
-                ProjectClient::new(&client).init(initialization).await?
-            }
+            ProjectCommands::Create(creation) => project_client.create(creation).await?,
+            ProjectCommands::Get(lookup) => project_client.get(lookup).await?,
+            ProjectCommands::List(listing) => project_client.list(listing).await?,
             ProjectCommands::Export(exporting) => {
                 let scope = ComposeScope::new(config.clone())
-                    .bookmark(config.brain.clone(), config.bookmark.clone())?;
+                    .bookmark(config.project.clone(), config.bookmark.clone())?;
                 ProjectService::export(&scope, exporting).await?
             }
             ProjectCommands::Import(importing) => ProjectService::import(config, importing).await?,

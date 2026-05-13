@@ -10,7 +10,7 @@ pub(crate) async fn doctor_prompt<B: Backend>() -> TestResult {
     Ok(())
 }
 
-pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
+pub(crate) async fn reports_initialized_host<B: Backend>() -> TestResult {
     let harness = Harness::<B>::init_project().await?;
 
     let response = harness.exec_json("doctor").await?;
@@ -45,7 +45,7 @@ pub(crate) async fn reports_initialized_system<B: Backend>() -> TestResult {
     Ok(())
 }
 
-pub(crate) async fn reports_uninitialized_system<B: Backend>() -> TestResult {
+pub(crate) async fn reports_uninitialized_host<B: Backend>() -> TestResult {
     let harness = Harness::<B>::started().await?;
 
     let response = harness.exec_json("doctor").await?;

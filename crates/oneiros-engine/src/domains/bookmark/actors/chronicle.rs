@@ -1,7 +1,7 @@
 //! `BookmarkChronicleActor` — singleton that records stored events into
 //! the chronicle HAMT for any bookmark.
 //!
-//! First-time-seen `(brain, bookmark)` pairs are caught up by walking
+//! First-time-seen `(project, bookmark)` pairs are caught up by walking
 //! the project event log and recording each event. Subsequent `Record`
 //! messages add one event each. Chronicle insertion is idempotent on
 //! event id, so partial replay or duplicates are safe.
@@ -45,7 +45,7 @@ impl BookmarkChronicleInbox {
 
 pub(crate) struct BookmarkChronicleActor {
     canons: CanonIndex,
-    caught_up: HashSet<(BrainName, BookmarkName)>,
+    caught_up: HashSet<(ProjectName, BookmarkName)>,
 }
 
 impl BookmarkChronicleActor {
@@ -124,9 +124,9 @@ impl BookmarkChronicleActor {
 
     fn chronicle_for(
         &self,
-        brain: &BrainName,
+        project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<Chronicle, EventError> {
-        self.canons.bookmark_chronicle(brain, bookmark)
+        self.canons.bookmark_chronicle(project, bookmark)
     }
 }

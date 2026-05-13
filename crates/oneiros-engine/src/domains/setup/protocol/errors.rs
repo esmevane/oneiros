@@ -9,7 +9,7 @@ use crate::ErrorResponse;
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum SetupError {
     #[error(transparent)]
-    System(#[from] crate::SystemError),
+    Host(#[from] crate::HostError),
 
     #[error(transparent)]
     Project(#[from] crate::ProjectError),
@@ -19,9 +19,6 @@ pub(crate) enum SetupError {
 
     #[error(transparent)]
     McpConfig(#[from] crate::McpConfigError),
-
-    #[error(transparent)]
-    Service(#[from] crate::ServiceError),
 
     #[error(transparent)]
     HostKey(#[from] crate::HostKeyError),

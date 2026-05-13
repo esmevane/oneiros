@@ -76,7 +76,7 @@ versioned! {
 versioned! {
     pub(crate) enum BookmarkSwitched {
         V1 => {
-            pub(crate) brain: BrainName,
+            #[serde(alias = "brain")] pub(crate) project: ProjectName,
             pub(crate) name: BookmarkName,
         }
     }
@@ -85,7 +85,7 @@ versioned! {
 versioned! {
     pub(crate) enum BookmarkMerged {
         V1 => {
-            pub(crate) brain: BrainName,
+            #[serde(alias = "brain")] pub(crate) project: ProjectName,
             pub(crate) source: BookmarkName,
             pub(crate) target: BookmarkName,
         }
@@ -95,7 +95,7 @@ versioned! {
 versioned! {
     pub(crate) enum BookmarkShared {
         V1 => {
-            pub(crate) brain: BrainName,
+            #[serde(alias = "brain")] pub(crate) project: ProjectName,
             pub(crate) bookmark: BookmarkName,
             pub(crate) ticket_id: TicketId,
             pub(crate) shared_by: ActorId,
@@ -107,7 +107,7 @@ versioned! {
     pub(crate) enum BookmarkFollowed {
         V1 => {
             #[builder(default)] pub(crate) id: FollowId,
-            pub(crate) brain: BrainName,
+            #[serde(alias = "brain")] pub(crate) project: ProjectName,
             pub(crate) bookmark: BookmarkName,
             pub(crate) source: FollowSource,
             #[builder(default = Checkpoint::empty())] pub(crate) checkpoint: Checkpoint,
@@ -130,7 +130,7 @@ versioned! {
     pub(crate) enum BookmarkUnfollowed {
         V1 => {
             pub(crate) follow_id: FollowId,
-            pub(crate) brain: BrainName,
+            #[serde(alias = "brain")] pub(crate) project: ProjectName,
             pub(crate) bookmark: BookmarkName,
         }
     }
@@ -142,7 +142,7 @@ mod tests {
 
     fn sample_bookmark() -> Bookmark {
         Bookmark::builder()
-            .brain(BrainName::new("test-brain"))
+            .project(ProjectName::new("test-project"))
             .name(BookmarkName::new("main"))
             .build()
     }
@@ -182,7 +182,7 @@ mod tests {
         );
         assert_eq!(json["data"]["id"], bookmark.id.to_string());
         assert_eq!(json["data"]["name"], "main");
-        assert_eq!(json["data"]["brain"], "test-brain");
+        assert_eq!(json["data"]["project"], "test-project");
         assert!(json["data"].get("created_at").is_some());
     }
 
@@ -202,5 +202,44 @@ mod tests {
         );
         assert_eq!(json["data"]["id"], bookmark.id.to_string());
         assert_eq!(json["data"]["from"], "main");
+    }
+
+    #[test]
+    fn legacy_bookmark_created_with_brain_field_decodes_via_v1() {
+        let bookmark_id = BookmarkId::new();
+        let json = serde_json::json!({
+            "type": "bookmark-created",
+            "data": {
+                "id": bookmark_id.to_string(),
+                "brain": "legacy-project",
+                "name": "main",
+                "created_at": "2026-01-01T00:00:00Z"
+            }
+        });
+        let event: BookmarkEvents = serde_json::from_value(json).expect("legacy decode");
+        let created = match event {
+            BookmarkEvents::BookmarkCreated(inner) => inner.current().unwrap(),
+            other => panic!("expected BookmarkCreated, got {other:?}"),
+        };
+        assert_eq!(created.bookmark.project.as_str(), "legacy-project");
+        assert_eq!(created.bookmark.name.as_str(), "main");
+    }
+
+    #[test]
+    fn legacy_bookmark_switched_with_brain_field_decodes_via_v1() {
+        let json = serde_json::json!({
+            "type": "bookmark-switched",
+            "data": {
+                "brain": "legacy-project",
+                "name": "main"
+            }
+        });
+        let event: BookmarkEvents = serde_json::from_value(json).expect("legacy decode");
+        let switched = match event {
+            BookmarkEvents::BookmarkSwitched(inner) => inner.current().unwrap(),
+            other => panic!("expected BookmarkSwitched, got {other:?}"),
+        };
+        assert_eq!(switched.project.as_str(), "legacy-project");
+        assert_eq!(switched.name.as_str(), "main");
     }
 }

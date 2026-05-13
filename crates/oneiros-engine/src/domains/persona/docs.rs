@@ -40,7 +40,7 @@ impl PersonaDocs {
                 .tag(tag)
                 .nickname("remove-persona")
                 .summary("Remove a persona")
-                .description("Delete an agent category from the brain.")
+                .description("Delete an agent category from the project.")
                 .build(),
         }
     }

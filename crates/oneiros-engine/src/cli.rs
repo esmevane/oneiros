@@ -32,12 +32,12 @@ impl Cli {
 /// All CLI commands, unified under one tree.
 ///
 /// Each command variant knows which context it needs. The caller provides
-/// an `Engine` that holds both system and project contexts, and the
+/// an `Engine` that holds both host and project contexts, and the
 /// dispatch routes to the right one.
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
     #[command(subcommand)]
-    System(SystemCommands),
+    Host(HostCommands),
     #[command(subcommand)]
     Project(ProjectCommands),
 
@@ -55,8 +55,6 @@ pub(crate) enum Command {
     #[command(subcommand)]
     Actor(ActorCommands),
     #[command(subcommand)]
-    Brain(BrainCommands),
-    #[command(subcommand)]
     Ticket(TicketCommands),
     #[command(subcommand)]
     Peer(PeerCommands),
@@ -68,10 +66,6 @@ pub(crate) enum Command {
     /// Inspect follow records — bookmark/source links
     #[command(subcommand)]
     Follow(FollowCommands),
-
-    /// Install and start the service, or run it directly
-    #[command(subcommand)]
-    Service(ServiceCommands),
 
     /// Manage the agents within your continuity
     #[command(subcommand)]
@@ -125,12 +119,12 @@ pub(crate) enum Command {
 impl Command {
     /// Whether this command runs the long-lived HTTP server in-process.
     ///
-    /// Only `service run` boots the server here; every other command is a
+    /// Only `host run` boots the server here; every other command is a
     /// short-lived CLI client that issues HTTP requests to a running
     /// service. The two surfaces want different tracing defaults — see
     /// `support::logging::level`.
     pub(crate) fn is_server(&self) -> bool {
-        matches!(self, Command::Service(ServiceCommands::Run))
+        matches!(self, Command::Host(HostCommands::Run))
     }
 
     /// Execute a CLI command against the engine.
@@ -146,7 +140,6 @@ impl Command {
             Command::Agent(agent) => agent.execute(config).await?,
             Command::Bookmark(bookmark) => bookmark.execute(config).await?,
             Command::Follow(follow) => follow.execute(config).await?,
-            Command::Brain(brain) => brain.execute(config).await?,
             Command::Cognition(cognition) => cognition.execute(config).await?,
             Command::Connection(connection) => connection.execute(config).await?,
             Command::Continuity(continuity) => continuity.execute(config).await?,
@@ -163,10 +156,9 @@ impl Command {
             Command::Search(search) => search.execute(config).await?,
             Command::Seed(seed) => seed.execute(config).await?,
             Command::Sensation(sensation) => sensation.execute(config).await?,
-            Command::Service(service) => service.execute(config).await?,
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
             Command::Storage(storage) => storage.execute(config).await?,
-            Command::System(system) => system.execute(config).await?,
+            Command::Host(host) => host.execute(config).await?,
             Command::Tenant(tenant) => tenant.execute(config).await?,
             Command::Texture(texture) => texture.execute(config).await?,
             Command::Ticket(ticket) => ticket.execute(config).await?,
@@ -180,19 +172,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn service_run_is_the_server() {
-        let command = Command::Service(ServiceCommands::Run);
+    fn host_run_is_the_server() {
+        let command = Command::Host(HostCommands::Run);
         assert!(command.is_server());
     }
 
     #[test]
-    fn other_service_subcommands_are_clients() {
+    fn other_host_subcommands_are_clients() {
         for command in [
-            Command::Service(ServiceCommands::Install),
-            Command::Service(ServiceCommands::Uninstall),
-            Command::Service(ServiceCommands::Start),
-            Command::Service(ServiceCommands::Stop),
-            Command::Service(ServiceCommands::Status),
+            Command::Host(HostCommands::Install),
+            Command::Host(HostCommands::Uninstall),
+            Command::Host(HostCommands::Start),
+            Command::Host(HostCommands::Stop),
+            Command::Host(HostCommands::Status),
         ] {
             assert!(!command.is_server(), "{command:?} should be a CLI client");
         }

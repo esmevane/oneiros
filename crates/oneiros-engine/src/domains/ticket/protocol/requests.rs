@@ -12,7 +12,7 @@ versioned! {
             #[arg(long)]
             #[builder(into)] pub(crate) actor_id: ActorId,
             #[arg(long)]
-            #[builder(into)] pub(crate) brain_name: BrainName,
+            #[builder(into)] pub(crate) project_name: ProjectName,
         }
     }
 }

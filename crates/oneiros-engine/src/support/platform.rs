@@ -10,7 +10,8 @@ const AUTHOR: &str = "esmevane";
 const APP: &str = "oneiros";
 
 const CONFIG_FILE: &str = "config.toml";
-const SYSTEM_DB: &str = "system.db";
+const HOST_DB: &str = "host.db";
+const LEGACY_HOST_DB: &str = "system.db";
 const TICKETS_DIR: &str = "tickets";
 const BOOKMARKS_DIR: &str = "bookmarks";
 const EVENTS_DB: &str = "events.db";
@@ -25,7 +26,7 @@ pub(crate) enum PlatformError {
 /// directories they live in.
 ///
 /// Holds a single `data_dir` and answers all layout questions about
-/// the host: where the system DB lives, where each brain's events log
+/// the host: where the host DB lives, where each project's events log
 /// goes, where bookmark databases sit. Also owns the side of the
 /// substrate that touches the filesystem to ensure those directories
 /// exist.
@@ -71,8 +72,14 @@ impl Platform {
     }
 
     /// Path to the host's projection database.
-    pub(crate) fn system_db_path(&self) -> PathBuf {
-        self.data_dir.join(SYSTEM_DB)
+    pub(crate) fn host_db_path(&self) -> PathBuf {
+        self.data_dir.join(HOST_DB)
+    }
+
+    /// Pre-rename location of the host DB. Read by migrations to detect
+    /// whether the file rename still needs to happen.
+    pub(crate) fn legacy_host_db_path(&self) -> PathBuf {
+        self.data_dir.join(LEGACY_HOST_DB)
     }
 
     /// Directory where issued ticket tokens are persisted.
@@ -80,29 +87,33 @@ impl Platform {
         self.data_dir.join(TICKETS_DIR)
     }
 
-    /// Path to the cached token for a given brain.
-    pub(crate) fn token_path(&self, brain: &BrainName) -> PathBuf {
-        self.tickets_dir().join(format!("{brain}.token"))
+    /// Path to the cached token for a given project.
+    pub(crate) fn token_path(&self, project: &ProjectName) -> PathBuf {
+        self.tickets_dir().join(format!("{project}.token"))
     }
 
-    /// Directory holding all data for a given brain.
-    pub(crate) fn brain_dir(&self, brain: &BrainName) -> PathBuf {
-        self.data_dir.join(brain.as_str())
+    /// Directory holding all data for a given project.
+    pub(crate) fn project_dir(&self, project: &ProjectName) -> PathBuf {
+        self.data_dir.join(project.as_str())
     }
 
-    /// Path to a brain's append-only event log database.
-    pub(crate) fn events_db_path(&self, brain: &BrainName) -> PathBuf {
-        self.brain_dir(brain).join(EVENTS_DB)
+    /// Path to a project's append-only event log database.
+    pub(crate) fn events_db_path(&self, project: &ProjectName) -> PathBuf {
+        self.project_dir(project).join(EVENTS_DB)
     }
 
-    /// Directory holding all bookmark databases for a given brain.
-    pub(crate) fn bookmarks_dir(&self, brain: &BrainName) -> PathBuf {
-        self.brain_dir(brain).join(BOOKMARKS_DIR)
+    /// Directory holding all bookmark databases for a given project.
+    pub(crate) fn bookmarks_dir(&self, project: &ProjectName) -> PathBuf {
+        self.project_dir(project).join(BOOKMARKS_DIR)
     }
 
     /// Path to a specific bookmark's projection database.
-    pub(crate) fn bookmark_db_path(&self, brain: &BrainName, bookmark: &BookmarkName) -> PathBuf {
-        self.bookmarks_dir(brain).join(format!("{bookmark}.db"))
+    pub(crate) fn bookmark_db_path(
+        &self,
+        project: &ProjectName,
+        bookmark: &BookmarkName,
+    ) -> PathBuf {
+        self.bookmarks_dir(project).join(format!("{bookmark}.db"))
     }
 
     /// Ensure the data directory exists.
@@ -146,6 +157,25 @@ impl Platform {
         std::fs::remove_file(path)
     }
 
+    /// Atomically rename a file or directory.
+    pub(crate) fn rename(
+        &self,
+        from: impl AsRef<Path>,
+        to: impl AsRef<Path>,
+    ) -> std::io::Result<()> {
+        std::fs::rename(from, to)
+    }
+
+    /// Copy a regular file from one path to another, returning the
+    /// number of bytes copied.
+    pub(crate) fn copy(
+        &self,
+        from: impl AsRef<Path>,
+        to: impl AsRef<Path>,
+    ) -> std::io::Result<u64> {
+        std::fs::copy(from, to)
+    }
+
     /// Recursively remove a directory and its contents.
     #[allow(dead_code)]
     pub(crate) fn remove_dir_all(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
@@ -184,15 +214,15 @@ impl Platform {
         options.open(path)
     }
 
-    /// Ensure a brain's directory exists.
-    pub(crate) fn ensure_brain_dir(&self, brain: &BrainName) -> Result<(), PlatformError> {
-        std::fs::create_dir_all(self.brain_dir(brain))?;
+    /// Ensure a project's directory exists.
+    pub(crate) fn ensure_project_dir(&self, project: &ProjectName) -> Result<(), PlatformError> {
+        std::fs::create_dir_all(self.project_dir(project))?;
         Ok(())
     }
 
-    /// Ensure a brain's bookmarks directory exists.
-    pub(crate) fn ensure_bookmarks_dir(&self, brain: &BrainName) -> Result<(), PlatformError> {
-        std::fs::create_dir_all(self.bookmarks_dir(brain))?;
+    /// Ensure a project's bookmarks directory exists.
+    pub(crate) fn ensure_bookmarks_dir(&self, project: &ProjectName) -> Result<(), PlatformError> {
+        std::fs::create_dir_all(self.bookmarks_dir(project))?;
         Ok(())
     }
 
@@ -230,23 +260,23 @@ mod tests {
     #[test]
     fn explicit_data_dir_drives_layout() {
         let platform = Platform::new("/tmp/oneiros-test");
-        let brain = BrainName::new("alpha");
+        let project = ProjectName::new("alpha");
         let bookmark = BookmarkName::main();
 
         assert_eq!(
-            platform.system_db_path(),
-            Path::new("/tmp/oneiros-test/system.db")
+            platform.host_db_path(),
+            Path::new("/tmp/oneiros-test/host.db")
         );
         assert_eq!(
-            platform.brain_dir(&brain),
+            platform.project_dir(&project),
             Path::new("/tmp/oneiros-test/alpha")
         );
         assert_eq!(
-            platform.events_db_path(&brain),
+            platform.events_db_path(&project),
             Path::new("/tmp/oneiros-test/alpha/events.db")
         );
         assert_eq!(
-            platform.bookmark_db_path(&brain, &bookmark),
+            platform.bookmark_db_path(&project, &bookmark),
             Path::new("/tmp/oneiros-test/alpha/bookmarks/main.db")
         );
     }
@@ -264,18 +294,18 @@ mod tests {
     }
 
     #[test]
-    fn ensure_brain_and_bookmarks_dirs_are_idempotent() -> Result<(), PlatformError> {
+    fn ensure_project_and_bookmarks_dirs_are_idempotent() -> Result<(), PlatformError> {
         let dir = tempfile::tempdir().unwrap();
         let platform = Platform::new(dir.path());
-        let brain = BrainName::new("alpha");
+        let project = ProjectName::new("alpha");
 
-        platform.ensure_brain_dir(&brain)?;
-        platform.ensure_brain_dir(&brain)?; // idempotent
-        platform.ensure_bookmarks_dir(&brain)?;
-        platform.ensure_bookmarks_dir(&brain)?; // idempotent
+        platform.ensure_project_dir(&project)?;
+        platform.ensure_project_dir(&project)?; // idempotent
+        platform.ensure_bookmarks_dir(&project)?;
+        platform.ensure_bookmarks_dir(&project)?; // idempotent
 
-        assert!(platform.brain_dir(&brain).is_dir());
-        assert!(platform.bookmarks_dir(&brain).is_dir());
+        assert!(platform.project_dir(&project).is_dir());
+        assert!(platform.bookmarks_dir(&project).is_dir());
         Ok(())
     }
 }

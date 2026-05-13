@@ -7,9 +7,9 @@ async fn seeded_app() -> TestApp {
     TestApp::new()
         .await
         .expect("boot test app")
-        .init_system()
+        .init_host()
         .await
-        .expect("init system")
+        .expect("init host")
         .init_project()
         .await
         .expect("init project")

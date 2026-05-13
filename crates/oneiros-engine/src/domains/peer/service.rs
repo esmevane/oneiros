@@ -59,8 +59,8 @@ impl PeerService {
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
@@ -137,8 +137,8 @@ impl PeerService {
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
@@ -164,8 +164,8 @@ impl PeerService {
             )))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),

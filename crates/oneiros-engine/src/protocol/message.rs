@@ -6,13 +6,13 @@ use crate::*;
 /// dispatches by matching the variant chain.
 #[derive(Clone)]
 pub(crate) enum Message {
-    System(SystemMessage),
+    Host(HostMessage),
     Project(ProjectMessage),
     Bookmark(BookmarkMessage),
 }
 
 collects_enum!(
-    Message::System => SystemMessage,
+    Message::Host => HostMessage,
     Message::Project => ProjectMessage,
     Message::Bookmark => BookmarkMessage,
 );

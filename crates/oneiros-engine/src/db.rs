@@ -41,7 +41,7 @@ pub(crate) enum BookmarkDbError {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// HostDb — system.db (host-wide projections: brains, bookmarks,
+// HostDb — host.db (host-wide projections: projects, bookmarks,
 // chronicle, tickets, tenants, actors, peers, follows).
 // ─────────────────────────────────────────────────────────────────────
 
@@ -62,7 +62,7 @@ impl HostDb {
     /// have a scope handy.
     pub(crate) async fn open_with(platform: &Platform) -> Result<Self, HostDbError> {
         platform.ensure_data_dir()?;
-        let connection = rusqlite::Connection::open(platform.system_db_path())?;
+        let connection = rusqlite::Connection::open(platform.host_db_path())?;
         connection.pragma_update(None, "journal_mode", "wal")?;
         Ok(Self { connection })
     }
@@ -76,7 +76,7 @@ impl Deref for HostDb {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// EventsDb — append-only event log per brain.
+// EventsDb — append-only event log per project.
 // ─────────────────────────────────────────────────────────────────────
 
 pub(crate) struct EventsDb {
@@ -89,13 +89,13 @@ impl EventsDb {
         Self::open_with(&scope.config().platform(), &scope.project().name).await
     }
 
-    /// Open directly from a `Platform` + brain. Underlying primitive.
+    /// Open directly from a `Platform` + project. Underlying primitive.
     pub(crate) async fn open_with(
         platform: &Platform,
-        brain: &BrainName,
+        project: &ProjectName,
     ) -> Result<Self, EventsDbError> {
-        platform.ensure_brain_dir(brain)?;
-        let connection = rusqlite::Connection::open(platform.events_db_path(brain))?;
+        platform.ensure_project_dir(project)?;
+        let connection = rusqlite::Connection::open(platform.events_db_path(project))?;
         connection.pragma_update(None, "journal_mode", "wal")?;
         Ok(Self { connection })
     }
@@ -109,7 +109,7 @@ impl Deref for EventsDb {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// BookmarkDb — per-bookmark projection database with the brain's
+// BookmarkDb — per-bookmark projection database with the project's
 // events DB ATTACHed at `events`. Unqualified table names resolve to
 // the bookmark DB; event-log queries use the `events` schema.
 // ─────────────────────────────────────────────────────────────────────
@@ -131,21 +131,21 @@ impl BookmarkDb {
         .await
     }
 
-    /// Open directly from a `Platform` + brain + bookmark. Underlying
+    /// Open directly from a `Platform` + project + bookmark. Underlying
     /// primitive — used by the scope-form above and by tests.
     pub(crate) async fn open_with(
         platform: &Platform,
-        brain: &BrainName,
+        project: &ProjectName,
         bookmark: &BookmarkName,
         limit_attached: u32,
     ) -> Result<Self, BookmarkDbError> {
-        platform.ensure_bookmarks_dir(brain)?;
-        let connection = rusqlite::Connection::open(platform.bookmark_db_path(brain, bookmark))?;
+        platform.ensure_bookmarks_dir(project)?;
+        let connection = rusqlite::Connection::open(platform.bookmark_db_path(project, bookmark))?;
         connection.pragma_update(None, "journal_mode", "wal")?;
         connection.pragma_update(None, "limit_attached", limit_attached.to_string())?;
         connection.execute_batch(&format!(
             "ATTACH DATABASE '{}' AS events",
-            platform.events_db_path(brain).display(),
+            platform.events_db_path(project).display(),
         ))?;
         Ok(Self { connection })
     }
@@ -169,30 +169,30 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn host_db_opens_and_creates_system_db() {
+    async fn host_db_opens_and_creates_host_db() {
         let (_dir, platform) = test_platform();
         let _db = HostDb::open_with(&platform).await.unwrap();
-        assert!(platform.system_db_path().exists());
+        assert!(platform.host_db_path().exists());
     }
 
     #[tokio::test]
-    async fn events_db_opens_and_creates_brain_dir() {
+    async fn events_db_opens_and_creates_project_dir() {
         let (_dir, platform) = test_platform();
-        let brain = BrainName::new("alpha");
-        let _db = EventsDb::open_with(&platform, &brain).await.unwrap();
-        assert!(platform.brain_dir(&brain).is_dir());
-        assert!(platform.events_db_path(&brain).exists());
+        let project = ProjectName::new("alpha");
+        let _db = EventsDb::open_with(&platform, &project).await.unwrap();
+        assert!(platform.project_dir(&project).is_dir());
+        assert!(platform.events_db_path(&project).exists());
     }
 
     #[tokio::test]
     async fn bookmark_db_opens_with_events_attached() {
         let (_dir, platform) = test_platform();
-        let brain = BrainName::new("alpha");
+        let project = ProjectName::new("alpha");
         let bookmark = BookmarkName::main();
 
         // Pre-create events db so ATTACH points at a real file.
-        let _events = EventsDb::open_with(&platform, &brain).await.unwrap();
-        let db = BookmarkDb::open_with(&platform, &brain, &bookmark, 125)
+        let _events = EventsDb::open_with(&platform, &project).await.unwrap();
+        let db = BookmarkDb::open_with(&platform, &project, &bookmark, 125)
             .await
             .unwrap();
 

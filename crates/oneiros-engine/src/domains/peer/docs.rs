@@ -23,14 +23,14 @@ impl PeerDocs {
                 .nickname("add-peer")
                 .summary("Add a peer")
                 .description(
-                    "Register a remote brain as a peer, enabling event exchange and distribution.",
+                    "Register a remote project as a peer, enabling event exchange and distribution.",
                 )
                 .build(),
             Self::List => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("list-peers")
                 .summary("List peers")
-                .description("List all remote brains registered as peers of the current brain.")
+                .description("List all remote projects registered as peers of the current project.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
@@ -43,7 +43,7 @@ impl PeerDocs {
                 .nickname("remove-peer")
                 .summary("Remove a peer")
                 .description(
-                    "Deregister a remote brain as a peer, stopping further event exchange with it.",
+                    "Deregister a remote project as a peer, stopping further event exchange with it.",
                 )
                 .build(),
         }

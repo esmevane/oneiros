@@ -126,10 +126,10 @@ impl<T: Clone + Default> Projections<T> {
     }
 }
 
-impl Projections<BrainCanon> {
+impl Projections<ProjectCanon> {
     /// Apply a single event — projections, reducer, then sync
     /// reducer-computed pressures to SQLite.
-    pub(crate) fn apply_brain(
+    pub(crate) fn apply_project(
         &self,
         db: &rusqlite::Connection,
         event: &StoredEvent,
@@ -156,8 +156,8 @@ impl Projections<BrainCanon> {
         Ok(())
     }
 
-    /// Replay for brain projections — includes pressure sync at the end.
-    pub(crate) fn replay_brain(
+    /// Replay for project projections — includes pressure sync at the end.
+    pub(crate) fn replay_project(
         &self,
         db: &rusqlite::Connection,
         log: &EventLog,
@@ -168,10 +168,10 @@ impl Projections<BrainCanon> {
     }
 
     pub(crate) fn project() -> Self {
-        Self::project_with_pipeline(ReducerPipeline::brain())
+        Self::project_with_pipeline(ReducerPipeline::project())
     }
 
-    pub(crate) fn project_with_pipeline(pipeline: ReducerPipeline<BrainCanon>) -> Self {
+    pub(crate) fn project_with_pipeline(pipeline: ReducerPipeline<ProjectCanon>) -> Self {
         Self::new(
             &[
                 Frames::new(&[
@@ -200,19 +200,19 @@ impl Projections<BrainCanon> {
     }
 }
 
-impl Projections<SystemCanon> {
-    pub(crate) fn system() -> Self {
+impl Projections<HostCanon> {
+    pub(crate) fn host() -> Self {
         Self::new(
             &[Frames::new(&[
                 Frame::new(TenantProjections.all()),
                 Frame::new(ActorProjections.all()),
-                Frame::new(BrainProjections.all()),
+                Frame::new(ProjectProjections.all()),
                 Frame::new(TicketProjections.all()),
                 Frame::new(BookmarkProjections.all()),
                 Frame::new(PeerProjections.all()),
                 Frame::new(FollowProjections.all()),
             ])],
-            ReducerPipeline::system(),
+            ReducerPipeline::host(),
         )
     }
 }

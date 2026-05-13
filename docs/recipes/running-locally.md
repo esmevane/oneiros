@@ -6,7 +6,7 @@ The keys here are:
 
 - Running it on different ports
 - Pointing at different data directories
-- If you're running it off-project, giving it a `--brain` param so it uses that as the project name instead of inferring it
+- If you're running it off-project, giving it a `--project` param so it uses that as the project name instead of inferring it
 
 ## Why?
 
@@ -62,9 +62,9 @@ A pretty common reason to do this is to test out exports locally before doing an
 oneiros project export --target /tmp/export-dir
 
 # Import into the scratch install
-oneiros project import /tmp/export-dir/<brain>-<date>-export.jsonl \
+oneiros project import /tmp/export-dir/<project>-<date>-export.jsonl \
   --data-dir /tmp/oneiros-scratch \
-  --brain <brain>
+  --project <project>
 ```
 
 ## Peeking under the hood
@@ -72,16 +72,16 @@ oneiros project import /tmp/export-dir/<brain>-<date>-export.jsonl \
 Oneiros uses sqlite3 for persistence so you can take a gander at the databases if you like. It can be faster than using the CLI sometimes if you know where everything is, since you don't have to stand the server up to see what's in the db files.
 
 ```sh
-# See the event log for a given brain.
-sqlite3 /tmp/oneiros-scratch/<brain>/events.db \
+# See the event log for a given project.
+sqlite3 /tmp/oneiros-scratch/<project>/events.db \
   'select count(*) from events'
 
-# See the table schemas for the brain's "main" bookmark.
-sqlite3 /tmp/oneiros-scratch/<brain>/bookmarks/main.db \
+# See the table schemas for the project's "main" bookmark.
+sqlite3 /tmp/oneiros-scratch/<project>/bookmarks/main.db \
   '.tables'
 
-# See the total cognitions for the brain's "main" bookmark.
-sqlite3 /tmp/oneiros-scratch/<brain>/bookmarks/main.db \
+# See the total cognitions for the project's "main" bookmark.
+sqlite3 /tmp/oneiros-scratch/<project>/bookmarks/main.db \
   'select count(*) from cognitions'
 ```
 
@@ -89,6 +89,6 @@ sqlite3 /tmp/oneiros-scratch/<brain>/bookmarks/main.db \
 
 **`--address` is a no-op for local-DB commands.** `project import`, `project export`, and `project replay` open the data directory directly — they do not route through HTTP. Passing `--address 127.0.0.1:8081` on these commands does *not* send them to the instance on 8081. Use `--data-dir` to target a specific instance's data.
 
-**Brain name is auto-detected from cwd.** Running `oneiros project import foo.jsonl` from `/tmp` will create a brain called `tmp`. Pass `--brain <name>` explicitly when running from an unrelated directory, or `cd` into a directory whose basename matches the target brain.
+**Project name is auto-detected from cwd.** Running `oneiros project import foo.jsonl` from `/tmp` will create a project called `tmp`. Pass `--project <name>` explicitly when running from an unrelated directory, or `cd` into a directory whose basename matches the target project.
 
-**Ticket/token are per-instance.** An imported brain has no ticket on the destination until one is issued. HTTP queries against the imported brain will return `401 Missing authorization header` until a token is in place. Direct CLI commands that open the DB locally work regardless. You can conjure a token with `oneiros project init --brain <brain>`.
+**Ticket/token are per-instance.** An imported project has no ticket on the destination until one is issued. HTTP queries against the imported project will return `401 Missing authorization header` until a token is in place. Direct CLI commands that open the DB locally work regardless. You can conjure a token with `oneiros project create --project <project>`.

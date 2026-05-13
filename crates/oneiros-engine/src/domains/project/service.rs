@@ -5,46 +5,59 @@ use crate::*;
 pub(crate) struct ProjectService;
 
 impl ProjectService {
-    pub(crate) async fn init(
+    pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
-        request: &InitProject,
+        request: &CreateProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
-        let brain_name = details
+        let project_name = details
             .name
             .clone()
-            .unwrap_or_else(|| scope.config().brain.clone());
+            .unwrap_or_else(|| scope.config().project.clone());
 
-        if let Ok(BrainResponse::Found(_)) = BrainService::get(
+        if let Ok(ProjectResponse::Found(_)) = Self::get(
             scope,
-            &GetBrain::builder_v1()
-                .key(brain_name.clone())
+            &GetProject::builder_v1()
+                .key(project_name.clone())
                 .build()
                 .into(),
         )
         .await
         {
-            return Ok(ProjectResponse::BrainAlreadyExists(
-                BrainAlreadyExistsResponse::builder_v1()
-                    .brain_name(brain_name)
+            return Ok(ProjectResponse::ProjectAlreadyExists(
+                ProjectAlreadyExistsResponse::builder_v1()
+                    .project_name(project_name)
                     .build()
                     .into(),
             ));
         }
 
-        BrainService::create(
-            scope,
-            mailbox,
-            &CreateBrain::builder_v1()
-                .name(brain_name.clone())
-                .build()
-                .into(),
-        )
-        .await?;
+        let project = Project::builder().name(project_name.clone()).build();
+
+        let new_event = NewEvent::builder()
+            .data(Events::Project(ProjectEvents::ProjectCreated(
+                ProjectCreated::builder_v1()
+                    .project(project.clone())
+                    .build()
+                    .into(),
+            )))
+            .build();
+
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
+
+        let stored = ProjectRepo::new(scope)
+            .fetch(&project_name)
+            .await?
+            .ok_or_else(|| ProjectError::NotFound(project_name.clone()))?;
 
         let main_bookmark = Bookmark::builder()
-            .brain(brain_name.clone())
+            .project(project_name.clone())
             .name(BookmarkName::main())
             .build();
 
@@ -57,28 +70,23 @@ impl ProjectService {
             )))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
         ));
 
-        // Create the brain's database layout:
-        //   {brain_dir}/events.db         — event log (append-only)
-        //   {brain_dir}/bookmarks/main.db — projection tables for the default bookmark
         let platform = scope.config().platform();
-        let brain_dir = scope.config().data_dir.join(brain_name.as_str());
-        let bookmarks_dir = brain_dir.join("bookmarks");
+        let project_dir = scope.config().data_dir.join(project_name.as_str());
+        let bookmarks_dir = project_dir.join("bookmarks");
         platform.ensure_dir(&bookmarks_dir)?;
 
-        // Event log — standalone, no ATTACH needed during init.
-        let events_db = rusqlite::Connection::open(brain_dir.join("events.db"))?;
+        let events_db = rusqlite::Connection::open(project_dir.join("events.db"))?;
         events_db.pragma_update(None, "journal_mode", "wal")?;
         EventLog::new(&events_db).init()?;
         drop(events_db);
 
-        // Default bookmark projections — standalone during init.
         let bookmark_db = rusqlite::Connection::open(bookmarks_dir.join("main.db"))?;
         bookmark_db.pragma_update(None, "journal_mode", "wal")?;
         Projections::project().migrate(&bookmark_db)?;
@@ -96,7 +104,7 @@ impl ProjectService {
                 mailbox,
                 &CreateTicket::builder_v1()
                     .actor_id(actor.id)
-                    .brain_name(brain_name.clone())
+                    .project_name(project_name.clone())
                     .build()
                     .into(),
             )
@@ -112,42 +120,84 @@ impl ProjectService {
         };
 
         let tickets_dir = scope.config().data_dir.join("tickets");
-
         platform.ensure_dir(&tickets_dir)?;
 
-        let token_path = tickets_dir.join(format!("{brain_name}.token"));
-
+        let token_path = tickets_dir.join(format!("{project_name}.token"));
         platform.write(&token_path, format!("{token}"))?;
 
-        Ok(ProjectResponse::Initialized(
-            InitializedResponse::builder_v1()
-                .brain_name(brain_name)
+        Ok(ProjectResponse::Created(
+            ProjectCreatedResponse::builder_v1()
+                .project(stored)
                 .token(token)
                 .build()
                 .into(),
         ))
     }
 
+    pub(crate) async fn get(
+        scope: &Scope<AtHost>,
+        request: &GetProject,
+    ) -> Result<ProjectResponse, ProjectError> {
+        let GetProject::V1(lookup) = request;
+        let repo = ProjectRepo::new(scope);
+        let project = match &lookup.key {
+            ResourceKey::Key(name) => repo
+                .fetch(name)
+                .await?
+                .ok_or_else(|| ProjectError::NotFound(name.clone()))?,
+            ResourceKey::Ref(token) => {
+                let Ref::V0(resource) = token.inner().clone();
+                match resource {
+                    Resource::Project(id) => repo
+                        .fetch_by_id(&id)
+                        .await?
+                        .ok_or(ProjectError::NotFoundById(id))?,
+                    other => {
+                        return Err(ProjectError::Resolve(ResolveError::WrongKind {
+                            expected: "project",
+                            got: other.label(),
+                        }));
+                    }
+                }
+            }
+        };
+        Ok(ProjectResponse::Found(
+            ProjectFoundResponse::builder_v1()
+                .project(project)
+                .build()
+                .into(),
+        ))
+    }
+
+    pub(crate) async fn list(
+        scope: &Scope<AtHost>,
+        request: &ListProjects,
+    ) -> Result<ProjectResponse, ProjectError> {
+        let ListProjects::V1(listing) = request;
+        let listed = ProjectRepo::new(scope).list(&listing.filters).await?;
+        Ok(ProjectResponse::Listed(
+            ProjectsResponse::builder_v1()
+                .items(listed.items)
+                .total(listed.total)
+                .build()
+                .into(),
+        ))
+    }
+
     /// Export all events to a JSONL file in the target directory.
-    ///
-    /// When a `StorageSet` event is encountered, an ephemeral `BlobStored`
-    /// event is prepended carrying the binary content. This makes the export
-    /// portable — the receiving brain materializes the blob at import time
-    /// without persisting the ephemeral event to the log.
     pub(crate) async fn export(
         scope: &Scope<AtBookmark>,
         request: &ExportProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
         let target_dir = &details.target;
-        let project_name = &scope.config().brain;
+        let project_name = &scope.config().project;
         let db = BookmarkDb::open(scope).await?;
         let events = EventLog::attached(&db).load_all()?;
         let storage = StorageStore::new(&db);
 
         let mut buffer = String::new();
         for event in &events {
-            // Synthesize ephemeral BlobStored events for storage portability.
             if let Event::Known(Events::Storage(StorageEvents::StorageSet(set))) = &event.data
                 && let Ok(current) = set.current()
                 && let Ok(Some(blob)) = storage.get_blob(&current.entry.hash)
@@ -186,16 +236,6 @@ impl ProjectService {
     }
 
     /// Import events from a JSONL file and replay projections.
-    ///
-    /// Ephemeral events (like BlobStored) are materialized directly
-    /// at the import boundary — they never enter the event log.
-    /// Domain events are persisted normally, then all projections
-    /// are replayed to rebuild the read models.
-    /// Import is self-bootstrapping — the destination brain may not yet
-    /// be in the projection (system init without project init), so we
-    /// can't compose a `Scope<AtBookmark>` here. Take the platform +
-    /// brain + bookmark directly and open the bookmark DB via the
-    /// underlying primitive.
     pub(crate) async fn import(
         config: &Config,
         request: &ImportProject,
@@ -208,24 +248,17 @@ impl ProjectService {
 
         let db = BookmarkDb::open_with(
             &config.platform(),
-            &config.brain,
+            &config.project,
             &config.bookmark,
             config.database.limit_attached,
         )
         .await?;
         let log = EventLog::attached(&db);
-        let projections = Projections::<BrainCanon>::project();
+        let projections = Projections::<ProjectCanon>::project();
 
-        // Import is self-bootstrapping: a destination brain may have seen
-        // `system init` without `project init`, leaving the events DB and
-        // bookmark DB unmigrated. Running the migrations here is idempotent
-        // (CREATE TABLE IF NOT EXISTS) and makes import the correctness
-        // gate the versioning story relies on.
         log.init()?;
         projections.migrate(&db)?;
 
-        // Batch all inserts in a single transaction — without this,
-        // each INSERT is an implicit transaction with an fsync.
         db.execute_batch("BEGIN")?;
 
         let result = (|| -> Result<(), ProjectError> {
@@ -261,7 +294,7 @@ impl ProjectService {
         }
 
         let log = EventLog::attached(&db);
-        let replayed = projections.replay_brain(&db, &log)?;
+        let replayed = projections.replay_project(&db, &log)?;
 
         Ok(ProjectResponse::Imported(
             ImportedResponse::builder_v1()
@@ -273,20 +306,7 @@ impl ProjectService {
     }
 
     /// Replay all events through projections, rebuilding read models.
-    ///
-    /// Deletes the bookmark DB file first, then recreates it with the
-    /// current schema via `migrate()` before replaying all events.
-    /// This ensures schema changes are picked up — `CREATE TABLE IF NOT EXISTS`
-    /// alone cannot add columns to existing tables. The event log
-    /// (`events.db`) is untouched; projection data is always derivable
-    /// from events.
-    ///
-    /// Takes `&Config` rather than `&Scope<AtBookmark>` because the
-    /// bookmark DB file may be deleted mid-call — composing a scope
-    /// would fail the existence check.
     pub(crate) async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
-        // Ensure a clean schema by deleting the old bookmark DB.
-        // WAL sidecar files are silently cleaned up if present.
         let platform = config.platform();
         let db_path = config.bookmark_db_path();
         if db_path.exists() {
@@ -295,18 +315,17 @@ impl ProjectService {
         let _ = platform.remove_file(db_path.with_extension("db-wal"));
         let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
-        // Open a fresh DB, create tables with current schema, then replay.
         let db = BookmarkDb::open_with(
             &config.platform(),
-            &config.brain,
+            &config.project,
             &config.bookmark,
             config.database.limit_attached,
         )
         .await?;
-        let projections = Projections::<BrainCanon>::project();
+        let projections = Projections::<ProjectCanon>::project();
         projections.migrate(&db)?;
         let log = EventLog::attached(&db);
-        let replayed = projections.replay_brain(&db, &log)?;
+        let replayed = projections.replay_project(&db, &log)?;
 
         Ok(ProjectResponse::Replayed(
             ReplayedResponse::builder_v1()

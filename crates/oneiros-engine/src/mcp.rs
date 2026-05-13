@@ -5,7 +5,7 @@
 //!
 //! Session authentication: every MCP session must provide a valid
 //! `Authorization: Bearer <token>` header during the initialize handshake.
-//! The token resolves to the brain associated with the project. Sessions
+//! The token resolves to the project associated with the project. Sessions
 //! that fail to authenticate receive an informative error directing the
 //! agent to run `oneiros mcp init` in its project directory.
 
@@ -177,9 +177,9 @@ async fn read_resource(context: &ProjectLog, uri: &ResourceUri) -> Result<McpRes
 async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Option<Config> {
     let verifier = state.ticket_verifier();
     match verifier.verify(token_str).await {
-        Ok(VerifiedSession::Project { brain_name }) => {
+        Ok(VerifiedSession::Project { project_name }) => {
             let mut config = state.config().clone();
-            config.brain = brain_name;
+            config.project = project_name;
             Some(config)
         }
         _ => None,
@@ -450,7 +450,7 @@ impl ServerHandler for EngineToolBox {
                     ));
                 };
                 let scope = ComposeScope::new(config.clone())
-                    .bookmark(config.brain.clone(), config.bookmark.clone())
+                    .bookmark(config.project.clone(), config.bookmark.clone())
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 let request: DreamAgent = DreamAgent::builder_v1()

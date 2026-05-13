@@ -11,7 +11,7 @@ use crate::*;
 async fn vocabulary_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;

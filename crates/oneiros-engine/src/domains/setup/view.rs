@@ -34,17 +34,17 @@ impl SetupView {
 
         for step in steps {
             let line = match step {
-                SetupStep::SystemInitialized => {
-                    format!("  {} System initialized", "✓".success())
+                SetupStep::HostInitialized => {
+                    format!("  {} Host initialized", "✓".success())
                 }
-                SetupStep::SystemAlreadyInitialized => {
-                    format!("  {} System already initialized", "=".muted())
+                SetupStep::HostAlreadyInitialized => {
+                    format!("  {} Host already initialized", "=".muted())
                 }
                 SetupStep::ProjectInitialized(name) => {
-                    format!("  {} Brain '{}' created", "✓".success(), name)
+                    format!("  {} Project '{}' created", "✓".success(), name)
                 }
                 SetupStep::ProjectAlreadyExists(name) => {
-                    format!("  {} Brain '{}' already exists", "=".muted(), name)
+                    format!("  {} Project '{}' already exists", "=".muted(), name)
                 }
                 SetupStep::VocabularySeeded => {
                     format!("  {} Vocabulary seeded", "✓".success())

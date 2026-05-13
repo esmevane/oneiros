@@ -18,7 +18,7 @@ pub(crate) trait Backend: Sized {
     /// Create a new backend instance ready to execute commands.
     fn start() -> impl Future<Output = Result<Self, Box<dyn core::error::Error>>>;
 
-    /// Start the service. Required before executing brain-scoped commands.
+    /// Start the service. Required before executing project-scoped commands.
     fn start_service(&mut self) -> impl Future<Output = Result<(), Box<dyn core::error::Error>>>;
 
     /// Execute in JSON mode — returns typed data for structural assertions.
@@ -42,7 +42,7 @@ pub(crate) trait Backend: Sized {
 /// raw commands into meaningful setup steps. Test cases read like stories:
 ///
 /// ```ignore
-/// let harness = Harness::<MyBackend>::setup_system().await?;
+/// let harness = Harness::<MyBackend>::setup_host().await?;
 /// let harness = harness.init_project().await?;
 /// let response = harness.exec_json("level set session ...").await?;
 /// ```
@@ -51,38 +51,38 @@ pub(crate) struct Harness<B> {
 }
 
 impl<B: Backend> Harness<B> {
-    /// Create a bare harness — no system, no project. System-scope tests start here.
+    /// Create a bare harness — no system, no project. Host-scope tests start here.
     pub(crate) async fn started() -> Result<Self, Box<dyn core::error::Error>> {
         let backend = B::start().await?;
         Ok(Self { backend })
     }
 
-    /// Initialize the host system. After this, system-scoped commands work
-    /// (actor, brain, tenant, ticket).
-    pub(crate) async fn setup_system() -> Result<Self, Box<dyn core::error::Error>> {
+    /// Initialize the host system. After this, host-scoped commands work
+    /// (actor, project, tenant, ticket).
+    pub(crate) async fn setup_host() -> Result<Self, Box<dyn core::error::Error>> {
         let harness = Self::started().await?;
         harness
             .backend
-            .exec_json("system init --name test --yes")
+            .exec_json("host init --name test --yes")
             .await?;
         Ok(harness)
     }
 
     /// Start the backing service explicitly. Most tests don't need this —
-    /// `setup_system` starts the service automatically. Use for tests that
+    /// `setup_host` starts the service automatically. Use for tests that
     /// need fine-grained control over sequencing.
     pub(crate) async fn start_service(mut self) -> Result<Self, Box<dyn core::error::Error>> {
         self.backend.start_service().await?;
         Ok(self)
     }
 
-    /// Initialize a project brain. After this, brain-scoped commands work
+    /// Initialize a project. After this, project-scoped commands work
     /// (agents, cognitions, memories, vocabulary, etc.)
     pub(crate) async fn init_project() -> Result<Self, Box<dyn core::error::Error>> {
-        let harness = Self::setup_system().await?.start_service().await?;
+        let harness = Self::setup_host().await?.start_service().await?;
         harness
             .backend
-            .exec_json("project init --yes")
+            .exec_json("project create --yes")
             .await
             .map_err(|e| -> Box<dyn core::error::Error> { e.to_string().into() })?;
         Ok(harness)
@@ -136,7 +136,7 @@ impl Backend for EngineBackend {
         let dir = tempfile::TempDir::new()?;
         let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
-            .brain(BrainName::new("test-project"))
+            .project(ProjectName::new("test-project"))
             .service(
                 ServiceConfig::builder()
                     .address("127.0.0.1:0".parse()?)
@@ -221,23 +221,23 @@ fn shell_words(input: &str) -> Vec<String> {
 // ── Test registrations ──────────────────────────────────────────
 
 #[tokio::test]
-async fn system_init_creates_tenant_and_actor() -> TestResult {
-    cases::system::init_creates_tenant_and_actor::<EngineBackend>().await
+async fn host_init_creates_tenant_and_actor() -> TestResult {
+    cases::host::init_creates_tenant_and_actor::<EngineBackend>().await
 }
 
 #[tokio::test]
-async fn system_init_is_idempotent() -> TestResult {
-    cases::system::init_is_idempotent::<EngineBackend>().await
+async fn host_init_is_idempotent() -> TestResult {
+    cases::host::init_is_idempotent::<EngineBackend>().await
 }
 #[tokio::test]
-async fn system_init_prompt() -> TestResult {
-    cases::system::init_prompt::<EngineBackend>().await
+async fn host_init_prompt() -> TestResult {
+    cases::host::init_prompt::<EngineBackend>().await
 }
 
 // Tenant
 #[tokio::test]
-async fn tenant_list_after_system_init() -> TestResult {
-    cases::tenant::list_after_system_init::<EngineBackend>().await
+async fn tenant_list_after_host_init() -> TestResult {
+    cases::tenant::list_after_host_init::<EngineBackend>().await
 }
 #[tokio::test]
 async fn tenant_list_prompt() -> TestResult {
@@ -248,10 +248,10 @@ async fn tenant_create_dispatches_via_bus() -> TestResult {
     cases::tenant::create_dispatches_via_bus::<EngineBackend>().await
 }
 
-// Actor (system-scoped)
+// Actor (host-scoped)
 #[tokio::test]
-async fn actor_list_after_system_init() -> TestResult {
-    cases::actor::list_after_system_init::<EngineBackend>().await
+async fn actor_list_after_host_init() -> TestResult {
+    cases::actor::list_after_host_init::<EngineBackend>().await
 }
 #[tokio::test]
 async fn actor_list_prompt() -> TestResult {
@@ -263,22 +263,22 @@ async fn project_init_prompt() -> TestResult {
     cases::project::init_prompt::<EngineBackend>().await
 }
 #[tokio::test]
-async fn project_init_creates_brain() -> TestResult {
-    cases::project::init_creates_brain::<EngineBackend>().await
+async fn project_init_creates_project() -> TestResult {
+    cases::project::init_creates_project::<EngineBackend>().await
 }
 
-// Brain
+// Project
 #[tokio::test]
-async fn brain_list_after_project_init() -> TestResult {
-    cases::brain::list_after_project_init::<EngineBackend>().await
+async fn project_list_after_project_init() -> TestResult {
+    cases::project::list_after_project_init::<EngineBackend>().await
 }
 #[tokio::test]
-async fn brain_get_by_name() -> TestResult {
-    cases::brain::get_by_name::<EngineBackend>().await
+async fn project_get_by_name() -> TestResult {
+    cases::project::get_by_name::<EngineBackend>().await
 }
 #[tokio::test]
-async fn brain_list_prompt() -> TestResult {
-    cases::brain::list_prompt::<EngineBackend>().await
+async fn project_list_prompt() -> TestResult {
+    cases::project::list_prompt::<EngineBackend>().await
 }
 
 // Ticket
@@ -622,11 +622,11 @@ async fn status_returns_activity_table_json() -> TestResult {
 // Doctor
 #[tokio::test]
 async fn doctor_reports_initialized() -> TestResult {
-    cases::doctor::reports_initialized_system::<EngineBackend>().await
+    cases::doctor::reports_initialized_host::<EngineBackend>().await
 }
 #[tokio::test]
 async fn doctor_reports_uninitialized() -> TestResult {
-    cases::doctor::reports_uninitialized_system::<EngineBackend>().await
+    cases::doctor::reports_uninitialized_host::<EngineBackend>().await
 }
 #[tokio::test]
 async fn doctor_prompt() -> TestResult {
@@ -721,8 +721,8 @@ async fn export_import_preserves_storage() -> TestResult {
     cases::import_export::export_import_preserves_storage::<EngineBackend>().await
 }
 #[tokio::test]
-async fn import_bootstraps_fresh_brain() -> TestResult {
-    cases::import_export::import_bootstraps_fresh_brain::<EngineBackend>().await
+async fn import_bootstraps_fresh_project() -> TestResult {
+    cases::import_export::import_bootstraps_fresh_project::<EngineBackend>().await
 }
 
 // Pressure

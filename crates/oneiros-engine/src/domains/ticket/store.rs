@@ -29,8 +29,8 @@ impl<'a> TicketStore<'a> {
             "CREATE TABLE IF NOT EXISTS tickets (
                 id TEXT PRIMARY KEY,
                 actor_id TEXT NOT NULL,
-                brain_name TEXT NOT NULL,
-                brain_id TEXT NOT NULL DEFAULT '',
+                project_name TEXT NOT NULL,
+                project_id TEXT NOT NULL DEFAULT '',
                 token TEXT NOT NULL UNIQUE,
                 target TEXT NOT NULL DEFAULT '',
                 granted_by TEXT NOT NULL DEFAULT '',
@@ -48,15 +48,15 @@ impl<'a> TicketStore<'a> {
         let target = RefToken::new(ticket.link.target.clone()).to_string();
         self.conn.execute(
             "insert or replace into tickets (
-                id, actor_id, brain_name, brain_id, token, target, granted_by,
+                id, actor_id, project_name, project_id, token, target, granted_by,
                 expires_at, revoked_at, max_uses, uses, created_at
              )
              values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             params![
                 ticket.id.to_string(),
                 ticket.actor_id.to_string(),
-                ticket.brain_name.to_string(),
-                ticket.brain_id.to_string(),
+                ticket.project_name.to_string(),
+                ticket.project_id.to_string(),
                 ticket.link.token.as_str(),
                 target,
                 ticket.granted_by.to_string(),

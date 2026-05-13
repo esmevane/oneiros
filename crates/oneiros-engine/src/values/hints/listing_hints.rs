@@ -15,7 +15,7 @@ impl ListingHints {
         let agent = &self.agent;
         let mut hints = vec![Hint::inspect(
             format!("search {agent}"),
-            "Search across everything in the brain",
+            "Search across everything in the project",
         )];
 
         if self.has_more {

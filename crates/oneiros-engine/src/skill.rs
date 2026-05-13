@@ -38,7 +38,6 @@ impl SkillInventory {
         skills.extend(ActorSkills::all());
         skills.extend(AgentSkills::all());
         skills.extend(BookmarkSkills::all());
-        skills.extend(BrainSkills::all());
         skills.extend(CognitionSkills::all());
         skills.extend(ConnectionSkills::all());
         skills.extend(ContinuitySkills::all());
@@ -56,10 +55,9 @@ impl SkillInventory {
         skills.extend(SearchSkills::all());
         skills.extend(SeedSkills::all());
         skills.extend(SensationSkills::all());
-        skills.extend(ServiceSkills::all());
         skills.extend(SetupSkills::all());
         skills.extend(StorageSkills::all());
-        skills.extend(SystemSkills::all());
+        skills.extend(HostSkills::all());
         skills.extend(TenantSkills::all());
         skills.extend(TextureSkills::all());
         skills.extend(TicketSkills::all());

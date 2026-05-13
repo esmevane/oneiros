@@ -11,7 +11,7 @@ use crate::*;
 pub(crate) struct PressureState;
 
 impl PressureState {
-    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: ProjectCanon, event: &Events) -> ProjectCanon {
         // Track continuity timestamps before computing pressure
         Self::track_continuity(&mut canon, event);
 
@@ -62,12 +62,12 @@ impl PressureState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<ProjectCanon> {
         Reducer::new(Self::reduce)
     }
 
     /// Update continuity timestamps when we see lifecycle events.
-    fn track_continuity(canon: &mut BrainCanon, event: &Events) {
+    fn track_continuity(canon: &mut ProjectCanon, event: &Events) {
         match event {
             Events::Continuity(ContinuityEvents::Introspected(Introspected::V1(e))) => {
                 canon
@@ -98,7 +98,7 @@ impl PressureState {
     }
 
     /// Determine which agents need pressure recomputed for this event.
-    fn resolve_agents<'a>(canon: &'a BrainCanon, event: &Events) -> Vec<&'a Agent> {
+    fn resolve_agents<'a>(canon: &'a ProjectCanon, event: &Events) -> Vec<&'a Agent> {
         match event {
             Events::Cognition(CognitionEvents::CognitionAdded(CognitionAdded::V1(addition))) => {
                 canon
@@ -141,7 +141,7 @@ impl PressureState {
     }
 
     /// Build a set of all entity IDs referenced by any connection.
-    fn referenced_ids(canon: &BrainCanon) -> HashSet<String> {
+    fn referenced_ids(canon: &ProjectCanon) -> HashSet<String> {
         let mut ids = HashSet::new();
         for conn in canon.connections.values() {
             Self::collect_ref_id(&conn.from_ref, &mut ids);
@@ -164,7 +164,7 @@ impl PressureState {
     }
 
     fn compute_gauge(
-        canon: &BrainCanon,
+        canon: &ProjectCanon,
         referenced: &HashSet<String>,
         urge: &UrgeName,
         agent: &Agent,
@@ -193,7 +193,7 @@ impl PressureState {
     }
 
     fn compute_introspect(
-        canon: &BrainCanon,
+        canon: &ProjectCanon,
         agent_id: &AgentId,
         agent_name: &AgentName,
     ) -> IntrospectGauge {
@@ -252,7 +252,7 @@ impl PressureState {
     }
 
     fn compute_catharsis(
-        canon: &BrainCanon,
+        canon: &ProjectCanon,
         referenced: &HashSet<String>,
         agent_id: &AgentId,
         agent_name: &AgentName,
@@ -298,7 +298,7 @@ impl PressureState {
     }
 
     fn compute_recollect(
-        canon: &BrainCanon,
+        canon: &ProjectCanon,
         referenced: &HashSet<String>,
         agent_id: &AgentId,
     ) -> RecollectGauge {
@@ -344,7 +344,7 @@ impl PressureState {
         })
     }
 
-    fn compute_retrospect(canon: &BrainCanon, agent_id: &AgentId) -> RetrospectGauge {
+    fn compute_retrospect(canon: &ProjectCanon, agent_id: &AgentId) -> RetrospectGauge {
         let agent_memories: Vec<&Memory> = canon
             .memories
             .values()
@@ -398,8 +398,8 @@ impl PressureState {
 mod tests {
     use super::*;
 
-    fn seeded_canon() -> BrainCanon {
-        let mut canon = BrainCanon::default();
+    fn seeded_canon() -> ProjectCanon {
+        let mut canon = ProjectCanon::default();
 
         let agent = Agent::builder()
             .name("gov.process")

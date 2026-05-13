@@ -7,7 +7,7 @@
 //! Scope's transitions take pre-built data and verify trivial
 //! invariants (e.g. that a Pick name lives in the registry it was
 //! handed). Scope does NOT fetch from the filesystem or query the
-//! system DB. That work belongs to [`ComposeScope`], the factory
+//! host DB. That work belongs to [`ComposeScope`], the factory
 //! paired with scope at every callsite that wields it.
 //!
 //! Scope and ComposeScope are wielded together — same module, same
@@ -109,12 +109,12 @@ pub(crate) trait HasBookmark: HasProject {
 
 #[derive(Clone)]
 pub(crate) struct HostInfra {
-    pub(crate) projects: HashMap<BrainName, Arc<ProjectInfra>>,
+    pub(crate) projects: HashMap<ProjectName, Arc<ProjectInfra>>,
 }
 
 #[derive(Clone)]
 pub(crate) struct ProjectInfra {
-    pub(crate) name: BrainName,
+    pub(crate) name: ProjectName,
     pub(crate) bookmarks: HashMap<BookmarkName, Arc<BookmarkInfra>>,
 }
 
@@ -130,7 +130,7 @@ pub(crate) struct BookmarkInfra {
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum ScopeError {
     #[error("project not found in registry: {0}")]
-    ProjectNotFound(BrainName),
+    ProjectNotFound(ProjectName),
 
     #[error("bookmark not found in registry: {0}")]
     BookmarkNotFound(BookmarkName),
@@ -156,13 +156,16 @@ impl Scope<AtHost> {
     /// Advance to a specific project, verifying its name is in the
     /// host's registry. Caller assembled the registry; scope just
     /// guarantees the named project is among them.
-    pub(crate) fn verify_project(self, brain: BrainName) -> Result<Scope<AtProject>, ScopeError> {
+    pub(crate) fn verify_project(
+        self,
+        project: ProjectName,
+    ) -> Result<Scope<AtProject>, ScopeError> {
         let AtHost { config, host } = self.inner;
         let project = host
             .projects
-            .get(&brain)
+            .get(&project)
             .cloned()
-            .ok_or(ScopeError::ProjectNotFound(brain))?;
+            .ok_or(ScopeError::ProjectNotFound(project))?;
         Ok(Scope::wrap(AtProject { config, project }))
     }
 }
@@ -234,8 +237,8 @@ impl HasBookmark for Scope<AtBookmark> {
 //
 // Knows how to read filesystem, build Infra structs, and walk the
 // scope ladder. Lives wherever Scope is wielded. Today: filesystem
-// enumeration. Follow-up: intersect with system-DB projection tables
-// (BrainStore::list, BookmarkStore::list_for_brain) for authoritative
+// enumeration. Follow-up: intersect with host-DB projection tables
+// (ProjectStore::list, BookmarkStore::list_for_project) for authoritative
 // capability.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -248,8 +251,8 @@ impl ComposeScope {
         Self { config }
     }
 
-    /// Build a host-tier scope: validate `data_dir`, enumerate brain
-    /// directories, assemble HostInfra with each brain's resolved
+    /// Build a host-tier scope: validate `data_dir`, enumerate project
+    /// directories, assemble HostInfra with each project's resolved
     /// paths and (empty) bookmark map.
     pub(crate) fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
         let host = self.build_host_infra()?;
@@ -258,33 +261,33 @@ impl ComposeScope {
             .verify_host(Arc::new(host)))
     }
 
-    /// Build a project-tier scope for a specific brain. Climbs to
-    /// host, verifies the brain exists, enumerates its bookmarks,
+    /// Build a project-tier scope for a specific project. Climbs to
+    /// host, verifies the project exists, enumerates its bookmarks,
     /// and attaches the populated ProjectInfra.
-    pub(crate) fn project(&self, brain: BrainName) -> Result<Scope<AtProject>, ComposeError> {
+    pub(crate) fn project(&self, name: ProjectName) -> Result<Scope<AtProject>, ComposeError> {
         let mut host = self.build_host_infra()?;
         let project = host
             .projects
-            .remove(&brain)
-            .ok_or_else(|| ComposeError::Scope(ScopeError::ProjectNotFound(brain.clone())))?;
+            .remove(&name)
+            .ok_or_else(|| ComposeError::Scope(ScopeError::ProjectNotFound(name.clone())))?;
         let project = self.populate_bookmarks(&project)?;
-        host.projects.insert(brain.clone(), Arc::new(project));
+        host.projects.insert(name.clone(), Arc::new(project));
 
         let host_arc = Arc::new(host);
         let host_scope = Scope::empty()
             .with_config(self.config.clone())
             .verify_host(host_arc);
-        Ok(host_scope.verify_project(brain)?)
+        Ok(host_scope.verify_project(name)?)
     }
 
     /// Build a bookmark-tier scope. Climbs to project, verifies the
     /// bookmark exists, attaches.
     pub(crate) fn bookmark(
         &self,
-        brain: BrainName,
+        project: ProjectName,
         name: BookmarkName,
     ) -> Result<Scope<AtBookmark>, ComposeError> {
-        let project_scope = self.project(brain)?;
+        let project_scope = self.project(project)?;
         Ok(project_scope.verify_bookmark(name)?)
     }
 
@@ -297,16 +300,16 @@ impl ComposeScope {
             )));
         }
 
-        // Authoritative source: the `brains` projection in system DB.
-        // System recognizes a brain when an event made it real; the
+        // Authoritative source: the `projects` projection in host DB.
+        // The host recognizes a project when an event made it real; the
         // filesystem is the underlying medium. Intersection means
         // both must agree.
-        let conn = self.config.system_db()?;
-        let projection_names = BrainStore::new(&conn).list()?;
+        let conn = self.config.host_db()?;
+        let projection_names = ProjectStore::new(&conn).list()?;
 
         let mut projects = HashMap::new();
         for name in projection_names {
-            // System says the brain exists; verify it's actually
+            // The host says the project exists; verify it's actually
             // reachable on disk. Mismatch = orphan, exclude.
             if !platform.events_db_path(&name).exists() {
                 continue;
@@ -323,10 +326,10 @@ impl ComposeScope {
 
     fn populate_bookmarks(&self, project: &ProjectInfra) -> Result<ProjectInfra, ComposeError> {
         // Authoritative source: `bookmarks` projection scoped to
-        // brain. Filesystem must agree.
+        // project. Filesystem must agree.
         let platform = self.config.platform();
-        let conn = self.config.system_db()?;
-        let projection_names = BookmarkStore::new(&conn).list_for_brain(&project.name)?;
+        let conn = self.config.host_db()?;
+        let projection_names = BookmarkStore::new(&conn).list_for_project(&project.name)?;
 
         let mut bookmarks = HashMap::new();
         for name in projection_names {
@@ -361,42 +364,42 @@ mod tests {
         Config::builder().data_dir(dir.path().to_path_buf()).build()
     }
 
-    /// Seed a brain on both sides of the intersection: filesystem
-    /// (brain dir + events.db) AND projection (`brains` row).
-    fn seed_brain(config: &Config, name: &str) -> PathBuf {
+    /// Seed a project on both sides of the intersection: filesystem
+    /// (project dir + events.db) AND projection (`projects` row).
+    fn seed_project(config: &Config, name: &str) -> PathBuf {
         let platform = config.platform();
-        let brain_dir = config.data_dir.join(name);
-        platform.ensure_dir(&brain_dir).unwrap();
-        platform.write(brain_dir.join("events.db"), b"").unwrap();
+        let project_dir = config.data_dir.join(name);
+        platform.ensure_dir(&project_dir).unwrap();
+        platform.write(project_dir.join("events.db"), b"").unwrap();
 
-        let conn = config.system_db().unwrap();
-        BrainStore::new(&conn).migrate().unwrap();
+        let conn = config.host_db().unwrap();
+        ProjectStore::new(&conn).migrate().unwrap();
         conn.execute(
-            "insert or replace into brains (id, name, created_at) values (?1, ?2, ?3)",
-            rusqlite::params![format!("brain-{name}"), name, "2026-04-28T00:00:00"],
+            "insert or replace into projects (id, name, created_at) values (?1, ?2, ?3)",
+            rusqlite::params![format!("project-{name}"), name, "2026-04-28T00:00:00"],
         )
         .unwrap();
 
-        brain_dir
+        project_dir
     }
 
     /// Seed a bookmark on both sides: filesystem (`bookmarks/{name}.db`)
-    /// AND projection (`bookmarks` row scoped to brain).
-    fn seed_bookmark(config: &Config, brain: &str, name: &str) {
+    /// AND projection (`bookmarks` row scoped to project).
+    fn seed_bookmark(config: &Config, project: &str, name: &str) {
         let platform = config.platform();
-        let bookmarks_dir = config.data_dir.join(brain).join("bookmarks");
+        let bookmarks_dir = config.data_dir.join(project).join("bookmarks");
         platform.ensure_dir(&bookmarks_dir).unwrap();
         platform
             .write(bookmarks_dir.join(format!("{name}.db")), b"")
             .unwrap();
 
-        let conn = config.system_db().unwrap();
+        let conn = config.host_db().unwrap();
         BookmarkStore::new(&conn).migrate().unwrap();
         conn.execute(
-            "INSERT OR REPLACE INTO bookmarks (id, brain, name, created_at) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at) VALUES (?1, ?2, ?3, ?4)",
             rusqlite::params![
-                format!("bookmark-{brain}-{name}"),
-                brain,
+                format!("bookmark-{project}-{name}"),
+                project,
                 name,
                 "2026-04-28T00:00:00"
             ],
@@ -414,9 +417,9 @@ mod tests {
     }
 
     #[test]
-    fn project_compose_unknown_brain_errors() {
+    fn project_compose_unknown_project_errors() {
         let dir = TempDir::new().unwrap();
-        let result = ComposeScope::new(test_config(&dir)).project(BrainName::from("nope"));
+        let result = ComposeScope::new(test_config(&dir)).project(ProjectName::from("nope"));
         assert!(matches!(
             result,
             Err(ComposeError::Scope(ScopeError::ProjectNotFound(_)))
@@ -424,13 +427,13 @@ mod tests {
     }
 
     #[test]
-    fn project_compose_attaches_known_brain() -> Result<(), ComposeError> {
+    fn project_compose_attaches_known_project() -> Result<(), ComposeError> {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
-        seed_brain(&config, "alpha");
+        seed_project(&config, "alpha");
 
-        let scope = ComposeScope::new(config).project(BrainName::from("alpha"))?;
-        assert_eq!(scope.project().name, BrainName::from("alpha"));
+        let scope = ComposeScope::new(config).project(ProjectName::from("alpha"))?;
+        assert_eq!(scope.project().name, ProjectName::from("alpha"));
 
         Ok(())
     }
@@ -439,11 +442,11 @@ mod tests {
     fn bookmark_compose_picks_existing_bookmark() -> Result<(), ComposeError> {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
-        seed_brain(&config, "alpha");
+        seed_project(&config, "alpha");
         seed_bookmark(&config, "alpha", "main");
 
         let scope =
-            ComposeScope::new(config).bookmark(BrainName::from("alpha"), BookmarkName::main())?;
+            ComposeScope::new(config).bookmark(ProjectName::from("alpha"), BookmarkName::main())?;
         assert_eq!(scope.bookmark().name, BookmarkName::main());
         Ok(())
     }
@@ -452,10 +455,10 @@ mod tests {
     fn bookmark_compose_unknown_bookmark_errors() {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
-        seed_brain(&config, "alpha");
+        seed_project(&config, "alpha");
 
         let result = ComposeScope::new(config)
-            .bookmark(BrainName::from("alpha"), BookmarkName::from("nope"));
+            .bookmark(ProjectName::from("alpha"), BookmarkName::from("nope"));
         assert!(matches!(
             result,
             Err(ComposeError::Scope(ScopeError::BookmarkNotFound(_)))

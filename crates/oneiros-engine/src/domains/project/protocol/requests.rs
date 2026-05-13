@@ -8,16 +8,39 @@ use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
-    pub(crate) enum InitProject {
+    pub(crate) enum CreateProject {
         #[derive(clap::Args)]
         V1 => {
             #[arg(long)]
             #[builder(into)]
-            pub(crate) name: Option<BrainName>,
+            pub(crate) name: Option<ProjectName>,
             #[arg(long, short)]
             #[serde(default)]
             #[builder(default)]
             pub(crate) yes: bool,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum GetProject {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) key: ResourceKey<ProjectName>,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ListProjects {
+        #[derive(clap::Args)]
+        V1 => {
+            #[command(flatten)]
+            #[serde(flatten)]
+            #[builder(default)]
+            pub(crate) filters: SearchFilters,
         }
     }
 }
@@ -45,22 +68,11 @@ versioned! {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
-#[kinded(
-    kind = ProjectRequestType,
-    display = "kebab-case",
-    attrs(
-        expect(
-            clippy::enum_variant_names,
-            reason = "We use these for `type` notation in serde"
-        )
-    )
-)]
-#[expect(
-    clippy::enum_variant_names,
-    reason = "We use these for `type` notation in serde"
-)]
+#[kinded(kind = ProjectRequestType, display = "kebab-case")]
 pub(crate) enum ProjectRequest {
-    InitProject(InitProject),
+    CreateProject(CreateProject),
+    GetProject(GetProject),
+    ListProjects(ListProjects),
     ExportProject(ExportProject),
     ImportProject(ImportProject),
     ReplayProject,
@@ -73,7 +85,9 @@ mod tests {
     #[test]
     fn request_types_are_kebab_cased() {
         let cases = [
-            (ProjectRequestType::InitProject, "init-project"),
+            (ProjectRequestType::CreateProject, "create-project"),
+            (ProjectRequestType::GetProject, "get-project"),
+            (ProjectRequestType::ListProjects, "list-projects"),
             (ProjectRequestType::ExportProject, "export-project"),
             (ProjectRequestType::ImportProject, "import-project"),
             (ProjectRequestType::ReplayProject, "replay-project"),

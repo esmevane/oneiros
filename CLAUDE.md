@@ -25,5 +25,5 @@ Run `oneiros introspect governor.process` to summarize the session before contex
 
 If the service isn't running: `oneiros service run &`
 
-If the project brain doesn't exist: `oneiros project init && oneiros seed core`
+If the project doesn't exist: `oneiros project create && oneiros seed core`
 <!-- oneiros:end -->

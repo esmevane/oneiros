@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct LevelState;
 
 impl LevelState {
-    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: ProjectCanon, event: &Events) -> ProjectCanon {
         if let Events::Level(level_event) = event {
             match level_event {
                 LevelEvents::LevelSet(setting) => {
@@ -22,7 +22,7 @@ impl LevelState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<ProjectCanon> {
         Reducer::new(Self::reduce)
     }
 }
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn sets_and_removes_level() {
-        let canon = BrainCanon::default();
+        let canon = ProjectCanon::default();
         let name = LevelName::new("working");
         let level = Level::builder()
             .name(name.clone())

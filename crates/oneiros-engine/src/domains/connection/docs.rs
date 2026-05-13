@@ -28,7 +28,7 @@ impl ConnectionDocs {
                 .tag(tag)
                 .nickname("list-connections")
                 .summary("List connections")
-                .description("List all relationships visible to the current brain, optionally filtered by nature or entity.")
+                .description("List all relationships visible to the current project, optionally filtered by nature or entity.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-/// A named timeline within a brain's canon.
+/// A named timeline within a project's canon.
 ///
 /// Each bookmark points to a forked LoroDoc — an independent
 /// line of development. The default bookmark is "main".
@@ -12,7 +12,8 @@ use crate::*;
 pub(crate) struct Bookmark {
     #[builder(default)]
     pub(crate) id: BookmarkId,
-    pub(crate) brain: BrainName,
+    #[serde(alias = "brain")]
+    pub(crate) project: ProjectName,
     #[builder(into)]
     pub(crate) name: BookmarkName,
     #[builder(default = Timestamp::now())]

@@ -9,8 +9,10 @@ pub(crate) struct Ticket {
     #[builder(default, into)]
     pub(crate) id: TicketId,
     pub(crate) actor_id: ActorId,
-    pub(crate) brain_name: BrainName,
-    pub(crate) brain_id: BrainId,
+    #[serde(alias = "brain_name")]
+    pub(crate) project_name: ProjectName,
+    #[serde(alias = "brain_id")]
+    pub(crate) project_id: ProjectId,
     /// Target + token bundled. The target is a `Ref` pointing at what this
     /// ticket grants access to; the token is the self-describing bearer
     /// credential presented during auth.

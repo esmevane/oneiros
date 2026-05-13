@@ -8,7 +8,7 @@ use crate::*;
 ///
 /// - **`Local(Ref)`** — the source is resolvable within the current host's
 ///   `CanonIndex`. No transport, no ticket. Used for same-host follows
-///   (whether same-brain or different-brain on this system).
+///   (whether same-project or different-project on this system).
 /// - **`Peer(PeerLink)`** — the source is on another host, reached via
 ///   iroh transport through the Bridge. The PeerLink carries both the host
 ///   address and the authorization token.

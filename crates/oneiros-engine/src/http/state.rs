@@ -7,7 +7,7 @@ use crate::*;
 
 /// Shared state for the HTTP server.
 ///
-/// Carries the system context (always available) and resolves brain
+/// Carries the host context (always available) and resolves project
 /// context per-request via Bearer token.
 #[derive(Clone)]
 pub(crate) struct ServerState {
@@ -73,7 +73,7 @@ impl ServerState {
         self.bridge.host_identity()
     }
 
-    /// The bookmark registry — shared state for all brains.
+    /// The bookmark registry — shared state for all projects.
     pub(crate) fn canons(&self) -> &CanonIndex {
         &self.canons
     }
@@ -81,7 +81,9 @@ impl ServerState {
     /// Hydrate reducer pipelines and chronicles from event logs.
     /// Best-effort — skips databases that don't exist yet (pre-init).
     pub(crate) fn hydrate(&self) {
-        let _ = self.canons.hydrate_brain(&self.config, &self.config.brain);
+        let _ = self
+            .canons
+            .hydrate_project(&self.config, &self.config.project);
     }
 
     /// The server configuration.
@@ -89,9 +91,9 @@ impl ServerState {
         &self.config
     }
 
-    /// The brain name from the server config.
-    pub(crate) fn brain_name(&self) -> &BrainName {
-        &self.config.brain
+    /// The project name from the server config.
+    pub(crate) fn project_name(&self) -> &ProjectName {
+        &self.config.project
     }
 
     /// Build a project context for a request. Strangler — used by the
@@ -160,8 +162,12 @@ impl axum::response::IntoResponse for ScopeExtractError {
 
 /// Resolve the bookmark for a request from the `X-Bookmark` header or
 /// `?bookmark=` query parameter. Falls back to the active bookmark for
-/// the given brain, or `main` if none is active.
-fn resolve_bookmark(parts: &Parts, state: &ServerState, brain_name: &BrainName) -> BookmarkName {
+/// the given project, or `main` if none is active.
+fn resolve_bookmark(
+    parts: &Parts,
+    state: &ServerState,
+    project_name: &ProjectName,
+) -> BookmarkName {
     let from_header_or_query = parts
         .headers
         .get("x-bookmark")
@@ -179,7 +185,7 @@ fn resolve_bookmark(parts: &Parts, state: &ServerState, brain_name: &BrainName) 
 
     state
         .canons()
-        .active_bookmark(brain_name)
+        .active_bookmark(project_name)
         .unwrap_or_else(|_| BookmarkName::main())
 }
 
@@ -200,18 +206,18 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
             .get::<VerifiedSession>()
             .ok_or(AuthError::NoAuthHeader)?;
 
-        let brain_name = match session {
+        let project_name = match session {
             VerifiedSession::Host => return Err(AuthError::InvalidToken),
-            VerifiedSession::Project { brain_name } => brain_name.clone(),
+            VerifiedSession::Project { project_name } => project_name.clone(),
         };
 
-        let bookmark = resolve_bookmark(parts, state, &brain_name);
+        let bookmark = resolve_bookmark(parts, state, &project_name);
         let mut config = state.config().clone();
-        config.brain = brain_name;
+        config.project = project_name;
         config.bookmark = bookmark;
 
         let scope = ComposeScope::new(config.clone())
-            .bookmark(config.brain.clone(), config.bookmark.clone())
+            .bookmark(config.project.clone(), config.bookmark.clone())
             .map_err(|_| AuthError::InvalidToken)?;
         Ok(scope)
     }
@@ -225,7 +231,7 @@ impl FromRequestParts<ServerState> for ProjectLog {
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
         // Read the verified session from extensions (set by auth middleware).
-        // ProjectLog requires a project token — it carries the brain-scoped
+        // ProjectLog requires a project token — it carries the project-scoped
         // config that MCP dispatch and HTTP handlers use.
         let session = parts
             .extensions
@@ -234,10 +240,10 @@ impl FromRequestParts<ServerState> for ProjectLog {
 
         let config = match session {
             VerifiedSession::Host => return Err(AuthError::InvalidToken),
-            VerifiedSession::Project { brain_name } => {
-                let bookmark = resolve_bookmark(parts, state, brain_name);
+            VerifiedSession::Project { project_name } => {
+                let bookmark = resolve_bookmark(parts, state, project_name);
                 let mut c = state.config().clone();
-                c.brain = brain_name.clone();
+                c.project = project_name.clone();
                 c.bookmark = bookmark;
                 c
             }

@@ -40,7 +40,7 @@ Memories crystallize from accumulated impressions. Don't rush this — an impres
 
 Personas define what kind of agent you are. An agent belongs to a persona, and the persona's prompt provides shared context to all agents in that category. Agent names follow the convention `agent.persona` (e.g. `governor.process`).
 
-The core seed installs the `process` persona and the `governor.process` agent. The brain's ecology grows as new personas and agents are added.
+The core seed installs the `process` persona and the `governor.process` agent. The project's ecology grows as new personas and agents are added.
 
 ## Practice — When to Notice
 
@@ -97,4 +97,4 @@ Each agent dreams independently. The governor agent orchestrates by:
 3. Coordinating work through cognitions and memories
 4. Ensuring all agents introspect before compaction
 
-Agents share a brain but maintain independent cognitive streams. The governor reads coordination-level information; each agent keeps its detailed context private.
+Agents share a project but maintain independent cognitive streams. The governor reads coordination-level information; each agent keeps its detailed context private.

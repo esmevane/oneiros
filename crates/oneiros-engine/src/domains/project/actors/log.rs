@@ -1,5 +1,5 @@
 //! `ProjectLogActor` — singleton that owns the events.db append for any
-//! brain. After appending, emits two follow-up messages addressed to
+//! project. After appending, emits two follow-up messages addressed to
 //! the bookmark projections and bookmark chronicle actors.
 //!
 //! Stateless across messages: the scope on each `LogAppend` opens the

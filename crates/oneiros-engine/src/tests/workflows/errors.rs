@@ -13,7 +13,7 @@ use crate::*;
 async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -57,7 +57,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
             .list(&ListTenants::builder_v1().build().into())
             .await
             .is_err(),
-        "system routes should reject unauthenticated requests"
+        "host routes should reject unauthenticated requests"
     );
 
     Ok(())
@@ -67,7 +67,7 @@ async fn auth_boundaries() -> Result<(), Box<dyn core::error::Error>> {
 async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -259,7 +259,7 @@ async fn missing_entities() -> Result<(), Box<dyn core::error::Error>> {
 async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -379,7 +379,7 @@ async fn invalid_references() -> Result<(), Box<dyn core::error::Error>> {
 async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -414,15 +414,28 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
     );
 
     client
-        .brain()
-        .create(&CreateBrain::builder_v1().name("dupe-brain").build().into())
+        .project()
+        .create(
+            &CreateProject::builder_v1()
+                .name("dupe-project")
+                .build()
+                .into(),
+        )
         .await?;
 
-    let result = client
-        .brain()
-        .create(&CreateBrain::builder_v1().name("dupe-brain").build().into())
-        .await;
-    assert!(result.is_err(), "duplicate brain should conflict");
+    let response = client
+        .project()
+        .create(
+            &CreateProject::builder_v1()
+                .name("dupe-project")
+                .build()
+                .into(),
+        )
+        .await?;
+    assert!(
+        matches!(response, ProjectResponse::ProjectAlreadyExists(_)),
+        "duplicate project should surface ProjectAlreadyExists, got {response:?}"
+    );
 
     app.command(r#"persona set custom --description "First" --prompt """#)
         .await?;
@@ -456,7 +469,7 @@ async fn duplicate_entities() -> Result<(), Box<dyn core::error::Error>> {
 async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -486,7 +499,7 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
         )
         .await;
 
-    // After all the remove attempts, the system should still be functional
+    // After all the remove attempts, the host should still be functional
     app.command(r#"level set working --description "Still works" --prompt """#)
         .await?;
 

@@ -20,13 +20,13 @@ impl SeedDocs {
                 .tag(tag)
                 .nickname("seed-core")
                 .summary("Seed core vocabulary")
-                .description("Plant the foundational textures, sensations, urges, and personas into the brain.")
+                .description("Plant the foundational textures, sensations, urges, and personas into the project.")
                 .build(),
             Self::SeedAgents => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("seed-agents")
                 .summary("Seed agents")
-                .description("Plant a default set of agents into the brain to bootstrap cognition.")
+                .description("Plant a default set of agents into the project to bootstrap cognition.")
                 .build(),
         }
     }

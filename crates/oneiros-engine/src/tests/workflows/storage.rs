@@ -11,7 +11,7 @@ use crate::*;
 async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -61,7 +61,7 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
         other => panic!("expected Entries, got {other:?}"),
     }
 
-    // Remove — metadata gone, system still functional
+    // Remove — metadata gone, host still functional
     client
         .storage()
         .remove(
@@ -101,7 +101,7 @@ async fn storage_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 async fn storage_via_cli() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -142,7 +142,7 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
     // Instance A: upload content
     let app_a = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -196,7 +196,7 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
     // Instance B: import
     let app_b = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -234,7 +234,7 @@ async fn storage_content_survives_export_import() -> Result<(), Box<dyn core::er
 async fn storage_path_like_keys() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
