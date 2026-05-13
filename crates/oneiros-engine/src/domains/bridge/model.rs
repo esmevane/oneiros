@@ -119,12 +119,12 @@ impl Bridge {
                             }
                         }
                         BridgeResponse::BridgeDenied(d) => {
-                            return Err(BridgeError::Denied(d.reason));
+                            return Err(DenyReason::Remote(d.reason.into()).into());
                         }
                         _ => {
-                            return Err(BridgeError::Protocol(
-                                "expected bridge-nodes response for resolve request".into(),
-                            ));
+                            return Err(
+                                BridgeProtocolError::UnexpectedResponse(BridgeOp::Resolve).into()
+                            );
                         }
                     }
                 }
@@ -148,10 +148,8 @@ impl Bridge {
                     missing,
                 })
             }
-            BridgeResponse::BridgeDenied(d) => Err(BridgeError::Denied(d.reason)),
-            _ => Err(BridgeError::Protocol(
-                "expected bridge-current or bridge-root-node response for diff request".into(),
-            )),
+            BridgeResponse::BridgeDenied(d) => Err(DenyReason::Remote(d.reason.into()).into()),
+            _ => Err(BridgeProtocolError::UnexpectedResponse(BridgeOp::Diff).into()),
         }
     }
 
@@ -167,10 +165,8 @@ impl Bridge {
         match response {
             BridgeResponse::BridgeEvents(be) => Ok(be.events),
             BridgeResponse::BridgeCurrent => Ok(Vec::new()),
-            BridgeResponse::BridgeDenied(d) => Err(BridgeError::Denied(d.reason)),
-            _ => Err(BridgeError::Protocol(
-                "expected bridge-events response for fetch-events request".into(),
-            )),
+            BridgeResponse::BridgeDenied(d) => Err(DenyReason::Remote(d.reason.into()).into()),
+            _ => Err(BridgeProtocolError::UnexpectedResponse(BridgeOp::FetchEvents).into()),
         }
     }
 
@@ -210,14 +206,11 @@ impl Bridge {
         conn.close(0u32.into(), b"done");
 
         if response_bytes.len() > MAX_MESSAGE_SIZE {
-            return Err(BridgeError::Protocol(format!(
-                "response too large: {} bytes",
-                response_bytes.len()
-            )));
+            return Err(BridgeProtocolError::ResponseTooLarge(response_bytes.len()).into());
         }
 
         BridgeResponse::from_bytes(&response_bytes)
-            .map_err(|e| BridgeError::Protocol(e.to_string()))
+            .map_err(|e| BridgeProtocolError::Decode(e).into())
     }
 
     /// Low-level transport: connect, write request, read response bytes.
