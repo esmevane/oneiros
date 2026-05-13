@@ -177,7 +177,7 @@ async fn read_resource(context: &ProjectLog, uri: &ResourceUri) -> Result<McpRes
 async fn resolve_config_from_token(state: &ServerState, token_str: &str) -> Option<Config> {
     let verifier = state.ticket_verifier();
     match verifier.verify(token_str).await {
-        Ok(VerifiedSession::Project { project_name }) => {
+        Ok(VerifiedSession::Project(project_name)) => {
             let mut config = state.config().clone();
             config.project = project_name;
             Some(config)
