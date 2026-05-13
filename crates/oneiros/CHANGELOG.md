@@ -96,8 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- oneiros project init
-- System init, readme, migrations.
+- oneiros project create
+- Host init, readme, migrations.
 - Project detection
 
 ### Other

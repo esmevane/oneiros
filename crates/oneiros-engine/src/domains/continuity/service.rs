@@ -423,7 +423,7 @@ impl ContinuityService {
 
         let agent_id_str = agent.id.to_string();
 
-        // Vocabulary — system-wide
+        // Vocabulary — host-wide
         let textures = TextureStore::new(&db).list()?;
         let levels = LevelStore::new(&db).list()?;
         let sensations = SensationStore::new(&db).list()?;

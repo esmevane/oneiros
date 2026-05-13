@@ -9,19 +9,19 @@ impl FollowService {
     pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
-        brain: BrainName,
+        project: ProjectName,
         bookmark: BookmarkName,
         source: FollowSource,
     ) -> Result<Follow, FollowError> {
         let follow = Follow::builder()
-            .brain(brain)
+            .project(project)
             .bookmark(bookmark)
             .source(source)
             .build();
 
         let event = BookmarkFollowed::builder_v1()
             .id(follow.id)
-            .brain(follow.brain.clone())
+            .project(follow.project.clone())
             .bookmark(follow.bookmark.clone())
             .source(follow.source.clone())
             .checkpoint(follow.checkpoint.clone())
@@ -34,8 +34,8 @@ impl FollowService {
             )))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
@@ -58,15 +58,17 @@ impl FollowService {
         Ok(FollowRepo::new(scope).list(filters).await?)
     }
 
-    /// Find the active Follow for a given brain/bookmark pair. Returns
+    /// Find the active Follow for a given project/bookmark pair. Returns
     /// `None` when the bookmark isn't currently following anything.
     /// Used by `BookmarkService::collect` in Act 3.
     pub(crate) async fn for_bookmark(
         scope: &Scope<AtHost>,
-        brain: &BrainName,
+        project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<Option<Follow>, FollowError> {
-        Ok(FollowRepo::new(scope).for_bookmark(brain, bookmark).await?)
+        Ok(FollowRepo::new(scope)
+            .for_bookmark(project, bookmark)
+            .await?)
     }
 
     /// Advance the checkpoint on a follow after a successful collect.
@@ -89,8 +91,8 @@ impl FollowService {
             )))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
@@ -115,15 +117,15 @@ impl FollowService {
             .data(Events::Bookmark(BookmarkEvents::BookmarkUnfollowed(
                 BookmarkUnfollowed::builder_v1()
                     .follow_id(existing.id)
-                    .brain(existing.brain)
+                    .project(existing.project)
                     .bookmark(existing.bookmark)
                     .build()
                     .into(),
             )))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),

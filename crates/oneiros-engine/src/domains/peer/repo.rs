@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use crate::*;
 
-/// Peer read model — async queries against the system context.
+/// Peer read model — async queries against the host context.
 pub(crate) struct PeerRepo<'a> {
     scope: &'a Scope<AtHost>,
 }

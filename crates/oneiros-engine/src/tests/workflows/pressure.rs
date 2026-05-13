@@ -21,7 +21,7 @@ fn urgency_for(pressures: &[Pressure], urge: &str) -> Option<f64> {
 async fn pressure_builds_from_activity() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -83,7 +83,7 @@ async fn pressure_builds_from_activity() -> Result<(), Box<dyn core::error::Erro
 async fn introspecting_reduces_introspect_pressure() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -159,7 +159,7 @@ async fn introspecting_reduces_introspect_pressure() -> Result<(), Box<dyn core:
 async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -278,7 +278,7 @@ async fn connecting_reduces_catharsis_pressure() -> Result<(), Box<dyn core::err
 async fn consolidating_reduces_recollect_pressure() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?

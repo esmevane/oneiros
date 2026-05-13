@@ -4,7 +4,7 @@ use crate::*;
 
 /// Everything a host identifies itself as: its cryptographic key and its
 /// current network reachability. Composed at runtime from the persisted
-/// host keypair (generated at `oneiros system init`) and the bound iroh
+/// host keypair (generated at `oneiros host init`) and the bound iroh
 /// `Endpoint`'s address.
 ///
 /// Accessed via `ServerState::host_identity()` when composing outgoing

@@ -10,8 +10,10 @@ use crate::*;
 #[kinded(kind = ProjectResponseType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub(crate) enum ProjectResponse {
-    Initialized(InitializedResponse),
-    BrainAlreadyExists(BrainAlreadyExistsResponse),
+    Created(ProjectCreatedResponse),
+    Found(ProjectFoundResponse),
+    Listed(ProjectsResponse),
+    ProjectAlreadyExists(ProjectAlreadyExistsResponse),
     WroteExport(WroteExportResponse),
     Imported(ImportedResponse),
     Replayed(ReplayedResponse),
@@ -19,9 +21,9 @@ pub(crate) enum ProjectResponse {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub(crate) enum InitializedResponse {
+    pub(crate) enum ProjectCreatedResponse {
         V1 => {
-            #[builder(into)] pub(crate) brain_name: BrainName,
+            #[serde(flatten)] pub(crate) project: Project,
             pub(crate) token: Token,
         }
     }
@@ -29,9 +31,26 @@ versioned! {
 
 versioned! {
     #[derive(JsonSchema)]
-    pub(crate) enum BrainAlreadyExistsResponse {
+    pub(crate) enum ProjectFoundResponse {
+        V1 => { #[serde(flatten)] pub(crate) project: Project }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ProjectsResponse {
         V1 => {
-            #[builder(into)] pub(crate) brain_name: BrainName,
+            pub(crate) items: Vec<Project>,
+            pub(crate) total: usize,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ProjectAlreadyExistsResponse {
+        V1 => {
+            #[builder(into)] pub(crate) project_name: ProjectName,
         }
     }
 }

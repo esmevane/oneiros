@@ -44,7 +44,7 @@ impl FollowView {
     fn table(follows: &Listed<Response<FollowFoundResponse>>) -> Table {
         let mut table = Table::new(vec![
             Column::new("Bookmark"),
-            Column::new("Brain"),
+            Column::new("Project"),
             Column::new("Source"),
             Column::new("ID"),
         ]);
@@ -58,7 +58,7 @@ impl FollowView {
             };
             table.push_row(vec![
                 follow.bookmark.to_string(),
-                follow.brain.to_string(),
+                follow.project.to_string(),
                 source_label.to_string(),
                 follow.id.to_string(),
             ]);
@@ -74,7 +74,7 @@ impl FollowView {
         };
         Detail::new(follow.bookmark.to_string())
             .field("id:", follow.id.to_string())
-            .field("brain:", follow.brain.to_string())
+            .field("project:", follow.project.to_string())
             .field("source:", source_label.to_string())
             .field(
                 "checkpoint.sequence:",

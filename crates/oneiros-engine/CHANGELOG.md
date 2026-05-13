@@ -58,16 +58,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move acceptance tests into engine.
 - Move bin code into engine.
 - SSE test flake fix.
-- Explicit errors. Generate keypair in system init.
+- Explicit errors. Generate keypair in host init.
 - Distribution feedback.
 - Distribution.
-- Create a `main` bookmark on project init.
+- Create a `main` bookmark on project create.
 - Enum centric ergonomics.
 - Viewable resources.
 - Distribution workflow tests.
 - Bookmark MCP & MCP Auth.
 - MCP Quality of Life improvements
-- Fixes for import speed and system migrations.
+- Fixes for import speed and host migrations.
 - Morning / evening pages, the skills.
 - Bookmarks and chronicles.
 - Rehydrate canon at start.

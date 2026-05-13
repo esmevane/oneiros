@@ -19,8 +19,8 @@ use crate::*;
 /// holding sibling handles.
 #[derive(Clone)]
 pub(crate) struct Mailbox {
-    system_log: SystemLogMailbox,
-    system_projection: SystemProjectionMailbox,
+    host_log: HostLogMailbox,
+    host_projection: HostProjectionMailbox,
     project_log: ProjectLogMailbox,
     project_import: ProjectImportMailbox,
     bookmark_projections: BookmarkProjectionsMailbox,
@@ -34,24 +34,24 @@ impl Mailbox {
     /// receives a clone of the mailbox so it can emit follow-ups without
     /// holding handles to siblings.
     pub(crate) fn spawn(canons: CanonIndex) -> Self {
-        let (system_log, system_log_inbox) = SystemLogMailbox::open();
-        let (system_projection, system_projection_inbox) = SystemProjectionMailbox::open();
+        let (host_log, host_log_inbox) = HostLogMailbox::open();
+        let (host_projection, host_projection_inbox) = HostProjectionMailbox::open();
         let (project_log, project_log_inbox) = ProjectLogMailbox::open();
         let (project_import, project_import_inbox) = ProjectImportMailbox::open();
         let (bookmark_projections, bookmark_projections_inbox) = BookmarkProjectionsMailbox::open();
         let (bookmark_chronicle, bookmark_chronicle_inbox) = BookmarkChronicleMailbox::open();
 
         let mailbox = Self {
-            system_log,
-            system_projection,
+            host_log,
+            host_projection,
             project_log,
             project_import,
             bookmark_projections,
             bookmark_chronicle,
         };
 
-        SystemLogActor::spawn(system_log_inbox, mailbox.clone());
-        SystemProjectionActor::spawn(system_projection_inbox);
+        HostLogActor::spawn(host_log_inbox, mailbox.clone());
+        HostProjectionActor::spawn(host_projection_inbox);
         ProjectLogActor::spawn(project_log_inbox, mailbox.clone());
         ProjectImportActor::spawn(project_import_inbox, mailbox.clone());
         BookmarkProjectionsActor::spawn(bookmark_projections_inbox, canons.clone());
@@ -65,13 +65,13 @@ impl Mailbox {
     /// at the call site.
     pub(crate) fn tell(&self, message: impl Into<Message>) {
         match message.into() {
-            Message::System(message) => match message {
-                SystemMessage::LogAppend(_) => {
-                    self.system_log.tell(message);
+            Message::Host(message) => match message {
+                HostMessage::LogAppend(_) => {
+                    self.host_log.tell(message);
                 }
-                SystemMessage::ProjectionApply(_)
-                | SystemMessage::ProjectionMigrate(_)
-                | SystemMessage::ProjectionReset(_) => self.system_projection.tell(message),
+                HostMessage::ProjectionApply(_)
+                | HostMessage::ProjectionMigrate(_)
+                | HostMessage::ProjectionReset(_) => self.host_projection.tell(message),
             },
             Message::Project(message) => match message {
                 ProjectMessage::LogAppend(_) => {

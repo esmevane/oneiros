@@ -13,8 +13,8 @@ impl SetupService {
         // 1. Server reachability is the precondition. Setup talks to a running
         //    server; if there isn't one, offer to install and start it.
         let server_ready = matches!(
-            ServiceService::status(config).await,
-            ServiceResponse::ServiceRunning(_)
+            HostService::status(config).await,
+            HostResponse::ServiceRunning(_)
         );
 
         if !server_ready {
@@ -36,7 +36,7 @@ impl SetupService {
                 ));
             }
 
-            match ServiceService::install(config) {
+            match HostService::install(config) {
                 Ok(_) => steps.push(SetupStep::ServiceInstalled),
                 Err(e) => {
                     steps.push(SetupStep::StepFailed {
@@ -52,7 +52,7 @@ impl SetupService {
                 }
             }
 
-            match ServiceService::start(config).await {
+            match HostService::start(config).await {
                 Ok(_) => steps.push(SetupStep::ServiceStarted),
                 Err(e) => {
                     steps.push(SetupStep::StepFailed {
@@ -69,7 +69,7 @@ impl SetupService {
             }
         }
 
-        // 2. System init (always, idempotent) — over HTTP with a host
+        // 2. Host init (always, idempotent) — over HTTP with a host
         //    token. The host key was created at server startup.
         let host_secret = HostKey::new(config.platform()).load()?;
         let host_client = match host_secret {
@@ -84,22 +84,34 @@ impl SetupService {
                 Ok(Client::new(config.base_url()))
             }
         }?;
-        let system_request: InitSystem = InitSystem::builder_v1()
+        let host_request: InitHost = InitHost::builder_v1()
             .maybe_name(details.name.clone())
             .yes(true)
             .build()
             .into();
 
-        match SystemClient::new(&host_client).init(&system_request).await {
-            Ok(SystemResponse::SystemInitialized(_)) => {
-                steps.push(SetupStep::SystemInitialized);
+        match HostClient::new(&host_client).init(&host_request).await {
+            Ok(HostResponse::HostInitialized(_)) => {
+                steps.push(SetupStep::HostInitialized);
             }
-            Ok(SystemResponse::HostAlreadyInitialized) => {
-                steps.push(SetupStep::SystemAlreadyInitialized);
+            Ok(HostResponse::HostAlreadyInitialized) => {
+                steps.push(SetupStep::HostAlreadyInitialized);
+            }
+            Ok(unexpected) => {
+                steps.push(SetupStep::StepFailed {
+                    step: "host init".into(),
+                    reason: format!("unexpected host init response: {unexpected}"),
+                });
+                return Ok(SetupResponse::SetupComplete(
+                    SetupCompleteResponse::builder_v1()
+                        .steps(steps)
+                        .build()
+                        .into(),
+                ));
             }
             Err(e) => {
                 steps.push(SetupStep::StepFailed {
-                    step: "system init".into(),
+                    step: "host init".into(),
                     reason: e.to_string(),
                 });
                 return Ok(SetupResponse::SetupComplete(
@@ -111,25 +123,27 @@ impl SetupService {
             }
         }
 
-        // 3. Project init (always, idempotent) — over HTTP. Capture the token
+        // 3. Project create (always, idempotent) — over HTTP. Capture the token
         //    from the response so the seed calls can authenticate.
-        let project_request: InitProject = InitProject::builder_v1().yes(true).build().into();
+        let project_request: CreateProject = CreateProject::builder_v1().yes(true).build().into();
         let project_token: Option<Token> = match ProjectClient::new(&host_client)
-            .init(&project_request)
+            .create(&project_request)
             .await
         {
-            Ok(ProjectResponse::Initialized(InitializedResponse::V1(result))) => {
-                steps.push(SetupStep::ProjectInitialized(result.brain_name));
+            Ok(ProjectResponse::Created(ProjectCreatedResponse::V1(result))) => {
+                steps.push(SetupStep::ProjectInitialized(result.project.name));
                 Some(result.token)
             }
-            Ok(ProjectResponse::BrainAlreadyExists(BrainAlreadyExistsResponse::V1(details))) => {
-                steps.push(SetupStep::ProjectAlreadyExists(details.brain_name));
+            Ok(ProjectResponse::ProjectAlreadyExists(ProjectAlreadyExistsResponse::V1(
+                details,
+            ))) => {
+                steps.push(SetupStep::ProjectAlreadyExists(details.project_name));
                 None
             }
             Ok(_) => None,
             Err(e) => {
                 steps.push(SetupStep::StepFailed {
-                    step: "project init".into(),
+                    step: "project create".into(),
                     reason: e.to_string(),
                 });
                 return Ok(SetupResponse::SetupComplete(

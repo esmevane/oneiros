@@ -11,7 +11,7 @@ use crate::*;
 async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -213,7 +213,7 @@ async fn cognitive_session() -> Result<(), Box<dyn core::error::Error>> {
 async fn listing_cognitions() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -270,7 +270,7 @@ async fn listing_cognitions() -> Result<(), Box<dyn core::error::Error>> {
 async fn listing_cognitions_with_limit() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -309,7 +309,7 @@ async fn listing_cognitions_with_limit() -> Result<(), Box<dyn core::error::Erro
 async fn listing_cognitions_with_offset() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -348,7 +348,7 @@ async fn listing_cognitions_with_offset() -> Result<(), Box<dyn core::error::Err
 async fn listing_cognitions_empty() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -375,7 +375,7 @@ async fn listing_cognitions_empty() -> Result<(), Box<dyn core::error::Error>> {
 async fn listing_memories() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -417,7 +417,7 @@ async fn listing_memories() -> Result<(), Box<dyn core::error::Error>> {
 async fn listing_experiences() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -455,7 +455,7 @@ async fn listing_experiences() -> Result<(), Box<dyn core::error::Error>> {
 async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -549,7 +549,7 @@ async fn agent_lifecycle() -> Result<(), Box<dyn core::error::Error>> {
 async fn activity_status_shows_all_agents() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -605,7 +605,7 @@ async fn activity_status_shows_all_agents() -> Result<(), Box<dyn core::error::E
 async fn connect_via_listed_refs() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?

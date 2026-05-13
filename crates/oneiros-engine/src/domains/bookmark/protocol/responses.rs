@@ -40,7 +40,7 @@ versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum BookmarkSwitchedResponse {
         V1 => {
-            pub(crate) brain: BrainName,
+            pub(crate) project: ProjectName,
             pub(crate) name: BookmarkName,
         }
     }
@@ -50,7 +50,7 @@ versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum BookmarkMergedResponse {
         V1 => {
-            pub(crate) brain: BrainName,
+            pub(crate) project: ProjectName,
             pub(crate) source: BookmarkName,
             pub(crate) target: BookmarkName,
         }
@@ -62,7 +62,7 @@ versioned! {
     pub(crate) enum BookmarkUnfollowedResponse {
         V1 => {
             pub(crate) follow_id: FollowId,
-            pub(crate) brain: BrainName,
+            pub(crate) project: ProjectName,
             pub(crate) bookmark: BookmarkName,
         }
     }

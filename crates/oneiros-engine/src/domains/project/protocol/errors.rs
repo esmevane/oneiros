@@ -11,11 +11,17 @@ pub(crate) enum ProjectError {
     #[error("project context required — call start_service first")]
     Missing,
 
-    #[error(transparent)]
-    Ticket(#[from] TicketError),
+    #[error("Project not found: {0}")]
+    NotFound(ProjectName),
+
+    #[error("Project not found for id: {0}")]
+    NotFoundById(ProjectId),
 
     #[error(transparent)]
-    Brain(#[from] BrainError),
+    Resolve(#[from] ResolveError),
+
+    #[error(transparent)]
+    Ticket(#[from] TicketError),
 
     #[error("Serde error: {0}")]
     Serde(#[from] serde_json::Error),
@@ -48,7 +54,10 @@ impl IntoResponse for ProjectError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
             ProjectError::Ticket(ticket) => return ticket.into_response(),
-            ProjectError::Brain(brain) => return brain.into_response(),
+            ProjectError::NotFound(_) | ProjectError::NotFoundById(_) => {
+                (StatusCode::NOT_FOUND, self.to_string())
+            }
+            ProjectError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ProjectError::Missing
             | ProjectError::Database(_)
             | ProjectError::Event(_)

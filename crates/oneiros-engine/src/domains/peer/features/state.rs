@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct PeerState;
 
 impl PeerState {
-    pub(crate) fn reduce(mut canon: SystemCanon, event: &Events) -> SystemCanon {
+    pub(crate) fn reduce(mut canon: HostCanon, event: &Events) -> HostCanon {
         if let Events::Peer(peer_event) = event {
             match peer_event {
                 PeerEvents::PeerAdded(added) => {
@@ -41,7 +41,7 @@ impl PeerState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<SystemCanon> {
+    pub(crate) fn reducer() -> Reducer<HostCanon> {
         Reducer::new(Self::reduce)
     }
 }

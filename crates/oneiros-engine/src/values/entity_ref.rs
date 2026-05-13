@@ -83,8 +83,8 @@ impl Ref {
         Self::V0(Resource::Bookmark(id))
     }
 
-    pub(crate) fn brain(id: BrainId) -> Self {
-        Self::V0(Resource::Brain(id))
+    pub(crate) fn project(id: ProjectId) -> Self {
+        Self::V0(Resource::Project(id))
     }
 
     pub(crate) fn cognition(id: CognitionId) -> Self {

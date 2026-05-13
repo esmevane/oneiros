@@ -14,8 +14,8 @@ pub(crate) enum TicketError {
     #[error("Invalid token")]
     InvalidToken,
 
-    #[error("Brain not found: {0}")]
-    BrainNotFound(BrainName),
+    #[error("Project not found: {0}")]
+    ProjectNotFound(ProjectName),
 
     #[error("Actor not found: {0}")]
     ActorNotFound(ActorId),
@@ -43,7 +43,7 @@ impl IntoResponse for TicketError {
         let (status, message) = match &self {
             TicketError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TicketError::InvalidToken => (StatusCode::UNAUTHORIZED, self.to_string()),
-            TicketError::BrainNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
+            TicketError::ProjectNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TicketError::ActorNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TicketError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             TicketError::Database(_) | TicketError::Event(_) | TicketError::Client(_) => {

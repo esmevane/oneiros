@@ -23,7 +23,7 @@ pub(crate) struct DiffResult {
 ///
 /// A Bridge is bound once at service start using the host's persisted
 /// keypair, lives on `ServerState`, and produces connections on demand
-/// when the system needs to talk to a peer.
+/// when the host needs to talk to a peer.
 #[derive(Clone)]
 pub(crate) struct Bridge {
     endpoint: iroh::Endpoint,

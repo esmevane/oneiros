@@ -1,5 +1,5 @@
 ---
-description: Bring a new agent into the brain
+description: Bring a new agent into the project
 argument-hint: "<name> <persona> [--description <text>] [--prompt <text>]"
 ---
 

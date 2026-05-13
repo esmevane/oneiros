@@ -35,7 +35,7 @@ pub(crate) enum Events {
     Continuity(ContinuityEvents),
     Tenant(TenantEvents),
     Actor(ActorEvents),
-    Brain(BrainEvents),
+    Project(ProjectEvents),
     Ticket(TicketEvents),
     Bookmark(BookmarkEvents),
     Peer(PeerEvents),
@@ -63,7 +63,7 @@ impl Events {
             Events::Continuity(e) => e.kind().to_string(),
             Events::Tenant(e) => e.kind().to_string(),
             Events::Actor(e) => e.kind().to_string(),
-            Events::Brain(e) => e.kind().to_string(),
+            Events::Project(e) => e.kind().to_string(),
             Events::Ticket(e) => e.kind().to_string(),
             Events::Bookmark(e) => e.kind().to_string(),
             Events::Peer(e) => e.kind().to_string(),
@@ -87,7 +87,7 @@ collects_enum!(
     Events::Continuity => ContinuityEvents,
     Events::Tenant => TenantEvents,
     Events::Actor => ActorEvents,
-    Events::Brain => BrainEvents,
+    Events::Project => ProjectEvents,
     Events::Ticket => TicketEvents,
     Events::Bookmark => BookmarkEvents,
     Events::Peer => PeerEvents,
@@ -95,7 +95,7 @@ collects_enum!(
 
 /// Ephemeral events — transport artifacts that are never persisted to the log.
 ///
-/// These carry data between brains during export/import but are materialized
+/// These carry data between projects during export/import but are materialized
 /// directly at the import boundary. They never enter the event log and are
 /// never seen by projections.
 #[derive(Debug, Clone, Serialize, Deserialize, Kinded)]

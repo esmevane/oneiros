@@ -175,7 +175,7 @@ fn resource_text(result: &serde_json::Value) -> String {
 async fn tools_discovery() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -235,7 +235,7 @@ async fn tools_discovery() -> Result<(), Box<dyn core::error::Error>> {
 async fn tool_responses_are_markdown_with_hints() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -270,7 +270,7 @@ async fn tool_responses_are_markdown_with_hints() -> Result<(), Box<dyn core::er
 async fn tool_auth_session() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -307,7 +307,7 @@ async fn tool_auth_session() -> Result<(), Box<dyn core::error::Error>> {
 async fn resources_discovery() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -379,7 +379,7 @@ async fn resources_discovery() -> Result<(), Box<dyn core::error::Error>> {
 async fn resource_reads_return_markdown_with_hints() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -459,7 +459,7 @@ async fn resource_reads_return_markdown_with_hints() -> Result<(), Box<dyn core:
 async fn prompts_discovery() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -496,7 +496,7 @@ async fn prompts_discovery() -> Result<(), Box<dyn core::error::Error>> {
 async fn dream_prompt_returns_agent_context() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -568,7 +568,7 @@ async fn dream_prompt_returns_agent_context() -> Result<(), Box<dyn core::error:
 async fn error_responses_include_hints() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -623,7 +623,7 @@ async fn error_responses_include_hints() -> Result<(), Box<dyn core::error::Erro
 async fn invalid_resource_uri_returns_error() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -657,7 +657,7 @@ async fn invalid_resource_uri_returns_error() -> Result<(), Box<dyn core::error:
 async fn initialize_without_token_fails() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -674,7 +674,7 @@ async fn initialize_without_token_fails() -> Result<(), Box<dyn core::error::Err
 async fn initialize_with_bad_token_fails() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -697,7 +697,7 @@ async fn initialize_with_bad_token_fails() -> Result<(), Box<dyn core::error::Er
 async fn initialize_with_non_bearer_scheme_fails() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;

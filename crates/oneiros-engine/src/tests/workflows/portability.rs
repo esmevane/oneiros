@@ -1,6 +1,6 @@
 //! Portability workflow — moving continuity between instances.
 //!
-//! A brain is a portable unit. An agent's identity, thoughts, memories,
+//! A project is a portable unit. An agent's identity, thoughts, memories,
 //! experiences, and connections should survive export from one instance
 //! and import into another. This is the distribution primitive: if
 //! continuity survives the move, the identity survives.
@@ -12,7 +12,7 @@ use crate::*;
 async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::Error>> {
     let app_a = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -120,7 +120,7 @@ async fn continuity_survives_export_import() -> Result<(), Box<dyn core::error::
 
     let app_b = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;

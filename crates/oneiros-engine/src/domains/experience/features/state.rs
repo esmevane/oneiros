@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct ExperienceState;
 
 impl ExperienceState {
-    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: ProjectCanon, event: &Events) -> ProjectCanon {
         if let Events::Experience(experience_event) = event {
             match experience_event {
                 ExperienceEvents::ExperienceCreated(created) => {
@@ -31,7 +31,7 @@ impl ExperienceState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<ProjectCanon> {
         Reducer::new(Self::reduce)
     }
 }
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn updates_experience_description() {
-        let mut canon = BrainCanon::default();
+        let mut canon = ProjectCanon::default();
         let experience = Experience::builder()
             .agent_id(AgentId::new())
             .sensation("distills")

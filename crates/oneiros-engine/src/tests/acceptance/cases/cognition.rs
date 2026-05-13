@@ -35,7 +35,7 @@ pub(crate) async fn add_creates_cognition<B: Backend>() -> TestResult {
 
 /// Vertical slice through the lazy bookmark actor tree: `cognition
 /// add` dispatches a `Message<AtBookmark>` through the bus, the host
-/// actor lazy-spawns the project actor for the brain, the project
+/// actor lazy-spawns the project actor for the project, the project
 /// actor lazy-spawns bookmark + chronicle actors for the bookmark on
 /// scope, and the projection materializes the row that the service
 /// then fetches eventually-consistently.

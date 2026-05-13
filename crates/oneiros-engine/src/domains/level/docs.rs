@@ -22,7 +22,7 @@ impl LevelDocs {
                 .tag(tag)
                 .nickname("list-levels")
                 .summary("List levels")
-                .description("List all memory retention levels defined for the current brain.")
+                .description("List all memory retention levels defined for the current project.")
                 .build(),
             Self::Set => ResourceDocs::builder()
                 .tag(tag)

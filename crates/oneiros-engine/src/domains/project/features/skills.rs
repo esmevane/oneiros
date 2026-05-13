@@ -5,7 +5,9 @@ pub(crate) struct ProjectSkills;
 impl ProjectSkills {
     pub(crate) fn all() -> Vec<Skill> {
         vec![
-            Skill::new("project-init", include_str!("skills/init.md")),
+            Skill::new("project-create", include_str!("skills/create.md")),
+            Skill::new("project-get", include_str!("skills/get.md")),
+            Skill::new("project-list", include_str!("skills/list.md")),
             Skill::new("project-export", include_str!("skills/export.md")),
             Skill::new("project-import", include_str!("skills/import.md")),
             Skill::new("project-replay", include_str!("skills/replay.md")),

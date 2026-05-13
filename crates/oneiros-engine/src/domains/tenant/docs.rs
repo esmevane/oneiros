@@ -21,19 +21,19 @@ impl TenantDocs {
                 .tag(tag)
                 .nickname("create-tenant")
                 .summary("Create a tenant")
-                .description("Register a new tenant brain on this host.")
+                .description("Register a new tenant project on this host.")
                 .build(),
             Self::List => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("list-tenants")
                 .summary("List tenants")
-                .description("See all tenant brains registered on this host.")
+                .description("See all tenant projects registered on this host.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("show-tenant")
                 .summary("Show a tenant")
-                .description("Retrieve details for a specific tenant brain on this host.")
+                .description("Retrieve details for a specific tenant project on this host.")
                 .build(),
         }
     }

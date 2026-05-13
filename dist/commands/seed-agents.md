@@ -1,5 +1,5 @@
 ---
-description: Seed the brain with canonical agents (governor, oneiroi, activity scribe). Requires `seed core` to have run first.
+description: Seed the project with canonical agents (governor, oneiroi, activity scribe). Requires `seed core` to have run first.
 argument-hint: ""
 ---
 

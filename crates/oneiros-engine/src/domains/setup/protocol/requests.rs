@@ -7,7 +7,7 @@ versioned! {
     pub(crate) enum SetupRequest {
         #[derive(clap::Args)]
         V1 => {
-            /// Name for the system/host. Defaults to "oneiros user".
+            /// Name for the host. Defaults to "oneiros user".
             #[arg(long)]
             #[builder(into)]
             pub(crate) name: Option<String>,

@@ -1,7 +1,7 @@
 use super::*;
 
-pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
-    let harness = Harness::<B>::setup_system().await?;
+pub(crate) async fn list_after_host_init<B: Backend>() -> TestResult {
+    let harness = Harness::<B>::setup_host().await?;
 
     let response = harness.exec_json("actor list").await?;
 
@@ -10,7 +10,7 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
             assert_eq!(
                 actors.items.len(),
                 1,
-                "system init should create exactly one actor"
+                "host init should create exactly one actor"
             );
             assert_eq!(actors.items[0].name.as_str(), "test");
         }
@@ -21,7 +21,7 @@ pub(crate) async fn list_after_system_init<B: Backend>() -> TestResult {
 }
 
 pub(crate) async fn list_prompt<B: Backend>() -> TestResult {
-    let harness = Harness::<B>::setup_system().await?;
+    let harness = Harness::<B>::setup_host().await?;
 
     let prompt = harness.exec_prompt("actor list").await?;
 

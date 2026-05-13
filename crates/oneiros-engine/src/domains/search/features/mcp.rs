@@ -24,7 +24,7 @@ mod search_mcp {
         vec![
             Tool::<SearchQuery>::new(
                 SearchRequestType::SearchQuery,
-                "Search across everything in the brain",
+                "Search across everything in the project",
             )
             .def(),
         ]

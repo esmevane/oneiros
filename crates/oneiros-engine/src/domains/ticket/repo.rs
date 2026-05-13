@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use crate::*;
 
-/// Ticket read model — async queries against the system context.
+/// Ticket read model — async queries against the host context.
 pub(crate) struct TicketRepo<'a> {
     scope: &'a Scope<AtHost>,
 }
@@ -11,8 +11,8 @@ pub(crate) struct TicketRepo<'a> {
 type TicketRow = (
     String,         // id
     String,         // actor_id
-    String,         // brain_name
-    String,         // brain_id
+    String,         // project_name
+    String,         // project_id
     String,         // token
     String,         // target (RefToken string form)
     String,         // granted_by
@@ -23,15 +23,15 @@ type TicketRow = (
     String,         // created_at
 );
 
-const SELECT_COLUMNS: &str = "id, actor_id, brain_name, brain_id, token, target, granted_by, \
+const SELECT_COLUMNS: &str = "id, actor_id, project_name, project_id, token, target, granted_by, \
                               expires_at, revoked_at, max_uses, uses, created_at";
 
 fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
     let (
         id,
         actor_id,
-        brain_name,
-        brain_id,
+        project_name,
+        project_id,
         token,
         target,
         granted_by,
@@ -63,8 +63,8 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
     Ok(Ticket {
         id: id.parse()?,
         actor_id,
-        brain_name: BrainName::new(brain_name),
-        brain_id: brain_id.parse()?,
+        project_name: ProjectName::new(project_name),
+        project_id: project_id.parse()?,
         link,
         granted_by: granted_by_id,
         expires_at,

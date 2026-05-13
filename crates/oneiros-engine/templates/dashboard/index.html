@@ -159,9 +159,9 @@ a{color:inherit;text-decoration:none}
     <div class="sb-heading">HOST</div>
     <a class="sb-link" data-page="host" onclick="go('host')">Overview</a>
     <a class="sb-link" data-page="tenants" onclick="go('tenants')">Tenants</a>
-    <div id="sb-brain-section" style="display:none">
-      <div class="sb-heading">BRAIN &middot; <span id="sb-brain-name"></span></div>
-      <a class="sb-link" data-page="brain" id="sb-brain-overview">Overview</a>
+    <div id="sb-project-section" style="display:none">
+      <div class="sb-heading">PROJECT &middot; <span id="sb-project-name"></span></div>
+      <a class="sb-link" data-page="project" id="sb-project-overview">Overview</a>
       <a class="sb-link" data-page="search" onclick="go('search')">Search</a>
       <div class="sb-heading" id="sb-agents-heading" style="display:none">AGENTS</div>
       <div id="sb-agents"></div>
@@ -181,8 +181,8 @@ a{color:inherit;text-decoration:none}
         <div class="stats" id="host-identity-cards"></div>
       </div>
       <div class="section">
-        <div class="section-head"><span class="section-num">02</span><h2>Brains</h2></div>
-        <div class="agent-grid" id="host-brain-grid"><div class="loading">loading&hellip;</div></div>
+        <div class="section-head"><span class="section-num">02</span><h2>Projects</h2></div>
+        <div class="agent-grid" id="host-project-grid"><div class="loading">loading&hellip;</div></div>
       </div>
       <div class="section">
         <div class="section-head"><span class="section-num">03</span><h2>Tenants</h2></div>
@@ -193,9 +193,9 @@ a{color:inherit;text-decoration:none}
         <div class="agent-grid" id="host-peer-grid"><div class="loading">loading&hellip;</div></div>
       </div>
 
-    <!-- BRAIN -->
-    <div class="page" id="page-brain">
-      <div class="eyebrow">brain</div>
+    <!-- PROJECT -->
+    <div class="page" id="page-project">
+      <div class="eyebrow">project</div>
       <h1 class="title" id="proj-title">loading&hellip;</h1>
       <p class="subtitle" id="proj-subtitle"></p>
       <div class="stats" id="proj-stats"></div>
@@ -263,8 +263,8 @@ a{color:inherit;text-decoration:none}
 <script>
 (function() {
   var BOOTSTRAP = null;  // full /dashboard/config response
-  var TOKEN = null;      // current brain's token (set on brain entry)
-  var BRAIN = null;      // current brain's name (set on brain entry)
+  var TOKEN = null;      // current project's token (set on project entry)
+  var PROJECT = null;      // current project's name (set on project entry)
 
   // Bootstrap: host-shaped config. Defaults to the host landing page.
   fetch('/dashboard/config')
@@ -279,13 +279,13 @@ a{color:inherit;text-decoration:none}
     })
     .catch(function() { go('host'); });
 
-  // Ticket lookup for a given brain name.
-  function ticketFor(brainName) {
+  // Ticket lookup for a given project name.
+  function ticketFor(projectName) {
     if (!BOOTSTRAP || !BOOTSTRAP.tickets) return null;
-    return BOOTSTRAP.tickets.find(function(t) { return t.brain_name === brainName; }) || null;
+    return BOOTSTRAP.tickets.find(function(t) { return t.project_name === projectName; }) || null;
   }
 
-  // Authenticated fetch helper — uses the current brain's token.
+  // Authenticated fetch helper — uses the current project's token.
   function api(path) {
     var opts = {};
     if (TOKEN) opts.headers = { 'Authorization': 'Bearer ' + TOKEN };
@@ -351,23 +351,23 @@ a{color:inherit;text-decoration:none}
     return raw;
   }
 
-  // Enter a brain context: set the current brain + its token, reveal
-  // the BRAIN sidebar section. Called by `go('brain', name)`.
-  function enterBrain(name) {
+  // Enter a project context: set the current project + its token, reveal
+  // the PROJECT sidebar section. Called by `go('project', name)`.
+  function enterProject(name) {
     var ticket = ticketFor(name);
-    BRAIN = name;
+    PROJECT = name;
     TOKEN = ticket ? ticket.link.token : null;
-    document.getElementById('sb-brain-section').style.display = '';
-    document.getElementById('sb-brain-name').textContent = name;
-    var overviewLink = document.getElementById('sb-brain-overview');
-    overviewLink.onclick = function() { go('brain', name); };
+    document.getElementById('sb-project-section').style.display = '';
+    document.getElementById('sb-project-name').textContent = name;
+    var overviewLink = document.getElementById('sb-project-overview');
+    overviewLink.onclick = function() { go('project', name); };
   }
 
-  // Clear brain context — called when returning to the host page.
-  function leaveBrain() {
-    BRAIN = null;
+  // Clear project context — called when returning to the host page.
+  function leaveProject() {
+    PROJECT = null;
     TOKEN = null;
-    document.getElementById('sb-brain-section').style.display = 'none';
+    document.getElementById('sb-project-section').style.display = 'none';
   }
 
   // Navigation
@@ -381,11 +381,11 @@ a{color:inherit;text-decoration:none}
     location.hash = detail ? page + '/' + detail : page;
     window.scrollTo(0, 0);
 
-    if (page === 'host') { leaveBrain(); loadHost(); }
-    if (page === 'brain' && detail) { enterBrain(detail); loadBrain(detail); }
-    if (page === 'tenants') { leaveBrain(); loadTenants(); }
-    if (page === 'tenant' && detail) { leaveBrain(); loadTenant(detail); }
-    if (page === 'actor' && detail) { leaveBrain(); loadActor(detail); }
+    if (page === 'host') { leaveProject(); loadHost(); }
+    if (page === 'project' && detail) { enterProject(detail); loadProject(detail); }
+    if (page === 'tenants') { leaveProject(); loadTenants(); }
+    if (page === 'tenant' && detail) { leaveProject(); loadTenant(detail); }
+    if (page === 'actor' && detail) { leaveProject(); loadActor(detail); }
     if (page === 'search') document.getElementById('search-input').focus();
     if (page === 'agent' && detail) loadAgent(detail);
   };
@@ -405,11 +405,11 @@ a{color:inherit;text-decoration:none}
     var cfg = BOOTSTRAP;
     var shortId = cfg.host && cfg.host.key ? String(cfg.host.key).slice(0, 12) : 'host';
     document.getElementById('host-title').textContent = shortId;
-    var brainCount = (cfg.brains || []).length;
+    var projectCount = (cfg.projects || []).length;
     var tenantCount = (cfg.tenants || []).length;
     var ticketCount = (cfg.tickets || []).length;
     document.getElementById('host-subtitle').textContent =
-      'A host with ' + brainCount + ' brain' + (brainCount === 1 ? '' : 's') +
+      'A host with ' + projectCount + ' project' + (projectCount === 1 ? '' : 's') +
       ', ' + tenantCount + ' tenant' + (tenantCount === 1 ? '' : 's') +
       ', and ' + ticketCount + ' ticket' + (ticketCount === 1 ? '' : 's') + '.';
 
@@ -428,23 +428,23 @@ a{color:inherit;text-decoration:none}
       idCards.appendChild(card);
     });
 
-    // Brain cards — live link if ticket exists, dim otherwise
-    var brainGrid = document.getElementById('host-brain-grid');
-    brainGrid.innerHTML = '';
-    if (!cfg.brains || !cfg.brains.length) {
-      brainGrid.innerHTML = '<div class="loading">no brains on this host</div>';
+    // Project cards — live link if ticket exists, dim otherwise
+    var projectGrid = document.getElementById('host-project-grid');
+    projectGrid.innerHTML = '';
+    if (!cfg.projects || !cfg.projects.length) {
+      projectGrid.innerHTML = '<div class="loading">no projects on this host</div>';
     } else {
-      cfg.brains.forEach(function(b) {
+      cfg.projects.forEach(function(b) {
         var ticket = ticketFor(b.name);
         var card = document.createElement('div');
         card.className = 'card a-card' + (ticket ? ' card-click' : '');
-        if (ticket) card.onclick = function() { go('brain', b.name); };
+        if (ticket) card.onclick = function() { go('project', b.name); };
         var persona = ticket ? 'ticket held &middot; enter' : 'no ticket';
         if (!ticket) card.style.opacity = '0.55';
         card.innerHTML = '<div class="a-name">' + esc(b.name) + '</div>' +
           '<div class="a-persona">' + persona + '</div>' +
           '<div class="a-desc">id: ' + esc(String(b.id || '').slice(0, 12)) + '&hellip;</div>';
-        brainGrid.appendChild(card);
+        projectGrid.appendChild(card);
       });
     }
 
@@ -475,14 +475,14 @@ a{color:inherit;text-decoration:none}
     }
   }
 
-  // ── Brain Page ──
-  // Keyed by brain name — re-renders when switching between brains.
-  var loadedBrain = null;
-  function loadBrain(name) {
-    if (loadedBrain === name) return;
-    loadedBrain = name;
+  // ── Project Page ──
+  // Keyed by project name — re-renders when switching between projects.
+  var loadedProject = null;
+  function loadProject(name) {
+    if (loadedProject === name) return;
+    loadedProject = name;
 
-    // Reset per-brain UI
+    // Reset per-project UI
     document.getElementById('proj-title').textContent = name;
     document.getElementById('proj-subtitle').textContent = 'loading…';
     document.getElementById('proj-stats').innerHTML = '';
@@ -493,14 +493,14 @@ a{color:inherit;text-decoration:none}
 
     if (!TOKEN) {
       document.getElementById('proj-subtitle').textContent =
-        'No ticket held for this brain — cannot load details.';
+        'No ticket held for this project — cannot load details.';
       return;
     }
 
     api('/summary').then(function(d) {
       document.getElementById('proj-title').textContent = name;
       document.getElementById('proj-subtitle').textContent =
-        'A brain with ' + d.agent_count + ' agents, ' +
+        'A project with ' + d.agent_count + ' agents, ' +
         d.cognition_count.toLocaleString() + ' thoughts, and ' +
         d.event_count.toLocaleString() + ' events.';
 
@@ -581,8 +581,8 @@ a{color:inherit;text-decoration:none}
     var card = document.createElement('div');
     card.className = 'card a-card';
     var tokenShort = t.link && t.link.token ? String(t.link.token).slice(0, 16) + '…' : '—';
-    card.innerHTML = '<div class="a-name">' + esc(t.brain_name) + '</div>' +
-      '<div class="a-persona">brain ticket</div>' +
+    card.innerHTML = '<div class="a-name">' + esc(t.project_name) + '</div>' +
+      '<div class="a-persona">project ticket</div>' +
       '<div class="a-desc">token: ' + esc(tokenShort) + '</div>';
     return card;
   }

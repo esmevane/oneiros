@@ -1,5 +1,5 @@
 //! A host-scoped bearer token for authenticating local clients (dashboard,
-//! CLI) to the HTTP API without requiring a brain-specific ticket.
+//! CLI) to the HTTP API without requiring a project-specific ticket.
 //!
 //! Generated via `HMAC-SHA256(host_secret_key, b"oneiros:host-token:v1")`,
 //! base32-encoded. Deterministic from the host key — stable across restarts,

@@ -35,11 +35,11 @@ impl DoctorView {
         for check in checks {
             let line = match check {
                 DoctorCheck::Initialized => {
-                    format!("  {} System initialized", "✓".success())
+                    format!("  {} Host initialized", "✓".success())
                 }
                 DoctorCheck::NotInitialized => {
                     format!(
-                        "  {} System not initialized {} run `oneiros setup`",
+                        "  {} Host not initialized {} run `oneiros setup`",
                         "!".warning(),
                         "—".muted()
                     )
@@ -50,12 +50,12 @@ impl DoctorView {
                 DoctorCheck::EventLogReady(count) => {
                     format!("  {} Event log ready ({} events)", "✓".success(), count)
                 }
-                DoctorCheck::BrainExists(name) => {
-                    format!("  {} Brain '{}' exists", "✓".success(), name)
+                DoctorCheck::ProjectExists(name) => {
+                    format!("  {} Project '{}' exists", "✓".success(), name)
                 }
-                DoctorCheck::BrainMissing(name) => {
+                DoctorCheck::ProjectMissing(name) => {
                     format!(
-                        "  {} Brain '{}' not found {} run `oneiros project init`",
+                        "  {} Project '{}' not found {} run `oneiros project create`",
                         "!".warning(),
                         name,
                         "—".muted()
@@ -86,7 +86,7 @@ impl DoctorView {
                 }
                 DoctorCheck::HostKeyMissing => {
                     format!(
-                        "  {} Host keypair missing {} run `oneiros system init`",
+                        "  {} Host keypair missing {} run `oneiros host init`",
                         "!".warning(),
                         "—".muted()
                     )

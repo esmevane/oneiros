@@ -8,7 +8,7 @@ impl SearchDocs {
     pub(crate) fn tag(&self) -> Tag {
         Tag::builder()
             .name("search")
-            .description("Search across all entities in a brain")
+            .description("Search across all entities in a project")
             .build()
     }
 
@@ -18,9 +18,9 @@ impl SearchDocs {
             Self::Search => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("search")
-                .summary("Search the brain")
+                .summary("Search the project")
                 .description(
-                    "Query across agents, cognitions, memories, and other entities in the brain.",
+                    "Query across agents, cognitions, memories, and other entities in the project.",
                 )
                 .build(),
         }

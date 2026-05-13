@@ -168,7 +168,7 @@ mod tests {
             Ref::agent(AgentId::new()),
             Ref::actor(ActorId::new()),
             Ref::bookmark(BookmarkId::new()),
-            Ref::brain(BrainId::new()),
+            Ref::project(ProjectId::new()),
             Ref::cognition(CognitionId::new()),
             Ref::connection(ConnectionId::new()),
             Ref::experience(ExperienceId::new()),

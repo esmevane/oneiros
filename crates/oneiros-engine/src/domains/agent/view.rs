@@ -58,11 +58,11 @@ impl AgentView {
                 }
                 McpResponse::new(md).hint(Hint::suggest(
                     "create-agent",
-                    "Bring a new agent into the brain",
+                    "Bring a new agent into the project",
                 ))
             }
             AgentResponse::NoAgents => McpResponse::new("# Agents\n\nNo agents configured.").hint(
-                Hint::suggest("create-agent", "Bring a new agent into the brain"),
+                Hint::suggest("create-agent", "Bring a new agent into the project"),
             ),
             AgentResponse::AgentUpdated(AgentUpdatedResponse::V1(updated)) => {
                 let agent = &updated.agent;

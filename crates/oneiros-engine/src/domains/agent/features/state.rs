@@ -3,7 +3,7 @@ use crate::*;
 pub(crate) struct AgentState;
 
 impl AgentState {
-    pub(crate) fn reduce(mut canon: BrainCanon, event: &Events) -> BrainCanon {
+    pub(crate) fn reduce(mut canon: ProjectCanon, event: &Events) -> ProjectCanon {
         if let Events::Agent(agent_event) = event {
             if let Some(agent) = agent_event.maybe_agent() {
                 canon.agents.set(&agent);
@@ -17,7 +17,7 @@ impl AgentState {
         canon
     }
 
-    pub(crate) fn reducer() -> Reducer<BrainCanon> {
+    pub(crate) fn reducer() -> Reducer<ProjectCanon> {
         Reducer::new(Self::reduce)
     }
 }
@@ -38,14 +38,14 @@ mod tests {
             AgentCreated::builder_v1().agent(agent).build().into(),
         ));
 
-        let next = AgentState::reduce(BrainCanon::default(), &event);
+        let next = AgentState::reduce(ProjectCanon::default(), &event);
 
         assert_eq!(next.agents.len(), 1);
     }
 
     #[test]
     fn removes_agent() {
-        let mut canon = BrainCanon::default();
+        let mut canon = ProjectCanon::default();
         let agent = Agent::builder()
             .name("test.agent")
             .persona("process")

@@ -11,10 +11,10 @@ pub(crate) enum BookmarkError {
     #[error("Bookmark not found: {0}")]
     NotFound(BookmarkName),
 
-    #[error("Brain not found: {0}")]
-    BrainNotFound(BrainName),
+    #[error("Project not found: {0}")]
+    ProjectNotFound(ProjectName),
 
-    #[error("No actor available — provide an actor_id or initialize the system first")]
+    #[error("No actor available — provide an actor_id or initialize the host first")]
     NoActor,
 
     #[error("Invalid URI: {0}")]
@@ -63,7 +63,7 @@ impl IntoResponse for BookmarkError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             BookmarkError::NotFound(_)
-            | BookmarkError::BrainNotFound(_)
+            | BookmarkError::ProjectNotFound(_)
             | BookmarkError::FollowNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             BookmarkError::InvalidUri(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             BookmarkError::NoActor

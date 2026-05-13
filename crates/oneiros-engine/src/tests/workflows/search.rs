@@ -1,4 +1,4 @@
-//! Search workflow — finding things across the brain.
+//! Search workflow — finding things across the project.
 //!
 //! Data is indexed as it's created: agents, cognitions, memories.
 //! Search finds them by content, optionally filtered by agent.
@@ -10,7 +10,7 @@ use crate::*;
 async fn search_across_domains() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?

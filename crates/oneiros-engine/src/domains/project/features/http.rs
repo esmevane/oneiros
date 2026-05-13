@@ -1,5 +1,9 @@
 use aide::axum::{ApiRouter, routing};
-use axum::{Json, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+};
 
 use crate::*;
 
@@ -8,28 +12,50 @@ pub(crate) struct ProjectRouter;
 impl ProjectRouter {
     pub(crate) fn routes(&self) -> ApiRouter<ServerState> {
         ApiRouter::new()
-            // System-scoped — no auth needed (creating a brain is how you get a token)
             .api_route(
                 "/projects",
-                routing::post_with(init, |op| {
-                    resource_op!(op, ProjectDocs::Init).response::<201, Json<ProjectResponse>>()
-                }),
+                routing::get_with(list, |op| resource_op!(op, ProjectDocs::List)).post_with(
+                    create,
+                    |op| {
+                        resource_op!(op, ProjectDocs::Create)
+                            .response::<201, Json<ProjectResponse>>()
+                    },
+                ),
             )
-            // Brain-scoped — BrainSummary lacks OperationOutput, use plain route()
+            .api_route(
+                "/projects/{name}",
+                routing::get_with(show, |op| resource_op!(op, ProjectDocs::Show)),
+            )
             .route("/summary", axum::routing::get(summary))
     }
 }
 
-async fn init(
+async fn create(
     scope: Scope<AtHost>,
     mailbox: Mailbox,
-    Json(body): Json<InitProject>,
+    Json(body): Json<CreateProject>,
 ) -> Result<(StatusCode, Json<ProjectResponse>), ProjectError> {
-    let response = ProjectService::init(&scope, &mailbox, &body).await?;
+    let response = ProjectService::create(&scope, &mailbox, &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
-async fn summary(scope: Scope<AtBookmark>) -> Result<Json<BrainSummary>, ProjectError> {
+async fn list(
+    scope: Scope<AtHost>,
+    Query(params): Query<ListProjects>,
+) -> Result<Json<ProjectResponse>, ProjectError> {
+    Ok(Json(ProjectService::list(&scope, &params).await?))
+}
+
+async fn show(
+    scope: Scope<AtHost>,
+    Path(key): Path<ResourceKey<ProjectName>>,
+) -> Result<Json<ProjectResponse>, ProjectError> {
+    Ok(Json(
+        ProjectService::get(&scope, &GetProject::builder_v1().key(key).build().into()).await?,
+    ))
+}
+
+async fn summary(scope: Scope<AtBookmark>) -> Result<Json<ProjectSummary>, ProjectError> {
     let db = BookmarkDb::open(&scope).await?;
 
     let agents = AgentStore::new(&db).list().unwrap_or_default();
@@ -40,7 +66,6 @@ async fn summary(scope: Scope<AtBookmark>) -> Result<Json<BrainSummary>, Project
         .unwrap_or_default();
     let cognition_count = cognitions.len();
 
-    // Get recent cognitions (last 30, newest first)
     let recent_cognitions = {
         let mut recent = cognitions;
         recent.sort_by_key(|b| std::cmp::Reverse(b.created_at));
@@ -64,7 +89,7 @@ async fn summary(scope: Scope<AtBookmark>) -> Result<Json<BrainSummary>, Project
         })
         .unwrap_or(0) as usize;
 
-    let summary = BrainSummary {
+    let summary = ProjectSummary {
         agents,
         agent_count,
         cognition_count,

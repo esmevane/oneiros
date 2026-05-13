@@ -1,8 +1,8 @@
 //! Dashboard bootstrap — the host-shaped config endpoint.
 //!
 //! Returns everything the web UI needs to render the host view and
-//! authenticate into individual brains, in a single unauthenticated
-//! call. Aggregates from the `HostLog` — tenants, brains, and
+//! authenticate into individual projects, in a single unauthenticated
+//! call. Aggregates from the `HostLog` — tenants, projects, and
 //! tickets — plus the host's iroh identity.
 
 use axum::{Json, extract::State};
@@ -12,7 +12,7 @@ use crate::*;
 /// GET `/dashboard/config` — host-shaped bootstrap for the web UI.
 ///
 /// Intentionally public: the host view is unauthenticated (same
-/// posture as `HostLog`-scoped endpoints like `/brains`).
+/// posture as `HostLog`-scoped endpoints like `/projects`).
 /// The tokens returned in `tickets` are the same tokens anyone
 /// with local access to the ticket DB can already read.
 pub(crate) async fn dashboard_config(State(state): State<ServerState>) -> Json<DashboardBootstrap> {
@@ -36,8 +36,8 @@ pub(crate) async fn dashboard_config(State(state): State<ServerState>) -> Json<D
         None => Vec::new(),
     };
 
-    let brains = match scope.as_ref() {
-        Some(s) => BrainRepo::new(s)
+    let projects = match scope.as_ref() {
+        Some(s) => ProjectRepo::new(s)
             .list(&SearchFilters::default())
             .await
             .map(|listed| listed.items)
@@ -66,10 +66,10 @@ pub(crate) async fn dashboard_config(State(state): State<ServerState>) -> Json<D
     Json(DashboardBootstrap {
         host: state.host_identity(),
         version: env!("CARGO_PKG_VERSION").to_string(),
-        current_brain: state.brain_name().clone(),
+        current_project: state.project_name().clone(),
         tenants,
         actors,
-        brains,
+        projects,
         tickets,
         peers,
     })

@@ -21,6 +21,8 @@ pub(crate) enum ServerError {
     Listener(#[from] std::io::Error),
     #[error(transparent)]
     State(#[from] ServerStateError),
+    #[error(transparent)]
+    Migration(#[from] MigrationError),
 }
 
 /// The dashboard HTML, embedded at compile time.
@@ -73,6 +75,19 @@ impl Server {
     /// against it, then assembles the router. Shared inner used by both
     /// `serve` and `spawn`.
     async fn serve_on(self, listener: TcpListener) -> Result<(), ServerError> {
+        match MigrationService::ensure_current(&self.config)? {
+            MigrationOutcome::AlreadyCurrent => {}
+            MigrationOutcome::Migrated {
+                applied,
+                backup_path,
+            } => {
+                tracing::info!(
+                    applied = ?applied,
+                    backup = %backup_path.display(),
+                    "data-dir migrated forward to current layout",
+                );
+            }
+        }
         let state = ServerState::bind(self.config.clone()).await?;
 
         // Register the sync handler on the bridge so incoming
@@ -124,7 +139,6 @@ impl Server {
             .merge(ActorRouter.routes())
             .merge(AgentRouter.routes())
             .merge(BookmarkRouter.routes())
-            .merge(BrainRouter.routes())
             .merge(CognitionRouter.routes())
             .merge(ConnectionRouter.routes())
             .merge(ContinuityRouter.routes())
@@ -141,7 +155,7 @@ impl Server {
             .merge(SeedRouter.routes())
             .merge(SensationRouter.routes())
             .merge(StorageRouter.routes())
-            .merge(SystemRouter.routes())
+            .merge(HostRouter.routes())
             .merge(TenantRouter.routes())
             .merge(TextureRouter.routes())
             .merge(TicketRouter.routes())
@@ -231,7 +245,7 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let config = Config::builder()
             .data_dir(dir.path().to_path_buf())
-            .brain(BrainName::new("test"))
+            .project(ProjectName::new("test"))
             .service(
                 ServiceConfig::builder()
                     .address("127.0.0.1:0".parse().unwrap())

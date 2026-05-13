@@ -49,12 +49,12 @@ impl<'a> FollowStore<'a> {
         self.conn.execute_batch(
             "create table if not exists follows (
                 id text primary key,
-                brain text not null,
+                project text not null,
                 bookmark text not null,
                 source text not null,
                 checkpoint text not null,
                 created_at text not null default '',
-                unique(brain, bookmark)
+                unique(project, bookmark)
             )",
         )?;
         Ok(())
@@ -66,12 +66,12 @@ impl<'a> FollowStore<'a> {
 
         self.conn.execute(
             "insert or replace into follows (
-                id, brain, bookmark, source, checkpoint, created_at
+                id, project, bookmark, source, checkpoint, created_at
              )
              values (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 follow.id.to_string(),
-                follow.brain.to_string(),
+                follow.project.to_string(),
                 follow.bookmark.to_string(),
                 source_json,
                 checkpoint_json,

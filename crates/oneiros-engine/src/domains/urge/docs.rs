@@ -28,7 +28,7 @@ impl UrgeDocs {
                 .tag(tag)
                 .nickname("set-urge")
                 .summary("Define an urge")
-                .description("Create or update a cognitive drive in the brain's vocabulary.")
+                .description("Create or update a cognitive drive in the project's vocabulary.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
@@ -40,7 +40,7 @@ impl UrgeDocs {
                 .tag(tag)
                 .nickname("remove-urge")
                 .summary("Remove an urge")
-                .description("Delete a cognitive drive from the brain's vocabulary.")
+                .description("Delete a cognitive drive from the project's vocabulary.")
                 .build(),
         }
     }

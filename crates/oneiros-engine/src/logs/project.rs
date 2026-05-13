@@ -6,7 +6,7 @@ impl aide::operation::OperationInput for ProjectLog {}
 
 /// Strangler — request-shaped context for legacy bookmark-tier callers.
 ///
-/// Carries the request's `Config` (with brain + bookmark already
+/// Carries the request's `Config` (with project + bookmark already
 /// resolved) and provides a lazily-composed `Scope<AtBookmark>` plus
 /// an authenticated HTTP `client()`. New code uses
 /// `Scope<AtBookmark>` + `Mailbox` directly; this remains for CLI
@@ -27,9 +27,9 @@ impl ProjectLog {
         }
     }
 
-    /// The brain name for this project.
-    pub(crate) fn brain_name(&self) -> &BrainName {
-        &self.config.brain
+    /// The project name for this project.
+    pub(crate) fn project_name(&self) -> &ProjectName {
+        &self.config.project
     }
 
     /// Compose a bookmark-tier Scope from this context's config
@@ -38,7 +38,7 @@ impl ProjectLog {
     pub(crate) fn scope(&self) -> Result<&Scope<AtBookmark>, ComposeError> {
         if self.scope.get().is_none() {
             let s = ComposeScope::new(self.config.clone())
-                .bookmark(self.config.brain.clone(), self.config.bookmark.clone())?;
+                .bookmark(self.config.project.clone(), self.config.bookmark.clone())?;
             let _ = self.scope.set(s);
         }
         Ok(self.scope.get().expect("just set above"))

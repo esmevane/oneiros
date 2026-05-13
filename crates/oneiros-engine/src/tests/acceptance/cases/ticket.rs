@@ -9,12 +9,12 @@ pub(crate) async fn list_after_project_init<B: Backend>() -> TestResult {
         Responses::Ticket(TicketResponse::Listed(TicketsResponse::V1(tickets))) => {
             assert!(
                 !tickets.items.is_empty(),
-                "project init should create at least one ticket"
+                "project create should create at least one ticket"
             );
             assert_eq!(
-                tickets.items[0].brain_name,
+                tickets.items[0].project_name,
                 "test-project".into(),
-                "ticket should be for the initialized brain"
+                "ticket should be for the initialized project"
             );
         }
         other => panic!("expected Ticket(Listed), got {other:#?}"),

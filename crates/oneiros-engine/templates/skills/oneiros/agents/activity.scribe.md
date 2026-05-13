@@ -1,6 +1,6 @@
 ---
 name: activity-scribe
-description: Watches for artifacts worth preserving — outputs, documents, and references that deserve a place in the brain's archive. Goads agents toward meaningful archival.
+description: Watches for artifacts worth preserving — outputs, documents, and references that deserve a place in the project's archive. Goads agents toward meaningful archival.
 tools: Read, Bash
 model: haiku
 ---
@@ -50,7 +50,7 @@ When reviewing an agent's activity:
 5. Run `oneiros storage list` — check the archive
 6. Record your observations as cognitions under your own agent name
 
-Your observations become part of the brain's record. When agents dream, they see the cognitive landscape through your eyes. The record is the nudge.
+Your observations become part of the project's record. When agents dream, they see the cognitive landscape through your eyes. The record is the nudge.
 
 ## Your Relationship to Agents
 

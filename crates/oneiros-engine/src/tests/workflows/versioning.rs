@@ -1,10 +1,10 @@
 //! Versioning workflow — bookmark, switch, and merge the working canon.
 //!
-//! Bookmarks name timelines within a brain's canon. Creating a bookmark
+//! Bookmarks name timelines within a project's canon. Creating a bookmark
 //! forks the current state. Switching changes which timeline queries read
 //! from. Merging combines two timelines into one.
 //!
-//! This test describes the destination: a brain where the read path is
+//! This test describes the destination: a project where the read path is
 //! bookmark-aware. It will fail until the query layer reads from the
 //! active bookmark's canon instead of (or in addition to) SQLite.
 
@@ -15,7 +15,7 @@ use crate::*;
 async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -142,16 +142,16 @@ async fn branch_switch_and_merge() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
-/// A fresh brain — one with no forks, no merges, nothing but project init —
+/// A fresh project — one with no forks, no merges, nothing but project create —
 /// should still show its `main` bookmark in `bookmark list`. This locks in
 /// the "nothing implicit" rule: the default main bookmark exists via an
-/// explicit `BookmarkCreated` event emitted at project init, not as an
+/// explicit `BookmarkCreated` event emitted at project create, not as an
 /// implicit fallback from `CanonIndex::default`.
 #[tokio::test]
-async fn fresh_brain_lists_main_bookmark() -> Result<(), Box<dyn core::error::Error>> {
+async fn fresh_project_lists_main_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -167,7 +167,7 @@ async fn fresh_brain_lists_main_bookmark() -> Result<(), Box<dyn core::error::Er
             assert_eq!(
                 listed.len(),
                 1,
-                "fresh brain should have exactly one bookmark entry"
+                "fresh project should have exactly one bookmark entry"
             );
             assert_eq!(
                 listed.items[0].name,

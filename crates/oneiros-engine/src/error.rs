@@ -31,8 +31,6 @@ pub(crate) enum Error {
     Actor(#[from] ActorError),
     #[error(transparent)]
     Bookmark(#[from] BookmarkError),
-    #[error(transparent)]
-    Brain(#[from] BrainError),
     #[error("configuration: {0}")]
     Config(String),
     #[error(transparent)]
@@ -76,13 +74,11 @@ pub(crate) enum Error {
     #[error(transparent)]
     Sensation(#[from] SensationError),
     #[error(transparent)]
-    Service(#[from] ServiceError),
-    #[error(transparent)]
     Setup(#[from] SetupError),
     #[error(transparent)]
     Storage(#[from] StorageError),
     #[error(transparent)]
-    System(#[from] SystemError),
+    Host(#[from] HostError),
     #[error(transparent)]
     Tenant(#[from] TenantError),
     #[error(transparent)]

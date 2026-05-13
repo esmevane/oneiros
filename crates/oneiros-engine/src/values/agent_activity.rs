@@ -35,7 +35,7 @@ impl AgentActivity {
     }
 }
 
-/// Cross-agent activity overview — the pulse of the brain.
+/// Cross-agent activity overview — the pulse of the project.
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub(crate) struct AgentActivityTable {
     pub(crate) agents: Vec<AgentActivity>,

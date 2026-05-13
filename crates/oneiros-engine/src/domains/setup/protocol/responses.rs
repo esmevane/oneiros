@@ -9,10 +9,10 @@ use crate::*;
 #[kinded(kind = SetupStepType, display = "kebab-case")]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 pub(crate) enum SetupStep {
-    SystemInitialized,
-    SystemAlreadyInitialized,
-    ProjectInitialized(BrainName),
-    ProjectAlreadyExists(BrainName),
+    HostInitialized,
+    HostAlreadyInitialized,
+    ProjectInitialized(ProjectName),
+    ProjectAlreadyExists(ProjectName),
     VocabularySeeded,
     AgentsSeeded,
     McpConfigured,

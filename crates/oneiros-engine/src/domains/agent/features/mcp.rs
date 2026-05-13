@@ -18,7 +18,7 @@ impl AgentMcp {
     }
 
     pub(crate) fn resources(&self) -> Vec<ResourceDef> {
-        vec![ResourcePathKind::Agents.resource_def("All agents in the brain")]
+        vec![ResourcePathKind::Agents.resource_def("All agents in the project")]
     }
 
     pub(crate) fn resource_templates(&self) -> Vec<ResourceTemplateDef> {
@@ -68,14 +68,14 @@ mod agent_mcp {
         vec![
             Tool::<CreateAgent>::new(
                 AgentRequestType::CreateAgent,
-                "Bring a new agent into the brain",
+                "Bring a new agent into the project",
             )
             .def(),
             Tool::<UpdateAgent>::new(AgentRequestType::UpdateAgent, "Reshape an agent's identity")
                 .def(),
             Tool::<RemoveAgent>::new(
                 AgentRequestType::RemoveAgent,
-                "Remove an agent from the brain",
+                "Remove an agent from the project",
             )
             .def(),
         ]

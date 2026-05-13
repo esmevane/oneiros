@@ -52,9 +52,9 @@ impl<T: Clone + Default> ReducerPipeline<T> {
     }
 }
 
-impl ReducerPipeline<BrainCanon> {
-    pub(crate) fn brain_with_state(initial: BrainCanon) -> Result<Self, EventError> {
-        let pipeline = Self::brain();
+impl ReducerPipeline<ProjectCanon> {
+    pub(crate) fn project_with_state(initial: ProjectCanon) -> Result<Self, EventError> {
+        let pipeline = Self::project();
         {
             let mut guard = pipeline
                 .state
@@ -65,7 +65,7 @@ impl ReducerPipeline<BrainCanon> {
         Ok(pipeline)
     }
 
-    pub(crate) fn brain() -> Self {
+    pub(crate) fn project() -> Self {
         Self::new(vec![
             AgentState::reducer(),
             CognitionState::reducer(),
@@ -84,12 +84,12 @@ impl ReducerPipeline<BrainCanon> {
     }
 }
 
-impl ReducerPipeline<SystemCanon> {
-    pub(crate) fn system() -> Self {
+impl ReducerPipeline<HostCanon> {
+    pub(crate) fn host() -> Self {
         Self::new(vec![
             TenantState::reducer(),
             ActorState::reducer(),
-            BrainState::reducer(),
+            ProjectState::reducer(),
             TicketState::reducer(),
             PeerState::reducer(),
             FollowState::reducer(),

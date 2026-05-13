@@ -8,7 +8,7 @@ use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum McpConfigError {
-    #[error("No token available. Run `oneiros project init` first, or pass --token.")]
+    #[error("No token available. Run `oneiros project create` first, or pass --token.")]
     NoToken,
 
     #[error(transparent)]

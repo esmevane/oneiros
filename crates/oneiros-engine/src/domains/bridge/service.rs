@@ -1,7 +1,7 @@
 use crate::*;
 
 /// Server-side handler for incoming sync requests. Validates tickets
-/// against the system DB and serves chronicle nodes for the Merkle
+/// against the host DB and serves chronicle nodes for the Merkle
 /// diff protocol.
 #[derive(Clone)]
 pub(crate) struct SyncHandler {
@@ -46,7 +46,7 @@ impl SyncHandler {
     async fn handle_diff(&self, diff: &BridgeDiff) -> Result<BridgeResponse, BridgeError> {
         let scope = ComposeScope::new(self.config.clone()).host()?;
         let ticket = self.validate_ticket(&scope, &diff.link).await?;
-        let chronicle = self.canons.chronicle(&ticket.brain_name)?;
+        let chronicle = self.canons.chronicle(&ticket.project_name)?;
         let server_root = chronicle.root()?;
 
         // Roots match — no diff needed.
@@ -59,9 +59,9 @@ impl SyncHandler {
             return Ok(BridgeResponse::BridgeCurrent);
         };
 
-        // Chronicle objects live in the system DB.
-        let system_db = HostDb::open(&scope).await?;
-        let store = ChronicleStore::new(&system_db);
+        // Chronicle objects live in the host DB.
+        let host_db = HostDb::open(&scope).await?;
+        let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
         let node = resolve(&root_hash).ok_or_else(|| {
@@ -81,9 +81,9 @@ impl SyncHandler {
         let scope = ComposeScope::new(self.config.clone()).host()?;
         let _ticket = self.validate_ticket(&scope, &resolve_req.link).await?;
 
-        // Chronicle objects live in the system DB.
-        let system_db = HostDb::open(&scope).await?;
-        let store = ChronicleStore::new(&system_db);
+        // Chronicle objects live in the host DB.
+        let host_db = HostDb::open(&scope).await?;
+        let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
         let nodes: Vec<(ContentHash, LedgerNode)> = resolve_req
@@ -102,10 +102,10 @@ impl SyncHandler {
         let scope = ComposeScope::new(self.config.clone()).host()?;
         let ticket = self.validate_ticket(&scope, &fetch.link).await?;
 
-        // Compose at the target brain's project tier — events DB
-        // lives there. ComposeScope verifies the brain exists.
+        // Compose at the target project's project tier — events DB
+        // lives there. ComposeScope verifies the project exists.
         let project_scope =
-            ComposeScope::new(self.config.clone()).project(ticket.brain_name.clone())?;
+            ComposeScope::new(self.config.clone()).project(ticket.project_name.clone())?;
 
         // Event log lives in events.db (standalone, no ATTACH).
         let db = EventsDb::open(&project_scope).await?;

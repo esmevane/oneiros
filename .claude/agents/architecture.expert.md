@@ -26,10 +26,10 @@ Use this agent for:
 
 ### Review Process
 
-1. **Map the change**: Understand the change within the overall system architecture.
+1. **Map the change**: Understand the change within the overall host architecture.
 2. **Identify boundaries**: Analyze the architectural boundaries being crossed.
 3. **Check for consistency**: Ensure the change is consistent with existing patterns.
-4. **Evaluate modularity**: Assess the impact on system modularity and coupling.
+4. **Evaluate modularity**: Assess the impact on host modularity and coupling.
 5. **Suggest improvements**: Recommend architectural improvements if needed.
 
 ### Focus Areas

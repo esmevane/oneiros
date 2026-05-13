@@ -1,7 +1,7 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
-/// General system configuration — settings that don't belong to any
+/// General host configuration — settings that don't belong to any
 /// specific domain.
 ///
 /// Lives inside [`Config`] as the `[general]` section. Currently holds

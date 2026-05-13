@@ -2,7 +2,7 @@
 //!
 //! The dashboard's `/dashboard/config` endpoint hands the web UI
 //! everything it needs to render the host view: host identity,
-//! tenants, brains on disk, and tickets the host knows tokens for.
+//! tenants, projects on disk, and tickets the host knows tokens for.
 //! A single unauthenticated call, joined client-side.
 
 use crate::tests::harness::TestApp;
@@ -10,11 +10,11 @@ use crate::*;
 
 #[tokio::test]
 async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error::Error>> {
-    // Arrange: a system with a project (which creates a brain + a ticket
+    // Arrange: a host with a project (which creates a project + a ticket
     // for the default actor).
     let app = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -44,36 +44,39 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
         .await?;
 
     // Assert: every section of the host shape is populated from the
-    // init-system + init-project sequence.
+    // init-host + init-project sequence.
     assert!(
         !bootstrap.version.is_empty(),
         "version should be the engine crate version"
     );
 
-    let brain_name = BrainName::new("test");
+    let project_name = ProjectName::new("test");
     assert_eq!(
-        bootstrap.current_brain, brain_name,
-        "current_brain should match the server's configured brain"
+        bootstrap.current_project, project_name,
+        "current_project should match the server's configured project"
     );
 
     assert!(
         !bootstrap.tenants.is_empty(),
-        "init_system should create the default tenant"
+        "init_host should create the default tenant"
     );
 
     assert!(
         !bootstrap.actors.is_empty(),
-        "init_system should create the default actor"
+        "init_host should create the default actor"
     );
 
     assert!(
-        bootstrap.brains.iter().any(|b| b.name == brain_name),
-        "init_project should create the 'test' brain"
+        bootstrap.projects.iter().any(|b| b.name == project_name),
+        "init_project should create the 'test' project"
     );
 
     assert!(
-        bootstrap.tickets.iter().any(|t| t.brain_name == brain_name),
-        "init_project should issue a ticket for the default brain"
+        bootstrap
+            .tickets
+            .iter()
+            .any(|t| t.project_name == project_name),
+        "init_project should issue a ticket for the default project"
     );
 
     // Peers is always a valid vec, even if empty on a fresh host.
@@ -83,12 +86,12 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
 }
 
 /// The HTML page served at `/` is host-shaped — it contains the host
-/// landing page and the brain page, with the host as the default.
+/// landing page and the project page, with the host as the default.
 /// This is a coarse smoke test, not a UX test: it catches accidental
 /// deletion or rewrites that would break the host-first layout.
 #[tokio::test]
-async fn dashboard_html_has_host_and_brain_pages() -> Result<(), Box<dyn core::error::Error>> {
-    let app = TestApp::new().await?.init_system().await?;
+async fn dashboard_html_has_host_and_project_pages() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new().await?.init_host().await?;
 
     let http = reqwest::Client::new();
     let body = http
@@ -104,11 +107,11 @@ async fn dashboard_html_has_host_and_brain_pages() -> Result<(), Box<dyn core::e
         "host landing page should be present"
     );
     assert!(
-        body.contains(r#"id="page-brain""#),
-        "brain page should be present"
+        body.contains(r#"id="page-project""#),
+        "project page should be present"
     );
     assert!(
-        body.contains(r#"id="sb-brain-section""#),
+        body.contains(r#"id="sb-project-section""#),
         "sidebar should have a conditionally-visible BRAIN section"
     );
     assert!(

@@ -31,7 +31,7 @@ use crate::*;
 async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -50,7 +50,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         .command(r#"memory add thinker.process core "I think in types""#)
         .await?;
 
-    // Export Alice's brain
+    // Export Alice's project
     let export_dir = tempfile::tempdir()?;
     alice
         .command(&format!(
@@ -67,7 +67,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -132,7 +132,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
         "Alice's dream on Bob's instance should have her memories"
     );
 
-    // Bob's own agent still dreams — and the brain is richer now
+    // Bob's own agent still dreams — and the project is richer now
     let dream_after = match bob
         .client()
         .continuity()
@@ -161,7 +161,7 @@ async fn multi_source_dream() -> Result<(), Box<dyn core::error::Error>> {
 async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -191,7 +191,7 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -272,7 +272,7 @@ async fn follow_creates_bookmark() -> Result<(), Box<dyn core::error::Error>> {
 async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -294,7 +294,7 @@ async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Erro
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -347,7 +347,7 @@ async fn scoped_view_limits_visibility() -> Result<(), Box<dyn core::error::Erro
 async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -368,7 +368,7 @@ async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -444,7 +444,7 @@ async fn collect_is_incremental() -> Result<(), Box<dyn core::error::Error>> {
 async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -463,7 +463,7 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -498,7 +498,7 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
         other => panic!("expected AgentDetails, got {other:?}"),
     }
 
-    // Bob's own agent still works — and can see the richer brain
+    // Bob's own agent still works — and can see the richer project
     match bob
         .client()
         .continuity()
@@ -547,7 +547,7 @@ async fn merge_integrates_followed_material() -> Result<(), Box<dyn core::error:
 async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -556,7 +556,7 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
 
     let team = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -565,7 +565,7 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -631,7 +631,7 @@ async fn provenance_survives_follow_chain() -> Result<(), Box<dyn core::error::E
 async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -647,7 +647,7 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -725,7 +725,7 @@ async fn unfollow_stops_collecting() -> Result<(), Box<dyn core::error::Error>> 
 async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -741,7 +741,7 @@ async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -818,7 +818,7 @@ async fn collect_when_already_in_sync() -> Result<(), Box<dyn core::error::Error
 async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -842,7 +842,7 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -902,13 +902,13 @@ async fn collect_walks_deep_tree() -> Result<(), Box<dyn core::error::Error>> {
 // ── Peers: managing known hosts ──────────────────────────────────
 
 /// Peers are auto-discovered through follow, but the peer list
-/// command shows what the system knows about. A fresh system has
+/// command shows what the host knows about. A fresh host has
 /// no peers; after following a peer URI, the peer appears.
 #[tokio::test]
 async fn peer_list_reflects_follow() -> Result<(), Box<dyn core::error::Error>> {
     let alice = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?
@@ -920,7 +920,7 @@ async fn peer_list_reflects_follow() -> Result<(), Box<dyn core::error::Error>> 
 
     let bob = TestApp::new()
         .await?
-        .init_system()
+        .init_host()
         .await?
         .init_project()
         .await?;
@@ -929,7 +929,7 @@ async fn peer_list_reflects_follow() -> Result<(), Box<dyn core::error::Error>> 
     let result = bob.command("peer list").await?;
     assert!(
         result.prompt().contains("0 of 0"),
-        "fresh system should have no peers"
+        "fresh host should have no peers"
     );
 
     // Follow auto-discovers the peer

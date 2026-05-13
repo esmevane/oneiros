@@ -1,5 +1,5 @@
 //! `ProjectImportActor` — singleton that handles foreign event ingestion
-//! for any brain. Insert-or-ignore into events.db keyed on event id,
+//! for any project. Insert-or-ignore into events.db keyed on event id,
 //! then emit the same downstream messages as a local append.
 //!
 //! Stateless across messages: the scope on each `ImportEvent` opens

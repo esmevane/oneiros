@@ -70,7 +70,7 @@ async fn create(
     State(state): State<ServerState>,
     Json(body): Json<CreateBookmark>,
 ) -> Result<(StatusCode, Json<BookmarkResponse>), BookmarkError> {
-    let response = BookmarkService::create(&state, context.brain_name(), &body).await?;
+    let response = BookmarkService::create(&state, context.project_name(), &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -80,7 +80,7 @@ async fn switch(
     Json(body): Json<SwitchBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::switch(&state, context.brain_name(), &body).await?,
+        BookmarkService::switch(&state, context.project_name(), &body).await?,
     ))
 }
 
@@ -90,7 +90,7 @@ async fn merge(
     Json(body): Json<MergeBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::merge(&state, context.brain_name(), &body).await?,
+        BookmarkService::merge(&state, context.project_name(), &body).await?,
     ))
 }
 
@@ -100,7 +100,7 @@ async fn list(
     Query(params): Query<ListBookmarks>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::list(&state, context.brain_name(), &params).await?,
+        BookmarkService::list(&state, context.project_name(), &params).await?,
     ))
 }
 
@@ -110,7 +110,7 @@ async fn share(
     Json(body): Json<ShareBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::share(&state, context.brain_name(), &body).await?,
+        BookmarkService::share(&state, context.project_name(), &body).await?,
     ))
 }
 
@@ -120,7 +120,7 @@ async fn follow(
     Json(body): Json<FollowBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::follow(&state, context.brain_name(), &body).await?,
+        BookmarkService::follow(&state, context.project_name(), &body).await?,
     ))
 }
 
@@ -130,7 +130,7 @@ async fn unfollow(
     Json(body): Json<UnfollowBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::unfollow(&state, context.brain_name(), &body).await?,
+        BookmarkService::unfollow(&state, context.project_name(), &body).await?,
     ))
 }
 
@@ -140,6 +140,6 @@ async fn collect(
     Json(body): Json<CollectBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
-        BookmarkService::collect(&state, context.brain_name(), &body).await?,
+        BookmarkService::collect(&state, context.project_name(), &body).await?,
     ))
 }

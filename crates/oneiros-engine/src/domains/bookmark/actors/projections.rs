@@ -1,7 +1,7 @@
-//! `BookmarkProjectionsActor` — singleton that applies brain projections
+//! `BookmarkProjectionsActor` — singleton that applies project projections
 //! against any bookmark's database.
 //!
-//! First-time-seen `(brain, bookmark)` pairs are caught up by replaying
+//! First-time-seen `(project, bookmark)` pairs are caught up by replaying
 //! the project event log into the bookmark DB. Subsequent `Apply`
 //! messages project a single stored event each. Idempotent
 //! (delete-then-insert), so partial replay or duplicate applies are
@@ -46,7 +46,7 @@ impl BookmarkProjectionsInbox {
 
 pub(crate) struct BookmarkProjectionsActor {
     canons: CanonIndex,
-    caught_up: HashSet<(BrainName, BookmarkName)>,
+    caught_up: HashSet<(ProjectName, BookmarkName)>,
 }
 
 impl BookmarkProjectionsActor {
@@ -89,7 +89,7 @@ impl BookmarkProjectionsActor {
         }
         let bookmark_db = BookmarkDb::open(&apply.scope).await?;
         let projections = self.projections_for(&apply.scope.project().name)?;
-        projections.apply_brain(&bookmark_db, &apply.stored)?;
+        projections.apply_project(&bookmark_db, &apply.stored)?;
         Ok(())
     }
 
@@ -98,12 +98,15 @@ impl BookmarkProjectionsActor {
         let projections = self.projections_for(&scope.project().name)?;
         projections.migrate(&bookmark_db)?;
         let log = EventLog::attached(&bookmark_db);
-        projections.replay_brain(&bookmark_db, &log)?;
+        projections.replay_project(&bookmark_db, &log)?;
         Ok(())
     }
 
-    fn projections_for(&self, brain: &BrainName) -> Result<Projections<BrainCanon>, EventError> {
-        let entry = self.canons.brain_entry(brain)?;
+    fn projections_for(
+        &self,
+        project: &ProjectName,
+    ) -> Result<Projections<ProjectCanon>, EventError> {
+        let entry = self.canons.project_entry(project)?;
         Ok(Projections::project_with_pipeline(entry.pipeline))
     }
 }

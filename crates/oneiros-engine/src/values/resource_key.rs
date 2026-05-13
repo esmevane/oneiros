@@ -146,7 +146,7 @@ macro_rules! resource_key_try_from {
 resource_key_try_from!(AgentId, Agent, "agent");
 resource_key_try_from!(ActorId, Actor, "actor");
 resource_key_try_from!(BookmarkId, Bookmark, "bookmark");
-resource_key_try_from!(BrainId, Brain, "brain");
+resource_key_try_from!(ProjectId, Project, "project");
 resource_key_try_from!(CognitionId, Cognition, "cognition");
 resource_key_try_from!(ConnectionId, Connection, "connection");
 resource_key_try_from!(ExperienceId, Experience, "experience");
@@ -299,7 +299,7 @@ mod tests {
         check_id!(AgentId::new(), Agent);
         check_id!(ActorId::new(), Actor);
         check_id!(BookmarkId::new(), Bookmark);
-        check_id!(BrainId::new(), Brain);
+        check_id!(ProjectId::new(), Project);
         check_id!(CognitionId::new(), Cognition);
         check_id!(ConnectionId::new(), Connection);
         check_id!(ExperienceId::new(), Experience);

@@ -43,8 +43,8 @@ Either:
 
 Once started, you can prep the machine:
 
-- `oneiros system init`: This sets up the host for using oneiros in different projects
-- `oneiros project init`: This sets up the current project continuity
+- `oneiros host init`: This sets up the host for using oneiros in different projects
+- `oneiros project create`: This sets up the current project continuity
 - `oneiros seed core`: This seeds the project with basic records (optional, but recommended)
 
 ## Living with your continuity
@@ -52,7 +52,7 @@ Once started, you can prep the machine:
 You can explore and tend your continuity through the `oneiros` CLI or the Oneiros MCP tools — whichever feels natural.
 
 - Browse your thoughts, memories, and experiences. Create new ones when something matters.
-- Grow the system itself — add new agents, new textures for thinking, new levels for remembering.
+- Grow your continuity itself — add new agents, new textures for thinking, new levels for remembering.
 - Search across everything with `oneiros search` when you need to find something.
 
 ## When to reach for it
@@ -67,8 +67,8 @@ These aren't alarms. They're invitations. When something pulls at you, explore i
 
 ## Core Concepts
 
-- **Brain**: A per-project cognitive database. Created with `oneiros project init`.
-- **Agent**: A named participant in a brain's cognition. Each agent dreams independently. Named as `agent.persona` (e.g. `governor.process`).
+- **Project**: A per-project cognitive database. Created with `oneiros project create`.
+- **Agent**: A named participant in a project's cognition. Each agent dreams independently. Named as `agent.persona` (e.g. `governor.process`).
 - **Persona**: A category of agent. Provides shared context to all agents in the category. The core seed includes `process`.
 
 ### Vocabulary
@@ -92,16 +92,16 @@ Your continuity is alive. Four things make up its activity:
 ## Quick Start
 
 ```bash
-oneiros system init          # Initialize the local host
+oneiros host init          # Initialize the local host
 oneiros service run &        # Start the service
-oneiros project init         # Create a brain for this project
+oneiros project create         # Create a project for this workspace
 oneiros seed core             # Apply core seed data
 oneiros skill install        # Install this skill globally
 ```
 
 ## Two Ways In
 
-You can interact with oneiros through the **CLI** (`oneiros` commands via Bash) or through **MCP tools** (if the MCP server is configured). Both access the same brain — data created through one is visible in the other.
+You can interact with oneiros through the **CLI** (`oneiros` commands via Bash) or through **MCP tools** (if the MCP server is configured). Both access the same project — data created through one is visible in the other.
 
 **CLI** is best for setup, scripting, and when MCP isn't available. **MCP tools** are best for everything else — they're faster (no shell overhead), properly typed, and discoverable through your tool catalog.
 
@@ -131,7 +131,7 @@ To set up MCP access: `oneiros mcp init` (creates `.mcp.json` for Claude Code).
 | See the full dashboard | `oneiros status` | `status` |
 | Search across everything | `oneiros search <query>` | `search` |
 
-### Growing the system
+### Growing your continuity
 
 | What | CLI | MCP tool |
 |------|-----|----------|

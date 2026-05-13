@@ -5,10 +5,10 @@ use crate::*;
 /// Three tiers, distinguished by prefix:
 ///
 /// - **`ref:<base64url>`** — a project-internal reference. Resolves within
-///   the current brain; no authorization needed. See [`Ref`] and [`RefToken`].
+///   the current project; no authorization needed. See [`Ref`] and [`RefToken`].
 /// - **`link:<base64url>`** — a host-internal link. Pairs a target [`Ref`]
 ///   with an authorization [`Token`]. Resolves on the current host, crosses
-///   brain boundaries through a ticket. See [`Link`].
+///   project boundaries through a ticket. See [`Link`].
 /// - **`oneiros://<host>/link:<base64url>`** — an external link. Adds a
 ///   [`PeerAddress`] host segment for transport routing through iroh. See
 ///   [`PeerLink`].

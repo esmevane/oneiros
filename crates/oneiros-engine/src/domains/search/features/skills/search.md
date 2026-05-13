@@ -1,5 +1,5 @@
 ---
-description: Search across everything in the brain
+description: Search across everything in the project
 argument-hint: "<query>"
 ---
 

@@ -9,17 +9,17 @@ impl TicketService {
         request: &CreateTicket,
     ) -> Result<TicketResponse, TicketError> {
         let CreateTicket::V1(create) = request;
-        let brain = BrainRepo::new(scope)
-            .get(&create.brain_name)
+        let project = ProjectRepo::new(scope)
+            .get(&create.project_name)
             .await?
-            .ok_or_else(|| TicketError::BrainNotFound(create.brain_name.clone()))?;
+            .ok_or_else(|| TicketError::ProjectNotFound(create.project_name.clone()))?;
 
-        let target = Ref::brain(brain.id);
+        let target = Ref::project(project.id);
         let ticket = Self::issue(
             scope,
             mailbox,
-            &create.brain_name,
-            &brain,
+            &create.project_name,
+            &project,
             create.actor_id,
             target,
         )
@@ -33,12 +33,12 @@ impl TicketService {
     }
 
     /// Issue a ticket scoped to a specific target ref. Used by both
-    /// `create` (brain-scoped) and `bookmark share` (bookmark-scoped).
+    /// `create` (project-scoped) and `bookmark share` (bookmark-scoped).
     pub(crate) async fn issue(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
-        brain_name: &BrainName,
-        brain: &Brain,
+        project_name: &ProjectName,
+        project: &Project,
         actor_id: ActorId,
         target: Ref,
     ) -> Result<Ticket, TicketError> {
@@ -48,7 +48,7 @@ impl TicketService {
             .ok_or_else(|| TicketError::ActorNotFound(actor_id))?;
 
         let claims = TokenClaims::builder()
-            .brain_id(brain.id)
+            .project_id(project.id)
             .tenant_id(actor.tenant_id)
             .actor_id(actor_id)
             .build();
@@ -57,8 +57,8 @@ impl TicketService {
         let link = Link::new(target, token);
         let ticket = Ticket::builder()
             .actor_id(actor_id)
-            .brain_name(brain_name.clone())
-            .brain_id(brain.id)
+            .project_name(project_name.clone())
+            .project_id(project.id)
             .link(link)
             .granted_by(actor_id)
             .build();
@@ -70,8 +70,8 @@ impl TicketService {
             )))
             .build();
 
-        mailbox.tell(SystemMessage::from(
-            AppendSystemLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),

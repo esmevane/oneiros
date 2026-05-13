@@ -2,7 +2,7 @@
 //!
 //! `HostKey` owns the host's persistent ed25519 secret key — the
 //! cryptographic identity from which the iroh `EndpointId` and public
-//! `PeerKey` are derived. One key per host, shared across brains,
+//! `PeerKey` are derived. One key per host, shared across projects,
 //! lives at `data_dir/host.key`.
 
 use std::path::{Path, PathBuf};
@@ -55,7 +55,7 @@ impl HostKey {
 
     /// Load the persisted host secret key, or generate and persist a
     /// fresh one if none exists. Idempotent: subsequent calls return
-    /// the same key. Safe to call from either `SystemService::init` or
+    /// the same key. Safe to call from either `HostService::init` or
     /// the server's start path — whichever runs first creates the key.
     ///
     /// On Unix, the key file is written with mode `0o600` (owner-only

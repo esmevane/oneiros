@@ -20,7 +20,7 @@ impl PressureDocs {
                 .tag(tag)
                 .nickname("list-pressure")
                 .summary("List pressure readings")
-                .description("See all current cognitive pressure measurements across the brain.")
+                .description("See all current cognitive pressure measurements across the project.")
                 .build(),
             Self::Get => ResourceDocs::builder()
                 .tag(tag)
