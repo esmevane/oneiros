@@ -15,23 +15,23 @@ impl CognitionCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, CognitionError> {
         let client = Client::from_config(config)?;
-        let cognition_client = CognitionClient::new(&client);
 
-        let (response, request) = match self {
+        let (bytes, request) = match self {
             Self::Add(addition) => (
-                cognition_client.add(addition).await?,
+                addition.execute_request(&client).await?,
                 CognitionRequest::AddCognition(addition.clone()),
             ),
             Self::Show(lookup) => (
-                cognition_client.get(lookup).await?,
+                lookup.execute_request(&client).await?,
                 CognitionRequest::GetCognition(lookup.clone()),
             ),
             Self::List(listing) => (
-                cognition_client.list(listing).await?,
+                listing.execute_request(&client).await?,
                 CognitionRequest::ListCognitions(listing.clone()),
             ),
         };
 
+        let response: CognitionResponse = serde_json::from_slice(&bytes)?;
         Ok(CognitionView::new(response, &request)
             .render()
             .map(Into::into))

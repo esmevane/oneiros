@@ -4,7 +4,7 @@
 //! should fail through the CLI, the typed client, and MCP alike. These
 //! tests prove the error contract across boundaries.
 
-use crate::tests::harness::TestApp;
+use crate::tests::harness::{AgentClient, TenantClient, TestApp};
 use crate::*;
 
 /// Project-scoped routes reject unauthenticated and badly-authenticated

@@ -18,15 +18,15 @@ pub(crate) enum LevelCommands {
 impl LevelCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, LevelError> {
         let client = Client::from_config(config)?;
-        let level_client = LevelClient::new(&client);
 
-        let response = match self {
-            Self::Set(setting) => level_client.set(setting).await?,
-            Self::Show(lookup) => level_client.get(lookup).await?,
-            Self::List(listing) => level_client.list(listing).await?,
-            Self::Remove(removal) => level_client.remove(removal).await?,
+        let bytes = match self {
+            Self::Set(setting) => setting.execute_request(&client).await?,
+            Self::Show(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: LevelResponse = serde_json::from_slice(&bytes)?;
         Ok(LevelView::new(response).render().map(Into::into))
     }
 }

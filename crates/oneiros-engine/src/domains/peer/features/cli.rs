@@ -13,15 +13,15 @@ pub(crate) enum PeerCommands {
 impl PeerCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, PeerError> {
         let client = Client::from_config(config)?;
-        let peer_client = PeerClient::new(&client);
 
-        let response = match self {
-            Self::Add(addition) => peer_client.add(addition).await?,
-            Self::Get(lookup) => peer_client.get(lookup).await?,
-            Self::List(listing) => peer_client.list(listing).await?,
-            Self::Remove(removal) => peer_client.remove(removal).await?,
+        let bytes = match self {
+            Self::Add(addition) => addition.execute_request(&client).await?,
+            Self::Get(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: PeerResponse = serde_json::from_slice(&bytes)?;
         Ok(PeerView::new(response).render().map(Into::into))
     }
 }

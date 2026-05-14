@@ -21,15 +21,15 @@ impl PersonaCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, PersonaError> {
         let client = Client::from_config(config)?;
-        let persona_client = PersonaClient::new(&client);
 
-        let response = match self {
-            Self::Set(setting) => persona_client.set(setting).await?,
-            Self::Show(lookup) => persona_client.get(lookup).await?,
-            Self::List(listing) => persona_client.list(listing).await?,
-            Self::Remove(removal) => persona_client.remove(removal).await?,
+        let bytes = match self {
+            Self::Set(setting) => setting.execute_request(&client).await?,
+            Self::Show(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: PersonaResponse = serde_json::from_slice(&bytes)?;
         Ok(PersonaView::new(response).render().map(Into::into))
     }
 }

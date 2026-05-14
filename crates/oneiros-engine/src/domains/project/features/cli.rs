@@ -18,12 +18,20 @@ impl ProjectCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, ProjectError> {
         let client = Client::from_config(config)?;
-        let project_client = ProjectClient::new(&client);
 
         let response: ProjectResponse = match self {
-            ProjectCommands::Create(creation) => project_client.create(creation).await?,
-            ProjectCommands::Get(lookup) => project_client.get(lookup).await?,
-            ProjectCommands::List(listing) => project_client.list(listing).await?,
+            ProjectCommands::Create(creation) => {
+                let bytes = creation.execute_request(&client).await?;
+                serde_json::from_slice(&bytes)?
+            }
+            ProjectCommands::Get(lookup) => {
+                let bytes = lookup.execute_request(&client).await?;
+                serde_json::from_slice(&bytes)?
+            }
+            ProjectCommands::List(listing) => {
+                let bytes = listing.execute_request(&client).await?;
+                serde_json::from_slice(&bytes)?
+            }
             ProjectCommands::Export(exporting) => {
                 let scope = ComposeScope::new(config.clone())
                     .bookmark(config.project.clone(), config.bookmark.clone())?;

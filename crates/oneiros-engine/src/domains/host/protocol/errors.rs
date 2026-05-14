@@ -44,6 +44,9 @@ pub(crate) enum HostError {
 
     #[error("Unexpected service response: {0}")]
     UnexpectedResponse(String),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(HostError);
@@ -67,6 +70,7 @@ impl IntoResponse for HostError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             HostError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            HostError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

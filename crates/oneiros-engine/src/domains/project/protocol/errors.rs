@@ -61,12 +61,13 @@ impl IntoResponse for ProjectError {
             ProjectError::Missing
             | ProjectError::Database(_)
             | ProjectError::Event(_)
-            | ProjectError::Serde(_)
             | ProjectError::Io(_)
             | ProjectError::Upcast(_)
             | ProjectError::Compose(_)
             | ProjectError::BookmarkDb(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
-            ProjectError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            ProjectError::Client(_) | ProjectError::Serde(_) => {
+                (StatusCode::BAD_GATEWAY, self.to_string())
+            }
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

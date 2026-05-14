@@ -14,9 +14,8 @@ impl SearchCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, SearchError> {
         let client = Client::from_config(config)?;
-        let search_client = SearchClient::new(&client);
-
-        let response = search_client.search(&self.command).await?;
+        let bytes = self.command.execute_request(&client).await?;
+        let response: SearchResponse = serde_json::from_slice(&bytes)?;
         Ok(SearchView::new(response).render().map(Into::into))
     }
 }

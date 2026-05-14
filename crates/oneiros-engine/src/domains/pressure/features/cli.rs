@@ -14,11 +14,11 @@ impl PressureCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, PressureError> {
         let client = Client::from_config(config)?;
-        let pressure_client = PressureClient::new(&client);
 
+        let bytes = self.command.execute_request(&client).await?;
+        let response: PressureResponse = serde_json::from_slice(&bytes)?;
         let request = PressureRequest::GetPressure(self.command.clone());
-        let response = pressure_client.get(&self.command).await?;
-        Ok(PressurePresenter::new(response, &request)
+        Ok(PressureView::new(response, &request)
             .render()
             .map(Into::into))
     }

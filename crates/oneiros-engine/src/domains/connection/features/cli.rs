@@ -16,27 +16,27 @@ impl ConnectionCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, ConnectionError> {
         let client = Client::from_config(config)?;
-        let connection_client = ConnectionClient::new(&client);
 
-        let (response, request) = match self {
+        let (bytes, request) = match self {
             Self::Create(creation) => (
-                connection_client.create(creation).await?,
+                creation.execute_request(&client).await?,
                 ConnectionRequest::CreateConnection(creation.clone()),
             ),
             Self::Show(lookup) => (
-                connection_client.get(lookup).await?,
+                lookup.execute_request(&client).await?,
                 ConnectionRequest::GetConnection(lookup.clone()),
             ),
             Self::List(listing) => (
-                connection_client.list(listing).await?,
+                listing.execute_request(&client).await?,
                 ConnectionRequest::ListConnections(listing.clone()),
             ),
             Self::Remove(removal) => (
-                connection_client.remove(removal).await?,
+                removal.execute_request(&client).await?,
                 ConnectionRequest::RemoveConnection(removal.clone()),
             ),
         };
 
+        let response: ConnectionResponse = serde_json::from_slice(&bytes)?;
         Ok(ConnectionView::new(response, &request)
             .render()
             .map(Into::into))

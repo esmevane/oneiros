@@ -20,6 +20,9 @@ pub(crate) enum PressureError {
 
     #[error(transparent)]
     Upcast(#[from] UpcastError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(PressureError);
@@ -32,6 +35,7 @@ impl IntoResponse for PressureError {
             }
             PressureError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             PressureError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            PressureError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

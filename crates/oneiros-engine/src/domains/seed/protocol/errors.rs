@@ -36,6 +36,9 @@ pub(crate) enum SeedError {
     Client(#[from] ClientError),
 
     #[error(transparent)]
+    Json(#[from] serde_json::Error),
+
+    #[error(transparent)]
     Compose(#[from] ComposeError),
 
     #[error("Required personas (process, scribe) not found. Run `oneiros seed core` first.")]
@@ -60,6 +63,11 @@ impl IntoResponse for SeedError {
             )
                 .into_response(),
             SeedError::Client(client) => client.into_response(),
+            SeedError::Json(_) => (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorResponse::new(self.to_string())),
+            )
+                .into_response(),
             SeedError::MissingPersonas => (
                 StatusCode::PRECONDITION_FAILED,
                 Json(ErrorResponse::new(self.to_string())),

@@ -18,14 +18,14 @@ impl TicketCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, TicketError> {
         let client = Client::from_config(config)?;
-        let ticket_client = TicketClient::new(&client);
 
-        let response = match self {
-            Self::Issue(issuance) => ticket_client.issue(issuance).await?,
-            Self::Validate(validation) => ticket_client.validate(validation).await?,
-            Self::List(listing) => ticket_client.list(listing).await?,
+        let bytes = match self {
+            Self::Issue(issuance) => issuance.execute_request(&client).await?,
+            Self::Validate(validation) => validation.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
         };
 
+        let response: TicketResponse = serde_json::from_slice(&bytes)?;
         Ok(TicketView::new(response).render().map(Into::into))
     }
 }

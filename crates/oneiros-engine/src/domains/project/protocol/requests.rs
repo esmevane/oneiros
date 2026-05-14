@@ -22,6 +22,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for CreateProject {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/projects", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetProject {
@@ -29,6 +37,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ProjectName>,
         }
+    }
+}
+
+impl ClientRequest for GetProject {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetProject::V1(lookup) = self;
+        client.get(&format!("/projects/{}", lookup.key)).await
     }
 }
 
@@ -42,6 +59,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListProjects {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListProjects::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/projects?{query}")).await
     }
 }
 

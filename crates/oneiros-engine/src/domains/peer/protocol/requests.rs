@@ -17,6 +17,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for AddPeer {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/peers", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetPeer {
@@ -24,6 +32,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<PeerId>,
         }
+    }
+}
+
+impl ClientRequest for GetPeer {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetPeer::V1(lookup) = self;
+        client.get(&format!("/peers/{}", lookup.key)).await
     }
 }
 
@@ -37,6 +54,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemovePeer {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemovePeer::V1(removal) = self;
+        client.delete(&format!("/peers/{}", removal.id)).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListPeers {
@@ -47,6 +73,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListPeers {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListPeers::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/peers?{query}")).await
     }
 }
 

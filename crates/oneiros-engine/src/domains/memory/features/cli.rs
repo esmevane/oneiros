@@ -15,23 +15,23 @@ impl MemoryCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, MemoryError> {
         let client = Client::from_config(config)?;
-        let memory_client = MemoryClient::new(&client);
 
-        let (response, request) = match self {
+        let (bytes, request) = match self {
             Self::Add(addition) => (
-                memory_client.add(addition).await?,
+                addition.execute_request(&client).await?,
                 MemoryRequest::AddMemory(addition.clone()),
             ),
             Self::Show(lookup) => (
-                memory_client.get(lookup).await?,
+                lookup.execute_request(&client).await?,
                 MemoryRequest::GetMemory(lookup.clone()),
             ),
             Self::List(listing) => (
-                memory_client.list(listing).await?,
+                listing.execute_request(&client).await?,
                 MemoryRequest::ListMemories(listing.clone()),
             ),
         };
 
+        let response: MemoryResponse = serde_json::from_slice(&bytes)?;
         Ok(MemoryView::new(response, &request).render().map(Into::into))
     }
 }

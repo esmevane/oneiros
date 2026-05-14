@@ -21,15 +21,15 @@ impl NatureCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, NatureError> {
         let client = Client::from_config(config)?;
-        let nature_client = NatureClient::new(&client);
 
-        let response = match self {
-            Self::Set(setting) => nature_client.set(setting).await?,
-            Self::Show(lookup) => nature_client.get(lookup).await?,
-            Self::List(listing) => nature_client.list(listing).await?,
-            Self::Remove(removal) => nature_client.remove(removal).await?,
+        let bytes = match self {
+            Self::Set(setting) => setting.execute_request(&client).await?,
+            Self::Show(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: NatureResponse = serde_json::from_slice(&bytes)?;
         Ok(NatureView::new(response).render().map(Into::into))
     }
 }

@@ -38,6 +38,9 @@ pub(crate) enum StorageError {
 
     #[error(transparent)]
     Client(#[from] ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(StorageError);
@@ -56,6 +59,7 @@ impl IntoResponse for StorageError {
             | StorageError::Compose(_)
             | StorageError::BookmarkDb(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            StorageError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

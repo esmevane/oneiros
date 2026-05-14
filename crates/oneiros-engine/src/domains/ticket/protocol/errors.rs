@@ -34,6 +34,9 @@ pub(crate) enum TicketError {
 
     #[error(transparent)]
     Client(#[from] ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(TicketError);
@@ -46,10 +49,12 @@ impl IntoResponse for TicketError {
             TicketError::ProjectNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TicketError::ActorNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             TicketError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            TicketError::Database(_) | TicketError::Event(_) | TicketError::Client(_) => {
+            TicketError::Database(_) | TicketError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
+            TicketError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             TicketError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            TicketError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

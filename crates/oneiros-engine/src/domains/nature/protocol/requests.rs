@@ -20,6 +20,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for SetNature {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SetNature::V1(body) = self;
+        client.put(&format!("/natures/{}", body.name), self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetNature {
@@ -27,6 +36,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<NatureName>,
         }
+    }
+}
+
+impl ClientRequest for GetNature {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetNature::V1(lookup) = self;
+        client.get(&format!("/natures/{}", lookup.key)).await
     }
 }
 
@@ -40,6 +58,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemoveNature {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveNature::V1(removal) = self;
+        client.delete(&format!("/natures/{}", removal.name)).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListNatures {
@@ -50,6 +77,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListNatures {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListNatures::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/natures?{query}")).await
     }
 }
 

@@ -17,7 +17,7 @@
 //! app.command("agent create thinker process").await?;
 //!
 //! let client = app.client();
-//! let persona = client.persona().get(&PersonaName::new("process")).await?;
+//! let agent = client.agent().get(&GetAgent::V1(...)).await?;
 //! ```
 
 use clap::Parser;
@@ -172,8 +172,15 @@ impl TestApp {
 
 /// A typed HTTP client for test assertions.
 ///
-/// Wraps the existing domain clients behind a fluent API.
-/// Each method returns the production domain client — no test doubles.
+/// Wraps the shared `Client` and exposes per-domain helpers. Each accessor
+/// returns a borrowing wrapper (e.g. `AgentClient<'a>`) that knows how to
+/// dispatch typed `ClientRequest`s and decode the response bytes back into
+/// the matching response shape.
+///
+/// Production code dispatches typed requests via `ClientRequest::execute_request`
+/// directly — these wrappers exist only for tests, and only carry the methods
+/// the suite actually exercises. Add to a wrapper here when a workflow needs
+/// a new shape; do not let test ergonomics leak into the production client.
 pub(crate) struct TestClient {
     client: Client,
 }
@@ -257,6 +264,631 @@ impl TestClient {
 
     pub(crate) fn bookmark(&self) -> BookmarkClient<'_> {
         BookmarkClient::new(&self.client)
+    }
+}
+
+/// Decode bytes from the shared client into a typed response. The shared
+/// `Client` returns raw bytes; each test wrapper turns those into the
+/// domain's response enum and surfaces serde failures as
+/// `ClientError::InvalidRequest` (the only string-bearing variant we have).
+fn decode<R: serde::de::DeserializeOwned>(bytes: Vec<u8>, domain: &str) -> Result<R, ClientError> {
+    serde_json::from_slice(&bytes)
+        .map_err(|error| ClientError::InvalidRequest(format!("{domain} response: {error}")))
+}
+
+// ---------------------------------------------------------------------------
+// Per-domain test wrappers.
+//
+// One borrowing wrapper per domain. Methods are added when a test reaches for
+// them; production CLI/MCP/HTTP layers dispatch `ClientRequest::execute_request`
+// directly without going through these.
+// ---------------------------------------------------------------------------
+
+pub(crate) struct AgentClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> AgentClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn create(&self, request: &CreateAgent) -> Result<AgentResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "agent")
+    }
+
+    pub(crate) async fn get(&self, request: &GetAgent) -> Result<AgentResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "agent")
+    }
+
+    pub(crate) async fn list(&self, request: &ListAgents) -> Result<AgentResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "agent")
+    }
+}
+
+pub(crate) struct CognitionClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> CognitionClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn add(
+        &self,
+        request: &AddCognition,
+    ) -> Result<CognitionResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "cognition")
+    }
+
+    pub(crate) async fn list(
+        &self,
+        request: &ListCognitions,
+    ) -> Result<CognitionResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "cognition")
+    }
+}
+
+pub(crate) struct ContinuityClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> ContinuityClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn emerge(
+        &self,
+        request: &EmergeAgent,
+    ) -> Result<ContinuityResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn dream(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
+        self.dream_with(agent, &DreamOverrides::default()).await
+    }
+
+    pub(crate) async fn dream_with(
+        &self,
+        agent: &AgentName,
+        overrides: &DreamOverrides,
+    ) -> Result<ContinuityResponse, ClientError> {
+        // The `DreamAgent` request hard-codes `DreamOverrides::default()`
+        // when serializing to a URL; tests that want explicit overrides
+        // build the query string here and call the raw client.
+        let query = encode_dream_overrides(overrides);
+        let path = if query.is_empty() {
+            format!("/continuity/{agent}/dream")
+        } else {
+            format!("/continuity/{agent}/dream?{query}")
+        };
+        let bytes = self.client.post(&path, &serde_json::Value::Null).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn introspect(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
+        let request: IntrospectAgent = IntrospectAgent::builder_v1()
+            .agent(agent.clone())
+            .build()
+            .into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn reflect(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
+        let request: ReflectAgent = ReflectAgent::builder_v1()
+            .agent(agent.clone())
+            .build()
+            .into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn sleep(&self, agent: &AgentName) -> Result<ContinuityResponse, ClientError> {
+        let request: SleepAgent = SleepAgent::builder_v1().agent(agent.clone()).build().into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn recede(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
+        let request: RecedeAgent = RecedeAgent::builder_v1()
+            .agent(agent.clone())
+            .build()
+            .into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn guidebook(
+        &self,
+        agent: &AgentName,
+    ) -> Result<ContinuityResponse, ClientError> {
+        let request: GuidebookAgent = GuidebookAgent::builder_v1()
+            .agent(agent.clone())
+            .build()
+            .into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+
+    pub(crate) async fn status(&self) -> Result<ContinuityResponse, ClientError> {
+        let request: StatusAgent = StatusAgent::builder_v1().build().into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "continuity")
+    }
+}
+
+fn encode_dream_overrides(overrides: &DreamOverrides) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(value) = overrides.recent_window {
+        parts.push(format!("recent_window={value}"));
+    }
+    if let Some(value) = overrides.dream_depth {
+        parts.push(format!("dream_depth={value}"));
+    }
+    if let Some(value) = overrides.cognition_size {
+        parts.push(format!("cognition_size={value}"));
+    }
+    if let Some(value) = &overrides.recollection_level {
+        parts.push(format!("recollection_level={value}"));
+    }
+    if let Some(value) = overrides.recollection_size {
+        parts.push(format!("recollection_size={value}"));
+    }
+    if let Some(value) = overrides.experience_size {
+        parts.push(format!("experience_size={value}"));
+    }
+    parts.join("&")
+}
+
+pub(crate) struct StorageClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> StorageClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn upload(
+        &self,
+        request: &UploadStorage,
+    ) -> Result<StorageResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "storage")
+    }
+
+    pub(crate) async fn show(&self, request: &GetStorage) -> Result<StorageResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "storage")
+    }
+
+    pub(crate) async fn list(&self, request: &ListStorage) -> Result<StorageResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "storage")
+    }
+
+    pub(crate) async fn remove(
+        &self,
+        request: &RemoveStorage,
+    ) -> Result<StorageResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "storage")
+    }
+}
+
+pub(crate) struct MemoryClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> MemoryClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn add(&self, request: &AddMemory) -> Result<MemoryResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "memory")
+    }
+
+    pub(crate) async fn list(&self, request: &ListMemories) -> Result<MemoryResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "memory")
+    }
+
+    pub(crate) async fn get(&self, request: &GetMemory) -> Result<MemoryResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "memory")
+    }
+}
+
+pub(crate) struct ExperienceClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> ExperienceClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn create(
+        &self,
+        request: &CreateExperience,
+    ) -> Result<ExperienceResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "experience")
+    }
+
+    pub(crate) async fn list(
+        &self,
+        request: &ListExperiences,
+    ) -> Result<ExperienceResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "experience")
+    }
+
+    pub(crate) async fn get(
+        &self,
+        request: &GetExperience,
+    ) -> Result<ExperienceResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "experience")
+    }
+}
+
+pub(crate) struct ConnectionClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> ConnectionClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn create(
+        &self,
+        request: &CreateConnection,
+    ) -> Result<ConnectionResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "connection")
+    }
+
+    pub(crate) async fn list(
+        &self,
+        request: &ListConnections,
+    ) -> Result<ConnectionResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "connection")
+    }
+
+    pub(crate) async fn get(
+        &self,
+        request: &GetConnection,
+    ) -> Result<ConnectionResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "connection")
+    }
+
+    pub(crate) async fn remove(
+        &self,
+        request: &RemoveConnection,
+    ) -> Result<ConnectionResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "connection")
+    }
+}
+
+pub(crate) struct PressureClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> PressureClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn get(&self, request: &GetPressure) -> Result<PressureResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "pressure")
+    }
+}
+
+pub(crate) struct PersonaClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> PersonaClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn set(&self, request: &SetPersona) -> Result<PersonaResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "persona")
+    }
+
+    pub(crate) async fn get(&self, request: &GetPersona) -> Result<PersonaResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "persona")
+    }
+
+    pub(crate) async fn list(
+        &self,
+        request: &ListPersonas,
+    ) -> Result<PersonaResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "persona")
+    }
+}
+
+pub(crate) struct LevelClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> LevelClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn set(&self, request: &SetLevel) -> Result<LevelResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "level")
+    }
+
+    pub(crate) async fn get(&self, request: &GetLevel) -> Result<LevelResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "level")
+    }
+
+    pub(crate) async fn list(&self, request: &ListLevels) -> Result<LevelResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "level")
+    }
+}
+
+pub(crate) struct TextureClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> TextureClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn get(&self, request: &GetTexture) -> Result<TextureResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "texture")
+    }
+}
+
+pub(crate) struct SensationClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> SensationClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn get(
+        &self,
+        request: &GetSensation,
+    ) -> Result<SensationResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "sensation")
+    }
+}
+
+pub(crate) struct NatureClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> NatureClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn get(&self, request: &GetNature) -> Result<NatureResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "nature")
+    }
+}
+
+pub(crate) struct UrgeClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> UrgeClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn get(&self, request: &GetUrge) -> Result<UrgeResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "urge")
+    }
+}
+
+pub(crate) struct SearchClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> SearchClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn search(
+        &self,
+        request: &SearchQuery,
+    ) -> Result<SearchResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "search")
+    }
+}
+
+pub(crate) struct TenantClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> TenantClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn create(
+        &self,
+        request: &CreateTenant,
+    ) -> Result<TenantResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "tenant")
+    }
+
+    pub(crate) async fn list(&self, request: &ListTenants) -> Result<TenantResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "tenant")
+    }
+}
+
+pub(crate) struct ActorClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> ActorClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn create(&self, request: &CreateActor) -> Result<ActorResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "actor")
+    }
+
+    pub(crate) async fn get(&self, request: &GetActor) -> Result<ActorResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "actor")
+    }
+
+    pub(crate) async fn list(&self, request: &ListActors) -> Result<ActorResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "actor")
+    }
+}
+
+pub(crate) struct ProjectClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> ProjectClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn create(
+        &self,
+        request: &CreateProject,
+    ) -> Result<ProjectResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "project")
+    }
+
+    pub(crate) async fn get(&self, request: &GetProject) -> Result<ProjectResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "project")
+    }
+
+    pub(crate) async fn list(
+        &self,
+        request: &ListProjects,
+    ) -> Result<ProjectResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "project")
+    }
+}
+
+pub(crate) struct TicketClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> TicketClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn issue(
+        &self,
+        request: &CreateTicket,
+    ) -> Result<TicketResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "ticket")
+    }
+
+    pub(crate) async fn get(&self, request: &GetTicket) -> Result<TicketResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "ticket")
+    }
+
+    pub(crate) async fn list(&self, request: &ListTickets) -> Result<TicketResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "ticket")
+    }
+
+    pub(crate) async fn validate(
+        &self,
+        request: &ValidateTicket,
+    ) -> Result<TicketResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "ticket")
+    }
+}
+
+pub(crate) struct BookmarkClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> BookmarkClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn list(
+        &self,
+        request: &ListBookmarks,
+    ) -> Result<BookmarkResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "bookmark")
+    }
+}
+
+pub(crate) struct HostClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> HostClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn init(&self, request: &InitHost) -> Result<HostResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "host")
     }
 }
 

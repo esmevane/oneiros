@@ -25,19 +25,18 @@ impl ExperienceCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, ExperienceError> {
         let client = Client::from_config(config)?;
-        let experience_client = ExperienceClient::new(&client);
 
-        let (response, request) = match self {
+        let (bytes, request) = match self {
             Self::Create(creation) => (
-                experience_client.create(creation).await?,
+                creation.execute_request(&client).await?,
                 ExperienceRequest::CreateExperience(creation.clone()),
             ),
             Self::Show(lookup) => (
-                experience_client.get(lookup).await?,
+                lookup.execute_request(&client).await?,
                 ExperienceRequest::GetExperience(lookup.clone()),
             ),
             Self::List(listing) => (
-                experience_client.list(listing).await?,
+                listing.execute_request(&client).await?,
                 ExperienceRequest::ListExperiences(listing.clone()),
             ),
             Self::Update {
@@ -46,7 +45,7 @@ impl ExperienceCommands {
                 sensation,
             } => {
                 let id: ExperienceId = id.parse()?;
-                let mut result: Option<(ExperienceResponse, ExperienceRequest)> = None;
+                let mut result: Option<(Vec<u8>, ExperienceRequest)> = None;
 
                 if let Some(desc) = description {
                     let update: UpdateExperienceDescription =
@@ -55,9 +54,9 @@ impl ExperienceCommands {
                             .description(Description::new(desc))
                             .build()
                             .into();
-                    let response = experience_client.update_description(&update).await?;
+                    let bytes = update.execute_request(&client).await?;
                     result = Some((
-                        response,
+                        bytes,
                         ExperienceRequest::UpdateExperienceDescription(update),
                     ));
                 }
@@ -68,11 +67,8 @@ impl ExperienceCommands {
                         .sensation(SensationName::new(sens))
                         .build()
                         .into();
-                    let response = experience_client.update_sensation(&update).await?;
-                    result = Some((
-                        response,
-                        ExperienceRequest::UpdateExperienceSensation(update),
-                    ));
+                    let bytes = update.execute_request(&client).await?;
+                    result = Some((bytes, ExperienceRequest::UpdateExperienceSensation(update)));
                 }
 
                 result.ok_or_else(|| {
@@ -83,6 +79,7 @@ impl ExperienceCommands {
             }
         };
 
+        let response: ExperienceResponse = serde_json::from_slice(&bytes)?;
         Ok(ExperienceView::new(response, &request)
             .render()
             .map(Into::into))

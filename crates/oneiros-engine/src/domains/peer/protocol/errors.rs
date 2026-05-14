@@ -29,6 +29,9 @@ pub(crate) enum PeerError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(PeerError);
@@ -40,10 +43,12 @@ impl IntoResponse for PeerError {
             PeerError::InvalidAddress(_) | PeerError::InvalidId(_) | PeerError::Resolve(_) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
-            PeerError::Database(_) | PeerError::Event(_) | PeerError::Client(_) => {
+            PeerError::Database(_) | PeerError::Event(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
+            PeerError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             PeerError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            PeerError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

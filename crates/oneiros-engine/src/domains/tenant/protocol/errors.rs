@@ -34,6 +34,9 @@ pub(crate) enum TenantError {
 
     #[error(transparent)]
     Compose(#[from] crate::ComposeError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(TenantError);
@@ -48,8 +51,10 @@ impl IntoResponse for TenantError {
             | TenantError::Event(_)
             | TenantError::Database(_)
             | TenantError::HostDb(_)
-            | TenantError::Client(_)
             | TenantError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            TenantError::Client(_) | TenantError::Json(_) => {
+                (StatusCode::BAD_GATEWAY, self.to_string())
+            }
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

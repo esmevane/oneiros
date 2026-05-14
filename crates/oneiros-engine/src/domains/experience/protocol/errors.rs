@@ -32,6 +32,9 @@ pub(crate) enum ExperienceError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(ExperienceError);
@@ -49,6 +52,7 @@ impl IntoResponse for ExperienceError {
             ExperienceError::InvalidRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
             ExperienceError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             ExperienceError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ExperienceError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

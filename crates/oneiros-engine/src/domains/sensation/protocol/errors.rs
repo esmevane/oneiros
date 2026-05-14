@@ -25,6 +25,9 @@ pub(crate) enum SensationError {
 
     #[error(transparent)]
     Event(#[from] EventError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(SensationError);
@@ -39,6 +42,7 @@ impl IntoResponse for SensationError {
             }
             SensationError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             SensationError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            SensationError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

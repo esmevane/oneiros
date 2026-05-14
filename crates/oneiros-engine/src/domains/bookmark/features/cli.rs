@@ -20,19 +20,19 @@ impl BookmarkCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, BookmarkError> {
         let client = Client::from_config(config)?;
-        let bookmark_client = BookmarkClient::new(&client);
 
-        let response = match self {
-            Self::Create(creation) => bookmark_client.create(creation).await?,
-            Self::Switch(switch) => bookmark_client.switch(switch).await?,
-            Self::Merge(merge) => bookmark_client.merge(merge).await?,
-            Self::List(listing) => bookmark_client.list(listing).await?,
-            Self::Share(share) => bookmark_client.share(share).await?,
-            Self::Follow(follow) => bookmark_client.follow(follow).await?,
-            Self::Collect(collect) => bookmark_client.collect(collect).await?,
-            Self::Unfollow(unfollow) => bookmark_client.unfollow(unfollow).await?,
+        let bytes = match self {
+            Self::Create(creation) => creation.execute_request(&client).await?,
+            Self::Switch(switch) => switch.execute_request(&client).await?,
+            Self::Merge(merge) => merge.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Share(share) => share.execute_request(&client).await?,
+            Self::Follow(follow) => follow.execute_request(&client).await?,
+            Self::Collect(collect) => collect.execute_request(&client).await?,
+            Self::Unfollow(unfollow) => unfollow.execute_request(&client).await?,
         };
 
+        let response: BookmarkResponse = serde_json::from_slice(&bytes)?;
         Ok(BookmarkView::new(response).render().map(Into::into))
     }
 }

@@ -16,6 +16,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for AddMemory {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/memories", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetMemory {
@@ -23,6 +31,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<MemoryId>,
         }
+    }
+}
+
+impl ClientRequest for GetMemory {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetMemory::V1(lookup) = self;
+        client.get(&format!("/memories/{}", lookup.key)).await
     }
 }
 
@@ -45,6 +62,38 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListMemories {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListMemories::V1(listing) = self;
+        let mut params: Vec<(&str, String)> = Vec::new();
+
+        if let Some(agent_name) = &listing.agent {
+            params.push(("agent", agent_name.to_string()));
+        }
+
+        if let Some(level_name) = &listing.level {
+            params.push(("level", level_name.to_string()));
+        }
+
+        if let Some(query) = &listing.query {
+            params.push(("query", query.clone()));
+        }
+
+        params.push(("limit", listing.filters.limit.to_string()));
+        params.push(("offset", listing.filters.offset.to_string()));
+
+        let query = params
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        client.get(&format!("/memories?{query}")).await
     }
 }
 

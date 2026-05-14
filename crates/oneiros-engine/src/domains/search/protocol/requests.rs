@@ -42,6 +42,38 @@ impl SearchQueryV1 {
     }
 }
 
+impl ClientRequest for SearchQuery {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SearchQuery::V1(query) = self;
+        let mut parts: Vec<String> = Vec::new();
+        if let Some(q) = &query.query {
+            parts.push(format!("query={q}"));
+        }
+        if let Some(a) = &query.agent {
+            parts.push(format!("agent={a}"));
+        }
+        if let Some(k) = query.kind {
+            parts.push(format!("kind={}", k.as_str()));
+        }
+        if let Some(t) = &query.texture {
+            parts.push(format!("texture={t}"));
+        }
+        if let Some(l) = &query.level {
+            parts.push(format!("level={l}"));
+        }
+        if let Some(s) = &query.sensation {
+            parts.push(format!("sensation={s}"));
+        }
+        parts.push(format!("limit={}", query.filters.limit));
+        parts.push(format!("offset={}", query.filters.offset));
+
+        let path = format!("/search?{}", parts.join("&"));
+        client.get(&path).await
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = SearchRequestType, display = "kebab-case")]

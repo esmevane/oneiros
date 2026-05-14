@@ -441,6 +441,12 @@ impl Config {
     }
 }
 
+pub(crate) trait FromConfig: Sized {
+    type Error;
+
+    fn from_config(config: &Config) -> Result<Self, Self::Error>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

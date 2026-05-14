@@ -18,14 +18,14 @@ impl TenantCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, TenantError> {
         let client = Client::from_config(config)?;
-        let tenant_client = TenantClient::new(&client);
 
-        let response = match self {
-            Self::Create(creation) => tenant_client.create(creation).await?,
-            Self::Get(lookup) => tenant_client.get(lookup).await?,
-            Self::List(listing) => tenant_client.list(listing).await?,
+        let bytes = match self {
+            Self::Create(creation) => creation.execute_request(&client).await?,
+            Self::Get(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
         };
 
+        let response: TenantResponse = serde_json::from_slice(&bytes)?;
         Ok(TenantView::new(response).render().map(Into::into))
     }
 }

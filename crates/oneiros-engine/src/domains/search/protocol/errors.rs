@@ -20,6 +20,9 @@ pub(crate) enum SearchError {
 
     #[error(transparent)]
     Upcast(#[from] UpcastError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(SearchError);
@@ -32,6 +35,7 @@ impl IntoResponse for SearchError {
             }
             SearchError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             SearchError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            SearchError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

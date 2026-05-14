@@ -14,6 +14,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for CreateBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum SwitchBookmark {
@@ -24,6 +32,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for SwitchBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/switch", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum MergeBookmark {
@@ -31,6 +47,14 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) source: BookmarkName,
         }
+    }
+}
+
+impl ClientRequest for MergeBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/merge", self).await
     }
 }
 
@@ -47,6 +71,19 @@ versioned! {
     }
 }
 
+impl ClientRequest for ListBookmarks {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListBookmarks::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/bookmarks?{query}")).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ShareBookmark {
@@ -56,6 +93,14 @@ versioned! {
             #[arg(long)]
             pub(crate) actor_id: Option<ActorId>,
         }
+    }
+}
+
+impl ClientRequest for ShareBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/share", self).await
     }
 }
 
@@ -72,6 +117,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for FollowBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/follow", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum CollectBookmark {
@@ -82,6 +135,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for CollectBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/collect", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum UnfollowBookmark {
@@ -89,6 +150,14 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: BookmarkName,
         }
+    }
+}
+
+impl ClientRequest for UnfollowBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/unfollow", self).await
     }
 }
 

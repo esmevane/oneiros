@@ -25,6 +25,9 @@ pub(crate) enum PersonaError {
 
     #[error(transparent)]
     Event(#[from] EventError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(PersonaError);
@@ -39,6 +42,7 @@ impl IntoResponse for PersonaError {
             }
             PersonaError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             PersonaError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            PersonaError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }
