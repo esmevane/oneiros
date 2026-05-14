@@ -66,9 +66,9 @@ Check that host, service, and project are all healthy.
 
 Once set up, the cognitive loop runs automatically through hooks:
 
-1. **Session start** — `oneiros dream governor.process` fires, assembling the governor's full context
+1. **Session start** — `oneiros continuity dream governor.process` fires, assembling the governor's full context
 2. **During work** — Agents log cognitions and reflect on significant events
-3. **Before compaction** — `oneiros introspect governor.process` fires, preserving session continuity
+3. **Before compaction** — `oneiros continuity introspect governor.process` fires, preserving session continuity
 
 To manually test the loop:
 

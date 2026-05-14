@@ -70,7 +70,7 @@ As impressions accumulate, patterns emerge on their own. You don't have to force
 
 ### Dream
 
-`oneiros dream <agent>` assembles your full identity:
+`oneiros continuity dream <agent>` assembles your full identity:
 
 1. Who you are (name, persona, description, behavioral prompt)
 2. What you know (memories at all retention levels)

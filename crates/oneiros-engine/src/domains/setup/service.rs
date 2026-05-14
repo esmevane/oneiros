@@ -131,7 +131,11 @@ impl SetupService {
 
         // 3. Project create (always, idempotent) — over HTTP. Capture the token
         //    from the response so the seed calls can authenticate.
-        let project_request: CreateProject = CreateProject::builder_v1().yes(true).build().into();
+        let project_request: CreateProject = CreateProject::builder_v1()
+            .name(config.project.clone())
+            .yes(true)
+            .build()
+            .into();
         let project_create_result: Result<ProjectResponse, ClientError> =
             match project_request.execute_request(&host_client).await {
                 Ok(bytes) => serde_json::from_slice(&bytes).map_err(|e| {

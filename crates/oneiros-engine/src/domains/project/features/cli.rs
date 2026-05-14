@@ -21,6 +21,11 @@ impl ProjectCommands {
 
         let response: ProjectResponse = match self {
             ProjectCommands::Create(creation) => {
+                let mut creation = creation.clone();
+                let CreateProject::V1(ref mut details) = creation;
+                if details.name.is_none() {
+                    details.name = Some(config.project.clone());
+                }
                 let bytes = creation.execute_request(&client).await?;
                 serde_json::from_slice(&bytes)?
             }
