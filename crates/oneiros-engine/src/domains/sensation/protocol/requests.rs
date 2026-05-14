@@ -20,6 +20,17 @@ versioned! {
     }
 }
 
+impl ClientRequest for SetSensation {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SetSensation::V1(body) = self;
+        client
+            .put(&format!("/sensations/{}", body.name), self)
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetSensation {
@@ -27,6 +38,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<SensationName>,
         }
+    }
+}
+
+impl ClientRequest for GetSensation {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetSensation::V1(lookup) = self;
+        client.get(&format!("/sensations/{}", lookup.key)).await
     }
 }
 
@@ -40,6 +60,17 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemoveSensation {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveSensation::V1(removal) = self;
+        client
+            .delete(&format!("/sensations/{}", removal.name))
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListSensations {
@@ -50,6 +81,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListSensations {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListSensations::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/sensations?{query}")).await
     }
 }
 

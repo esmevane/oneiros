@@ -20,6 +20,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for SetUrge {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SetUrge::V1(body) = self;
+        client.put(&format!("/urges/{}", body.name), self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetUrge {
@@ -27,6 +36,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<UrgeName>,
         }
+    }
+}
+
+impl ClientRequest for GetUrge {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetUrge::V1(lookup) = self;
+        client.get(&format!("/urges/{}", lookup.key)).await
     }
 }
 
@@ -40,6 +58,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemoveUrge {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveUrge::V1(removal) = self;
+        client.delete(&format!("/urges/{}", removal.name)).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListUrges {
@@ -50,6 +77,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListUrges {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListUrges::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/urges?{query}")).await
     }
 }
 

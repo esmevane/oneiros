@@ -14,6 +14,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for GetPressure {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetPressure::V1(lookup) = self;
+        client.get(&format!("/pressures/{}", lookup.agent)).await
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = PressureRequestType, display = "kebab-case")]

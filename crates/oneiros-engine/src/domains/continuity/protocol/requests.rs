@@ -14,6 +14,20 @@ versioned! {
     }
 }
 
+impl ClientRequest for WakeAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let WakeAgent::V1(wake) = self;
+        client
+            .post(
+                &format!("/continuity/{agent}/wake", agent = wake.agent),
+                &serde_json::Value::Null,
+            )
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum DreamAgent {
@@ -21,6 +35,21 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) agent: AgentName,
         }
+    }
+}
+
+impl ClientRequest for DreamAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let DreamAgent::V1(dream) = self;
+        let query = encode_dream_overrides(&DreamOverrides::default());
+        let path = if query.is_empty() {
+            format!("/continuity/{agent}/dream", agent = dream.agent)
+        } else {
+            format!("/continuity/{agent}/dream?{query}", agent = dream.agent)
+        };
+        client.post(&path, &serde_json::Value::Null).await
     }
 }
 
@@ -34,6 +63,23 @@ versioned! {
     }
 }
 
+impl ClientRequest for IntrospectAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let IntrospectAgent::V1(introspecting) = self;
+        client
+            .post(
+                &format!(
+                    "/continuity/{agent}/introspect",
+                    agent = introspecting.agent
+                ),
+                &serde_json::Value::Null,
+            )
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ReflectAgent {
@@ -41,6 +87,20 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) agent: AgentName,
         }
+    }
+}
+
+impl ClientRequest for ReflectAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ReflectAgent::V1(reflecting) = self;
+        client
+            .post(
+                &format!("/continuity/{agent}/reflect", agent = reflecting.agent),
+                &serde_json::Value::Null,
+            )
+            .await
     }
 }
 
@@ -55,6 +115,20 @@ versioned! {
     }
 }
 
+impl ClientRequest for SenseContent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SenseContent::V1(sense) = self;
+        client
+            .post(
+                &format!("/continuity/{agent}/sense", agent = sense.agent),
+                self,
+            )
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum SleepAgent {
@@ -65,6 +139,20 @@ versioned! {
     }
 }
 
+impl ClientRequest for SleepAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SleepAgent::V1(sleeping) = self;
+        client
+            .post(
+                &format!("/continuity/{agent}/sleep", agent = sleeping.agent),
+                &serde_json::Value::Null,
+            )
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GuidebookAgent {
@@ -72,6 +160,20 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) agent: AgentName,
         }
+    }
+}
+
+impl ClientRequest for GuidebookAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GuidebookAgent::V1(lookup) = self;
+        client
+            .get(&format!(
+                "/continuity/{agent}/guidebook",
+                agent = lookup.agent
+            ))
+            .await
     }
 }
 
@@ -88,6 +190,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for EmergeAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/continuity", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RecedeAgent {
@@ -95,6 +205,17 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) agent: AgentName,
         }
+    }
+}
+
+impl ClientRequest for RecedeAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RecedeAgent::V1(receding) = self;
+        client
+            .delete(&format!("/continuity/{agent}", agent = receding.agent))
+            .await
     }
 }
 
@@ -109,6 +230,37 @@ versioned! {
             pub(crate) filters: SearchFilters,
         }
     }
+}
+
+impl ClientRequest for StatusAgent {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.get("/continuity").await
+    }
+}
+
+fn encode_dream_overrides(overrides: &DreamOverrides) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(value) = overrides.recent_window {
+        parts.push(format!("recent_window={value}"));
+    }
+    if let Some(value) = overrides.dream_depth {
+        parts.push(format!("dream_depth={value}"));
+    }
+    if let Some(value) = overrides.cognition_size {
+        parts.push(format!("cognition_size={value}"));
+    }
+    if let Some(value) = &overrides.recollection_level {
+        parts.push(format!("recollection_level={value}"));
+    }
+    if let Some(value) = overrides.recollection_size {
+        parts.push(format!("recollection_size={value}"));
+    }
+    if let Some(value) = overrides.experience_size {
+        parts.push(format!("experience_size={value}"));
+    }
+    parts.join("&")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

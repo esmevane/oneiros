@@ -90,7 +90,13 @@ impl SetupService {
             .build()
             .into();
 
-        match HostClient::new(&host_client).init(&host_request).await {
+        let host_init_result: Result<HostResponse, ClientError> =
+            match host_request.execute_request(&host_client).await {
+                Ok(bytes) => serde_json::from_slice(&bytes)
+                    .map_err(|e| ClientError::InvalidRequest(format!("host init response: {e}"))),
+                Err(e) => Err(e),
+            };
+        match host_init_result {
             Ok(HostResponse::HostInitialized(_)) => {
                 steps.push(SetupStep::HostInitialized);
             }
@@ -126,10 +132,14 @@ impl SetupService {
         // 3. Project create (always, idempotent) — over HTTP. Capture the token
         //    from the response so the seed calls can authenticate.
         let project_request: CreateProject = CreateProject::builder_v1().yes(true).build().into();
-        let project_token: Option<Token> = match ProjectClient::new(&host_client)
-            .create(&project_request)
-            .await
-        {
+        let project_create_result: Result<ProjectResponse, ClientError> =
+            match project_request.execute_request(&host_client).await {
+                Ok(bytes) => serde_json::from_slice(&bytes).map_err(|e| {
+                    ClientError::InvalidRequest(format!("project create response: {e}"))
+                }),
+                Err(e) => Err(e),
+            };
+        let project_token: Option<Token> = match project_create_result {
             Ok(ProjectResponse::Created(ProjectCreatedResponse::V1(result))) => {
                 steps.push(SetupStep::ProjectInitialized(result.project.name));
                 Some(result.token)
@@ -188,10 +198,8 @@ impl SetupService {
             }
         };
 
-        let seed = SeedClient::new(&project_client);
-
         // 4. Seed core (always, idempotent) — over HTTP.
-        match seed.core().await {
+        match project_client.post("/seed/core", &()).await {
             Ok(_) => steps.push(SetupStep::VocabularySeeded),
             Err(e) => {
                 steps.push(SetupStep::StepFailed {
@@ -202,7 +210,7 @@ impl SetupService {
         }
 
         // 5. Seed agents (always, idempotent) — over HTTP.
-        match seed.agents().await {
+        match project_client.post("/seed/agents", &()).await {
             Ok(_) => steps.push(SetupStep::AgentsSeeded),
             Err(e) => {
                 steps.push(SetupStep::StepFailed {

@@ -20,6 +20,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for SetLevel {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SetLevel::V1(body) = self;
+        client.put(&format!("/levels/{}", body.name), self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetLevel {
@@ -27,6 +36,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<LevelName>,
         }
+    }
+}
+
+impl ClientRequest for GetLevel {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetLevel::V1(lookup) = self;
+        client.get(&format!("/levels/{}", lookup.key)).await
     }
 }
 
@@ -40,6 +58,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemoveLevel {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveLevel::V1(removal) = self;
+        client.delete(&format!("/levels/{}", removal.name)).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListLevels {
@@ -50,6 +77,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListLevels {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListLevels::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/levels?{query}")).await
     }
 }
 

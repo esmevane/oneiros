@@ -15,14 +15,14 @@ pub(crate) enum ActorCommands {
 impl ActorCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, ActorError> {
         let client = Client::from_config(config)?;
-        let actor_client = ActorClient::new(&client);
 
-        let response = match self {
-            Self::Create(creation) => actor_client.create(creation).await?,
-            Self::Get(lookup) => actor_client.get(lookup).await?,
-            Self::List(listing) => actor_client.list(listing).await?,
+        let bytes = match self {
+            Self::Create(creation) => creation.execute_request(&client).await?,
+            Self::Get(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
         };
 
+        let response: ActorResponse = serde_json::from_slice(&bytes)?;
         Ok(ActorView::new(response).render().map(Into::into))
     }
 }

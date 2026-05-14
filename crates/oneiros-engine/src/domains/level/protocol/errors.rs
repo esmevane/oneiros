@@ -25,6 +25,9 @@ pub(crate) enum LevelError {
 
     #[error(transparent)]
     Event(#[from] EventError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(LevelError);
@@ -39,6 +42,7 @@ impl IntoResponse for LevelError {
             }
             LevelError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             LevelError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            LevelError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

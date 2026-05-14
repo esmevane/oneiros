@@ -28,6 +28,9 @@ pub(crate) enum ActorError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(ActorError);
@@ -38,10 +41,11 @@ impl IntoResponse for ActorError {
             ActorError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ActorError::InvalidId(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ActorError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
-            ActorError::Database(_)
-            | ActorError::Event(_)
-            | ActorError::Client(_)
-            | ActorError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ActorError::Database(_) | ActorError::Event(_) | ActorError::Compose(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
+            ActorError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            ActorError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

@@ -17,6 +17,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for CreateTicket {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/tickets", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetTicket {
@@ -24,6 +32,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<TicketId>,
         }
+    }
+}
+
+impl ClientRequest for GetTicket {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetTicket::V1(lookup) = self;
+        client.get(&format!("/tickets/{}", lookup.key)).await
     }
 }
 
@@ -37,6 +54,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for ValidateTicket {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/tickets/validate", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListTickets {
@@ -47,6 +72,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListTickets {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListTickets::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/tickets?{query}")).await
     }
 }
 

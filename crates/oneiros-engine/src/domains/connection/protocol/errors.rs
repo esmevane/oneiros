@@ -26,6 +26,9 @@ pub(crate) enum ConnectionError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(ConnectionError);
@@ -41,6 +44,7 @@ impl IntoResponse for ConnectionError {
             }
             ConnectionError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             ConnectionError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ConnectionError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

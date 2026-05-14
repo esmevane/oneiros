@@ -29,6 +29,9 @@ pub(crate) enum CognitionError {
 
     #[error(transparent)]
     Client(#[from] crate::ClientError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(CognitionError);
@@ -45,6 +48,7 @@ impl IntoResponse for CognitionError {
             }
             CognitionError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             CognitionError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            CognitionError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

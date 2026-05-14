@@ -27,6 +27,9 @@ pub(crate) enum ContinuityError {
     #[error(transparent)]
     Client(#[from] crate::ClientError),
 
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+
     #[error("Unexpected service response: {0}")]
     UnexpectedResponse(String),
 }
@@ -44,6 +47,7 @@ impl IntoResponse for ContinuityError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             ContinuityError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            ContinuityError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             ContinuityError::UnexpectedResponse(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }

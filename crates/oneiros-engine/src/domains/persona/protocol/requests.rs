@@ -20,6 +20,17 @@ versioned! {
     }
 }
 
+impl ClientRequest for SetPersona {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SetPersona::V1(body) = self;
+        client
+            .put(&format!("/personas/{name}", name = body.name), self)
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetPersona {
@@ -27,6 +38,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<PersonaName>,
         }
+    }
+}
+
+impl ClientRequest for GetPersona {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetPersona::V1(lookup) = self;
+        client.get(&format!("/personas/{}", lookup.key)).await
     }
 }
 
@@ -40,6 +60,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemovePersona {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemovePersona::V1(removal) = self;
+        client.delete(&format!("/personas/{}", removal.name)).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListPersonas {
@@ -50,6 +79,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListPersonas {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListPersonas::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/personas?{query}")).await
     }
 }
 

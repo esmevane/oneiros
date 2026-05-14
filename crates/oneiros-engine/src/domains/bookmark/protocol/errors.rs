@@ -55,6 +55,9 @@ pub(crate) enum BookmarkError {
 
     #[error(transparent)]
     TimestampParse(#[from] TimestampParseError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(BookmarkError);
@@ -77,7 +80,9 @@ impl IntoResponse for BookmarkError {
             | BookmarkError::Peer(_)
             | BookmarkError::Ticket(_)
             | BookmarkError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
-            BookmarkError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            BookmarkError::Client(_) | BookmarkError::Json(_) => {
+                (StatusCode::BAD_GATEWAY, self.to_string())
+            }
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

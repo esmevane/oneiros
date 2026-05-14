@@ -25,6 +25,9 @@ pub(crate) enum UrgeError {
 
     #[error(transparent)]
     Event(#[from] EventError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(UrgeError);
@@ -39,6 +42,7 @@ impl IntoResponse for UrgeError {
             }
             UrgeError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             UrgeError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            UrgeError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

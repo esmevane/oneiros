@@ -32,29 +32,26 @@ impl StorageCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, StorageError> {
         let client = Client::from_config(config)?;
-        let storage_client = StorageClient::new(&client);
 
-        let response = match self {
+        let bytes = match self {
             Self::Set {
                 key,
                 file,
                 description,
             } => {
                 let data = config.platform().read(file)?;
-                storage_client
-                    .upload(
-                        &UploadStorage::builder_v1()
-                            .key(StorageKey::new(key))
-                            .description(Description::new(description))
-                            .data(data)
-                            .build()
-                            .into(),
-                    )
-                    .await?
+                let request: UploadStorage = UploadStorage::builder_v1()
+                    .key(StorageKey::new(key))
+                    .description(Description::new(description))
+                    .data(data)
+                    .build()
+                    .into();
+                request.execute_request(&client).await?
             }
-            Self::Show(lookup) => storage_client.show(lookup).await?,
+            Self::Show(lookup) => lookup.execute_request(&client).await?,
             Self::Get { key, out } => {
-                let bytes = storage_client.get_content(&StorageKey::new(key)).await?;
+                let ref_key = StorageRef::encode(&StorageKey::new(key));
+                let bytes = client.get(&format!("/storage/{ref_key}/content")).await?;
                 match out {
                     Some(path) => {
                         let len = bytes.len();
@@ -73,10 +70,11 @@ impl StorageCommands {
                     }
                 }
             }
-            Self::List(listing) => storage_client.list(listing).await?,
-            Self::Remove(removal) => storage_client.remove(removal).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: StorageResponse = serde_json::from_slice(&bytes)?;
         Ok(StorageView::new(response).render().map(Into::into))
     }
 }

@@ -19,16 +19,16 @@ pub(crate) enum AgentCommands {
 impl AgentCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, AgentError> {
         let client = Client::from_config(config)?;
-        let agent_client = AgentClient::new(&client);
 
-        let response = match self {
-            Self::Create(creation) => agent_client.create(creation).await?,
-            Self::Show(lookup) => agent_client.get(lookup).await?,
-            Self::List(listing) => agent_client.list(listing).await?,
-            Self::Update(update) => agent_client.update(update).await?,
-            Self::Remove(removal) => agent_client.remove(removal).await?,
+        let bytes = match self {
+            Self::Create(creation) => creation.execute_request(&client).await?,
+            Self::Show(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Update(update) => update.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: AgentResponse = serde_json::from_slice(&bytes)?;
         Ok(AgentView::new(response).render().map(Into::into))
     }
 }

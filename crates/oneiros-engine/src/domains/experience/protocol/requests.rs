@@ -16,6 +16,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for CreateExperience {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/experiences", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetExperience {
@@ -23,6 +31,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ExperienceId>,
         }
+    }
+}
+
+impl ClientRequest for GetExperience {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetExperience::V1(lookup) = self;
+        client.get(&format!("/experiences/{}", lookup.key)).await
     }
 }
 
@@ -49,6 +66,38 @@ versioned! {
     }
 }
 
+impl ClientRequest for ListExperiences {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListExperiences::V1(listing) = self;
+        let mut params: Vec<(&str, String)> = Vec::new();
+
+        if let Some(agent_name) = &listing.agent {
+            params.push(("agent", agent_name.to_string()));
+        }
+
+        if let Some(sensation_name) = &listing.sensation {
+            params.push(("sensation", sensation_name.to_string()));
+        }
+
+        if let Some(query) = &listing.query {
+            params.push(("query", query.clone()));
+        }
+
+        params.push(("limit", listing.filters.limit.to_string()));
+        params.push(("offset", listing.filters.offset.to_string()));
+
+        let query = params
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        client.get(&format!("/experiences?{query}")).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum UpdateExperienceDescription {
@@ -60,6 +109,20 @@ versioned! {
     }
 }
 
+impl ClientRequest for UpdateExperienceDescription {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let UpdateExperienceDescription::V1(update) = self;
+        client
+            .put(
+                &format!("/experiences/{}/description", update.id),
+                &serde_json::json!({ "description": update.description }),
+            )
+            .await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum UpdateExperienceSensation {
@@ -68,6 +131,20 @@ versioned! {
             #[builder(into)] pub(crate) id: ExperienceId,
             #[builder(into)] pub(crate) sensation: SensationName,
         }
+    }
+}
+
+impl ClientRequest for UpdateExperienceSensation {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let UpdateExperienceSensation::V1(update) = self;
+        client
+            .put(
+                &format!("/experiences/{}/sensation", update.id),
+                &serde_json::json!({ "sensation": update.sensation }),
+            )
+            .await
     }
 }
 

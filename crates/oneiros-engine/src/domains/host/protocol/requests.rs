@@ -20,6 +20,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for InitHost {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/host", self).await
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = HostRequestType, display = "kebab-case")]

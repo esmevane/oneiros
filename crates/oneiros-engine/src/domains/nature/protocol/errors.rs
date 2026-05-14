@@ -25,6 +25,9 @@ pub(crate) enum NatureError {
 
     #[error(transparent)]
     Event(#[from] EventError),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 resource_op_error!(NatureError);
@@ -39,6 +42,7 @@ impl IntoResponse for NatureError {
             }
             NatureError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             NatureError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            NatureError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

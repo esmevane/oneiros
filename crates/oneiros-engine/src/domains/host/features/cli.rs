@@ -24,7 +24,8 @@ impl HostCommands {
         let response = match self {
             HostCommands::Init(initialization) => {
                 let client = Client::from_config(config)?;
-                HostClient::new(&client).init(initialization).await?
+                let bytes = initialization.execute_request(&client).await?;
+                serde_json::from_slice::<HostResponse>(&bytes)?
             }
             HostCommands::Install => HostService::install(config)?,
             HostCommands::Uninstall => HostService::uninstall(config)?,

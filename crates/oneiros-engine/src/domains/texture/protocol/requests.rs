@@ -20,6 +20,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for SetTexture {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let SetTexture::V1(body) = self;
+        client.put(&format!("/textures/{}", body.name), self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetTexture {
@@ -27,6 +36,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<TextureName>,
         }
+    }
+}
+
+impl ClientRequest for GetTexture {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetTexture::V1(lookup) = self;
+        client.get(&format!("/textures/{}", lookup.key)).await
     }
 }
 
@@ -40,6 +58,15 @@ versioned! {
     }
 }
 
+impl ClientRequest for RemoveTexture {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveTexture::V1(removal) = self;
+        client.delete(&format!("/textures/{}", removal.name)).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListTextures {
@@ -50,6 +77,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListTextures {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListTextures::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/textures?{query}")).await
     }
 }
 

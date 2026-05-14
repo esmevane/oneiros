@@ -18,15 +18,15 @@ pub(crate) enum UrgeCommands {
 impl UrgeCommands {
     pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, UrgeError> {
         let client = Client::from_config(config)?;
-        let urge_client = UrgeClient::new(&client);
 
-        let response = match self {
-            Self::Set(setting) => urge_client.set(setting).await?,
-            Self::Show(lookup) => urge_client.get(lookup).await?,
-            Self::List(listing) => urge_client.list(listing).await?,
-            Self::Remove(removal) => urge_client.remove(removal).await?,
+        let bytes = match self {
+            Self::Set(setting) => setting.execute_request(&client).await?,
+            Self::Show(lookup) => lookup.execute_request(&client).await?,
+            Self::List(listing) => listing.execute_request(&client).await?,
+            Self::Remove(removal) => removal.execute_request(&client).await?,
         };
 
+        let response: UrgeResponse = serde_json::from_slice(&bytes)?;
         Ok(UrgeView::new(response).render().map(Into::into))
     }
 }

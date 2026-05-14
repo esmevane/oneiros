@@ -4,7 +4,7 @@
 //! project, seed the vocabulary, emerge an agent, and dream them into
 //! existence. If this works, the core lifecycle is sound.
 
-use crate::tests::harness::TestApp;
+use crate::tests::harness::{HostClient, TestApp};
 use crate::*;
 
 #[tokio::test]

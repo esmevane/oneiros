@@ -22,42 +22,21 @@ impl ContinuityCommands {
         config: &Config,
     ) -> Result<Rendered<Responses>, ContinuityError> {
         let client = Client::from_config(config)?;
-        let continuity_client = ContinuityClient::new(&client);
 
-        let result = match self {
-            ContinuityCommands::Wake(wake) => {
-                let WakeAgent::V1(wake) = wake;
-                continuity_client.wake(&wake.agent).await?
-            }
-            ContinuityCommands::Dream(dream) => {
-                let DreamAgent::V1(dream) = dream;
-                continuity_client.dream(&dream.agent).await?
-            }
-            ContinuityCommands::Introspect(introspecting) => {
-                let IntrospectAgent::V1(introspecting) = introspecting;
-                continuity_client.introspect(&introspecting.agent).await?
-            }
-            ContinuityCommands::Reflect(reflecting) => {
-                let ReflectAgent::V1(reflecting) = reflecting;
-                continuity_client.reflect(&reflecting.agent).await?
-            }
-            ContinuityCommands::Sense(sensing) => continuity_client.sense(sensing).await?,
-            ContinuityCommands::Sleep(sleeping) => {
-                let SleepAgent::V1(sleeping) = sleeping;
-                continuity_client.sleep(&sleeping.agent).await?
-            }
-            ContinuityCommands::Guidebook(lookup) => {
-                let GuidebookAgent::V1(lookup) = lookup;
-                continuity_client.guidebook(&lookup.agent).await?
-            }
-            ContinuityCommands::Emerge(emerging) => continuity_client.emerge(emerging).await?,
-            ContinuityCommands::Recede(receding) => {
-                let RecedeAgent::V1(receding) = receding;
-                continuity_client.recede(&receding.agent).await?
-            }
-            ContinuityCommands::Status(_) => continuity_client.status().await?,
+        let bytes = match self {
+            Self::Wake(wake) => wake.execute_request(&client).await?,
+            Self::Dream(dream) => dream.execute_request(&client).await?,
+            Self::Introspect(introspecting) => introspecting.execute_request(&client).await?,
+            Self::Reflect(reflecting) => reflecting.execute_request(&client).await?,
+            Self::Sense(sensing) => sensing.execute_request(&client).await?,
+            Self::Sleep(sleeping) => sleeping.execute_request(&client).await?,
+            Self::Guidebook(lookup) => lookup.execute_request(&client).await?,
+            Self::Emerge(emerging) => emerging.execute_request(&client).await?,
+            Self::Recede(receding) => receding.execute_request(&client).await?,
+            Self::Status(status) => status.execute_request(&client).await?,
         };
 
-        Ok(ContinuityView::new(result).render().map(Into::into))
+        let response: ContinuityResponse = serde_json::from_slice(&bytes)?;
+        Ok(ContinuityView::new(response).render().map(Into::into))
     }
 }

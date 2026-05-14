@@ -16,6 +16,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for CreateConnection {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/connections", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetConnection {
@@ -23,6 +31,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ConnectionId>,
         }
+    }
+}
+
+impl ClientRequest for GetConnection {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetConnection::V1(lookup) = self;
+        client.get(&format!("/connections/{}", lookup.key)).await
     }
 }
 
@@ -41,6 +58,30 @@ versioned! {
     }
 }
 
+impl ClientRequest for ListConnections {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListConnections::V1(listing) = self;
+        let mut params: Vec<(&str, String)> = Vec::new();
+
+        if let Some(entity) = &listing.entity {
+            params.push(("entity", entity.to_string()));
+        }
+
+        params.push(("limit", listing.filters.limit.to_string()));
+        params.push(("offset", listing.filters.offset.to_string()));
+
+        let query = params
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        client.get(&format!("/connections?{query}")).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveConnection {
@@ -48,6 +89,15 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) id: ConnectionId,
         }
+    }
+}
+
+impl ClientRequest for RemoveConnection {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveConnection::V1(removal) = self;
+        client.delete(&format!("/connections/{}", removal.id)).await
     }
 }
 

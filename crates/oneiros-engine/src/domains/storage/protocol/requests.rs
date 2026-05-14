@@ -14,6 +14,19 @@ versioned! {
     }
 }
 
+impl ClientRequest for GetStorage {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let GetStorage::V1(lookup) = self;
+        let path = match &lookup.key {
+            ResourceKey::Key(key) => StorageRef::encode(key).to_string(),
+            ResourceKey::Ref(token) => token.to_string(),
+        };
+        client.get(&format!("/storage/{path}")).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveStorage {
@@ -21,6 +34,16 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: StorageKey,
         }
+    }
+}
+
+impl ClientRequest for RemoveStorage {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RemoveStorage::V1(removal) = self;
+        let ref_key = StorageRef::encode(&removal.key);
+        client.delete(&format!("/storage/{ref_key}")).await
     }
 }
 
@@ -39,6 +62,14 @@ versioned! {
     }
 }
 
+impl ClientRequest for UploadStorage {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/storage", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListStorage {
@@ -49,6 +80,19 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ClientRequest for ListStorage {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let ListStorage::V1(listing) = self;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset
+        );
+        client.get(&format!("/storage?{query}")).await
     }
 }
 

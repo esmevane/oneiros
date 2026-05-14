@@ -17,6 +17,9 @@ pub(crate) enum TextureError {
     #[error(transparent)]
     Client(#[from] ClientError),
 
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -39,6 +42,7 @@ impl IntoResponse for TextureError {
             }
             TextureError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             TextureError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            TextureError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }
