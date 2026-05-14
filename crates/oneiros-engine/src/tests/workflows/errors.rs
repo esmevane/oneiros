@@ -521,3 +521,26 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
 
     Ok(())
 }
+
+#[tokio::test]
+async fn project_create_refuses_nameless_request() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_host()
+        .await?
+        .init_project()
+        .await?;
+
+    let result = app
+        .client()
+        .project()
+        .create(&CreateProject::builder_v1().build().into())
+        .await;
+
+    assert!(
+        result.is_err(),
+        "server should refuse CreateProject with no name, got {result:?}"
+    );
+
+    Ok(())
+}

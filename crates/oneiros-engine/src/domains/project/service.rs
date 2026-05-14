@@ -11,10 +11,7 @@ impl ProjectService {
         request: &CreateProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let details = request.current()?;
-        let project_name = details
-            .name
-            .clone()
-            .unwrap_or_else(|| scope.config().project.clone());
+        let project_name = details.name.clone().ok_or(ProjectError::MissingName)?;
 
         if let Ok(ProjectResponse::Found(_)) = Self::get(
             scope,

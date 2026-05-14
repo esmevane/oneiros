@@ -8,6 +8,9 @@ use crate::*;
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum ProjectError {
+    #[error("project name is required — pass --name or set --project before the subcommand")]
+    MissingName,
+
     #[error("project context required — call start_service first")]
     Missing,
 
@@ -58,6 +61,7 @@ impl IntoResponse for ProjectError {
                 (StatusCode::NOT_FOUND, self.to_string())
             }
             ProjectError::Resolve(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
+            ProjectError::MissingName => (StatusCode::BAD_REQUEST, self.to_string()),
             ProjectError::Missing
             | ProjectError::Database(_)
             | ProjectError::Event(_)

@@ -4,7 +4,7 @@ This project uses [oneiros](https://github.com/esmevane/oneiros) for persistent 
 
 ### Session Start
 
-Run `oneiros dream governor.process` to restore the governor agent's full cognitive context. The governor orchestrates other agents — each agent should dream their own context when activated.
+Run `oneiros continuity dream governor.process` to restore the governor agent's full cognitive context. The governor orchestrates other agents — each agent should dream their own context when activated.
 
 ### During Work
 

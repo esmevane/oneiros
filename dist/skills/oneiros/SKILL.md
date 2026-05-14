@@ -125,8 +125,8 @@ To set up MCP access: `oneiros mcp init` (creates `.mcp.json` for Claude Code).
 
 | What | CLI | MCP tool |
 |------|-----|----------|
-| Assemble full identity and context | `oneiros dream <agent>` | `dream` |
-| Read the cognitive guidebook | `oneiros guidebook <agent>` | `guidebook` |
+| Assemble full identity and context | `oneiros continuity dream <agent>` | `dream` |
+| Read the cognitive guidebook | `oneiros continuity guidebook <agent>` | `guidebook` |
 | Check cognitive pressure | `oneiros pressure <agent>` | `get_pressure` |
 | See the full dashboard | `oneiros status` | `status` |
 | Search across everything | `oneiros search <query>` | `search` |
