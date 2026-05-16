@@ -101,6 +101,22 @@ impl DoctorView {
                         "—".muted()
                     )
                 }
+                DoctorCheck::McpReachable => {
+                    format!("  {} MCP reachable", "✓".success())
+                }
+                DoctorCheck::McpTokenRejected(msg) => {
+                    format!("  {} MCP token rejected: {}", "!".warning(), msg)
+                }
+                DoctorCheck::McpUnreachable(msg) => {
+                    format!("  {} MCP unreachable: {}", "!".warning(), msg)
+                }
+                DoctorCheck::McpNotVerified => {
+                    format!(
+                        "  {} MCP config present, not verified {} service not running",
+                        "−".muted(),
+                        "—".muted()
+                    )
+                }
                 DoctorCheck::ServiceRunning => {
                     format!("  {} Service running", "✓".success())
                 }

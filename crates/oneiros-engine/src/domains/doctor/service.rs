@@ -1,5 +1,10 @@
 use crate::*;
 
+enum McpLiveResult {
+    Reachable,
+    TokenRejected(String),
+}
+
 pub(crate) struct DoctorService;
 
 impl DoctorService {
@@ -124,15 +129,9 @@ impl DoctorService {
             }
         }
 
-        // MCP config check
-        if McpConfigService::is_configured() {
-            checks.push(DoctorCheck::McpConfigured);
-        } else {
-            checks.push(DoctorCheck::McpMissing);
-        }
-
-        // Service check
-        match HostService::status(config).await {
+        // Service check — run before MCP so the live check can gate on it
+        let service_status = HostService::status(config).await;
+        match service_status {
             HostResponse::ServiceRunning(_) => {
                 checks.push(DoctorCheck::ServiceRunning);
             }
@@ -144,11 +143,122 @@ impl DoctorService {
             }
         }
 
+        // MCP config check — with live token validation when the service is up
+        if McpConfigService::is_configured() {
+            checks.push(DoctorCheck::McpConfigured);
+            let service_is_running = matches!(service_status, HostResponse::ServiceRunning(_));
+            if service_is_running {
+                if let Some(mcp_config) = McpConfigService::read_config(config) {
+                    Self::check_mcp_live(&mcp_config, &mut checks).await;
+                }
+            } else {
+                checks.push(DoctorCheck::McpNotVerified);
+            }
+        } else {
+            checks.push(DoctorCheck::McpMissing);
+        }
+
         DoctorResponse::CheckupStatus(
             CheckupStatusResponse::builder_v1()
                 .checks(checks)
                 .build()
                 .into(),
         )
+    }
+
+    async fn check_mcp_live(config: &McpLiveConfig, checks: &mut Vec<DoctorCheck>) {
+        let client = reqwest::Client::new();
+        let body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": { "name": "oneiros-doctor", "version": "0.1.0" }
+            }
+        });
+
+        let result = client
+            .post(&config.url)
+            .header("Accept", "application/json, text/event-stream")
+            .header("Content-Type", "application/json")
+            .header("Authorization", format!("Bearer {}", config.token))
+            .json(&body)
+            .send()
+            .await;
+
+        let resp = match result {
+            Ok(r) if r.status().is_success() => r,
+            Ok(r) => {
+                checks.push(DoctorCheck::McpUnreachable(DiagnosticMessage::new(
+                    format!("HTTP {}", r.status().as_u16()),
+                )));
+                return;
+            }
+            Err(e) => {
+                checks.push(DoctorCheck::McpUnreachable(DiagnosticMessage::new(
+                    e.to_string(),
+                )));
+                return;
+            }
+        };
+
+        let body_text = match resp.text().await {
+            Ok(t) => t,
+            Err(e) => {
+                checks.push(DoctorCheck::McpUnreachable(DiagnosticMessage::new(
+                    e.to_string(),
+                )));
+                return;
+            }
+        };
+
+        match Self::parse_mcp_initialize_response(&body_text) {
+            Ok(McpLiveResult::Reachable) => {
+                checks.push(DoctorCheck::McpReachable);
+            }
+            Ok(McpLiveResult::TokenRejected(msg)) => {
+                checks.push(DoctorCheck::McpTokenRejected(DiagnosticMessage::new(msg)));
+            }
+            Err(e) => {
+                checks.push(DoctorCheck::McpUnreachable(DiagnosticMessage::new(e)));
+            }
+        }
+    }
+
+    /// Parse an SSE-wrapped JSON-RPC initialize response. Returns
+    /// `Reachable` on a valid result, `TokenRejected` on -32602 with an
+    /// "Invalid" message, or an error string for other parse failures.
+    fn parse_mcp_initialize_response(body: &str) -> Result<McpLiveResult, String> {
+        let json_str = body
+            .lines()
+            .filter(|line| line.starts_with("data:"))
+            .map(|line| line.strip_prefix("data:").unwrap().trim())
+            .find(|s| !s.is_empty())
+            .ok_or_else(|| "no data: line in SSE response".to_string())?;
+
+        let parsed: serde_json::Value =
+            serde_json::from_str(json_str).map_err(|e| e.to_string())?;
+
+        if let Some(result) = parsed.get("result")
+            && result.is_object()
+        {
+            return Ok(McpLiveResult::Reachable);
+        }
+
+        let error = parsed
+            .get("error")
+            .ok_or_else(|| "no result or error in JSON-RPC response".to_string())?;
+
+        let code = error.get("code").and_then(|c| c.as_i64()).unwrap_or(0);
+
+        let message = error.get("message").and_then(|m| m.as_str()).unwrap_or("");
+
+        if code == -32602 && message.contains("Invalid") {
+            return Ok(McpLiveResult::TokenRejected(message.to_string()));
+        }
+
+        Err(format!("JSON-RPC error {code}: {message}"))
     }
 }

@@ -79,4 +79,29 @@ impl McpConfigService {
     pub(crate) fn is_configured() -> bool {
         Self::mcp_json_path().exists()
     }
+
+    /// Read the MCP URL and Bearer token from `.mcp.json`. Returns
+    /// `None` if the file does not exist, is not valid JSON, or does
+    /// not contain the expected structure.
+    pub(crate) fn read_config(config: &Config) -> Option<McpLiveConfig> {
+        let path = Self::mcp_json_path();
+        let content = config.platform().read_to_string(&path).ok()?;
+        let parsed: serde_json::Value = serde_json::from_str(&content).ok()?;
+        let server = parsed.get("mcpServers")?.get("oneiros-local")?;
+        let url = server.get("url")?.as_str()?.to_string();
+        let token = server
+            .get("headers")?
+            .get("Authorization")?
+            .as_str()?
+            .strip_prefix("Bearer ")?
+            .to_string();
+
+        Some(McpLiveConfig { url, token })
+    }
+}
+
+/// Live-check configuration extracted from `.mcp.json`.
+pub(crate) struct McpLiveConfig {
+    pub(crate) url: String,
+    pub(crate) token: String,
 }

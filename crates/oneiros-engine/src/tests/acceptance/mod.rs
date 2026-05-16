@@ -632,6 +632,14 @@ async fn doctor_reports_uninitialized() -> TestResult {
 async fn doctor_prompt() -> TestResult {
     cases::doctor::doctor_prompt::<EngineBackend>().await
 }
+#[tokio::test]
+async fn doctor_reports_mcp_missing_when_no_config() -> TestResult {
+    cases::doctor::reports_mcp_missing_when_no_config::<EngineBackend>().await
+}
+#[tokio::test]
+async fn doctor_prompt_includes_mcp_section() -> TestResult {
+    cases::doctor::doctor_prompt_includes_mcp_section::<EngineBackend>().await
+}
 
 // Search
 #[tokio::test]

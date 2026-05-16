@@ -153,7 +153,7 @@ mod tests {
             name: "foo".into(),
             value: 5,
         };
-        #[allow(clippy::unnecessary_fallible_conversions)]
+        #[expect(clippy::unnecessary_fallible_conversions)]
         let v1: Wedge1 = v0.try_into().unwrap();
         assert_eq!(v1.id, 42);
     }
@@ -178,7 +178,7 @@ mod tests {
             name: "foo".into(),
             value: 5,
         };
-        #[allow(clippy::unnecessary_fallible_conversions)]
+        #[expect(clippy::unnecessary_fallible_conversions)]
         let v1: Wedge1 = v0.try_into().unwrap();
         let v2: Wedge2 = v1.try_into().unwrap();
         assert_eq!(v2.name, "foo");

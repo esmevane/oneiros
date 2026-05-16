@@ -147,7 +147,7 @@ impl Platform {
     }
 
     /// Create a directory at the given path (parents must already exist).
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub(crate) fn create_dir(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
         std::fs::create_dir(path)
     }
@@ -176,20 +176,13 @@ impl Platform {
         std::fs::copy(from, to)
     }
 
-    /// Recursively remove a directory and its contents.
-    #[allow(dead_code)]
-    pub(crate) fn remove_dir_all(&self, path: impl AsRef<Path>) -> std::io::Result<()> {
-        std::fs::remove_dir_all(path)
-    }
-
     /// Iterate the entries of a directory.
-    #[allow(dead_code)]
     pub(crate) fn read_dir(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::ReadDir> {
         std::fs::read_dir(path)
     }
 
     /// Fetch metadata for the entry at the given path.
-    #[allow(dead_code)]
+    #[cfg(all(test, unix))]
     pub(crate) fn metadata(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::Metadata> {
         std::fs::metadata(path)
     }
@@ -197,12 +190,6 @@ impl Platform {
     /// Open a file for reading.
     pub(crate) fn open_file(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::File> {
         std::fs::File::open(path)
-    }
-
-    /// Create (or truncate) a file for writing.
-    #[allow(dead_code)]
-    pub(crate) fn create_file(&self, path: impl AsRef<Path>) -> std::io::Result<std::fs::File> {
-        std::fs::File::create(path)
     }
 
     /// Open a file with custom [`std::fs::OpenOptions`].

@@ -395,10 +395,10 @@ impl Config {
     /// to deserialize into [`Config`] (type mismatches, missing required
     /// fields, etc.).
     ///
-    /// `figment::Error` is large (~200 bytes); the `#[allow]` avoids
-    /// the `clippy::result_large_err` lint since boxing would break
-    /// the caller ergonomics.
-    #[allow(clippy::result_large_err)]
+    #[expect(
+        clippy::result_large_err,
+        reason = "`figment::Error` is large (~200 bytes); we're knowingly permitting it for now"
+    )]
     pub(crate) fn resolve(overrides: &CliOverrides) -> Result<Self, figment::Error> {
         let data_dir = overrides.data_dir.clone().unwrap_or_else(default_data_dir);
         let config_path = Platform::new(&data_dir).config_path();

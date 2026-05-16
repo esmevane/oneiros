@@ -37,6 +37,23 @@ impl core::fmt::Display for LogEventCount {
     }
 }
 
+/// A human-readable diagnostic message carrying error or status details.
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(transparent)]
+pub(crate) struct DiagnosticMessage(pub(crate) String);
+
+impl DiagnosticMessage {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+}
+
+impl core::fmt::Display for DiagnosticMessage {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 /// A single diagnostic check item emitted during a doctor checkup.
 #[derive(Debug, Clone, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
 #[kinded(kind = DoctorCheckType, display = "kebab-case")]
@@ -56,6 +73,10 @@ pub(crate) enum DoctorCheck {
     HostKeyMissing,
     McpConfigured,
     McpMissing,
+    McpReachable,
+    McpTokenRejected(DiagnosticMessage),
+    McpUnreachable(DiagnosticMessage),
+    McpNotVerified,
     ServiceRunning,
     ServiceStopped,
     ServiceNotInstalled,
