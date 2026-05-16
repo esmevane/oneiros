@@ -2,6 +2,7 @@ mod bootstrap;
 mod continuity;
 mod dashboard;
 mod distribution;
+mod doctor;
 mod errors;
 mod host;
 mod mcp;
