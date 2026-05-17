@@ -29,6 +29,20 @@ jobs:
       - name: Run cargo check
         run: cargo check --workspace --all-targets
 
+  check-windows:
+    name: Check (Windows)
+    runs-on: windows-latest
+    steps:
+      - *checkout
+      - *install-rust
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-windows
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Run cargo check
+        run: cargo check --workspace --all-targets
+
   test:
     name: Test
     runs-on: ubuntu-latest
