@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "oneiros wake governor.process"
+            "command": "oneiros continuity wake governor.process"
           },
           {
             "type": "command",
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "agent=$(cat | jq -r '.agent_type' | tr '-' '.') && dream=$(oneiros wake \"$agent\" 2>/dev/null) && [ -n \"$dream\" ] && echo \"$dream\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
+            "command": "agent=$(cat | jq -r '.agent_type' | tr '-' '.') && dream=$(oneiros continuity wake \"$agent\" 2>/dev/null) && [ -n \"$dream\" ] && echo \"$dream\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
           }
         ]
       }
@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "oneiros introspect governor.process 2>/dev/null || true",
+            "command": "oneiros continuity introspect governor.process 2>/dev/null || true",
             "timeout": 60
           }
         ]

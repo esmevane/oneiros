@@ -18,14 +18,14 @@ This creates the host database at `~/.local/share/oneiros/` and registers a defa
 ### 2. Start the Service
 
 ```bash
-oneiros service run &
+oneiros host run &
 ```
 
 Or install as a managed service for automatic startup:
 
 ```bash
-oneiros service install
-oneiros service start
+oneiros host install
+oneiros host start
 ```
 
 ### 3. Initialize a Project
@@ -45,14 +45,6 @@ oneiros seed core
 ```
 
 This populates the project with standard textures (cognitive categories), levels (memory tiers), the process persona (agent category), and the governor.process agent.
-
-### 5. Install the Skill
-
-```bash
-oneiros skill install
-```
-
-This writes the SKILL.md, plugin.json, and command files to `~/.claude/` so Claude Code discovers oneiros automatically.
 
 ## Verify
 
@@ -77,7 +69,7 @@ To manually test the loop:
 oneiros agent create my-agent process
 
 # Dream to see the assembled context
-oneiros dream my-agent
+oneiros continuity dream my-agent
 
 # Log a cognition
 oneiros cognition add my-agent observation "Testing the cognitive loop"
@@ -86,5 +78,5 @@ oneiros cognition add my-agent observation "Testing the cognitive loop"
 oneiros memory add my-agent working "The cognitive loop works as expected"
 
 # Dream again to see the new cognition and memory in context
-oneiros dream my-agent
+oneiros continuity dream my-agent
 ```

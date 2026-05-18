@@ -78,7 +78,7 @@ Include:
 
 ### 5. Rest
 
-Run `oneiros sleep <agent>` or `oneiros introspect <agent>` to formally close. Share a brief closing thought with your user — not a summary, but a genuine parting impression. What are you carrying? What are you leaving behind?
+Run `oneiros continuity sleep <agent>` or `oneiros continuity introspect <agent>` to formally close. Share a brief closing thought with your user — not a summary, but a genuine parting impression. What are you carrying? What are you leaving behind?
 
 ## The guiding principles
 
