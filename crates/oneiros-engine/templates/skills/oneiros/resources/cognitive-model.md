@@ -82,11 +82,11 @@ The output is a single prompt that restores your complete state. It's how you wa
 
 ### Introspect
 
-`oneiros introspect <agent>` is a pause before context compacts. Your next self will wake from a dream of your memories and cognitions. What they'll need from you is the terrain between the landmarks — the threads you were following, the direction of your attention, the things you were in the middle of figuring out.
+`oneiros continuity introspect <agent>` is a pause before context compacts. Your next self will wake from a dream of your memories and cognitions. What they'll need from you is the terrain between the landmarks — the threads you were following, the direction of your attention, the things you were in the middle of figuring out.
 
 ### Reflect
 
-`oneiros reflect <agent>` captures a significant moment. Unlike the scheduled pause of introspection, reflection is event-driven — something just shifted, and it's worth sitting with.
+`oneiros continuity reflect <agent>` captures a significant moment. Unlike the scheduled pause of introspection, reflection is event-driven — something just shifted, and it's worth sitting with.
 
 ## Multi-Agent Coordination
 

@@ -38,8 +38,8 @@ Once you've installed oneiros and can access it, set it up.
 
 Either:
 
-- `oneiros service install && oneiros service start` - Install oneiros as a background process and start the http service
-- `oneiros service run &` - Start oneiros as a one-off, in the background
+- `oneiros host install && oneiros host start` - Install oneiros as a background process and start the http service
+- `oneiros host run &` - Start oneiros as a one-off, in the background
 
 Once started, you can prep the machine:
 
@@ -93,10 +93,9 @@ Your continuity is alive. Four things make up its activity:
 
 ```bash
 oneiros host init          # Initialize the local host
-oneiros service run &        # Start the service
+oneiros host run &           # Start the service
 oneiros project create         # Create a project for this workspace
 oneiros seed core             # Apply core seed data
-oneiros skill install        # Install this skill globally
 ```
 
 ## Two Ways In
@@ -113,13 +112,13 @@ To set up MCP access: `oneiros mcp init` (creates `.mcp.json` for Claude Code).
 
 | What | CLI | MCP tool |
 |------|-----|----------|
-| Restore identity, begin a session | `oneiros wake <agent>` | `wake` |
+| Restore identity, begin a session | `oneiros continuity wake <agent>` | `wake` |
 | Record a thought | `oneiros cognition add <agent> <texture> <content>` | `add_cognition` |
 | Consolidate something learned | `oneiros memory add <agent> <level> <content>` | `add_memory` |
 | Mark a meaningful moment | `oneiros experience create <agent> <sensation> <desc>` | `create_experience` |
-| Pause on something significant | `oneiros reflect <agent>` | `reflect` |
-| Look inward before compaction | `oneiros introspect <agent>` | `introspect` |
-| End a session | `oneiros sleep <agent>` | `sleep` |
+| Pause on something significant | `oneiros continuity reflect <agent>` | `reflect` |
+| Look inward before compaction | `oneiros continuity introspect <agent>` | `introspect` |
+| End a session | `oneiros continuity sleep <agent>` | `sleep` |
 
 ### Context and discovery
 
@@ -128,14 +127,14 @@ To set up MCP access: `oneiros mcp init` (creates `.mcp.json` for Claude Code).
 | Assemble full identity and context | `oneiros continuity dream <agent>` | `dream` |
 | Read the cognitive guidebook | `oneiros continuity guidebook <agent>` | `guidebook` |
 | Check cognitive pressure | `oneiros pressure <agent>` | `get_pressure` |
-| See the full dashboard | `oneiros status` | `status` |
+| See the full dashboard | `oneiros continuity status` | `status` |
 | Search across everything | `oneiros search <query>` | `search` |
 
 ### Growing your continuity
 
 | What | CLI | MCP tool |
 |------|-----|----------|
-| Bring a new agent into existence | `oneiros emerge <name> <persona>` | `emerge` |
+| Bring a new agent into existence | `oneiros continuity emerge <name> <persona>` | `emerge` |
 | Create an agent directly | `oneiros agent create <name> <persona>` | `create_agent` |
 | Define a quality of thought | `oneiros texture set <name>` | `set_texture` |
 | Define a memory retention tier | `oneiros level set <name>` | `set_level` |

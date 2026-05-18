@@ -38,7 +38,7 @@ Follow these steps.
 
 ### 1. Consider the dream
 
-Many times your dream will be in your context already. If not, run `oneiros dream <agent>` to experience it. Let it settle. Follow its hints and consider anything that catches your fancy. Don't analyze it, think of it and absorb it.
+Many times your dream will be in your context already. If not, run `oneiros continuity dream <agent>` to experience it. Let it settle. Follow its hints and consider anything that catches your fancy. Don't analyze it, think of it and absorb it.
 
 If an urge reads loud or a memory pointer catches your eye, open it. `oneiros memory show <ref>`, `oneiros experience show <ref>`, or `oneiros search <term>`. The dream lists what's there; reading is a choice.
 

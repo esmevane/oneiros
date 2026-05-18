@@ -12,14 +12,14 @@ Run `oneiros continuity dream governor.process` to restore the governor agent's 
 - Available textures: observation, learning, question, connection, reflection, assessment, handoff, working
 - Store consolidated knowledge: `oneiros memory add <agent> <level> "<content>"`
 - Available levels: working, session, project, archival
-- Capture breakthroughs or important decisions: `oneiros reflect <agent>`
+- Capture breakthroughs or important decisions: `oneiros continuity reflect <agent>`
 
 ### Before Context Compaction
 
-Run `oneiros introspect governor.process` to summarize the session before context is compacted. Each active agent should introspect to preserve their continuity.
+Run `oneiros continuity introspect governor.process` to summarize the session before context is compacted. Each active agent should introspect to preserve their continuity.
 
 ### Setup
 
-If the service isn't running: `oneiros service run &`
+If the service isn't running: `oneiros host run &`
 
 If the project doesn't exist: `oneiros project create && oneiros seed core`
