@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/esmevane/oneiros/compare/v0.0.11...v0.0.12) - 2026-05-18
+
+### 🚀 Features
+
+- [minor] Merge project/brain and system/service/host (#264)
+
+We've been wanting to merge "project" and "brain", and "system",
+"service", and "host" for a while now, and that's what this commit
+does.
+
+- Project and "brain" were always essentially the same thing, but
+  differentiating the two of these resulted in a lot of weird behavior
+  with the robot, where they would enshrine the idea of a brain and sort
+  of work to talk about it everywhere. Not altogether a problem, except
+  that it made me realize that I'd rather talk about brains when I have
+  a reason to actually model something like that out.
+- System/Service/Host - this is sort of the same thing, where a host is
+  how I spoke about all of these things and so having multiple
+  conceptual wrappers around it was making it unclear what I wanted in
+  many cases.
+
+Release-Type: feature
+
+
 ## [0.0.10](https://github.com/esmevane/oneiros/compare/v0.0.9...v0.0.10) - 2026-05-05
 
 ### Other
