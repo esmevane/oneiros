@@ -74,7 +74,9 @@ impl<'src> Parser<'src> {
                 let integer = self.parse_integer_literal()?;
                 Ok(Lens::integer(integer))
             }
-            Some(character) if is_identifier_start(character) => self.parse_identifier_or_predicate(),
+            Some(character) if is_identifier_start(character) => {
+                self.parse_identifier_or_predicate()
+            }
             Some(found) => Err(LensParseError::UnexpectedChar {
                 found,
                 at: self.cursor,
@@ -345,14 +347,10 @@ mod tests {
 
     #[test]
     fn parses_predicate_with_ref_argument() {
-        let parsed =
-            Lens::parse("mentions(ref:AAYQAZ46gMbJfZKr0qOpgknFfA)").expect("parses");
+        let parsed = Lens::parse("mentions(ref:AAYQAZ46gMbJfZKr0qOpgknFfA)").expect("parses");
         assert_eq!(
             parsed,
-            Lens::predicate(
-                "mentions",
-                [Lens::reference("AAYQAZ46gMbJfZKr0qOpgknFfA")]
-            )
+            Lens::predicate("mentions", [Lens::reference("AAYQAZ46gMbJfZKr0qOpgknFfA")])
         );
     }
 
@@ -370,8 +368,8 @@ mod tests {
 
     #[test]
     fn parses_set_expression_as_argument() {
-        let parsed = Lens::parse("emitted_by(texture(observation) | texture(handoff))")
-            .expect("parses");
+        let parsed =
+            Lens::parse("emitted_by(texture(observation) | texture(handoff))").expect("parses");
         assert_eq!(
             parsed,
             Lens::predicate(
@@ -392,10 +390,9 @@ mod tests {
 
     #[test]
     fn parses_predicate_with_multiple_arguments() {
-        let parsed = Lens::parse(
-            "between(ref:AAYQAZ46gMbJfZKr0qOpgknFfA, ref:AAYQAZ47MrcTcuGpm-evDKpj7Q)",
-        )
-        .expect("parses");
+        let parsed =
+            Lens::parse("between(ref:AAYQAZ46gMbJfZKr0qOpgknFfA, ref:AAYQAZ47MrcTcuGpm-evDKpj7Q)")
+                .expect("parses");
         assert_eq!(
             parsed,
             Lens::predicate(
@@ -422,8 +419,7 @@ mod tests {
 
     #[test]
     fn parses_intersection() {
-        let parsed =
-            Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
+        let parsed = Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
         assert_eq!(
             parsed,
             Lens::intersection(
@@ -435,8 +431,7 @@ mod tests {
 
     #[test]
     fn parses_difference() {
-        let parsed =
-            Lens::parse("texture(observation) ~ texture(handoff)").expect("parses");
+        let parsed = Lens::parse("texture(observation) ~ texture(handoff)").expect("parses");
         assert_eq!(
             parsed,
             Lens::difference(
@@ -602,10 +597,8 @@ mod tests {
     fn dream_recent_cognitions_sub_query_parses() {
         // Closer to target shape now — integer literal works; anchor still
         // stubbed as `current_agent` until `@agent` lands.
-        let parsed = Lens::parse(
-            "recent(kind(cognition) & agent(current_agent), 12)",
-        )
-        .expect("parses");
+        let parsed =
+            Lens::parse("recent(kind(cognition) & agent(current_agent), 12)").expect("parses");
         let Lens::Predicate(predicate) = parsed else {
             panic!("expected top-level predicate");
         };
@@ -630,10 +623,9 @@ mod tests {
     #[test]
     fn dream_graph_traversal_sub_query_parses() {
         // Target shape: kind(cognition) & reachable(experiences(@agent), 3)
-        let parsed = Lens::parse(
-            "kind(cognition) & reachable(experiences(current_agent), dream_depth)",
-        )
-        .expect("parses");
+        let parsed =
+            Lens::parse("kind(cognition) & reachable(experiences(current_agent), dream_depth)")
+                .expect("parses");
         assert!(matches!(parsed, Lens::Intersection(_, _)));
     }
 

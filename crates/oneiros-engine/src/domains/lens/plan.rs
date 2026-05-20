@@ -38,10 +38,7 @@ pub(crate) enum ExplainPlan {
 }
 
 impl Lens {
-    pub(crate) fn explain(
-        &self,
-        registry: &Registry,
-    ) -> Result<ExplainPlan, LensValidationError> {
+    pub(crate) fn explain(&self, registry: &Registry) -> Result<ExplainPlan, LensValidationError> {
         self.validate(registry)?;
         Ok(build_plan(self, registry))
     }
@@ -118,11 +115,7 @@ fn render(plan: &ExplainPlan, f: &mut core::fmt::Formatter<'_>, depth: usize) ->
             right,
             result_type,
         } => {
-            writeln!(
-                f,
-                "{indent}union{}",
-                describe_operator_type(*result_type)
-            )?;
+            writeln!(f, "{indent}union{}", describe_operator_type(*result_type))?;
             render(left, f, depth + 1)?;
             render(right, f, depth + 1)
         }
@@ -207,7 +200,10 @@ mod tests {
     fn explain_validates_first_and_propagates_errors() {
         let lens = Lens::parse("unknown(x)").expect("parses");
         let error = lens.explain(&registry()).expect_err("must fail validation");
-        assert!(matches!(error, LensValidationError::UnknownPredicate { .. }));
+        assert!(matches!(
+            error,
+            LensValidationError::UnknownPredicate { .. }
+        ));
     }
 
     #[test]
@@ -302,8 +298,7 @@ mod tests {
 
     #[test]
     fn explain_preserves_set_operator_structure() {
-        let lens =
-            Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
+        let lens = Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
         let ExplainPlan::Intersection { left, right, .. } = plan else {
             panic!("expected intersection");
@@ -322,8 +317,7 @@ mod tests {
 
     #[test]
     fn explain_renders_as_indented_tree() {
-        let lens =
-            Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
+        let lens = Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
         let rendered = plan.to_string();
         assert_eq!(
@@ -393,8 +387,7 @@ mod tests {
 
     #[test]
     fn explain_carries_result_type_on_set_operator() {
-        let lens =
-            Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
+        let lens = Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
         let ExplainPlan::Intersection { result_type, .. } = plan else {
             panic!("expected intersection");

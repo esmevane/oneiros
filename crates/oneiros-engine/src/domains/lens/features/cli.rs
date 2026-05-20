@@ -13,10 +13,7 @@ pub(crate) enum LensCommands {
 }
 
 impl LensCommands {
-    pub(crate) async fn execute(
-        &self,
-        config: &Config,
-    ) -> Result<Rendered<Responses>, LensError> {
+    pub(crate) async fn execute(&self, config: &Config) -> Result<Rendered<Responses>, LensError> {
         let client = Client::from_config(config)?;
 
         let bytes = match self {

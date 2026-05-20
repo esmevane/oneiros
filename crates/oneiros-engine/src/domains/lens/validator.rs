@@ -130,8 +130,7 @@ mod tests {
 
     #[test]
     fn validates_set_operators_when_both_sides_validate() {
-        let lens =
-            Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
+        let lens = Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
         lens.validate(&registry()).expect("validates");
     }
 
@@ -145,7 +144,10 @@ mod tests {
     fn rejects_unknown_predicate() {
         let lens = Lens::parse("unknown(x)").expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
-        assert!(matches!(error, LensValidationError::UnknownPredicate { .. }));
+        assert!(matches!(
+            error,
+            LensValidationError::UnknownPredicate { .. }
+        ));
     }
 
     #[test]
@@ -186,10 +188,7 @@ mod tests {
     fn rejects_arg_type_mismatch_integer_where_symbol_expected() {
         let lens = Lens::parse("agent(12)").expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
-        let LensValidationError::ArgTypeMismatch {
-            expected, got, ..
-        } = error
-        else {
+        let LensValidationError::ArgTypeMismatch { expected, got, .. } = error else {
             panic!("expected ArgTypeMismatch");
         };
         assert_eq!(expected, "symbol");
@@ -257,17 +256,13 @@ mod tests {
         );
 
         let over_events = Lens::parse("recent(between(ref:AAA, ref:BBB), 12)").expect("parses");
-        assert_eq!(
-            over_events.result_type(&registry),
-            Some(ResultType::Events),
-        );
+        assert_eq!(over_events.result_type(&registry), Some(ResultType::Events),);
     }
 
     #[test]
     fn set_operator_result_type_when_both_sides_match() {
         let registry = registry();
-        let lens =
-            Lens::parse("agent(governor.process) & texture(observation)").expect("parses");
+        let lens = Lens::parse("agent(governor.process) & texture(observation)").expect("parses");
         assert_eq!(lens.result_type(&registry), Some(ResultType::Entities));
     }
 
@@ -348,9 +343,8 @@ mod tests {
     #[test]
     fn rejects_mismatch_through_recent_inheritance() {
         // recent inherits its first arg's type → events here, mismatched with entities side.
-        let lens =
-            Lens::parse("recent(between(ref:AAA, ref:BBB), 12) & agent(governor.process)")
-                .expect("parses");
+        let lens = Lens::parse("recent(between(ref:AAA, ref:BBB), 12) & agent(governor.process)")
+            .expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
         let LensValidationError::ResultTypeMismatch { left, right, .. } = error else {
             panic!("expected ResultTypeMismatch");

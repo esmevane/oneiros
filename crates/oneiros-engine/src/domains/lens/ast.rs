@@ -71,7 +71,10 @@ impl Lens {
         Lens::Integer(value.into())
     }
 
-    pub(crate) fn predicate(name: impl Into<PredicateName>, args: impl IntoIterator<Item = Lens>) -> Self {
+    pub(crate) fn predicate(
+        name: impl Into<PredicateName>,
+        args: impl IntoIterator<Item = Lens>,
+    ) -> Self {
         Lens::Predicate(Predicate {
             name: name.into(),
             args: args.into_iter().collect(),

@@ -38,9 +38,7 @@ pub(crate) enum LensValidationError {
         got: usize,
     },
 
-    #[error(
-        "predicate {predicate} arg #{position}: expected {expected}, got {got}"
-    )]
+    #[error("predicate {predicate} arg #{position}: expected {expected}, got {got}")]
     ArgTypeMismatch {
         predicate: crate::PredicateName,
         position: usize,

@@ -132,6 +132,7 @@ impl Registry {
         let entities = SpecResultType::Of(ResultType::Entities);
         let events = SpecResultType::Of(ResultType::Events);
         let inherits_first = SpecResultType::InheritsFromArg(0);
+
         Self::new()
             .with(PredicateSpec::new(
                 "agent",
@@ -220,22 +221,22 @@ impl Registry {
 impl ArgType {
     pub(crate) fn matches(&self, lens: &Lens) -> bool {
         match (self, lens) {
-            (ArgType::Symbol, Lens::Symbol(_)) => true,
-            (ArgType::String, Lens::String(_)) => true,
-            (ArgType::Ref, Lens::Ref(_)) => true,
-            (ArgType::Integer, Lens::Integer(_)) => true,
-            (ArgType::Lens, _) => true,
+            (Self::Symbol, Lens::Symbol(_)) => true,
+            (Self::String, Lens::String(_)) => true,
+            (Self::Ref, Lens::Ref(_)) => true,
+            (Self::Integer, Lens::Integer(_)) => true,
+            (Self::Lens, _) => true,
             _ => false,
         }
     }
 
     pub(crate) fn describe(&self) -> &'static str {
         match self {
-            ArgType::Symbol => "symbol",
-            ArgType::String => "string",
-            ArgType::Ref => "ref",
-            ArgType::Integer => "integer",
-            ArgType::Lens => "lens",
+            Self::Symbol => "symbol",
+            Self::String => "string",
+            Self::Ref => "ref",
+            Self::Integer => "integer",
+            Self::Lens => "lens",
         }
     }
 }
