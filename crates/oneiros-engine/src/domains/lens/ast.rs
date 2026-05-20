@@ -2,7 +2,7 @@
 pub(crate) enum Lens {
     Symbol(Identifier),
     String(StringLiteral),
-    Ref(RefLiteral),
+    Ref(crate::RefToken),
     Integer(IntegerLiteral),
     Predicate(Predicate),
     Union(Box<Lens>, Box<Lens>),
@@ -24,9 +24,6 @@ pub(crate) struct Identifier(String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct StringLiteral(String);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct RefLiteral(String);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct IntegerLiteral(i64);
@@ -63,7 +60,7 @@ impl Lens {
         Lens::String(value.into())
     }
 
-    pub(crate) fn reference(value: impl Into<RefLiteral>) -> Self {
+    pub(crate) fn reference(value: impl Into<crate::RefToken>) -> Self {
         Lens::Ref(value.into())
     }
 
@@ -130,4 +127,3 @@ macro_rules! lens_newtype {
 lens_newtype!(PredicateName);
 lens_newtype!(Identifier);
 lens_newtype!(StringLiteral);
-lens_newtype!(RefLiteral);

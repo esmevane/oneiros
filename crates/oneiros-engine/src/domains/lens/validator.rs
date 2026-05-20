@@ -165,6 +165,13 @@ mod tests {
         Registry::seed_default()
     }
 
+    /// Produce a fresh, valid `ref:<base64>` string for test fixtures.
+    /// Used wherever a test needs *some* ref literal in source — the
+    /// specific identity doesn't matter, only that the parser accepts it.
+    fn fake_ref() -> String {
+        crate::RefToken::new(crate::Ref::cognition(crate::CognitionId::new())).to_string()
+    }
+
     #[test]
     fn validates_known_predicate_with_correct_arg() {
         let lens = Lens::parse("agent(governor.process)").expect("parses");
@@ -271,12 +278,14 @@ mod tests {
     #[test]
     fn leaves_have_no_result_type() {
         let registry = registry();
-        for source in [
+        let ref_source = fake_ref();
+        let sources = [
             "governor.process",
             r#""text""#,
-            "ref:AAQQAZ4_p6yYe4Ou_ZRRuMpwKQ",
+            ref_source.as_str(),
             "42",
-        ] {
+        ];
+        for source in sources {
             let lens = Lens::parse(source).expect("parses");
             assert_eq!(
                 lens.result_type(&registry),
@@ -292,7 +301,8 @@ mod tests {
         let entities = Lens::parse("agent(governor.process)").expect("parses");
         assert_eq!(entities.result_type(&registry), Some(ResultType::Entities));
 
-        let events = Lens::parse("between(ref:AAA, ref:BBB)").expect("parses");
+        let source = format!("between({}, {})", fake_ref(), fake_ref());
+        let events = Lens::parse(&source).expect("parses");
         assert_eq!(events.result_type(&registry), Some(ResultType::Events));
     }
 
@@ -305,7 +315,8 @@ mod tests {
             Some(ResultType::Entities),
         );
 
-        let over_events = Lens::parse("recent(between(ref:AAA, ref:BBB), 12)").expect("parses");
+        let source = format!("recent(between({}, {}), 12)", fake_ref(), fake_ref());
+        let over_events = Lens::parse(&source).expect("parses");
         assert_eq!(over_events.result_type(&registry), Some(ResultType::Events),);
     }
 
@@ -332,8 +343,12 @@ mod tests {
 
     #[test]
     fn rejects_set_operator_with_mismatched_result_types() {
-        let lens =
-            Lens::parse("agent(governor.process) & between(ref:AAA, ref:BBB)").expect("parses");
+        let source = format!(
+            "agent(governor.process) & between({}, {})",
+            fake_ref(),
+            fake_ref()
+        );
+        let lens = Lens::parse(&source).expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
         let LensValidationError::ResultTypeMismatch {
             operator,
@@ -350,8 +365,12 @@ mod tests {
 
     #[test]
     fn rejects_mismatch_inside_union() {
-        let lens =
-            Lens::parse("agent(governor.process) | between(ref:AAA, ref:BBB)").expect("parses");
+        let source = format!(
+            "agent(governor.process) | between({}, {})",
+            fake_ref(),
+            fake_ref()
+        );
+        let lens = Lens::parse(&source).expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
         let LensValidationError::ResultTypeMismatch { operator, .. } = error else {
             panic!("expected ResultTypeMismatch");
@@ -361,8 +380,12 @@ mod tests {
 
     #[test]
     fn rejects_mismatch_under_difference() {
-        let lens =
-            Lens::parse("between(ref:AAA, ref:BBB) ~ agent(governor.process)").expect("parses");
+        let source = format!(
+            "between({}, {}) ~ agent(governor.process)",
+            fake_ref(),
+            fake_ref()
+        );
+        let lens = Lens::parse(&source).expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
         let LensValidationError::ResultTypeMismatch {
             operator,
@@ -379,10 +402,12 @@ mod tests {
 
     #[test]
     fn rejects_mismatch_nested_inside_a_set_operator() {
-        let lens = Lens::parse(
-            "agent(governor.process) | (texture(observation) & between(ref:AAA, ref:BBB))",
-        )
-        .expect("parses");
+        let source = format!(
+            "agent(governor.process) | (texture(observation) & between({}, {}))",
+            fake_ref(),
+            fake_ref()
+        );
+        let lens = Lens::parse(&source).expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
         assert!(matches!(
             error,
@@ -393,8 +418,12 @@ mod tests {
     #[test]
     fn rejects_mismatch_through_recent_inheritance() {
         // recent inherits its first arg's type → events here, mismatched with entities side.
-        let lens = Lens::parse("recent(between(ref:AAA, ref:BBB), 12) & agent(governor.process)")
-            .expect("parses");
+        let source = format!(
+            "recent(between({}, {}), 12) & agent(governor.process)",
+            fake_ref(),
+            fake_ref()
+        );
+        let lens = Lens::parse(&source).expect("parses");
         let error = lens.validate(&registry()).expect_err("must fail");
         let LensValidationError::ResultTypeMismatch { left, right, .. } = error else {
             panic!("expected ResultTypeMismatch");
@@ -407,10 +436,12 @@ mod tests {
     fn accepts_set_operator_when_one_side_is_polymorphic_leaf() {
         // Bare symbol defers typing until c2; validator stays permissive.
         let registry = registry();
-        for source in [
-            "governor.process | between(ref:AAA, ref:BBB)",
+        let with_event_side = format!("governor.process | between({}, {})", fake_ref(), fake_ref());
+        let sources: Vec<&str> = vec![
+            with_event_side.as_str(),
             "governor.process & agent(governor.process)",
-        ] {
+        ];
+        for source in sources {
             let lens = Lens::parse(source).expect("parses");
             lens.validate(&registry)
                 .unwrap_or_else(|err| panic!("expected `{source}` to validate, got {err}"));
@@ -420,10 +451,12 @@ mod tests {
     #[test]
     fn accepts_recent_over_either_substrate() {
         let registry = registry();
-        for source in [
+        let over_events = format!("recent(between({}, {}), 12)", fake_ref(), fake_ref());
+        let sources: Vec<&str> = vec![
             "recent(agent(governor.process), 12)",
-            "recent(between(ref:AAA, ref:BBB), 12)",
-        ] {
+            over_events.as_str(),
+        ];
+        for source in sources {
             let lens = Lens::parse(source).expect("parses");
             lens.validate(&registry)
                 .unwrap_or_else(|err| panic!("expected `{source}` to validate, got {err}"));

@@ -5,7 +5,7 @@ impl core::fmt::Display for Lens {
         match self {
             Lens::Symbol(identifier) => identifier.fmt(f),
             Lens::String(literal) => write!(f, "\"{}\"", escape_string(literal.as_str())),
-            Lens::Ref(reference) => write!(f, "ref:{reference}"),
+            Lens::Ref(token) => token.fmt(f),
             Lens::Integer(literal) => literal.fmt(f),
             Lens::Predicate(predicate) => predicate.fmt(f),
             Lens::Union(left, right) => write!(f, "({left} | {right})"),

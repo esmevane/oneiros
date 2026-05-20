@@ -93,8 +93,15 @@ impl<'src> Parser<'src> {
         let text = self.parse_identifier_text()?;
         if text == "ref" && self.peek_char() == Some(':') {
             self.advance(1);
+            let body_start = self.cursor;
             let reference = self.parse_ref_body()?;
-            return Ok(Lens::reference(RefLiteral::new(reference)));
+            let token: crate::RefToken = format!("ref:{reference}").parse().map_err(|_| {
+                LensParseError::InvalidRef {
+                    at: body_start,
+                    reason: "ref body did not decode to a valid token",
+                }
+            })?;
+            return Ok(Lens::reference(token));
         }
         self.skip_whitespace();
         if self.peek_char() == Some('(') {
@@ -315,6 +322,14 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    /// Build a [`crate::RefToken`] from a base64url body for test fixtures.
+    /// The body must decode to a valid [`crate::Ref`].
+    fn ref_token(body: &str) -> crate::RefToken {
+        format!("ref:{body}")
+            .parse()
+            .expect("test ref body must decode to a valid token")
+    }
+
     #[test]
     fn parses_bare_symbol_as_lens() {
         let parsed = Lens::parse("governor.process").expect("parses");
@@ -324,7 +339,7 @@ mod tests {
     #[test]
     fn parses_bare_ref_as_lens() {
         let parsed = Lens::parse("ref:AAYQAZ46gMbJfZKr0qOpgknFfA").expect("parses");
-        assert_eq!(parsed, Lens::reference("AAYQAZ46gMbJfZKr0qOpgknFfA"));
+        assert_eq!(parsed, Lens::reference(ref_token("AAYQAZ46gMbJfZKr0qOpgknFfA")));
     }
 
     #[test]
@@ -350,7 +365,7 @@ mod tests {
         let parsed = Lens::parse("mentions(ref:AAYQAZ46gMbJfZKr0qOpgknFfA)").expect("parses");
         assert_eq!(
             parsed,
-            Lens::predicate("mentions", [Lens::reference("AAYQAZ46gMbJfZKr0qOpgknFfA")])
+            Lens::predicate("mentions", [Lens::reference(ref_token("AAYQAZ46gMbJfZKr0qOpgknFfA"))])
         );
     }
 
@@ -398,8 +413,8 @@ mod tests {
             Lens::predicate(
                 "between",
                 [
-                    Lens::reference("AAYQAZ46gMbJfZKr0qOpgknFfA"),
-                    Lens::reference("AAYQAZ47MrcTcuGpm-evDKpj7Q"),
+                    Lens::reference(ref_token("AAYQAZ46gMbJfZKr0qOpgknFfA")),
+                    Lens::reference(ref_token("AAYQAZ47MrcTcuGpm-evDKpj7Q")),
                 ]
             )
         );

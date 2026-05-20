@@ -196,6 +196,12 @@ mod tests {
         Registry::seed_default()
     }
 
+    /// Fresh, valid `ref:<base64>` for test sources where the identity
+    /// of the ref doesn't matter — only that the parser accepts it.
+    fn fake_ref() -> String {
+        crate::RefToken::new(crate::Ref::cognition(crate::CognitionId::new())).to_string()
+    }
+
     #[test]
     fn explain_validates_first_and_propagates_errors() {
         let lens = Lens::parse("unknown(x)").expect("parses");
@@ -371,7 +377,8 @@ mod tests {
 
     #[test]
     fn explain_carries_result_type_on_between_predicate() {
-        let lens = Lens::parse("between(ref:AAA, ref:BBB)").expect("parses");
+        let source = format!("between({}, {})", fake_ref(), fake_ref());
+        let lens = Lens::parse(&source).expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
         let ExplainPlan::Predicate {
             executor,
@@ -397,7 +404,8 @@ mod tests {
 
     #[test]
     fn explain_carries_result_type_through_recent_inheritance() {
-        let lens = Lens::parse("recent(between(ref:AAA, ref:BBB), 12)").expect("parses");
+        let source = format!("recent(between({}, {}), 12)", fake_ref(), fake_ref());
+        let lens = Lens::parse(&source).expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
         let ExplainPlan::Predicate {
             executor,

@@ -1,9 +1,15 @@
+use kinded::Kinded;
 use serde::{Deserialize, Serialize};
 
 use crate::*;
 
 /// All addressable resource types in the system.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
+///
+/// The auto-generated [`ResourceKind`] discriminator (via [`Kinded`]) is
+/// the canonical "which kind of resource" enum — useful anywhere we want
+/// to talk about kinds without carrying IDs.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Kinded, Serialize, Deserialize, schemars::JsonSchema)]
+#[kinded(kind = ResourceKind, display = "kebab-case")]
 pub(crate) enum Resource {
     Agent(AgentId),
     Actor(ActorId),
