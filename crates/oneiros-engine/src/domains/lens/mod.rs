@@ -1,12 +1,20 @@
 mod ast;
 mod display;
 mod errors;
+mod features;
 mod parser;
 mod plan;
+mod protocol;
 mod registry;
+mod service;
 mod validator;
+mod view;
 
 pub(crate) use ast::*;
 pub(crate) use errors::*;
+pub(crate) use features::*;
 pub(crate) use plan::*;
+pub(crate) use protocol::*;
 pub(crate) use registry::*;
+pub(crate) use service::*;
+pub(crate) use view::*;

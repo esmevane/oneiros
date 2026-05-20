@@ -58,6 +58,7 @@ impl SkillInventory {
         skills.extend(SetupSkills::all());
         skills.extend(StorageSkills::all());
         skills.extend(HostSkills::all());
+        skills.extend(LensSkills::all());
         skills.extend(TenantSkills::all());
         skills.extend(TextureSkills::all());
         skills.extend(TicketSkills::all());

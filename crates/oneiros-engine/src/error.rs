@@ -80,6 +80,8 @@ pub(crate) enum Error {
     #[error(transparent)]
     Host(#[from] HostError),
     #[error(transparent)]
+    Lens(#[from] LensError),
+    #[error(transparent)]
     Tenant(#[from] TenantError),
     #[error(transparent)]
     Texture(#[from] TextureError),

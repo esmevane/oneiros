@@ -112,6 +112,10 @@ pub(crate) enum Command {
     #[command(subcommand)]
     Continuity(ContinuityCommands),
 
+    /// Parse and explain lens query expressions
+    #[command(subcommand)]
+    Lens(LensCommands),
+
     /// Run diagnostics against the local host
     Doctor,
 }
@@ -159,6 +163,7 @@ impl Command {
             Command::Setup(setup) => SetupCli::execute(config, setup).await?,
             Command::Storage(storage) => storage.execute(config).await?,
             Command::Host(host) => host.execute(config).await?,
+            Command::Lens(lens) => lens.execute(config).await?,
             Command::Tenant(tenant) => tenant.execute(config).await?,
             Command::Texture(texture) => texture.execute(config).await?,
             Command::Ticket(ticket) => ticket.execute(config).await?,
