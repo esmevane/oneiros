@@ -47,6 +47,15 @@ pub(crate) enum LensValidationError {
         expected: &'static str,
         got: &'static str,
     },
+
+    #[error(
+        "set operator `{operator}` requires matching result types: left is {left}, right is {right}"
+    )]
+    ResultTypeMismatch {
+        operator: &'static str,
+        left: &'static str,
+        right: &'static str,
+    },
 }
 
 impl LensParseError {

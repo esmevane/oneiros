@@ -1,8 +1,13 @@
 use crate::*;
 
 /// A parallel tree to [`Lens`] that annotates each predicate with its
-/// [`Executor`] hint. Leaf values (symbols, strings, refs, integers) appear
-/// as bare leaves. Set operators preserve their compositional shape.
+/// [`Executor`] hint and resolved [`ResultType`]. Leaf values (symbols,
+/// strings, refs, integers) appear as bare leaves. Set operators preserve
+/// their compositional shape and carry the type they evaluated to.
+///
+/// `result_type` is `None` only when every node beneath is a leaf — once
+/// symbol resolution (c2) lands, those bind to typed kinds and this becomes
+/// fully typed.
 ///
 /// Produced by [`Lens::explain`]. Inspect programmatically or render via
 /// [`core::fmt::Display`] for a tree view.
@@ -12,19 +17,23 @@ pub(crate) enum ExplainPlan {
     Predicate {
         name: PredicateName,
         executor: Executor,
+        result_type: Option<ResultType>,
         args: Vec<ExplainPlan>,
     },
     Union {
         left: Box<ExplainPlan>,
         right: Box<ExplainPlan>,
+        result_type: Option<ResultType>,
     },
     Intersection {
         left: Box<ExplainPlan>,
         right: Box<ExplainPlan>,
+        result_type: Option<ResultType>,
     },
     Difference {
         left: Box<ExplainPlan>,
         right: Box<ExplainPlan>,
+        result_type: Option<ResultType>,
     },
 }
 
@@ -55,20 +64,24 @@ fn build_plan(lens: &Lens, registry: &Registry) -> ExplainPlan {
             ExplainPlan::Predicate {
                 name: predicate.name.clone(),
                 executor: spec.executor.clone(),
+                result_type: lens.result_type(registry),
                 args,
             }
         }
         Lens::Union(left, right) => ExplainPlan::Union {
             left: Box::new(build_plan(left, registry)),
             right: Box::new(build_plan(right, registry)),
+            result_type: lens.result_type(registry),
         },
         Lens::Intersection(left, right) => ExplainPlan::Intersection {
             left: Box::new(build_plan(left, registry)),
             right: Box::new(build_plan(right, registry)),
+            result_type: lens.result_type(registry),
         },
         Lens::Difference(left, right) => ExplainPlan::Difference {
             left: Box::new(build_plan(left, registry)),
             right: Box::new(build_plan(right, registry)),
+            result_type: lens.result_type(registry),
         },
     }
 }
@@ -83,28 +96,76 @@ fn render(plan: &ExplainPlan, f: &mut core::fmt::Formatter<'_>, depth: usize) ->
     let indent = "  ".repeat(depth);
     match plan {
         ExplainPlan::Leaf(lens) => writeln!(f, "{indent}{lens}"),
-        ExplainPlan::Predicate { name, executor, args } => {
-            writeln!(f, "{indent}{name}(...) [{}]", describe_executor(executor))?;
+        ExplainPlan::Predicate {
+            name,
+            executor,
+            result_type,
+            args,
+        } => {
+            writeln!(
+                f,
+                "{indent}{name}(...) [{}{}]",
+                describe_executor(executor),
+                describe_result_type(*result_type),
+            )?;
             for arg in args {
                 render(arg, f, depth + 1)?;
             }
             Ok(())
         }
-        ExplainPlan::Union { left, right } => {
-            writeln!(f, "{indent}union")?;
+        ExplainPlan::Union {
+            left,
+            right,
+            result_type,
+        } => {
+            writeln!(
+                f,
+                "{indent}union{}",
+                describe_operator_type(*result_type)
+            )?;
             render(left, f, depth + 1)?;
             render(right, f, depth + 1)
         }
-        ExplainPlan::Intersection { left, right } => {
-            writeln!(f, "{indent}intersection")?;
+        ExplainPlan::Intersection {
+            left,
+            right,
+            result_type,
+        } => {
+            writeln!(
+                f,
+                "{indent}intersection{}",
+                describe_operator_type(*result_type)
+            )?;
             render(left, f, depth + 1)?;
             render(right, f, depth + 1)
         }
-        ExplainPlan::Difference { left, right } => {
-            writeln!(f, "{indent}difference")?;
+        ExplainPlan::Difference {
+            left,
+            right,
+            result_type,
+        } => {
+            writeln!(
+                f,
+                "{indent}difference{}",
+                describe_operator_type(*result_type)
+            )?;
             render(left, f, depth + 1)?;
             render(right, f, depth + 1)
         }
+    }
+}
+
+fn describe_result_type(result_type: Option<ResultType>) -> String {
+    match result_type {
+        Some(rt) => format!(" → {}", rt.describe()),
+        None => String::new(),
+    }
+}
+
+fn describe_operator_type(result_type: Option<ResultType>) -> String {
+    match result_type {
+        Some(rt) => format!(" [{}]", rt.describe()),
+        None => String::new(),
     }
 }
 
@@ -153,11 +214,18 @@ mod tests {
     fn explain_annotates_facet_predicate_as_search_index() {
         let lens = Lens::parse("agent(governor.process)").expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
-        let ExplainPlan::Predicate { name, executor, args } = plan else {
+        let ExplainPlan::Predicate {
+            name,
+            executor,
+            result_type,
+            args,
+        } = plan
+        else {
             panic!("expected predicate plan");
         };
         assert_eq!(name.as_str(), "agent");
         assert_eq!(executor, Executor::SearchIndexFacet(SearchFacet::Agent));
+        assert_eq!(result_type, Some(ResultType::Entities));
         assert_eq!(args.len(), 1);
         assert!(matches!(args[0], ExplainPlan::Leaf(Lens::Symbol(_))));
     }
@@ -198,7 +266,13 @@ mod tests {
     fn explain_annotates_within_with_depth_argument() {
         let lens = Lens::parse("within(governor.process, 3)").expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
-        let ExplainPlan::Predicate { name, executor, args } = plan else {
+        let ExplainPlan::Predicate {
+            name,
+            executor,
+            args,
+            ..
+        } = plan
+        else {
             panic!("expected predicate plan");
         };
         assert_eq!(name.as_str(), "within");
@@ -231,7 +305,7 @@ mod tests {
         let lens =
             Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
         let plan = lens.explain(&registry()).expect("explains");
-        let ExplainPlan::Intersection { left, right } = plan else {
+        let ExplainPlan::Intersection { left, right, .. } = plan else {
             panic!("expected intersection");
         };
         assert!(matches!(
@@ -254,10 +328,10 @@ mod tests {
         let rendered = plan.to_string();
         assert_eq!(
             rendered,
-            "intersection\n  \
-             texture(...) [search-index:texture]\n    \
+            "intersection [entities]\n  \
+             texture(...) [search-index:texture → entities]\n    \
              observation\n  \
-             agent(...) [search-index:agent]\n    \
+             agent(...) [search-index:agent → entities]\n    \
              governor.process\n"
         );
     }
@@ -269,8 +343,8 @@ mod tests {
         let rendered = plan.to_string();
         assert_eq!(
             rendered,
-            "recent(...) [recency]\n  \
-             agent(...) [search-index:agent]\n    \
+            "recent(...) [recency → entities]\n  \
+             agent(...) [search-index:agent → entities]\n    \
              governor.process\n  \
              12\n"
         );
@@ -283,7 +357,7 @@ mod tests {
         let rendered = plan.to_string();
         assert_eq!(
             rendered,
-            "from(...) [connections]\n  \
+            "from(...) [connections → entities]\n  \
              governor.process\n"
         );
     }
@@ -295,9 +369,66 @@ mod tests {
         let rendered = plan.to_string();
         assert_eq!(
             rendered,
-            "within(...) [connections]\n  \
+            "within(...) [connections → entities]\n  \
              governor.process\n  \
              3\n"
+        );
+    }
+
+    #[test]
+    fn explain_carries_result_type_on_between_predicate() {
+        let lens = Lens::parse("between(ref:AAA, ref:BBB)").expect("parses");
+        let plan = lens.explain(&registry()).expect("explains");
+        let ExplainPlan::Predicate {
+            executor,
+            result_type,
+            ..
+        } = plan
+        else {
+            panic!("expected predicate plan");
+        };
+        assert_eq!(executor, Executor::ChronicleWalk);
+        assert_eq!(result_type, Some(ResultType::Events));
+    }
+
+    #[test]
+    fn explain_carries_result_type_on_set_operator() {
+        let lens =
+            Lens::parse("texture(observation) & agent(governor.process)").expect("parses");
+        let plan = lens.explain(&registry()).expect("explains");
+        let ExplainPlan::Intersection { result_type, .. } = plan else {
+            panic!("expected intersection");
+        };
+        assert_eq!(result_type, Some(ResultType::Entities));
+    }
+
+    #[test]
+    fn explain_carries_result_type_through_recent_inheritance() {
+        let lens = Lens::parse("recent(between(ref:AAA, ref:BBB), 12)").expect("parses");
+        let plan = lens.explain(&registry()).expect("explains");
+        let ExplainPlan::Predicate {
+            executor,
+            result_type,
+            ..
+        } = plan
+        else {
+            panic!("expected predicate plan");
+        };
+        assert_eq!(executor, Executor::Recency);
+        assert_eq!(result_type, Some(ResultType::Events));
+    }
+
+    #[test]
+    fn explain_renders_polymorphic_set_operator_without_type_annotation() {
+        // Bare-symbol leaves on both sides → no resolved type until c2.
+        let lens = Lens::parse("governor.process | other.agent").expect("parses");
+        let plan = lens.explain(&registry()).expect("explains");
+        let rendered = plan.to_string();
+        assert_eq!(
+            rendered,
+            "union\n  \
+             governor.process\n  \
+             other.agent\n"
         );
     }
 }
