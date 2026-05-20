@@ -54,6 +54,12 @@ pub(crate) enum LensValidationError {
         left: &'static str,
         right: &'static str,
     },
+
+    #[error("unknown {kind} `{name}`")]
+    UnknownSymbol {
+        kind: &'static str,
+        name: crate::Identifier,
+    },
 }
 
 impl LensParseError {

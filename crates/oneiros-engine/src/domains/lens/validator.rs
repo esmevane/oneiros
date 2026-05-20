@@ -11,6 +11,32 @@ impl Lens {
         }
     }
 
+    /// Cross-checks every `SymbolOf(kind)` argument against the supplied
+    /// [`NameRegistry`]. Assumes the lens has already passed
+    /// [`Lens::validate`]; walks predicates and verifies each typed-symbol
+    /// position resolves to a registered name of its declared kind.
+    ///
+    /// Unknown predicates are silently skipped here (the structural validator
+    /// catches them); a `SymbolOf` arg whose lens isn't actually a symbol is
+    /// also skipped (likewise structural). The only error this returns is
+    /// [`LensValidationError::UnknownSymbol`].
+    pub(crate) fn check_names(
+        &self,
+        registry: &Registry,
+        names: &dyn NameRegistry,
+    ) -> Result<(), LensValidationError> {
+        match self {
+            Lens::Symbol(_) | Lens::String(_) | Lens::Ref(_) | Lens::Integer(_) => Ok(()),
+            Lens::Predicate(predicate) => check_predicate_names(predicate, registry, names),
+            Lens::Union(left, right)
+            | Lens::Intersection(left, right)
+            | Lens::Difference(left, right) => {
+                left.check_names(registry, names)?;
+                right.check_names(registry, names)
+            }
+        }
+    }
+
     /// Resolves the lens's result type against the registry, recursing through
     /// predicates and set operators.
     ///
@@ -31,6 +57,30 @@ impl Lens {
                 .or_else(|| right.result_type(registry)),
         }
     }
+}
+
+fn check_predicate_names(
+    predicate: &Predicate,
+    registry: &Registry,
+    names: &dyn NameRegistry,
+) -> Result<(), LensValidationError> {
+    let Some(spec) = registry.lookup(&predicate.name) else {
+        return Ok(());
+    };
+    for (arg_type, arg_lens) in spec.arg_types.iter().zip(&predicate.args) {
+        match (arg_type, arg_lens) {
+            (ArgType::SymbolOf(kind), Lens::Symbol(identifier)) => {
+                if !names.knows(*kind, identifier) {
+                    return Err(LensValidationError::UnknownSymbol {
+                        kind: kind.describe(),
+                        name: identifier.clone(),
+                    });
+                }
+            }
+            (_, nested) => nested.check_names(registry, names)?,
+        }
+    }
+    Ok(())
 }
 
 fn resolve_predicate_type(predicate: &Predicate, registry: &Registry) -> Option<ResultType> {
@@ -191,7 +241,7 @@ mod tests {
         let LensValidationError::ArgTypeMismatch { expected, got, .. } = error else {
             panic!("expected ArgTypeMismatch");
         };
-        assert_eq!(expected, "symbol");
+        assert_eq!(expected, "agent symbol");
         assert_eq!(got, "integer");
     }
 
@@ -215,7 +265,7 @@ mod tests {
         let registry = registry();
         let agent_name = PredicateName::new("agent");
         let spec = registry.lookup(&agent_name).expect("agent is registered");
-        assert_eq!(spec.arg_types, vec![ArgType::Symbol]);
+        assert_eq!(spec.arg_types, vec![ArgType::SymbolOf(NameKind::Agent)]);
     }
 
     #[test]
@@ -378,5 +428,169 @@ mod tests {
             lens.validate(&registry)
                 .unwrap_or_else(|err| panic!("expected `{source}` to validate, got {err}"));
         }
+    }
+
+    /// Test-only [`NameRegistry`] backed by a per-kind set of identifiers.
+    /// Used to exercise [`Lens::check_names`] without standing up project
+    /// repos.
+    struct FakeNameRegistry {
+        agents: std::collections::HashSet<String>,
+        textures: std::collections::HashSet<String>,
+        levels: std::collections::HashSet<String>,
+        sensations: std::collections::HashSet<String>,
+        personas: std::collections::HashSet<String>,
+        natures: std::collections::HashSet<String>,
+    }
+
+    impl FakeNameRegistry {
+        fn empty() -> Self {
+            Self {
+                agents: Default::default(),
+                textures: Default::default(),
+                levels: Default::default(),
+                sensations: Default::default(),
+                personas: Default::default(),
+                natures: Default::default(),
+            }
+        }
+
+        fn with_agent(mut self, name: &str) -> Self {
+            self.agents.insert(name.to_string());
+            self
+        }
+
+        fn with_texture(mut self, name: &str) -> Self {
+            self.textures.insert(name.to_string());
+            self
+        }
+
+        fn with_level(mut self, name: &str) -> Self {
+            self.levels.insert(name.to_string());
+            self
+        }
+    }
+
+    impl NameRegistry for FakeNameRegistry {
+        fn knows(&self, kind: NameKind, name: &Identifier) -> bool {
+            let bucket = match kind {
+                NameKind::Agent => &self.agents,
+                NameKind::Texture => &self.textures,
+                NameKind::Level => &self.levels,
+                NameKind::Sensation => &self.sensations,
+                NameKind::Persona => &self.personas,
+                NameKind::Nature => &self.natures,
+            };
+            bucket.contains(name.as_str())
+        }
+    }
+
+    #[test]
+    fn check_names_accepts_known_agent() {
+        let lens = Lens::parse("agent(governor.process)").expect("parses");
+        let names = FakeNameRegistry::empty().with_agent("governor.process");
+        lens.check_names(&registry(), &names).expect("name resolves");
+    }
+
+    #[test]
+    fn check_names_rejects_unknown_agent_with_kind_label() {
+        let lens = Lens::parse("agent(governorr.process)").expect("parses");
+        let names = FakeNameRegistry::empty().with_agent("governor.process");
+        let error = lens
+            .check_names(&registry(), &names)
+            .expect_err("typo must reject");
+        let LensValidationError::UnknownSymbol { kind, name } = error else {
+            panic!("expected UnknownSymbol");
+        };
+        assert_eq!(kind, "agent");
+        assert_eq!(name.as_str(), "governorr.process");
+    }
+
+    #[test]
+    fn check_names_rejects_unknown_texture() {
+        let lens = Lens::parse("texture(observasion)").expect("parses");
+        let names = FakeNameRegistry::empty().with_texture("observation");
+        let error = lens
+            .check_names(&registry(), &names)
+            .expect_err("typo must reject");
+        let LensValidationError::UnknownSymbol { kind, .. } = error else {
+            panic!("expected UnknownSymbol");
+        };
+        assert_eq!(kind, "texture");
+    }
+
+    #[test]
+    fn check_names_rejects_unknown_level() {
+        let lens = Lens::parse("level(woking)").expect("parses");
+        let names = FakeNameRegistry::empty().with_level("working");
+        let error = lens
+            .check_names(&registry(), &names)
+            .expect_err("typo must reject");
+        let LensValidationError::UnknownSymbol { kind, .. } = error else {
+            panic!("expected UnknownSymbol");
+        };
+        assert_eq!(kind, "level");
+    }
+
+    #[test]
+    fn check_names_walks_into_set_operators() {
+        // Typo on the right side of an intersection.
+        let lens = Lens::parse("agent(governor.process) & texture(observasion)").expect("parses");
+        let names = FakeNameRegistry::empty()
+            .with_agent("governor.process")
+            .with_texture("observation");
+        let error = lens
+            .check_names(&registry(), &names)
+            .expect_err("nested typo must reject");
+        let LensValidationError::UnknownSymbol { kind, name } = error else {
+            panic!("expected UnknownSymbol");
+        };
+        assert_eq!(kind, "texture");
+        assert_eq!(name.as_str(), "observasion");
+    }
+
+    #[test]
+    fn check_names_walks_into_nested_predicate_arguments() {
+        // Typo inside a Lens-shaped arg: `from(level(woking))`.
+        let lens = Lens::parse("from(level(woking))").expect("parses");
+        let names = FakeNameRegistry::empty().with_level("working");
+        let error = lens
+            .check_names(&registry(), &names)
+            .expect_err("nested typo must reject");
+        let LensValidationError::UnknownSymbol { kind, name } = error else {
+            panic!("expected UnknownSymbol");
+        };
+        assert_eq!(kind, "level");
+        assert_eq!(name.as_str(), "woking");
+    }
+
+    #[test]
+    fn check_names_ignores_untyped_symbol_positions() {
+        // `kind(X)` stays as ArgType::Symbol (entity kinds aren't yet a
+        // NameRegistry concern). A bare-symbol arg should not be checked.
+        let lens = Lens::parse("kind(anything)").expect("parses");
+        let names = FakeNameRegistry::empty();
+        lens.check_names(&registry(), &names)
+            .expect("untyped symbol is not name-checked");
+    }
+
+    #[test]
+    fn check_names_accepts_set_operator_when_both_sides_resolve() {
+        let lens =
+            Lens::parse("agent(governor.process) | texture(observation)").expect("parses");
+        let names = FakeNameRegistry::empty()
+            .with_agent("governor.process")
+            .with_texture("observation");
+        lens.check_names(&registry(), &names)
+            .expect("both sides resolve");
+    }
+
+    #[test]
+    fn check_names_skips_unknown_predicate_silently() {
+        // Structural validator catches unknown predicates; check_names
+        // assumes pre-validated and quietly skips.
+        let lens = Lens::parse("unknown(anything)").expect("parses");
+        let names = FakeNameRegistry::empty();
+        lens.check_names(&registry(), &names)
+            .expect("unknown predicates are the structural validator's job");
     }
 }

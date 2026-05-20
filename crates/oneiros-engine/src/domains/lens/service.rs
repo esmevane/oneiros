@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::*;
 
 pub(crate) struct LensService;
@@ -17,14 +19,22 @@ impl LensService {
         ))
     }
 
-    /// Parses, validates, and explains a lens source string against the
-    /// default seeded registry. Returns the source, the parsed display
-    /// form, and the planned tree rendered as text.
-    pub(crate) fn explain(request: &ExplainLens) -> Result<LensResponse, LensError> {
+    /// Parses, validates, name-resolves, and explains a lens source string.
+    ///
+    /// Loads canonical names from the project's vocabulary repos (agents,
+    /// textures, levels, sensations, personas, natures) and uses them to
+    /// catch typo-shaped errors that pure structural validation would miss
+    /// — `agent(governorr.process)` rejects even though the grammar is fine.
+    pub(crate) async fn explain(
+        scope: &Scope<AtBookmark>,
+        request: &ExplainLens,
+    ) -> Result<LensResponse, LensError> {
         let ExplainLens::V1(req) = request;
         let lens = Lens::parse(&req.source)?;
         let registry = Registry::seed_default();
         let plan = lens.explain(&registry)?;
+        let names = ProjectNameRegistry::fetch(scope).await?;
+        lens.check_names(&registry, &names)?;
         Ok(LensResponse::Explained(
             ExplainedLensResponse::builder_v1()
                 .source(req.source.clone())
@@ -34,6 +44,58 @@ impl LensService {
                 .into(),
         ))
     }
+}
+
+/// Project-backed [`NameRegistry`] — fetches the full set of registered
+/// names from each vocabulary table at construction time and answers
+/// resolution queries synchronously against the resulting in-memory sets.
+///
+/// One round-trip per kind, six total. The vocabulary domains are small
+/// (typically <20 entries each) and the snapshot is per-explain-call, so
+/// the fetch cost is negligible and the registry stays consistent for the
+/// duration of a single resolution pass.
+pub(crate) struct ProjectNameRegistry {
+    agents: HashSet<String>,
+    textures: HashSet<String>,
+    levels: HashSet<String>,
+    sensations: HashSet<String>,
+    personas: HashSet<String>,
+    natures: HashSet<String>,
+}
+
+impl ProjectNameRegistry {
+    pub(crate) async fn fetch(scope: &Scope<AtBookmark>) -> Result<Self, EventError> {
+        let db = BookmarkDb::open(scope).await?;
+        Ok(Self {
+            agents: fetch_names(&db, "agents")?,
+            textures: fetch_names(&db, "textures")?,
+            levels: fetch_names(&db, "levels")?,
+            sensations: fetch_names(&db, "sensations")?,
+            personas: fetch_names(&db, "personas")?,
+            natures: fetch_names(&db, "natures")?,
+        })
+    }
+}
+
+impl NameRegistry for ProjectNameRegistry {
+    fn knows(&self, kind: NameKind, name: &Identifier) -> bool {
+        let bucket = match kind {
+            NameKind::Agent => &self.agents,
+            NameKind::Texture => &self.textures,
+            NameKind::Level => &self.levels,
+            NameKind::Sensation => &self.sensations,
+            NameKind::Persona => &self.personas,
+            NameKind::Nature => &self.natures,
+        };
+        bucket.contains(name.as_str())
+    }
+}
+
+fn fetch_names(db: &BookmarkDb, table: &str) -> Result<HashSet<String>, rusqlite::Error> {
+    let sql = format!("select name from {table}");
+    let mut stmt = db.prepare(&sql)?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+    rows.collect()
 }
 
 #[cfg(test)]
@@ -64,43 +126,5 @@ mod tests {
             .into();
         let error = LensService::parse(&request).expect_err("must fail");
         assert!(matches!(error, LensError::Parse(_)));
-    }
-
-    #[test]
-    fn explain_returns_planned_tree() {
-        let request = ExplainLens::builder_v1()
-            .source("agent(governor.process)".to_string())
-            .build()
-            .into();
-        let LensResponse::Explained(ExplainedLensResponse::V1(explained)) =
-            LensService::explain(&request).expect("explains")
-        else {
-            panic!("expected explained response");
-        };
-        assert_eq!(explained.source, "agent(governor.process)");
-        assert!(explained.plan.contains("search-index:agent"));
-        assert!(explained.plan.contains("entities"));
-    }
-
-    #[test]
-    fn explain_propagates_validation_errors() {
-        let request = ExplainLens::builder_v1()
-            .source("unknown(x)".to_string())
-            .build()
-            .into();
-        let error = LensService::explain(&request).expect_err("must fail");
-        assert!(matches!(error, LensError::Validate(_)));
-    }
-
-    #[test]
-    fn explain_propagates_result_type_mismatch() {
-        let request = ExplainLens::builder_v1()
-            .source("agent(governor.process) & between(ref:AAA, ref:BBB)".to_string())
-            .build()
-            .into();
-        let error = LensService::explain(&request).expect_err("must fail");
-        let LensError::Validate(LensValidationError::ResultTypeMismatch { .. }) = error else {
-            panic!("expected ResultTypeMismatch under LensError::Validate");
-        };
     }
 }

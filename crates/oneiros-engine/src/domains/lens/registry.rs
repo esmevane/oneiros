@@ -4,11 +4,58 @@ use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ArgType {
+    /// Free-form symbol — no resolution against a naming domain. Used for
+    /// positions whose validity is structural (anything goes lexically) or
+    /// not yet typed; prefer [`ArgType::SymbolOf`] when the position has a
+    /// known kind.
     Symbol,
+    /// Symbol that must resolve to a registered name of the given kind.
+    /// Checked against a [`NameRegistry`] at name-resolution time.
+    SymbolOf(NameKind),
     String,
     Ref,
     Integer,
     Lens,
+}
+
+/// Naming-domain categories that a [`ArgType::SymbolOf`] position can
+/// reference. Each variant corresponds to a vocabulary domain whose
+/// canonical names live in the project's repos (agents, textures, levels,
+/// sensations, personas, natures).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum NameKind {
+    Agent,
+    Texture,
+    Level,
+    Sensation,
+    Persona,
+    Nature,
+}
+
+impl NameKind {
+    pub(crate) fn describe(self) -> &'static str {
+        match self {
+            NameKind::Agent => "agent",
+            NameKind::Texture => "texture",
+            NameKind::Level => "level",
+            NameKind::Sensation => "sensation",
+            NameKind::Persona => "persona",
+            NameKind::Nature => "nature",
+        }
+    }
+}
+
+/// A registry of canonical names per [`NameKind`]. Lens consults this at
+/// resolution time to verify that bare symbols (like `governor.process` in
+/// `agent(governor.process)`) actually name something the project knows
+/// about.
+///
+/// Implementations are free to back this with repos, an in-memory set, a
+/// remote lookup — anything that can answer "is this name registered?"
+/// Lens doesn't care; the trait gives the validator a single seam to
+/// cross-check symbols without depending on any specific substrate.
+pub(crate) trait NameRegistry {
+    fn knows(&self, kind: NameKind, name: &Identifier) -> bool;
 }
 
 /// The set a lens evaluates to, resolved against the registry.
@@ -136,19 +183,19 @@ impl Registry {
         Self::new()
             .with(PredicateSpec::new(
                 "agent",
-                [ArgType::Symbol],
+                [ArgType::SymbolOf(NameKind::Agent)],
                 entities,
                 Executor::SearchIndexFacet(SearchFacet::Agent),
             ))
             .with(PredicateSpec::new(
                 "texture",
-                [ArgType::Symbol],
+                [ArgType::SymbolOf(NameKind::Texture)],
                 entities,
                 Executor::SearchIndexFacet(SearchFacet::Texture),
             ))
             .with(PredicateSpec::new(
                 "level",
-                [ArgType::Symbol],
+                [ArgType::SymbolOf(NameKind::Level)],
                 entities,
                 Executor::SearchIndexFacet(SearchFacet::Level),
             ))
@@ -222,6 +269,7 @@ impl ArgType {
     pub(crate) fn matches(&self, lens: &Lens) -> bool {
         match (self, lens) {
             (Self::Symbol, Lens::Symbol(_)) => true,
+            (Self::SymbolOf(_), Lens::Symbol(_)) => true,
             (Self::String, Lens::String(_)) => true,
             (Self::Ref, Lens::Ref(_)) => true,
             (Self::Integer, Lens::Integer(_)) => true,
@@ -233,6 +281,12 @@ impl ArgType {
     pub(crate) fn describe(&self) -> &'static str {
         match self {
             Self::Symbol => "symbol",
+            Self::SymbolOf(NameKind::Agent) => "agent symbol",
+            Self::SymbolOf(NameKind::Texture) => "texture symbol",
+            Self::SymbolOf(NameKind::Level) => "level symbol",
+            Self::SymbolOf(NameKind::Sensation) => "sensation symbol",
+            Self::SymbolOf(NameKind::Persona) => "persona symbol",
+            Self::SymbolOf(NameKind::Nature) => "nature symbol",
             Self::String => "string",
             Self::Ref => "ref",
             Self::Integer => "integer",

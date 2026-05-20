@@ -21,6 +21,9 @@ async fn parse(Json(body): Json<ParseLens>) -> Result<Json<LensResponse>, LensEr
     Ok(Json(LensService::parse(&body)?))
 }
 
-async fn explain(Json(body): Json<ExplainLens>) -> Result<Json<LensResponse>, LensError> {
-    Ok(Json(LensService::explain(&body)?))
+async fn explain(
+    scope: Scope<AtBookmark>,
+    Json(body): Json<ExplainLens>,
+) -> Result<Json<LensResponse>, LensError> {
+    Ok(Json(LensService::explain(&scope, &body).await?))
 }

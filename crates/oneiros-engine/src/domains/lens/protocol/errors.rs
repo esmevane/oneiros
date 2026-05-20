@@ -13,6 +13,9 @@ pub(crate) enum LensError {
     Validate(#[from] LensValidationError),
 
     #[error(transparent)]
+    Event(#[from] crate::EventError),
+
+    #[error(transparent)]
     Client(#[from] crate::ClientError),
 
     #[error(transparent)]
@@ -25,6 +28,7 @@ impl IntoResponse for LensError {
             LensError::Parse(_) | LensError::Validate(_) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
+            LensError::Event(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             LensError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             LensError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };
