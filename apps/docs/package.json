@@ -1,0 +1,27 @@
+{
+  "name": "@oneiros/docs",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "^5.0.5",
+    "@astrojs/starlight": "^0.39.2",
+    "@oneiros/components": "workspace:*",
+    "@oneiros/tokens": "workspace:*",
+    "astro": "^6.3.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

@@ -1,0 +1,7 @@
+---
+import { DocsSidebar } from "./DocsSidebar";
+
+const { sidebar } = Astro.locals.starlightRoute;
+---
+
+<DocsSidebar entries={sidebar} client:load />

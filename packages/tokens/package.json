@@ -1,0 +1,20 @@
+{
+  "name": "@oneiros/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Oneiros design tokens — source spec and tangible-rendered CSS.",
+  "main": "dist/tokens.css",
+  "exports": {
+    ".": "./dist/tokens.css",
+    "./source": "./tokens.json"
+  },
+  "files": [
+    "tokens.json",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tangible tokens.json -o dist/tokens.css",
+    "clean": "rm -rf dist"
+  }
+}

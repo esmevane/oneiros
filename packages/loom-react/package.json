@@ -1,0 +1,33 @@
+{
+  "name": "@oneiros/loom-react",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "React bindings for @oneiros/loom — createShell() factory yields a Controller component, signal-backed hooks, and signals indexed by the loom model.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@oneiros/loom": "workspace:*",
+    "@preact/signals-react": "^3.10.1",
+    "@xstate/react": "^6.1.0",
+    "xstate": "^5.31.1"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.9.0"
+  }
+}

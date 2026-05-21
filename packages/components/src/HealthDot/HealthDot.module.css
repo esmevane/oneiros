@@ -1,0 +1,39 @@
+.health {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.label {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xxs);
+  color: var(--color-text-secondary);
+}
+
+.current {
+  background: var(--colors-success-400);
+  box-shadow: var(--glow-success-medium);
+}
+
+.drifting {
+  background: var(--colors-warn-400);
+  box-shadow: var(--glow-warn-medium);
+}
+
+.critical {
+  background: var(--colors-error-400);
+  box-shadow: var(--glow-error-medium);
+}
+
+.inactive {
+  background: var(--colors-neutral-600);
+  box-shadow: var(--glow-neutral-low);
+}

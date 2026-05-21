@@ -1,0 +1,46 @@
+---
+import "@oneiros/components";
+import "../styles/global.css";
+import { Hero, Layout, Link, Sidebar, Text } from "@oneiros/components";
+import { DashboardController, HostStatus } from "../surface";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=Syne:wght@400;500;600;700;800&family=Spectral:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <title>Oneiros</title>
+  </head>
+  <body>
+    <Layout.Container>
+      <Layout.Aside>
+        <Sidebar>
+          <Text font="mono" uppercase size="sm">Oneiros</Text>
+          <Text font="serif" italic color="muted" size="xxs">
+            Local dashboard
+          </Text>
+          <Link.Nav href="/" active>Host</Link.Nav>
+        </Sidebar>
+      </Layout.Aside>
+      <Layout.Main>
+        <Hero.Container>
+          <Hero.Eyebrow>Continuity</Hero.Eyebrow>
+          <Hero.Title>Oneiros</Hero.Title>
+          <Hero.Subtitle>
+            Local dashboard for inspecting and steering your oneiroi.
+          </Hero.Subtitle>
+        </Hero.Container>
+        <DashboardController client:load />
+        <HostStatus client:load />
+      </Layout.Main>
+    </Layout.Container>
+  </body>
+</html>

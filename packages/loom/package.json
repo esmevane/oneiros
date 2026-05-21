@@ -1,0 +1,24 @@
+{
+  "name": "@oneiros/loom",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Compositional xstate world — typed primitives for the conventional shapes UIs need (requests, forms, dialogs, screens, navigation, workers, commands, i18n). Composes them into a single typesafe model.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./primitives": "./src/primitives/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "xstate": "^5.31.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

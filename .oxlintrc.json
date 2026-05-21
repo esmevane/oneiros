@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "react/exhaustive-deps": "warn",
+    "react/rules-of-hooks": "error",
+    "no-console": "warn",
+    "no-debugger": "error",
+    "no-shadow": "off",
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "target",
+    ".astro",
+    "packages/tokens/dist",
+    "packages/components/dist",
+    "apps/*/dist",
+    "apps/*/.astro",
+    ".claude",
+    ".claude-plugin"
+  ]
+}

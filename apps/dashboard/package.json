@@ -1,0 +1,34 @@
+{
+  "name": "@oneiros/dashboard",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "^5.0.5",
+    "@oneiros/components": "workspace:*",
+    "@oneiros/loom": "workspace:*",
+    "@oneiros/loom-react": "workspace:*",
+    "@oneiros/tokens": "workspace:*",
+    "@preact/signals-react": "^3.10.1",
+    "@xstate/react": "^6.1.0",
+    "astro": "^6.3.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "xstate": "^5.31.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.3"
+  }
+}

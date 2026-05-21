@@ -1,0 +1,42 @@
+---
+title: Oneiros
+description: Persistent and distributed continuity control for your AI agents.
+template: splash
+hero:
+  tagline: Local-first, distributable continuity control for your AI agents. Build a persistent version of your agents that exists apart from the models and harnesses they run on.
+  actions:
+    - text: What is continuity?
+      link: /concepts/continuity/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/esmevane/oneiros
+      icon: external
+      variant: minimal
+---
+
+import { Card, Text } from "@oneiros/components";
+import { Cards } from "../../components/Cards";
+
+<Cards>
+  <Card title="Swap harnesses">
+    <Text size="sm" color="muted">
+      Move between agents and harnesses without losing project continuity.
+    </Text>
+  </Card>
+  <Card title="Version control">
+    <Text size="sm" color="muted">
+      Back up, slice, and rebuild parts of the continuity, VCS-style.
+    </Text>
+  </Card>
+  <Card title="Share with your team">
+    <Text size="sm" color="muted">
+      Ship and share continuity across team members or hosts.
+    </Text>
+  </Card>
+  <Card title="Own everything">
+    <Text size="sm" color="muted">
+      Local-first storage. No third party between you and your work.
+    </Text>
+  </Card>
+</Cards>
