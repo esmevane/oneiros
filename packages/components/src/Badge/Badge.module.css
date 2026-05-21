@@ -1,0 +1,62 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xxs);
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--border-radius);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  border: var(--border-width-sm) solid;
+}
+
+.badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.primary {
+  color: var(--colors-primary-500);
+  border-color: var(--colors-primary-900);
+  background: color-mix(in srgb, var(--colors-primary-500) 6%, transparent);
+}
+
+.accent {
+  color: var(--colors-accent-400);
+  border-color: var(--colors-accent-900);
+  background: color-mix(in srgb, var(--colors-accent-400) 6%, transparent);
+}
+
+.success {
+  color: var(--colors-success-400);
+  border-color: var(--colors-success-900);
+  background: color-mix(in srgb, var(--colors-success-400) 6%, transparent);
+}
+
+.warn {
+  color: var(--colors-warn-400);
+  border-color: var(--colors-warn-900);
+  background: color-mix(in srgb, var(--colors-warn-400) 6%, transparent);
+}
+
+.info {
+  color: var(--colors-info-400);
+  border-color: var(--colors-info-900);
+  background: color-mix(in srgb, var(--colors-info-400) 6%, transparent);
+}
+
+.error {
+  color: var(--colors-error-400);
+  border-color: var(--colors-error-900);
+  background: color-mix(in srgb, var(--colors-error-400) 6%, transparent);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  background: transparent;
+}

@@ -1,0 +1,32 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="oneiros-footer">
+  <span>Oneiros · MIT · {year}</span>
+  <a href="https://github.com/esmevane/oneiros">github</a>
+</footer>
+
+<style>
+  .oneiros-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-3xs);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  .oneiros-footer a {
+    color: var(--colors-primary-300);
+    text-decoration: none;
+  }
+
+  .oneiros-footer a:hover {
+    color: var(--colors-primary-200);
+  }
+</style>

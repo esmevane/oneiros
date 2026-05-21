@@ -1,0 +1,37 @@
+@import "@oneiros/tokens";
+
+/* Map oneiros tokens onto Starlight's CSS variables.
+   Starlight's defaults sit in @layer starlight.base, so our unlayered rules
+   win the cascade. Theme-agnostic things (fonts) apply at :root; colors are
+   scoped to data-theme="dark" until we author a light token set. */
+
+:root {
+  --sl-font: var(--font-family-sans);
+  --sl-font-mono: var(--font-family-mono);
+  --sl-sidebar-width: var(--dimension-md);
+}
+
+:root[data-theme="dark"] {
+  /* Surfaces */
+  --sl-color-bg: var(--colors-neutral-1200);
+  --sl-color-bg-nav: var(--colors-neutral-1200);
+  --sl-color-bg-sidebar: var(--colors-neutral-1200);
+  --sl-color-bg-inline-code: var(--color-surface);
+
+  /* Text */
+  --sl-color-text: var(--color-text);
+  --sl-color-text-accent: var(--colors-primary-300);
+  --sl-color-white: var(--colors-neutral-100);
+  --sl-color-gray-1: var(--colors-neutral-200);
+  --sl-color-gray-2: var(--colors-neutral-300);
+  --sl-color-gray-3: var(--colors-neutral-500);
+  --sl-color-gray-4: var(--colors-neutral-700);
+  --sl-color-gray-5: var(--colors-neutral-900);
+  --sl-color-gray-6: var(--colors-neutral-1100);
+  --sl-color-black: var(--colors-neutral-1200);
+
+  /* Accent (interactive / links) */
+  --sl-color-accent-low: var(--colors-primary-1000);
+  --sl-color-accent: var(--colors-primary-500);
+  --sl-color-accent-high: var(--colors-primary-200);
+}

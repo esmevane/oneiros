@@ -9,6 +9,12 @@ license.workspace = true
 [package.metadata.dist]
 dist = true
 
+[package.metadata.wix]
+upgrade-guid = "46C0F456-6446-4678-A663-27F334BCBCDC"
+path-guid = "CB3E30EE-E340-42BC-824E-81E669529050"
+license = false
+eula = false
+
 [[bin]]
 name = "oneiros"
 path = "src/main.rs"

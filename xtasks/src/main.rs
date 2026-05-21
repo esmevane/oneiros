@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::process::Command as ProcessCommand;
 
 use clap::{Parser, Subcommand};
 use oneiros_engine::SkillPackage;
@@ -15,6 +16,10 @@ enum Command {
     /// Build the Claude Code plugin — emit skill assets to dist/ and
     /// marketplace manifest to .claude-plugin/.
     PluginBuild,
+    /// Build the dashboard SPA — runs `pnpm --filter @oneiros/dashboard build`.
+    /// Output lands in `apps/dashboard/dist/`, ready to be embedded by the
+    /// oneiros-engine build.
+    DashboardBuild,
 }
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
@@ -22,6 +27,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     match cli.command {
         Command::PluginBuild => plugin_build()?,
+        Command::DashboardBuild => dashboard_build()?,
     }
 
     Ok(())
@@ -62,6 +68,24 @@ fn plugin_build() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     println!("Wrote {count} plugin files to {}", dist.display());
+
+    Ok(())
+}
+
+fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
+    let workspace_root = workspace_root()?;
+
+    let status = ProcessCommand::new("pnpm")
+        .args(["--filter", "@oneiros/dashboard", "run", "build"])
+        .current_dir(&workspace_root)
+        .status()?;
+
+    if !status.success() {
+        return Err(format!("pnpm dashboard build failed with status {status}").into());
+    }
+
+    let dist = workspace_root.join("apps/dashboard/dist");
+    println!("Built dashboard SPA at {}", dist.display());
 
     Ok(())
 }
