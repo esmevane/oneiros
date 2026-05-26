@@ -193,6 +193,7 @@ impl Projections<ProjectCanon> {
                 Frames::new(&[
                     Frame::new(PressureProjections.all()),
                     Frame::new(SearchProjections.all()),
+                    Frame::new(TrailProjections.all()),
                 ]),
             ],
             pipeline,

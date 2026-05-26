@@ -86,6 +86,8 @@ pub(crate) enum Error {
     #[error(transparent)]
     Ticket(#[from] TicketError),
     #[error(transparent)]
+    Trail(#[from] TrailError),
+    #[error(transparent)]
     Urge(#[from] UrgeError),
 
     #[error(transparent)]

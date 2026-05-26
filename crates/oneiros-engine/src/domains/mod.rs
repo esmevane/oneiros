@@ -26,6 +26,7 @@ mod storage;
 mod tenant;
 mod texture;
 mod ticket;
+mod trail;
 mod urge;
 
 pub(crate) mod event;
@@ -59,4 +60,5 @@ pub(crate) use storage::*;
 pub(crate) use tenant::*;
 pub(crate) use texture::*;
 pub(crate) use ticket::*;
+pub(crate) use trail::*;
 pub(crate) use urge::*;

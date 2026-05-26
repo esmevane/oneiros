@@ -112,6 +112,10 @@ pub(crate) enum Command {
     #[command(subcommand)]
     Continuity(ContinuityCommands),
 
+    /// Walk the events ↔ entities bridge
+    #[command(subcommand)]
+    Trail(TrailCommands),
+
     /// Run diagnostics against the local host
     Doctor,
 }
@@ -162,6 +166,7 @@ impl Command {
             Command::Tenant(tenant) => tenant.execute(config).await?,
             Command::Texture(texture) => texture.execute(config).await?,
             Command::Ticket(ticket) => ticket.execute(config).await?,
+            Command::Trail(trail) => trail.execute(config).await?,
             Command::Urge(urge) => urge.execute(config).await?,
         })
     }

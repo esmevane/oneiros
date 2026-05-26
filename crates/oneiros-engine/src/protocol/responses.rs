@@ -37,6 +37,7 @@ pub(crate) enum Responses {
     Tenant(TenantResponse),
     Texture(TextureResponse),
     Ticket(TicketResponse),
+    Trail(TrailResponse),
     Urge(UrgeResponse),
 }
 
@@ -67,5 +68,6 @@ collects_enum!(
     Responses::Tenant => TenantResponse,
     Responses::Texture => TextureResponse,
     Responses::Ticket => TicketResponse,
+    Responses::Trail => TrailResponse,
     Responses::Urge => UrgeResponse,
 );

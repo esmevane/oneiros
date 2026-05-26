@@ -12,5 +12,6 @@ mod pressure;
 mod search;
 mod skills;
 mod storage;
+mod trail;
 mod versioning;
 mod vocabulary;
