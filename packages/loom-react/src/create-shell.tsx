@@ -16,13 +16,18 @@ import {
   type SnapshotFrom,
 } from "xstate";
 import { fromConfig, type Bindings } from "@oneiros/loom";
+import type { ModelPaths } from "@oneiros/loom/types";
 
-interface ShellModel<TMachine extends AnyStateMachine = AnyStateMachine> {
+interface ShellModel<
+  TMachine extends AnyStateMachine = AnyStateMachine,
+  Schema = object,
+> {
   machine: TMachine;
   createEvents: (
     send: (event: AnyEventObject) => void,
   ) => Record<string, unknown>;
   registries: Record<string, unknown>;
+  schema: Schema;
 }
 
 interface CreateShellInput<GivenModel extends ShellModel> {
@@ -144,9 +149,14 @@ export function createShell<GivenModel extends ShellModel>(
     return selector(signals.snapshot.value);
   }
 
-  function useMatches(path: string): boolean {
+  type ModelPath = ModelPaths<GivenModel["schema"]>;
+
+  /** Returns true when the current snapshot matches the given dot-path.
+   *  Path is constrained to the schema-derived union, so typos are compile
+   *  errors and IDEs autocomplete reachable states. */
+  function useMatches<GivenPath extends ModelPath>(path: GivenPath): boolean {
     useSignals();
-    return signals.match.value(path);
+    return signals.match.value(path as string);
   }
 
   function useRegistries(): Model["registries"] {

@@ -3,6 +3,19 @@ import type { ModelEvent, ModelNodeId, Send } from "../types";
 type DialogId<DialogKey extends string> = ModelNodeId<"dialog", DialogKey>;
 type DialogEventKind = "close" | "open" | "toggle";
 
+/** Assembled dialogs config — preserves per-dialog keying so downstream
+ *  path derivation (via `ModelPaths`) can see each dialog as a known node. */
+export type DialogsConfig<DialogKey extends string> = {
+  type: "parallel";
+  states: {
+    [GivenDialog in DialogKey]: {
+      id: DialogId<GivenDialog>;
+      initial: "closed";
+      states: { open: object; closed: object };
+    };
+  };
+};
+
 /** Dialog primitive — each dialog is an independent open/closed substate
  *  inside a parallel root. Pure UI state; no actors. */
 export function dialogs<DialogKey extends string>({
@@ -73,9 +86,9 @@ export function dialogs<DialogKey extends string>({
     },
     {
       type: "parallel" as const,
-      states: {} as Record<string, unknown>,
+      states: {} as DialogsConfig<DialogKey>["states"],
     },
-  );
+  ) satisfies DialogsConfig<DialogKey>;
 
   const createEvents = (send: Send<DialogEvents>) =>
     dialogs.reduce(

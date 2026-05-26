@@ -2,6 +2,16 @@ import type { GetKeypaths, ModelEvent, ModelNodeId, Send } from "../types";
 
 type I18nId<GivenLocale extends string> = ModelNodeId<"locale", GivenLocale>;
 
+/** Assembled i18n config — preserves per-locale keying so downstream
+ *  path derivation (via `ModelPaths`) can see each locale as a known node. */
+export type I18nConfig<LocaleMap extends Record<string, Bundle>> = {
+  initial: string;
+  on: Record<string, unknown>;
+  states: {
+    [GivenLocale in keyof LocaleMap & string]: { id: I18nId<GivenLocale> };
+  };
+};
+
 /** Translation bundle — nested objects keyed by string. Templates use
  *  lodash-style `{{name}}` interpolation. */
 export type Bundle = { [key: string]: string | Bundle };
@@ -72,9 +82,9 @@ export function i18n<
     {
       initial: "" as string,
       on: {} as Record<string, unknown>,
-      states: {} as Record<string, unknown>,
+      states: {} as I18nConfig<LocaleMap>["states"],
     },
-  );
+  ) satisfies I18nConfig<LocaleMap>;
 
   const createEvents = (send: Send<SwitchEvent>) => ({
     switch: <Locale extends AllLocales>(locale: Locale) =>

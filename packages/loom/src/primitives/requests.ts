@@ -25,6 +25,27 @@ type RequestEventLabel<
   GivenRequest extends string,
 > = ModelEvent<"requests", GivenRequest, GivenEvent>;
 
+/** Assembled requests config — preserves per-request keying so downstream
+ *  path derivation (via `ModelPaths`) can see each request as a known node. */
+export type RequestsConfig<
+  RequestMap extends Record<string, { init: unknown }>,
+> = {
+  type: "parallel";
+  states: {
+    [GivenRequest in keyof RequestMap & string]: {
+      id: RequestId<GivenRequest>;
+      initial: "pristine";
+      states: {
+        pristine: object;
+        idle: object;
+        requesting: object;
+        success: object;
+        failure: object;
+      };
+    };
+  };
+};
+
 /** Wraps a request lifecycle (pristine / idle / requesting / success / failure)
  *  in a typed chart fragment. Each request becomes a parallel substate
  *  driven by `init` events; the actor implementation is supplied at runtime
@@ -173,9 +194,9 @@ export function requests<
     },
     {
       type: "parallel" as const,
-      states: {} as Record<string, unknown>,
+      states: {} as RequestsConfig<RequestMap>["states"],
     },
-  );
+  ) satisfies RequestsConfig<RequestMap>;
 
   const createEvents = (send: Send<RequestEvents>) =>
     (Object.keys(requests) as AllRequests[]).reduce(

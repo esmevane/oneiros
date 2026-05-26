@@ -15,6 +15,39 @@ type FormEventLabel<
   GivenForm extends string,
 > = ModelEvent<"forms", GivenEvent, GivenForm>;
 
+/** Assembled forms config — preserves per-form keying so downstream path
+ *  derivation (via `ModelPaths`) can see each form's parallel regions. */
+export type FormsConfig<
+  FormMap extends Record<
+    string,
+    { init: unknown; validate: (model: unknown) => Promise<unknown> }
+  >,
+> = {
+  type: "parallel";
+  states: {
+    [GivenForm in keyof FormMap & string]: {
+      id: FormId<GivenForm>;
+      type: "parallel";
+      states: {
+        activity: {
+          initial: "idle";
+          states: { active: object; idle: object };
+        };
+        validation: {
+          id: "validation";
+          initial: "pristine";
+          states: {
+            pristine: object;
+            valid: object;
+            invalid: object;
+            validating: object;
+          };
+        };
+      };
+    };
+  };
+};
+
 /** Forms primitive — each form is a parallel substate tracking activity
  *  (active/idle) and validation (pristine/validating/valid/invalid). The
  *  validate actor is the consumer's async predicate. */
@@ -189,9 +222,9 @@ export function forms<
     },
     {
       type: "parallel" as const,
-      states: {} as Record<string, unknown>,
+      states: {} as FormsConfig<FormMap>["states"],
     },
-  );
+  ) satisfies FormsConfig<FormMap>;
 
   const createEvents = (send: Send<FormEvents>) =>
     (Object.keys(forms) as AllForms[]).reduce(
