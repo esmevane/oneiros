@@ -159,6 +159,7 @@ impl Server {
             .merge(TenantRouter.routes())
             .merge(TextureRouter.routes())
             .merge(TicketRouter.routes())
+            .merge(TrailRouter.routes())
             .merge(UrgeRouter.routes())
             // OpenAPI spec and docs
             .route("/api.json", api_routing::get(serve_api))

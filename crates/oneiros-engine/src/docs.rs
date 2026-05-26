@@ -49,6 +49,7 @@ impl AppDocs {
             TenantDocs::Create.tag(),
             TextureDocs::List.tag(),
             TicketDocs::Create.tag(),
+            TrailDocs::Of.tag(),
             UrgeDocs::List.tag(),
         ]
     }

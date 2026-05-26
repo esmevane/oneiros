@@ -242,6 +242,10 @@ impl TestClient {
         SearchClient::new(&self.client)
     }
 
+    pub(crate) fn trail(&self) -> TrailClient<'_> {
+        TrailClient::new(&self.client)
+    }
+
     pub(crate) fn pressure(&self) -> PressureClient<'_> {
         PressureClient::new(&self.client)
     }
@@ -741,6 +745,26 @@ impl<'a> SearchClient<'a> {
     ) -> Result<SearchResponse, ClientError> {
         let bytes = request.execute_request(self.client).await?;
         decode(bytes, "search")
+    }
+}
+
+pub(crate) struct TrailClient<'a> {
+    client: &'a Client,
+}
+
+impl<'a> TrailClient<'a> {
+    pub(crate) fn new(client: &'a Client) -> Self {
+        Self { client }
+    }
+
+    pub(crate) async fn of(&self, request: &TrailOf) -> Result<TrailResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "trail")
+    }
+
+    pub(crate) async fn from(&self, request: &TrailFrom) -> Result<TrailResponse, ClientError> {
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "trail")
     }
 }
 

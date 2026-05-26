@@ -61,6 +61,7 @@ impl SkillInventory {
         skills.extend(TenantSkills::all());
         skills.extend(TextureSkills::all());
         skills.extend(TicketSkills::all());
+        skills.extend(TrailSkills::all());
         skills.extend(UrgeSkills::all());
 
         skills

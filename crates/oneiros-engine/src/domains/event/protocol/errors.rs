@@ -16,6 +16,9 @@ pub(crate) enum EventError {
     TimestampParse(#[from] TimestampParseError),
 
     #[error(transparent)]
+    RefParse(#[from] RefError),
+
+    #[error(transparent)]
     Blob(#[from] BlobError),
 
     #[error(transparent)]

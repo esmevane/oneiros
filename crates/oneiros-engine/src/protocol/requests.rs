@@ -35,6 +35,7 @@ pub(crate) enum Requests {
     Tenant(TenantRequest),
     Texture(TextureRequest),
     Ticket(TicketRequest),
+    Trail(TrailRequest),
     Urge(UrgeRequest),
 }
 
@@ -61,5 +62,6 @@ collects_enum!(
     Requests::Tenant => TenantRequest,
     Requests::Texture => TextureRequest,
     Requests::Ticket => TicketRequest,
+    Requests::Trail => TrailRequest,
     Requests::Urge => UrgeRequest,
 );

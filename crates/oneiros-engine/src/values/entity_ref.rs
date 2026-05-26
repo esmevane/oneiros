@@ -21,13 +21,6 @@ pub(crate) enum Ref {
     V0(Resource),
 }
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "These methods are meant to be kept, but only exist in tests for now"
-    )
-)]
 impl Ref {
     pub(crate) fn actor(id: ActorId) -> Self {
         Self::V0(Resource::Actor(id))
@@ -72,9 +65,7 @@ impl Ref {
     pub(crate) fn urge(name: UrgeName) -> Self {
         Self::V0(Resource::Urge(name))
     }
-}
 
-impl Ref {
     pub(crate) fn agent(id: AgentId) -> Self {
         Self::V0(Resource::Agent(id))
     }
