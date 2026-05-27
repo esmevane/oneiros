@@ -51,6 +51,7 @@ collects_enum!(
     Requests::Level => LevelRequest,
     Requests::Memory => MemoryRequest,
     Requests::Nature => NatureRequest,
+    Requests::Project => ProjectRequest,
     Requests::Peer => PeerRequest,
     Requests::Persona => PersonaRequest,
     Requests::Pressure => PressureRequest,
