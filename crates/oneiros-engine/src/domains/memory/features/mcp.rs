@@ -7,6 +7,7 @@ impl MemoryMcp {
         memory_mcp::tool_defs()
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
@@ -21,6 +22,7 @@ impl MemoryMcp {
         vec![ResourcePathKind::Memory.template_def("A specific memory")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
@@ -43,6 +45,7 @@ mod memory_mcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -70,6 +73,7 @@ mod memory_mcp {
         }
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         context: &ProjectLog,
         request: &MemoryRequest,

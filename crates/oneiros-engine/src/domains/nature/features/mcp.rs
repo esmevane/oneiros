@@ -7,6 +7,7 @@ impl NatureMcp {
         vec![ResourcePathKind::Natures.resource_def("Connection natures")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

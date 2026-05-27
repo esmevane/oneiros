@@ -7,6 +7,7 @@ impl UrgeMcp {
         vec![ResourcePathKind::Urges.resource_def("Cognitive drives")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

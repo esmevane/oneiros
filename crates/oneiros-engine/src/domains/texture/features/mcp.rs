@@ -7,6 +7,7 @@ impl TextureMcp {
         vec![ResourcePathKind::Textures.resource_def("Thought textures")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

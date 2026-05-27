@@ -7,6 +7,7 @@ impl LevelMcp {
         vec![ResourcePathKind::Levels.resource_def("Memory retention tiers")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

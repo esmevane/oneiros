@@ -65,6 +65,7 @@ impl BookmarkRouter {
     }
 }
 
+#[expect(deprecated)]
 async fn create(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -74,6 +75,7 @@ async fn create(
     Ok((StatusCode::CREATED, Json(response)))
 }
 
+#[expect(deprecated)]
 async fn switch(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -84,6 +86,7 @@ async fn switch(
     ))
 }
 
+#[expect(deprecated)]
 async fn merge(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -94,6 +97,7 @@ async fn merge(
     ))
 }
 
+#[expect(deprecated)]
 async fn list(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -104,6 +108,7 @@ async fn list(
     ))
 }
 
+#[expect(deprecated)]
 async fn share(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -114,6 +119,7 @@ async fn share(
     ))
 }
 
+#[expect(deprecated)]
 async fn follow(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -124,6 +130,7 @@ async fn follow(
     ))
 }
 
+#[expect(deprecated)]
 async fn unfollow(
     context: ProjectLog,
     State(state): State<ServerState>,
@@ -134,6 +141,7 @@ async fn unfollow(
     ))
 }
 
+#[expect(deprecated)]
 async fn collect(
     context: ProjectLog,
     State(state): State<ServerState>,

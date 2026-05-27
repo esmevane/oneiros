@@ -98,6 +98,7 @@ impl ServerState {
 
     /// Build a project context for a request. Strangler — used by the
     /// `ProjectLog` extractor for legacy CLI/MCP dispatchers.
+    #[expect(deprecated)]
     pub(crate) fn project_log(&self, config: Config) -> ProjectLog {
         ProjectLog::new(config)
     }
@@ -218,6 +219,7 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
     }
 }
 
+#[expect(deprecated)]
 impl FromRequestParts<ServerState> for ProjectLog {
     type Rejection = AuthError;
 

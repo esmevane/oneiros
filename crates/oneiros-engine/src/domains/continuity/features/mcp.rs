@@ -7,6 +7,7 @@ impl ContinuityMcp {
         vec![ResourcePathKind::Status.resource_def("Cross-agent activity table")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

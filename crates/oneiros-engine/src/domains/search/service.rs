@@ -5,6 +5,7 @@ use crate::*;
 pub(crate) struct SearchService;
 
 impl SearchService {
+    #[expect(deprecated)]
     pub(crate) async fn search(
         context: &ProjectLog,
         request: &SearchQuery,
@@ -43,6 +44,7 @@ impl SearchService {
 /// reassemble [`Hit`]s in the original FTS5 order. Drops refs whose
 /// underlying row has been removed since the index was queried — search
 /// shouldn't surface ghosts.
+#[expect(deprecated)]
 pub(crate) async fn hydrate_hits(
     context: &ProjectLog,
     ranked: Vec<RankedHit>,
