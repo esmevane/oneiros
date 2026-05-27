@@ -1,0 +1,13 @@
+# .cargo-crap.toml
+threshold = 30.0
+missing = "pessimistic"
+exclude = ["**/src/tests/**", "xtasks/**"]
+
+# cargo llvm-cov --workspace --lcov --output-path lcov.info \
+# --ignore-filename-regex '(/src/tests/|/tests/|/benches/|xtasks/)'
+
+# cargo crap --workspace --lcov lcov.info --format json \
+#   | jq '[.entries[] | select(.coverage != null)] | length'
+
+# cargo crap --workspace --lcov lcov.info --format json \
+#   | jq '[.entries[] | select(.coverage != null) | select(.crap > 30)]'
