@@ -118,14 +118,13 @@ async fn host_init_twice_returns_already_initialized() -> Result<(), Box<dyn cor
 /// Setup orchestrates the full bootstrap through HTTP. With the server
 /// already running, setup discovers it (no install prompt), drives the
 /// init / seed sequence over HTTP, and the token issued by project create
-/// authenticates the subsequent seed calls. The MCP step prompts in an
-/// interactive shell; in a non-interactive test it falls through to
-/// McpSkipped, leaving no `.mcp.json` side-effect.
+/// authenticates the subsequent seed calls. `--accept-all` opts into every
+/// optional step without interactive prompts.
 #[tokio::test]
 async fn setup_drives_bootstrap_through_http() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new().await?;
 
-    let result = app.command("setup").await?;
+    let result = app.command("setup --accept-all").await?;
     let response = match result.response() {
         Responses::Setup(setup) => setup.clone(),
         other => panic!("expected Setup response, got {other:?}"),

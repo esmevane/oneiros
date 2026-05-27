@@ -11,11 +11,21 @@ versioned! {
             #[arg(long)]
             #[builder(into)]
             pub(crate) name: Option<String>,
-            /// Skip all confirmation prompts.
-            #[arg(long, short)]
+            /// Install and start the host service if it isn't running.
+            #[arg(long)]
             #[serde(default)]
             #[builder(default)]
-            pub(crate) yes: bool,
+            pub(crate) install_host: bool,
+            /// Write .mcp.json for Claude Code integration.
+            #[arg(long)]
+            #[serde(default)]
+            #[builder(default)]
+            pub(crate) init_mcp: bool,
+            /// Accept all optional steps without prompting.
+            #[arg(long, short = 'y')]
+            #[serde(default)]
+            #[builder(default)]
+            pub(crate) accept_all: bool,
         }
     }
 }
