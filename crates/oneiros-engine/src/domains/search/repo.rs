@@ -22,7 +22,7 @@ impl<'a> SearchRepo<'a> {
 
     /// Execute a search with optional filters. Returns ranked refs plus
     /// facet aggregations scoped to the filtered result set. Hydration to
-    /// typed [`Hit`]s is the service layer's job — the repo only knows
+    /// typed [`SearchHit`]s is the service layer's job — the repo only knows
     /// what's in the index.
     ///
     /// `agent_id` is resolved by the caller (service layer) from an

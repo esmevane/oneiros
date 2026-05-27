@@ -12,14 +12,14 @@ use crate::*;
 /// extracting the matching variant from a search result.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(tag = "kind", content = "data", rename_all = "kebab-case")]
-pub(crate) enum Hit {
+pub(crate) enum SearchHit {
     Cognition(Cognition),
     Memory(Memory),
     Experience(Experience),
     Agent(Agent),
 }
 
-impl Hit {
+impl SearchHit {
     pub(crate) fn kind(&self) -> SearchKind {
         match self {
             Self::Cognition(_) => SearchKind::Cognition,
@@ -127,7 +127,7 @@ impl IndexEntry {
 /// A ranked hit pulled from `search_index` — just enough to drive
 /// kind-aware hydration through per-domain `get_many` calls. The row
 /// preserves FTS5 rank order (or `created_at desc` when no query is
-/// present); hydration must reassemble [`Hit`]s in this order. The
+/// present); hydration must reassemble [`SearchHit`]s in this order. The
 /// kind is carried by the `Ref::V0(Resource::...)` variant — no
 /// separate discriminator needed.
 #[derive(Debug, Clone)]
@@ -175,7 +175,7 @@ impl core::fmt::Display for QueryText {
 pub(crate) struct SearchResults {
     pub(crate) query: QueryText,
     pub(crate) total: usize,
-    pub(crate) hits: Vec<Hit>,
+    pub(crate) hits: Vec<SearchHit>,
     #[serde(default, skip_serializing_if = "Facets::is_empty")]
     pub(crate) facets: Facets,
 }
