@@ -9,6 +9,7 @@ mod mcp;
 mod migrations;
 mod portability;
 mod pressure;
+mod protocol;
 mod search;
 mod skills;
 mod storage;
