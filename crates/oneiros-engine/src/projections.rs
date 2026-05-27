@@ -174,6 +174,9 @@ impl Projections<ProjectCanon> {
     pub(crate) fn project_with_pipeline(pipeline: ReducerPipeline<ProjectCanon>) -> Self {
         Self::new(
             &[
+                // Vocabulary: idempotent definitions that other projections
+                // reference. These must migrate and apply first so that
+                // foreign-key targets exist before records land.
                 Frames::new(&[
                     Frame::new(LevelProjections.all()),
                     Frame::new(TextureProjections.all()),
@@ -182,6 +185,9 @@ impl Projections<ProjectCanon> {
                     Frame::new(PersonaProjections.all()),
                     Frame::new(UrgeProjections.all()),
                 ]),
+                // Records: the core domain entities. Each projection is
+                // commutative within its own domain — ordering between
+                // domains in this tier is not load-bearing.
                 Frames::new(&[
                     Frame::new(AgentProjections.all()),
                     Frame::new(CognitionProjections.all()),
@@ -190,6 +196,9 @@ impl Projections<ProjectCanon> {
                     Frame::new(ConnectionProjections.all()),
                     Frame::new(StorageProjections.all()),
                 ]),
+                // Aggregations: cross-domain or derived views that read
+                // from records. Applied last so the data they aggregate
+                // is already materialized.
                 Frames::new(&[
                     Frame::new(PressureProjections.all()),
                     Frame::new(SearchProjections.all()),

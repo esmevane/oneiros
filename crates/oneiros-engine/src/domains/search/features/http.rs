@@ -19,6 +19,7 @@ impl SearchRouter {
     }
 }
 
+#[expect(deprecated)]
 async fn search(
     context: ProjectLog,
     Query(params): Query<SearchQuery>,

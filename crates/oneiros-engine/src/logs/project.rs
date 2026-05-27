@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::*;
 
+#[expect(deprecated)]
 impl aide::operation::OperationInput for ProjectLog {}
 
 /// Strangler — request-shaped context for legacy bookmark-tier callers.
@@ -12,6 +13,10 @@ impl aide::operation::OperationInput for ProjectLog {}
 /// `Scope<AtBookmark>` + `Mailbox` directly; this remains for CLI
 /// commands and MCP dispatchers that derive their scope from the
 /// request context during the bus migration.
+#[deprecated(
+    since = "0.0.11",
+    note = "Strangler: use Scope<AtBookmark> + Mailbox directly. See logs/project.rs doc-comment."
+)]
 #[derive(Clone)]
 pub(crate) struct ProjectLog {
     pub(crate) config: Config,
@@ -19,6 +24,7 @@ pub(crate) struct ProjectLog {
     scope: Arc<std::sync::OnceLock<Scope<AtBookmark>>>,
 }
 
+#[expect(deprecated)]
 impl ProjectLog {
     pub(crate) fn new(config: Config) -> Self {
         Self {

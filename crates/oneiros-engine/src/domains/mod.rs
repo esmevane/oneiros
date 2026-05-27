@@ -1,3 +1,16 @@
+//! Domain modules — one domain ≈ one event type ≈ one service ≈ one feature set.
+//!
+//! Most domains follow this isomorphism exactly. Four are named exceptions:
+//!
+//! - **Bookmark** — host-scoped at the service boundary, not bookmark-scoped,
+//!   because bookmarks define the scope that other domains operate within.
+//! - **Search** — strangler at the service signature; will evolve with the
+//!   lens work. Currently couples to multiple domain projections.
+//! - **Follow** — handles foreign events (`BookmarkEvents`) rather than its
+//!   own event type, because follows react to bookmark lifecycle.
+//! - **Trail** — aggregates events from nearly every domain to produce
+//!   cross-cutting activity views.
+
 mod actor;
 mod agent;
 mod bookmark;

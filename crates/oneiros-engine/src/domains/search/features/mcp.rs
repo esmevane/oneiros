@@ -7,6 +7,7 @@ impl SearchMcp {
         search_mcp::tool_defs()
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
@@ -30,6 +31,7 @@ mod search_mcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         context: &ProjectLog,
         tool_name: &ToolName,

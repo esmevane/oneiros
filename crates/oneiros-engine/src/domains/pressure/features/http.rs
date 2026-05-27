@@ -26,6 +26,7 @@ impl PressureRouter {
     }
 }
 
+#[expect(deprecated)]
 async fn get(
     context: ProjectLog,
     Path(agent): Path<AgentName>,
@@ -39,6 +40,7 @@ async fn get(
     ))
 }
 
+#[expect(deprecated)]
 async fn list(context: ProjectLog) -> Result<Json<PressureResponse>, PressureError> {
     Ok(Json(PressureService::list(&context).await?))
 }

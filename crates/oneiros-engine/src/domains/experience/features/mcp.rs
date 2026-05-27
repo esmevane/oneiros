@@ -7,6 +7,7 @@ impl ExperienceMcp {
         experience_mcp::tool_defs()
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
@@ -21,6 +22,7 @@ impl ExperienceMcp {
         vec![ResourcePathKind::Experience.template_def("A specific experience")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
@@ -43,6 +45,7 @@ mod experience_mcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -73,6 +76,7 @@ mod experience_mcp {
         }
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         context: &ProjectLog,
         request: &ExperienceRequest,

@@ -7,6 +7,7 @@ mod errors;
 mod host;
 mod mcp;
 mod migrations;
+mod namespace;
 mod portability;
 mod pressure;
 mod search;

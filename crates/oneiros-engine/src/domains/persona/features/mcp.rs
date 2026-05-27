@@ -7,6 +7,7 @@ impl PersonaMcp {
         vec![ResourcePathKind::Personas.resource_def("Agent personas")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,

@@ -7,6 +7,7 @@ impl PressureMcp {
         vec![ResourcePathKind::Pressure.resource_def("All agents' pressure readings")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
@@ -19,6 +20,7 @@ impl PressureMcp {
 mod pressure_mcp {
     use crate::*;
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         context: &ProjectLog,
         request: &PressureRequest,

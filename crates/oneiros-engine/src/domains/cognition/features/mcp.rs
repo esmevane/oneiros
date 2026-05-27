@@ -7,6 +7,7 @@ impl CognitionMcp {
         cognition_mcp::tool_defs()
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
@@ -21,6 +22,7 @@ impl CognitionMcp {
         vec![ResourcePathKind::Cognition.template_def("A specific cognition")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
@@ -39,6 +41,7 @@ mod cognition_mcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -66,6 +69,7 @@ mod cognition_mcp {
         }
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         context: &ProjectLog,
         request: &CognitionRequest,

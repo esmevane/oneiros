@@ -3,6 +3,7 @@ use crate::*;
 pub(crate) struct PressureService;
 
 impl PressureService {
+    #[expect(deprecated)]
     pub(crate) async fn get(
         context: &ProjectLog,
         selector: &GetPressure,
@@ -20,6 +21,7 @@ impl PressureService {
         ))
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn list(context: &ProjectLog) -> Result<PressureResponse, PressureError> {
         let pressures = PressureRepo::new(context.scope()?).list().await?;
         Ok(PressureResponse::AllReadings(

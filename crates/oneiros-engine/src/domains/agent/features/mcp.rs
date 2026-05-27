@@ -7,6 +7,7 @@ impl AgentMcp {
         agent_mcp::tool_defs()
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
@@ -32,6 +33,7 @@ impl AgentMcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
@@ -44,6 +46,7 @@ impl AgentMcp {
     /// without I/O. Currently only `AgentConnections`, which requires an
     /// agent lookup to resolve a `RefToken` before building a
     /// `ConnectionRequest`.
+    #[expect(deprecated)]
     pub(crate) async fn read_resource_special(
         &self,
         context: &ProjectLog,
@@ -81,6 +84,7 @@ mod agent_mcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -122,6 +126,7 @@ mod agent_mcp {
         }
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         context: &ProjectLog,
         request: &AgentRequest,
@@ -151,6 +156,7 @@ mod agent_mcp {
         }
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn read_agent_connections(
         context: &ProjectLog,
         name: &AgentName,

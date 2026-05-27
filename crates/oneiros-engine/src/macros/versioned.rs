@@ -180,6 +180,7 @@ macro_rules! versioned {
             )*
 
             impl $name {
+                /// Upcast to the latest version by reference, cloning the inner value.
                 #[allow(dead_code)]
                 pub(crate) fn current(
                     &self,
@@ -190,12 +191,25 @@ macro_rules! versioned {
                     })
                 }
 
+                /// Upcast to the latest version, consuming self to avoid cloning.
+                #[allow(dead_code)]
+                pub(crate) fn into_current(
+                    self,
+                ) -> ::std::result::Result<[<$name $latest_variant>], $crate::UpcastError> {
+                    Ok(match self {
+                        Self::$latest_variant(v) => v,
+                        $(Self::$variant(v) => v.try_into()?,)*
+                    })
+                }
+
+                /// Build the latest version directly.
                 #[allow(dead_code)]
                 pub(crate) fn [<builder_ $latest_variant:lower>]() -> [<$name $latest_variant Builder>] {
                     [<$name $latest_variant>]::builder()
                 }
 
                 $(
+                    #[doc = concat!("Build the ", stringify!($variant), " version directly.")]
                     #[allow(dead_code)]
                     pub(crate) fn [<builder_ $variant:lower>]() -> [<$name $variant Builder>] {
                         [<$name $variant>]::builder()
@@ -203,6 +217,7 @@ macro_rules! versioned {
                 )*
             }
 
+            /// Wrap the latest version struct into the versioned enum.
             impl ::std::convert::From<[<$name $latest_variant>]> for $name {
                 fn from(v: [<$name $latest_variant>]) -> Self {
                     Self::$latest_variant(v)
@@ -273,14 +288,24 @@ macro_rules! versioned {
         }
 
         impl $name {
+            /// Upcast to the latest version by reference, cloning the inner value.
             #[allow(dead_code)]
             pub(crate) fn current(&self) -> ::std::result::Result<$v1_type, $crate::UpcastError> {
                 Ok(match self {
                     Self::V1(v) => v.clone(),
                 })
             }
+
+            /// Upcast to the latest version, consuming self to avoid cloning.
+            #[allow(dead_code)]
+            pub(crate) fn into_current(self) -> ::std::result::Result<$v1_type, $crate::UpcastError> {
+                Ok(match self {
+                    Self::V1(v) => v,
+                })
+            }
         }
 
+        /// Wrap the latest version struct into the versioned enum.
         impl ::std::convert::From<$v1_type> for $name {
             fn from(v: $v1_type) -> Self {
                 Self::V1(v)

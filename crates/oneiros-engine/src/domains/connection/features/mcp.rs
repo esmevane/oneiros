@@ -7,6 +7,7 @@ impl ConnectionMcp {
         connection_mcp::tool_defs()
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         &self,
         context: &ProjectLog,
@@ -21,6 +22,7 @@ impl ConnectionMcp {
         vec![ResourcePathKind::Connection.template_def("A specific connection")]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         &self,
         context: &ProjectLog,
@@ -43,6 +45,7 @@ mod connection_mcp {
         ]
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn dispatch(
         context: &ProjectLog,
         mailbox: &Mailbox,
@@ -72,6 +75,7 @@ mod connection_mcp {
         }
     }
 
+    #[expect(deprecated)]
     pub(crate) async fn resource(
         context: &ProjectLog,
         request: &ConnectionRequest,
