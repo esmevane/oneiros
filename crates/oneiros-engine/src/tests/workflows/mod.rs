@@ -10,6 +10,7 @@ mod migrations;
 mod namespace;
 mod portability;
 mod pressure;
+mod protocol;
 mod search;
 mod skills;
 mod storage;
