@@ -10,23 +10,14 @@ impl SetupService {
         let details = request.current()?;
         let mut steps = Vec::new();
 
-        // 1. Server reachability is the precondition. Setup talks to a running
-        //    server; if there isn't one, offer to install and start it.
+        // 1. Service install — gated by `install_host`.
         let server_ready = matches!(
             HostService::status(config).await,
             HostResponse::ServiceRunning(_)
         );
 
         if !server_ready {
-            let do_service = details.yes
-                || inquire::Confirm::new(
-                    "The oneiros service isn't running. Install and start it now?",
-                )
-                .with_default(true)
-                .prompt()
-                .unwrap_or(false);
-
-            if !do_service {
+            if !details.install_host {
                 steps.push(SetupStep::ServiceSkipped);
                 return Ok(SetupResponse::SetupComplete(
                     SetupCompleteResponse::builder_v1()
@@ -69,20 +60,14 @@ impl SetupService {
             }
         }
 
-        // 2. Host init (always, idempotent) — over HTTP with a host
-        //    token. The host key was created at server startup.
+        // 2. Host init (always, idempotent).
         let host_secret = HostKey::new(config.platform()).load()?;
         let host_client = match host_secret {
             Some(secret) => {
                 let host_token = HostToken::generate(&secret);
                 Client::with_bearer(config.base_url(), &host_token.to_string())
             }
-            None => {
-                // Host key not yet generated — server may not have
-                // started. Use anonymous client; the request will fail
-                // with a clear 401 if auth is required.
-                Ok(Client::new(config.base_url()))
-            }
+            None => Ok(Client::new(config.base_url())),
         }?;
         let host_request: InitHost = InitHost::builder_v1()
             .maybe_name(details.name.clone())
@@ -129,8 +114,7 @@ impl SetupService {
             }
         }
 
-        // 3. Project create (always, idempotent) — over HTTP. Capture the token
-        //    from the response so the seed calls can authenticate.
+        // 3. Project create (always, idempotent).
         let project_request: CreateProject = CreateProject::builder_v1()
             .name(config.project.clone())
             .yes(true)
@@ -169,8 +153,6 @@ impl SetupService {
             }
         };
 
-        // Resolve the token for the seed calls: prefer a freshly-issued one,
-        // fall back to whatever's already on disk (for repeat runs).
         let token = project_token.or_else(|| config.token());
 
         let Some(token) = token else {
@@ -202,7 +184,7 @@ impl SetupService {
             }
         };
 
-        // 4. Seed core (always, idempotent) — over HTTP.
+        // 4. Seed core (always, idempotent).
         match project_client.post("/seed/core", &()).await {
             Ok(_) => steps.push(SetupStep::VocabularySeeded),
             Err(e) => {
@@ -213,7 +195,7 @@ impl SetupService {
             }
         }
 
-        // 5. Seed agents (always, idempotent) — over HTTP.
+        // 5. Seed agents (always, idempotent).
         match project_client.post("/seed/agents", &()).await {
             Ok(_) => steps.push(SetupStep::AgentsSeeded),
             Err(e) => {
@@ -224,14 +206,8 @@ impl SetupService {
             }
         }
 
-        // 6. MCP config (prompt unless --yes) — local file write.
-        let do_mcp = details.yes
-            || inquire::Confirm::new("Set up MCP config for Claude Code?")
-                .with_default(true)
-                .prompt()
-                .unwrap_or(false);
-
-        if do_mcp {
+        // 6. MCP config — gated by `init_mcp`.
+        if details.init_mcp {
             let mcp_request: InitMcp = InitMcp::builder_v1().yes(true).build().into();
             match McpConfigService::init(config, &mcp_request) {
                 Ok(McpResponses::McpConfigWritten(_)) => {
