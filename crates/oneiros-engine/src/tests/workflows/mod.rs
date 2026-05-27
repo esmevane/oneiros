@@ -5,6 +5,7 @@ mod distribution;
 mod doctor;
 mod errors;
 mod host;
+mod lens;
 mod mcp;
 mod migrations;
 mod namespace;

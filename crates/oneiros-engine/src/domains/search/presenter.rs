@@ -115,17 +115,17 @@ impl SearchPresenter {
 
 /// Bucket hits by kind, preserving FTS5 rank within each bucket. Returns
 /// stable section ordering: cognitions, memories, experiences, agents.
-fn group_by_kind(hits: &[Hit]) -> [(&'static str, Vec<&Hit>); 4] {
+fn group_by_kind(hits: &[SearchHit]) -> [(&'static str, Vec<&SearchHit>); 4] {
     let mut cognitions = Vec::new();
     let mut memories = Vec::new();
     let mut experiences = Vec::new();
     let mut agents = Vec::new();
     for hit in hits {
         match hit {
-            Hit::Cognition(_) => cognitions.push(hit),
-            Hit::Memory(_) => memories.push(hit),
-            Hit::Experience(_) => experiences.push(hit),
-            Hit::Agent(_) => agents.push(hit),
+            SearchHit::Cognition(_) => cognitions.push(hit),
+            SearchHit::Memory(_) => memories.push(hit),
+            SearchHit::Experience(_) => experiences.push(hit),
+            SearchHit::Agent(_) => agents.push(hit),
         }
     }
     [
@@ -139,22 +139,22 @@ fn group_by_kind(hits: &[Hit]) -> [(&'static str, Vec<&Hit>); 4] {
 /// Render one hit as a kind-shaped MCP item. Each kind shows the facet
 /// that lists already lead with — texture for cognitions, level for
 /// memories, sensation for experiences, persona for agents.
-fn render_hit_item(hit: &Hit) -> String {
+fn render_hit_item(hit: &SearchHit) -> String {
     let ref_token = RefToken::new(hit.resource_ref());
     match hit {
-        Hit::Cognition(c) => format!(
+        SearchHit::Cognition(c) => format!(
             "- **{}** — {}\n  {}\n  {}\n",
             c.texture, c.created_at, c.content, ref_token
         ),
-        Hit::Memory(m) => format!(
+        SearchHit::Memory(m) => format!(
             "- **{}** — {}\n  {}\n  {}\n",
             m.level, m.created_at, m.content, ref_token
         ),
-        Hit::Experience(e) => format!(
+        SearchHit::Experience(e) => format!(
             "- **{}** — {}\n  {}\n  {}\n",
             e.sensation, e.created_at, e.description, ref_token
         ),
-        Hit::Agent(a) => format!(
+        SearchHit::Agent(a) => format!(
             "- **{}** ({})\n  {}\n  {}\n",
             a.name, a.persona, a.description, ref_token
         ),

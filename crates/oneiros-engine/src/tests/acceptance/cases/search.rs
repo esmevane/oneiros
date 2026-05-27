@@ -61,7 +61,7 @@ async fn with_searchable<B: Backend>() -> Result<Harness<B>, Box<dyn core::error
 }
 
 /// Helper: extract the results vec from a search response.
-fn extract_results(response: Responses) -> Vec<Hit> {
+fn extract_results(response: Responses) -> Vec<SearchHit> {
     match response {
         Responses::Search(SearchResponse::Results(ResultsResponse::V1(search_results))) => {
             search_results.hits
@@ -328,8 +328,8 @@ pub(crate) async fn hits_carry_typed_metadata<B: Backend>() -> TestResult {
         .hits
         .first()
         .expect("one hit for distinctive content");
-    let Hit::Cognition(cognition) = hit else {
-        panic!("expected Hit::Cognition, got {hit:#?}");
+    let SearchHit::Cognition(cognition) = hit else {
+        panic!("expected SearchHit::Cognition, got {hit:#?}");
     };
     assert_eq!(cognition.texture.as_str(), "observation");
 
@@ -437,8 +437,8 @@ pub(crate) async fn default_limit_caps_at_ten<B: Backend>() -> TestResult {
 }
 
 /// Search hits are kind-discriminated, fully-hydrated typed domain
-/// objects — a `Hit::Cognition` carries the full `Cognition`, a
-/// `Hit::Memory` carries the full `Memory`, etc. The intermediate
+/// objects — a `SearchHit::Cognition` carries the full `Cognition`, a
+/// `SearchHit::Memory` carries the full `Memory`, etc. The intermediate
 /// `Expression` shape is gone; search renders through the same domain
 /// objects that lists do.
 pub(crate) async fn hits_are_hydrated_typed_objects<B: Backend>() -> TestResult {
@@ -459,9 +459,9 @@ pub(crate) async fn hits_are_hydrated_typed_objects<B: Backend>() -> TestResult 
     let cognition_hit = results
         .hits
         .iter()
-        .find(|h| matches!(h, Hit::Cognition(_)))
+        .find(|h| matches!(h, SearchHit::Cognition(_)))
         .expect("cognition hit present");
-    let Hit::Cognition(cognition) = cognition_hit else {
+    let SearchHit::Cognition(cognition) = cognition_hit else {
         unreachable!()
     };
     assert_eq!(cognition.content.as_str(), "Hydration test cognition");
@@ -470,9 +470,9 @@ pub(crate) async fn hits_are_hydrated_typed_objects<B: Backend>() -> TestResult 
     let memory_hit = results
         .hits
         .iter()
-        .find(|h| matches!(h, Hit::Memory(_)))
+        .find(|h| matches!(h, SearchHit::Memory(_)))
         .expect("memory hit present");
-    let Hit::Memory(memory) = memory_hit else {
+    let SearchHit::Memory(memory) = memory_hit else {
         unreachable!()
     };
     assert_eq!(memory.content.as_str(), "Hydration test memory");

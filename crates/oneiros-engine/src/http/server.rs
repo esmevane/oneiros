@@ -156,6 +156,7 @@ impl Server {
             .merge(SensationRouter.routes())
             .merge(StorageRouter.routes())
             .merge(HostRouter.routes())
+            .merge(LensRouter.routes())
             .merge(TenantRouter.routes())
             .merge(TextureRouter.routes())
             .merge(TicketRouter.routes())

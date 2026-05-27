@@ -41,14 +41,14 @@ impl SearchService {
 }
 
 /// Walk the ranked refs once, fan out per-kind `get_many` calls, then
-/// reassemble [`Hit`]s in the original FTS5 order. Drops refs whose
+/// reassemble [`SearchHit`]s in the original FTS5 order. Drops refs whose
 /// underlying row has been removed since the index was queried — search
 /// shouldn't surface ghosts.
 #[expect(deprecated)]
 pub(crate) async fn hydrate_hits(
     context: &ProjectLog,
     ranked: Vec<RankedHit>,
-) -> Result<Vec<Hit>, SearchError> {
+) -> Result<Vec<SearchHit>, SearchError> {
     let mut cognition_ids: Vec<CognitionId> = Vec::new();
     let mut memory_ids: Vec<MemoryId> = Vec::new();
     let mut experience_ids: Vec<ExperienceId> = Vec::new();
@@ -99,22 +99,22 @@ pub(crate) async fn hydrate_hits(
         match resource {
             Resource::Cognition(id) => {
                 if let Some(c) = cognitions.remove(&id) {
-                    hydrated.push(Hit::Cognition(c));
+                    hydrated.push(SearchHit::Cognition(c));
                 }
             }
             Resource::Memory(id) => {
                 if let Some(m) = memories.remove(&id) {
-                    hydrated.push(Hit::Memory(m));
+                    hydrated.push(SearchHit::Memory(m));
                 }
             }
             Resource::Experience(id) => {
                 if let Some(e) = experiences.remove(&id) {
-                    hydrated.push(Hit::Experience(e));
+                    hydrated.push(SearchHit::Experience(e));
                 }
             }
             Resource::Agent(id) => {
                 if let Some(a) = agents.remove(&id) {
-                    hydrated.push(Hit::Agent(a));
+                    hydrated.push(SearchHit::Agent(a));
                 }
             }
             _ => {}
