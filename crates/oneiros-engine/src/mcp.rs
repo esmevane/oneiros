@@ -468,23 +468,16 @@ impl ServerHandler for EngineToolBox {
                 .await
                 .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
-                match response {
-                    ContinuityResponse::Dreaming(DreamingResponse::V1(details)) => {
-                        let dream = details.context;
-                        let text = DreamTemplate::new(&dream).to_string();
-                        Ok(
-                            GetPromptResult::new(vec![rmcp::model::PromptMessage::new_text(
-                                rmcp::model::PromptMessageRole::User,
-                                text,
-                            )])
-                            .with_description(format!("Dream context for {agent_name}")),
-                        )
-                    }
-                    _ => Err(ErrorData::internal_error(
-                        "Unexpected response from dream",
-                        None,
-                    )),
-                }
+                let rendered = ContinuityPresenter::new(response).render();
+                let text = rendered.prompt().to_owned();
+
+                Ok(
+                    GetPromptResult::new(vec![rmcp::model::PromptMessage::new_text(
+                        rmcp::model::PromptMessageRole::User,
+                        text,
+                    )])
+                    .with_description(format!("Dream context for {agent_name}")),
+                )
             }
             _ => Err(ErrorData::invalid_params(
                 format!("Unknown prompt: {}", request.name),
