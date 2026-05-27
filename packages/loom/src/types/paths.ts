@@ -39,5 +39,11 @@ export type GetKeypaths<
     : Key;
 }[keyof GivenType & string];
 
-/** All dot-paths reachable in a chart schema, descending through "states". */
-export type ModelPaths<GivenType> = GetKeypaths<GivenType, "states">;
+/** All dot-paths reachable in a chart schema. Strips xstate's reserved keys
+ *  first, then walks the user-defined state tree, descending silently
+ *  through "states" so paths read like `requests.hostInfo.idle` rather than
+ *  `requests.states.hostInfo.states.idle`. */
+export type ModelPaths<GivenType> = GetKeypaths<
+  ProduceSchema<GivenType>,
+  "states"
+>;

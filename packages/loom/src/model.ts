@@ -8,8 +8,58 @@ import {
   requests as requestsPrimitive,
   screens as screensPrimitive,
   workers as workersPrimitive,
+  type Bundle,
+  type CommandDefinition,
+  type CommandsConfig,
+  type DialogsConfig,
+  type FormsConfig,
+  type I18nConfig,
+  type NavigationConfig,
+  type RequestsConfig,
+  type ScreensConfig,
+  type WorkersConfig,
 } from "./primitives";
 import type { Send } from "./types";
+
+/** Composed schema of a model — mirrors the runtime `states` envelope so
+ *  consumers can derive `ModelPaths<ModelSchema<Input>>` for typestate-aware
+ *  matchers. Each primitive contributes its key only when the input declares
+ *  the corresponding field. */
+export type ModelSchema<Input> = (Input extends {
+  requests: infer R extends Record<string, { init: unknown }>;
+}
+  ? { requests: RequestsConfig<R> }
+  : object) &
+  (Input extends {
+    forms: infer F extends Record<
+      string,
+      { init: unknown; validate: (model: unknown) => Promise<unknown> }
+    >;
+  }
+    ? { forms: FormsConfig<F> }
+    : object) &
+  (Input extends { dialogs: infer D extends readonly string[] }
+    ? { dialogs: DialogsConfig<D[number]> }
+    : object) &
+  (Input extends { screens: infer S extends readonly string[] }
+    ? { screens: ScreensConfig<S[number]> }
+    : object) &
+  (Input extends { navigation: { routes: readonly string[] } }
+    ? { navigation: NavigationConfig }
+    : object) &
+  (Input extends {
+    workers: infer W extends Record<string, { init?: unknown }>;
+  }
+    ? { workers: WorkersConfig<W> }
+    : object) &
+  (Input extends { commands: Record<string, CommandDefinition> }
+    ? { commands: CommandsConfig }
+    : object) &
+  (Input extends {
+    i18n: { locales: infer L extends Record<string, Bundle> };
+  }
+    ? { i18n: I18nConfig<L> }
+    : object);
 
 /** ModelInput threads the consumer's configuration for each primitive. All
  *  fields optional — omitted primitives contribute no states. */
@@ -59,44 +109,12 @@ export interface ModelInput<
 
 /** Compose the eight primitives into a single typesafe model. Returns the
  *  assembled xstate machine plus the typed event factory, runtime registries
- *  (commands, i18n bundles), and metadata. */
-export function model<
-  RequestKey extends string,
-  RequestMap extends Record<RequestKey, { init: unknown }>,
-  FormKey extends string,
-  FormMap extends Record<
-    FormKey,
-    { init: unknown; validate: (model: unknown) => Promise<unknown> }
-  >,
-  DialogKey extends string,
-  ScreenKey extends string,
-  RouteKey extends string,
-  WorkerKey extends string,
-  WorkerMap extends Record<WorkerKey, { init?: unknown }>,
-  CommandKey extends string,
-  CommandMap extends Record<
-    CommandKey,
-    import("./primitives").CommandDefinition
-  >,
-  LocaleKey extends string,
-  LocaleMap extends Record<LocaleKey, import("./primitives").Bundle>,
->(
-  input: ModelInput<
-    RequestKey,
-    RequestMap,
-    FormKey,
-    FormMap,
-    DialogKey,
-    ScreenKey,
-    RouteKey,
-    WorkerKey,
-    WorkerMap,
-    CommandKey,
-    CommandMap,
-    LocaleKey,
-    LocaleMap
-  >,
-) {
+ *  (commands, i18n bundles), and metadata.
+ *
+ *  Uses `const Input` so the input's literal shape — including which optional
+ *  fields are present — flows through to `ModelSchema<Input>` for downstream
+ *  path narrowing. */
+export function model<const Input extends ModelInput>(input: Input) {
   const requestsFragment = requestsPrimitive({ requests: input.requests });
   const formsFragment = formsPrimitive({ forms: input.forms });
   const dialogsFragment = dialogsPrimitive({ dialogs: input.dialogs });
@@ -199,23 +217,13 @@ export function model<
         translate: i18nFragment.translate,
       },
     },
+    /** Phantom — type-level mirror of the assembled `states` envelope.
+     *  Consumed by `createShell` to type `useMatches` against a precise
+     *  path union. No runtime value. */
+    schema: {} as ModelSchema<Input>,
   } as const;
 }
 
 export type ModelOf<GivenInput extends ModelInput> = ReturnType<
-  typeof model<
-    Extract<keyof NonNullable<GivenInput["requests"]>, string>,
-    NonNullable<GivenInput["requests"]>,
-    Extract<keyof NonNullable<GivenInput["forms"]>, string>,
-    NonNullable<GivenInput["forms"]>,
-    Extract<NonNullable<GivenInput["dialogs"]>[number], string>,
-    Extract<NonNullable<GivenInput["screens"]>[number], string>,
-    Extract<NonNullable<GivenInput["navigation"]>["routes"][number], string>,
-    Extract<keyof NonNullable<GivenInput["workers"]>, string>,
-    NonNullable<GivenInput["workers"]>,
-    Extract<keyof NonNullable<GivenInput["commands"]>, string>,
-    NonNullable<GivenInput["commands"]>,
-    Extract<keyof NonNullable<GivenInput["i18n"]>["locales"], string>,
-    NonNullable<GivenInput["i18n"]>["locales"]
-  >
+  typeof model<GivenInput>
 >;

@@ -8,6 +8,21 @@ import type { ModelEvent, ModelNodeId, Send } from "../types";
 type WorkerId<GivenWorker extends string> = ModelNodeId<"worker", GivenWorker>;
 type WorkerEventKind = "start" | "stop" | "restart";
 
+/** Assembled workers config — preserves per-worker keying so downstream
+ *  path derivation (via `ModelPaths`) can see each worker as a known node. */
+export type WorkersConfig<
+  WorkerMap extends Record<string, { init?: unknown }>,
+> = {
+  type: "parallel";
+  states: {
+    [GivenWorker in keyof WorkerMap & string]: {
+      id: WorkerId<GivenWorker>;
+      initial: "idle";
+      states: { idle: object; running: object; stopped: object };
+    };
+  };
+};
+
 /** Long-running background work. Each worker has an idle/running/stopped
  *  lifecycle and an actor placeholder that the shell's bindings supply at
  *  runtime. Workers are useful for SSE subscriptions, polling loops, and
@@ -95,9 +110,9 @@ export function workers<
     },
     {
       type: "parallel" as const,
-      states: {} as Record<string, unknown>,
+      states: {} as WorkersConfig<WorkerMap>["states"],
     },
-  );
+  ) satisfies WorkersConfig<WorkerMap>;
 
   const createEvents = (send: Send<WorkerEvents>) =>
     (Object.keys(workers) as AllWorkers[]).reduce(

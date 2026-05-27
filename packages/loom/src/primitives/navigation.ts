@@ -4,6 +4,14 @@ import type { ModelEvent, ModelNodeId, Send } from "../types";
 type NavigationId = ModelNodeId<"navigation", "stack">;
 type NavigationEventKind = "push" | "replace" | "reset" | "pop";
 
+/** Assembled navigation config — one `active` state with dynamic event
+ *  handlers. Exposed so `ModelSchema` composition can address `navigation.active`. */
+export type NavigationConfig = {
+  id: NavigationId;
+  initial: "active";
+  states: { active: { on: Record<string, unknown> } };
+};
+
 /** A frame on the navigation stack. */
 export interface NavigationFrame<RouteName extends string> {
   route: RouteName;
@@ -155,11 +163,11 @@ export function navigation<RouteName extends string>({
 
   const config = {
     id: labeler.id(),
-    initial: "active",
+    initial: "active" as const,
     states: {
       active: { on: stateOn },
     },
-  };
+  } satisfies NavigationConfig;
 
   const createEvents = (send: Send<NavigationEvents>) => ({
     push: <Route extends Routes>(

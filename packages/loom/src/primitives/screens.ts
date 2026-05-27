@@ -7,6 +7,14 @@ type OpenScreen<GivenScreen extends string> = ModelEvent<
   GivenScreen
 >;
 
+/** Assembled screens config — preserves per-screen keying so downstream
+ *  path derivation (via `ModelPaths`) can see each screen as a known node. */
+export type ScreensConfig<ScreenKey extends string> = {
+  initial: string;
+  on: Record<string, unknown>;
+  states: { [GivenScreen in ScreenKey]: { id: ScreenId<GivenScreen> } };
+};
+
 /** Screens primitive — mode switcher. Exactly one screen is active at a
  *  time. No history (use the `navigation` primitive for a stack). */
 export function screens<ScreenKey extends string>({
@@ -53,9 +61,9 @@ export function screens<ScreenKey extends string>({
     {
       initial: "" as string,
       on: {} as Record<string, unknown>,
-      states: {} as Record<string, unknown>,
+      states: {} as ScreensConfig<ScreenKey>["states"],
     },
-  );
+  ) satisfies ScreensConfig<ScreenKey>;
 
   return {
     createEvents,

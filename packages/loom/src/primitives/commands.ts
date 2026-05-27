@@ -3,6 +3,14 @@ import type { ModelEvent, ModelNodeId, Send } from "../types";
 
 type CommandsId = ModelNodeId<"commands", "registry">;
 
+/** Assembled commands config — one `active` state with dynamic event handlers.
+ *  Exposed so `ModelSchema` composition can address `commands.active`. */
+export type CommandsConfig = {
+  id: CommandsId;
+  initial: "active";
+  states: { active: { on: Record<string, unknown> } };
+};
+
 /** A registered command — metadata plus an invocation function. The `run`
  *  function is closed over at registration time; the chart emits an event
  *  whenever a command is invoked so consumers can observe (and replay)
@@ -68,7 +76,7 @@ export function commands<
     id: labeler.id(),
     initial: "active" as const,
     states: { active: { on: stateOn } },
-  };
+  } satisfies CommandsConfig;
 
   const context: CommandsContext = { lastInvoked: null };
 
