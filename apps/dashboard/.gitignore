@@ -1,5 +1,4 @@
-# build output
-dist/
+# build output: committed as a generated artifact (see root .gitignore)
 # generated types
 .astro/
 
