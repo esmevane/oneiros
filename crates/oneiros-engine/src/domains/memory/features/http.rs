@@ -45,9 +45,18 @@ async fn add(
 }
 
 async fn list(
+    axum::extract::State(state): axum::extract::State<ServerState>,
     scope: Scope<AtBookmark>,
     Query(params): Query<ListMemories>,
 ) -> Result<Json<MemoryResponse>, MemoryError> {
+    let ListMemories::V1(listing) = &params;
+    if let Some(source) = listing.lens.as_deref() {
+        return Ok(Json(
+            MemoryLens::new(&scope, state.canons())
+                .list(source, &listing.filters)
+                .await?,
+        ));
+    }
     Ok(Json(MemoryService::list(&scope, &params).await?))
 }
 

@@ -32,6 +32,9 @@ pub(crate) enum MemoryError {
 
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    Lens(#[from] crate::LensError),
 }
 
 resource_op_error!(MemoryError);
@@ -49,6 +52,7 @@ impl IntoResponse for MemoryError {
             MemoryError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             MemoryError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             MemoryError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            MemoryError::Lens(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

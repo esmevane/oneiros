@@ -32,6 +32,9 @@ pub(crate) enum CognitionError {
 
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    Lens(#[from] crate::LensError),
 }
 
 resource_op_error!(CognitionError);
@@ -49,6 +52,7 @@ impl IntoResponse for CognitionError {
             CognitionError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             CognitionError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             CognitionError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            CognitionError::Lens(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

@@ -79,9 +79,19 @@ mod cognition_mcp {
             CognitionRequest::GetCognition(get) => CognitionService::get(scope, get)
                 .await
                 .map_err(Error::from)?,
-            CognitionRequest::ListCognitions(listing) => CognitionService::list(scope, listing)
-                .await
-                .map_err(Error::from)?,
+            CognitionRequest::ListCognitions(listing) => {
+                let ListCognitions::V1(details) = listing;
+                if let Some(source) = details.lens.as_deref() {
+                    CognitionLens::new(scope, context.canons())
+                        .list(source, &details.filters)
+                        .await
+                        .map_err(Error::from)?
+                } else {
+                    CognitionService::list(scope, listing)
+                        .await
+                        .map_err(Error::from)?
+                }
+            }
             CognitionRequest::AddCognition(_) => {
                 return Err(ToolError::NotAResource(
                     "Add is a tool, not a resource".to_string(),

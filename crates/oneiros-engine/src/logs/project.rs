@@ -22,20 +22,29 @@ pub(crate) struct ProjectLog {
     pub(crate) config: Config,
     /// Lazily-composed Scope, cached for the context's lifetime.
     scope: Arc<std::sync::OnceLock<Scope<AtBookmark>>>,
+    /// Bookmark chronicle registry — shared from `ServerState`. Required
+    /// for lens queries that route through chronicle-aware readers.
+    canons: CanonIndex,
 }
 
 #[expect(deprecated)]
 impl ProjectLog {
-    pub(crate) fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config, canons: CanonIndex) -> Self {
         Self {
             config,
             scope: Arc::new(std::sync::OnceLock::new()),
+            canons,
         }
     }
 
     /// The project name for this project.
     pub(crate) fn project_name(&self) -> &ProjectName {
         &self.config.project
+    }
+
+    /// The bookmark chronicle registry — needed by lens queries.
+    pub(crate) fn canons(&self) -> &CanonIndex {
+        &self.canons
     }
 
     /// Compose a bookmark-tier Scope from this context's config

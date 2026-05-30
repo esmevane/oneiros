@@ -85,9 +85,19 @@ mod connection_mcp {
             ConnectionRequest::GetConnection(get) => ConnectionService::get(scope, get)
                 .await
                 .map_err(Error::from)?,
-            ConnectionRequest::ListConnections(listing) => ConnectionService::list(scope, listing)
-                .await
-                .map_err(Error::from)?,
+            ConnectionRequest::ListConnections(listing) => {
+                let ListConnections::V1(details) = listing;
+                if let Some(source) = details.lens.as_deref() {
+                    ConnectionLens::new(scope, context.canons())
+                        .list(source, &details.filters)
+                        .await
+                        .map_err(Error::from)?
+                } else {
+                    ConnectionService::list(scope, listing)
+                        .await
+                        .map_err(Error::from)?
+                }
+            }
             ConnectionRequest::CreateConnection(_) | ConnectionRequest::RemoveConnection(_) => {
                 return Err(ToolError::NotAResource(
                     "Mutations are tools, not resources".to_string(),

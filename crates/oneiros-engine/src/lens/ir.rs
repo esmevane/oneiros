@@ -26,16 +26,47 @@ impl core::fmt::Display for SlotId {
 
 #[derive(Debug, Clone)]
 pub(crate) enum Op {
+    /// A compile-time constant — resolved without consulting any reader.
+    Const(ConstValue),
+    /// A substrate query dispatched to [`Reader::read`].
     Read(Read),
+    /// A transformation over a prior slot dispatched to [`Reader::step`].
+    Step {
+        kind: StepKind,
+        input: SlotId,
+    },
     Union(SlotId, SlotId),
     Intersect(SlotId, SlotId),
     Difference(SlotId, SlotId),
 }
 
+/// Values fixed at compile time that the executor populates directly.
+#[derive(Debug, Clone)]
+pub(crate) enum ConstValue {
+    Name { name: String, kind: NameKind },
+    Ref(RefToken),
+}
+
 #[derive(Debug, Clone)]
 pub(crate) enum Read {
-    SearchFacet { facet: FacetName, value: String },
     SearchText(String),
+    ChronicleBetween { from: RefToken, to: RefToken },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum StepKind {
+    ConnectedFrom,
+    ConnectedTo,
+    Descendants,
+    Ancestors,
+    Within(u32),
+    Component,
+    EventsFor,
+    RefsFrom,
+    SearchByAgent,
+    SearchByTexture,
+    SearchByLevel,
+    SearchByKind,
 }
 
 #[cfg(test)]
@@ -45,13 +76,13 @@ mod tests {
     #[test]
     fn result_slot_points_to_last_op() {
         let ir = Ir::new(vec![
-            Op::Read(Read::SearchFacet {
-                facet: FacetName::Texture,
-                value: "observation".into(),
+            Op::Const(ConstValue::Name {
+                name: "observation".into(),
+                kind: NameKind::Texture,
             }),
-            Op::Read(Read::SearchFacet {
-                facet: FacetName::Agent,
-                value: "governor.process".into(),
+            Op::Const(ConstValue::Name {
+                name: "governor.process".into(),
+                kind: NameKind::Agent,
             }),
             Op::Intersect(SlotId(0), SlotId(1)),
         ]);

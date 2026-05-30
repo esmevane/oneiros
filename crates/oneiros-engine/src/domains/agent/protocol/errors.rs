@@ -39,6 +39,9 @@ pub(crate) enum AgentError {
 
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    Lens(#[from] crate::LensError),
 }
 
 resource_op_error!(AgentError);
@@ -57,6 +60,7 @@ impl IntoResponse for AgentError {
             AgentError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             AgentError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             AgentError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            AgentError::Lens(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

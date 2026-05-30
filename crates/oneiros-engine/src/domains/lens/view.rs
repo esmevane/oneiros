@@ -51,6 +51,13 @@ impl LensView {
                                     e.timestamp.to_string(),
                                 ]);
                             }
+                            Hit::Name(n) => {
+                                table.push_row(vec![
+                                    format!("name:{}", n.kind.describe()),
+                                    n.name.clone(),
+                                    n.timestamp.to_string(),
+                                ]);
+                            }
                         }
                     }
                     let count_text = format!(

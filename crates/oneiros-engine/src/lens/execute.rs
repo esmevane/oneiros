@@ -22,7 +22,12 @@ impl<'a> Executor<'a> {
 
         for op in &ir.ops {
             let result = match op {
+                Op::Const(value) => self.eval_const(value)?,
                 Op::Read(read) => self.dispatch(read)?,
+                Op::Step { kind, input } => {
+                    let input_selection = self.resolve(&slots, *input)?.clone();
+                    self.dispatch_step(kind, &input_selection)?
+                }
                 Op::Union(left, right) => {
                     let left = self.resolve(&slots, *left)?;
                     let right = self.resolve(&slots, *right)?;
@@ -46,9 +51,40 @@ impl<'a> Executor<'a> {
         self.resolve(&slots, result_slot).cloned()
     }
 
+    fn eval_const(&self, value: &ConstValue) -> Result<Selection, ExecuteError> {
+        let mut selection = Selection::new();
+        match value {
+            ConstValue::Name { name, kind } => {
+                selection.insert(Hit::Name(NameHit {
+                    name: name.clone(),
+                    kind: *kind,
+                    timestamp: Timestamp::now(),
+                    relevance: Relevance::Unknown,
+                }));
+            }
+            ConstValue::Ref(reference) => {
+                selection.insert(Hit::Entity(EntityHit {
+                    entity_ref: reference.inner().clone(),
+                    timestamp: Timestamp::now(),
+                    relevance: Relevance::Unknown,
+                }));
+            }
+        }
+        Ok(selection)
+    }
+
     fn dispatch(&self, read: &Read) -> Result<Selection, ExecuteError> {
         for reader in self.readers {
             if let Some(result) = reader.read(read) {
+                return Ok(result?);
+            }
+        }
+        Ok(Selection::new())
+    }
+
+    fn dispatch_step(&self, kind: &StepKind, input: &Selection) -> Result<Selection, ExecuteError> {
+        for reader in self.readers {
+            if let Some(result) = reader.step(kind, input) {
                 return Ok(result?);
             }
         }

@@ -58,6 +58,12 @@ versioned! {
             #[arg(long)]
             #[builder(into)]
             pub(crate) query: Option<String>,
+            /// Lens expression — replaces ad-hoc filters with the unified
+            /// query language. When set, agent/sensation/query are ignored
+            /// and the lens drives selection end-to-end.
+            #[arg(long)]
+            #[builder(into)]
+            pub(crate) lens: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
@@ -83,6 +89,10 @@ impl ClientRequest for ListExperiences {
 
         if let Some(query) = &listing.query {
             params.push(("query", query.clone()));
+        }
+
+        if let Some(lens) = &listing.lens {
+            params.push(("lens", lens.clone()));
         }
 
         params.push(("limit", listing.filters.limit.to_string()));

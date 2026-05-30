@@ -282,6 +282,22 @@ pub(crate) struct Config {
     /// How much detail to show: quiet, normal (default), or verbose.
     #[builder(default)]
     pub(crate) verbosity: Verbosity,
+    /// Lens-specific configuration: aliases for query expressions.
+    #[builder(default)]
+    pub(crate) lens: LensConfig,
+}
+
+/// Configuration for the lens query language. Currently carries
+/// user-defined aliases — short names that expand to full lens
+/// expressions at parse time. Aliases are sugar over the fixed grammar;
+/// the parser doesn't change. See `notes/Charter - Lens, revised.local.md`.
+#[derive(Builder, Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub(crate) struct LensConfig {
+    /// Named aliases — `mine = "agent(governor.process)"` lets the user
+    /// type `mine` anywhere a lens expression is expected. Expansion is
+    /// transitive; circular aliases are rejected at parse time.
+    pub(crate) aliases: std::collections::HashMap<String, String>,
 }
 
 impl Default for Config {
@@ -298,6 +314,7 @@ impl Default for Config {
             output: OutputMode::default(),
             color: ColorChoice::default(),
             verbosity: Verbosity::default(),
+            lens: LensConfig::default(),
         }
     }
 }

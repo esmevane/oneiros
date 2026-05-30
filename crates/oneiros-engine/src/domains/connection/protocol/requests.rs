@@ -50,6 +50,12 @@ versioned! {
         V1 => {
             #[arg(long)]
             pub(crate) entity: Option<RefToken>,
+            /// Lens expression — replaces ad-hoc filters with the unified
+            /// query language. When set, entity is ignored and the lens
+            /// drives selection end-to-end.
+            #[arg(long)]
+            #[builder(into)]
+            pub(crate) lens: Option<String>,
             #[command(flatten)]
             #[serde(flatten)]
             #[builder(default)]
@@ -67,6 +73,10 @@ impl ClientRequest for ListConnections {
 
         if let Some(entity) = &listing.entity {
             params.push(("entity", entity.to_string()));
+        }
+
+        if let Some(lens) = &listing.lens {
+            params.push(("lens", lens.clone()));
         }
 
         params.push(("limit", listing.filters.limit.to_string()));

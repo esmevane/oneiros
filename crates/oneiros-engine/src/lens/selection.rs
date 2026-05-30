@@ -10,6 +10,7 @@ use crate::*;
 pub(crate) enum Hit {
     Event(EventHit),
     Entity(EntityHit),
+    Name(NameHit),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -27,6 +28,14 @@ pub(crate) struct EntityHit {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub(crate) struct NameHit {
+    pub(crate) name: String,
+    pub(crate) kind: NameKind,
+    pub(crate) timestamp: Timestamp,
+    pub(crate) relevance: Relevance,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub(crate) enum Relevance {
     Known { score: f64 },
@@ -38,6 +47,10 @@ impl Hit {
         match self {
             Hit::Event(e) => HitIdentity::Event(e.event_id),
             Hit::Entity(e) => HitIdentity::Entity(e.entity_ref.clone()),
+            Hit::Name(n) => HitIdentity::Name {
+                name: n.name.clone(),
+                kind: n.kind,
+            },
         }
     }
 
@@ -45,6 +58,7 @@ impl Hit {
         match self {
             Hit::Event(e) => e.timestamp,
             Hit::Entity(e) => e.timestamp,
+            Hit::Name(n) => n.timestamp,
         }
     }
 
@@ -52,6 +66,7 @@ impl Hit {
         match self {
             Hit::Event(e) => &e.relevance,
             Hit::Entity(e) => &e.relevance,
+            Hit::Name(n) => &n.relevance,
         }
     }
 
@@ -69,6 +84,12 @@ impl Hit {
                 timestamp: earlier_timestamp,
                 relevance: merged_relevance,
             }),
+            Hit::Name(n) => Hit::Name(NameHit {
+                name: n.name.clone(),
+                kind: n.kind,
+                timestamp: earlier_timestamp,
+                relevance: merged_relevance,
+            }),
         }
     }
 }
@@ -77,6 +98,7 @@ impl Hit {
 pub(crate) enum HitIdentity {
     Event(EventId),
     Entity(Ref),
+    Name { name: String, kind: NameKind },
 }
 
 impl Relevance {
@@ -159,6 +181,64 @@ impl Selection {
         let mut hits: Vec<Hit> = self.entries.into_values().collect();
         hits.sort_by_key(|h| std::cmp::Reverse(h.timestamp()));
         hits
+    }
+
+    /// Returns a new [`Selection`] containing only the hits that satisfy
+    /// the predicate. Order is not preserved — selections are sets.
+    #[allow(dead_code)]
+    pub(crate) fn filter(mut self, predicate: impl Fn(&Hit) -> bool) -> Self {
+        self.entries.retain(|_, hit| predicate(hit));
+        self
+    }
+
+    /// Sorts hits by timestamp descending, skips `offset` entries, and
+    /// returns at most `limit` hits. The result is a plain [`Vec`] —
+    /// pagination is a terminal operation.
+    pub(crate) fn paginate(self, offset: usize, limit: usize) -> Vec<Hit> {
+        self.sorted_by_timestamp_desc()
+            .into_iter()
+            .skip(offset)
+            .take(limit)
+            .collect()
+    }
+
+    /// Collects every [`Ref`] from entity hits in this selection.
+    pub(crate) fn entity_refs(&self) -> Vec<Ref> {
+        let mut refs = Vec::new();
+        for hit in self.entries.values() {
+            if let Hit::Entity(EntityHit { entity_ref, .. }) = hit {
+                refs.push(entity_ref.clone());
+            }
+        }
+        refs
+    }
+
+    /// Collects every [`EventId`] from event hits in this selection.
+    pub(crate) fn event_ids(&self) -> Vec<EventId> {
+        let mut ids = Vec::new();
+        for hit in self.entries.values() {
+            if let Hit::Event(EventHit { event_id, .. }) = hit {
+                ids.push(*event_id);
+            }
+        }
+        ids
+    }
+
+    /// Collects every name from [`NameHit`]s of the given kind.
+    pub(crate) fn names_of(&self, kind: NameKind) -> Vec<String> {
+        let mut names = Vec::new();
+        for hit in self.entries.values() {
+            if let Hit::Name(NameHit {
+                name,
+                kind: hit_kind,
+                ..
+            }) = hit
+                && *hit_kind == kind
+            {
+                names.push(name.clone());
+            }
+        }
+        names
     }
 }
 
@@ -312,5 +392,49 @@ mod tests {
         assert_eq!(result.len(), 1);
         let hit = result.into_iter().next().unwrap();
         assert_eq!(hit.relevance().score(), Some(5.0));
+    }
+
+    #[test]
+    fn filter_retains_only_matching_hits() {
+        let a = entity_hit("a", Some(1.0));
+        let b = entity_hit("b", Some(2.0));
+        let sel = selection_of(vec![a.clone(), b.clone()]);
+        // Filter keeps only hits from entity_hit with score > 1.0.
+        // We use a discriminator that works: only "b" has score 2.0.
+        let filtered = sel.filter(|h| h.relevance().score() == Some(2.0));
+        assert_eq!(filtered.len(), 1);
+    }
+
+    #[test]
+    fn filter_can_produce_empty_selection() {
+        let a = entity_hit("a", None);
+        let sel = selection_of(vec![a]);
+        let filtered = sel.filter(|_| false);
+        assert_eq!(filtered.len(), 0);
+    }
+
+    #[test]
+    fn paginate_respects_offset_and_limit() {
+        let a = entity_hit("a", Some(1.0));
+        let b = entity_hit("b", Some(2.0));
+        let c = entity_hit("c", Some(3.0));
+        let sel = selection_of(vec![a, b, c]);
+        let page = sel.paginate(1, 1);
+        assert_eq!(page.len(), 1);
+    }
+
+    #[test]
+    fn paginate_empty_selection_returns_empty() {
+        let sel = Selection::new();
+        let page = sel.paginate(0, 10);
+        assert!(page.is_empty());
+    }
+
+    #[test]
+    fn paginate_offset_past_end_returns_empty() {
+        let a = entity_hit("a", None);
+        let sel = selection_of(vec![a]);
+        let page = sel.paginate(10, 10);
+        assert!(page.is_empty());
     }
 }

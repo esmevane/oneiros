@@ -2,6 +2,10 @@ use crate::*;
 
 pub(crate) trait Reader {
     fn read(&self, read: &Read) -> Option<Result<Selection, ReaderError>>;
+
+    fn step(&self, _kind: &StepKind, _input: &Selection) -> Option<Result<Selection, ReaderError>> {
+        None
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

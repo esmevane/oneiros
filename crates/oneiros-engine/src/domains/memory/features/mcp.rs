@@ -83,9 +83,19 @@ mod memory_mcp {
             MemoryRequest::GetMemory(get) => {
                 MemoryService::get(scope, get).await.map_err(Error::from)?
             }
-            MemoryRequest::ListMemories(listing) => MemoryService::list(scope, listing)
-                .await
-                .map_err(Error::from)?,
+            MemoryRequest::ListMemories(listing) => {
+                let ListMemories::V1(details) = listing;
+                if let Some(source) = details.lens.as_deref() {
+                    MemoryLens::new(scope, context.canons())
+                        .list(source, &details.filters)
+                        .await
+                        .map_err(Error::from)?
+                } else {
+                    MemoryService::list(scope, listing)
+                        .await
+                        .map_err(Error::from)?
+                }
+            }
             MemoryRequest::AddMemory(_) => {
                 return Err(ToolError::NotAResource(
                     "Add is a tool, not a resource".to_string(),

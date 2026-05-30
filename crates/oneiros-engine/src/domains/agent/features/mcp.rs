@@ -143,9 +143,17 @@ mod agent_mcp {
                 }
             }
             AgentRequest::ListAgents(listing) => {
-                let response = AgentService::list(scope, listing)
-                    .await
-                    .map_err(Error::from)?;
+                let ListAgents::V1(details) = listing;
+                let response = if let Some(source) = details.lens.as_deref() {
+                    AgentLens::new(scope, context.canons())
+                        .list(source, &details.filters)
+                        .await
+                        .map_err(Error::from)?
+                } else {
+                    AgentService::list(scope, listing)
+                        .await
+                        .map_err(Error::from)?
+                };
                 Ok(AgentView::new(response).mcp())
             }
             AgentRequest::CreateAgent(_)

@@ -60,9 +60,18 @@ async fn create(
 }
 
 async fn list(
+    axum::extract::State(state): axum::extract::State<ServerState>,
     scope: Scope<AtBookmark>,
     Query(params): Query<ListExperiences>,
 ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+    let ListExperiences::V1(listing) = &params;
+    if let Some(source) = listing.lens.as_deref() {
+        return Ok(Json(
+            ExperienceLens::new(&scope, state.canons())
+                .list(source, &listing.filters)
+                .await?,
+        ));
+    }
     Ok(Json(ExperienceService::list(&scope, &params).await?))
 }
 
