@@ -113,16 +113,11 @@ impl Predicate {
             return Ok(());
         };
         for (arg_type, arg_lens) in spec.arg_types.iter().zip(&self.args) {
-            match (arg_type, arg_lens) {
-                (ArgType::SymbolOf(kind), Lens::Symbol(identifier)) => {
-                    if !names.knows(*kind, identifier) {
-                        return Err(LensValidationError::UnknownSymbol {
-                            kind: kind.describe(),
-                            name: identifier.clone(),
-                        });
-                    }
+            match arg_type {
+                ArgType::LensOfNames(kind) => {
+                    check_names_in_name_lens(*kind, arg_lens, names)?;
                 }
-                (_, nested) => nested.check_names(registry, names)?,
+                _ => arg_lens.check_names(registry, names)?,
             }
         }
         Ok(())
@@ -132,6 +127,32 @@ impl Predicate {
         let spec = registry.lookup(&self.name)?;
         let SpecResultType::Of(result_type) = spec.result_type;
         Some(result_type)
+    }
+}
+
+fn check_names_in_name_lens(
+    kind: NameKind,
+    lens: &Lens,
+    names: &dyn NameRegistry,
+) -> Result<(), LensValidationError> {
+    match lens {
+        Lens::Symbol(identifier) => {
+            if !names.knows(kind, identifier) {
+                Err(LensValidationError::UnknownSymbol {
+                    kind: kind.describe(),
+                    name: identifier.clone(),
+                })
+            } else {
+                Ok(())
+            }
+        }
+        Lens::Union(left, right)
+        | Lens::Intersection(left, right)
+        | Lens::Difference(left, right) => {
+            check_names_in_name_lens(kind, left, names)?;
+            check_names_in_name_lens(kind, right, names)
+        }
+        _ => Ok(()),
     }
 }
 
@@ -286,6 +307,10 @@ mod tests {
                 NameKind::Agent => self.agents.iter().any(|n| n == name.as_str()),
                 NameKind::Texture => self.textures.iter().any(|n| n == name.as_str()),
                 NameKind::Level => self.levels.iter().any(|n| n == name.as_str()),
+                NameKind::Kind => matches!(
+                    name.as_str(),
+                    "cognition" | "memory" | "experience" | "agent" | "connection" | "bookmark"
+                ),
             }
         }
     }
@@ -341,10 +366,10 @@ mod tests {
     }
 
     #[test]
-    fn check_names_ignores_untyped_symbol_positions() {
-        let lens = Lens::predicate("kind", [Lens::symbol("whatever_goes_here")]);
+    fn check_names_accepts_known_resource_kind() {
+        let lens = Lens::predicate("kind", [Lens::symbol("cognition")]);
         lens.check_names(&registry(), &TestNames::new())
-            .expect("valid — kind takes untyped Symbol, no name check");
+            .expect("valid — cognition is a known resource kind");
     }
 
     #[test]

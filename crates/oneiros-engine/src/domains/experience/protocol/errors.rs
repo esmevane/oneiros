@@ -35,6 +35,9 @@ pub(crate) enum ExperienceError {
 
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    Lens(#[from] crate::LensError),
 }
 
 resource_op_error!(ExperienceError);
@@ -53,6 +56,7 @@ impl IntoResponse for ExperienceError {
             ExperienceError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             ExperienceError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ExperienceError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            ExperienceError::Lens(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
         };
         (status, Json(ErrorResponse::new(message))).into_response()
     }

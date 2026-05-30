@@ -30,8 +30,11 @@ async fn explain(
 }
 
 async fn query(
+    axum::extract::State(state): axum::extract::State<ServerState>,
     scope: Scope<AtBookmark>,
     Json(body): Json<QueryLens>,
 ) -> Result<Json<LensResponse>, LensError> {
-    Ok(Json(LensService::query(&scope, &body).await?))
+    Ok(Json(
+        LensService::query(&scope, state.canons(), &body).await?,
+    ))
 }

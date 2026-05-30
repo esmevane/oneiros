@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::*;
 
 pub(crate) struct LensService;
@@ -20,21 +18,18 @@ impl LensService {
     }
 
     /// Parses, validates, name-resolves, and explains a lens source string.
-    ///
-    /// Loads canonical names from the project's vocabulary repos (agents,
-    /// textures, levels, sensations, personas, natures) and uses them to
-    /// catch typo-shaped errors that pure structural validation would miss
-    /// — `agent(governorr.process)` rejects even though the grammar is fine.
     pub(crate) async fn explain(
         scope: &Scope<AtBookmark>,
         request: &ExplainLens,
     ) -> Result<LensResponse, LensError> {
         let ExplainLens::V1(req) = request;
-        let lens = Lens::parse(&req.source)?;
+        let parsed = Lens::parse(&req.source)?;
+        let resolver = AliasResolver::new(&scope.config().lens.aliases)?;
+        let lens = resolver.expand(parsed)?;
         let registry = Registry::seed_default();
         lens.validate(&registry)?;
 
-        let names = ProjectNameRegistry::fetch(scope).await?;
+        let names = NameResolver::fetch(scope).await?;
         lens.check_names(&registry, &names)?;
 
         let compiler = Compiler::new(registry);
@@ -50,24 +45,40 @@ impl LensService {
                 .into(),
         ))
     }
+
+    /// Executes a lens query end-to-end: parse, alias-expand, validate,
+    /// name-resolve, compile, execute via readers, and return hits.
     pub(crate) async fn query(
         scope: &Scope<AtBookmark>,
+        canons: &CanonIndex,
         request: &QueryLens,
     ) -> Result<LensResponse, LensError> {
         let QueryLens::V1(req) = request;
-        let lens = Lens::parse(&req.source)?;
+        let parsed = Lens::parse(&req.source)?;
+        let resolver = AliasResolver::new(&scope.config().lens.aliases)?;
+        let lens = resolver.expand(parsed)?;
         let registry = Registry::seed_default();
         lens.validate(&registry)?;
 
-        let names = ProjectNameRegistry::fetch(scope).await?;
+        let names = NameResolver::fetch(scope).await?;
         lens.check_names(&registry, &names)?;
 
         let compiler = Compiler::new(registry);
         let ir = compiler.compile(&lens)?;
 
         let db = BookmarkDb::open(scope).await?;
+        let host_db = HostDb::open(scope).await?;
         let search_reader = SearchIndexReader::new(&db);
-        let readers: Vec<&dyn Reader> = vec![&search_reader];
+        let trail_reader = TrailLensReader::new(&db);
+        let connection_reader = ConnectionLensReader::new(&db);
+        let chronicle_reader =
+            ChronicleLensReader::new(&host_db, canons, scope.project().name.clone());
+        let readers: Vec<&dyn Reader> = vec![
+            &search_reader,
+            &trail_reader,
+            &connection_reader,
+            &chronicle_reader,
+        ];
         let executor = Executor::new(&readers);
         let selection = executor.run(&ir)?;
 
@@ -83,48 +94,29 @@ impl LensService {
                 .into(),
         ))
     }
-}
 
-/// Project-backed [`NameRegistry`] — fetches the full set of registered
-/// names from each vocabulary table at construction time and answers
-/// resolution queries synchronously against the resulting in-memory sets.
-///
-/// One round-trip per kind, six total. The vocabulary domains are small
-/// (typically <20 entries each) and the snapshot is per-explain-call, so
-/// the fetch cost is negligible and the registry stays consistent for the
-/// duration of a single resolution pass.
-pub(crate) struct ProjectNameRegistry {
-    agents: HashSet<String>,
-    textures: HashSet<String>,
-    levels: HashSet<String>,
-}
-
-impl ProjectNameRegistry {
-    pub(crate) async fn fetch(scope: &Scope<AtBookmark>) -> Result<Self, EventError> {
-        let db = BookmarkDb::open(scope).await?;
-        Ok(Self {
-            agents: Self::names_from(&db, "agents")?,
-            textures: Self::names_from(&db, "textures")?,
-            levels: Self::names_from(&db, "levels")?,
-        })
-    }
-
-    fn names_from(db: &BookmarkDb, table: &str) -> Result<HashSet<String>, rusqlite::Error> {
-        let sql = format!("select name from {table}");
-        let mut stmt = db.prepare(&sql)?;
-        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
-        rows.collect()
-    }
-}
-
-impl NameRegistry for ProjectNameRegistry {
-    fn knows(&self, kind: NameKind, name: &Identifier) -> bool {
-        let bucket = match kind {
-            NameKind::Agent => &self.agents,
-            NameKind::Texture => &self.textures,
-            NameKind::Level => &self.levels,
+    /// Runs the lens query pipeline and returns the raw [`Selection`]
+    /// without hydrating into domain objects. Callers apply their own
+    /// pagination, filtering, and repo dispatch from here.
+    pub(crate) async fn select(
+        scope: &Scope<AtBookmark>,
+        canons: &CanonIndex,
+        source: &str,
+    ) -> Result<Selection, LensError> {
+        let request = QueryLens::builder_v1()
+            .source(source.to_string())
+            .build()
+            .into();
+        let LensResponse::Queried(QueriedLensResponse::V1(queried)) =
+            Self::query(scope, canons, &request).await?
+        else {
+            return Ok(Selection::new());
         };
-        bucket.contains(name.as_str())
+        let mut selection = Selection::new();
+        for hit in &queried.hits {
+            selection.insert(hit.clone());
+        }
+        Ok(selection)
     }
 }
 

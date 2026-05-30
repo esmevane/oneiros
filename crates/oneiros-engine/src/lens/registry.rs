@@ -1,19 +1,28 @@
 use std::collections::HashMap;
 
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ArgType {
-    Symbol,
-    SymbolOf(NameKind),
     String,
+    Ref,
+    Integer,
+    Lens,
+    /// A lens producing a set of names of the given kind. Bare symbols
+    /// in this position compile to singleton name-lenses with this kind.
+    LensOfNames(NameKind),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) enum NameKind {
     Agent,
     Texture,
     Level,
+    Kind,
 }
 
 impl NameKind {
@@ -22,6 +31,7 @@ impl NameKind {
             NameKind::Agent => "agent",
             NameKind::Texture => "texture",
             NameKind::Level => "level",
+            NameKind::Kind => "kind",
         }
     }
 }
@@ -33,12 +43,14 @@ pub(crate) trait NameRegistry {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ResultType {
     Entities,
+    Events,
 }
 
 impl ResultType {
     pub(crate) fn describe(self) -> &'static str {
         match self {
             ResultType::Entities => "entities",
+            ResultType::Events => "events",
         }
     }
 }
@@ -51,15 +63,8 @@ pub(crate) enum SpecResultType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ExecutorHint {
     SearchIndexText,
-    SearchIndexFacet(SearchFacet),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SearchFacet {
-    Kind,
-    Agent,
-    Texture,
-    Level,
+    GraphStep(StepKind),
+    ChronicleBetween,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,31 +112,32 @@ impl Registry {
 
     pub(crate) fn seed_default() -> Self {
         let entities = SpecResultType::Of(ResultType::Entities);
+        let events = SpecResultType::Of(ResultType::Events);
 
         Self::new()
             .with(PredicateSpec::new(
                 "agent",
-                [ArgType::SymbolOf(NameKind::Agent)],
+                [ArgType::LensOfNames(NameKind::Agent)],
                 entities,
-                ExecutorHint::SearchIndexFacet(SearchFacet::Agent),
+                ExecutorHint::GraphStep(StepKind::SearchByAgent),
             ))
             .with(PredicateSpec::new(
                 "texture",
-                [ArgType::SymbolOf(NameKind::Texture)],
+                [ArgType::LensOfNames(NameKind::Texture)],
                 entities,
-                ExecutorHint::SearchIndexFacet(SearchFacet::Texture),
+                ExecutorHint::GraphStep(StepKind::SearchByTexture),
             ))
             .with(PredicateSpec::new(
                 "level",
-                [ArgType::SymbolOf(NameKind::Level)],
+                [ArgType::LensOfNames(NameKind::Level)],
                 entities,
-                ExecutorHint::SearchIndexFacet(SearchFacet::Level),
+                ExecutorHint::GraphStep(StepKind::SearchByLevel),
             ))
             .with(PredicateSpec::new(
                 "kind",
-                [ArgType::Symbol],
+                [ArgType::LensOfNames(NameKind::Kind)],
                 entities,
-                ExecutorHint::SearchIndexFacet(SearchFacet::Kind),
+                ExecutorHint::GraphStep(StepKind::SearchByKind),
             ))
             .with(PredicateSpec::new(
                 "search",
@@ -139,26 +145,104 @@ impl Registry {
                 entities,
                 ExecutorHint::SearchIndexText,
             ))
+            .with(PredicateSpec::new(
+                "events_for",
+                [ArgType::Lens],
+                events,
+                ExecutorHint::GraphStep(StepKind::EventsFor),
+            ))
+            .with(PredicateSpec::new(
+                "refs_from",
+                [ArgType::Lens],
+                entities,
+                ExecutorHint::GraphStep(StepKind::RefsFrom),
+            ))
+            .with(PredicateSpec::new(
+                "from",
+                [ArgType::Lens],
+                entities,
+                ExecutorHint::GraphStep(StepKind::ConnectedFrom),
+            ))
+            .with(PredicateSpec::new(
+                "to",
+                [ArgType::Lens],
+                entities,
+                ExecutorHint::GraphStep(StepKind::ConnectedTo),
+            ))
+            .with(PredicateSpec::new(
+                "descendants",
+                [ArgType::Lens],
+                entities,
+                ExecutorHint::GraphStep(StepKind::Descendants),
+            ))
+            .with(PredicateSpec::new(
+                "ancestors",
+                [ArgType::Lens],
+                entities,
+                ExecutorHint::GraphStep(StepKind::Ancestors),
+            ))
+            .with(PredicateSpec::new(
+                "within",
+                [ArgType::Lens, ArgType::Integer],
+                entities,
+                ExecutorHint::GraphStep(StepKind::Within(0)),
+            ))
+            .with(PredicateSpec::new(
+                "component",
+                [ArgType::Lens],
+                entities,
+                ExecutorHint::GraphStep(StepKind::Component),
+            ))
+            .with(PredicateSpec::new(
+                "between",
+                [ArgType::Ref, ArgType::Ref],
+                events,
+                ExecutorHint::ChronicleBetween,
+            ))
     }
 }
 
 impl ArgType {
     pub(crate) fn matches(&self, lens: &Lens) -> bool {
-        matches!(
-            (self, lens),
-            (Self::Symbol, Lens::Symbol(_))
-                | (Self::SymbolOf(_), Lens::Symbol(_))
-                | (Self::String, Lens::String(_))
-        )
+        match (self, lens) {
+            (Self::String, Lens::String(_)) => true,
+            (Self::Ref, Lens::Ref(_)) => true,
+            (Self::Integer, Lens::Integer(_)) => true,
+            (Self::Lens, lens) => matches!(
+                lens,
+                Lens::Predicate(_)
+                    | Lens::Union(_, _)
+                    | Lens::Intersection(_, _)
+                    | Lens::Difference(_, _)
+                    | Lens::Ref(_)
+            ),
+            (Self::LensOfNames(_), lens) => Self::lens_of_names_matches(lens),
+            _ => false,
+        }
+    }
+
+    fn lens_of_names_matches(lens: &Lens) -> bool {
+        match lens {
+            Lens::Symbol(_) => true,
+            Lens::Union(left, right)
+            | Lens::Intersection(left, right)
+            | Lens::Difference(left, right) => {
+                Self::lens_of_names_matches(left) && Self::lens_of_names_matches(right)
+            }
+            _ => false,
+        }
     }
 
     pub(crate) fn describe(&self) -> &'static str {
         match self {
-            Self::Symbol => "symbol",
-            Self::SymbolOf(NameKind::Agent) => "agent symbol",
-            Self::SymbolOf(NameKind::Texture) => "texture symbol",
-            Self::SymbolOf(NameKind::Level) => "level symbol",
             Self::String => "string",
+            Self::Ref => "ref",
+            Self::Integer => "integer",
+            Self::Lens => "lens expression",
+            Self::LensOfNames(NameKind::Agent) => "lens of agent names",
+            Self::LensOfNames(NameKind::Texture) => "lens of texture names",
+            Self::LensOfNames(NameKind::Level) => "lens of level names",
+            Self::LensOfNames(NameKind::Kind) => "lens of resource kinds",
         }
     }
 }

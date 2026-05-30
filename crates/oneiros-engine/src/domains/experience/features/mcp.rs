@@ -86,9 +86,19 @@ mod experience_mcp {
             ExperienceRequest::GetExperience(get) => ExperienceService::get(scope, get)
                 .await
                 .map_err(Error::from)?,
-            ExperienceRequest::ListExperiences(listing) => ExperienceService::list(scope, listing)
-                .await
-                .map_err(Error::from)?,
+            ExperienceRequest::ListExperiences(listing) => {
+                let ListExperiences::V1(details) = listing;
+                if let Some(source) = details.lens.as_deref() {
+                    ExperienceLens::new(scope, context.canons())
+                        .list(source, &details.filters)
+                        .await
+                        .map_err(Error::from)?
+                } else {
+                    ExperienceService::list(scope, listing)
+                        .await
+                        .map_err(Error::from)?
+                }
+            }
             ExperienceRequest::CreateExperience(_)
             | ExperienceRequest::UpdateExperienceDescription(_)
             | ExperienceRequest::UpdateExperienceSensation(_) => {

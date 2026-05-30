@@ -100,7 +100,7 @@ impl ServerState {
     /// `ProjectLog` extractor for legacy CLI/MCP dispatchers.
     #[expect(deprecated)]
     pub(crate) fn project_log(&self, config: Config) -> ProjectLog {
-        ProjectLog::new(config)
+        ProjectLog::new(config, self.canons.clone())
     }
 
     /// Construct a ticket verifier backed by this server's config,

@@ -1,3 +1,4 @@
+mod aliases;
 mod ast;
 mod compile;
 mod display;
@@ -5,18 +6,21 @@ mod errors;
 mod execute;
 mod explain;
 mod ir;
+mod name_resolver;
 mod parser;
 mod reader;
 mod registry;
 mod selection;
 mod validator;
 
+pub(crate) use aliases::*;
 pub(crate) use ast::*;
 pub(crate) use compile::*;
 pub(crate) use errors::*;
 pub(crate) use execute::*;
 pub(crate) use explain::*;
 pub(crate) use ir::*;
+pub(crate) use name_resolver::*;
 pub(crate) use reader::*;
 pub(crate) use registry::*;
 pub(crate) use selection::*;

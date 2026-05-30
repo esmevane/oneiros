@@ -1,7 +1,7 @@
 use aide::axum::{ApiRouter, routing};
 use axum::{
     Json,
-    extract::{Path, Query},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 
@@ -51,9 +51,20 @@ async fn create(
 }
 
 async fn list(
+    State(state): State<ServerState>,
     scope: Scope<AtBookmark>,
     Query(params): Query<ListAgents>,
 ) -> Result<Json<AgentResponse>, AgentError> {
+    let ListAgents::V1(listing) = &params;
+
+    if let Some(source) = listing.lens.as_deref() {
+        return Ok(Json(
+            AgentLens::new(&scope, state.canons())
+                .list(source, &listing.filters)
+                .await?,
+        ));
+    }
+
     Ok(Json(AgentService::list(&scope, &params).await?))
 }
 
