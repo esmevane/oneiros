@@ -84,6 +84,6 @@ async fn bookmark(
     Json(body): Json<BookmarkSlice>,
 ) -> Result<Json<SliceResponse>, SliceError> {
     Ok(Json(
-        SliceService::bookmark(&state, &scope, &body).await?,
+        SliceService::bookmark(&state, &scope, state.canons(), &body).await?,
     ))
 }

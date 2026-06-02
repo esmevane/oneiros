@@ -205,16 +205,10 @@ async fn slice_diff_reveals_missing_events() -> Result<(), Box<dyn core::error::
 
 // ── Bookmark bridge ──────────────────────────────────────────────
 
-/// Bookmarking a slice creates a new bookmark whose chronicle and
-/// projection DB reflect exactly the slice's materialized events.
-/// The bookmark is the transportable artifact; the slice is the
-/// standing query.
-///
-/// NOTE: Filtered bookmark creation (scoped replay) is deferred.
-/// For now the bookmark is a standard fork. The content filtering
-/// assertion will land when scoped bookmark creation is built.
+/// Bookmarking a slice creates a scoped bookmark whose projection DB
+/// contains only the slice's matching events. The bookmark appears in
+/// the bookmark list, and switching to it shows only the filtered view.
 #[tokio::test]
-#[ignore = "needs: scoped bookmark creation (filtered event replay)"]
 async fn slice_bookmark_snapshots_into_bookmark() -> Result<(), Box<dyn core::error::Error>> {
     let app = seeded_app().await?;
 
@@ -232,8 +226,32 @@ async fn slice_bookmark_snapshots_into_bookmark() -> Result<(), Box<dyn core::er
         "bookmarked slice should appear in bookmark list"
     );
 
-    // NOTE: Once scoped bookmark creation lands, switch to the
-    // new bookmark and assert it contains only gov.process content.
+    // Switch to the snapshot and verify it contains only gov.process content
+    app.command("bookmark switch gov-snapshot").await?;
+
+    let client = app.client();
+    let cognitions = client
+        .cognition()
+        .list(&ListCognitions::builder_v1().build().into())
+        .await?;
+    let items = match cognitions {
+        CognitionResponse::Cognitions(CognitionsResponse::V1(r)) => r.items,
+        other => panic!("expected Cognitions, got {other:?}"),
+    };
+
+    assert_eq!(
+        items.len(),
+        2,
+        "scoped bookmark should have only 2 cognitions from gov.process"
+    );
+    for cog in &items {
+        assert!(
+            cog.content.as_str().contains("Architecture")
+                || cog.content.as_str().contains("Design"),
+            "only gov.process cognitions should be present, got: {}",
+            cog.content.as_str()
+        );
+    }
 
     Ok(())
 }
@@ -256,6 +274,7 @@ async fn slice_refine_rebase_diff_iterate_workflow() -> Result<(), Box<dyn core:
 
     // Step 2: Bookmark it for sharing (pretend we push to dreamforge)
     app.command("slice bookmark v1 --as v1-snapshot").await?;
+    app.command("bookmark switch main").await?;
 
     // Step 3: Realize we need a narrower view — only reflections
     app.command(r#"slice create v2 "agent(gov.process) & texture(reflection)""#)
@@ -280,6 +299,7 @@ async fn slice_refine_rebase_diff_iterate_workflow() -> Result<(), Box<dyn core:
 
     // Step 6: Rebase: move the bookmark from v1 to v3
     app.command("slice bookmark v3 --as v1-snapshot").await?;
+    app.command("bookmark switch main").await?;
 
     // Step 7: Verify the updated snapshot reflects the v3 lens
     // (In a real workflow, we'd push again after rebasing)

@@ -126,28 +126,32 @@ impl SliceService {
         ))
     }
 
-    /// Bookmarks a slice by creating a new bookmark from the slice's
-    /// materialized events. Currently creates a standard fork (full
-    /// replay) — scoped replay filtering is deferred.
+    /// Bookmarks a slice by creating a scoped bookmark with only the
+    /// slice's matching events replayed into the new bookmark.
     pub(crate) async fn bookmark(
         state: &ServerState,
         scope: &Scope<AtBookmark>,
+        canons: &CanonIndex,
         request: &BookmarkSlice,
     ) -> Result<SliceResponse, SliceError> {
         let BookmarkSlice::V1(req) = request;
-
-        let create = CreateBookmark::builder_v1()
-            .name(req.as_bookmark.clone())
-            .build()
-            .into();
-        BookmarkService::create(state, &scope.project().name, &create)
-            .await
-            .map_err(|e| SliceError::Bookmark(e))?;
 
         let slice = SliceRepo::new(scope)
             .get(&req.slice_name)
             .await?
             .ok_or(SliceError::NotFound(req.slice_name.clone()))?;
+
+        let event_ids = Self::event_ids(scope, canons, &slice.lens_expr).await?;
+        let event_ids_vec: Vec<EventId> = event_ids.into_iter().collect();
+
+        let create = CreateBookmark::builder_v1()
+            .name(req.as_bookmark.clone())
+            .event_ids(event_ids_vec)
+            .build()
+            .into();
+        BookmarkService::create(state, &scope.project().name, &create)
+            .await
+            .map_err(|e| SliceError::Bookmark(e))?;
 
         Ok(SliceResponse::Created(
             SliceCreatedResponse::builder_v1()

@@ -63,7 +63,6 @@ impl SliceView {
                     String::new(),
                 )
             }
-            other => Rendered::new(other, "slice".to_string(), String::new()),
         }
     }
 }

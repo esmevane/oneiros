@@ -14,7 +14,8 @@ impl BookmarkService {
         state.canons().fork_project(project, name)?;
 
         // Create the new bookmark's DB and replay the source events into it.
-        Self::create_bookmark_db(state.config(), project, name)?;
+        // If event_ids is non-empty, only those events are replayed (scoped fork).
+        Self::create_bookmark_db(state.config(), project, name, &creation.event_ids)?;
 
         let bookmark = Bookmark::builder()
             .project(project.clone())
@@ -269,7 +270,7 @@ impl BookmarkService {
         state.canons().fork_project(project, name)?;
 
         // Create the new bookmark's DB (empty — collect will populate it).
-        Self::create_bookmark_db(state.config(), project, name)?;
+        Self::create_bookmark_db(state.config(), project, name, &[])?;
 
         let follow =
             FollowService::create(&scope, mailbox, project.clone(), name.clone(), source).await?;
@@ -498,10 +499,13 @@ impl BookmarkService {
     ///
     /// Migrates the schema, then replays the event log through
     /// projections so the new bookmark starts with the source's state.
+    /// When `event_ids` is non-empty, only matching events are replayed
+    /// (scoped fork — used by slice bookmarking).
     fn create_bookmark_db(
         config: &Config,
         project: &ProjectName,
         bookmark: &BookmarkName,
+        event_ids: &[EventId],
     ) -> Result<(), BookmarkError> {
         let mut project_config = config.clone();
         project_config.project = project.clone();
@@ -518,7 +522,21 @@ impl BookmarkService {
         let projections = Projections::<ProjectCanon>::project();
         projections.migrate(&db)?;
         let log = EventLog::attached(&db);
-        projections.replay_project(&db, &log)?;
+
+        if event_ids.is_empty() {
+            // Full replay: all events from the attached log.
+            projections.replay_project(&db, &log)?;
+        } else {
+            // Scoped replay: only events whose IDs are in the filter set.
+            let filter: std::collections::HashSet<EventId> =
+                event_ids.iter().copied().collect();
+            let all_events = log.load_all()?;
+            for event in &all_events {
+                if filter.contains(&event.id) {
+                    projections.apply_project(&db, event)?;
+                }
+            }
+        }
 
         Ok(())
     }
