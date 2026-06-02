@@ -15,8 +15,10 @@
 //! returns a handle.
 
 use anstream::{stderr, stdout};
+use axum::body::Body;
 use clap::Parser;
-use std::{io::Write, path::Path, process::ExitCode};
+use http::Request;
+use std::{io::Write, process::ExitCode};
 use tempfile::TempDir;
 
 use crate::*;
@@ -125,17 +127,13 @@ impl Engine {
     }
 }
 
-/// Generate the OpenAPI schema for this engine version and write it to
-/// `output_path` as JSON.
+/// Return the canonical OpenAPI spec JSON for this engine version.
 ///
-/// Creates a throwaway [`ServerState`] with a temp directory, builds the
-/// full router (which populates the API spec via `finish_api_with`), then
-/// extracts the compiled OpenAPI document. Used at build time by xtask to
-/// feed `@hey-api/openapi-ts` for TypeScript client generation.
-///
-/// The temp directory is automatically cleaned up when this function
-/// returns (the `TempDir` is dropped).
-pub fn write_openapi_schema(output_path: impl AsRef<Path>) -> Result<(), Box<dyn core::error::Error>> {
+/// Constructs a throwaway router from a temp-directory config, extracts the
+/// compiled OpenAPI document (populated during router assembly), and returns
+/// the pretty-printed JSON bytes. Used at build time by xtask to feed
+/// `@hey-api/openapi-ts` for TypeScript client generation.
+pub fn api_spec_json() -> Result<Vec<u8>, Box<dyn core::error::Error>> {
     let temp_dir = TempDir::new()?;
     let config = Config::builder()
         .data_dir(temp_dir.path().to_path_buf())
@@ -150,13 +148,9 @@ pub fn write_openapi_schema(output_path: impl AsRef<Path>) -> Result<(), Box<dyn
     let rt = tokio::runtime::Runtime::new()?;
     let api = rt.block_on(async {
         let state = ServerState::bind(config).await?;
-        // Building the router populates state.api() via finish_api_with
         let _router = Server::router_from_state(state.clone());
         Ok::<_, Box<dyn core::error::Error>>(state.api().cloned().unwrap_or_default())
     })?;
 
-    let json = serde_json::to_string_pretty(&api)?;
-    Platform::default().write(&output_path, &json)?;
-
-    Ok(())
+    Ok(serde_json::to_vec_pretty(&api)?)
 }

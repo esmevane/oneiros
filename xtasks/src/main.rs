@@ -47,7 +47,8 @@ fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
         std::fs::create_dir_all(parent)?;
     }
 
-    oneiros_engine::write_openapi_schema(&output_path)?;
+    let json = oneiros_engine::api_spec_json()?;
+    std::fs::write(&output_path, &json)?;
 
     println!("OpenAPI schema written to {}", output_path.display());
 
