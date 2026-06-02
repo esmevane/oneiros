@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
 
 use clap::{Parser, Subcommand};
-use oneiros_engine::SkillPackage;
+use oneiros_engine::{self, SkillPackage};
 
 #[derive(Debug, Parser)]
 #[command(name = "xtask")]
@@ -16,7 +16,12 @@ enum Command {
     /// Build the Claude Code plugin — emit skill assets to dist/ and
     /// marketplace manifest to .claude-plugin/.
     PluginBuild,
-    /// Build the dashboard SPA — runs `pnpm --filter @oneiros/dashboard build`.
+    /// Generate the OpenAPI schema from the engine's routes and write it to
+    /// `packages/oneiros-client/schema.json`. Must be run before
+    /// `DashboardBuild` if the API surface has changed.
+    GenerateSchema,
+    /// Build the dashboard SPA — runs `pnpm --filter @oneiros/dashboard build`
+    /// after ensuring the API client schema is up to date.
     /// Output lands in `apps/dashboard/dist/`, ready to be embedded by the
     /// oneiros-engine build.
     DashboardBuild,
@@ -27,8 +32,24 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     match cli.command {
         Command::PluginBuild => plugin_build()?,
+        Command::GenerateSchema => generate_schema()?,
         Command::DashboardBuild => dashboard_build()?,
     }
+
+    Ok(())
+}
+
+fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
+    let workspace_root = workspace_root()?;
+    let output_path = workspace_root.join("packages/oneiros-client/schema.json");
+
+    if let Some(parent) = output_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    oneiros_engine::write_openapi_schema(&output_path)?;
+
+    println!("OpenAPI schema written to {}", output_path.display());
 
     Ok(())
 }
@@ -73,7 +94,21 @@ fn plugin_build() -> Result<(), Box<dyn core::error::Error>> {
 }
 
 fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
+    // Regenerate the OpenAPI schema and TypeScript client before building
+    // the dashboard, so type-checking catches any API mismatches.
+    generate_schema()?;
+
     let workspace_root = workspace_root()?;
+
+    // Regenerate the TypeScript client from the schema
+    let client_gen = ProcessCommand::new("pnpm")
+        .args(["--filter", "@oneiros/client", "run", "types"])
+        .current_dir(&workspace_root)
+        .status()?;
+
+    if !client_gen.success() {
+        return Err(format!("pnpm client types generation failed with status {client_gen}").into());
+    }
 
     let status = ProcessCommand::new("pnpm")
         .args(["--filter", "@oneiros/dashboard", "run", "build"])

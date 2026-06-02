@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^5.0.5",
+    "@oneiros/client": "workspace:*",
     "@oneiros/components": "workspace:*",
     "@oneiros/loom": "workspace:*",
     "@oneiros/loom-react": "workspace:*",
