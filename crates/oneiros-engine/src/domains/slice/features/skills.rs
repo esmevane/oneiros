@@ -9,7 +9,6 @@ impl SliceSkills {
             Skill::new("slice-list", include_str!("skills/list.md")),
             Skill::new("slice-delete", include_str!("skills/delete.md")),
             Skill::new("slice-diff", include_str!("skills/diff.md")),
-            Skill::new("slice-bookmark", include_str!("skills/bookmark.md")),
         ]
     }
 }

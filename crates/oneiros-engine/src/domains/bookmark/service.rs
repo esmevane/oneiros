@@ -11,11 +11,33 @@ impl BookmarkService {
         let CreateBookmark::V1(creation) = request;
         let name = &creation.name;
         let from = state.canons().active_bookmark(project)?;
+
+        let mut event_ids = creation.event_ids.clone();
+
+        if let Some(slice_name) = &creation.from_slice {
+            let scope = ComposeScope::new(state.config().clone())
+                .bookmark(project.clone(), from.clone())?;
+            let db = BookmarkDb::open(&scope).await?;
+            let lens_expr: String = db.query_row(
+                "SELECT lens_expr FROM slices WHERE name = ?1",
+                rusqlite::params![slice_name.to_string()],
+                |row| row.get(0),
+            )?;
+            let selection = LensService::select(
+                &scope,
+                state.canons(),
+                &format!("events_for({lens_expr})"),
+            )
+            .await
+            .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
+            event_ids = selection.event_ids();
+        }
+
         state.canons().fork_project(project, name)?;
 
         // Create the new bookmark's DB and replay the source events into it.
         // If event_ids is non-empty, only those events are replayed (scoped fork).
-        Self::create_bookmark_db(state.config(), project, name, &creation.event_ids)?;
+        Self::create_bookmark_db(state.config(), project, name, &event_ids)?;
 
         let bookmark = Bookmark::builder()
             .project(project.clone())

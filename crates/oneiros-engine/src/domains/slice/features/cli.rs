@@ -9,7 +9,6 @@ pub(crate) enum SliceCommands {
     List(ListSlices),
     Delete(DeleteSlice),
     Diff(DiffSlice),
-    Bookmark(BookmarkSlice),
 }
 
 impl SliceCommands {
@@ -24,7 +23,6 @@ impl SliceCommands {
             Self::List(list) => list.execute_request(&client).await?,
             Self::Delete(delete) => delete.execute_request(&client).await?,
             Self::Diff(diff) => diff.execute_request(&client).await?,
-            Self::Bookmark(bookmark) => bookmark.execute_request(&client).await?,
         };
 
         let response: SliceResponse = serde_json::from_slice(&bytes)?;

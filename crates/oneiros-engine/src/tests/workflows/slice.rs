@@ -214,7 +214,7 @@ async fn slice_bookmark_snapshots_into_bookmark() -> Result<(), Box<dyn core::er
 
     app.command(r#"slice create gov "agent(gov.process)""#)
         .await?;
-    app.command("slice bookmark gov --as gov-snapshot").await?;
+    app.command("bookmark create gov-snapshot --from-slice gov").await?;
 
     let rendered = app.command("bookmark list").await?;
     let Responses::Bookmark(BookmarkResponse::Bookmarks(listed)) = rendered.response() else {
@@ -273,7 +273,7 @@ async fn slice_refine_rebase_diff_iterate_workflow() -> Result<(), Box<dyn core:
         .await?;
 
     // Step 2: Bookmark it for sharing (pretend we push to dreamforge)
-    app.command("slice bookmark v1 --as v1-snapshot").await?;
+    app.command("bookmark create v1-snapshot --from-slice v1").await?;
     app.command("bookmark switch main").await?;
 
     // Step 3: Realize we need a narrower view — only reflections
@@ -298,7 +298,7 @@ async fn slice_refine_rebase_diff_iterate_workflow() -> Result<(), Box<dyn core:
         .await?;
 
     // Step 6: Rebase: move the bookmark from v1 to v3
-    app.command("slice bookmark v3 --as v1-snapshot").await?;
+    app.command("bookmark create v1-snapshot --from-slice v3").await?;
     app.command("bookmark switch main").await?;
 
     // Step 7: Verify the updated snapshot reflects the v3 lens

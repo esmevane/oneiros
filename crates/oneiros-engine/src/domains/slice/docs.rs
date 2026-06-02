@@ -5,7 +5,6 @@ pub(crate) enum SliceDocs {
     List,
     Delete,
     Diff,
-    Bookmark,
 }
 
 impl SliceDocs {
@@ -45,12 +44,6 @@ impl SliceDocs {
                 .nickname("diff-slices")
                 .summary("Diff two slices")
                 .description("Compare two slices and return the event counts unique to each and shared between them.")
-                .build(),
-            Self::Bookmark => ResourceDocs::builder()
-                .tag(tag)
-                .nickname("bookmark-slice")
-                .summary("Bookmark a slice")
-                .description("Create a bookmark from a slice for transport and sharing.")
                 .build(),
         }
     }

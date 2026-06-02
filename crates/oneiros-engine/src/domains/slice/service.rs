@@ -126,41 +126,6 @@ impl SliceService {
         ))
     }
 
-    /// Bookmarks a slice by creating a scoped bookmark with only the
-    /// slice's matching events replayed into the new bookmark.
-    pub(crate) async fn bookmark(
-        state: &ServerState,
-        scope: &Scope<AtBookmark>,
-        canons: &CanonIndex,
-        request: &BookmarkSlice,
-    ) -> Result<SliceResponse, SliceError> {
-        let BookmarkSlice::V1(req) = request;
-
-        let slice = SliceRepo::new(scope)
-            .get(&req.slice_name)
-            .await?
-            .ok_or(SliceError::NotFound(req.slice_name.clone()))?;
-
-        let event_ids = Self::event_ids(scope, canons, &slice.lens_expr).await?;
-        let event_ids_vec: Vec<EventId> = event_ids.into_iter().collect();
-
-        let create = CreateBookmark::builder_v1()
-            .name(req.as_bookmark.clone())
-            .event_ids(event_ids_vec)
-            .build()
-            .into();
-        BookmarkService::create(state, &scope.project().name, &create)
-            .await
-            .map_err(|e| SliceError::Bookmark(e))?;
-
-        Ok(SliceResponse::Created(
-            SliceCreatedResponse::builder_v1()
-                .slice(slice)
-                .build()
-                .into(),
-        ))
-    }
-
     /// Evaluates a lens expression and returns the set of matching event IDs.
     async fn event_ids(
         scope: &Scope<AtBookmark>,
