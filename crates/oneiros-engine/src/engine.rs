@@ -17,9 +17,9 @@
 use anstream::{stderr, stdout};
 use axum::body::Body;
 use clap::Parser;
-use http::Request;
 use std::{io::Write, process::ExitCode};
 use tempfile::TempDir;
+use tower::ServiceExt;
 
 use crate::*;
 
@@ -116,6 +116,48 @@ impl Engine {
         Self { config }
     }
 
+    /// From explicit config — tests and programmatic consumers.
+    pub fn schema_mode() -> Result<Self, Box<dyn core::error::Error>> {
+        let temp_dir = TempDir::new()?;
+        let name = ProjectName::new("schema-gen");
+
+        Ok(Self {
+            config: Config::builder()
+                .data_dir(temp_dir.path().to_path_buf())
+                .project(name)
+                .service(ServiceConfig::dynamic())
+                .build(),
+        })
+    }
+
+    pub async fn api_schema(
+        &self,
+    ) -> Result<axum::http::Response<Body>, Box<dyn core::error::Error>> {
+        self.oneshot(
+            axum::http::Request::builder()
+                .method("GET")
+                .uri("/api.json")
+                .body(Body::empty())?,
+        )
+        .await
+    }
+
+    /// Make a one-shot request against the engine's router without starting
+    /// a server.
+    ///
+    /// Binds a [`ServerState`] from the engine's config, builds the full
+    /// router, and processes the request. The router includes middleware
+    /// (auth, tracing), but paths listed in `EXCLUDED_PATHS` (including
+    /// `/api.json`) skip authentication.
+    pub async fn oneshot(
+        &self,
+        request: axum::http::Request<Body>,
+    ) -> Result<axum::http::Response<Body>, Box<dyn core::error::Error>> {
+        let state = ServerState::bind(self.config.clone()).await?;
+        let router = Server::router_from_state(state);
+        Ok(router.oneshot(request).await?)
+    }
+
     /// Execute a parsed CLI command against this engine's config.
     pub(crate) async fn execute(&self, cli: &Cli) -> Result<Rendered<Responses>, Error> {
         cli.execute(&self.config).await
@@ -125,32 +167,4 @@ impl Engine {
     pub(crate) fn config(&self) -> &Config {
         &self.config
     }
-}
-
-/// Return the canonical OpenAPI spec JSON for this engine version.
-///
-/// Constructs a throwaway router from a temp-directory config, extracts the
-/// compiled OpenAPI document (populated during router assembly), and returns
-/// the pretty-printed JSON bytes. Used at build time by xtask to feed
-/// `@hey-api/openapi-ts` for TypeScript client generation.
-pub fn api_spec_json() -> Result<Vec<u8>, Box<dyn core::error::Error>> {
-    let temp_dir = TempDir::new()?;
-    let config = Config::builder()
-        .data_dir(temp_dir.path().to_path_buf())
-        .project(ProjectName::new("schema-gen"))
-        .service(
-            ServiceConfig::builder()
-                .address("127.0.0.1:0".parse()?)
-                .build(),
-        )
-        .build();
-
-    let rt = tokio::runtime::Runtime::new()?;
-    let api = rt.block_on(async {
-        let state = ServerState::bind(config).await?;
-        let _router = Server::router_from_state(state.clone());
-        Ok::<_, Box<dyn core::error::Error>>(state.api().cloned().unwrap_or_default())
-    })?;
-
-    Ok(serde_json::to_vec_pretty(&api)?)
 }

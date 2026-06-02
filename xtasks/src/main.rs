@@ -1,8 +1,8 @@
+use clap::{Parser, Subcommand};
+use http_body_util::BodyExt;
+use oneiros_engine::{self, Engine, SkillPackage};
 use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
-
-use clap::{Parser, Subcommand};
-use oneiros_engine::{self, SkillPackage};
 
 #[derive(Debug, Parser)]
 #[command(name = "xtask")]
@@ -27,19 +27,20 @@ enum Command {
     DashboardBuild,
 }
 
-fn main() -> Result<(), Box<dyn core::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
         Command::PluginBuild => plugin_build()?,
-        Command::GenerateSchema => generate_schema()?,
-        Command::DashboardBuild => dashboard_build()?,
+        Command::GenerateSchema => generate_schema().await?,
+        Command::DashboardBuild => dashboard_build().await?,
     }
 
     Ok(())
 }
 
-fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
+async fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
     let workspace_root = workspace_root()?;
     let output_path = workspace_root.join("packages/oneiros-client/schema.json");
 
@@ -47,7 +48,15 @@ fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
         std::fs::create_dir_all(parent)?;
     }
 
-    let json = oneiros_engine::api_spec_json()?;
+    let json = Engine::schema_mode()?
+        .api_schema()
+        .await?
+        .into_body()
+        .collect()
+        .await?
+        .to_bytes()
+        .to_vec();
+
     std::fs::write(&output_path, &json)?;
 
     println!("OpenAPI schema written to {}", output_path.display());
@@ -94,10 +103,10 @@ fn plugin_build() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
-fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
+async fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
     // Regenerate the OpenAPI schema and TypeScript client before building
     // the dashboard, so type-checking catches any API mismatches.
-    generate_schema()?;
+    generate_schema().await?;
 
     let workspace_root = workspace_root()?;
 
