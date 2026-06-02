@@ -195,6 +195,7 @@ impl Projections<ProjectCanon> {
                     Frame::new(ExperienceProjections.all()),
                     Frame::new(ConnectionProjections.all()),
                     Frame::new(StorageProjections.all()),
+                    Frame::new(SliceProjections.all()),
                 ]),
                 // Aggregations: cross-domain or derived views that read
                 // from records. Applied last so the data they aggregate

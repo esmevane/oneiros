@@ -2,6 +2,10 @@ use crate::*;
 
 pub(crate) enum SliceDocs {
     Create,
+    List,
+    Delete,
+    Diff,
+    Bookmark,
 }
 
 impl SliceDocs {
@@ -23,6 +27,30 @@ impl SliceDocs {
                     "Create a standing lens-filtered view of the event stream, \
                      materializing matching events retroactively.",
                 )
+                .build(),
+            Self::List => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("list-slices")
+                .summary("List slices")
+                .description("List all slices for the current project.")
+                .build(),
+            Self::Delete => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("delete-slice")
+                .summary("Delete a slice")
+                .description("Delete a slice by name.")
+                .build(),
+            Self::Diff => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("diff-slices")
+                .summary("Diff two slices")
+                .description("Compare two slices and return the event counts unique to each and shared between them.")
+                .build(),
+            Self::Bookmark => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("bookmark-slice")
+                .summary("Bookmark a slice")
+                .description("Create a bookmark from a slice for transport and sharing.")
                 .build(),
         }
     }

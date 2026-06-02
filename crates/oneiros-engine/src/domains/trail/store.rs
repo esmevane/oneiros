@@ -213,6 +213,9 @@ fn derive_refs(event: &Events) -> Vec<Ref> {
             one(unfollowed.clone().current(), |v| Ref::follow(v.follow_id))
         }
 
+        // Slices — metadata events, no entity refs to emit.
+        Events::Slice(_) => Vec::new(),
+
         // Peers.
         Events::Peer(PeerEvents::PeerAdded(added)) => {
             one(added.clone().current(), |v| Ref::peer(v.id))

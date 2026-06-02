@@ -12,6 +12,39 @@ impl ClientRequest for CreateSlice {
     }
 }
 
+impl ClientRequest for ListSlices {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.get("/slices").await
+    }
+}
+
+impl ClientRequest for DeleteSlice {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let DeleteSlice::V1(req) = self;
+        client.delete(&format!("/slices/{}", req.name)).await
+    }
+}
+
+impl ClientRequest for DiffSlice {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/slices/diff", self).await
+    }
+}
+
+impl ClientRequest for BookmarkSlice {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/slices/bookmark", self).await
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum CreateSlice {
@@ -29,6 +62,7 @@ versioned! {
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum DeleteSlice {
+        #[derive(clap::Args)]
         V1 => {
             #[builder(into)]
             pub(crate) name: SliceName,
@@ -38,7 +72,16 @@ versioned! {
 
 versioned! {
     #[derive(JsonSchema)]
+    pub(crate) enum ListSlices {
+        #[derive(clap::Args)]
+        V1 => {}
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
     pub(crate) enum DiffSlice {
+        #[derive(clap::Args)]
         V1 => {
             #[builder(into)]
             pub(crate) source: SliceName,
@@ -51,9 +94,11 @@ versioned! {
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum BookmarkSlice {
+        #[derive(clap::Args)]
         V1 => {
             #[builder(into)]
             pub(crate) slice_name: SliceName,
+            #[arg(long = "as")]
             #[builder(into)]
             pub(crate) as_bookmark: BookmarkName,
         }
@@ -65,6 +110,7 @@ versioned! {
 #[kinded(kind = SliceRequestType, display = "kebab-case")]
 pub(crate) enum SliceRequest {
     CreateSlice(CreateSlice),
+    ListSlices(ListSlices),
     DeleteSlice(DeleteSlice),
     DiffSlice(DiffSlice),
     BookmarkSlice(BookmarkSlice),
