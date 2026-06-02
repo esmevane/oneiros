@@ -17,6 +17,7 @@
 use anstream::{stderr, stdout};
 use axum::body::Body;
 use clap::Parser;
+use http_body_util::BodyExt;
 use std::{io::Write, process::ExitCode};
 use tempfile::TempDir;
 use tower::ServiceExt;
@@ -111,13 +112,31 @@ impl Engine {
         Ok((Self::new(config), cli))
     }
 
+    /// Gets the API schema typically provided at `/api.json` and returns
+    /// it as a byte stream.
+    pub async fn get_api_schema() -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+        Ok(Self::schema_mode()?
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/api.json")
+                    .body(Body::empty())?,
+            )
+            .await?
+            .into_body()
+            .collect()
+            .await?
+            .to_bytes()
+            .to_vec())
+    }
+
     /// From explicit config — tests and programmatic consumers.
     pub(crate) fn new(config: Config) -> Self {
         Self { config }
     }
 
     /// From explicit config — tests and programmatic consumers.
-    pub fn schema_mode() -> Result<Self, Box<dyn core::error::Error>> {
+    pub(crate) fn schema_mode() -> Result<Self, Box<dyn core::error::Error>> {
         let temp_dir = TempDir::new()?;
         let name = ProjectName::new("schema-gen");
 
@@ -130,18 +149,6 @@ impl Engine {
         })
     }
 
-    pub async fn api_schema(
-        &self,
-    ) -> Result<axum::http::Response<Body>, Box<dyn core::error::Error>> {
-        self.oneshot(
-            axum::http::Request::builder()
-                .method("GET")
-                .uri("/api.json")
-                .body(Body::empty())?,
-        )
-        .await
-    }
-
     /// Make a one-shot request against the engine's router without starting
     /// a server.
     ///
@@ -149,7 +156,7 @@ impl Engine {
     /// router, and processes the request. The router includes middleware
     /// (auth, tracing), but paths listed in `EXCLUDED_PATHS` (including
     /// `/api.json`) skip authentication.
-    pub async fn oneshot(
+    pub(crate) async fn oneshot(
         &self,
         request: axum::http::Request<Body>,
     ) -> Result<axum::http::Response<Body>, Box<dyn core::error::Error>> {

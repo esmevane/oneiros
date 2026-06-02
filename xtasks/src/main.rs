@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use http_body_util::BodyExt;
 use oneiros_engine::{self, Engine, SkillPackage};
 use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
@@ -48,14 +47,7 @@ async fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
         std::fs::create_dir_all(parent)?;
     }
 
-    let json = Engine::schema_mode()?
-        .api_schema()
-        .await?
-        .into_body()
-        .collect()
-        .await?
-        .to_bytes()
-        .to_vec();
+    let json = Engine::get_api_schema().await?;
 
     std::fs::write(&output_path, &json)?;
 

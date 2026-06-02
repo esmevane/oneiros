@@ -5649,7 +5649,6 @@ name = "xtasks"
 version = "0.0.11"
 dependencies = [
  "clap",
- "http-body-util",
  "oneiros-engine",
  "tokio",
 ]
