@@ -16,17 +16,21 @@ impl ActorRouter {
             ApiRouter::<ServerState>::new()
                 .api_route(
                     "/",
-                    routing::get_with(list, |op| resource_op!(op, ActorDocs::List).response::<200, Json<ActorsResponse>>()).post_with(
-                        create,
-                        |op| {
-                            resource_op!(op, ActorDocs::Create)
-                                .response::<201, Json<ActorCreatedResponse>>()
-                        },
-                    ),
+                    routing::get_with(list, |op| {
+                        resource_op!(op, ActorDocs::List).response::<200, Json<ActorsResponse>>()
+                    })
+                    .post_with(create, |op| {
+                        resource_op!(op, ActorDocs::Create)
+                            .response::<201, Json<ActorCreatedResponse>>()
+                    }),
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, ActorDocs::Show).input::<IdPathParam<ActorId>>().response::<200, Json<ActorFoundResponse>>()),
+                    routing::get_with(show, |op| {
+                        resource_op!(op, ActorDocs::Show)
+                            .input::<IdPathParam<ActorId>>()
+                            .response::<200, Json<ActorFoundResponse>>()
+                    }),
                 ),
         )
     }

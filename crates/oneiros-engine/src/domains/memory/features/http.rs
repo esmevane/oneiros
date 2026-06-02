@@ -17,7 +17,9 @@ impl MemoryRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, MemoryDocs::List).security_requirement("BearerToken").response::<200, Json<MemoriesResponse>>()
+                        resource_op!(op, MemoryDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<MemoriesResponse>>()
                     })
                     .post_with(add, |op| {
                         resource_op!(op, MemoryDocs::Add)
@@ -28,7 +30,10 @@ impl MemoryRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, MemoryDocs::Show).security_requirement("BearerToken").input::<IdPathParam<MemoryId>>().response::<200, Json<MemoryDetailsResponse>>()
+                        resource_op!(op, MemoryDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<IdPathParam<MemoryId>>()
+                            .response::<200, Json<MemoryDetailsResponse>>()
                     }),
                 ),
         )

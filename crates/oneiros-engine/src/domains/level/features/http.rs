@@ -17,7 +17,9 @@ impl LevelRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, LevelDocs::List).security_requirement("BearerToken").response::<200, Json<LevelsResponse>>()
+                        resource_op!(op, LevelDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<LevelsResponse>>()
                     }),
                 )
                 .api_route(
@@ -29,10 +31,16 @@ impl LevelRouter {
                             .input::<NamePathParam<LevelName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, LevelDocs::Show).security_requirement("BearerToken").input::<NamePathParam<LevelName>>().response::<200, Json<LevelDetailsResponse>>()
+                        resource_op!(op, LevelDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<LevelName>>()
+                            .response::<200, Json<LevelDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, LevelDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<LevelName>>().response::<200, Json<LevelRemovedResponse>>()
+                        resource_op!(op, LevelDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<LevelName>>()
+                            .response::<200, Json<LevelRemovedResponse>>()
                     }),
                 ),
         )

@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
 
 use aide::{
-    openapi::{Parameter, ParameterData, ParameterSchemaOrContent, PathStyle, ReferenceOr, SchemaObject},
+    openapi::{
+        Parameter, ParameterData, ParameterSchemaOrContent, PathStyle, ReferenceOr, SchemaObject,
+    },
     operation::OperationInput,
 };
 use schemars::JsonSchema;
@@ -21,24 +23,26 @@ impl<T: JsonSchema> OperationInput for IdPathParam<T> {
         operation: &mut aide::openapi::Operation,
     ) {
         let schema = ctx.schema.subschema_for::<T>();
-        operation.parameters.push(ReferenceOr::Item(Parameter::Path {
-            parameter_data: ParameterData {
-                name: "id".into(),
-                description: None,
-                required: true,
-                format: ParameterSchemaOrContent::Schema(SchemaObject {
-                    json_schema: schema,
+        operation
+            .parameters
+            .push(ReferenceOr::Item(Parameter::Path {
+                parameter_data: ParameterData {
+                    name: "id".into(),
+                    description: None,
+                    required: true,
+                    format: ParameterSchemaOrContent::Schema(SchemaObject {
+                        json_schema: schema,
+                        example: None,
+                        external_docs: None,
+                    }),
+                    deprecated: None,
                     example: None,
-                    external_docs: None,
-                }),
-                deprecated: None,
-                example: None,
-                examples: Default::default(),
-                explode: None,
-                extensions: Default::default(),
-            },
-            style: PathStyle::Simple,
-        }));
+                    examples: Default::default(),
+                    explode: None,
+                    extensions: Default::default(),
+                },
+                style: PathStyle::Simple,
+            }));
     }
 }
 
@@ -54,24 +58,26 @@ impl<T: JsonSchema> OperationInput for NamePathParam<T> {
         operation: &mut aide::openapi::Operation,
     ) {
         let schema = ctx.schema.subschema_for::<T>();
-        operation.parameters.push(ReferenceOr::Item(Parameter::Path {
-            parameter_data: ParameterData {
-                name: "name".into(),
-                description: None,
-                required: true,
-                format: ParameterSchemaOrContent::Schema(SchemaObject {
-                    json_schema: schema,
+        operation
+            .parameters
+            .push(ReferenceOr::Item(Parameter::Path {
+                parameter_data: ParameterData {
+                    name: "name".into(),
+                    description: None,
+                    required: true,
+                    format: ParameterSchemaOrContent::Schema(SchemaObject {
+                        json_schema: schema,
+                        example: None,
+                        external_docs: None,
+                    }),
+                    deprecated: None,
                     example: None,
-                    external_docs: None,
-                }),
-                deprecated: None,
-                example: None,
-                examples: Default::default(),
-                explode: None,
-                extensions: Default::default(),
-            },
-            style: PathStyle::Simple,
-        }));
+                    examples: Default::default(),
+                    explode: None,
+                    extensions: Default::default(),
+                },
+                style: PathStyle::Simple,
+            }));
     }
 }
 
@@ -87,24 +93,26 @@ impl<T: JsonSchema> OperationInput for AgentPathParam<T> {
         operation: &mut aide::openapi::Operation,
     ) {
         let schema = ctx.schema.subschema_for::<T>();
-        operation.parameters.push(ReferenceOr::Item(Parameter::Path {
-            parameter_data: ParameterData {
-                name: "agent".into(),
-                description: None,
-                required: true,
-                format: ParameterSchemaOrContent::Schema(SchemaObject {
-                    json_schema: schema,
+        operation
+            .parameters
+            .push(ReferenceOr::Item(Parameter::Path {
+                parameter_data: ParameterData {
+                    name: "agent".into(),
+                    description: None,
+                    required: true,
+                    format: ParameterSchemaOrContent::Schema(SchemaObject {
+                        json_schema: schema,
+                        example: None,
+                        external_docs: None,
+                    }),
+                    deprecated: None,
                     example: None,
-                    external_docs: None,
-                }),
-                deprecated: None,
-                example: None,
-                examples: Default::default(),
-                explode: None,
-                extensions: Default::default(),
-            },
-            style: PathStyle::Simple,
-        }));
+                    examples: Default::default(),
+                    explode: None,
+                    extensions: Default::default(),
+                },
+                style: PathStyle::Simple,
+            }));
     }
 }
 
@@ -119,23 +127,25 @@ impl<T: JsonSchema> OperationInput for RefKeyPathParam<T> {
         operation: &mut aide::openapi::Operation,
     ) {
         let schema = ctx.schema.subschema_for::<T>();
-        operation.parameters.push(ReferenceOr::Item(Parameter::Path {
-            parameter_data: ParameterData {
-                name: "ref_key".into(),
-                description: None,
-                required: true,
-                format: ParameterSchemaOrContent::Schema(SchemaObject {
-                    json_schema: schema,
+        operation
+            .parameters
+            .push(ReferenceOr::Item(Parameter::Path {
+                parameter_data: ParameterData {
+                    name: "ref_key".into(),
+                    description: None,
+                    required: true,
+                    format: ParameterSchemaOrContent::Schema(SchemaObject {
+                        json_schema: schema,
+                        example: None,
+                        external_docs: None,
+                    }),
+                    deprecated: None,
                     example: None,
-                    external_docs: None,
-                }),
-                deprecated: None,
-                example: None,
-                examples: Default::default(),
-                explode: None,
-                extensions: Default::default(),
-            },
-            style: PathStyle::Simple,
-        }));
+                    examples: Default::default(),
+                    explode: None,
+                    extensions: Default::default(),
+                },
+                style: PathStyle::Simple,
+            }));
     }
 }

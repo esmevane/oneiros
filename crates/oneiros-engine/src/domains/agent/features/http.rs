@@ -17,7 +17,9 @@ impl AgentRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, AgentDocs::List).security_requirement("BearerToken").response::<200, Json<AgentsResponse>>()
+                        resource_op!(op, AgentDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<AgentsResponse>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, AgentDocs::Create)
@@ -28,13 +30,22 @@ impl AgentRouter {
                 .api_route(
                     "/{name}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, AgentDocs::Show).security_requirement("BearerToken").input::<NamePathParam<AgentName>>().response::<200, Json<AgentDetailsResponse>>()
+                        resource_op!(op, AgentDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<AgentName>>()
+                            .response::<200, Json<AgentDetailsResponse>>()
                     })
                     .put_with(update, |op| {
-                        resource_op!(op, AgentDocs::Update).security_requirement("BearerToken").input::<NamePathParam<AgentName>>().response::<200, Json<AgentUpdatedResponse>>()
+                        resource_op!(op, AgentDocs::Update)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<AgentName>>()
+                            .response::<200, Json<AgentUpdatedResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, AgentDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<AgentName>>().response::<200, Json<AgentRemovedResponse>>()
+                        resource_op!(op, AgentDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<AgentName>>()
+                            .response::<200, Json<AgentRemovedResponse>>()
                     }),
                 ),
         )

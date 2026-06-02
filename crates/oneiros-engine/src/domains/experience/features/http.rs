@@ -18,7 +18,9 @@ impl ExperienceRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, ExperienceDocs::List).security_requirement("BearerToken").response::<200, Json<ExperiencesResponse>>()
+                        resource_op!(op, ExperienceDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<ExperiencesResponse>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, ExperienceDocs::Create)
@@ -29,7 +31,10 @@ impl ExperienceRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, ExperienceDocs::Show).security_requirement("BearerToken").input::<IdPathParam<ExperienceId>>().response::<200, Json<ExperienceDetailsResponse>>()
+                        resource_op!(op, ExperienceDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<IdPathParam<ExperienceId>>()
+                            .response::<200, Json<ExperienceDetailsResponse>>()
                     }),
                 )
                 // Local body structs (UpdateDescriptionBody, UpdateSensationBody) don't

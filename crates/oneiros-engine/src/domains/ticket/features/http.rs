@@ -17,8 +17,7 @@ impl TicketRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, TicketDocs::List)
-                            .response::<200, Json<TicketsResponse>>()
+                        resource_op!(op, TicketDocs::List).response::<200, Json<TicketsResponse>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, TicketDocs::Create)

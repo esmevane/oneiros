@@ -17,7 +17,9 @@ impl ConnectionRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, ConnectionDocs::List).security_requirement("BearerToken").response::<200, Json<ConnectionsResponse>>()
+                        resource_op!(op, ConnectionDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<ConnectionsResponse>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, ConnectionDocs::Create)
@@ -28,10 +30,15 @@ impl ConnectionRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, ConnectionDocs::Show).security_requirement("BearerToken").input::<IdPathParam<ConnectionId>>().response::<200, Json<ConnectionDetailsResponse>>()
+                        resource_op!(op, ConnectionDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<IdPathParam<ConnectionId>>()
+                            .response::<200, Json<ConnectionDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, ConnectionDocs::Remove).security_requirement("BearerToken").response::<200, Json<ConnectionRemovedResponse>>()
+                        resource_op!(op, ConnectionDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<ConnectionRemovedResponse>>()
                     }),
                 ),
         )

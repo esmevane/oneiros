@@ -14,17 +14,21 @@ impl ProjectRouter {
         ApiRouter::new()
             .api_route(
                 "/projects",
-                routing::get_with(list, |op| resource_op!(op, ProjectDocs::List).response::<200, Json<ProjectsResponse>>()).post_with(
-                    create,
-                    |op| {
-                        resource_op!(op, ProjectDocs::Create)
-                            .response::<201, Json<ProjectCreatedResponse>>()
-                    },
-                ),
+                routing::get_with(list, |op| {
+                    resource_op!(op, ProjectDocs::List).response::<200, Json<ProjectsResponse>>()
+                })
+                .post_with(create, |op| {
+                    resource_op!(op, ProjectDocs::Create)
+                        .response::<201, Json<ProjectCreatedResponse>>()
+                }),
             )
             .api_route(
                 "/projects/{name}",
-                routing::get_with(show, |op| resource_op!(op, ProjectDocs::Show).input::<NamePathParam<ProjectName>>().response::<200, Json<ProjectFoundResponse>>()),
+                routing::get_with(show, |op| {
+                    resource_op!(op, ProjectDocs::Show)
+                        .input::<NamePathParam<ProjectName>>()
+                        .response::<200, Json<ProjectFoundResponse>>()
+                }),
             )
             .route("/summary", axum::routing::get(summary))
     }

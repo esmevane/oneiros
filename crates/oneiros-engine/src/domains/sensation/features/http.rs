@@ -17,7 +17,9 @@ impl SensationRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, SensationDocs::List).security_requirement("BearerToken").response::<200, Json<SensationsResponse>>()
+                        resource_op!(op, SensationDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<SensationsResponse>>()
                     }),
                 )
                 .api_route(
@@ -29,10 +31,16 @@ impl SensationRouter {
                             .input::<NamePathParam<SensationName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, SensationDocs::Show).security_requirement("BearerToken").input::<NamePathParam<SensationName>>().response::<200, Json<SensationDetailsResponse>>()
+                        resource_op!(op, SensationDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<SensationName>>()
+                            .response::<200, Json<SensationDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, SensationDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<SensationName>>().response::<200, Json<SensationRemovedResponse>>()
+                        resource_op!(op, SensationDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<SensationName>>()
+                            .response::<200, Json<SensationRemovedResponse>>()
                     }),
                 ),
         )

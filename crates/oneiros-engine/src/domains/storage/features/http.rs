@@ -18,7 +18,9 @@ impl StorageRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, StorageDocs::List).security_requirement("BearerToken").response::<200, Json<StorageEntriesResponse>>()
+                        resource_op!(op, StorageDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<StorageEntriesResponse>>()
                     })
                     .post_with(upload, |op| {
                         resource_op!(op, StorageDocs::Upload)
@@ -29,10 +31,16 @@ impl StorageRouter {
                 .api_route(
                     "/{ref_key}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, StorageDocs::Show).security_requirement("BearerToken").input::<RefKeyPathParam<StorageKey>>().response::<200, Json<StorageDetailsResponse>>()
+                        resource_op!(op, StorageDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<RefKeyPathParam<StorageKey>>()
+                            .response::<200, Json<StorageDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, StorageDocs::Remove).security_requirement("BearerToken").input::<RefKeyPathParam<StorageKey>>().response::<200, Json<StorageRemovedResponse>>()
+                        resource_op!(op, StorageDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<RefKeyPathParam<StorageKey>>()
+                            .response::<200, Json<StorageRemovedResponse>>()
                     }),
                 )
                 // Raw blob bytes — application/octet-stream, not JSON, so
