@@ -26,12 +26,13 @@ impl TextureRouter {
                         resource_op!(op, TextureDocs::Set)
                             .security_requirement("BearerToken")
                             .response::<200, Json<TextureResponse>>()
+                            .input::<NamePathParam<TextureName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, TextureDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, TextureDocs::Show).security_requirement("BearerToken").input::<NamePathParam<TextureName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, TextureDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, TextureDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<TextureName>>()
                     }),
                 ),
         )

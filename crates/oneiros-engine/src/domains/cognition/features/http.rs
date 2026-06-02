@@ -28,7 +28,9 @@ impl CognitionRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, CognitionDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, CognitionDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<IdPathParam<CognitionId>>()
                     }),
                 ),
         )

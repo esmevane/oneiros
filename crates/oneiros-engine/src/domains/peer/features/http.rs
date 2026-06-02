@@ -23,7 +23,7 @@ impl PeerRouter {
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, PeerDocs::Show))
+                    routing::get_with(show, |op| resource_op!(op, PeerDocs::Show).input::<IdPathParam<PeerId>>())
                         .delete_with(remove, |op| resource_op!(op, PeerDocs::Remove)),
                 ),
         )

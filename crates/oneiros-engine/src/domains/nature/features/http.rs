@@ -26,12 +26,13 @@ impl NatureRouter {
                         resource_op!(op, NatureDocs::Set)
                             .security_requirement("BearerToken")
                             .response::<200, Json<NatureResponse>>()
+                            .input::<NamePathParam<NatureName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, NatureDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, NatureDocs::Show).security_requirement("BearerToken").input::<NamePathParam<NatureName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, NatureDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, NatureDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<NatureName>>()
                     }),
                 ),
         )

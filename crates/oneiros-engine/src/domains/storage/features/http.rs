@@ -29,10 +29,10 @@ impl StorageRouter {
                 .api_route(
                     "/{ref_key}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, StorageDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, StorageDocs::Show).security_requirement("BearerToken").input::<RefKeyPathParam<StorageKey>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, StorageDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, StorageDocs::Remove).security_requirement("BearerToken").input::<RefKeyPathParam<StorageKey>>()
                     }),
                 )
                 // Raw blob bytes — application/octet-stream, not JSON, so

@@ -26,12 +26,13 @@ impl PersonaRouter {
                         resource_op!(op, PersonaDocs::Set)
                             .security_requirement("BearerToken")
                             .response::<200, Json<PersonaResponse>>()
+                            .input::<NamePathParam<PersonaName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, PersonaDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, PersonaDocs::Show).security_requirement("BearerToken").input::<NamePathParam<PersonaName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, PersonaDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, PersonaDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<PersonaName>>()
                     }),
                 ),
         )

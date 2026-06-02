@@ -19,7 +19,7 @@ impl FollowRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, FollowDocs::Get).security_requirement("BearerToken")
+                        resource_op!(op, FollowDocs::Get).security_requirement("BearerToken").input::<IdPathParam<FollowId>>()
                     }),
                 ),
         )

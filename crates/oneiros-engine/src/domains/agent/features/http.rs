@@ -28,13 +28,13 @@ impl AgentRouter {
                 .api_route(
                     "/{name}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, AgentDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, AgentDocs::Show).security_requirement("BearerToken").input::<NamePathParam<AgentName>>()
                     })
                     .put_with(update, |op| {
-                        resource_op!(op, AgentDocs::Update).security_requirement("BearerToken")
+                        resource_op!(op, AgentDocs::Update).security_requirement("BearerToken").input::<NamePathParam<AgentName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, AgentDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, AgentDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<AgentName>>()
                     }),
                 ),
         )

@@ -28,7 +28,7 @@ impl ConnectionRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, ConnectionDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, ConnectionDocs::Show).security_requirement("BearerToken").input::<IdPathParam<ConnectionId>>()
                     })
                     .delete_with(remove, |op| {
                         resource_op!(op, ConnectionDocs::Remove).security_requirement("BearerToken")

@@ -26,12 +26,13 @@ impl LevelRouter {
                         resource_op!(op, LevelDocs::Set)
                             .security_requirement("BearerToken")
                             .response::<200, Json<LevelResponse>>()
+                            .input::<NamePathParam<LevelName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, LevelDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, LevelDocs::Show).security_requirement("BearerToken").input::<NamePathParam<LevelName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, LevelDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, LevelDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<LevelName>>()
                     }),
                 ),
         )

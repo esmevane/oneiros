@@ -24,7 +24,7 @@ impl ProjectRouter {
             )
             .api_route(
                 "/projects/{name}",
-                routing::get_with(show, |op| resource_op!(op, ProjectDocs::Show)),
+                routing::get_with(show, |op| resource_op!(op, ProjectDocs::Show).input::<NamePathParam<ProjectName>>()),
             )
             .route("/summary", axum::routing::get(summary))
     }

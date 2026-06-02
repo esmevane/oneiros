@@ -29,7 +29,7 @@ impl ExperienceRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, ExperienceDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, ExperienceDocs::Show).security_requirement("BearerToken").input::<IdPathParam<ExperienceId>>()
                     }),
                 )
                 // Local body structs (UpdateDescriptionBody, UpdateSensationBody) don't

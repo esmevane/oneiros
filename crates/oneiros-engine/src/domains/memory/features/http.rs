@@ -28,7 +28,7 @@ impl MemoryRouter {
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, MemoryDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, MemoryDocs::Show).security_requirement("BearerToken").input::<IdPathParam<MemoryId>>()
                     }),
                 ),
         )

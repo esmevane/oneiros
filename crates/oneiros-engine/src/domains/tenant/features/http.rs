@@ -26,7 +26,7 @@ impl TenantRouter {
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, TenantDocs::Show)),
+                    routing::get_with(show, |op| resource_op!(op, TenantDocs::Show).input::<IdPathParam<TenantId>>()),
                 ),
         )
     }

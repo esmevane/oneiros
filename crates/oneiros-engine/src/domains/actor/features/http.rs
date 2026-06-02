@@ -26,7 +26,7 @@ impl ActorRouter {
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, ActorDocs::Show)),
+                    routing::get_with(show, |op| resource_op!(op, ActorDocs::Show).input::<IdPathParam<ActorId>>()),
                 ),
         )
     }

@@ -19,7 +19,7 @@ impl PressureRouter {
                 .api_route(
                     "/{agent}",
                     routing::get_with(get, |op| {
-                        resource_op!(op, PressureDocs::Get).security_requirement("BearerToken")
+                        resource_op!(op, PressureDocs::Get).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>()
                     }),
                 ),
         )

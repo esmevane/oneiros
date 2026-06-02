@@ -26,12 +26,13 @@ impl SensationRouter {
                         resource_op!(op, SensationDocs::Set)
                             .security_requirement("BearerToken")
                             .response::<200, Json<SensationResponse>>()
+                            .input::<NamePathParam<SensationName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, SensationDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, SensationDocs::Show).security_requirement("BearerToken").input::<NamePathParam<SensationName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, SensationDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, SensationDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<SensationName>>()
                     }),
                 ),
         )

@@ -26,7 +26,7 @@ impl TicketRouter {
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, TicketDocs::Show)),
+                    routing::get_with(show, |op| resource_op!(op, TicketDocs::Show).input::<IdPathParam<TicketId>>()),
                 )
                 .api_route(
                     "/validate",

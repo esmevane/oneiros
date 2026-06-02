@@ -26,12 +26,13 @@ impl UrgeRouter {
                         resource_op!(op, UrgeDocs::Set)
                             .security_requirement("BearerToken")
                             .response::<200, Json<UrgeResponse>>()
+                            .input::<NamePathParam<UrgeName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, UrgeDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, UrgeDocs::Show).security_requirement("BearerToken").input::<NamePathParam<UrgeName>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, UrgeDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, UrgeDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<UrgeName>>()
                     }),
                 ),
         )
