@@ -17,12 +17,12 @@ impl CognitionRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, CognitionDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, CognitionDocs::List).security_requirement("BearerToken").response::<200, Json<CognitionsResponse>>()
                     })
                     .post_with(add, |op| {
                         resource_op!(op, CognitionDocs::Add)
                             .security_requirement("BearerToken")
-                            .response::<201, Json<CognitionResponse>>()
+                            .response::<201, Json<CognitionAddedResponse>>()
                     }),
                 )
                 .api_route(
@@ -31,6 +31,7 @@ impl CognitionRouter {
                         resource_op!(op, CognitionDocs::Show)
                             .security_requirement("BearerToken")
                             .input::<IdPathParam<CognitionId>>()
+                            .response::<200, Json<CognitionDetailsResponse>>()
                     }),
                 ),
         )

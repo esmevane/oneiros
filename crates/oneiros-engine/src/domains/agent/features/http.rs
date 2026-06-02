@@ -17,24 +17,24 @@ impl AgentRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, AgentDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, AgentDocs::List).security_requirement("BearerToken").response::<200, Json<AgentsResponse>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, AgentDocs::Create)
                             .security_requirement("BearerToken")
-                            .response::<201, Json<AgentResponse>>()
+                            .response::<201, Json<AgentCreatedResponse>>()
                     }),
                 )
                 .api_route(
                     "/{name}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, AgentDocs::Show).security_requirement("BearerToken").input::<NamePathParam<AgentName>>()
+                        resource_op!(op, AgentDocs::Show).security_requirement("BearerToken").input::<NamePathParam<AgentName>>().response::<200, Json<AgentDetailsResponse>>()
                     })
                     .put_with(update, |op| {
-                        resource_op!(op, AgentDocs::Update).security_requirement("BearerToken").input::<NamePathParam<AgentName>>()
+                        resource_op!(op, AgentDocs::Update).security_requirement("BearerToken").input::<NamePathParam<AgentName>>().response::<200, Json<AgentUpdatedResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, AgentDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<AgentName>>()
+                        resource_op!(op, AgentDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<AgentName>>().response::<200, Json<AgentRemovedResponse>>()
                     }),
                 ),
         )

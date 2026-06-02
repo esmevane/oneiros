@@ -17,48 +17,48 @@ impl BookmarkRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, BookmarkDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::List).security_requirement("BearerToken").response::<200, Json<Listed<Bookmark>>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, BookmarkDocs::Create)
                             .security_requirement("BearerToken")
-                            .response::<201, Json<BookmarkResponse>>()
+                            .response::<201, Json<BookmarkCreatedResponse>>()
                     }),
                 )
                 .api_route(
                     "/switch",
                     routing::post_with(switch, |op| {
-                        resource_op!(op, BookmarkDocs::Switch).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::Switch).security_requirement("BearerToken").response::<200, Json<BookmarkSwitchedResponse>>()
                     }),
                 )
                 .api_route(
                     "/merge",
                     routing::post_with(merge, |op| {
-                        resource_op!(op, BookmarkDocs::Merge).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::Merge).security_requirement("BearerToken").response::<200, Json<BookmarkMergedResponse>>()
                     }),
                 )
                 .api_route(
                     "/share",
                     routing::post_with(share, |op| {
-                        resource_op!(op, BookmarkDocs::Share).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::Share).security_requirement("BearerToken").response::<200, Json<BookmarkShareResult>>()
                     }),
                 )
                 .api_route(
                     "/follow",
                     routing::post_with(follow, |op| {
-                        resource_op!(op, BookmarkDocs::Follow).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::Follow).security_requirement("BearerToken").response::<200, Json<Follow>>()
                     }),
                 )
                 .api_route(
                     "/collect",
                     routing::post_with(collect, |op| {
-                        resource_op!(op, BookmarkDocs::Collect).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::Collect).security_requirement("BearerToken").response::<200, Json<BookmarkCollectResult>>()
                     }),
                 )
                 .api_route(
                     "/unfollow",
                     routing::post_with(unfollow, |op| {
-                        resource_op!(op, BookmarkDocs::Unfollow).security_requirement("BearerToken")
+                        resource_op!(op, BookmarkDocs::Unfollow).security_requirement("BearerToken").response::<200, Json<BookmarkUnfollowedResponse>>()
                     }),
                 ),
         )

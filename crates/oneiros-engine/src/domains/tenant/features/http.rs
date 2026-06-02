@@ -16,17 +16,17 @@ impl TenantRouter {
             ApiRouter::new()
                 .api_route(
                     "/",
-                    routing::get_with(list, |op| resource_op!(op, TenantDocs::List)).post_with(
+                    routing::get_with(list, |op| resource_op!(op, TenantDocs::List).response::<200, Json<TenantsResponse>>()).post_with(
                         create,
                         |op| {
                             resource_op!(op, TenantDocs::Create)
-                                .response::<201, Json<TenantResponse>>()
+                                .response::<201, Json<TenantCreatedResponse>>()
                         },
                     ),
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, TenantDocs::Show).input::<IdPathParam<TenantId>>()),
+                    routing::get_with(show, |op| resource_op!(op, TenantDocs::Show).input::<IdPathParam<TenantId>>().response::<200, Json<TenantFoundResponse>>()),
                 ),
         )
     }

@@ -16,15 +16,15 @@ impl PeerRouter {
             ApiRouter::<ServerState>::new()
                 .api_route(
                     "/",
-                    routing::get_with(list, |op| resource_op!(op, PeerDocs::List))
+                    routing::get_with(list, |op| resource_op!(op, PeerDocs::List).response::<200, Json<PeersResponse>>())
                         .post_with(add, |op| {
-                            resource_op!(op, PeerDocs::Add).response::<201, Json<PeerResponse>>()
+                            resource_op!(op, PeerDocs::Add)                            .response::<201, Json<PeerAddedResponse>>()
                         }),
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, PeerDocs::Show).input::<IdPathParam<PeerId>>())
-                        .delete_with(remove, |op| resource_op!(op, PeerDocs::Remove)),
+                    routing::get_with(show, |op| resource_op!(op, PeerDocs::Show).input::<IdPathParam<PeerId>>().response::<200, Json<PeerFoundResponse>>())
+                        .delete_with(remove, |op| resource_op!(op, PeerDocs::Remove).response::<200, Json<PeerRemovedResponse>>()),
                 ),
         )
     }

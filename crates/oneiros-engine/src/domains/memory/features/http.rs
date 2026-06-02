@@ -17,18 +17,18 @@ impl MemoryRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, MemoryDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, MemoryDocs::List).security_requirement("BearerToken").response::<200, Json<MemoriesResponse>>()
                     })
                     .post_with(add, |op| {
                         resource_op!(op, MemoryDocs::Add)
                             .security_requirement("BearerToken")
-                            .response::<201, Json<MemoryResponse>>()
+                            .response::<201, Json<MemoryAddedResponse>>()
                     }),
                 )
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, MemoryDocs::Show).security_requirement("BearerToken").input::<IdPathParam<MemoryId>>()
+                        resource_op!(op, MemoryDocs::Show).security_requirement("BearerToken").input::<IdPathParam<MemoryId>>().response::<200, Json<MemoryDetailsResponse>>()
                     }),
                 ),
         )

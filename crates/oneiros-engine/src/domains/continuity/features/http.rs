@@ -17,30 +17,30 @@ impl ContinuityRouter {
                 .api_route(
                     "/",
                     routing::get_with(status, |op| {
-                        resource_op!(op, ContinuityDocs::Status).security_requirement("BearerToken")
+                        resource_op!(op, ContinuityDocs::Status).security_requirement("BearerToken").response::<200, Json<StatusResponse>>()
                     })
                     .post_with(emerge, |op| {
                         resource_op!(op, ContinuityDocs::Emerge)
                             .security_requirement("BearerToken")
-                            .response::<201, Json<ContinuityResponse>>()
+                            .response::<201, Json<EmergedResponse>>()
                     }),
                 )
                 .api_route(
                     "/{agent}",
                     routing::delete_with(recede, |op| {
-                        resource_op!(op, ContinuityDocs::Recede).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>()
+                        resource_op!(op, ContinuityDocs::Recede).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>().response::<200, Json<RecededResponse>>()
                     }),
                 )
                 .api_route(
                     "/{agent}/wake",
                     routing::post_with(wake, |op| {
-                        resource_op!(op, ContinuityDocs::Wake).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>()
+                        resource_op!(op, ContinuityDocs::Wake).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>().response::<200, Json<WakingResponse>>()
                     }),
                 )
                 .api_route(
                     "/{agent}/dream",
                     routing::post_with(dream, |op| {
-                        resource_op!(op, ContinuityDocs::Dream).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>()
+                        resource_op!(op, ContinuityDocs::Dream).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>().response::<200, Json<DreamingResponse>>()
                     }),
                 )
                 .api_route(
@@ -49,6 +49,7 @@ impl ContinuityRouter {
                         resource_op!(op, ContinuityDocs::Introspect)
                             .security_requirement("BearerToken")
                             .input::<AgentPathParam<AgentName>>()
+                            .response::<200, Json<IntrospectingResponse>>()
                     }),
                 )
                 .api_route(
@@ -57,18 +58,19 @@ impl ContinuityRouter {
                         resource_op!(op, ContinuityDocs::Reflect)
                             .security_requirement("BearerToken")
                             .input::<AgentPathParam<AgentName>>()
+                            .response::<200, Json<ReflectingResponse>>()
                     }),
                 )
                 .api_route(
                     "/{agent}/sense",
                     routing::post_with(sense, |op| {
-                        resource_op!(op, ContinuityDocs::Sense).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>()
+                        resource_op!(op, ContinuityDocs::Sense).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>().response::<200, Json<SleepingResponse>>()
                     }),
                 )
                 .api_route(
                     "/{agent}/sleep",
                     routing::post_with(sleep, |op| {
-                        resource_op!(op, ContinuityDocs::Sleep).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>()
+                        resource_op!(op, ContinuityDocs::Sleep).security_requirement("BearerToken").input::<AgentPathParam<AgentName>>().response::<200, Json<SleepingResponse>>()
                     }),
                 )
                 .api_route(
@@ -77,6 +79,7 @@ impl ContinuityRouter {
                         resource_op!(op, ContinuityDocs::Guidebook)
                             .security_requirement("BearerToken")
                             .input::<AgentPathParam<AgentName>>()
+                            .response::<200, Json<GuidebookResponse>>()
                     }),
                 ),
         )

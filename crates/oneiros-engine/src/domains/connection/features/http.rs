@@ -17,21 +17,21 @@ impl ConnectionRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, ConnectionDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, ConnectionDocs::List).security_requirement("BearerToken").response::<200, Json<ConnectionsResponse>>()
                     })
                     .post_with(create, |op| {
                         resource_op!(op, ConnectionDocs::Create)
                             .security_requirement("BearerToken")
-                            .response::<201, Json<ConnectionResponse>>()
+                            .response::<201, Json<ConnectionCreatedResponse>>()
                     }),
                 )
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, ConnectionDocs::Show).security_requirement("BearerToken").input::<IdPathParam<ConnectionId>>()
+                        resource_op!(op, ConnectionDocs::Show).security_requirement("BearerToken").input::<IdPathParam<ConnectionId>>().response::<200, Json<ConnectionDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, ConnectionDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, ConnectionDocs::Remove).security_requirement("BearerToken").response::<200, Json<ConnectionRemovedResponse>>()
                     }),
                 ),
         )

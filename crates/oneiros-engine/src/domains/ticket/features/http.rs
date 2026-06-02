@@ -16,21 +16,29 @@ impl TicketRouter {
             ApiRouter::new()
                 .api_route(
                     "/",
-                    routing::get_with(list, |op| resource_op!(op, TicketDocs::List)).post_with(
-                        create,
-                        |op| {
-                            resource_op!(op, TicketDocs::Create)
-                                .response::<201, Json<TicketResponse>>()
-                        },
-                    ),
+                    routing::get_with(list, |op| {
+                        resource_op!(op, TicketDocs::List)
+                            .response::<200, Json<TicketsResponse>>()
+                    })
+                    .post_with(create, |op| {
+                        resource_op!(op, TicketDocs::Create)
+                            .response::<201, Json<TicketCreatedResponse>>()
+                    }),
                 )
                 .api_route(
                     "/{id}",
-                    routing::get_with(show, |op| resource_op!(op, TicketDocs::Show).input::<IdPathParam<TicketId>>()),
+                    routing::get_with(show, |op| {
+                        resource_op!(op, TicketDocs::Show)
+                            .input::<IdPathParam<TicketId>>()
+                            .response::<200, Json<TicketFoundResponse>>()
+                    }),
                 )
                 .api_route(
                     "/validate",
-                    routing::post_with(validate, |op| resource_op!(op, TicketDocs::Validate)),
+                    routing::post_with(validate, |op| {
+                        resource_op!(op, TicketDocs::Validate)
+                            .response::<200, Json<TicketValidatedResponse>>()
+                    }),
                 ),
         )
     }

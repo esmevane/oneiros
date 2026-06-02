@@ -13,13 +13,13 @@ impl FollowRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, FollowDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, FollowDocs::List).security_requirement("BearerToken").response::<200, Json<FollowsResponse>>()
                     }),
                 )
                 .api_route(
                     "/{id}",
                     routing::get_with(show, |op| {
-                        resource_op!(op, FollowDocs::Get).security_requirement("BearerToken").input::<IdPathParam<FollowId>>()
+                        resource_op!(op, FollowDocs::Get).security_requirement("BearerToken").input::<IdPathParam<FollowId>>().response::<200, Json<FollowFoundResponse>>()
                     }),
                 ),
         )

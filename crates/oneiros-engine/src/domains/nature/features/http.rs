@@ -17,7 +17,7 @@ impl NatureRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, NatureDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, NatureDocs::List).security_requirement("BearerToken").response::<200, Json<NaturesResponse>>()
                     }),
                 )
                 .api_route(
@@ -25,14 +25,14 @@ impl NatureRouter {
                     routing::put_with(set, |op| {
                         resource_op!(op, NatureDocs::Set)
                             .security_requirement("BearerToken")
-                            .response::<200, Json<NatureResponse>>()
+                            .response::<200, Json<NatureSetResponse>>()
                             .input::<NamePathParam<NatureName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, NatureDocs::Show).security_requirement("BearerToken").input::<NamePathParam<NatureName>>()
+                        resource_op!(op, NatureDocs::Show).security_requirement("BearerToken").input::<NamePathParam<NatureName>>().response::<200, Json<NatureDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, NatureDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<NatureName>>()
+                        resource_op!(op, NatureDocs::Remove).security_requirement("BearerToken").input::<NamePathParam<NatureName>>().response::<200, Json<NatureRemovedResponse>>()
                     }),
                 ),
         )
