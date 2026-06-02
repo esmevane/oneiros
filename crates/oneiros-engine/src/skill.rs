@@ -56,6 +56,7 @@ impl SkillInventory {
         skills.extend(SeedSkills::all());
         skills.extend(SensationSkills::all());
         skills.extend(SetupSkills::all());
+        skills.extend(SliceSkills::all());
         skills.extend(StorageSkills::all());
         skills.extend(HostSkills::all());
         skills.extend(LensSkills::all());
