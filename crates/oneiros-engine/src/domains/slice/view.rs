@@ -15,7 +15,7 @@ impl SliceView {
                 let prompt = Confirmation::new(
                     "Slice",
                     created.slice.name.to_string(),
-                    &format!("created ({count} events)", count = created.slice.event_count),
+                    format!("created ({count} events)", count = created.slice.event_count),
                 )
                 .to_string();
                 Rendered::new(
