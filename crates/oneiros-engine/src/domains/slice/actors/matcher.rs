@@ -77,9 +77,21 @@ impl SliceActor {
     /// whether the stored event is now in the result set. If so, emit
     /// a `SliceMatched` event so the projection increments the count.
     ///
-    /// TODO: This re-evaluates the full lens per event per slice (`O(n^2)`).
-    /// Optimize by caching inner-lens entity refs at slice creation time
-    /// and checking `derive_refs(event) ∩ cached_refs ≠ ∅` per event.
+    /// Performance: The lens pipeline compiles and evaluates per event
+    /// per slice, but the trail reader uses indexed queries (`WHERE ref
+    /// = ?1`) so the evaluation is `O(entity_refs × log n)`, not a full
+    /// scan. The constant overhead of lens compilation (parse → expand
+    /// → validate → name-resolve → compile) is the real cost.
+    ///
+    /// Optimization seam: `derive_refs` intersection with cached entity
+    /// refs would skip compilation, but requires a design decision:
+    /// `derive_refs` for cognition events emits `Ref::cognition(id)`
+    /// but the inner lens (e.g., `agent(gov.process)`) resolves through
+    /// FTS to cognition refs — which are retroactive. New cognitions
+    /// have new IDs not in the cache. Fix requires either (a) making
+    /// `derive_refs` emit agent refs for cognitions, or (b) storing
+    /// stable entity IDs (agent, texture) as cache keys rather than
+    /// retroactive FTS results.
     async fn check_and_emit(
         &self,
         scope: &Scope<AtBookmark>,
