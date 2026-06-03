@@ -74,6 +74,8 @@ pub(crate) enum Error {
     #[error(transparent)]
     Sensation(#[from] SensationError),
     #[error(transparent)]
+    Slice(#[from] SliceError),
+    #[error(transparent)]
     Setup(#[from] SetupError),
     #[error(transparent)]
     Storage(#[from] StorageError),

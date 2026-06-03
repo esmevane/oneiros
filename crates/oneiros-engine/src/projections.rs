@@ -219,6 +219,7 @@ impl Projections<HostCanon> {
                 Frame::new(ProjectProjections.all()),
                 Frame::new(TicketProjections.all()),
                 Frame::new(BookmarkProjections.all()),
+                Frame::new(SliceProjections.all()),
                 Frame::new(PeerProjections.all()),
                 Frame::new(FollowProjections.all()),
             ])],
