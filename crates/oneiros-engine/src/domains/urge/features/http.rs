@@ -17,7 +17,9 @@ impl UrgeRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, UrgeDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, UrgeDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<UrgesResponse>>()
                     }),
                 )
                 .api_route(
@@ -25,13 +27,20 @@ impl UrgeRouter {
                     routing::put_with(set, |op| {
                         resource_op!(op, UrgeDocs::Set)
                             .security_requirement("BearerToken")
-                            .response::<200, Json<UrgeResponse>>()
+                            .response::<200, Json<UrgeSetResponse>>()
+                            .input::<NamePathParam<UrgeName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, UrgeDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, UrgeDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<UrgeName>>()
+                            .response::<200, Json<UrgeDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, UrgeDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, UrgeDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<UrgeName>>()
+                            .response::<200, Json<UrgeRemovedResponse>>()
                     }),
                 ),
         )

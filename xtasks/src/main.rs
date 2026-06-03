@@ -1,8 +1,7 @@
+use clap::{Parser, Subcommand};
+use oneiros_engine::{self, Engine, SkillPackage};
 use std::path::PathBuf;
 use std::process::Command as ProcessCommand;
-
-use clap::{Parser, Subcommand};
-use oneiros_engine::SkillPackage;
 
 #[derive(Debug, Parser)]
 #[command(name = "xtask")]
@@ -16,19 +15,43 @@ enum Command {
     /// Build the Claude Code plugin — emit skill assets to dist/ and
     /// marketplace manifest to .claude-plugin/.
     PluginBuild,
-    /// Build the dashboard SPA — runs `pnpm --filter @oneiros/dashboard build`.
+    /// Generate the OpenAPI schema from the engine's routes and write it to
+    /// `packages/oneiros-client/schema.json`. Must be run before
+    /// `DashboardBuild` if the API surface has changed.
+    GenerateSchema,
+    /// Build the dashboard SPA — runs `pnpm --filter @oneiros/dashboard build`
+    /// after ensuring the API client schema is up to date.
     /// Output lands in `apps/dashboard/dist/`, ready to be embedded by the
     /// oneiros-engine build.
     DashboardBuild,
 }
 
-fn main() -> Result<(), Box<dyn core::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn core::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
         Command::PluginBuild => plugin_build()?,
-        Command::DashboardBuild => dashboard_build()?,
+        Command::GenerateSchema => generate_schema().await?,
+        Command::DashboardBuild => dashboard_build().await?,
     }
+
+    Ok(())
+}
+
+async fn generate_schema() -> Result<(), Box<dyn core::error::Error>> {
+    let workspace_root = workspace_root()?;
+    let output_path = workspace_root.join("packages/oneiros-client/schema.json");
+
+    if let Some(parent) = output_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let json = Engine::get_api_schema().await?;
+
+    std::fs::write(&output_path, &json)?;
+
+    println!("OpenAPI schema written to {}", output_path.display());
 
     Ok(())
 }
@@ -72,8 +95,22 @@ fn plugin_build() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
-fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
+async fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
+    // Regenerate the OpenAPI schema and TypeScript client before building
+    // the dashboard, so type-checking catches any API mismatches.
+    generate_schema().await?;
+
     let workspace_root = workspace_root()?;
+
+    // Regenerate the TypeScript client from the schema
+    let client_gen = ProcessCommand::new("pnpm")
+        .args(["--filter", "@oneiros/client", "run", "types"])
+        .current_dir(&workspace_root)
+        .status()?;
+
+    if !client_gen.success() {
+        return Err(format!("pnpm client types generation failed with status {client_gen}").into());
+    }
 
     let status = ProcessCommand::new("pnpm")
         .args(["--filter", "@oneiros/dashboard", "run", "build"])
@@ -85,8 +122,36 @@ fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     let dist = workspace_root.join("apps/dashboard/dist");
-    println!("Built dashboard SPA at {}", dist.display());
+    let template_dir = workspace_root.join("crates/oneiros-engine/templates/dashboard");
 
+    // Sync the built SPA into the engine's template directory so
+    // `rust-embed` picks it up at compile time.
+    std::fs::create_dir_all(&template_dir)?;
+    copy_dir(&dist, &template_dir)?;
+
+    println!("Dashboard SPA synced to {}", template_dir.display());
+
+    Ok(())
+}
+
+/// Recursively copy a directory, overwriting existing files.
+fn copy_dir(
+    src: &std::path::Path,
+    dst: &std::path::Path,
+) -> Result<(), Box<dyn core::error::Error>> {
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+
+        if file_type.is_dir() {
+            std::fs::create_dir_all(&dst_path)?;
+            copy_dir(&src_path, &dst_path)?;
+        } else {
+            std::fs::copy(&src_path, &dst_path)?;
+        }
+    }
     Ok(())
 }
 

@@ -1,6 +1,7 @@
 import { createShell } from "@oneiros/loom-react";
 import type { Bindings } from "@oneiros/loom";
 import { dashboardModel } from "./machine";
+import { api } from "@oneiros/client";
 
 /** Weave the dashboard model into a React shell. One call per app. The
  *  result holds the Controller component, the signal-backed hooks, and
@@ -16,12 +17,8 @@ export const { Controller, useEvents, useSelector, useMatches, useRegistries } =
 export const bindings: Bindings = {
   requests: {
     hostInfo: async () => {
-      const response = await fetch("/v1/health");
-      if (!response.ok) {
-        throw new Error(`Host responded ${response.status}`);
-      }
-      const body = (await response.json()) as { version?: string };
-      return { ok: true, version: body.version };
+      const data = await api.get.health();
+      return { ok: true, version: data.version };
     },
   },
 };

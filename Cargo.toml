@@ -12,13 +12,6 @@ repository = "https://github.com/esmevane/oneiros"
 license = "MIT"
 
 [workspace.dependencies]
-aide = { version = "0.16.0-alpha.4", features = [
-  "axum",
-  "axum-json",
-  "axum-query",
-  "macros",
-  "scalar"
-] }
 anstream = "1.0.0"
 anstyle = "1"
 askama = "0.15"
@@ -34,31 +27,24 @@ data-encoding = "2"
 # three pins together when ed25519 ships a release targeting current pkcs8.
 der = "=0.8.0-rc.10"
 etcetera = "0.11.0"
-figment = { version = "0.10", features = ["toml", "env"] }
+figment = { version = "0.10", features = ["env", "toml"] }
 flate2 = "1"
 futures = "0.3"
 hmac = "0.12"
+http-body-util = "0.1"
 humantime = "2"
 humantime-serde = "1"
 inquire = "0.9.4"
 iroh = "0.98"
 kinded = "0.5.0"
+mime_guess = "2"
 oneiros-engine = { path = "crates/oneiros-engine", version = "0.0.11" }
 paste = "1"
 pkcs8 = "=0.11.0-rc.10"
 postcard = { version = "1", features = ["alloc"] }
 pretty_assertions = "1"
 reqwest = { version = "0.13", features = ["json", "stream"] }
-rmcp = { version = "1.1.1", features = [
-  "server",
-  "transport-streamable-http-server"
-] }
-rusqlite = { version = "0.31", features = [
-  "bundled",
-  "functions",
-  "serde_json",
-  "uuid"
-] }
+rust-embed = { version = "8", features = ["interpolate-folder-path"] }
 schemars = { version = "1.0", features = ["chrono04", "uuid1"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
@@ -80,6 +66,18 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
 # whoami = "1"
+
+[workspace.dependencies.aide]
+version = "0.16.0-alpha.4"
+features = ["axum", "axum-json", "axum-query", "macros", "scalar"]
+
+[workspace.dependencies.rmcp]
+version = "1.1.1"
+features = ["server", "transport-streamable-http-server"]
+
+[workspace.dependencies.rusqlite]
+version = "0.31"
+features = ["bundled", "functions", "serde_json", "uuid"]
 
 # The profile that 'dist' will build with
 [profile.dist]

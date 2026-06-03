@@ -1,0 +1,2 @@
+# Generated artifacts are committed (like apps/dashboard/dist/) —
+# CI and consumers need them present at checkout time.

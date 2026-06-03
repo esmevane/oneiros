@@ -11,3 +11,4 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 oneiros-engine.workspace = true
+tokio.workspace = true
