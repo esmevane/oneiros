@@ -85,12 +85,11 @@ async fn dashboard_config_returns_host_shape() -> Result<(), Box<dyn core::error
     Ok(())
 }
 
-/// The HTML page served at `/` is host-shaped — it contains the host
-/// landing page and the project page, with the host as the default.
+/// The HTML page served at `/` is the compiled Astro dashboard SPA.
 /// This is a coarse smoke test, not a UX test: it catches accidental
-/// deletion or rewrites that would break the host-first layout.
+/// deletion or rewrites that would break the dashboard shell.
 #[tokio::test]
-async fn dashboard_html_has_host_and_project_pages() -> Result<(), Box<dyn core::error::Error>> {
+async fn dashboard_html_is_astro_spa() -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new().await?.init_host().await?;
 
     let http = reqwest::Client::new();
@@ -103,32 +102,20 @@ async fn dashboard_html_has_host_and_project_pages() -> Result<(), Box<dyn core:
         .await?;
 
     assert!(
-        body.contains(r#"id="page-host""#),
-        "host landing page should be present"
+        body.contains("<title>Oneiros</title>"),
+        "page title should be Oneiros"
     );
     assert!(
-        body.contains(r#"id="page-project""#),
-        "project page should be present"
+        body.contains("DashboardController"),
+        "dashboard controller island should be present"
     );
     assert!(
-        body.contains(r#"id="sb-project-section""#),
-        "sidebar should have a conditionally-visible BRAIN section"
+        body.contains("HostStatus"),
+        "host status island should be present"
     );
     assert!(
-        body.contains("go('host')"),
-        "brand click should route to the host page"
-    );
-    assert!(
-        body.contains(r#"id="page-tenants""#),
-        "tenants list page should be present"
-    );
-    assert!(
-        body.contains(r#"id="page-tenant""#),
-        "tenant detail page should be present"
-    );
-    assert!(
-        body.contains(r#"id="page-actor""#),
-        "actor detail page should be present"
+        body.contains("astro-island"),
+        "astro hydration markers should be present"
     );
 
     Ok(())

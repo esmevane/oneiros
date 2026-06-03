@@ -124,7 +124,7 @@ export const api = {
     follows_by_id: (opts: Parameters<typeof Generated.getFollow>[0]) =>
       call(Generated.getFollow({ ...opts, ...throwOff })),
     health: (opts?: Parameters<typeof Generated.getHealth>[0]) =>
-      call(Generated.getHealth({ ...throwOff, ...opts })),
+      call(Generated.getHealth({ ...opts, ...throwOff })),
     levels: (opts?: Parameters<typeof Generated.listLevels>[0]) =>
       call(Generated.listLevels({ ...opts, ...throwOff })),
     memories: (opts?: Parameters<typeof Generated.listMemories>[0]) =>
@@ -179,8 +179,9 @@ export const api = {
       call(Generated.addMemory({ ...opts, ...throwOff })),
     peers: (opts: Parameters<typeof Generated.addPeer>[0]) =>
       call(Generated.addPeer({ ...opts, ...throwOff })),
-    bookmarks_collect: (opts: Parameters<typeof Generated.collectBookmark>[0]) =>
-      call(Generated.collectBookmark({ ...opts, ...throwOff })),
+    bookmarks_collect: (
+      opts: Parameters<typeof Generated.collectBookmark>[0],
+    ) => call(Generated.collectBookmark({ ...opts, ...throwOff })),
     actors: (opts: Parameters<typeof Generated.createActor>[0]) =>
       call(Generated.createActor({ ...opts, ...throwOff })),
     agents: (opts: Parameters<typeof Generated.createAgent>[0]) =>
@@ -205,8 +206,9 @@ export const api = {
       call(Generated.followBookmark({ ...opts, ...throwOff })),
     host_init: (opts: Parameters<typeof Generated.initHost>[0]) =>
       call(Generated.initHost({ ...opts, ...throwOff })),
-    continuity_introspect: (opts: Parameters<typeof Generated.introspectAgent>[0]) =>
-      call(Generated.introspectAgent({ ...opts, ...throwOff })),
+    continuity_introspect: (
+      opts: Parameters<typeof Generated.introspectAgent>[0],
+    ) => call(Generated.introspectAgent({ ...opts, ...throwOff })),
     bookmarks_merge: (opts: Parameters<typeof Generated.mergeBookmark>[0]) =>
       call(Generated.mergeBookmark({ ...opts, ...throwOff })),
     continuity_reflect: (opts: Parameters<typeof Generated.reflectAgent>[0]) =>
@@ -223,8 +225,9 @@ export const api = {
       call(Generated.sleepAgent({ ...opts, ...throwOff })),
     bookmarks_switch: (opts: Parameters<typeof Generated.switchBookmark>[0]) =>
       call(Generated.switchBookmark({ ...opts, ...throwOff })),
-    bookmarks_unfollow: (opts: Parameters<typeof Generated.unfollowBookmark>[0]) =>
-      call(Generated.unfollowBookmark({ ...opts, ...throwOff })),
+    bookmarks_unfollow: (
+      opts: Parameters<typeof Generated.unfollowBookmark>[0],
+    ) => call(Generated.unfollowBookmark({ ...opts, ...throwOff })),
     storage: (opts: Parameters<typeof Generated.uploadBlob>[0]) =>
       call(Generated.uploadBlob({ ...opts, ...throwOff })),
     tickets_validate: (opts: Parameters<typeof Generated.validateTicket>[0]) =>
@@ -253,10 +256,11 @@ export const api = {
       call(Generated.recedeAgent({ ...opts, ...throwOff })),
     agents_by_name: (opts: Parameters<typeof Generated.removeAgent>[0]) =>
       call(Generated.removeAgent({ ...opts, ...throwOff })),
-    storage_by_ref_key: (opts?: Parameters<typeof Generated.removeBlob>[0]) =>
-      call(Generated.removeBlob(Object.assign({}, opts, throwOff))),
-    connections_by_id: (opts?: Parameters<typeof Generated.removeConnection>[0]) =>
-      call(Generated.removeConnection({ ...opts, ...throwOff })),
+    storage_by_ref_key: (opts: Parameters<typeof Generated.removeBlob>[0]) =>
+      call(Generated.removeBlob({ ...opts, ...throwOff })),
+    connections_by_id: (
+      opts?: Parameters<typeof Generated.removeConnection>[0],
+    ) => call(Generated.removeConnection({ ...opts, ...throwOff })),
     levels_by_name: (opts: Parameters<typeof Generated.removeLevel>[0]) =>
       call(Generated.removeLevel({ ...opts, ...throwOff })),
     natures_by_name: (opts: Parameters<typeof Generated.removeNature>[0]) =>
@@ -265,8 +269,9 @@ export const api = {
       call(Generated.removePeer({ ...opts, ...throwOff })),
     personas_by_name: (opts: Parameters<typeof Generated.removePersona>[0]) =>
       call(Generated.removePersona({ ...opts, ...throwOff })),
-    sensations_by_name: (opts: Parameters<typeof Generated.removeSensation>[0]) =>
-      call(Generated.removeSensation({ ...opts, ...throwOff })),
+    sensations_by_name: (
+      opts: Parameters<typeof Generated.removeSensation>[0],
+    ) => call(Generated.removeSensation({ ...opts, ...throwOff })),
     textures_by_name: (opts: Parameters<typeof Generated.removeTexture>[0]) =>
       call(Generated.removeTexture({ ...opts, ...throwOff })),
     urges_by_name: (opts: Parameters<typeof Generated.removeUrge>[0]) =>
@@ -288,7 +293,12 @@ class RequestProblem extends Error {
 }
 
 export async function call<Data = unknown>(
-  promise: Promise<{ data?: Data; error?: unknown; request: Request; response: Response }>,
+  promise: Promise<{
+    data?: Data;
+    error?: unknown;
+    request: Request;
+    response: Response;
+  }>,
 ): Promise<Data> {
   const result = await promise;
 
@@ -303,14 +313,160 @@ export async function call<Data = unknown>(
         ? result.error
         : JSON.stringify(result.error);
 
-  throw new RequestProblem(
-    detail,
-    result.response,
-    result.response.status,
-  );
+  throw new RequestProblem(detail, result.response, result.response.status);
 }
 
 // ── Re-exports ─────────────────────────────────────────────────────────────
 
 export { client } from "./generated/client.gen";
 export type * from "./generated/types.gen";
+
+// ── Type guard: exhaustiveness + URL enforcement ───────────────────────────
+//
+// When the API changes and the client types are regenerated:
+//   1. If a new endpoint appears → MappedFnNames fails (add the name)
+//   2. If an endpoint is removed  → api.* referencing it breaks
+//   3. If a URL or param changes  → routes.* breaks against Data.url
+//
+// Maintenance: one line per generated function in MappedFnNames, plus
+// the corresponding wrappers in `api` and `routes`.
+
+/** Every exported function from the generated SDK. */
+type GeneratedFnNames = {
+  [K in keyof typeof Generated]: (typeof Generated)[K] extends (
+    ...args: any[]
+  ) => any
+    ? K
+    : never;
+}[keyof typeof Generated];
+
+/** Extract the Data shape from a generated function's Options parameter. */
+type DataOf<Fn> = Fn extends (options?: infer Opts) => any
+  ? Opts extends { url: infer Url }
+    ? { url: Url; path: Opts extends { path: infer P } ? P : never }
+    : never
+  : never;
+
+/** Every generated function name must appear here. */
+type MappedFnNames =
+  | "addCognition"
+  | "addMemory"
+  | "addPeer"
+  | "collectBookmark"
+  | "createActor"
+  | "createAgent"
+  | "createBookmark"
+  | "createConnection"
+  | "createExperience"
+  | "createProject"
+  | "createTenant"
+  | "createTicket"
+  | "dreamAgent"
+  | "emergeAgent"
+  | "followBookmark"
+  | "getActor"
+  | "getAgent"
+  | "getCognition"
+  | "getConnection"
+  | "getExperience"
+  | "getFollow"
+  | "getHealth"
+  | "getLevel"
+  | "getMemory"
+  | "getNature"
+  | "getPeer"
+  | "getPressure"
+  | "getProject"
+  | "guidebookAgent"
+  | "initHost"
+  | "introspectAgent"
+  | "listActors"
+  | "listAgents"
+  | "listBlobs"
+  | "listBookmarks"
+  | "listCognitions"
+  | "listConnections"
+  | "listExperiences"
+  | "listFollows"
+  | "listLevels"
+  | "listMemories"
+  | "listNatures"
+  | "listPeers"
+  | "listPersonas"
+  | "listPressure"
+  | "listProjects"
+  | "listSensations"
+  | "listTenants"
+  | "listTextures"
+  | "listTickets"
+  | "listUrges"
+  | "mergeBookmark"
+  | "recedeAgent"
+  | "reflectAgent"
+  | "removeAgent"
+  | "removeBlob"
+  | "removeConnection"
+  | "removeLevel"
+  | "removeNature"
+  | "removePeer"
+  | "removePersona"
+  | "removeSensation"
+  | "removeTexture"
+  | "removeUrge"
+  | "search"
+  | "seedAgents"
+  | "seedCore"
+  | "senseAgent"
+  | "setLevel"
+  | "setNature"
+  | "setPersona"
+  | "setSensation"
+  | "setTexture"
+  | "setUrge"
+  | "shareBookmark"
+  | "showBlob"
+  | "showPersona"
+  | "showSensation"
+  | "showTenant"
+  | "showTexture"
+  | "showTicket"
+  | "showUrge"
+  | "sleepAgent"
+  | "statusAgent"
+  | "switchBookmark"
+  | "trailFrom"
+  | "trailOf"
+  | "unfollowBookmark"
+  | "updateAgent"
+  | "uploadBlob"
+  | "validateTicket"
+  | "wakeAgent";
+
+/** Fail if the generated SDK has functions we haven't mapped. */
+type _AssertAllMapped =
+  Exclude<GeneratedFnNames, MappedFnNames> extends never
+    ? true
+    : [
+        "❌ Unmapped API functions — add to MappedFnNames:",
+        Exclude<GeneratedFnNames, MappedFnNames>,
+      ];
+
+/** Every URL that exists in the generated API. */
+type GeneratedUrls = {
+  [K in MappedFnNames]: DataOf<(typeof Generated)[K]> extends { url: infer U }
+    ? U
+    : never;
+}[MappedFnNames];
+
+/** Every route URL we've hand-authored. */
+type RouteUrls =
+  (typeof routes)[keyof typeof routes][keyof (typeof routes)[keyof typeof routes]];
+
+/** Fail if any route URL doesn't match a generated endpoint. */
+type _AssertRoutesValid =
+  Exclude<RouteUrls, GeneratedUrls> extends never
+    ? true
+    : [
+        "❌ Unknown route URL — check against generated types:",
+        Exclude<RouteUrls, GeneratedUrls>,
+      ];

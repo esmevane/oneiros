@@ -122,8 +122,36 @@ async fn dashboard_build() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     let dist = workspace_root.join("apps/dashboard/dist");
-    println!("Built dashboard SPA at {}", dist.display());
+    let template_dir = workspace_root.join("crates/oneiros-engine/templates/dashboard");
 
+    // Sync the built SPA into the engine's template directory so
+    // `rust-embed` picks it up at compile time.
+    std::fs::create_dir_all(&template_dir)?;
+    copy_dir(&dist, &template_dir)?;
+
+    println!("Dashboard SPA synced to {}", template_dir.display());
+
+    Ok(())
+}
+
+/// Recursively copy a directory, overwriting existing files.
+fn copy_dir(
+    src: &std::path::Path,
+    dst: &std::path::Path,
+) -> Result<(), Box<dyn core::error::Error>> {
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+
+        if file_type.is_dir() {
+            std::fs::create_dir_all(&dst_path)?;
+            copy_dir(&src_path, &dst_path)?;
+        } else {
+            std::fs::copy(&src_path, &dst_path)?;
+        }
+    }
     Ok(())
 }
 

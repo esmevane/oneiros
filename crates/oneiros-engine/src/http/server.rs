@@ -5,7 +5,7 @@ use aide::{
     openapi::OpenApi,
     scalar::Scalar,
 };
-use axum::{Json, Router, extract::State, middleware, response::Html, routing};
+use axum::{Json, Router, extract::State, middleware, routing};
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
@@ -26,9 +26,6 @@ pub(crate) enum ServerError {
     #[error(transparent)]
     Migration(#[from] MigrationError),
 }
-
-/// The dashboard HTML, embedded at compile time.
-const DASHBOARD_HTML: &str = include_str!("../../templates/dashboard/index.html");
 
 /// Response body for the health-check endpoint.
 #[derive(Debug, Serialize, JsonSchema)]
@@ -131,8 +128,23 @@ impl Server {
         }
 
         let root = Router::new()
-            .route("/", routing::get(async || Html(DASHBOARD_HTML)))
+            .route(
+                "/",
+                routing::get(|| async { DashboardAssets::index_html() }),
+            )
             .route("/dashboard/config", routing::get(dashboard_config));
+
+        // Serve static dashboard assets (JS, CSS, favicons) from the
+        // embedded SPA. Any path under /_astro/ or named asset files
+        // are resolved against the compiled-in dashboard dist.
+        let assets = Router::new().route(
+            "/{*path}",
+            routing::get(
+                |axum::extract::Path(path): axum::extract::Path<String>| async move {
+                    DashboardAssets::serve(&path)
+                },
+            ),
+        );
 
         state.hydrate();
 
@@ -141,6 +153,7 @@ impl Server {
 
         let router = ApiRouter::new()
             .merge(root)
+            .merge(assets)
             .nest_service(
                 "/mcp",
                 Router::new().route_service("/", {
