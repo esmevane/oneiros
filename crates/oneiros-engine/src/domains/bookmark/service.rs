@@ -15,16 +15,17 @@ impl BookmarkService {
         let mut event_ids = creation.event_ids.clone();
 
         if let Some(slice_name) = &creation.from_slice {
-            let scope = ComposeScope::new(state.config().clone())
-                .bookmark(project.clone(), from.clone())?;
-            let db = BookmarkDb::open(&scope).await?;
-            let lens_expr: String = db.query_row(
+            let host_scope = ComposeScope::new(state.config().clone()).host()?;
+            let host_db = HostDb::open(&host_scope).await?;
+            let lens_expr: String = host_db.query_row(
                 "SELECT lens_expr FROM slices WHERE name = ?1",
                 rusqlite::params![slice_name.to_string()],
                 |row| row.get(0),
             )?;
+            let bookmark_scope = ComposeScope::new(state.config().clone())
+                .bookmark(project.clone(), from.clone())?;
             let selection = LensService::select(
-                &scope,
+                &bookmark_scope,
                 state.canons(),
                 &format!("events_for({lens_expr})"),
             )
@@ -550,8 +551,7 @@ impl BookmarkService {
             projections.replay_project(&db, &log)?;
         } else {
             // Scoped replay: only events whose IDs are in the filter set.
-            let filter: std::collections::HashSet<EventId> =
-                event_ids.iter().copied().collect();
+            let filter: std::collections::HashSet<EventId> = event_ids.iter().copied().collect();
             let all_events = log.load_all()?;
             for event in &all_events {
                 if filter.contains(&event.id) {

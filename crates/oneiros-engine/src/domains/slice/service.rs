@@ -5,10 +5,11 @@ pub(crate) struct SliceService;
 
 impl SliceService {
     /// Creates a slice by evaluating the lens expression against the
-    /// project's event log, emitting a `SliceCreated` event, and waiting
-    /// for the projection to materialize.
+    /// project's event log, emitting a `SliceCreated` event to the host
+    /// log, and waiting for the host projection to materialize.
     pub(crate) async fn create(
-        scope: &Scope<AtBookmark>,
+        scope: &Scope<AtHost>,
+        project_scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
         canons: &CanonIndex,
         request: &CreateSlice,
@@ -16,7 +17,7 @@ impl SliceService {
         let CreateSlice::V1(req) = request;
 
         let event_lens = format!("events_for({})", req.lens_expr);
-        let selection = LensService::select(scope, canons, &event_lens).await?;
+        let selection = LensService::select(project_scope, canons, &event_lens).await?;
         let event_count = selection.event_ids().len() as u64;
 
         let slice = Slice::builder()
@@ -30,8 +31,8 @@ impl SliceService {
                 SliceCreated::builder_v1().slice(slice).build().into(),
             )))
             .build();
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
@@ -50,27 +51,24 @@ impl SliceService {
         ))
     }
 
-    /// Lists all slices for the current project.
-    pub(crate) async fn list(scope: &Scope<AtBookmark>) -> Result<SliceResponse, SliceError> {
+    /// Lists all slices from the host DB.
+    pub(crate) async fn list(scope: &Scope<AtHost>) -> Result<SliceResponse, SliceError> {
         let listed = SliceRepo::new(scope).list().await?;
         Ok(SliceResponse::Slices(listed))
     }
 
-    /// Deletes a slice by name.
+    /// Deletes a slice by name. Emits a `SliceDeleted` event to the host log.
     pub(crate) async fn delete(
-        scope: &Scope<AtBookmark>,
+        scope: &Scope<AtHost>,
         mailbox: &Mailbox,
         name: &SliceName,
     ) -> Result<SliceResponse, SliceError> {
-        let deleted = SliceDeleted::builder_v1()
-            .name(name.clone())
-            .build()
-            .into();
+        let deleted = SliceDeleted::builder_v1().name(name.clone()).build().into();
         let new_event = NewEvent::builder()
             .data(Events::Slice(SliceEvents::SliceDeleted(deleted)))
             .build();
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
                 .scope(scope.clone())
                 .event(new_event)
                 .build(),
@@ -95,7 +93,8 @@ impl SliceService {
     /// Diffs two slices by re-evaluating their lens expressions and
     /// comparing the resulting event ID sets.
     pub(crate) async fn diff(
-        scope: &Scope<AtBookmark>,
+        scope: &Scope<AtHost>,
+        project_scope: &Scope<AtBookmark>,
         canons: &CanonIndex,
         source: &SliceName,
         target: &SliceName,
@@ -109,8 +108,8 @@ impl SliceService {
             .await?
             .ok_or(SliceError::NotFound(target.clone()))?;
 
-        let source_ids = Self::event_ids(scope, canons, &source_slice.lens_expr).await?;
-        let target_ids = Self::event_ids(scope, canons, &target_slice.lens_expr).await?;
+        let source_ids = Self::event_ids(project_scope, canons, &source_slice.lens_expr).await?;
+        let target_ids = Self::event_ids(project_scope, canons, &target_slice.lens_expr).await?;
 
         let only_in_source = source_ids.difference(&target_ids).count() as u64;
         let only_in_target = target_ids.difference(&source_ids).count() as u64;
@@ -128,12 +127,12 @@ impl SliceService {
 
     /// Evaluates a lens expression and returns the set of matching event IDs.
     async fn event_ids(
-        scope: &Scope<AtBookmark>,
+        project_scope: &Scope<AtBookmark>,
         canons: &CanonIndex,
         lens_expr: &str,
     ) -> Result<HashSet<EventId>, SliceError> {
         let event_lens = format!("events_for({})", lens_expr);
-        let selection = LensService::select(scope, canons, &event_lens).await?;
+        let selection = LensService::select(project_scope, canons, &event_lens).await?;
         Ok(selection.event_ids().into_iter().collect())
     }
 }

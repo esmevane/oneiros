@@ -4,6 +4,10 @@
 //! `SliceMatched` event for each match.
 //!
 //! Receives `ProjectMessage::SliceMatch`; no-ops other variants.
+//!
+//! Slices live at the host level (host DB, host event log). The actor
+//! receives project-tier events for matching but emits host-tier
+//! `SliceMatched` events so the host projection updates `event_count`.
 
 use tokio::sync::mpsc;
 
@@ -61,46 +65,33 @@ impl SliceActor {
     }
 
     async fn handle_match(&self, msg: SliceMatch) -> Result<(), EventError> {
-        let scope = &msg.scope;
+        let project_scope = &msg.scope;
         let stored = &msg.stored;
 
-        let slices = SliceRepo::new(scope).list().await?;
+        // List slices from the host DB (cross-bookmark).
+        let host_scope = ComposeScope::new(project_scope.config().clone())
+            .host()
+            .map_err(|e| EventError::Import(e.to_string()))?;
+        let slices = SliceRepo::new(&host_scope).list().await?;
 
         for slice in &slices.items {
-            self.check_and_emit(scope, stored, slice).await?;
+            self.check_and_emit(&host_scope, project_scope, stored, slice)
+                .await?;
         }
 
         Ok(())
     }
 
-    /// Evaluate the slice's lens against the full event log and check
-    /// whether the stored event is now in the result set. If so, emit
-    /// a `SliceMatched` event so the projection increments the count.
-    ///
-    /// Performance: The lens pipeline compiles and evaluates per event
-    /// per slice, but the trail reader uses indexed queries (`WHERE ref
-    /// = ?1`) so the evaluation is `O(entity_refs × log n)`, not a full
-    /// scan. The constant overhead of lens compilation (parse → expand
-    /// → validate → name-resolve → compile) is the real cost.
-    ///
-    /// Optimization seam: `derive_refs` intersection with cached entity
-    /// refs would skip compilation, but requires a design decision:
-    /// `derive_refs` for cognition events emits `Ref::cognition(id)`
-    /// but the inner lens (e.g., `agent(gov.process)`) resolves through
-    /// FTS to cognition refs — which are retroactive. New cognitions
-    /// have new IDs not in the cache. Fix requires either (a) making
-    /// `derive_refs` emit agent refs for cognitions, or (b) storing
-    /// stable entity IDs (agent, texture) as cache keys rather than
-    /// retroactive FTS results.
     async fn check_and_emit(
         &self,
-        scope: &Scope<AtBookmark>,
+        host_scope: &Scope<AtHost>,
+        project_scope: &Scope<AtBookmark>,
         stored: &StoredEvent,
         slice: &Slice,
     ) -> Result<(), EventError> {
         let lens_source = format!("events_for({})", slice.lens_expr);
 
-        let selection = LensService::select(scope, &self.canons, &lens_source)
+        let selection = LensService::select(project_scope, &self.canons, &lens_source)
             .await
             .map_err(|e| EventError::Import(e.to_string()))?;
 
@@ -115,9 +106,9 @@ impl SliceActor {
                 .data(Events::Slice(SliceEvents::SliceMatched(matched)))
                 .build();
 
-            self.mailbox.tell(ProjectMessage::from(
-                AppendProjectLog::builder()
-                    .scope(scope.clone())
+            self.mailbox.tell(HostMessage::from(
+                AppendHostLog::builder()
+                    .scope(host_scope.clone())
                     .event(new_event)
                     .build(),
             ));

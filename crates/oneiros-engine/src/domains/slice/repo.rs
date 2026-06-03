@@ -3,24 +3,20 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct SliceRepo<'a> {
-    scope: &'a Scope<AtBookmark>,
+    scope: &'a Scope<AtHost>,
 }
 
 impl<'a> SliceRepo<'a> {
-    pub(crate) fn new(scope: &'a Scope<AtBookmark>) -> Self {
+    pub(crate) fn new(scope: &'a Scope<AtHost>) -> Self {
         Self { scope }
     }
 
     pub(crate) async fn fetch(&self, name: &SliceName) -> Result<Option<Slice>, EventError> {
-        self.scope
-            .config()
-            .fetch
-            .eventual(|| self.get(name))
-            .await
+        self.scope.config().fetch.eventual(|| self.get(name)).await
     }
 
     pub(crate) async fn get(&self, name: &SliceName) -> Result<Option<Slice>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare(
             "SELECT name, lens_expr, event_count, created_at FROM slices WHERE name = ?1",
         )?;
@@ -47,7 +43,7 @@ impl<'a> SliceRepo<'a> {
     }
 
     pub(crate) async fn list(&self) -> Result<Listed<Slice>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = HostDb::open(self.scope).await?;
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM slices")?;
             stmt.query_row([], |row| row.get::<_, usize>(0))?

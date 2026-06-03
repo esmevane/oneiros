@@ -35,39 +35,59 @@ impl SliceRouter {
     }
 }
 
+#[expect(deprecated)]
 async fn create(
     axum::extract::State(state): axum::extract::State<ServerState>,
-    scope: Scope<AtBookmark>,
+    context: ProjectLog,
     mailbox: Mailbox,
     Json(body): Json<CreateSlice>,
 ) -> Result<(StatusCode, Json<SliceResponse>), SliceError> {
+    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    let project_scope = context.scope()?;
     Ok((
         StatusCode::CREATED,
-        Json(SliceService::create(&scope, &mailbox, state.canons(), &body).await?),
+        Json(
+            SliceService::create(&host_scope, &project_scope, &mailbox, state.canons(), &body)
+                .await?,
+        ),
     ))
 }
 
 async fn list(
-    scope: Scope<AtBookmark>,
+    axum::extract::State(state): axum::extract::State<ServerState>,
 ) -> Result<Json<SliceResponse>, SliceError> {
-    Ok(Json(SliceService::list(&scope).await?))
+    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    Ok(Json(SliceService::list(&host_scope).await?))
 }
 
 async fn delete(
-    scope: Scope<AtBookmark>,
+    axum::extract::State(state): axum::extract::State<ServerState>,
     mailbox: Mailbox,
     Path(name): Path<SliceName>,
 ) -> Result<Json<SliceResponse>, SliceError> {
-    Ok(Json(SliceService::delete(&scope, &mailbox, &name).await?))
+    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    Ok(Json(
+        SliceService::delete(&host_scope, &mailbox, &name).await?,
+    ))
 }
 
+#[expect(deprecated)]
 async fn diff(
     axum::extract::State(state): axum::extract::State<ServerState>,
-    scope: Scope<AtBookmark>,
+    context: ProjectLog,
     Json(body): Json<DiffSlice>,
 ) -> Result<Json<SliceResponse>, SliceError> {
+    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    let project_scope = context.scope()?;
     let DiffSlice::V1(req) = &body;
     Ok(Json(
-        SliceService::diff(&scope, state.canons(), &req.source, &req.target).await?,
+        SliceService::diff(
+            &host_scope,
+            &project_scope,
+            state.canons(),
+            &req.source,
+            &req.target,
+        )
+        .await?,
     ))
 }
