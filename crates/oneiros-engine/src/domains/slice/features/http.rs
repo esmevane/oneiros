@@ -47,7 +47,7 @@ async fn create(
     Ok((
         StatusCode::CREATED,
         Json(
-            SliceService::create(&host_scope, &project_scope, &mailbox, state.canons(), &body)
+            SliceService::create(&host_scope, project_scope, &mailbox, state.canons(), &body)
                 .await?,
         ),
     ))
@@ -83,7 +83,7 @@ async fn diff(
     Ok(Json(
         SliceService::diff(
             &host_scope,
-            &project_scope,
+            project_scope,
             state.canons(),
             &req.source,
             &req.target,

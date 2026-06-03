@@ -56,10 +56,10 @@ impl SliceActor {
 
     async fn run(self, mut inbox: ProjectSliceInbox) {
         while let Some(message) = inbox.recv().await {
-            if let ProjectMessage::SliceMatch(slice_match) = message {
-                if let Err(error) = self.handle_match(slice_match).await {
-                    tracing::error!(?error, "slice actor: match handling failed");
-                }
+            if let ProjectMessage::SliceMatch(slice_match) = message
+                && let Err(error) = self.handle_match(slice_match).await
+            {
+                tracing::error!(?error, "slice actor: match handling failed");
             }
         }
     }
