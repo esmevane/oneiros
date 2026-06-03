@@ -16,6 +16,7 @@ impl<'a> SliceStore<'a> {
             match slice_event {
                 SliceEvents::SliceCreated(created) => self.insert(created)?,
                 SliceEvents::SliceDeleted(deleted) => self.remove(deleted)?,
+                SliceEvents::SliceMatched(matched) => self.increment(matched)?,
             }
         }
         Ok(())
@@ -43,7 +44,7 @@ impl<'a> SliceStore<'a> {
         let created = created.current()?;
         let slice = &created.slice;
         self.conn.execute(
-            "INSERT OR REPLACE INTO slices (id, name, lens_expr, event_count, created_at) \
+            "INSERT INTO slices (id, name, lens_expr, event_count, created_at) \
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 slice.id.to_string(),
@@ -61,6 +62,15 @@ impl<'a> SliceStore<'a> {
         self.conn.execute(
             "DELETE FROM slices WHERE name = ?1",
             params![deleted.name.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn increment(&self, matched: &SliceMatched) -> Result<(), EventError> {
+        let matched = matched.current()?;
+        self.conn.execute(
+            "UPDATE slices SET event_count = event_count + 1 WHERE name = ?1",
+            params![matched.slice_name.to_string()],
         )?;
         Ok(())
     }

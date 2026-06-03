@@ -12,6 +12,7 @@
 //! 4. Diffing two slices reveals event-level differences
 //! 5. Bookmarking a slice snapshots it into transportable form
 //! 6. The refine → rebase → diff → iterate workflow
+//! 7. Standing query: new matching events update the slice's event count prospectively
 
 use crate::tests::harness::TestApp;
 use crate::*;
@@ -93,7 +94,10 @@ async fn slice_create_empty_for_no_match() -> Result<(), Box<dyn core::error::Er
     };
 
     assert_eq!(created.slice.name.as_str(), "empty");
-    assert_eq!(created.slice.event_count, 0, "nonexistent agent has no events");
+    assert_eq!(
+        created.slice.event_count, 0,
+        "nonexistent agent has no events"
+    );
 
     Ok(())
 }
@@ -113,8 +117,7 @@ async fn slice_list_shows_all_slices() -> Result<(), Box<dyn core::error::Error>
 
     let rendered = app.command("slice list").await?;
 
-    let Responses::Slice(SliceResponse::Slices(listed)) = rendered.response()
-    else {
+    let Responses::Slice(SliceResponse::Slices(listed)) = rendered.response() else {
         panic!("expected Slice(Slices), got {:#?}", rendered.response());
     };
 
@@ -152,8 +155,7 @@ async fn slice_delete_removes_slice() -> Result<(), Box<dyn core::error::Error>>
     app.command("slice delete gov").await?;
 
     let rendered = app.command("slice list").await?;
-    let Responses::Slice(SliceResponse::Slices(listed)) = rendered.response()
-    else {
+    let Responses::Slice(SliceResponse::Slices(listed)) = rendered.response() else {
         panic!("expected Slice(Slices), got {:#?}", rendered.response());
     };
 
@@ -214,7 +216,8 @@ async fn slice_bookmark_snapshots_into_bookmark() -> Result<(), Box<dyn core::er
 
     app.command(r#"slice create gov "agent(gov.process)""#)
         .await?;
-    app.command("bookmark create gov-snapshot --from-slice gov").await?;
+    app.command("bookmark create gov-snapshot --from-slice gov")
+        .await?;
 
     let rendered = app.command("bookmark list").await?;
     let Responses::Bookmark(BookmarkResponse::Bookmarks(listed)) = rendered.response() else {
@@ -222,7 +225,10 @@ async fn slice_bookmark_snapshots_into_bookmark() -> Result<(), Box<dyn core::er
     };
 
     assert!(
-        listed.items.iter().any(|b| b.name.as_str() == "gov-snapshot"),
+        listed
+            .items
+            .iter()
+            .any(|b| b.name.as_str() == "gov-snapshot"),
         "bookmarked slice should appear in bookmark list"
     );
 
@@ -273,7 +279,8 @@ async fn slice_refine_rebase_diff_iterate_workflow() -> Result<(), Box<dyn core:
         .await?;
 
     // Step 2: Bookmark it for sharing (pretend we push to dreamforge)
-    app.command("bookmark create v1-snapshot --from-slice v1").await?;
+    app.command("bookmark create v1-snapshot --from-slice v1")
+        .await?;
     app.command("bookmark switch main").await?;
 
     // Step 3: Realize we need a narrower view — only reflections
@@ -285,34 +292,95 @@ async fn slice_refine_rebase_diff_iterate_workflow() -> Result<(), Box<dyn core:
     let Responses::Slice(SliceResponse::Diffed(SliceDiffedResponse::V1(diffed))) =
         diff_rendered.response()
     else {
-        panic!("expected Slice(Diffed), got {:#?}", diff_rendered.response());
+        panic!(
+            "expected Slice(Diffed), got {:#?}",
+            diff_rendered.response()
+        );
     };
-    assert!(
-        diffed.only_in_source > 0,
-        "v1 should have events v2 lacks"
-    );
+    assert!(diffed.only_in_source > 0, "v1 should have events v2 lacks");
 
     // Step 5: "Someone asks about a missing piece" — broaden again
     // to include both reflections AND learnings
-    app.command(r#"slice create v3 "agent(gov.process) & (texture(reflection) | texture(learning))""#)
-        .await?;
+    app.command(
+        r#"slice create v3 "agent(gov.process) & (texture(reflection) | texture(learning))""#,
+    )
+    .await?;
 
     // Step 6: Rebase: move the bookmark from v1 to v3
-    app.command("bookmark create v1-snapshot --from-slice v3").await?;
+    app.command("bookmark create v1-snapshot --from-slice v3")
+        .await?;
     app.command("bookmark switch main").await?;
 
     // Step 7: Verify the updated snapshot reflects the v3 lens
     // (In a real workflow, we'd push again after rebasing)
     let list_rendered = app.command("slice list").await?;
-    let Responses::Slice(SliceResponse::Slices(listed)) =
-        list_rendered.response()
-    else {
-        panic!("expected Slice(Slices), got {:#?}", list_rendered.response());
+    let Responses::Slice(SliceResponse::Slices(listed)) = list_rendered.response() else {
+        panic!(
+            "expected Slice(Slices), got {:#?}",
+            list_rendered.response()
+        );
     };
     let names: Vec<&str> = listed.items.iter().map(|s| s.name.as_str()).collect();
     assert!(names.contains(&"v1"));
     assert!(names.contains(&"v2"));
     assert!(names.contains(&"v3"));
+
+    Ok(())
+}
+
+// ── Standing query: prospective event routing ─────────────────────
+
+/// A slice is a standing query — its event count should increase when
+/// new events arrive that match its lens expression. This test asserts
+/// that the slice actor prospectively routes matching events.
+///
+/// Currently expected to FAIL: the actor that subscribes to the event
+/// stream and updates slice projections hasn't been built yet (CCS Arc 1).
+/// This test defines the behavior we're building toward.
+#[tokio::test]
+async fn slice_standing_query_grows_with_new_matching_events()
+-> Result<(), Box<dyn core::error::Error>> {
+    let app = seeded_app().await?;
+
+    // Step 1: Create a slice capturing gov.process events
+    app.command(r#"slice create gov "agent(gov.process)""#)
+        .await?;
+
+    // Step 2: Get the initial event count from listing
+    let rendered = app.command("slice list").await?;
+    let Responses::Slice(SliceResponse::Slices(listed)) = rendered.response() else {
+        panic!("expected Slice(Slices), got {:#?}", rendered.response());
+    };
+    let initial_count = listed
+        .items
+        .iter()
+        .find(|s| s.name.as_str() == "gov")
+        .expect("gov slice exists")
+        .event_count;
+
+    // Step 3: Add a new cognition for gov.process — this should match the lens
+    app.command(
+        r#"cognition add gov.process observation "A new thought arrives after slice creation""#,
+    )
+    .await?;
+
+    // Step 4: The slice's event count should have increased
+    let rendered = app.command("slice list").await?;
+    let Responses::Slice(SliceResponse::Slices(listed)) = rendered.response() else {
+        panic!("expected Slice(Slices), got {:#?}", rendered.response());
+    };
+    let updated_count = listed
+        .items
+        .iter()
+        .find(|s| s.name.as_str() == "gov")
+        .expect("gov slice should still exist")
+        .event_count;
+
+    assert!(
+        updated_count > initial_count,
+        "standing query should grow with new matching events: \
+         was {initial_count}, still {updated_count} after adding a matching cognition"
+    );
 
     Ok(())
 }

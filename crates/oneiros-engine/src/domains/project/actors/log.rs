@@ -71,9 +71,14 @@ impl ProjectLogActor {
         ));
         self.mailbox.tell(BookmarkMessage::from(
             RecordBookmarkChronicle::builder()
-                .scope(scope)
-                .stored(stored)
+                .scope(scope.clone())
+                .stored(stored.clone())
                 .build(),
+        ));
+
+        // Fan out to the slice actor for prospective lens matching.
+        self.mailbox.tell(ProjectMessage::from(
+            SliceMatch::builder().scope(scope).stored(stored).build(),
         ));
 
         Ok(())
