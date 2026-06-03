@@ -18,17 +18,21 @@ impl SliceService {
 
         let event_lens = format!("events_for({})", req.lens_expr);
         let selection = LensService::select(project_scope, canons, &event_lens).await?;
-        let event_count = selection.event_ids().len() as u64;
+        let initial_event_ids: Vec<EventId> = selection.event_ids();
 
         let slice = Slice::builder()
             .name(req.name.clone())
             .lens_expr(req.lens_expr.clone())
-            .event_count(event_count)
+            .event_count(initial_event_ids.len() as u64)
             .build();
 
         let new_event = NewEvent::builder()
             .data(Events::Slice(SliceEvents::SliceCreated(
-                SliceCreated::builder_v1().slice(slice).build().into(),
+                SliceCreated::builder_v1()
+                    .slice(slice)
+                    .initial_event_ids(initial_event_ids)
+                    .build()
+                    .into(),
             )))
             .build();
         mailbox.tell(HostMessage::from(

@@ -18,18 +18,26 @@ impl<'a> SliceRepo<'a> {
     pub(crate) async fn get(&self, name: &SliceName) -> Result<Option<Slice>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let mut stmt = db.prepare(
-            "SELECT name, lens_expr, event_count, created_at FROM slices WHERE name = ?1",
+            "SELECT s.name, s.lens_expr, s.created_at,
+                    COALESCE(c.event_count, 0) AS event_count
+             FROM slices s
+             LEFT JOIN (
+                 SELECT slice_name, COUNT(*) AS event_count
+                 FROM slice_chronicle
+                 GROUP BY slice_name
+             ) c ON c.slice_name = s.name
+             WHERE s.name = ?1",
         )?;
         let result = stmt.query_row(params![name.to_string()], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
-                row.get::<_, i64>(2)?,
-                row.get::<_, String>(3)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, i64>(3)?,
             ))
         });
         match result {
-            Ok((name, lens_expr, event_count, created_at)) => Ok(Some(
+            Ok((name, lens_expr, created_at, event_count)) => Ok(Some(
                 Slice::builder()
                     .name(name)
                     .lens_expr(lens_expr)
@@ -49,20 +57,28 @@ impl<'a> SliceRepo<'a> {
             stmt.query_row([], |row| row.get::<_, usize>(0))?
         };
         let mut stmt = db.prepare(
-            "SELECT name, lens_expr, event_count, created_at FROM slices ORDER BY created_at DESC",
+            "SELECT s.name, s.lens_expr, s.created_at,
+                    COALESCE(c.event_count, 0) AS event_count
+             FROM slices s
+             LEFT JOIN (
+                 SELECT slice_name, COUNT(*) AS event_count
+                 FROM slice_chronicle
+                 GROUP BY slice_name
+             ) c ON c.slice_name = s.name
+             ORDER BY s.created_at DESC",
         )?;
         let items: Vec<Slice> = stmt
             .query_map([], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, String>(1)?,
-                    row.get::<_, i64>(2)?,
-                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, i64>(3)?,
                 ))
             })?
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
-            .map(|(name, lens_expr, event_count, created_at)| {
+            .map(|(name, lens_expr, created_at, event_count)| {
                 Ok(Slice::builder()
                     .name(name)
                     .lens_expr(lens_expr)

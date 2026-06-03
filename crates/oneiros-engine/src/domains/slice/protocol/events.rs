@@ -17,6 +17,8 @@ versioned! {
         V1 => {
             #[serde(flatten)]
             pub(crate) slice: Slice,
+            #[builder(default)]
+            pub(crate) initial_event_ids: Vec<EventId>,
         }
     }
 }
@@ -32,9 +34,8 @@ versioned! {
 
 versioned! {
     /// Emitted by the slice actor when a new event matches a slice's lens.
-    /// Carries the matched event's ID for replayability — replaying this
-    /// event against the projection increments `event_count` for the named
-    /// slice by one.
+    /// The projection inserts into `slice_chronicle` (idempotent via
+    /// INSERT OR IGNORE). `event_count` is computed from the chronicle.
     pub(crate) enum SliceMatched {
         V1 => {
             #[builder(into)]
