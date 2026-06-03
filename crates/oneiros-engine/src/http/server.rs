@@ -9,6 +9,8 @@ use axum::{Json, Router, extract::State, middleware, response::Html, routing};
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, tower::StreamableHttpService,
 };
+use schemars::JsonSchema;
+use serde::Serialize;
 use tokio::net::TcpListener;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::Level;
@@ -27,6 +29,21 @@ pub(crate) enum ServerError {
 
 /// The dashboard HTML, embedded at compile time.
 const DASHBOARD_HTML: &str = include_str!("../../templates/dashboard/index.html");
+
+/// Response body for the health-check endpoint.
+#[derive(Debug, Serialize, JsonSchema)]
+struct HealthResponse {
+    status: String,
+    version: String,
+}
+
+/// GET `/health` — server liveness check.
+async fn health_check() -> Json<HealthResponse> {
+    Json(HealthResponse {
+        status: "ok".into(),
+        version: env!("CARGO_PKG_VERSION").into(),
+    })
+}
 
 /// An HTTP server backed by a `ServerState`.
 pub(crate) struct Server {
@@ -115,7 +132,6 @@ impl Server {
 
         let root = Router::new()
             .route("/", routing::get(async || Html(DASHBOARD_HTML)))
-            .route("/health", routing::get(async || "ok"))
             .route("/dashboard/config", routing::get(dashboard_config));
 
         state.hydrate();
@@ -162,6 +178,16 @@ impl Server {
             .merge(TicketRouter.routes())
             .merge(TrailRouter.routes())
             .merge(UrgeRouter.routes())
+            // Health check
+            .api_route(
+                "/health",
+                api_routing::get_with(health_check, |op| {
+                    op.tag("health")
+                        .summary("Server health")
+                        .description("Returns the server status and engine version.")
+                        .response::<200, Json<HealthResponse>>()
+                }),
+            )
             // OpenAPI spec and docs
             .route("/api.json", api_routing::get(serve_api))
             .route("/docs", Scalar::new("/api.json").axum_route())

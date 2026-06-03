@@ -19,6 +19,7 @@ export const routes = {
     experiences_by_id: "/experiences/:id",
     follows: "/follows",
     follows_by_id: "/follows/:id",
+    health: "/health",
     levels: "/levels",
     levels_by_name: "/levels/:name",
     memories: "/memories",
@@ -122,36 +123,8 @@ export const api = {
       call(Generated.getExperience({ ...opts, ...throwOff })),
     follows_by_id: (opts: Parameters<typeof Generated.getFollow>[0]) =>
       call(Generated.getFollow({ ...opts, ...throwOff })),
-    levels_by_name: (opts: Parameters<typeof Generated.getLevel>[0]) =>
-      call(Generated.getLevel({ ...opts, ...throwOff })),
-    memories_by_id: (opts: Parameters<typeof Generated.getMemory>[0]) =>
-      call(Generated.getMemory({ ...opts, ...throwOff })),
-    natures_by_name: (opts: Parameters<typeof Generated.getNature>[0]) =>
-      call(Generated.getNature({ ...opts, ...throwOff })),
-    peers_by_id: (opts: Parameters<typeof Generated.getPeer>[0]) =>
-      call(Generated.getPeer({ ...opts, ...throwOff })),
-    pressures_by_agent: (opts: Parameters<typeof Generated.getPressure>[0]) =>
-      call(Generated.getPressure({ ...opts, ...throwOff })),
-    projects_by_name: (opts: Parameters<typeof Generated.getProject>[0]) =>
-      call(Generated.getProject({ ...opts, ...throwOff })),
-    continuity_guidebook: (opts: Parameters<typeof Generated.guidebookAgent>[0]) =>
-      call(Generated.guidebookAgent({ ...opts, ...throwOff })),
-    actors: (opts?: Parameters<typeof Generated.listActors>[0]) =>
-      call(Generated.listActors({ ...opts, ...throwOff })),
-    agents: (opts?: Parameters<typeof Generated.listAgents>[0]) =>
-      call(Generated.listAgents({ ...opts, ...throwOff })),
-    storage: (opts?: Parameters<typeof Generated.listBlobs>[0]) =>
-      call(Generated.listBlobs({ ...opts, ...throwOff })),
-    bookmarks: (opts?: Parameters<typeof Generated.listBookmarks>[0]) =>
-      call(Generated.listBookmarks({ ...opts, ...throwOff })),
-    cognitions: (opts?: Parameters<typeof Generated.listCognitions>[0]) =>
-      call(Generated.listCognitions({ ...opts, ...throwOff })),
-    connections: (opts?: Parameters<typeof Generated.listConnections>[0]) =>
-      call(Generated.listConnections({ ...opts, ...throwOff })),
-    experiences: (opts?: Parameters<typeof Generated.listExperiences>[0]) =>
-      call(Generated.listExperiences({ ...opts, ...throwOff })),
-    follows: (opts?: Parameters<typeof Generated.listFollows>[0]) =>
-      call(Generated.listFollows({ ...opts, ...throwOff })),
+    health: (opts?: Parameters<typeof Generated.getHealth>[0]) =>
+      call(Generated.getHealth({ ...throwOff, ...opts })),
     levels: (opts?: Parameters<typeof Generated.listLevels>[0]) =>
       call(Generated.listLevels({ ...opts, ...throwOff })),
     memories: (opts?: Parameters<typeof Generated.listMemories>[0]) =>
