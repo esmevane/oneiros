@@ -17,7 +17,9 @@ impl TextureRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, TextureDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, TextureDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<TexturesResponse>>()
                     }),
                 )
                 .api_route(
@@ -25,13 +27,20 @@ impl TextureRouter {
                     routing::put_with(set, |op| {
                         resource_op!(op, TextureDocs::Set)
                             .security_requirement("BearerToken")
-                            .response::<200, Json<TextureResponse>>()
+                            .response::<200, Json<TextureSetResponse>>()
+                            .input::<NamePathParam<TextureName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, TextureDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, TextureDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<TextureName>>()
+                            .response::<200, Json<TextureDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, TextureDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, TextureDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<TextureName>>()
+                            .response::<200, Json<TextureRemovedResponse>>()
                     }),
                 ),
         )

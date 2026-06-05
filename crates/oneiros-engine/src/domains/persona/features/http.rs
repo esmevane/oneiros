@@ -17,7 +17,9 @@ impl PersonaRouter {
                 .api_route(
                     "/",
                     routing::get_with(list, |op| {
-                        resource_op!(op, PersonaDocs::List).security_requirement("BearerToken")
+                        resource_op!(op, PersonaDocs::List)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<PersonasResponse>>()
                     }),
                 )
                 .api_route(
@@ -25,13 +27,20 @@ impl PersonaRouter {
                     routing::put_with(set, |op| {
                         resource_op!(op, PersonaDocs::Set)
                             .security_requirement("BearerToken")
-                            .response::<200, Json<PersonaResponse>>()
+                            .response::<200, Json<PersonaSetResponse>>()
+                            .input::<NamePathParam<PersonaName>>()
                     })
                     .get_with(show, |op| {
-                        resource_op!(op, PersonaDocs::Show).security_requirement("BearerToken")
+                        resource_op!(op, PersonaDocs::Show)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<PersonaName>>()
+                            .response::<200, Json<PersonaDetailsResponse>>()
                     })
                     .delete_with(remove, |op| {
-                        resource_op!(op, PersonaDocs::Remove).security_requirement("BearerToken")
+                        resource_op!(op, PersonaDocs::Remove)
+                            .security_requirement("BearerToken")
+                            .input::<NamePathParam<PersonaName>>()
+                            .response::<200, Json<PersonaRemovedResponse>>()
                     }),
                 ),
         )

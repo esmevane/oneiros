@@ -24,6 +24,7 @@
     "packages/components/dist",
     "apps/*/dist",
     "apps/*/.astro",
+    "crates/oneiros-engine/templates",
     ".claude",
     ".claude-plugin"
   ]

@@ -70,6 +70,17 @@ impl ServiceConfig {
             .map(|&ms| Duration::from_millis(ms))
             .collect()
     }
+
+    /// Get a server with a dynamically assigned port
+    pub(crate) fn dynamic() -> Self {
+        Self::builder()
+            .address(
+                "127.0.0.1:0"
+                    .parse()
+                    .expect("unable to build dynamic port service config"),
+            )
+            .build()
+    }
 }
 
 impl Default for ServiceConfig {

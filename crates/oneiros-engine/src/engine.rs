@@ -15,8 +15,12 @@
 //! returns a handle.
 
 use anstream::{stderr, stdout};
+use axum::body::Body;
 use clap::Parser;
+use http_body_util::BodyExt;
 use std::{io::Write, process::ExitCode};
+use tempfile::TempDir;
+use tower::ServiceExt;
 
 use crate::*;
 
@@ -108,9 +112,57 @@ impl Engine {
         Ok((Self::new(config), cli))
     }
 
+    /// Gets the API schema typically provided at `/api.json` and returns
+    /// it as a byte stream.
+    pub async fn get_api_schema() -> Result<Vec<u8>, Box<dyn core::error::Error>> {
+        Ok(Self::schema_mode()?
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/api.json")
+                    .body(Body::empty())?,
+            )
+            .await?
+            .into_body()
+            .collect()
+            .await?
+            .to_bytes()
+            .to_vec())
+    }
+
     /// From explicit config — tests and programmatic consumers.
     pub(crate) fn new(config: Config) -> Self {
         Self { config }
+    }
+
+    /// From explicit config — tests and programmatic consumers.
+    pub(crate) fn schema_mode() -> Result<Self, Box<dyn core::error::Error>> {
+        let temp_dir = TempDir::new()?;
+        let name = ProjectName::new("schema-gen");
+
+        Ok(Self {
+            config: Config::builder()
+                .data_dir(temp_dir.path().to_path_buf())
+                .project(name)
+                .service(ServiceConfig::dynamic())
+                .build(),
+        })
+    }
+
+    /// Make a one-shot request against the engine's router without starting
+    /// a server.
+    ///
+    /// Binds a [`ServerState`] from the engine's config, builds the full
+    /// router, and processes the request. The router includes middleware
+    /// (auth, tracing), but paths listed in `EXCLUDED_PATHS` (including
+    /// `/api.json`) skip authentication.
+    pub(crate) async fn oneshot(
+        &self,
+        request: axum::http::Request<Body>,
+    ) -> Result<axum::http::Response<Body>, Box<dyn core::error::Error>> {
+        let state = ServerState::bind(self.config.clone()).await?;
+        let router = Server::router_from_state(state);
+        Ok(router.oneshot(request).await?)
     }
 
     /// Execute a parsed CLI command against this engine's config.
