@@ -14,6 +14,7 @@ mod pressure;
 mod protocol;
 mod search;
 mod skills;
+mod slice;
 mod storage;
 mod trail;
 mod versioning;

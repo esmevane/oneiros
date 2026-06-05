@@ -20,15 +20,26 @@ pub(crate) struct ImportProjectEvent {
     pub(crate) stored: Box<StoredEvent>,
 }
 
+/// Fan a newly-stored event to the slice actor for prospective lens
+/// matching. Carries the stored event and its project scope.
+#[derive(Builder, Clone)]
+pub(crate) struct SliceMatch {
+    pub(crate) scope: Scope<AtBookmark>,
+    #[builder(into)]
+    pub(crate) stored: Box<StoredEvent>,
+}
+
 /// All project-tier messages, flat. Routed per-project by the router;
 /// actors handle their own variants and no-op the rest.
 #[derive(Clone)]
 pub(crate) enum ProjectMessage {
     LogAppend(AppendProjectLog),
     ImportEvent(ImportProjectEvent),
+    SliceMatch(SliceMatch),
 }
 
 collects_enum!(
     ProjectMessage::LogAppend => AppendProjectLog,
     ProjectMessage::ImportEvent => ImportProjectEvent,
+    ProjectMessage::SliceMatch => SliceMatch,
 );

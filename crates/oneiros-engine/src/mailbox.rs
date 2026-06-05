@@ -23,6 +23,7 @@ pub(crate) struct Mailbox {
     host_projection: HostProjectionMailbox,
     project_log: ProjectLogMailbox,
     project_import: ProjectImportMailbox,
+    project_slice: ProjectSliceMailbox,
     bookmark_projections: BookmarkProjectionsMailbox,
     bookmark_chronicle: BookmarkChronicleMailbox,
 }
@@ -38,6 +39,7 @@ impl Mailbox {
         let (host_projection, host_projection_inbox) = HostProjectionMailbox::open();
         let (project_log, project_log_inbox) = ProjectLogMailbox::open();
         let (project_import, project_import_inbox) = ProjectImportMailbox::open();
+        let (project_slice, project_slice_inbox) = ProjectSliceMailbox::open();
         let (bookmark_projections, bookmark_projections_inbox) = BookmarkProjectionsMailbox::open();
         let (bookmark_chronicle, bookmark_chronicle_inbox) = BookmarkChronicleMailbox::open();
 
@@ -46,6 +48,7 @@ impl Mailbox {
             host_projection,
             project_log,
             project_import,
+            project_slice,
             bookmark_projections,
             bookmark_chronicle,
         };
@@ -54,6 +57,7 @@ impl Mailbox {
         HostProjectionActor::spawn(host_projection_inbox);
         ProjectLogActor::spawn(project_log_inbox, mailbox.clone());
         ProjectImportActor::spawn(project_import_inbox, mailbox.clone());
+        SliceActor::spawn(project_slice_inbox, mailbox.clone(), canons.clone());
         BookmarkProjectionsActor::spawn(bookmark_projections_inbox, canons.clone());
         BookmarkChronicleActor::spawn(bookmark_chronicle_inbox, canons);
 
@@ -79,6 +83,9 @@ impl Mailbox {
                 }
                 ProjectMessage::ImportEvent(_) => {
                     self.project_import.tell(message);
+                }
+                ProjectMessage::SliceMatch(_) => {
+                    self.project_slice.tell(message);
                 }
             },
             Message::Bookmark(message) => match message {

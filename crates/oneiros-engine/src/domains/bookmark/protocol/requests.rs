@@ -10,6 +10,11 @@ versioned! {
         #[derive(clap::Args)]
         V1 => {
             #[builder(into)] pub(crate) name: BookmarkName,
+            #[builder(default)]
+            pub(crate) event_ids: Vec<EventId>,
+            #[arg(long = "from-slice")]
+            #[builder(into)]
+            pub(crate) from_slice: Option<SliceName>,
         }
     }
 }

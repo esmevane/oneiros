@@ -120,6 +120,10 @@ pub(crate) enum Command {
     #[command(subcommand)]
     Lens(LensCommands),
 
+    /// Standing lens-filtered views over continuity
+    #[command(subcommand)]
+    Slice(SliceCommands),
+
     /// Run diagnostics against the local host
     Doctor,
 }
@@ -168,6 +172,7 @@ impl Command {
             Command::Storage(storage) => storage.execute(config).await?,
             Command::Host(host) => host.execute(config).await?,
             Command::Lens(lens) => lens.execute(config).await?,
+            Command::Slice(slice) => slice.execute(config).await?,
             Command::Tenant(tenant) => tenant.execute(config).await?,
             Command::Texture(texture) => texture.execute(config).await?,
             Command::Ticket(ticket) => ticket.execute(config).await?,
