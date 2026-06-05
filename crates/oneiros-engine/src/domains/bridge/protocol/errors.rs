@@ -29,6 +29,7 @@ pub(crate) enum BridgeOp {
     Diff,
     Resolve,
     FetchEvents,
+    Submit,
 }
 
 impl core::fmt::Display for BridgeOp {
@@ -37,6 +38,7 @@ impl core::fmt::Display for BridgeOp {
             Self::Diff => f.write_str("bridge-diff"),
             Self::Resolve => f.write_str("bridge-resolve"),
             Self::FetchEvents => f.write_str("bridge-fetch-events"),
+            Self::Submit => f.write_str("bridge-submit"),
         }
     }
 }
@@ -85,6 +87,9 @@ pub(crate) enum DenyReason {
 
     #[error("link target does not match ticket target")]
     TargetMismatch,
+
+    #[error("ticket does not grant the required permission")]
+    InsufficientPermissions,
 
     #[error(transparent)]
     Invalid(#[from] TicketInvalid),

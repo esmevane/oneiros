@@ -108,6 +108,22 @@ impl CanonIndex {
             .unwrap_or_default())
     }
 
+    /// Check whether a bookmark exists for a project.
+    pub(crate) fn has_bookmark(
+        &self,
+        project: &ProjectName,
+        bookmark: &BookmarkName,
+    ) -> Result<bool, EventError> {
+        let read = self
+            .projects
+            .read()
+            .map_err(|e| EventError::Lock(e.to_string()))?;
+        Ok(read
+            .get(project)
+            .map(|shelf| shelf.branches.contains_key(bookmark))
+            .unwrap_or(false))
+    }
+
     /// Get the active bookmark name for a project.
     pub(crate) fn active_bookmark(
         &self,

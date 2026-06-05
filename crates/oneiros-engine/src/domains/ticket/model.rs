@@ -28,6 +28,15 @@ pub(crate) struct Ticket {
     pub(crate) uses: u64,
     #[builder(default = Timestamp::now())]
     pub(crate) created_at: Timestamp,
+
+    /// Capabilities granted by this ticket.
+    ///
+    /// An empty vec represents implicit read access — the current behavior
+    /// for all existing tickets. Explicit permissions use the versioned
+    /// [`Permission`] wrapper.
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) permissions: Vec<Permission>,
 }
 
 impl Indexable<TicketId> for Ticket {
@@ -65,8 +74,108 @@ impl Ticket {
         }
         Ok(())
     }
+
+    /// Check whether this ticket grants a specific capability.
+    ///
+    /// When `permissions` is empty (V0 behavior, all existing tickets),
+    /// only `Read` is granted — `Write` requires an explicit V1 permission.
+    pub(crate) fn can(&self, required: PermissionOp) -> bool {
+        if self.permissions.is_empty() {
+            return required == PermissionOp::Read;
+        }
+        self.permissions.iter().any(|p| match p.current() {
+            Ok(v1) => v1.operation == required,
+            Err(_) => false,
+        })
+    }
 }
 
 pub(crate) type Tickets = EntityIndex<TicketId, Ticket>;
 
 resource_id!(TicketId);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ticket_with_permissions(ops: &[PermissionOp]) -> Ticket {
+        let actor_id = ActorId::new();
+        let permissions: Vec<Permission> = ops
+            .iter()
+            .map(|op| Permission::from(PermissionV1 { operation: *op }))
+            .collect();
+        Ticket::builder()
+            .actor_id(actor_id)
+            .project_name(ProjectName::new("test"))
+            .project_id(ProjectId::new())
+            .link(Link::new(
+                Ref::project(ProjectId::new()),
+                Token::from("tok"),
+            ))
+            .granted_by(actor_id)
+            .permissions(permissions)
+            .build()
+    }
+
+    #[test]
+    fn empty_permissions_grants_read() {
+        let ticket = ticket_with_permissions(&[]);
+        assert!(ticket.can(PermissionOp::Read));
+    }
+
+    #[test]
+    fn empty_permissions_denies_write() {
+        let ticket = ticket_with_permissions(&[]);
+        assert!(!ticket.can(PermissionOp::Write));
+    }
+
+    #[test]
+    fn explicit_read_grants_read() {
+        let ticket = ticket_with_permissions(&[PermissionOp::Read]);
+        assert!(ticket.can(PermissionOp::Read));
+    }
+
+    #[test]
+    fn explicit_read_denies_write() {
+        let ticket = ticket_with_permissions(&[PermissionOp::Read]);
+        assert!(!ticket.can(PermissionOp::Write));
+    }
+
+    #[test]
+    fn explicit_write_denies_read() {
+        let ticket = ticket_with_permissions(&[PermissionOp::Write]);
+        assert!(!ticket.can(PermissionOp::Read));
+    }
+
+    #[test]
+    fn explicit_write_grants_write() {
+        let ticket = ticket_with_permissions(&[PermissionOp::Write]);
+        assert!(ticket.can(PermissionOp::Write));
+    }
+
+    #[test]
+    fn read_write_grants_both() {
+        let ticket = ticket_with_permissions(&[PermissionOp::Read, PermissionOp::Write]);
+        assert!(ticket.can(PermissionOp::Read));
+        assert!(ticket.can(PermissionOp::Write));
+    }
+
+    #[test]
+    fn v0_permission_in_vec_is_valid() {
+        // A V0 entry in the permissions vec upcasts to Read.
+        let actor_id = ActorId::new();
+        let ticket = Ticket::builder()
+            .actor_id(actor_id)
+            .project_name(ProjectName::new("test"))
+            .project_id(ProjectId::new())
+            .link(Link::new(
+                Ref::project(ProjectId::new()),
+                Token::from("tok"),
+            ))
+            .granted_by(actor_id)
+            .permissions(vec![Permission::V0(PermissionV0 {})])
+            .build();
+        assert!(ticket.can(PermissionOp::Read));
+        assert!(!ticket.can(PermissionOp::Write));
+    }
+}

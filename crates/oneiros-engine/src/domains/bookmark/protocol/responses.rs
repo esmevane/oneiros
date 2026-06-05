@@ -17,6 +17,7 @@ pub(crate) enum BookmarkResponse {
     Followed(Follow),
     Collected(BookmarkCollectResult),
     Unfollowed(BookmarkUnfollowedResponse),
+    Submitted(BookmarkSubmitResult),
 }
 
 versioned! {
@@ -85,4 +86,12 @@ pub(crate) struct BookmarkCollectResult {
     pub(crate) follow_id: FollowId,
     pub(crate) events_received: u64,
     pub(crate) checkpoint: Checkpoint,
+}
+
+/// The outcome of a successful `bookmark submit` — whether the
+/// receiver accepted the submission.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub(crate) struct BookmarkSubmitResult {
+    pub(crate) accepted: bool,
+    pub(crate) bookmark_name: BookmarkName,
 }

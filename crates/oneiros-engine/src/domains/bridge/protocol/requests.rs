@@ -34,6 +34,23 @@ pub(crate) struct BridgeFetchEvents {
     pub(crate) event_ids: Vec<String>,
 }
 
+/// A submit request — "please accept this bookmark."
+///
+/// Sent by a peer who holds a submit-scoped ticket issued by the
+/// receiver. The `ticket` authorizes the push (must have Write
+/// permission). The `bookmark` is a full `PeerLink` — host address
+/// plus link — pointing at the shared bookmark to pull. The
+/// `bookmark_name` is the human-readable name the sender chose.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct BridgeSubmit {
+    /// The submit-scoped ticket — must have Write permission.
+    pub(crate) ticket: Link,
+    /// The shared bookmark peer link — host + link to pull from.
+    pub(crate) bookmark: PeerLink,
+    /// The bookmark name the sender chose.
+    pub(crate) bookmark_name: BookmarkName,
+}
+
 /// A request issued over the oneiros sync protocol.
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
@@ -60,6 +77,13 @@ pub(crate) enum BridgeRequest {
     ///
     /// Issued after the Merkle diff identifies missing events.
     BridgeFetchEvents(BridgeFetchEvents),
+
+    /// "Please accept this bookmark I'm pushing to you."
+    ///
+    /// Carries a submit-scoped ticket (granting write access) and
+    /// a peer link (pointing at the data to pull). The receiver
+    /// validates the submit ticket, then pulls via the peer link.
+    BridgeSubmit(BridgeSubmit),
 }
 
 impl BridgeRequest {

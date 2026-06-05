@@ -7,6 +7,8 @@ use crate::*;
 pub(crate) struct SyncHandler {
     config: Config,
     canons: CanonIndex,
+    bridge: Bridge,
+    mailbox: Mailbox,
 }
 
 impl core::fmt::Debug for SyncHandler {
@@ -16,8 +18,18 @@ impl core::fmt::Debug for SyncHandler {
 }
 
 impl SyncHandler {
-    pub(crate) fn new(config: Config, canons: CanonIndex) -> Self {
-        Self { config, canons }
+    pub(crate) fn new(
+        config: Config,
+        canons: CanonIndex,
+        bridge: Bridge,
+        mailbox: Mailbox,
+    ) -> Self {
+        Self {
+            config,
+            canons,
+            bridge,
+            mailbox,
+        }
     }
 
     async fn validate_ticket(
@@ -35,6 +47,11 @@ impl SyncHandler {
         }
 
         ticket.check_validity()?;
+
+        // All existing sync operations (diff, resolve, fetch) require read access.
+        if !ticket.can(PermissionOp::Read) {
+            return Err(DenyReason::InsufficientPermissions.into());
+        }
 
         Ok(ticket)
     }
@@ -114,6 +131,53 @@ impl SyncHandler {
 
         Ok(BridgeResponse::BridgeEvents(BridgeEvents { events }))
     }
+
+    async fn handle_submit(&self, submit: &BridgeSubmit) -> Result<BridgeResponse, BridgeError> {
+        let scope = ComposeScope::new(self.config.clone()).host()?;
+
+        // Validate the submit ticket — must have Write permission.
+        let submit_ticket = self.validate_ticket(&scope, &submit.ticket).await?;
+        if !submit_ticket.can(PermissionOp::Write) {
+            return Err(DenyReason::InsufficientPermissions.into());
+        }
+
+        // Validate the bookmark link (read access).
+        self.validate_ticket(&scope, &submit.bookmark.link).await?;
+
+        // Ensure the bookmark exists on the receiver side so the
+        // chronicle is available for the diff + import.
+        if !self
+            .canons
+            .has_bookmark(&submit_ticket.project_name, &submit.bookmark_name)?
+        {
+            self.canons
+                .fork_project(&submit_ticket.project_name, &submit.bookmark_name)?;
+            BookmarkService::create_bookmark_db(
+                &self.config,
+                &submit_ticket.project_name,
+                &submit.bookmark_name,
+                &[],
+            )
+            .map_err(|e| BridgeError::from(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
+        }
+
+        // Pull the peer's bookmark data via the existing collect logic.
+        BookmarkService::collect_from_peer_link(
+            &ServerState::from_parts(
+                self.config.clone(),
+                self.canons.clone(),
+                self.bridge.clone(),
+                self.mailbox.clone(),
+            ),
+            &submit_ticket.project_name,
+            &submit.bookmark_name,
+            submit.bookmark.clone(),
+        )
+        .await
+        .map_err(|e| BridgeError::from(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
+
+        Ok(BridgeResponse::BridgeSubmissionAccepted)
+    }
 }
 
 impl iroh::protocol::ProtocolHandler for SyncHandler {
@@ -162,6 +226,13 @@ impl iroh::protocol::ProtocolHandler for SyncHandler {
             }
             Ok(BridgeRequest::BridgeFetchEvents(fetch)) => {
                 self.handle_fetch_events(&fetch).await.unwrap_or_else(|e| {
+                    BridgeResponse::BridgeDenied(BridgeDenied {
+                        reason: e.to_string(),
+                    })
+                })
+            }
+            Ok(BridgeRequest::BridgeSubmit(submit)) => {
+                self.handle_submit(&submit).await.unwrap_or_else(|e| {
                     BridgeResponse::BridgeDenied(BridgeDenied {
                         reason: e.to_string(),
                     })

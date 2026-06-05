@@ -9,6 +9,7 @@ pub(crate) enum BookmarkDocs {
     Follow,
     Unfollow,
     Collect,
+    Submit,
 }
 
 impl BookmarkDocs {
@@ -69,6 +70,12 @@ impl BookmarkDocs {
                 .nickname("collect-bookmark")
                 .summary("Collect from a bookmark")
                 .description("Incrementally fetch new events into a followed bookmark from its remote source.")
+                .build(),
+            Self::Submit => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("submit-bookmark")
+                .summary("Submit a bookmark to a peer")
+                .description("Push a bookmark to a remote peer who has issued a submit-scoped ticket.")
                 .build(),
         }
     }

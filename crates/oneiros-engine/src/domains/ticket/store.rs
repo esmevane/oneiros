@@ -38,20 +38,27 @@ impl<'a> TicketStore<'a> {
                 revoked_at TEXT,
                 max_uses INTEGER,
                 uses INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL DEFAULT ''
+                created_at TEXT NOT NULL DEFAULT '',
+                permissions TEXT NOT NULL DEFAULT '[]'
             )",
         )?;
+        // Migration: add permissions column if missing from older schemas.
+        self.conn
+            .execute_batch("ALTER TABLE tickets ADD COLUMN permissions TEXT NOT NULL DEFAULT '[]'")
+            .ok();
         Ok(())
     }
 
     fn write_ticket(&self, ticket: &Ticket) -> Result<(), EventError> {
         let target = RefToken::new(ticket.link.target.clone()).to_string();
+        let permissions_json =
+            serde_json::to_string(&ticket.permissions).unwrap_or_else(|_| "[]".into());
         self.conn.execute(
             "insert or replace into tickets (
                 id, actor_id, project_name, project_id, token, target, granted_by,
-                expires_at, revoked_at, max_uses, uses, created_at
+                expires_at, revoked_at, max_uses, uses, created_at, permissions
              )
-             values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+             values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             params![
                 ticket.id.to_string(),
                 ticket.actor_id.to_string(),
@@ -64,7 +71,8 @@ impl<'a> TicketStore<'a> {
                 ticket.revoked_at.map(|t| t.as_string()),
                 ticket.max_uses,
                 ticket.uses,
-                ticket.created_at.as_string()
+                ticket.created_at.as_string(),
+                permissions_json,
             ],
         )?;
         Ok(())

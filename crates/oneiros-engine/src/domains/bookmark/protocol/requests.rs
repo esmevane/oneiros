@@ -178,4 +178,29 @@ pub(crate) enum BookmarkRequest {
     FollowBookmark(FollowBookmark),
     CollectBookmark(CollectBookmark),
     UnfollowBookmark(UnfollowBookmark),
+    SubmitBookmark(SubmitBookmark),
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum SubmitBookmark {
+        #[derive(clap::Args)]
+        V1 => {
+            /// The submit ticket URI (oneiros://host/link:...) from the receiver.
+            #[arg(long)]
+            #[builder(into)]
+            pub(crate) ticket: String,
+            /// The local bookmark name to submit.
+            #[builder(into)]
+            pub(crate) name: BookmarkName,
+        }
+    }
+}
+
+impl ClientRequest for SubmitBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/submit", self).await
+    }
 }

@@ -96,6 +96,16 @@ impl BookmarkView {
                     String::new(),
                 )
             }
+            BookmarkResponse::Submitted(result) => {
+                let status = if result.accepted {
+                    "accepted"
+                } else {
+                    "rejected"
+                };
+                let prompt = Confirmation::new("Submit", result.bookmark_name.to_string(), status)
+                    .to_string();
+                Rendered::new(BookmarkResponse::Submitted(result), prompt, String::new())
+            }
         }
     }
 }

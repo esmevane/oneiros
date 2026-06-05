@@ -48,6 +48,24 @@ impl ServerState {
         })
     }
 
+    /// Construct from individual components — used by sync handlers
+    /// that already own their config, canons, bridge, and mailbox.
+    pub(crate) fn from_parts(
+        config: Config,
+        canons: CanonIndex,
+        bridge: Bridge,
+        mailbox: Mailbox,
+    ) -> Self {
+        Self {
+            config,
+            canons,
+            bridge,
+            api: Arc::new(OnceLock::new()),
+            mailbox,
+            host_secret: iroh::SecretKey::generate(),
+        }
+    }
+
     /// The bus mailbox — services dispatch events through this handle.
     pub(crate) fn mailbox(&self) -> &Mailbox {
         &self.mailbox

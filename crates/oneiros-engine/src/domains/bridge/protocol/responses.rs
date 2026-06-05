@@ -56,6 +56,12 @@ pub(crate) enum BridgeResponse {
     /// The requested events, fetched by ID after the diff.
     BridgeEvents(BridgeEvents),
 
+    /// The receiver accepted the submission and is pulling the data.
+    BridgeSubmissionAccepted,
+
+    /// The receiver rejected the submission.
+    BridgeSubmissionRejected(BridgeDenied),
+
     /// The server rejected the request.
     BridgeDenied(BridgeDenied),
 }

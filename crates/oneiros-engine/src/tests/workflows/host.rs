@@ -216,6 +216,107 @@ async fn host_administration() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
+/// Submit-scoped tickets carry explicit Write permission and are
+/// denied for read operations on the sync protocol.
+#[tokio::test]
+async fn submit_ticket_carries_write_permission() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new().await?;
+    let app = app.init_host().await?;
+    let client = app.client();
+
+    let actor = match client
+        .actor()
+        .list(&ListActors::builder_v1().build().into())
+        .await?
+    {
+        ActorResponse::Listed(ActorsResponse::V1(listed)) => listed
+            .items
+            .into_iter()
+            .next()
+            .expect("host init should create an actor"),
+        other => panic!("expected Listed, got {other:?}"),
+    };
+
+    let project_name = ProjectName::new("submit-test");
+    client
+        .project()
+        .create(
+            &CreateProject::builder_v1()
+                .name(project_name.clone())
+                .build()
+                .into(),
+        )
+        .await?;
+
+    // Issue a write-scoped ticket
+    let write_ticket = match client
+        .ticket()
+        .issue(
+            &CreateTicket::builder_v1()
+                .actor_id(actor.id)
+                .project_name(project_name.clone())
+                .permissions(vec![PermissionOp::Write])
+                .build()
+                .into(),
+        )
+        .await?
+    {
+        TicketResponse::Created(TicketCreatedResponse::V1(creation)) => creation.ticket,
+        other => panic!("expected Created, got {other:?}"),
+    };
+
+    assert!(
+        !write_ticket.permissions.is_empty(),
+        "write-scoped ticket should have non-empty permissions, got {:?}",
+        write_ticket.permissions
+    );
+    assert!(!write_ticket.can(PermissionOp::Read));
+    assert!(write_ticket.can(PermissionOp::Write));
+    assert!(!write_ticket.permissions.is_empty());
+
+    // Issue a read-scoped ticket (explicit)
+    let read_ticket = match client
+        .ticket()
+        .issue(
+            &CreateTicket::builder_v1()
+                .actor_id(actor.id)
+                .project_name(project_name.clone())
+                .permissions(vec![PermissionOp::Read])
+                .build()
+                .into(),
+        )
+        .await?
+    {
+        TicketResponse::Created(TicketCreatedResponse::V1(creation)) => creation.ticket,
+        other => panic!("expected Created, got {other:?}"),
+    };
+
+    assert!(read_ticket.can(PermissionOp::Read));
+    assert!(!read_ticket.can(PermissionOp::Write));
+
+    // Issue a default ticket (no permissions) — backward compat
+    let default_ticket = match client
+        .ticket()
+        .issue(
+            &CreateTicket::builder_v1()
+                .actor_id(actor.id)
+                .project_name(project_name.clone())
+                .build()
+                .into(),
+        )
+        .await?
+    {
+        TicketResponse::Created(TicketCreatedResponse::V1(creation)) => creation.ticket,
+        other => panic!("expected Created, got {other:?}"),
+    };
+
+    assert!(default_ticket.can(PermissionOp::Read));
+    assert!(!default_ticket.can(PermissionOp::Write));
+    assert!(default_ticket.permissions.is_empty());
+
+    Ok(())
+}
+
 /// Host init must produce a usable host keypair on disk, and must not
 /// rotate it on subsequent calls. We wield the app: drive `system init`
 /// through the CLI (HTTP-mediated) and then verify the keypair file.
