@@ -124,6 +124,37 @@ impl CanonIndex {
             .unwrap_or_else(BookmarkName::main))
     }
 
+    /// Check whether a bookmark exists for a project.
+    pub(crate) fn has_bookmark(
+        &self,
+        project: &ProjectName,
+        bookmark: &BookmarkName,
+    ) -> Result<bool, EventError> {
+        let read = self
+            .projects
+            .read()
+            .map_err(|e| EventError::Lock(e.to_string()))?;
+        Ok(read
+            .get(project)
+            .map(|shelf| shelf.branches.contains_key(bookmark))
+            .unwrap_or(false))
+    }
+
+    /// Get all bookmark names for a project.
+    pub(crate) fn bookmark_names(
+        &self,
+        project: &ProjectName,
+    ) -> Result<Vec<BookmarkName>, EventError> {
+        let read = self
+            .projects
+            .read()
+            .map_err(|e| EventError::Lock(e.to_string()))?;
+        Ok(read
+            .get(project)
+            .map(|shelf| shelf.branches.keys().cloned().collect())
+            .unwrap_or_default())
+    }
+
     /// Fork the active bookmark into a new bookmark.
     pub(crate) fn fork_project(
         &self,

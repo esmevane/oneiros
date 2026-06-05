@@ -42,6 +42,10 @@ impl Ref {
         Self::V0(Resource::Peer(id))
     }
 
+    pub(crate) fn remote(id: RemoteId) -> Self {
+        Self::V0(Resource::Remote(id))
+    }
+
     pub(crate) fn persona(name: PersonaName) -> Self {
         Self::V0(Resource::Persona(name))
     }

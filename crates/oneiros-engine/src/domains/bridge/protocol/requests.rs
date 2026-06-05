@@ -34,6 +34,35 @@ pub(crate) struct BridgeFetchEvents {
     pub(crate) event_ids: Vec<String>,
 }
 
+/// List bookmarks on a remote project.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct BridgeListBookmarks {
+    /// Project-scoped ticket (must have Read permission).
+    pub(crate) ticket: Link,
+    /// The project to list bookmarks for.
+    pub(crate) project: ProjectName,
+}
+
+/// Pull a named bookmark's full event data from a remote.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct BridgePullBookmark {
+    /// Project-scoped ticket (must have Read permission).
+    pub(crate) ticket: Link,
+    /// The bookmark name to pull.
+    pub(crate) bookmark_name: BookmarkName,
+}
+
+/// Push a bookmark to a remote host.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) struct BridgePushBookmark {
+    /// Project-scoped ticket (must have Write permission).
+    pub(crate) ticket: Link,
+    /// The shared bookmark peer link — host + link to pull from.
+    pub(crate) bookmark: PeerLink,
+    /// The bookmark name to create/update on the remote.
+    pub(crate) bookmark_name: BookmarkName,
+}
+
 /// A request issued over the oneiros sync protocol.
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
@@ -45,21 +74,22 @@ pub(crate) struct BridgeFetchEvents {
 )]
 pub(crate) enum BridgeRequest {
     /// "Here's my chronicle root — tell me yours."
-    ///
-    /// Initiates the Merkle diff protocol. The server compares
-    /// root hashes and responds with its root node if they differ.
     BridgeDiff(BridgeDiff),
 
     /// "Give me these HAMT nodes by hash."
-    ///
-    /// The client-driven tree walk requests server nodes it hasn't
-    /// seen. Each round narrows the search by 16x (one HAMT level).
     BridgeResolve(BridgeResolve),
 
     /// "Give me these specific events by ID."
-    ///
-    /// Issued after the Merkle diff identifies missing events.
     BridgeFetchEvents(BridgeFetchEvents),
+
+    /// "What bookmarks do you have for this project?"
+    BridgeListBookmarks(BridgeListBookmarks),
+
+    /// "Give me all events for a named bookmark."
+    BridgePullBookmark(BridgePullBookmark),
+
+    /// "Please accept this bookmark I'm pushing to you."
+    BridgePushBookmark(BridgePushBookmark),
 }
 
 impl BridgeRequest {

@@ -52,6 +52,7 @@ impl SkillInventory {
         skills.extend(PersonaSkills::all());
         skills.extend(PressureSkills::all());
         skills.extend(ProjectSkills::all());
+        skills.extend(RemoteSkills::all());
         skills.extend(SearchSkills::all());
         skills.extend(SeedSkills::all());
         skills.extend(SensationSkills::all());

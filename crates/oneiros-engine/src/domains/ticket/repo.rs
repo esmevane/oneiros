@@ -72,6 +72,7 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
         max_uses: max_uses.map(|v| v as u64),
         uses: uses as u64,
         created_at: Timestamp::parse_str(created_at)?,
+        permissions: vec![],
     })
 }
 

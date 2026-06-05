@@ -1,5 +1,11 @@
 use crate::*;
 
+/// Internal result from `collect_from_peer_link`.
+pub(crate) struct PeerCollectResult {
+    pub(crate) count: u64,
+    pub(crate) diff_result: DiffResult,
+}
+
 pub(crate) struct BookmarkService;
 
 impl BookmarkService {
@@ -345,19 +351,51 @@ impl BookmarkService {
     ) -> Result<BookmarkResponse, BookmarkError> {
         let scope = ComposeScope::new(state.config().clone()).host()?;
         let mailbox = state.mailbox();
+
+        let result =
+            Self::collect_from_peer_link(state, project, &follow.bookmark, peer_link).await?;
+        let events_received = result.count;
+
+        let checkpoint = Checkpoint {
+            sequence: follow.checkpoint.sequence + events_received,
+            cumulative_hash: result.diff_result.server_root.unwrap_or_default(),
+            head: None,
+            taken_at: Timestamp::now(),
+        };
+
+        FollowService::advance(
+            &scope,
+            mailbox,
+            follow.id,
+            checkpoint.clone(),
+            events_received,
+        )
+        .await?;
+
+        Ok(BookmarkResponse::Collected(BookmarkCollectResult {
+            follow_id: follow.id,
+            events_received,
+            checkpoint,
+        }))
+    }
+
+    /// Collect events from a peer link into a named bookmark, without
+    /// requiring a Follow record. Used by both the existing collect flow
+    /// and the push/submit handshake.
+    ///
+    /// The caller must ensure the bookmark already exists on this host.
+    pub(crate) async fn collect_from_peer_link(
+        state: &ServerState,
+        project: &ProjectName,
+        bookmark_name: &BookmarkName,
+        peer_link: PeerLink,
+    ) -> Result<PeerCollectResult, BookmarkError> {
+        let mailbox = state.mailbox();
         let bridge = state.bridge();
 
-        // Get the bookmark's chronicle — read-only here, used for the
-        // Merkle diff. The chronicle actor updates it on each Stored
-        // notification from the inbound actor.
-        let chronicle = state
-            .canons()
-            .bookmark_chronicle(project, &follow.bookmark)?;
+        let chronicle = state.canons().bookmark_chronicle(project, bookmark_name)?;
         let local_root = chronicle.root()?;
 
-        // Build a local resolver from the host DB's ChronicleStore.
-        // Opens its own connection per resolve call — Send-safe across
-        // the async diff, and fast with WAL mode (~20 resolves per tree walk).
         {
             let db = state.config().host_db()?;
             ChronicleStore::new(&db).migrate()?;
@@ -370,8 +408,6 @@ impl BookmarkService {
             }
         };
 
-        // Phase 1: Merkle diff — walk the peer's chronicle tree,
-        // comparing against our local chronicle to find missing events.
         let diff_result = bridge
             .diff(
                 &peer_link.host,
@@ -384,10 +420,6 @@ impl BookmarkService {
 
         let events_received = diff_result.missing.len() as u64;
 
-        // Phase 2: Fetch missing events and dispatch each as an
-        // `Import` through the bus. The inbound actor handles
-        // events.db insert and notifies the project actor; bookmark
-        // + chronicle children project / record naturally.
         if !diff_result.missing.is_empty() {
             let event_ids: Vec<String> = diff_result
                 .missing
@@ -406,11 +438,8 @@ impl BookmarkService {
                 .map_err(|error: BridgeError| BookmarkError::InvalidUri(error.to_string()))?;
 
             let bookmark_scope = ComposeScope::new(state.config().clone())
-                .bookmark(project.clone(), follow.bookmark.clone())?;
+                .bookmark(project.clone(), bookmark_name.clone())?;
 
-            // Capture the imported event ids — we'll wait until the
-            // chronicle (and therefore the bookmark actor processing
-            // the same FIFO) has seen them all.
             let expected_ids: std::collections::HashSet<String> =
                 events.iter().map(|event| event.id.to_string()).collect();
 
@@ -423,8 +452,6 @@ impl BookmarkService {
                 ));
             }
 
-            // Wait for every imported event id to appear in the
-            // bookmark's chronicle.
             let chronicle_for_wait = chronicle.clone();
             let resolve_for_wait = {
                 let config = state.config().clone();
@@ -451,29 +478,10 @@ impl BookmarkService {
                 .await?;
         }
 
-        // Store the server's root hash in the checkpoint so we can
-        // detect "already up to date" on the next collect.
-        let checkpoint = Checkpoint {
-            sequence: follow.checkpoint.sequence + events_received,
-            cumulative_hash: diff_result.server_root.unwrap_or_default(),
-            head: None,
-            taken_at: Timestamp::now(),
-        };
-
-        FollowService::advance(
-            &scope,
-            mailbox,
-            follow.id,
-            checkpoint.clone(),
-            events_received,
-        )
-        .await?;
-
-        Ok(BookmarkResponse::Collected(BookmarkCollectResult {
-            follow_id: follow.id,
-            events_received,
-            checkpoint,
-        }))
+        Ok(PeerCollectResult {
+            count: events_received,
+            diff_result,
+        })
     }
 
     /// Remove a follow.
@@ -524,7 +532,7 @@ impl BookmarkService {
     /// projections so the new bookmark starts with the source's state.
     /// When `event_ids` is non-empty, only matching events are replayed
     /// (scoped fork — used by slice bookmarking).
-    fn create_bookmark_db(
+    pub(crate) fn create_bookmark_db(
         config: &Config,
         project: &ProjectName,
         bookmark: &BookmarkName,

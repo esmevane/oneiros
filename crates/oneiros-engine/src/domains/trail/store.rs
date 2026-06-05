@@ -226,6 +226,14 @@ fn derive_refs(event: &Events) -> Vec<Ref> {
         Events::Peer(PeerEvents::PeerRemoved(removed)) => {
             one(removed.clone().current(), |v| Ref::peer(v.id))
         }
+
+        // Remotes.
+        Events::Remote(RemoteEvents::RemoteAdded(added)) => {
+            one(added.clone().current(), |v| Ref::remote(v.remote.id))
+        }
+        Events::Remote(RemoteEvents::RemoteRemoved(removed)) => {
+            one(removed.clone().current(), |v| Ref::remote(v.id))
+        }
     }
 }
 

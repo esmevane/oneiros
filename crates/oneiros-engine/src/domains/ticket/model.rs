@@ -28,6 +28,12 @@ pub(crate) struct Ticket {
     pub(crate) uses: u64,
     #[builder(default = Timestamp::now())]
     pub(crate) created_at: Timestamp,
+
+    /// Capabilities granted by this ticket. Empty vec = implicit read access
+    /// (V0 behavior for backward compatibility).
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) permissions: Vec<Permission>,
 }
 
 impl Indexable<TicketId> for Ticket {
@@ -64,6 +70,20 @@ impl Ticket {
             return Err(TicketInvalid::Exhausted);
         }
         Ok(())
+    }
+
+    /// Check whether this ticket grants a specific capability.
+    ///
+    /// When `permissions` is empty (V0 behavior, all existing tickets),
+    /// only `Read` is granted — `Write` requires an explicit V1 permission.
+    pub(crate) fn can(&self, required: PermissionOp) -> bool {
+        if self.permissions.is_empty() {
+            return required == PermissionOp::Read;
+        }
+        self.permissions.iter().any(|p| match p.current() {
+            Ok(v1) => v1.operation == required,
+            Err(_) => false,
+        })
     }
 }
 
