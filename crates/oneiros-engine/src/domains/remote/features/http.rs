@@ -59,17 +59,14 @@ async fn list(
 
 async fn remove(
     scope: Scope<AtHost>,
-    Path(name): Path<String>,
+    Path(name): Path<RemoteName>,
     State(state): State<ServerState>,
 ) -> Result<Json<RemoteResponse>, RemoteError> {
     Ok(Json(
         RemoteService::remove(
             &scope,
             state.mailbox(),
-            &RemoveRemote::builder_v1()
-                .name(RemoteName::new(name))
-                .build()
-                .into(),
+            &RemoveRemote::builder_v1().name(name).build().into(),
         )
         .await?,
     ))
@@ -77,9 +74,7 @@ async fn remove(
 
 async fn bookmarks(
     State(state): State<ServerState>,
-    Path(name): Path<String>,
+    Path(name): Path<RemoteName>,
 ) -> Result<Json<RemoteResponse>, RemoteError> {
-    Ok(Json(
-        RemoteService::bookmarks(&state, &RemoteName::new(name)).await?,
-    ))
+    Ok(Json(RemoteService::bookmarks(&state, &name).await?))
 }

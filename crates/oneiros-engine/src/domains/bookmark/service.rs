@@ -219,7 +219,7 @@ impl BookmarkService {
             &project_record,
             resolved_actor_id,
             target,
-            &[],
+            vec![],
         )
         .await?;
 
