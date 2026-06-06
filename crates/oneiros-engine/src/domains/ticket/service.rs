@@ -22,6 +22,7 @@ impl TicketService {
             &project,
             create.actor_id,
             target,
+            &create.permissions,
         )
         .await?;
         Ok(TicketResponse::Created(
@@ -41,6 +42,7 @@ impl TicketService {
         project: &Project,
         actor_id: ActorId,
         target: Ref,
+        permission_ops: &[PermissionOp],
     ) -> Result<Ticket, TicketError> {
         let actor = ActorRepo::new(scope)
             .get(actor_id)
@@ -55,12 +57,23 @@ impl TicketService {
 
         let token = Token::issue(claims);
         let link = Link::new(target, token);
+
+        let permissions: Vec<Permission> = if permission_ops.is_empty() {
+            vec![]
+        } else {
+            permission_ops
+                .iter()
+                .map(|op| Permission::from(PermissionV1 { operation: *op }))
+                .collect()
+        };
+
         let ticket = Ticket::builder()
             .actor_id(actor_id)
             .project_name(project_name.clone())
             .project_id(project.id)
             .link(link)
             .granted_by(actor_id)
+            .permissions(permissions)
             .build();
         let id = ticket.id;
 

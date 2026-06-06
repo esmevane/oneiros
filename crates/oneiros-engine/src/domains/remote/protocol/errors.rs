@@ -3,6 +3,8 @@ use axum::response::{IntoResponse, Response};
 
 use crate::*;
 
+resource_op_error!(RemoteError);
+
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum RemoteError {
     #[error("remote not found: {0}")]

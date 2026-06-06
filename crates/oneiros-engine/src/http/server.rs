@@ -182,6 +182,7 @@ impl Server {
             .merge(PersonaRouter.routes())
             .merge(PressureRouter.routes())
             .merge(ProjectRouter.routes())
+            .merge(RemoteRouter.routes())
             .merge(SearchRouter.routes())
             .merge(SeedRouter.routes())
             .merge(SensationRouter.routes())
