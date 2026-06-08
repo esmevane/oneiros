@@ -30,6 +30,10 @@ impl TicketRouter {
                         resource_op!(op, TicketDocs::Show)
                             .input::<IdPathParam<TicketId>>()
                             .response::<200, Json<TicketFoundResponse>>()
+                    })
+                    .delete_with(revoke, |op| {
+                        resource_op!(op, TicketDocs::Revoke)
+                            .response::<200, Json<TicketRevokedResponse>>()
                     }),
                 )
                 .api_route(
@@ -73,4 +77,20 @@ async fn validate(
     Json(body): Json<ValidateTicket>,
 ) -> Result<Json<TicketResponse>, TicketError> {
     Ok(Json(TicketService::validate(&scope, &body).await?))
+}
+
+async fn revoke(
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
+    Path(key): Path<ResourceKey<TicketId>>,
+) -> Result<Json<TicketResponse>, TicketError> {
+    let id = key.resolve()?;
+    Ok(Json(
+        TicketService::revoke(
+            &scope,
+            &mailbox,
+            &RevokeTicket::builder_v1().ticket_id(id).build().into(),
+        )
+        .await?,
+    ))
 }

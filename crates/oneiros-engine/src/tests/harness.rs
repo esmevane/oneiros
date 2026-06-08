@@ -881,6 +881,15 @@ impl<'a> TicketClient<'a> {
         let bytes = request.execute_request(self.client).await?;
         decode(bytes, "ticket")
     }
+
+    pub(crate) async fn revoke(&self, ticket_id: TicketId) -> Result<TicketResponse, ClientError> {
+        let request: RevokeTicket = RevokeTicket::builder_v1()
+            .ticket_id(ticket_id)
+            .build()
+            .into();
+        let bytes = request.execute_request(self.client).await?;
+        decode(bytes, "ticket")
+    }
 }
 
 pub(crate) struct BookmarkClient<'a> {

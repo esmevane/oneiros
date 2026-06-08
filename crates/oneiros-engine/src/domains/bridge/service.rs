@@ -138,6 +138,11 @@ impl SyncHandler {
             return Err(DenyReason::InsufficientPermissions.into());
         }
 
+        // The request must target the same project the ticket was issued for.
+        if request.project != ticket.project_name {
+            return Err(DenyReason::TargetMismatch.into());
+        }
+
         // List bookmark names from the host DB projection.
         let host_db = self.config.host_db().map_err(|e| {
             BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))

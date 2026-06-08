@@ -5,6 +5,7 @@ pub(crate) enum TicketDocs {
     List,
     Show,
     Validate,
+    Revoke,
 }
 
 impl TicketDocs {
@@ -40,7 +41,13 @@ impl TicketDocs {
                 .tag(tag)
                 .nickname("validate-ticket")
                 .summary("Validate a ticket")
-                .description("Check whether a project access ticket is currently valid.")
+                .description("Verify that a ticket is still valid and not revoked.")
+                .build(),
+            Self::Revoke => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("revoke-ticket")
+                .summary("Revoke a ticket")
+                .description("Revoke a previously issued ticket, rendering it unusable.")
                 .build(),
         }
     }

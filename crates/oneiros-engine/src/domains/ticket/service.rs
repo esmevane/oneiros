@@ -148,4 +148,40 @@ impl TicketService {
                 .into(),
         ))
     }
+
+    pub(crate) async fn revoke(
+        scope: &Scope<AtHost>,
+        mailbox: &Mailbox,
+        request: &RevokeTicket,
+    ) -> Result<TicketResponse, TicketError> {
+        let RevokeTicket::V1(revoke) = request;
+        let ticket = TicketRepo::new(scope)
+            .get(&revoke.ticket_id)
+            .await?
+            .ok_or(TicketError::NotFound(revoke.ticket_id))?;
+
+        let new_event = NewEvent::builder()
+            .data(Events::Ticket(TicketEvents::TicketRevoked(
+                TicketRevoked::builder_v1()
+                    .ticket_id(ticket.id)
+                    .revoked_at(Timestamp::now())
+                    .build()
+                    .into(),
+            )))
+            .build();
+
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
+
+        Ok(TicketResponse::Revoked(
+            TicketRevokedResponse::builder_v1()
+                .ticket_id(ticket.id)
+                .build()
+                .into(),
+        ))
+    }
 }

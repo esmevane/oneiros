@@ -12,6 +12,7 @@ pub(crate) enum TicketResponse {
     Found(TicketFoundResponse),
     Listed(TicketsResponse),
     Validated(TicketValidatedResponse),
+    Revoked(TicketRevokedResponse),
 }
 
 versioned! {
@@ -42,5 +43,14 @@ versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum TicketValidatedResponse {
         V1 => { #[serde(flatten)] pub(crate) ticket: Ticket }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum TicketRevokedResponse {
+        V1 => {
+            pub(crate) ticket_id: TicketId,
+        }
     }
 }

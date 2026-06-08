@@ -101,6 +101,25 @@ pub(crate) enum TicketRequest {
     GetTicket(GetTicket),
     ListTickets(ListTickets),
     ValidateTicket(ValidateTicket),
+    RevokeTicket(RevokeTicket),
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum RevokeTicket {
+        V1 => {
+            #[builder(into)] pub(crate) ticket_id: TicketId,
+        }
+    }
+}
+
+impl ClientRequest for RevokeTicket {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        let RevokeTicket::V1(r) = self;
+        client.delete(&format!("/tickets/{}", r.ticket_id)).await
+    }
 }
 
 #[cfg(test)]

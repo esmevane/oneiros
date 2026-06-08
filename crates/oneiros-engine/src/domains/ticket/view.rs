@@ -44,6 +44,15 @@ impl TicketView {
                     String::new(),
                 )
             }
+            TicketResponse::Revoked(TicketRevokedResponse::V1(revoked)) => {
+                let prompt = Confirmation::new("Ticket", revoked.ticket_id.to_string(), "revoked")
+                    .to_string();
+                Rendered::new(
+                    TicketResponse::Revoked(TicketRevokedResponse::V1(revoked)),
+                    prompt,
+                    String::new(),
+                )
+            }
             TicketResponse::Listed(TicketsResponse::V1(listed)) => {
                 let mut table = Table::new(vec![Column::new("Project"), Column::new("Actor")]);
                 for ticket in &listed.items {

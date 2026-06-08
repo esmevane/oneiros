@@ -15,6 +15,17 @@ impl<'a> TicketStore<'a> {
         if let Event::Known(Events::Ticket(TicketEvents::TicketIssued(issued))) = &event.data {
             let ticket = issued.current()?.ticket;
             self.write_ticket(&ticket)?;
+        } else if let Event::Known(Events::Ticket(TicketEvents::TicketRevoked(revoked))) =
+            &event.data
+        {
+            let current = revoked.current()?;
+            self.conn.execute(
+                "UPDATE tickets SET revoked_at = ?1 WHERE id = ?2",
+                rusqlite::params![
+                    current.revoked_at.as_string(),
+                    current.ticket_id.to_string()
+                ],
+            )?;
         }
         Ok(())
     }

@@ -234,6 +234,11 @@ fn derive_refs(event: &Events) -> Vec<Ref> {
         Events::Remote(RemoteEvents::RemoteRemoved(removed)) => {
             one(removed.clone().current(), |v| Ref::remote(v.id))
         }
+
+        // Ticket revocation.
+        Events::Ticket(TicketEvents::TicketRevoked(revoked)) => {
+            one(revoked.clone().current(), |v| Ref::ticket(v.ticket_id))
+        }
     }
 }
 

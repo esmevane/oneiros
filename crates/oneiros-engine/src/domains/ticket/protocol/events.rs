@@ -23,13 +23,16 @@ pub(crate) enum TicketEvents {
     TicketIssued(TicketIssued),
     TicketUsed(TicketUsed),
     TicketRejected(TicketRejected),
+    TicketRevoked(TicketRevoked),
 }
 
 impl TicketEvents {
     pub(crate) fn maybe_ticket(&self) -> Option<Ticket> {
         match self {
             TicketEvents::TicketIssued(event) => event.clone().current().ok().map(|v| v.ticket),
-            TicketEvents::TicketUsed(_) | TicketEvents::TicketRejected(_) => None,
+            TicketEvents::TicketUsed(_)
+            | TicketEvents::TicketRejected(_)
+            | TicketEvents::TicketRevoked(_) => None,
         }
     }
 }
@@ -57,6 +60,15 @@ versioned! {
             pub(crate) ticket_id: Option<TicketId>,
             pub(crate) reason: String,
             pub(crate) rejected_at: Timestamp,
+        }
+    }
+}
+
+versioned! {
+    pub(crate) enum TicketRevoked {
+        V1 => {
+            pub(crate) ticket_id: TicketId,
+            pub(crate) revoked_at: Timestamp,
         }
     }
 }

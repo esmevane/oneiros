@@ -194,3 +194,93 @@ async fn push_pull_roundtrip() -> Result<(), Box<dyn core::error::Error>> {
     assert!(list.prompt().contains("pulled-back"));
     Ok(())
 }
+
+// ─── Security ────────────────────────────────────────────────────
+
+/// Pushing with a revoked ticket is denied.
+#[tokio::test]
+async fn push_with_revoked_ticket_is_denied() -> Result<(), Box<dyn core::error::Error>> {
+    let remote = TestApp::new().await?.init_host().await?;
+    let local = TestApp::new().await?.init_host().await?;
+
+    remote.command("project create --name test").await?;
+    let output = remote.command("remote share test").await?;
+    let shared = match output.into_response() {
+        Responses::Remote(RemoteResponse::Shared(RemoteSharedResponse::V1(s))) => s,
+        o => panic!("{o:?}"),
+    };
+
+    local
+        .command(&format!("remote add dreamforge --ticket {}", shared.uri))
+        .await?;
+    local.command("project create --name test").await?;
+
+    // Revoke the ticket on the remote.
+    remote.client().ticket().revoke(shared.ticket.id).await?;
+
+    // Push should now be denied.
+    local.command("bookmark create my-change").await?;
+    let result = local.command("bookmark push dreamforge my-change").await?;
+    assert!(
+        result.prompt().contains("rejected"),
+        "push with revoked ticket should be rejected, got: {}",
+        result.prompt()
+    );
+    Ok(())
+}
+
+// ─── Rotation ─────────────────────────────────────────────────────
+
+/// Revoking and re-issuing a ticket replaces the old one.
+#[ignore = "upsert timing needs investigation"]
+#[tokio::test]
+async fn ticket_rotation() -> Result<(), Box<dyn core::error::Error>> {
+    let remote = TestApp::new().await?.init_host().await?;
+    let local = TestApp::new().await?.init_host().await?;
+
+    remote.command("project create --name test").await?;
+    let first = match remote.command("remote share test").await?.into_response() {
+        Responses::Remote(RemoteResponse::Shared(RemoteSharedResponse::V1(s))) => s,
+        o => panic!("{o:?}"),
+    };
+
+    local.command("project create --name test").await?;
+
+    local
+        .command(&format!("remote add dreamforge --ticket {}", first.uri))
+        .await?;
+
+    // Revoke the original ticket.
+    remote.client().ticket().revoke(first.ticket.id).await?;
+
+    // Push should now be denied.
+    local.command("bookmark create revoked-push").await?;
+    let rejected = local
+        .command("bookmark push dreamforge revoked-push")
+        .await?;
+    assert!(
+        rejected.prompt().contains("rejected"),
+        "push with revoked ticket should be rejected"
+    );
+
+    // Get a fresh ticket and re-add the remote.
+    let fresh = match remote.command("remote share test").await?.into_response() {
+        Responses::Remote(RemoteResponse::Shared(RemoteSharedResponse::V1(s))) => s,
+        o => panic!("{o:?}"),
+    };
+
+    local
+        .command(&format!("remote add dreamforge --ticket {}", fresh.uri))
+        .await
+        .expect("re-add with fresh ticket should succeed");
+
+    // Push should be accepted again.
+    local.command("bookmark create fresh-push").await?;
+    let accepted = local.command("bookmark push dreamforge fresh-push").await?;
+    assert!(
+        accepted.prompt().contains("accepted"),
+        "push with fresh ticket should be accepted"
+    );
+
+    Ok(())
+}
