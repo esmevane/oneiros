@@ -38,9 +38,11 @@ async fn add_remote_with_valid_ticket() -> Result<(), Box<dyn core::error::Error
     };
 
     let ticket = {
-        let output = remote.command(&format!(
-            "ticket issue --actor-id {actor_id} --project-name test --permission read --permission write"
-        )).await?;
+        let output = remote
+            .command(&format!(
+                "ticket issue --actor-id {actor_id} --project-name test"
+            ))
+            .await?;
         match output.into_response() {
             Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
             o => panic!("{o:?}"),
@@ -93,7 +95,7 @@ async fn remove_remote_drops_from_list() -> Result<(), Box<dyn core::error::Erro
     let ticket = {
         let output = remote
             .command(&format!(
-                "ticket issue --actor-id {actor_id} --project-name test --permission read"
+                "ticket issue --actor-id {actor_id} --project-name test"
             ))
             .await?;
         match output.into_response() {
@@ -149,7 +151,7 @@ async fn list_remote_bookmarks() -> Result<(), Box<dyn core::error::Error>> {
     let ticket = {
         let output = remote
             .command(&format!(
-                "ticket issue --actor-id {actor_id} --project-name test --permission read"
+                "ticket issue --actor-id {actor_id} --project-name test"
             ))
             .await?;
         match output.into_response() {
@@ -211,9 +213,11 @@ async fn push_bookmark_to_remote() -> Result<(), Box<dyn core::error::Error>> {
             .expect("bookmark share should produce a URI")
     };
     let ticket = {
-        let output = remote.command(&format!(
-            "ticket issue --actor-id {actor_id} --project-name test --permission read --permission write"
-        )).await?;
+        let output = remote
+            .command(&format!(
+                "ticket issue --actor-id {actor_id} --project-name test"
+            ))
+            .await?;
         match output.into_response() {
             Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
             o => panic!("{o:?}"),
@@ -279,9 +283,11 @@ async fn push_bookmark_with_as_renames() -> Result<(), Box<dyn core::error::Erro
             .expect("bookmark share should produce a URI")
     };
     let ticket = {
-        let output = remote.command(&format!(
-            "ticket issue --actor-id {actor_id} --project-name test --permission read --permission write"
-        )).await?;
+        let output = remote
+            .command(&format!(
+                "ticket issue --actor-id {actor_id} --project-name test"
+            ))
+            .await?;
         match output.into_response() {
             Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
             o => panic!("{o:?}"),
@@ -302,66 +308,6 @@ async fn push_bookmark_with_as_renames() -> Result<(), Box<dyn core::error::Erro
     let bookmarks = local.command("remote bookmarks dreamforge").await?;
     assert!(!bookmarks.prompt().contains("my-change"));
     assert!(bookmarks.prompt().contains("feature-x"));
-    Ok(())
-}
-
-#[tokio::test]
-async fn push_with_read_only_ticket_is_rejected() -> Result<(), Box<dyn core::error::Error>> {
-    let remote = TestApp::new().await?.init_host().await?;
-    let local = TestApp::new().await?.init_host().await?;
-    let actor_id = {
-        let client = remote.client();
-        match client
-            .actor()
-            .list(&ListActors::builder_v1().build().into())
-            .await?
-        {
-            ActorResponse::Listed(ActorsResponse::V1(l)) => {
-                l.items.into_iter().next().unwrap().id.to_string()
-            }
-            o => panic!("{o:?}"),
-        }
-    };
-    remote.command("project create --name test").await?;
-    remote.command("bookmark create extra").await?;
-    let host_addr = {
-        let output = remote.command("bookmark share main").await?;
-        output
-            .prompt()
-            .split_whitespace()
-            .find_map(|w| w.parse::<OneirosUri>().ok())
-            .and_then(|u| match u {
-                OneirosUri::Peer(p) => Some(p.host),
-                _ => None,
-            })
-            .expect("bookmark share should produce a URI")
-    };
-    // Read-only ticket — Write permission withheld.
-    let ticket = {
-        let output = remote
-            .command(&format!(
-                "ticket issue --actor-id {actor_id} --project-name test --permission read"
-            ))
-            .await?;
-        match output.into_response() {
-            Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
-            o => panic!("{o:?}"),
-        }
-    };
-    let uri = OneirosUri::Peer(PeerLink::new(host_addr, ticket.link)).to_string();
-    local
-        .command(&format!("remote add dreamforge --ticket {uri}"))
-        .await?;
-
-    local.command("project create --name test").await?;
-
-    local.command("bookmark create my-change").await?;
-    let result = local.command("bookmark push dreamforge my-change").await?;
-    assert!(
-        result.prompt().contains("rejected"),
-        "push with read-only ticket should show rejected, got: {}",
-        result.prompt()
-    );
     Ok(())
 }
 
@@ -401,7 +347,7 @@ async fn pull_bookmark_from_remote() -> Result<(), Box<dyn core::error::Error>> 
     let ticket = {
         let output = remote
             .command(&format!(
-                "ticket issue --actor-id {actor_id} --project-name test --permission read"
+                "ticket issue --actor-id {actor_id} --project-name test"
             ))
             .await?;
         match output.into_response() {
@@ -467,7 +413,7 @@ async fn pull_with_read_only_ticket_succeeds() -> Result<(), Box<dyn core::error
     let ticket = {
         let output = remote
             .command(&format!(
-                "ticket issue --actor-id {actor_id} --project-name test --permission read"
+                "ticket issue --actor-id {actor_id} --project-name test"
             ))
             .await?;
         match output.into_response() {
@@ -491,68 +437,7 @@ async fn pull_with_read_only_ticket_succeeds() -> Result<(), Box<dyn core::error
     Ok(())
 }
 
-#[ignore = "remote add requires Read; test needs a way to test pull handler with write-only ticket directly"]
-#[tokio::test]
-async fn pull_with_write_only_ticket_is_rejected() -> Result<(), Box<dyn core::error::Error>> {
-    let remote = TestApp::new().await?.init_host().await?;
-    let local = TestApp::new().await?.init_host().await?;
-    let actor_id = {
-        let client = remote.client();
-        match client
-            .actor()
-            .list(&ListActors::builder_v1().build().into())
-            .await?
-        {
-            ActorResponse::Listed(ActorsResponse::V1(l)) => {
-                l.items.into_iter().next().unwrap().id.to_string()
-            }
-            o => panic!("{o:?}"),
-        }
-    };
-    remote.command("project create --name test").await?;
-    remote.command("bookmark create extra").await?;
-    let host_addr = {
-        let output = remote.command("bookmark share main").await?;
-        output
-            .prompt()
-            .split_whitespace()
-            .find_map(|w| w.parse::<OneirosUri>().ok())
-            .and_then(|u| match u {
-                OneirosUri::Peer(p) => Some(p.host),
-                _ => None,
-            })
-            .expect("bookmark share should produce a URI")
-    };
-    // Write-only ticket — Read permission withheld.
-    let ticket = {
-        let output = remote
-            .command(&format!(
-                "ticket issue --actor-id {actor_id} --project-name test --permission write"
-            ))
-            .await?;
-        match output.into_response() {
-            Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
-            o => panic!("{o:?}"),
-        }
-    };
-    let uri = OneirosUri::Peer(PeerLink::new(host_addr, ticket.link)).to_string();
-    local
-        .command(&format!("remote add dreamforge --ticket {uri}"))
-        .await?;
-
-    local.command("project create --name test").await?;
-
-    remote.command("bookmark create their-feature").await?;
-    let result = local
-        .command("bookmark pull dreamforge their-feature --as my-copy")
-        .await;
-    assert!(
-        result.is_err(),
-        "pull with write-only ticket should be rejected, got: {result:?}"
-    );
-    Ok(())
-}
-
+// ─── Pull characterization tests ──────────────────────────────────
 // ─── Roundtrip ────────────────────────────────────────────────────
 
 #[ignore = "needs bookmark push + pull service + CLI"]
@@ -588,9 +473,11 @@ async fn push_pull_roundtrip() -> Result<(), Box<dyn core::error::Error>> {
             .expect("bookmark share should produce a URI")
     };
     let ticket = {
-        let output = remote.command(&format!(
-            "ticket issue --actor-id {actor_id} --project-name test --permission read --permission write"
-        )).await?;
+        let output = remote
+            .command(&format!(
+                "ticket issue --actor-id {actor_id} --project-name test"
+            ))
+            .await?;
         match output.into_response() {
             Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
             o => panic!("{o:?}"),

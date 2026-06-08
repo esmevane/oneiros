@@ -75,13 +75,13 @@ impl Ticket {
     /// Check whether this ticket grants a specific capability.
     ///
     /// When `permissions` is empty (V0 behavior, all existing tickets),
-    /// only `Read` is granted — `Write` requires an explicit V1 permission.
-    pub(crate) fn can(&self, required: PermissionOp) -> bool {
+    /// all operations are granted — the ticket IS the permission.
+    pub(crate) fn can(&self, _required: PermissionOp) -> bool {
         if self.permissions.is_empty() {
-            return required == PermissionOp::Read;
+            return true;
         }
         self.permissions.iter().any(|p| match p.current() {
-            Ok(v1) => v1.operation == required,
+            Ok(v1) => v1.operation == _required,
             Err(_) => false,
         })
     }

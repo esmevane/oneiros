@@ -242,26 +242,6 @@ impl SyncHandler {
             ));
         }
 
-        // Pull the data from the pusher.
-        let result = BookmarkService::collect_from_peer_link(
-            &ServerState::from_parts(
-                self.config.clone(),
-                self.canons.clone(),
-                self.bridge.clone(),
-                self.mailbox.clone(),
-            ),
-            &ticket.project_name,
-            &request.bookmark_name,
-            request.bookmark.clone(),
-        )
-        .await;
-
-        // A failed collect is not a rejection — the bookmark exists now
-        // and can be collected later via bookmark collect.
-        if let Err(e) = &result {
-            tracing::warn!("push collect failed (bookmark still created): {e}");
-        }
-
         Ok(BridgeResponse::BridgePushAccepted)
     }
 }
