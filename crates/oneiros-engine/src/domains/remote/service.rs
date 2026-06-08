@@ -10,20 +10,11 @@ impl RemoteService {
         let AddRemote::V1(add) = request;
         let scope = ComposeScope::new(state.config().clone()).host()?;
 
-        // If a remote with this name already exists, remove it first (upsert).
-        if let Some(existing) = RemoteRepo::new(&scope).get_by_name(&add.name).await? {
-            let remove_event = NewEvent::builder()
-                .data(Events::Remote(RemoteEvents::RemoteRemoved(
-                    RemoteRemoved::builder_v1().id(existing.id).build().into(),
-                )))
-                .build();
-            state.mailbox().tell(HostMessage::from(
-                AppendHostLog::builder()
-                    .scope(scope.clone())
-                    .event(remove_event)
-                    .build(),
-            ));
-        }
+        // If a remote with this name already exists, we'll reuse its id.
+        let existing_id = RemoteRepo::new(&scope)
+            .get_by_name(&add.name)
+            .await?
+            .map(|r| r.id);
 
         // Parse the ticket URI.
         let uri: OneirosUri = add
@@ -57,12 +48,15 @@ impl RemoteService {
         }
 
         // Persist the remote.
-        let remote = Remote::builder()
+        let mut remote = Remote::builder()
             .name(add.name.clone())
             .address(peer_link.host)
             .ticket(peer_link.link)
             .project(state.config().project.clone())
             .build();
+        if let Some(id) = existing_id {
+            remote.id = id;
+        }
         let id = remote.id;
 
         let new_event = NewEvent::builder()

@@ -165,7 +165,6 @@ async fn pull_with_read_only_ticket_succeeds() -> Result<(), Box<dyn core::error
     Ok(())
 }
 
-#[ignore = "needs bookmark push + pull service + CLI"]
 #[tokio::test]
 async fn push_pull_roundtrip() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -234,7 +233,7 @@ async fn push_with_revoked_ticket_is_denied() -> Result<(), Box<dyn core::error:
 // ─── Rotation ─────────────────────────────────────────────────────
 
 /// Revoking and re-issuing a ticket replaces the old one.
-#[ignore = "upsert timing needs investigation"]
+#[ignore = "CLI auth breaks on second remote add in test; works via client API"]
 #[tokio::test]
 async fn ticket_rotation() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -273,10 +272,11 @@ async fn ticket_rotation() -> Result<(), Box<dyn core::error::Error>> {
         o => panic!("{o:?}"),
     };
 
+    local.command("project create --name test").await?;
+
     local
         .command(&format!("remote add dreamforge --ticket {}", fresh.uri))
-        .await
-        .expect("re-add with fresh ticket should succeed");
+        .await?;
 
     // Push should be accepted again.
     local.command("bookmark create fresh-push").await?;
