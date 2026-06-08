@@ -37,6 +37,13 @@ impl RemoteRouter {
                         resource_op!(op, RemoteDocs::Bookmarks)
                             .response::<200, Json<RemoteBookmarkListResponse>>()
                     }),
+                )
+                .api_route(
+                    "/share",
+                    routing::post_with(share, |op| {
+                        resource_op!(op, RemoteDocs::Share)
+                            .response::<200, Json<RemoteSharedResponse>>()
+                    }),
                 ),
         )
     }
@@ -77,4 +84,11 @@ async fn bookmarks(
     Path(name): Path<RemoteName>,
 ) -> Result<Json<RemoteResponse>, RemoteError> {
     Ok(Json(RemoteService::bookmarks(&state, &name).await?))
+}
+
+async fn share(
+    State(state): State<ServerState>,
+    Json(body): Json<ShareRemote>,
+) -> Result<Json<RemoteResponse>, RemoteError> {
+    Ok(Json(RemoteService::share(&state, &body).await?))
 }

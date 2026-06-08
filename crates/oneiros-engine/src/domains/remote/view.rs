@@ -12,12 +12,8 @@ impl RemoteView {
     pub(crate) fn render(self) -> Rendered<RemoteResponse> {
         match self.response {
             RemoteResponse::Added(RemoteAddedResponse::V1(added)) => {
-                let prompt = Confirmation::new(
-                    "Remote",
-                    added.remote.name.to_string(),
-                    "added",
-                )
-                .to_string();
+                let prompt =
+                    Confirmation::new("Remote", added.remote.name.to_string(), "added").to_string();
                 Rendered::new(
                     RemoteResponse::Added(RemoteAddedResponse::V1(added)),
                     prompt,
@@ -25,12 +21,8 @@ impl RemoteView {
                 )
             }
             RemoteResponse::Found(RemoteFoundResponse::V1(found)) => {
-                let prompt = Confirmation::new(
-                    "Remote",
-                    found.remote.name.to_string(),
-                    "found",
-                )
-                .to_string();
+                let prompt =
+                    Confirmation::new("Remote", found.remote.name.to_string(), "found").to_string();
                 Rendered::new(
                     RemoteResponse::Found(RemoteFoundResponse::V1(found)),
                     prompt,
@@ -40,10 +32,7 @@ impl RemoteView {
             RemoteResponse::Listed(RemotesResponse::V1(listed)) => {
                 let mut table = Table::new(vec![Column::new("Name"), Column::new("Project")]);
                 for remote in &listed.items {
-                    table.push_row(vec![
-                        remote.name.to_string(),
-                        remote.project.to_string(),
-                    ]);
+                    table.push_row(vec![remote.name.to_string(), remote.project.to_string()]);
                 }
                 let prompt = format!(
                     "{}\n\n{table}",
@@ -56,12 +45,8 @@ impl RemoteView {
                 )
             }
             RemoteResponse::Removed(RemoteRemovedResponse::V1(removed)) => {
-                let prompt = Confirmation::new(
-                    "Remote",
-                    removed.name.to_string(),
-                    "removed",
-                )
-                .to_string();
+                let prompt =
+                    Confirmation::new("Remote", removed.name.to_string(), "removed").to_string();
                 Rendered::new(
                     RemoteResponse::Removed(RemoteRemovedResponse::V1(removed)),
                     prompt,
@@ -79,6 +64,14 @@ impl RemoteView {
                 );
                 Rendered::new(
                     RemoteResponse::Bookmarks(RemoteBookmarkListResponse::V1(list)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            RemoteResponse::Shared(RemoteSharedResponse::V1(shared)) => {
+                let prompt = shared.uri.clone();
+                Rendered::new(
+                    RemoteResponse::Shared(RemoteSharedResponse::V1(shared)),
                     prompt,
                     String::new(),
                 )

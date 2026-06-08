@@ -88,4 +88,23 @@ pub(crate) enum RemoteRequest {
     GetRemote(GetRemote),
     ListRemotes(ListRemotes),
     RemoveRemote(RemoveRemote),
+    ShareRemote(ShareRemote),
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ShareRemote {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) project: ProjectName,
+        }
+    }
+}
+
+impl ClientRequest for ShareRemote {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/remotes/share", self).await
+    }
 }

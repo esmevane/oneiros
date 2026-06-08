@@ -6,6 +6,7 @@ use crate::*;
 #[derive(Debug, Subcommand)]
 pub(crate) enum RemoteCommands {
     Add(AddRemote),
+    Share(ShareRemote),
     List(ListRemotes),
     Remove(RemoveRemote),
     Bookmarks(RemoteBookmarks),
@@ -29,6 +30,7 @@ impl RemoteCommands {
         let client = Client::from_config(config)?;
         let bytes = match self {
             Self::Add(add) => add.execute_request(&client).await?,
+            Self::Share(share) => share.execute_request(&client).await?,
             Self::List(list) => list.execute_request(&client).await?,
             Self::Remove(remove) => remove.execute_request(&client).await?,
             Self::Bookmarks(bm) => {

@@ -13,6 +13,7 @@ pub(crate) enum RemoteResponse {
     Listed(RemotesResponse),
     Removed(RemoteRemovedResponse),
     Bookmarks(RemoteBookmarkListResponse),
+    Shared(RemoteSharedResponse),
 }
 
 versioned! {
@@ -54,6 +55,16 @@ versioned! {
     pub(crate) enum RemoteBookmarkListResponse {
         V1 => {
             pub(crate) bookmarks: Vec<BookmarkName>,
+        }
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum RemoteSharedResponse {
+        V1 => {
+            pub(crate) ticket: Ticket,
+            pub(crate) uri: String,
         }
     }
 }

@@ -138,8 +138,15 @@ impl SyncHandler {
             return Err(DenyReason::InsufficientPermissions.into());
         }
 
-        // Collect bookmark names from the project canon.
-        let bookmarks = self.canons.bookmark_names(&request.project)?;
+        // List bookmark names from the host DB projection.
+        let host_db = self.config.host_db().map_err(|e| {
+            BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
+        })?;
+        let bookmarks = BookmarkStore::new(&host_db)
+            .list_for_project(&request.project)
+            .map_err(|e| {
+                BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
+            })?;
 
         Ok(BridgeResponse::BridgeBookmarkList(BridgeBookmarkList {
             bookmarks,

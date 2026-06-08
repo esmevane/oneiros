@@ -5,6 +5,7 @@ pub(crate) enum RemoteDocs {
     List,
     Remove,
     Bookmarks,
+    Share,
 }
 
 impl RemoteDocs {
@@ -41,6 +42,12 @@ impl RemoteDocs {
                 .nickname("remote-bookmarks")
                 .summary("List remote bookmarks")
                 .description("List bookmarks available on a remote host.")
+                .build(),
+            Self::Share => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("remote-share")
+                .summary("Share a project")
+                .description("Issue a project ticket and print the URI for remote access.")
                 .build(),
         }
     }

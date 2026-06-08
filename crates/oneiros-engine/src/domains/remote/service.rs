@@ -163,4 +163,57 @@ impl RemoteService {
             _ => Err(RemoteError::ConnectionFailed("unexpected response".into())),
         }
     }
+
+    /// Share a project by issuing (or reusing) a project-scoped ticket.
+    pub(crate) async fn share(
+        state: &ServerState,
+        request: &ShareRemote,
+    ) -> Result<RemoteResponse, RemoteError> {
+        let ShareRemote::V1(req) = request;
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+
+        // Get or create the project.
+        let project = ProjectRepo::new(&scope)
+            .get(&req.project)
+            .await?
+            .ok_or_else(|| {
+                RemoteError::ConnectionFailed(format!("project not found: {}", req.project))
+            })?;
+
+        // Issue a ticket for the project.
+        let target = Ref::project(project.id);
+        let all = SearchFilters {
+            limit: Limit(usize::MAX),
+            offset: Offset(0),
+        };
+        let actor = ActorRepo::new(&scope)
+            .list(&all)
+            .await?
+            .items
+            .into_iter()
+            .next()
+            .ok_or_else(|| RemoteError::ConnectionFailed("no actors found".into()))?;
+
+        let ticket = TicketService::issue(
+            &scope,
+            state.mailbox(),
+            &req.project,
+            &project,
+            actor.id,
+            target,
+            vec![],
+        )
+        .await?;
+
+        let peer_link = PeerLink::new(state.host_identity().address, ticket.link.clone());
+        let uri = OneirosUri::Peer(peer_link).to_string();
+
+        Ok(RemoteResponse::Shared(
+            RemoteSharedResponse::builder_v1()
+                .ticket(ticket)
+                .uri(uri)
+                .build()
+                .into(),
+        ))
+    }
 }
