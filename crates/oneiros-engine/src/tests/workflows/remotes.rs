@@ -233,7 +233,7 @@ async fn push_with_revoked_ticket_is_denied() -> Result<(), Box<dyn core::error:
 // ─── Rotation ─────────────────────────────────────────────────────
 
 /// Revoking and re-issuing a ticket replaces the old one.
-#[ignore = "CLI auth breaks on second remote add in test; works via client API"]
+#[ignore = "ticket verifier rejects token after push creates a new ticket in the same test scope"]
 #[tokio::test]
 async fn ticket_rotation() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -271,8 +271,6 @@ async fn ticket_rotation() -> Result<(), Box<dyn core::error::Error>> {
         Responses::Remote(RemoteResponse::Shared(RemoteSharedResponse::V1(s))) => s,
         o => panic!("{o:?}"),
     };
-
-    local.command("project create --name test").await?;
 
     local
         .command(&format!("remote add dreamforge --ticket {}", fresh.uri))
