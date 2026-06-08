@@ -15,23 +15,24 @@ async fn add_remote_with_valid_ticket() -> Result<(), Box<dyn core::error::Error
             .list(&ListActors::builder_v1().build().into())
             .await?
         {
-            ActorResponse::Listed(ActorsResponse::V1(l)) => {
-                l.items.into_iter().next().unwrap().id.to_string()
+            ActorResponse::Listed(ActorsResponse::V1(response)) => {
+                response.items.into_iter().next().unwrap().id.to_string()
             }
-            o => panic!("{o:?}"),
+            other => panic!("{other:?}"),
         }
     };
 
     remote.command("project create --name test").await?;
     remote.command("bookmark create extra").await?;
+
     let host_addr = {
         let output = remote.command("bookmark share main").await?;
         output
             .prompt()
             .split_whitespace()
-            .find_map(|w| w.parse::<OneirosUri>().ok())
-            .and_then(|u| match u {
-                OneirosUri::Peer(p) => Some(p.host),
+            .find_map(|whitespace_split_string| whitespace_split_string.parse::<OneirosUri>().ok())
+            .and_then(|oneiros_uri| match oneiros_uri {
+                OneirosUri::Peer(peer_link) => Some(peer_link.host),
                 _ => None,
             })
             .expect("bookmark share should produce a URI")
@@ -45,7 +46,7 @@ async fn add_remote_with_valid_ticket() -> Result<(), Box<dyn core::error::Error
             .await?;
         match output.into_response() {
             Responses::Ticket(TicketResponse::Created(TicketCreatedResponse::V1(c))) => c.ticket,
-            o => panic!("{o:?}"),
+            other => panic!("{other:?}"),
         }
     };
 

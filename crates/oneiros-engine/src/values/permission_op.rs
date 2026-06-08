@@ -3,22 +3,22 @@ use serde::{Deserialize, Serialize};
 
 /// A capability operation that a ticket holder may perform.
 ///
-/// Permissions are carried on [`Ticket`](crate::Ticket) via the versioned
-/// [`Permission`](crate::Permission) wrapper. The operation describes *what*
-/// the holder is allowed to do; the ticket's [`Link::target`](crate::Link)
-/// describes *to what resource*.
+/// These map to the bridge operations a remote ticket authorizes:
 ///
-/// For v1, the operations are:
+/// - `BookmarkPush` — push a bookmark to the remote (BridgePushBookmark)
+/// - `BookmarkPull` — pull a bookmark from the remote (BridgePullBookmark)
+/// - `BookmarkList` — list bookmarks on the remote (BridgeListBookmarks)
 ///
-/// - `Read`  — pull, diff, fetch, list bookmarks
-/// - `Write` — submit, push bookmarks
+/// When a ticket's `permissions` vec is empty (V0, all existing tickets),
+/// all operations are granted — the ticket IS the permission.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::ValueEnum,
 )]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum PermissionOp {
-    Read,
-    Write,
+    BookmarkPush,
+    BookmarkPull,
+    BookmarkList,
 }
 
 #[cfg(test)]
@@ -30,29 +30,33 @@ mod tests {
     #[test]
     fn value_enum_names_are_kebab_cased() {
         assert_eq!(
-            PermissionOp::Read.to_possible_value().unwrap().get_name(),
-            "read"
+            PermissionOp::BookmarkPush
+                .to_possible_value()
+                .unwrap()
+                .get_name(),
+            "bookmark-push"
         );
         assert_eq!(
-            PermissionOp::Write.to_possible_value().unwrap().get_name(),
-            "write"
+            PermissionOp::BookmarkPull
+                .to_possible_value()
+                .unwrap()
+                .get_name(),
+            "bookmark-pull"
+        );
+        assert_eq!(
+            PermissionOp::BookmarkList
+                .to_possible_value()
+                .unwrap()
+                .get_name(),
+            "bookmark-list"
         );
     }
 
     #[test]
-    fn serde_roundtrip_read() {
-        let json = serde_json::json!("read");
+    fn serde_roundtrip_push() {
+        let json = serde_json::json!("bookmark-push");
         let decoded: PermissionOp = serde_json::from_value(json.clone()).unwrap();
-        assert_eq!(decoded, PermissionOp::Read);
-        let encoded = serde_json::to_value(&decoded).unwrap();
-        assert_eq!(encoded, json);
-    }
-
-    #[test]
-    fn serde_roundtrip_write() {
-        let json = serde_json::json!("write");
-        let decoded: PermissionOp = serde_json::from_value(json.clone()).unwrap();
-        assert_eq!(decoded, PermissionOp::Write);
+        assert_eq!(decoded, PermissionOp::BookmarkPush);
         let encoded = serde_json::to_value(&decoded).unwrap();
         assert_eq!(encoded, json);
     }

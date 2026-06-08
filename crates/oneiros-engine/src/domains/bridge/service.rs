@@ -134,7 +134,7 @@ impl SyncHandler {
         let scope = ComposeScope::new(self.config.clone()).host()?;
         let ticket = self.validate_ticket(&scope, &request.ticket).await?;
 
-        if !ticket.can(PermissionOp::Read) {
+        if !ticket.can(PermissionOp::BookmarkList) {
             return Err(DenyReason::InsufficientPermissions.into());
         }
 
@@ -153,7 +153,7 @@ impl SyncHandler {
         let scope = ComposeScope::new(self.config.clone()).host()?;
         let ticket = self.validate_ticket(&scope, &request.ticket).await?;
 
-        if !ticket.can(PermissionOp::Read) {
+        if !ticket.can(PermissionOp::BookmarkPull) {
             return Err(DenyReason::InsufficientPermissions.into());
         }
 
@@ -197,7 +197,7 @@ impl SyncHandler {
         let scope = ComposeScope::new(self.config.clone()).host()?;
         let ticket = self.validate_ticket(&scope, &request.ticket).await?;
 
-        if !ticket.can(PermissionOp::Write) {
+        if !ticket.can(PermissionOp::BookmarkPush) {
             return Err(DenyReason::InsufficientPermissions.into());
         }
 

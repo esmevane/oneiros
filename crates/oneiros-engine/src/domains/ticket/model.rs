@@ -76,12 +76,12 @@ impl Ticket {
     ///
     /// When `permissions` is empty (V0 behavior, all existing tickets),
     /// all operations are granted — the ticket IS the permission.
-    pub(crate) fn can(&self, _required: PermissionOp) -> bool {
+    pub(crate) fn can(&self, required: PermissionOp) -> bool {
         if self.permissions.is_empty() {
             return true;
         }
         self.permissions.iter().any(|p| match p.current() {
-            Ok(v1) => v1.operation == _required,
+            Ok(v1) => v1.operation == required,
             Err(_) => false,
         })
     }

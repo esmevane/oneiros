@@ -54,13 +54,13 @@ impl From<PermissionV0> for Permission {
     }
 }
 
-/// V0 → V1 upcast: an empty V0 permission implies read access.
+/// V0 → V1 upcast: an empty V0 permission implies full access.
 impl TryFrom<PermissionV0> for PermissionV1 {
     type Error = UpcastError;
 
     fn try_from(_: PermissionV0) -> Result<Self, Self::Error> {
         Ok(PermissionV1 {
-            operation: PermissionOp::Read,
+            operation: PermissionOp::BookmarkList,
         })
     }
 }
@@ -81,30 +81,30 @@ mod tests {
 
     #[test]
     fn v1_read_serde_roundtrip() {
-        let json = serde_json::json!({"operation": "read"});
+        let json = serde_json::json!({"operation": "bookmark-push"});
         let decoded: Permission = serde_json::from_value(json.clone()).unwrap();
         assert!(matches!(decoded, Permission::V1(_)));
         let v1 = decoded.current().unwrap();
-        assert_eq!(v1.operation, PermissionOp::Read);
+        assert_eq!(v1.operation, PermissionOp::BookmarkPush);
         let encoded = serde_json::to_value(&decoded).unwrap();
         assert_eq!(encoded, json);
     }
 
     #[test]
     fn v1_write_serde_roundtrip() {
-        let json = serde_json::json!({"operation": "write"});
+        let json = serde_json::json!({"operation": "bookmark-pull"});
         let decoded: Permission = serde_json::from_value(json.clone()).unwrap();
         assert!(matches!(decoded, Permission::V1(_)));
         let v1 = decoded.current().unwrap();
-        assert_eq!(v1.operation, PermissionOp::Write);
+        assert_eq!(v1.operation, PermissionOp::BookmarkPull);
         let encoded = serde_json::to_value(&decoded).unwrap();
         assert_eq!(encoded, json);
     }
 
     #[test]
-    fn v0_upcasts_to_read() {
+    fn v0_upcasts_to_bookmark_list() {
         let perm = Permission::V0(PermissionV0 {});
         let v1 = perm.current().unwrap();
-        assert_eq!(v1.operation, PermissionOp::Read);
+        assert_eq!(v1.operation, PermissionOp::BookmarkList);
     }
 }
