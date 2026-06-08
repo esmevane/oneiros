@@ -512,6 +512,162 @@ impl BookmarkService {
         ))
     }
 
+    /// Push a bookmark to a remote.
+    pub(crate) async fn push(
+        state: &ServerState,
+        project: &ProjectName,
+        request: &PushBookmark,
+    ) -> Result<BookmarkResponse, BookmarkError> {
+        let PushBookmark::V1(req) = request;
+
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let remote = RemoteRepo::new(&scope)
+            .get_by_name(&req.remote)
+            .await?
+            .ok_or_else(|| {
+                BookmarkError::InvalidUri(format!("remote not found: {}", req.remote))
+            })?;
+
+        let remote_name = req.as_name.clone().unwrap_or_else(|| req.name.clone());
+
+        // Share the local bookmark to get a peer link.
+        let share_result = match Self::share(
+            state,
+            project,
+            &ShareBookmark::builder_v1()
+                .name(req.name.clone())
+                .build()
+                .into(),
+        )
+        .await?
+        {
+            BookmarkResponse::Shared(result) => result,
+            _ => return Err(BookmarkError::InvalidUri("share failed".into())),
+        };
+
+        let submit_request = BridgeRequest::BridgePushBookmark(BridgePushBookmark {
+            ticket: remote.ticket,
+            bookmark: PeerLink::new(state.host_identity().address, share_result.ticket.link),
+            bookmark_name: remote_name.clone(),
+        });
+
+        let response = state
+            .bridge()
+            .send(&remote.address, &submit_request)
+            .await
+            .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
+
+        let (accepted, reason) = match response {
+            BridgeResponse::BridgePushAccepted => (true, None),
+            BridgeResponse::BridgePushRejected(d) => (false, Some(d.reason)),
+            BridgeResponse::BridgeDenied(d) => (false, Some(d.reason)),
+            _ => (false, Some("unexpected response".into())),
+        };
+
+        Ok(BookmarkResponse::Pushed(BookmarkPushResult {
+            accepted,
+            bookmark_name: remote_name,
+            reason,
+        }))
+    }
+
+    /// Pull a bookmark from a remote.
+    pub(crate) async fn pull(
+        state: &ServerState,
+        project: &ProjectName,
+        request: &PullBookmark,
+    ) -> Result<BookmarkResponse, BookmarkError> {
+        let PullBookmark::V1(req) = request;
+
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let remote = RemoteRepo::new(&scope)
+            .get_by_name(&req.remote)
+            .await?
+            .ok_or_else(|| {
+                BookmarkError::InvalidUri(format!("remote not found: {}", req.remote))
+            })?;
+
+        let pull_request = BridgeRequest::BridgePullBookmark(BridgePullBookmark {
+            ticket: remote.ticket,
+            bookmark_name: req.name.clone(),
+        });
+
+        let response = state
+            .bridge()
+            .send(&remote.address, &pull_request)
+            .await
+            .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
+
+        let events = match response {
+            BridgeResponse::BridgeEvents(be) => be.events,
+            BridgeResponse::BridgeDenied(d) => {
+                return Err(BookmarkError::InvalidUri(d.reason));
+            }
+            _ => return Err(BookmarkError::InvalidUri("unexpected pull response".into())),
+        };
+
+        let local_name = req.as_name.clone();
+
+        // Ensure the bookmark exists locally.
+        if !state.canons().has_bookmark(project, &local_name)? {
+            state.canons().fork_project(project, &local_name)?;
+            Self::create_bookmark_db(state.config(), project, &local_name, &[])?;
+
+            // Emit BookmarkForked and wait for the projection.
+            let from = state.canons().active_bookmark(project)?;
+            let bookmark = Bookmark::builder()
+                .project(project.clone())
+                .name(local_name.clone())
+                .build();
+            let host_scope = ComposeScope::new(state.config().clone()).host()?;
+            let new_event = NewEvent::builder()
+                .data(Events::Bookmark(BookmarkEvents::BookmarkForked(
+                    BookmarkForked::builder_v1()
+                        .bookmark(bookmark.clone())
+                        .from(from.clone())
+                        .build()
+                        .into(),
+                )))
+                .build();
+            state.mailbox().tell(HostMessage::from(
+                AppendHostLog::builder()
+                    .scope(host_scope)
+                    .event(new_event)
+                    .build(),
+            ));
+
+            // Write directly to the bookmark store so compose can find it.
+            let host_db = state.config().host_db()?;
+            host_db.execute(
+                "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![
+                    bookmark.id.to_string(),
+                    bookmark.project.to_string(),
+                    bookmark.name.to_string(),
+                    bookmark.created_at.to_string(),
+                ],
+            )?;
+        }
+
+        // Import the pulled events.
+        if !events.is_empty() {
+            let bookmark_scope = ComposeScope::new(state.config().clone())
+                .bookmark(project.clone(), local_name.clone())?;
+            for event in events {
+                state.mailbox().tell(ProjectMessage::from(
+                    ImportProjectEvent::builder()
+                        .scope(bookmark_scope.clone())
+                        .stored(event)
+                        .build(),
+                ));
+            }
+        }
+
+        Ok(BookmarkResponse::Pulled(BookmarkPullResult {
+            bookmark_name: local_name,
+        }))
+    }
+
     /// Replay the event log into a specific bookmark's projection DB.
     fn replay_bookmark(
         config: &Config,

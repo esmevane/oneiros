@@ -96,6 +96,30 @@ impl BookmarkView {
                     String::new(),
                 )
             }
+            BookmarkResponse::Pushed(result) => {
+                let status = if result.accepted {
+                    "accepted"
+                } else {
+                    "rejected"
+                };
+                let detail = result
+                    .reason
+                    .as_deref()
+                    .map(|r| format!(" ({r})"))
+                    .unwrap_or_default();
+                let prompt = Confirmation::new(
+                    "Push",
+                    format!("{}{}", result.bookmark_name, detail),
+                    status,
+                )
+                .to_string();
+                Rendered::new(BookmarkResponse::Pushed(result), prompt, String::new())
+            }
+            BookmarkResponse::Pulled(result) => {
+                let prompt = Confirmation::new("Pull", result.bookmark_name.to_string(), "pulled")
+                    .to_string();
+                Rendered::new(BookmarkResponse::Pulled(result), prompt, String::new())
+            }
         }
     }
 }

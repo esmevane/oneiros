@@ -178,4 +178,56 @@ pub(crate) enum BookmarkRequest {
     FollowBookmark(FollowBookmark),
     CollectBookmark(CollectBookmark),
     UnfollowBookmark(UnfollowBookmark),
+    PushBookmark(PushBookmark),
+    PullBookmark(PullBookmark),
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum PushBookmark {
+        #[derive(clap::Args)]
+        V1 => {
+            /// Name of the remote to push to.
+            #[builder(into)] pub(crate) remote: RemoteName,
+            /// Local bookmark name to push.
+            #[builder(into)] pub(crate) name: BookmarkName,
+            /// Rename the bookmark on the remote.
+            #[arg(long = "as")]
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub(crate) as_name: Option<BookmarkName>,
+        }
+    }
+}
+
+impl ClientRequest for PushBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/push", self).await
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum PullBookmark {
+        #[derive(clap::Args)]
+        V1 => {
+            /// Name of the remote to pull from.
+            #[builder(into)] pub(crate) remote: RemoteName,
+            /// Bookmark name on the remote.
+            #[builder(into)] pub(crate) name: BookmarkName,
+            /// Local name to assign the pulled bookmark.
+            #[arg(long = "as")]
+            #[builder(into)]
+            pub(crate) as_name: BookmarkName,
+        }
+    }
+}
+
+impl ClientRequest for PullBookmark {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/bookmarks/pull", self).await
+    }
 }

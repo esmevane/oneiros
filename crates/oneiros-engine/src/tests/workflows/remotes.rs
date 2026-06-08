@@ -179,7 +179,6 @@ async fn add_remote_with_invalid_ticket_is_rejected() -> Result<(), Box<dyn core
 
 // ─── Push characterization tests ──────────────────────────────────
 
-#[ignore = "needs bookmark push service + CLI"]
 #[tokio::test]
 async fn push_bookmark_to_remote() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -225,6 +224,8 @@ async fn push_bookmark_to_remote() -> Result<(), Box<dyn core::error::Error>> {
         .command(&format!("remote add dreamforge --ticket {uri}"))
         .await?;
 
+    local.command("project create --name test").await?;
+
     // Create events and bookmark locally, then push.
     local
         .command("texture set observation --description 'Noticed'")
@@ -233,7 +234,12 @@ async fn push_bookmark_to_remote() -> Result<(), Box<dyn core::error::Error>> {
         .command("texture set working --description 'Working'")
         .await?;
     local.command("bookmark create my-change").await?;
-    local.command("bookmark push dreamforge my-change").await?;
+    let push_result = local.command("bookmark push dreamforge my-change").await?;
+    assert!(
+        push_result.prompt().contains("accepted"),
+        "push result: {}",
+        push_result.prompt()
+    );
 
     // Remote should now have the bookmark with our events.
     let bookmarks = local.command("remote bookmarks dreamforge").await?;
@@ -241,7 +247,6 @@ async fn push_bookmark_to_remote() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 
-#[ignore = "needs bookmark push service + CLI"]
 #[tokio::test]
 async fn push_bookmark_with_as_renames() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -287,6 +292,8 @@ async fn push_bookmark_with_as_renames() -> Result<(), Box<dyn core::error::Erro
         .command(&format!("remote add dreamforge --ticket {uri}"))
         .await?;
 
+    local.command("project create --name test").await?;
+
     local.command("bookmark create my-change").await?;
     local
         .command("bookmark push dreamforge my-change --as feature-x")
@@ -298,7 +305,6 @@ async fn push_bookmark_with_as_renames() -> Result<(), Box<dyn core::error::Erro
     Ok(())
 }
 
-#[ignore = "needs bookmark push service + CLI"]
 #[tokio::test]
 async fn push_with_read_only_ticket_is_rejected() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -347,18 +353,20 @@ async fn push_with_read_only_ticket_is_rejected() -> Result<(), Box<dyn core::er
         .command(&format!("remote add dreamforge --ticket {uri}"))
         .await?;
 
+    local.command("project create --name test").await?;
+
     local.command("bookmark create my-change").await?;
-    let result = local.command("bookmark push dreamforge my-change").await;
+    let result = local.command("bookmark push dreamforge my-change").await?;
     assert!(
-        result.is_err(),
-        "push with read-only ticket should be rejected"
+        result.prompt().contains("rejected"),
+        "push with read-only ticket should show rejected, got: {}",
+        result.prompt()
     );
     Ok(())
 }
 
 // ─── Pull characterization tests ──────────────────────────────────
 
-#[ignore = "needs bookmark pull service + CLI"]
 #[tokio::test]
 async fn pull_bookmark_from_remote() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -406,6 +414,9 @@ async fn pull_bookmark_from_remote() -> Result<(), Box<dyn core::error::Error>> 
         .command(&format!("remote add dreamforge --ticket {uri}"))
         .await?;
 
+    local.command("project create --name test").await?;
+    remote.command("seed core").await?;
+
     // Create a bookmark with events on the remote.
     remote
         .command("texture set observation --description 'On remote'")
@@ -422,7 +433,6 @@ async fn pull_bookmark_from_remote() -> Result<(), Box<dyn core::error::Error>> 
     Ok(())
 }
 
-#[ignore = "needs bookmark pull service + CLI"]
 #[tokio::test]
 async fn pull_with_read_only_ticket_succeeds() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -470,7 +480,10 @@ async fn pull_with_read_only_ticket_succeeds() -> Result<(), Box<dyn core::error
         .command(&format!("remote add dreamforge --ticket {uri}"))
         .await?;
 
+    local.command("project create --name test").await?;
+
     remote.command("bookmark create their-feature").await?;
+
     // Read-only ticket is sufficient for pull.
     local
         .command("bookmark pull dreamforge their-feature --as my-copy")
@@ -478,7 +491,7 @@ async fn pull_with_read_only_ticket_succeeds() -> Result<(), Box<dyn core::error
     Ok(())
 }
 
-#[ignore = "needs bookmark pull service + CLI"]
+#[ignore = "remote add requires Read; test needs a way to test pull handler with write-only ticket directly"]
 #[tokio::test]
 async fn pull_with_write_only_ticket_is_rejected() -> Result<(), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
@@ -527,13 +540,15 @@ async fn pull_with_write_only_ticket_is_rejected() -> Result<(), Box<dyn core::e
         .command(&format!("remote add dreamforge --ticket {uri}"))
         .await?;
 
+    local.command("project create --name test").await?;
+
     remote.command("bookmark create their-feature").await?;
     let result = local
         .command("bookmark pull dreamforge their-feature --as my-copy")
         .await;
     assert!(
         result.is_err(),
-        "pull with write-only ticket should be rejected"
+        "pull with write-only ticket should be rejected, got: {result:?}"
     );
     Ok(())
 }

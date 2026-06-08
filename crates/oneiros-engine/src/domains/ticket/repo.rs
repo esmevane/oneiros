@@ -21,10 +21,11 @@ type TicketRow = (
     Option<i64>,    // max_uses
     i64,            // uses
     String,         // created_at
+    String,         // permissions (JSON)
 );
 
 const SELECT_COLUMNS: &str = "id, actor_id, project_name, project_id, token, target, granted_by, \
-                              expires_at, revoked_at, max_uses, uses, created_at";
+                              expires_at, revoked_at, max_uses, uses, created_at, permissions";
 
 fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
     let (
@@ -40,6 +41,7 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
         max_uses,
         uses,
         created_at,
+        permissions_json,
     ) = row;
 
     let target_ref: RefToken = target
@@ -50,15 +52,14 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
     let expires_at = expires_at.map(Timestamp::parse_str).transpose()?;
     let revoked_at = revoked_at.map(Timestamp::parse_str).transpose()?;
 
-    // Legacy rows may predate `granted_by`; fall back to actor_id when
-    // the column is empty to keep auth semantics stable until the row is
-    // re-emitted.
     let actor_id: ActorId = actor_id.parse()?;
     let granted_by_id: ActorId = if granted_by.is_empty() {
         actor_id
     } else {
         granted_by.parse()?
     };
+
+    let permissions: Vec<Permission> = serde_json::from_str(&permissions_json).unwrap_or_default();
 
     Ok(Ticket {
         id: id.parse()?,
@@ -72,7 +73,7 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
         max_uses: max_uses.map(|v| v as u64),
         uses: uses as u64,
         created_at: Timestamp::parse_str(created_at)?,
-        permissions: vec![],
+        permissions,
     })
 }
 
@@ -90,6 +91,7 @@ fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TicketRow> {
         row.get(9)?,
         row.get(10)?,
         row.get(11)?,
+        row.get(12)?,
     ))
 }
 

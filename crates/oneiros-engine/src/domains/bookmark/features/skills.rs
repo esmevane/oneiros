@@ -13,6 +13,8 @@ impl BookmarkSkills {
             Skill::new("bookmark-follow", include_str!("skills/follow.md")),
             Skill::new("bookmark-collect", include_str!("skills/collect.md")),
             Skill::new("bookmark-unfollow", include_str!("skills/unfollow.md")),
+            Skill::new("bookmark-push", include_str!("skills/push.md")),
+            Skill::new("bookmark-pull", include_str!("skills/pull.md")),
         ]
     }
 }

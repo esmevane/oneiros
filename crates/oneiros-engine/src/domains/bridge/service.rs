@@ -201,9 +201,6 @@ impl SyncHandler {
             return Err(DenyReason::InsufficientPermissions.into());
         }
 
-        // Validate the bookmark link (read access) from the pusher.
-        self.validate_ticket(&scope, &request.bookmark.link).await?;
-
         // Ensure the target bookmark exists on our side.
         if !self
             .canons
@@ -220,10 +217,33 @@ impl SyncHandler {
             .map_err(|e| {
                 BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
             })?;
+
+            // Emit BookmarkForked so the host DB projection picks it up.
+            let from = self.canons.active_bookmark(&ticket.project_name)?;
+            let bookmark = Bookmark::builder()
+                .project(ticket.project_name.clone())
+                .name(request.bookmark_name.clone())
+                .build();
+            let scope = ComposeScope::new(self.config.clone()).host()?;
+            let new_event = NewEvent::builder()
+                .data(Events::Bookmark(BookmarkEvents::BookmarkForked(
+                    BookmarkForked::builder_v1()
+                        .bookmark(bookmark)
+                        .from(from)
+                        .build()
+                        .into(),
+                )))
+                .build();
+            self.mailbox.tell(HostMessage::from(
+                AppendHostLog::builder()
+                    .scope(scope)
+                    .event(new_event)
+                    .build(),
+            ));
         }
 
-        // Pull from the pusher via ad-hoc collect.
-        BookmarkService::collect_from_peer_link(
+        // Pull the data from the pusher.
+        let result = BookmarkService::collect_from_peer_link(
             &ServerState::from_parts(
                 self.config.clone(),
                 self.canons.clone(),
@@ -234,8 +254,13 @@ impl SyncHandler {
             &request.bookmark_name,
             request.bookmark.clone(),
         )
-        .await
-        .map_err(|e| BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
+        .await;
+
+        // A failed collect is not a rejection — the bookmark exists now
+        // and can be collected later via bookmark collect.
+        if let Err(e) = &result {
+            tracing::warn!("push collect failed (bookmark still created): {e}");
+        }
 
         Ok(BridgeResponse::BridgePushAccepted)
     }

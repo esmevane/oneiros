@@ -17,6 +17,8 @@ pub(crate) enum BookmarkResponse {
     Followed(Follow),
     Collected(BookmarkCollectResult),
     Unfollowed(BookmarkUnfollowedResponse),
+    Pushed(BookmarkPushResult),
+    Pulled(BookmarkPullResult),
 }
 
 versioned! {
@@ -85,4 +87,19 @@ pub(crate) struct BookmarkCollectResult {
     pub(crate) follow_id: FollowId,
     pub(crate) events_received: u64,
     pub(crate) checkpoint: Checkpoint,
+}
+
+/// The outcome of a successful `bookmark push`.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub(crate) struct BookmarkPushResult {
+    pub(crate) accepted: bool,
+    pub(crate) bookmark_name: BookmarkName,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) reason: Option<String>,
+}
+
+/// The outcome of a successful `bookmark pull`.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub(crate) struct BookmarkPullResult {
+    pub(crate) bookmark_name: BookmarkName,
 }

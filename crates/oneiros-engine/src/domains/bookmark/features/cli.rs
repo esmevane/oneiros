@@ -12,6 +12,8 @@ pub(crate) enum BookmarkCommands {
     Follow(FollowBookmark),
     Collect(CollectBookmark),
     Unfollow(UnfollowBookmark),
+    Push(PushBookmark),
+    Pull(PullBookmark),
 }
 
 impl BookmarkCommands {
@@ -30,6 +32,8 @@ impl BookmarkCommands {
             Self::Follow(follow) => follow.execute_request(&client).await?,
             Self::Collect(collect) => collect.execute_request(&client).await?,
             Self::Unfollow(unfollow) => unfollow.execute_request(&client).await?,
+            Self::Push(push) => push.execute_request(&client).await?,
+            Self::Pull(pull) => pull.execute_request(&client).await?,
         };
 
         let response: BookmarkResponse = serde_json::from_slice(&bytes)?;
