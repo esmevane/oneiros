@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, clap::ValueEnum,
 )]
 #[serde(rename_all = "kebab-case")]
+#[allow(clippy::enum_variant_names)]
 pub(crate) enum PermissionOp {
     BookmarkPush,
     BookmarkPull,
@@ -57,7 +58,7 @@ mod tests {
         let json = serde_json::json!("bookmark-push");
         let decoded: PermissionOp = serde_json::from_value(json.clone()).unwrap();
         assert_eq!(decoded, PermissionOp::BookmarkPush);
-        let encoded = serde_json::to_value(&decoded).unwrap();
+        let encoded = serde_json::to_value(decoded).unwrap();
         assert_eq!(encoded, json);
     }
 }

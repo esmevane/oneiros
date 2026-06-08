@@ -25,6 +25,7 @@ pub(crate) enum IrohError {
 
 /// Which bridge operation a protocol error pertains to.
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub(crate) enum BridgeOp {
     Diff,
     Resolve,

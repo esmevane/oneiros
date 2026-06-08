@@ -6,6 +6,7 @@ use crate::*;
 resource_op_error!(RemoteError);
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub(crate) enum RemoteError {
     #[error("remote not found: {0}")]
     NotFound(RemoteName),

@@ -83,6 +83,7 @@ impl ClientRequest for RemoveRemote {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
 #[serde(tag = "type", content = "data", rename_all = "kebab-case")]
 #[kinded(kind = RemoteRequestType, display = "kebab-case")]
+#[allow(dead_code)]
 pub(crate) enum RemoteRequest {
     AddRemote(AddRemote),
     GetRemote(GetRemote),

@@ -882,6 +882,7 @@ impl<'a> TicketClient<'a> {
         decode(bytes, "ticket")
     }
 
+    #[allow(dead_code)]
     pub(crate) async fn revoke(&self, ticket_id: TicketId) -> Result<TicketResponse, ClientError> {
         let request: RevokeTicket = RevokeTicket::builder_v1()
             .ticket_id(ticket_id)

@@ -1,7 +1,9 @@
 use crate::*;
 
+#[allow(dead_code)]
 pub(crate) struct RemoteState;
 
+#[allow(dead_code)]
 impl RemoteState {
     pub(crate) fn reduce(mut canon: HostCanon, event: &Events) -> HostCanon {
         if let Events::Remote(remote_event) = event {

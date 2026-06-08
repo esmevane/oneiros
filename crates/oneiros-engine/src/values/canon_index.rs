@@ -141,6 +141,7 @@ impl CanonIndex {
     }
 
     /// Get all bookmark names for a project.
+    #[allow(dead_code)]
     pub(crate) fn bookmark_names(
         &self,
         project: &ProjectName,
