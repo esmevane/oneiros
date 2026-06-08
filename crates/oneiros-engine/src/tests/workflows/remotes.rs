@@ -215,8 +215,10 @@ async fn push_with_revoked_ticket_is_denied() -> Result<(), Box<dyn core::error:
         .await?;
     local.command("project create --name test").await?;
 
-    // Revoke the ticket on the remote.
-    remote.client().ticket().revoke(shared.ticket.id).await?;
+    // Revoke the ticket via the CLI.
+    remote
+        .command(&format!("ticket revoke {}", shared.ticket.id))
+        .await?;
 
     // Push should now be denied.
     local.command("bookmark create my-change").await?;
@@ -251,7 +253,9 @@ async fn ticket_rotation() -> Result<(), Box<dyn core::error::Error>> {
         .await?;
 
     // Revoke the original ticket.
-    remote.client().ticket().revoke(first.ticket.id).await?;
+    remote
+        .command(&format!("ticket revoke {}", first.ticket.id))
+        .await?;
 
     // Push should now be denied.
     local.command("bookmark create revoked-push").await?;
