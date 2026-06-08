@@ -207,7 +207,17 @@ impl RemoteService {
             &project,
             actor.id,
             target,
-            vec![],
+            vec![
+                Permission::from(PermissionV1 {
+                    operation: PermissionOp::BookmarkPush,
+                }),
+                Permission::from(PermissionV1 {
+                    operation: PermissionOp::BookmarkPull,
+                }),
+                Permission::from(PermissionV1 {
+                    operation: PermissionOp::BookmarkList,
+                }),
+            ],
         )
         .await?;
 

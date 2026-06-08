@@ -15,11 +15,23 @@ impl TicketService {
             .ok_or_else(|| TicketError::ProjectNotFound(create.project_name.clone()))?;
 
         let target = Ref::project(project.id);
-        let permissions: Vec<Permission> = create
-            .permissions
-            .iter()
-            .map(|op| Permission::from(PermissionV1 { operation: *op }))
-            .collect();
+        let permissions: Vec<Permission> = if create.permissions.is_empty() {
+            // Default to full access when no permissions specified.
+            vec![
+                PermissionOp::BookmarkPush,
+                PermissionOp::BookmarkPull,
+                PermissionOp::BookmarkList,
+            ]
+            .into_iter()
+            .map(|op| Permission::from(PermissionV1 { operation: op }))
+            .collect()
+        } else {
+            create
+                .permissions
+                .iter()
+                .map(|op| Permission::from(PermissionV1 { operation: *op }))
+                .collect()
+        };
         let ticket = Self::issue(
             scope,
             mailbox,

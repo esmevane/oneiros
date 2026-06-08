@@ -232,15 +232,17 @@ impl SyncHandler {
 
             // Emit BookmarkForked so the host DB projection picks it up.
             let from = self.canons.active_bookmark(&ticket.project_name)?;
-            let bookmark = Bookmark::builder()
-                .project(ticket.project_name.clone())
-                .name(request.bookmark_name.clone())
-                .build();
-            let scope = ComposeScope::new(self.config.clone()).host()?;
+            let bookmark_id = BookmarkId::new();
             let new_event = NewEvent::builder()
                 .data(Events::Bookmark(BookmarkEvents::BookmarkForked(
                     BookmarkForked::builder_v1()
-                        .bookmark(bookmark)
+                        .bookmark(
+                            Bookmark::builder()
+                                .id(bookmark_id)
+                                .project(ticket.project_name.clone())
+                                .name(request.bookmark_name.clone())
+                                .build(),
+                        )
                         .from(from)
                         .build()
                         .into(),
@@ -248,11 +250,49 @@ impl SyncHandler {
                 .build();
             self.mailbox.tell(HostMessage::from(
                 AppendHostLog::builder()
-                    .scope(scope)
+                    .scope(ComposeScope::new(self.config.clone()).host()?)
                     .event(new_event)
                     .build(),
             ));
+
+            // Write directly to the bookmark store so compose can find it.
+            let bookmark = Bookmark::builder()
+                .id(bookmark_id)
+                .project(ticket.project_name.clone())
+                .name(request.bookmark_name.clone())
+                .build();
+            let host_db = self.config.host_db().map_err(|e| {
+                BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
+            })?;
+            host_db
+                .execute(
+                    "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at) VALUES (?1, ?2, ?3, ?4)",
+                    rusqlite::params![
+                        bookmark.id.to_string(),
+                        bookmark.project.to_string(),
+                        bookmark.name.to_string(),
+                        bookmark.created_at.to_string(),
+                    ],
+                )
+                .map_err(|e| {
+                    BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
+                })?;
         }
+
+        // Pull the pusher's data via chronicle diff + fetch.
+        BookmarkService::collect_from_peer_link(
+            &ServerState::from_parts(
+                self.config.clone(),
+                self.canons.clone(),
+                self.bridge.clone(),
+                self.mailbox.clone(),
+            ),
+            &ticket.project_name,
+            &request.bookmark_name,
+            request.bookmark.clone(),
+        )
+        .await
+        .map_err(|e| BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
 
         Ok(BridgeResponse::BridgePushAccepted)
     }
