@@ -8,6 +8,7 @@ use crate::*;
 #[derive(Debug, Subcommand)]
 pub(crate) enum TicketCommands {
     Issue(CreateTicket),
+    Revoke(RevokeTicket),
     Validate(ValidateTicket),
     List(ListTickets),
 }
@@ -21,6 +22,7 @@ impl TicketCommands {
 
         let bytes = match self {
             Self::Issue(issuance) => issuance.execute_request(&client).await?,
+            Self::Revoke(revoke) => revoke.execute_request(&client).await?,
             Self::Validate(validation) => validation.execute_request(&client).await?,
             Self::List(listing) => listing.execute_request(&client).await?,
         };

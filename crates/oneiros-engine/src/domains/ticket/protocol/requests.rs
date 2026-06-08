@@ -107,6 +107,7 @@ pub(crate) enum TicketRequest {
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RevokeTicket {
+        #[derive(clap::Args)]
         V1 => {
             #[builder(into)] pub(crate) ticket_id: TicketId,
         }
