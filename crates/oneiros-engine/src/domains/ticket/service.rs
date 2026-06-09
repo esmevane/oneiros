@@ -15,6 +15,19 @@ impl TicketService {
             .ok_or_else(|| TicketError::ProjectNotFound(create.project_name.clone()))?;
 
         let target = Ref::project(project.id);
+        let permissions: Vec<Permission> = if create.permissions.is_empty() {
+            // Default to full access when no permissions specified.
+            vec![PermissionOp::BookmarkPush, PermissionOp::BookmarkList]
+                .into_iter()
+                .map(|op| Permission::from(PermissionV1 { operation: op }))
+                .collect()
+        } else {
+            create
+                .permissions
+                .iter()
+                .map(|op| Permission::from(PermissionV1 { operation: *op }))
+                .collect()
+        };
         let ticket = Self::issue(
             scope,
             mailbox,
@@ -22,6 +35,7 @@ impl TicketService {
             &project,
             create.actor_id,
             target,
+            permissions,
         )
         .await?;
         Ok(TicketResponse::Created(
@@ -41,6 +55,7 @@ impl TicketService {
         project: &Project,
         actor_id: ActorId,
         target: Ref,
+        permissions: Vec<Permission>,
     ) -> Result<Ticket, TicketError> {
         let actor = ActorRepo::new(scope)
             .get(actor_id)
@@ -55,12 +70,14 @@ impl TicketService {
 
         let token = Token::issue(claims);
         let link = Link::new(target, token);
+
         let ticket = Ticket::builder()
             .actor_id(actor_id)
             .project_name(project_name.clone())
             .project_id(project.id)
             .link(link)
             .granted_by(actor_id)
+            .permissions(permissions)
             .build();
         let id = ticket.id;
 

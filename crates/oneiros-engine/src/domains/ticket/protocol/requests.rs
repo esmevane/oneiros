@@ -13,6 +13,11 @@ versioned! {
             #[builder(into)] pub(crate) actor_id: ActorId,
             #[arg(long)]
             #[builder(into)] pub(crate) project_name: ProjectName,
+            /// Operations this ticket grants. Repeatable. Empty = full access.
+            #[arg(long = "permission", value_enum)]
+            #[serde(default, skip_serializing_if = "Vec::is_empty")]
+            #[builder(default)]
+            pub(crate) permissions: Vec<PermissionOp>,
         }
     }
 }

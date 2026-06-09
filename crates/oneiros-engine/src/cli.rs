@@ -58,6 +58,8 @@ pub(crate) enum Command {
     Ticket(TicketCommands),
     #[command(subcommand)]
     Peer(PeerCommands),
+    #[command(subcommand)]
+    Remote(RemoteCommands),
 
     /// Manage bookmarks
     #[command(subcommand)]
@@ -162,6 +164,7 @@ impl Command {
             Command::Memory(memory) => memory.execute(config).await?,
             Command::Nature(nature) => nature.execute(config).await?,
             Command::Peer(peer) => peer.execute(config).await?,
+            Command::Remote(remote) => remote.execute(config).await?,
             Command::Persona(persona) => persona.execute(config).await?,
             Command::Pressure(pressure) => pressure.execute(config).await?,
             Command::Project(project) => project.execute(config).await?,

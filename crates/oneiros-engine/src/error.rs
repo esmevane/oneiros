@@ -64,6 +64,8 @@ pub(crate) enum Error {
     #[error(transparent)]
     Project(#[from] ProjectError),
     #[error(transparent)]
+    Remote(#[from] RemoteError),
+    #[error(transparent)]
     Scope(#[from] ScopeError),
     #[error(transparent)]
     Compose(#[from] ComposeError),

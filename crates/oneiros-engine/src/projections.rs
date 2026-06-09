@@ -222,6 +222,7 @@ impl Projections<HostCanon> {
                 Frame::new(SliceProjections.all()),
                 Frame::new(PeerProjections.all()),
                 Frame::new(FollowProjections.all()),
+                Frame::new(RemoteProjections.all()),
             ])],
             ReducerPipeline::host(),
         )

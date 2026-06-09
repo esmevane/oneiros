@@ -40,7 +40,7 @@ impl TicketDocs {
                 .tag(tag)
                 .nickname("validate-ticket")
                 .summary("Validate a ticket")
-                .description("Check whether a project access ticket is currently valid.")
+                .description("Verify that a ticket is still valid and not revoked.")
                 .build(),
         }
     }

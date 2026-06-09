@@ -12,4 +12,6 @@ pub(crate) struct HostCanon {
     pub(crate) tickets: Tickets,
     pub(crate) peers: Peers,
     pub(crate) follows: Follows,
+    #[allow(dead_code)]
+    pub(crate) remotes: Remotes,
 }

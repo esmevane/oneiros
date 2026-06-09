@@ -40,6 +40,7 @@ pub(crate) enum Events {
     Ticket(TicketEvents),
     Bookmark(BookmarkEvents),
     Peer(PeerEvents),
+    Remote(RemoteEvents),
 }
 
 impl Events {
@@ -69,6 +70,7 @@ impl Events {
             Events::Ticket(e) => e.kind().to_string(),
             Events::Bookmark(e) => e.kind().to_string(),
             Events::Peer(e) => e.kind().to_string(),
+            Events::Remote(e) => e.kind().to_string(),
         }
     }
 }
@@ -94,6 +96,7 @@ collects_enum!(
     Events::Ticket => TicketEvents,
     Events::Bookmark => BookmarkEvents,
     Events::Peer => PeerEvents,
+    Events::Remote => RemoteEvents,
 );
 
 /// Ephemeral events — transport artifacts that are never persisted to the log.

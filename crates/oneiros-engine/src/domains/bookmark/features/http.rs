@@ -74,6 +74,14 @@ impl BookmarkRouter {
                             .security_requirement("BearerToken")
                             .response::<200, Json<BookmarkUnfollowedResponse>>()
                     }),
+                )
+                .api_route(
+                    "/push",
+                    routing::post_with(push, |op| {
+                        resource_op!(op, BookmarkDocs::Push)
+                            .security_requirement("BearerToken")
+                            .response::<200, Json<BookmarkPushResult>>()
+                    }),
                 ),
         )
     }
@@ -163,5 +171,16 @@ async fn collect(
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
     Ok(Json(
         BookmarkService::collect(&state, context.project_name(), &body).await?,
+    ))
+}
+
+#[expect(deprecated)]
+async fn push(
+    context: ProjectLog,
+    State(state): State<ServerState>,
+    Json(body): Json<PushBookmark>,
+) -> Result<Json<BookmarkResponse>, BookmarkError> {
+    Ok(Json(
+        BookmarkService::push(&state, context.project_name(), &body).await?,
     ))
 }
