@@ -8,6 +8,9 @@ fn peer_to_added_v1(peer: Peer) -> PeerAddedResponseV1 {
         key: peer.key,
         address: peer.address,
         name: peer.name,
+        kind: peer.kind,
+        ticket: peer.ticket,
+        project: peer.project,
         created_at: peer.created_at,
     }
 }
@@ -18,6 +21,9 @@ fn peer_to_found_v1(peer: Peer) -> PeerFoundResponseV1 {
         key: peer.key,
         address: peer.address,
         name: peer.name,
+        kind: peer.kind,
+        ticket: peer.ticket,
+        project: peer.project,
         created_at: peer.created_at,
     }
 }
@@ -29,22 +35,53 @@ impl PeerService {
         request: &AddPeer,
     ) -> Result<PeerResponse, PeerError> {
         let AddPeer::V1(add) = request;
-        let parsed: PeerAddress = add
-            .address
-            .parse()
-            .map_err(|e: PeerAddressError| PeerError::InvalidAddress(e.to_string()))?;
-        let endpoint_id = parsed.inner().id;
-        let key = PeerKey::from_bytes(*endpoint_id.as_bytes());
 
-        let peer_name = match &add.name {
-            Some(name) if !name.is_empty() => PeerName::new(name),
-            _ => default_peer_name(&key),
-        };
+        let (parsed_addr, kind, ticket, peer_project, peer_name) =
+            if let Ok(uri) = add.address.parse::<OneirosUri>() {
+                match uri {
+                    OneirosUri::Peer(pl) => {
+                        let addr = pl.host;
+                        let name = match &add.name {
+                            Some(n) if !n.is_empty() => PeerName::new(n),
+                            _ => {
+                                let key = PeerKey::from_bytes(*addr.inner().id.as_bytes());
+                                default_peer_name(&key)
+                            }
+                        };
+                        let pticket = pl.link.clone();
+                        let kind = match &pticket.target {
+                            Ref::V0(Resource::Project(_)) => PeerKind::Project,
+                            Ref::V0(Resource::Bookmark(_)) => PeerKind::Bookmark,
+                            _ => return Err(PeerError::InvalidRef),
+                        };
+                        let project = match &pticket.target {
+                            Ref::V0(Resource::Project(_)) => Some(scope.config().project.clone()),
+                            _ => None,
+                        };
+                        (addr, kind, Some(pticket), project, name)
+                    }
+                    _ => {
+                        return Err(PeerError::InvalidAddress);
+                    }
+                }
+            } else {
+                let parsed: PeerAddress = add.address.parse()?;
+                let endpt = parsed.inner().id;
+                let key = PeerKey::from_bytes(*endpt.as_bytes());
+                let name = match &add.name {
+                    Some(n) if !n.is_empty() => PeerName::new(n),
+                    _ => default_peer_name(&key),
+                };
+                (parsed, PeerKind::Bookmark, None, None, name)
+            };
 
         let peer = Peer::builder()
-            .key(key)
-            .address(parsed)
+            .key(PeerKey::from_bytes(*parsed_addr.inner().id.as_bytes()))
+            .address(parsed_addr)
             .name(peer_name)
+            .kind(kind)
+            .maybe_ticket(ticket)
+            .maybe_project(peer_project)
             .build();
 
         let event = PeerAdded::builder_v1()
@@ -52,6 +89,9 @@ impl PeerService {
             .key(peer.key)
             .address(peer.address.clone())
             .name(peer.name.clone())
+            .kind(peer.kind)
+            .maybe_ticket(peer.ticket.clone())
+            .maybe_project(peer.project.clone())
             .created_at(peer.created_at)
             .build();
 
@@ -104,9 +144,6 @@ impl PeerService {
         ))
     }
 
-    /// Ensure a peer with the given key is known. If one already exists,
-    /// return it without emitting an event. Otherwise add it and return
-    /// the newly-created record.
     pub(crate) async fn ensure(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
@@ -123,13 +160,21 @@ impl PeerService {
         }
 
         let name = default_peer_name(&key);
-        let peer = Peer::builder().key(key).address(address).name(name).build();
+        let peer = Peer::builder()
+            .key(key)
+            .address(address)
+            .name(name)
+            .kind(PeerKind::Bookmark)
+            .build();
 
         let event = PeerAdded::builder_v1()
             .id(peer.id)
             .key(peer.key)
             .address(peer.address.clone())
             .name(peer.name.clone())
+            .kind(peer.kind)
+            .maybe_ticket(peer.ticket.clone())
+            .maybe_project(peer.project.clone())
             .created_at(peer.created_at)
             .build();
 
@@ -180,7 +225,6 @@ impl PeerService {
     }
 }
 
-/// Default peer name derived from the first 6 hex digits of the key.
 fn default_peer_name(key: &PeerKey) -> PeerName {
     let hex = key.to_string();
     let prefix: String = hex.chars().take(6).collect();

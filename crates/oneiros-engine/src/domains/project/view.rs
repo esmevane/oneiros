@@ -110,6 +110,27 @@ impl ProjectView {
                     String::new(),
                 )
             }
+            ProjectResponse::Shared(ProjectSharedResponse::V1(shared)) => {
+                let prompt = shared.result.uri.clone();
+                Rendered::new(
+                    ProjectResponse::Shared(ProjectSharedResponse::V1(shared)),
+                    prompt,
+                    String::new(),
+                )
+            }
+            ProjectResponse::Followed(ProjectFollowedResponse::V1(followed)) => {
+                let prompt = Confirmation::new(
+                    "Project",
+                    followed.project.to_string(),
+                    format!("followed as peer '{}'", followed.peer_name),
+                )
+                .to_string();
+                Rendered::new(
+                    ProjectResponse::Followed(ProjectFollowedResponse::V1(followed)),
+                    prompt,
+                    String::new(),
+                )
+            }
         }
     }
 }

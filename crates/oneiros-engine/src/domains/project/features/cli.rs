@@ -10,6 +10,8 @@ pub(crate) enum ProjectCommands {
     Export(ExportProject),
     Import(ImportProject),
     Replay,
+    Share(ShareProject),
+    Follow(FollowProject),
 }
 
 impl ProjectCommands {
@@ -44,6 +46,14 @@ impl ProjectCommands {
             }
             ProjectCommands::Import(importing) => ProjectService::import(config, importing).await?,
             ProjectCommands::Replay => ProjectService::replay(config).await?,
+            ProjectCommands::Share(share) => {
+                let bytes = share.execute_request(&client).await?;
+                serde_json::from_slice(&bytes)?
+            }
+            ProjectCommands::Follow(follow) => {
+                let bytes = follow.execute_request(&client).await?;
+                serde_json::from_slice(&bytes)?
+            }
         };
 
         Ok(ProjectView::new(response).render().map(Into::into))

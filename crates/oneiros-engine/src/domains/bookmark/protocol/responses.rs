@@ -17,6 +17,7 @@ pub(crate) enum BookmarkResponse {
     Followed(Follow),
     Collected(BookmarkCollectResult),
     Unfollowed(BookmarkUnfollowedResponse),
+    Submitted(BookmarkSubmitResult),
 }
 
 versioned! {
@@ -80,9 +81,22 @@ pub(crate) struct BookmarkShareResult {
 
 /// The outcome of a successful `bookmark collect` — how many events were
 /// received and the new checkpoint after applying them.
+///
+/// When collecting from a follow, `follow_id` is set. When collecting
+/// directly from a remote (via `--remote`), `follow_id` is `None`.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub(crate) struct BookmarkCollectResult {
-    pub(crate) follow_id: FollowId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) follow_id: Option<FollowId>,
     pub(crate) events_received: u64,
     pub(crate) checkpoint: Checkpoint,
+}
+
+/// The outcome of a successful `bookmark submit`.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub(crate) struct BookmarkSubmitResult {
+    pub(crate) accepted: bool,
+    pub(crate) bookmark_name: BookmarkName,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) reason: Option<String>,
 }

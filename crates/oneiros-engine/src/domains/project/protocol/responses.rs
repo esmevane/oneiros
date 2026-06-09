@@ -17,6 +17,8 @@ pub(crate) enum ProjectResponse {
     WroteExport(WroteExportResponse),
     Imported(ImportedResponse),
     Replayed(ReplayedResponse),
+    Shared(ProjectSharedResponse),
+    Followed(ProjectFollowedResponse),
 }
 
 versioned! {
@@ -79,6 +81,34 @@ versioned! {
     pub(crate) enum ReplayedResponse {
         V1 => {
             pub(crate) replayed: i64,
+        }
+    }
+}
+
+/// Response to `project share` — contains the issued ticket and URI.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub(crate) struct ProjectShareResult {
+    pub(crate) ticket: Ticket,
+    pub(crate) uri: String,
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ProjectSharedResponse {
+        V1 => {
+            #[serde(flatten)] pub(crate) result: ProjectShareResult,
+        }
+    }
+}
+
+// Response to `project follow` — the created repository peer.
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ProjectFollowedResponse {
+        V1 => {
+            pub(crate) peer_name: PeerName,
+            pub(crate) peer_id: PeerId,
+            pub(crate) project: ProjectName,
         }
     }
 }

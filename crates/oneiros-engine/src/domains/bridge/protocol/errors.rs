@@ -25,10 +25,13 @@ pub(crate) enum IrohError {
 
 /// Which bridge operation a protocol error pertains to.
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub(crate) enum BridgeOp {
     Diff,
     Resolve,
     FetchEvents,
+    ListBookmarks,
+    SubmitBookmark,
 }
 
 impl core::fmt::Display for BridgeOp {
@@ -37,6 +40,8 @@ impl core::fmt::Display for BridgeOp {
             Self::Diff => f.write_str("bridge-diff"),
             Self::Resolve => f.write_str("bridge-resolve"),
             Self::FetchEvents => f.write_str("bridge-fetch-events"),
+            Self::ListBookmarks => f.write_str("bridge-list-bookmarks"),
+            Self::SubmitBookmark => f.write_str("bridge-submit-bookmark"),
         }
     }
 }
@@ -85,6 +90,9 @@ pub(crate) enum DenyReason {
 
     #[error("link target does not match ticket target")]
     TargetMismatch,
+
+    #[error("ticket does not grant the required permission")]
+    InsufficientPermissions,
 
     #[error(transparent)]
     Invalid(#[from] TicketInvalid),

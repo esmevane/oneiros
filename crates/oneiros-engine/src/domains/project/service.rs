@@ -331,4 +331,137 @@ impl ProjectService {
                 .into(),
         ))
     }
+
+    /// Share a project by issuing a project-scoped ticket.
+    pub(crate) async fn share(
+        state: &ServerState,
+        request: &ShareProject,
+    ) -> Result<ProjectResponse, ProjectError> {
+        let ShareProject::V1(req) = request;
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let project_name = if req.project.to_string().is_empty() {
+            state.config().project.clone()
+        } else {
+            req.project.clone()
+        };
+
+        let project = ProjectRepo::new(&scope)
+            .get(&project_name)
+            .await?
+            .ok_or_else(|| ProjectError::NotFound(project_name.clone()))?;
+
+        let target = Ref::project(project.id);
+        let all = SearchFilters {
+            limit: Limit(usize::MAX),
+            offset: Offset(0),
+        };
+        let actor = ActorRepo::new(&scope)
+            .list(&all)
+            .await?
+            .items
+            .into_iter()
+            .next()
+            .ok_or(ProjectError::Missing)?;
+
+        let request = IssueTicket::builder_v1()
+            .project_name(project_name.clone())
+            .project(project)
+            .actor_id(actor.id)
+            .target(target)
+            .permissions(vec![
+                Permission::builder_v1()
+                    .operation(PermissionOp::BookmarkSubmit)
+                    .build()
+                    .into(),
+                Permission::builder_v1()
+                    .operation(PermissionOp::BookmarkList)
+                    .build()
+                    .into(),
+            ])
+            .build()
+            .into();
+        let ticket = TicketService::issue(&scope, state.mailbox(), &request)
+            .await
+            .map_err(|e| ProjectError::NotFound(ProjectName::new(e.to_string())))?;
+
+        let peer_link = PeerLink::new(state.host_identity().address, ticket.link.clone());
+        let uri = OneirosUri::Peer(peer_link).to_string();
+
+        Ok(ProjectResponse::Shared(ProjectSharedResponse::V1(
+            ProjectSharedResponseV1 {
+                result: ProjectShareResult { ticket, uri },
+            },
+        )))
+    }
+
+    /// Follow a project share URI — creates a repository peer.
+    pub(crate) async fn follow(
+        scope: &Scope<AtHost>,
+        mailbox: &Mailbox,
+        request: &FollowProject,
+    ) -> Result<ProjectResponse, ProjectError> {
+        let FollowProject::V1(req) = request;
+
+        let uri: OneirosUri = req
+            .uri
+            .parse()
+            .map_err(|_| ProjectError::NotFound(ProjectName::new("invalid URI")))?;
+
+        let peer_link = match uri {
+            OneirosUri::Peer(pl) => pl,
+            _ => {
+                return Err(ProjectError::NotFound(ProjectName::new(
+                    "URI must be an oneiros:// link",
+                )));
+            }
+        };
+
+        let kind = match &peer_link.link.target {
+            Ref::V0(Resource::Project(_)) => PeerKind::Project,
+            _ => {
+                return Err(ProjectError::NotFound(ProjectName::new(
+                    "URI must target a project",
+                )));
+            }
+        };
+
+        let peer = Peer::builder()
+            .key(PeerKey::from_bytes(*peer_link.host.inner().id.as_bytes()))
+            .address(peer_link.host.clone())
+            .name(req.name.clone())
+            .kind(kind)
+            .maybe_ticket(Some(peer_link.link.clone()))
+            .maybe_project(Some(scope.config().project.clone()))
+            .build();
+
+        let event = PeerAdded::builder_v1()
+            .id(peer.id)
+            .key(peer.key)
+            .address(peer.address.clone())
+            .name(peer.name.clone())
+            .kind(peer.kind)
+            .maybe_ticket(peer.ticket.clone())
+            .maybe_project(peer.project.clone())
+            .created_at(peer.created_at)
+            .build();
+
+        let new_event = NewEvent::builder()
+            .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
+            .build();
+
+        mailbox.tell(HostMessage::from(
+            AppendHostLog::builder()
+                .scope(scope.clone())
+                .event(new_event)
+                .build(),
+        ));
+
+        Ok(ProjectResponse::Followed(ProjectFollowedResponse::V1(
+            ProjectFollowedResponseV1 {
+                peer_name: peer.name,
+                peer_id: peer.id,
+                project: scope.config().project.clone(),
+            },
+        )))
+    }
 }

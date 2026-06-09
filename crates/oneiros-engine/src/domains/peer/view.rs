@@ -24,6 +24,7 @@ impl PeerView {
                     .field("id:", found.id.to_string())
                     .field("key:", found.key.to_string())
                     .field("address:", found.address.to_string())
+                    .field("kind:", found.kind.to_string())
                     .field("created_at:", found.created_at.as_string())
                     .to_string();
                 Rendered::new(
@@ -35,16 +36,16 @@ impl PeerView {
             PeerResponse::Listed(PeersResponse::V1(listed)) => {
                 let mut table = Table::new(vec![
                     Column::new("Name"),
+                    Column::new("Kind"),
                     Column::new("Key"),
-                    Column::new("ID"),
                 ]);
                 for peer in &listed.items {
                     let key_display = peer.key.to_string();
                     let short_key: String = key_display.chars().take(12).collect();
                     table.push_row(vec![
                         peer.name.to_string(),
+                        peer.kind.to_string(),
                         format!("{short_key}…"),
-                        peer.id.to_string(),
                     ]);
                 }
                 let prompt = format!(

@@ -13,6 +13,11 @@ versioned! {
             #[builder(into)] pub(crate) actor_id: ActorId,
             #[arg(long)]
             #[builder(into)] pub(crate) project_name: ProjectName,
+            /// Operations this ticket grants. Repeatable. Empty = full access.
+            #[arg(long = "permission", value_enum)]
+            #[serde(default, skip_serializing_if = "Vec::is_empty")]
+            #[builder(default)]
+            pub(crate) permissions: Vec<PermissionOp>,
         }
     }
 }
@@ -96,6 +101,22 @@ pub(crate) enum TicketRequest {
     GetTicket(GetTicket),
     ListTickets(ListTickets),
     ValidateTicket(ValidateTicket),
+}
+
+// Internal service request for issuing a ticket. Not an HTTP/CLI endpoint —
+// used by services that need to mint distribution tickets (bookmark share,
+// project share).
+versioned! {
+    pub(crate) enum IssueTicket {
+        V1 => {
+            #[builder(into)] pub(crate) project_name: ProjectName,
+            pub(crate) project: Project,
+            pub(crate) actor_id: ActorId,
+            pub(crate) target: Ref,
+            #[builder(default)]
+            pub(crate) permissions: Vec<Permission>,
+        }
+    }
 }
 
 #[cfg(test)]

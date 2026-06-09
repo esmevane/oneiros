@@ -106,6 +106,49 @@ pub(crate) enum ProjectRequest {
     ExportProject(ExportProject),
     ImportProject(ImportProject),
     ReplayProject,
+    ShareProject(ShareProject),
+    FollowProject(FollowProject),
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum ShareProject {
+        #[derive(clap::Args)]
+        V1 => {
+            #[arg(default_value = "")]
+            #[builder(into)]
+            pub(crate) project: ProjectName,
+        }
+    }
+}
+
+impl ClientRequest for ShareProject {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/projects/share", self).await
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum FollowProject {
+        #[derive(clap::Args)]
+        V1 => {
+            pub(crate) uri: String,
+            #[arg(long)]
+            #[builder(into)]
+            pub(crate) name: PeerName,
+        }
+    }
+}
+
+impl ClientRequest for FollowProject {
+    type Error = ClientError;
+
+    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
+        client.post("/projects/follow", self).await
+    }
 }
 
 #[cfg(test)]
