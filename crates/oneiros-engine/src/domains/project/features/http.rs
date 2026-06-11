@@ -1,7 +1,7 @@
 use aide::axum::{ApiRouter, routing};
 use axum::{
     Json,
-    extract::{Path, Query},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 
@@ -31,6 +31,20 @@ impl ProjectRouter {
                 }),
             )
             .route("/summary", axum::routing::get(summary))
+            .api_route(
+                "/projects/share",
+                routing::post_with(share, |op| {
+                    resource_op!(op, ProjectDocs::Share)
+                        .response::<200, Json<ProjectSharedResponse>>()
+                }),
+            )
+            .api_route(
+                "/projects/follow",
+                routing::post_with(follow, |op| {
+                    resource_op!(op, ProjectDocs::Follow)
+                        .response::<200, Json<ProjectFollowedResponse>>()
+                }),
+            )
     }
 }
 
@@ -105,4 +119,19 @@ async fn summary(scope: Scope<AtBookmark>) -> Result<Json<ProjectSummary>, Proje
     };
 
     Ok(Json(summary))
+}
+
+async fn share(
+    State(state): State<ServerState>,
+    Json(body): Json<ShareProject>,
+) -> Result<Json<ProjectResponse>, ProjectError> {
+    Ok(Json(ProjectService::share(&state, &body).await?))
+}
+
+async fn follow(
+    scope: Scope<AtHost>,
+    mailbox: Mailbox,
+    Json(body): Json<FollowProject>,
+) -> Result<Json<ProjectResponse>, ProjectError> {
+    Ok(Json(ProjectService::follow(&scope, &mailbox, &body).await?))
 }

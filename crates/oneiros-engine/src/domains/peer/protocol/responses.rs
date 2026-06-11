@@ -22,6 +22,11 @@ versioned! {
             pub(crate) key: PeerKey,
             pub(crate) address: PeerAddress,
             #[builder(into)] pub(crate) name: PeerName,
+            #[builder(default)] pub(crate) kind: PeerKind,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub(crate) ticket: Option<Link>,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub(crate) project: Option<ProjectName>,
             pub(crate) created_at: Timestamp,
         }
     }
@@ -35,6 +40,11 @@ versioned! {
             pub(crate) key: PeerKey,
             pub(crate) address: PeerAddress,
             #[builder(into)] pub(crate) name: PeerName,
+            #[builder(default)] pub(crate) kind: PeerKind,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub(crate) ticket: Option<Link>,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub(crate) project: Option<ProjectName>,
             pub(crate) created_at: Timestamp,
         }
     }

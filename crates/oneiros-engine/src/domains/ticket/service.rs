@@ -15,15 +15,28 @@ impl TicketService {
             .ok_or_else(|| TicketError::ProjectNotFound(create.project_name.clone()))?;
 
         let target = Ref::project(project.id);
-        let ticket = Self::issue(
-            scope,
-            mailbox,
-            &create.project_name,
-            &project,
-            create.actor_id,
-            target,
-        )
-        .await?;
+        let permissions: Vec<Permission> = if create.permissions.is_empty() {
+            // Default to full access when no permissions specified.
+            vec![PermissionOp::BookmarkSubmit, PermissionOp::BookmarkList]
+                .into_iter()
+                .map(|op| Permission::builder_v1().operation(op).build().into())
+                .collect()
+        } else {
+            create
+                .permissions
+                .iter()
+                .map(|op| Permission::builder_v1().operation(*op).build().into())
+                .collect()
+        };
+        let request = IssueTicket::builder_v1()
+            .project_name(create.project_name.clone())
+            .project(project)
+            .actor_id(create.actor_id)
+            .target(target)
+            .permissions(permissions)
+            .build()
+            .into();
+        let ticket = Self::issue(scope, mailbox, &request).await?;
         Ok(TicketResponse::Created(
             TicketCreatedResponse::builder_v1()
                 .ticket(ticket)
@@ -37,30 +50,31 @@ impl TicketService {
     pub(crate) async fn issue(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
-        project_name: &ProjectName,
-        project: &Project,
-        actor_id: ActorId,
-        target: Ref,
+        request: &IssueTicket,
     ) -> Result<Ticket, TicketError> {
+        let IssueTicket::V1(request) = request;
+
         let actor = ActorRepo::new(scope)
-            .get(actor_id)
+            .get(request.actor_id)
             .await?
-            .ok_or_else(|| TicketError::ActorNotFound(actor_id))?;
+            .ok_or_else(|| TicketError::ActorNotFound(request.actor_id))?;
 
         let claims = TokenClaims::builder()
-            .project_id(project.id)
+            .project_id(request.project.id)
             .tenant_id(actor.tenant_id)
-            .actor_id(actor_id)
+            .actor_id(request.actor_id)
             .build();
 
         let token = Token::issue(claims);
-        let link = Link::new(target, token);
+        let link = Link::new(request.target.clone(), token);
+
         let ticket = Ticket::builder()
-            .actor_id(actor_id)
-            .project_name(project_name.clone())
-            .project_id(project.id)
+            .actor_id(request.actor_id)
+            .project_name(request.project_name.clone())
+            .project_id(request.project.id)
             .link(link)
-            .granted_by(actor_id)
+            .granted_by(request.actor_id)
+            .permissions(request.permissions.clone())
             .build();
         let id = ticket.id;
 

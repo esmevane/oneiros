@@ -12,6 +12,7 @@ mod namespace;
 mod portability;
 mod pressure;
 mod protocol;
+mod remotes;
 mod search;
 mod skills;
 mod slice;

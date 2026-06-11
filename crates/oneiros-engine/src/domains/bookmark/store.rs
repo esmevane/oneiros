@@ -39,6 +39,13 @@ impl<'a> BookmarkStore<'a> {
         Ok(())
     }
 
+    /// Insert or update a bookmark row directly. Used by service-layer
+    /// code that needs to write bookmark projections outside the event
+    /// replay path (e.g. creating bookmarks during peer collect/submit).
+    pub(crate) fn upsert(&self, bookmark: &Bookmark) -> Result<(), EventError> {
+        self.write_bookmark(bookmark)
+    }
+
     fn write_bookmark(&self, bookmark: &Bookmark) -> Result<(), EventError> {
         self.db.execute(
             "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at)

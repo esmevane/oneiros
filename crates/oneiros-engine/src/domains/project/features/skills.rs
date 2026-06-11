@@ -11,6 +11,8 @@ impl ProjectSkills {
             Skill::new("project-export", include_str!("skills/export.md")),
             Skill::new("project-import", include_str!("skills/import.md")),
             Skill::new("project-replay", include_str!("skills/replay.md")),
+            Skill::new("project-share", include_str!("skills/share.md")),
+            Skill::new("project-follow", include_str!("skills/follow.md")),
         ]
     }
 }

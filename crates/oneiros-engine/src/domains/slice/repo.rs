@@ -50,6 +50,23 @@ impl<'a> SliceRepo<'a> {
         }
     }
 
+    /// Fetch just the lens expression for a named slice.
+    pub(crate) async fn get_lens_expression(
+        &self,
+        name: &SliceName,
+    ) -> Result<Option<String>, EventError> {
+        let db = HostDb::open(self.scope).await?;
+        let mut stmt = db.prepare("SELECT lens_expr FROM slices WHERE name = ?1")?;
+        let result = stmt.query_row(rusqlite::params![name.to_string()], |row| {
+            row.get::<_, String>(0)
+        });
+        match result {
+            Ok(expr) => Ok(Some(expr)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
     pub(crate) async fn list(&self) -> Result<Listed<Slice>, EventError> {
         let db = HostDb::open(self.scope).await?;
         let total = {

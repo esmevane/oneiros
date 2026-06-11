@@ -23,28 +23,26 @@ impl PeerDocs {
                 .nickname("add-peer")
                 .summary("Add a peer")
                 .description(
-                    "Register a remote project as a peer, enabling event exchange and distribution.",
+                    "Register a remote host as a peer. Provide an oneiros:// URI to add a remote peer with ticket-based auth, or a plain address for a follow peer.",
                 )
                 .build(),
             Self::List => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("list-peers")
                 .summary("List peers")
-                .description("List all remote projects registered as peers of the current project.")
+                .description("List all known peer hosts.")
                 .build(),
             Self::Show => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("get-peer")
                 .summary("Get a peer")
-                .description("Look up the connection details for a specific registered peer.")
+                .description("Look up the connection details for a specific peer.")
                 .build(),
             Self::Remove => ResourceDocs::builder()
                 .tag(tag)
                 .nickname("remove-peer")
                 .summary("Remove a peer")
-                .description(
-                    "Deregister a remote project as a peer, stopping further event exchange with it.",
-                )
+                .description("Deregister a peer host.")
                 .build(),
         }
     }

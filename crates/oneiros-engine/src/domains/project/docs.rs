@@ -4,6 +4,8 @@ pub(crate) enum ProjectDocs {
     Create,
     List,
     Show,
+    Share,
+    Follow,
 }
 
 impl ProjectDocs {
@@ -37,6 +39,18 @@ impl ProjectDocs {
                 .nickname("get-project")
                 .summary("Get a project")
                 .description("Look up details for a specific project by name or ID.")
+                .build(),
+            Self::Share => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("share-project")
+                .summary("Share a project")
+                .description("Issue a project-scoped ticket and print the URI for peer access.")
+                .build(),
+            Self::Follow => ResourceDocs::builder()
+                .tag(tag)
+                .nickname("follow-project")
+                .summary("Follow a project")
+                .description("Create a repository peer by following a project share URI.")
                 .build(),
         }
     }

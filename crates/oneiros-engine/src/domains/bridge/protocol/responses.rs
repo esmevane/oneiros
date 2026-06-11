@@ -34,6 +34,12 @@ pub(crate) struct BridgeDenied {
     pub(crate) reason: String,
 }
 
+/// A list of bookmark names returned by `BridgeListBookmarks`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct BridgeBookmarkList {
+    pub(crate) bookmarks: Vec<BookmarkName>,
+}
+
 /// The response to a [`BridgeRequest`] over the oneiros sync protocol.
 ///
 /// Carried over the `/oneiros/sync/1` ALPN via iroh's QUIC transport.
@@ -55,6 +61,15 @@ pub(crate) enum BridgeResponse {
 
     /// The requested events, fetched by ID after the diff.
     BridgeEvents(BridgeEvents),
+
+    /// A list of bookmark names (response to BridgeListBookmarks).
+    BridgeBookmarkList(BridgeBookmarkList),
+
+    /// Submit accepted — the remote is collecting the data.
+    BridgeSubmitAccepted,
+
+    /// Submit rejected.
+    BridgeSubmitRejected(BridgeDenied),
 
     /// The server rejected the request.
     BridgeDenied(BridgeDenied),

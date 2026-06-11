@@ -7,6 +7,8 @@ use crate::*;
 pub(crate) struct SyncHandler {
     config: Config,
     canons: CanonIndex,
+    bridge: Bridge,
+    mailbox: Mailbox,
 }
 
 impl core::fmt::Debug for SyncHandler {
@@ -16,8 +18,18 @@ impl core::fmt::Debug for SyncHandler {
 }
 
 impl SyncHandler {
-    pub(crate) fn new(config: Config, canons: CanonIndex) -> Self {
-        Self { config, canons }
+    pub(crate) fn new(
+        config: Config,
+        canons: CanonIndex,
+        bridge: Bridge,
+        mailbox: Mailbox,
+    ) -> Self {
+        Self {
+            config,
+            canons,
+            bridge,
+            mailbox,
+        }
     }
 
     async fn validate_ticket(
@@ -114,6 +126,75 @@ impl SyncHandler {
 
         Ok(BridgeResponse::BridgeEvents(BridgeEvents { events }))
     }
+
+    async fn handle_list_bookmarks(
+        &self,
+        request: &BridgeListBookmarks,
+    ) -> Result<BridgeResponse, BridgeError> {
+        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let ticket = self.validate_ticket(&scope, &request.ticket).await?;
+
+        if !ticket.can(PermissionOp::BookmarkList) {
+            return Err(DenyReason::InsufficientPermissions.into());
+        }
+
+        // The request must target the same project the ticket was issued for.
+        if request.project != ticket.project_name {
+            return Err(DenyReason::TargetMismatch.into());
+        }
+
+        // List bookmark names from the host DB projection.
+        let host_db = self.config.host_db().map_err(|e| {
+            BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
+        })?;
+        let bookmarks = BookmarkStore::new(&host_db)
+            .list_for_project(&request.project)
+            .map_err(|e| {
+                BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
+            })?;
+
+        Ok(BridgeResponse::BridgeBookmarkList(BridgeBookmarkList {
+            bookmarks,
+        }))
+    }
+
+    async fn handle_submit_bookmark(
+        &self,
+        request: &BridgeSubmitBookmark,
+    ) -> Result<BridgeResponse, BridgeError> {
+        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let ticket = self.validate_ticket(&scope, &request.ticket).await?;
+
+        if !ticket.can(PermissionOp::BookmarkSubmit) {
+            return Err(DenyReason::InsufficientPermissions.into());
+        }
+
+        // Ensure the target bookmark exists on our side.
+        BookmarkService::ensure_bookmark_exists(
+            &scope,
+            &self.canons,
+            &self.config,
+            &self.mailbox,
+            &ticket.project_name,
+            &request.bookmark_name,
+        )
+        .map_err(|e| BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
+
+        // Collect the submitter's data via chronicle diff + fetch.
+        BookmarkService::collect_from_peer_link(
+            &self.mailbox,
+            &self.bridge,
+            &self.canons,
+            &self.config,
+            &ticket.project_name,
+            &request.bookmark_name,
+            request.bookmark.clone(),
+        )
+        .await
+        .map_err(|e| BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
+
+        Ok(BridgeResponse::BridgeSubmitAccepted)
+    }
 }
 
 impl iroh::protocol::ProtocolHandler for SyncHandler {
@@ -167,6 +248,21 @@ impl iroh::protocol::ProtocolHandler for SyncHandler {
                     })
                 })
             }
+            Ok(BridgeRequest::BridgeListBookmarks(list)) => {
+                self.handle_list_bookmarks(&list).await.unwrap_or_else(|e| {
+                    BridgeResponse::BridgeDenied(BridgeDenied {
+                        reason: e.to_string(),
+                    })
+                })
+            }
+            Ok(BridgeRequest::BridgeSubmitBookmark(submit)) => self
+                .handle_submit_bookmark(&submit)
+                .await
+                .unwrap_or_else(|e| {
+                    BridgeResponse::BridgeDenied(BridgeDenied {
+                        reason: e.to_string(),
+                    })
+                }),
             Err(e) => BridgeResponse::BridgeDenied(BridgeDenied {
                 reason: format!("invalid request: {e}"),
             }),
