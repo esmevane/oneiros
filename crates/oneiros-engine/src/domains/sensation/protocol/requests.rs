@@ -20,17 +20,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for SetSensation {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let SetSensation::V1(body) = self;
-        client
-            .put(&format!("/sensations/{}", body.name), self)
-            .await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetSensation {
@@ -41,15 +30,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetSensation {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetSensation::V1(lookup) = self;
-        client.get(&format!("/sensations/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveSensation {
@@ -57,17 +37,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: SensationName,
         }
-    }
-}
-
-impl ClientRequest for RemoveSensation {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveSensation::V1(removal) = self;
-        client
-            .delete(&format!("/sensations/{}", removal.name))
-            .await
     }
 }
 
@@ -84,17 +53,31 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListSensations {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListSensations::V1(listing) = self;
+resource_requests! {
+    SetSensation => |this, client| {
+        let SetSensation::V1(body) = this;
+        client
+            .put(&format!("/sensations/{}", body.name), this)
+            .await
+    },
+    GetSensation => |this, client| {
+        let GetSensation::V1(lookup) = this;
+        client.get(&format!("/sensations/{}", lookup.key)).await
+    },
+    RemoveSensation => |this, client| {
+        let RemoveSensation::V1(removal) = this;
+        client
+            .delete(&format!("/sensations/{}", removal.name))
+            .await
+    },
+    ListSensations => |this, client| {
+        let ListSensations::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/sensations?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

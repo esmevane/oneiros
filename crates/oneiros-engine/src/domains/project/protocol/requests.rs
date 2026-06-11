@@ -22,14 +22,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateProject {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/projects", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetProject {
@@ -37,15 +29,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ProjectName>,
         }
-    }
-}
-
-impl ClientRequest for GetProject {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetProject::V1(lookup) = self;
-        client.get(&format!("/projects/{}", lookup.key)).await
     }
 }
 
@@ -59,19 +42,6 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
-    }
-}
-
-impl ClientRequest for ListProjects {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListProjects::V1(listing) = self;
-        let query = format!(
-            "limit={}&offset={}",
-            listing.filters.limit, listing.filters.offset,
-        );
-        client.get(&format!("/projects?{query}")).await
     }
 }
 
@@ -122,14 +92,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for ShareProject {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/projects/share", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum FollowProject {
@@ -143,12 +105,28 @@ versioned! {
     }
 }
 
-impl ClientRequest for FollowProject {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/projects/follow", self).await
-    }
+resource_requests! {
+    CreateProject => |this, client| {
+        client.post("/projects", this).await
+    },
+    GetProject => |this, client| {
+        let GetProject::V1(lookup) = this;
+        client.get(&format!("/projects/{}", lookup.key)).await
+    },
+    ListProjects => |this, client| {
+        let ListProjects::V1(listing) = this;
+        let query = format!(
+            "limit={}&offset={}",
+            listing.filters.limit, listing.filters.offset,
+        );
+        client.get(&format!("/projects?{query}")).await
+    },
+    ShareProject => |this, client| {
+        client.post("/projects/share", this).await
+    },
+    FollowProject => |this, client| {
+        client.post("/projects/follow", this).await
+    },
 }
 
 #[cfg(test)]

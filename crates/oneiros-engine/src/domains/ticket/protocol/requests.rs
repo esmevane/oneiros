@@ -22,14 +22,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateTicket {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/tickets", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetTicket {
@@ -40,15 +32,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetTicket {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetTicket::V1(lookup) = self;
-        client.get(&format!("/tickets/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ValidateTicket {
@@ -56,14 +39,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) token: Token,
         }
-    }
-}
-
-impl ClientRequest for ValidateTicket {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/tickets/validate", self).await
     }
 }
 
@@ -80,17 +55,21 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListTickets {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListTickets::V1(listing) = self;
+resource_requests! {
+    CreateTicket => |this, client| { client.post("/tickets", this).await },
+    GetTicket => |this, client| {
+        let GetTicket::V1(lookup) = this;
+        client.get(&format!("/tickets/{}", lookup.key)).await
+    },
+    ListTickets => |this, client| {
+        let ListTickets::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/tickets?{query}")).await
-    }
+    },
+    ValidateTicket => |this, client| { client.post("/tickets/validate", this).await },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

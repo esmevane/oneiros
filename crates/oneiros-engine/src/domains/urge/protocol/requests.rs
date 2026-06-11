@@ -20,15 +20,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for SetUrge {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let SetUrge::V1(body) = self;
-        client.put(&format!("/urges/{}", body.name), self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetUrge {
@@ -39,15 +30,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetUrge {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetUrge::V1(lookup) = self;
-        client.get(&format!("/urges/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveUrge {
@@ -55,15 +37,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: UrgeName,
         }
-    }
-}
-
-impl ClientRequest for RemoveUrge {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveUrge::V1(removal) = self;
-        client.delete(&format!("/urges/{}", removal.name)).await
     }
 }
 
@@ -80,17 +53,27 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListUrges {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListUrges::V1(listing) = self;
+resource_requests! {
+    SetUrge => |this, client| {
+        let SetUrge::V1(body) = this;
+        client.put(&format!("/urges/{}", body.name), this).await
+    },
+    GetUrge => |this, client| {
+        let GetUrge::V1(lookup) = this;
+        client.get(&format!("/urges/{}", lookup.key)).await
+    },
+    RemoveUrge => |this, client| {
+        let RemoveUrge::V1(removal) = this;
+        client.delete(&format!("/urges/{}", removal.name)).await
+    },
+    ListUrges => |this, client| {
+        let ListUrges::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/urges?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

@@ -16,14 +16,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateConnection {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/connections", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetConnection {
@@ -31,15 +23,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ConnectionId>,
         }
-    }
-}
-
-impl ClientRequest for GetConnection {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetConnection::V1(lookup) = self;
-        client.get(&format!("/connections/{}", lookup.key)).await
     }
 }
 
@@ -64,11 +47,24 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListConnections {
-    type Error = ClientError;
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum RemoveConnection {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) id: ConnectionId,
+        }
+    }
+}
 
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListConnections::V1(listing) = self;
+resource_requests! {
+    CreateConnection => |this, client| { client.post("/connections", this).await },
+    GetConnection => |this, client| {
+        let GetConnection::V1(lookup) = this;
+        client.get(&format!("/connections/{}", lookup.key)).await
+    },
+    ListConnections => |this, client| {
+        let ListConnections::V1(listing) = this;
         let mut params: Vec<(&str, String)> = Vec::new();
 
         if let Some(entity) = &listing.entity {
@@ -89,24 +85,9 @@ impl ClientRequest for ListConnections {
             .join("&");
 
         client.get(&format!("/connections?{query}")).await
-    }
-}
-
-versioned! {
-    #[derive(JsonSchema)]
-    pub(crate) enum RemoveConnection {
-        #[derive(clap::Args)]
-        V1 => {
-            #[builder(into)] pub(crate) id: ConnectionId,
-        }
-    }
-}
-
-impl ClientRequest for RemoveConnection {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveConnection::V1(removal) = self;
+    },
+    RemoveConnection => |this, client| {
+        let RemoveConnection::V1(removal) = this;
         client.delete(&format!("/connections/{}", removal.id)).await
     }
 }

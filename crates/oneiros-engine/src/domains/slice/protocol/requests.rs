@@ -4,39 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-impl ClientRequest for CreateSlice {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/slices", self).await
-    }
-}
-
-impl ClientRequest for ListSlices {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.get("/slices").await
-    }
-}
-
-impl ClientRequest for DeleteSlice {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let DeleteSlice::V1(req) = self;
-        client.delete(&format!("/slices/{}", req.name)).await
-    }
-}
-
-impl ClientRequest for DiffSlice {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/slices/diff", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum CreateSlice {
@@ -81,6 +48,19 @@ versioned! {
             pub(crate) target: SliceName,
         }
     }
+}
+
+resource_requests! {
+    CreateSlice => |this, client| { client.post("/slices", this).await },
+    DeleteSlice => |this, client| {
+        let DeleteSlice::V1(req) = this;
+        client.delete(&format!("/slices/{}", req.name)).await
+    },
+    DiffSlice => |this, client| { client.post("/slices/diff", this).await },
+}
+
+resource_requests! {
+    ListSlices => |client| { client.get("/slices").await },
 }
 
 #[allow(dead_code)]

@@ -18,15 +18,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for TrailOf {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let TrailOf::V1(of) = self;
-        client.get(&format!("/trail/of/{}", of.r#ref)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum TrailFrom {
@@ -39,13 +30,15 @@ versioned! {
     }
 }
 
-impl ClientRequest for TrailFrom {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let TrailFrom::V1(from) = self;
+resource_requests! {
+    TrailOf => |this, client| {
+        let TrailOf::V1(of) = this;
+        client.get(&format!("/trail/of/{}", of.r#ref)).await
+    },
+    TrailFrom => |this, client| {
+        let TrailFrom::V1(from) = this;
         client.get(&format!("/trail/from/{}", from.event)).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

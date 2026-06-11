@@ -20,12 +20,10 @@ versioned! {
     }
 }
 
-impl ClientRequest for InitHost {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/host", self).await
-    }
+resource_requests! {
+    InitHost => |this, client| {
+        client.post("/host", this).await
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
