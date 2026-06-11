@@ -13,14 +13,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for ParseLens {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/lens/parse", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ExplainLens {
@@ -29,14 +21,6 @@ versioned! {
             #[builder(into)]
             pub(crate) source: String,
         }
-    }
-}
-
-impl ClientRequest for ExplainLens {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/lens/explain", self).await
     }
 }
 
@@ -51,10 +35,14 @@ versioned! {
     }
 }
 
-impl ClientRequest for QueryLens {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/lens/query", self).await
-    }
+resource_requests! {
+    ParseLens => |this, client| {
+        client.post("/lens/parse", this).await
+    },
+    ExplainLens => |this, client| {
+        client.post("/lens/explain", this).await
+    },
+    QueryLens => |this, client| {
+        client.post("/lens/query", this).await
+    },
 }

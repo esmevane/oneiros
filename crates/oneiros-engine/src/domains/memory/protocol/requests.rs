@@ -16,14 +16,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for AddMemory {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/memories", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetMemory {
@@ -31,15 +23,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<MemoryId>,
         }
-    }
-}
-
-impl ClientRequest for GetMemory {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetMemory::V1(lookup) = self;
-        client.get(&format!("/memories/{}", lookup.key)).await
     }
 }
 
@@ -71,11 +54,16 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListMemories {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListMemories::V1(listing) = self;
+resource_requests! {
+    AddMemory => |this, client| {
+        client.post("/memories", this).await
+    },
+    GetMemory => |this, client| {
+        let GetMemory::V1(lookup) = this;
+        client.get(&format!("/memories/{}", lookup.key)).await
+    },
+    ListMemories => |this, client| {
+        let ListMemories::V1(listing) = this;
         let mut params: Vec<(&str, String)> = Vec::new();
 
         if let Some(agent_name) = &listing.agent {
@@ -104,7 +92,7 @@ impl ClientRequest for ListMemories {
             .join("&");
 
         client.get(&format!("/memories?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

@@ -20,17 +20,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for SetPersona {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let SetPersona::V1(body) = self;
-        client
-            .put(&format!("/personas/{name}", name = body.name), self)
-            .await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetPersona {
@@ -41,15 +30,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetPersona {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetPersona::V1(lookup) = self;
-        client.get(&format!("/personas/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemovePersona {
@@ -57,15 +37,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: PersonaName,
         }
-    }
-}
-
-impl ClientRequest for RemovePersona {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemovePersona::V1(removal) = self;
-        client.delete(&format!("/personas/{}", removal.name)).await
     }
 }
 
@@ -82,17 +53,29 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListPersonas {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListPersonas::V1(listing) = self;
+resource_requests! {
+    SetPersona => |this, client| {
+        let SetPersona::V1(body) = this;
+        client
+            .put(&format!("/personas/{name}", name = body.name), this)
+            .await
+    },
+    GetPersona => |this, client| {
+        let GetPersona::V1(lookup) = this;
+        client.get(&format!("/personas/{}", lookup.key)).await
+    },
+    RemovePersona => |this, client| {
+        let RemovePersona::V1(removal) = this;
+        client.delete(&format!("/personas/{}", removal.name)).await
+    },
+    ListPersonas => |this, client| {
+        let ListPersonas::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/personas?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

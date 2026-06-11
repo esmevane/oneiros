@@ -14,19 +14,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetStorage {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetStorage::V1(lookup) = self;
-        let path = match &lookup.key {
-            ResourceKey::Key(key) => StorageRef::encode(key).to_string(),
-            ResourceKey::Ref(token) => token.to_string(),
-        };
-        client.get(&format!("/storage/{path}")).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveStorage {
@@ -34,16 +21,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: StorageKey,
         }
-    }
-}
-
-impl ClientRequest for RemoveStorage {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveStorage::V1(removal) = self;
-        let ref_key = StorageRef::encode(&removal.key);
-        client.delete(&format!("/storage/{ref_key}")).await
     }
 }
 
@@ -62,14 +39,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for UploadStorage {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/storage", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ListStorage {
@@ -83,17 +52,31 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListStorage {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListStorage::V1(listing) = self;
+resource_requests! {
+    GetStorage => |this, client| {
+        let GetStorage::V1(lookup) = this;
+        let path = match &lookup.key {
+            ResourceKey::Key(key) => StorageRef::encode(key).to_string(),
+            ResourceKey::Ref(token) => token.to_string(),
+        };
+        client.get(&format!("/storage/{path}")).await
+    },
+    RemoveStorage => |this, client| {
+        let RemoveStorage::V1(removal) = this;
+        let ref_key = StorageRef::encode(&removal.key);
+        client.delete(&format!("/storage/{ref_key}")).await
+    },
+    UploadStorage => |this, client| {
+        client.post("/storage", this).await
+    },
+    ListStorage => |this, client| {
+        let ListStorage::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset
         );
         client.get(&format!("/storage?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

@@ -20,15 +20,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for SetTexture {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let SetTexture::V1(body) = self;
-        client.put(&format!("/textures/{}", body.name), self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetTexture {
@@ -39,15 +30,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetTexture {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetTexture::V1(lookup) = self;
-        client.get(&format!("/textures/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveTexture {
@@ -55,15 +37,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: TextureName,
         }
-    }
-}
-
-impl ClientRequest for RemoveTexture {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveTexture::V1(removal) = self;
-        client.delete(&format!("/textures/{}", removal.name)).await
     }
 }
 
@@ -80,17 +53,27 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListTextures {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListTextures::V1(listing) = self;
+resource_requests! {
+    SetTexture => |this, client| {
+        let SetTexture::V1(body) = this;
+        client.put(&format!("/textures/{}", body.name), this).await
+    },
+    GetTexture => |this, client| {
+        let GetTexture::V1(lookup) = this;
+        client.get(&format!("/textures/{}", lookup.key)).await
+    },
+    RemoveTexture => |this, client| {
+        let RemoveTexture::V1(removal) = this;
+        client.delete(&format!("/textures/{}", removal.name)).await
+    },
+    ListTextures => |this, client| {
+        let ListTextures::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/textures?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

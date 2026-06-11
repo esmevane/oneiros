@@ -16,14 +16,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for AddCognition {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/cognitions", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetCognition {
@@ -31,15 +23,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<CognitionId>,
         }
-    }
-}
-
-impl ClientRequest for GetCognition {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetCognition::V1(lookup) = self;
-        client.get(&format!("/cognitions/{}", lookup.key)).await
     }
 }
 
@@ -71,11 +54,14 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListCognitions {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListCognitions::V1(listing) = self;
+resource_requests! {
+    AddCognition => |this, client| { client.post("/cognitions", this).await },
+    GetCognition => |this, client| {
+        let GetCognition::V1(lookup) = this;
+        client.get(&format!("/cognitions/{}", lookup.key)).await
+    },
+    ListCognitions => |this, client| {
+        let ListCognitions::V1(listing) = this;
         let mut params: Vec<(&str, String)> = Vec::new();
 
         if let Some(agent_name) = &listing.agent {

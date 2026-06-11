@@ -14,14 +14,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateTenant {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/tenants", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetTenant {
@@ -29,15 +21,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<TenantId>,
         }
-    }
-}
-
-impl ClientRequest for GetTenant {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetTenant::V1(lookup) = self;
-        client.get(&format!("/tenants/{}", lookup.key)).await
     }
 }
 
@@ -54,17 +37,22 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListTenants {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListTenants::V1(listing) = self;
+resource_requests! {
+    CreateTenant => |this, client| {
+        client.post("/tenants", this).await
+    },
+    GetTenant => |this, client| {
+        let GetTenant::V1(lookup) = this;
+        client.get(&format!("/tenants/{}", lookup.key)).await
+    },
+    ListTenants => |this, client| {
+        let ListTenants::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/tenants?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

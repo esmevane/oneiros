@@ -17,14 +17,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for AddPeer {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/peers", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetPeer {
@@ -35,15 +27,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetPeer {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetPeer::V1(lookup) = self;
-        client.get(&format!("/peers/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemovePeer {
@@ -51,15 +34,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) id: PeerId,
         }
-    }
-}
-
-impl ClientRequest for RemovePeer {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemovePeer::V1(removal) = self;
-        client.delete(&format!("/peers/{}", removal.id)).await
     }
 }
 
@@ -76,17 +50,26 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListPeers {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListPeers::V1(listing) = self;
+resource_requests! {
+    AddPeer => |this, client| {
+        client.post("/peers", this).await
+    },
+    GetPeer => |this, client| {
+        let GetPeer::V1(lookup) = this;
+        client.get(&format!("/peers/{}", lookup.key)).await
+    },
+    RemovePeer => |this, client| {
+        let RemovePeer::V1(removal) = this;
+        client.delete(&format!("/peers/{}", removal.id)).await
+    },
+    ListPeers => |this, client| {
+        let ListPeers::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/peers?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

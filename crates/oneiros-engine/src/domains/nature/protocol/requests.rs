@@ -20,15 +20,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for SetNature {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let SetNature::V1(body) = self;
-        client.put(&format!("/natures/{}", body.name), self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetNature {
@@ -39,15 +30,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetNature {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetNature::V1(lookup) = self;
-        client.get(&format!("/natures/{}", lookup.key)).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum RemoveNature {
@@ -55,15 +37,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: NatureName,
         }
-    }
-}
-
-impl ClientRequest for RemoveNature {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveNature::V1(removal) = self;
-        client.delete(&format!("/natures/{}", removal.name)).await
     }
 }
 
@@ -80,17 +53,27 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListNatures {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListNatures::V1(listing) = self;
+resource_requests! {
+    SetNature => |this, client| {
+        let SetNature::V1(body) = this;
+        client.put(&format!("/natures/{}", body.name), this).await
+    },
+    GetNature => |this, client| {
+        let GetNature::V1(lookup) = this;
+        client.get(&format!("/natures/{}", lookup.key)).await
+    },
+    RemoveNature => |this, client| {
+        let RemoveNature::V1(removal) = this;
+        client.delete(&format!("/natures/{}", removal.name)).await
+    },
+    ListNatures => |this, client| {
+        let ListNatures::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
         client.get(&format!("/natures?{query}")).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

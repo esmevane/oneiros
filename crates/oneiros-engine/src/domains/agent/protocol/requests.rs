@@ -21,14 +21,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateAgent {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/agents", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetAgent {
@@ -36,15 +28,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<AgentName>,
         }
-    }
-}
-
-impl ClientRequest for GetAgent {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetAgent::V1(lookup) = self;
-        client.get(&format!("/agents/{}", lookup.key)).await
     }
 }
 
@@ -73,11 +56,41 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListAgents {
-    type Error = ClientError;
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum UpdateAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) name: AgentName,
+            #[builder(into)] pub(crate) persona: PersonaName,
+            #[arg(long, default_value = "")]
+            #[builder(into)]
+            pub(crate) description: Description,
+            #[arg(long, default_value = "")]
+            #[builder(into)]
+            pub(crate) prompt: Prompt,
+        }
+    }
+}
 
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListAgents::V1(listing) = self;
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum RemoveAgent {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) name: AgentName,
+        }
+    }
+}
+
+resource_requests! {
+    CreateAgent => |this, client| { client.post("/agents", this).await },
+    GetAgent => |this, client| {
+        let GetAgent::V1(lookup) = this;
+        client.get(&format!("/agents/{}", lookup.key)).await
+    },
+    ListAgents => |this, client| {
+        let ListAgents::V1(listing) = this;
         let mut params: Vec<(&str, String)> = Vec::new();
 
         if let Some(query) = &listing.query {
@@ -97,52 +110,15 @@ impl ClientRequest for ListAgents {
             .collect::<Vec<_>>()
             .join("&");
         client.get(&format!("/agents?{query}")).await
-    }
-}
-
-versioned! {
-    #[derive(JsonSchema)]
-    pub(crate) enum UpdateAgent {
-        #[derive(clap::Args)]
-        V1 => {
-            #[builder(into)] pub(crate) name: AgentName,
-            #[builder(into)] pub(crate) persona: PersonaName,
-            #[arg(long, default_value = "")]
-            #[builder(into)]
-            pub(crate) description: Description,
-            #[arg(long, default_value = "")]
-            #[builder(into)]
-            pub(crate) prompt: Prompt,
-        }
-    }
-}
-
-impl ClientRequest for UpdateAgent {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let UpdateAgent::V1(body) = self;
+    },
+    UpdateAgent => |this, client| {
+        let UpdateAgent::V1(body) = this;
         client
-            .put(&format!("/agents/{name}", name = body.name), self)
+            .put(&format!("/agents/{name}", name = body.name), this)
             .await
-    }
-}
-
-versioned! {
-    #[derive(JsonSchema)]
-    pub(crate) enum RemoveAgent {
-        #[derive(clap::Args)]
-        V1 => {
-            #[builder(into)] pub(crate) name: AgentName,
-        }
-    }
-}
-
-impl ClientRequest for RemoveAgent {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let RemoveAgent::V1(removal) = self;
+    },
+    RemoveAgent => |this, client| {
+        let RemoveAgent::V1(removal) = this;
         client.delete(&format!("/agents/{}", removal.name)).await
     }
 }

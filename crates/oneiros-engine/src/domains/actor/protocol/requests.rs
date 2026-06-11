@@ -16,14 +16,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateActor {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/actors", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetActor {
@@ -31,15 +23,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ActorId>,
         }
-    }
-}
-
-impl ClientRequest for GetActor {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetActor::V1(lookup) = self;
-        client.get(&format!("/actors/{}", lookup.key)).await
     }
 }
 
@@ -56,11 +39,14 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListActors {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListActors::V1(listing) = self;
+resource_requests! {
+    CreateActor => |this, client| { client.post("/actors", this).await },
+    GetActor => |this, client| {
+        let GetActor::V1(lookup) = this;
+        client.get(&format!("/actors/{}", lookup.key)).await
+    },
+    ListActors => |this, client| {
+        let ListActors::V1(listing) = this;
         let query = format!(
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,

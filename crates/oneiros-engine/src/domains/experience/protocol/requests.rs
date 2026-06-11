@@ -16,14 +16,6 @@ versioned! {
     }
 }
 
-impl ClientRequest for CreateExperience {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        client.post("/experiences", self).await
-    }
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetExperience {
@@ -31,15 +23,6 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ExperienceId>,
         }
-    }
-}
-
-impl ClientRequest for GetExperience {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetExperience::V1(lookup) = self;
-        client.get(&format!("/experiences/{}", lookup.key)).await
     }
 }
 
@@ -72,11 +55,38 @@ versioned! {
     }
 }
 
-impl ClientRequest for ListExperiences {
-    type Error = ClientError;
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum UpdateExperienceDescription {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) id: ExperienceId,
+            #[builder(into)] pub(crate) description: Description,
+        }
+    }
+}
 
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let ListExperiences::V1(listing) = self;
+versioned! {
+    #[derive(JsonSchema)]
+    pub(crate) enum UpdateExperienceSensation {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) id: ExperienceId,
+            #[builder(into)] pub(crate) sensation: SensationName,
+        }
+    }
+}
+
+resource_requests! {
+    CreateExperience => |this, client| {
+        client.post("/experiences", this).await
+    },
+    GetExperience => |this, client| {
+        let GetExperience::V1(lookup) = this;
+        client.get(&format!("/experiences/{}", lookup.key)).await
+    },
+    ListExperiences => |this, client| {
+        let ListExperiences::V1(listing) = this;
         let mut params: Vec<(&str, String)> = Vec::new();
 
         if let Some(agent_name) = &listing.agent {
@@ -105,57 +115,25 @@ impl ClientRequest for ListExperiences {
             .join("&");
 
         client.get(&format!("/experiences?{query}")).await
-    }
-}
-
-versioned! {
-    #[derive(JsonSchema)]
-    pub(crate) enum UpdateExperienceDescription {
-        #[derive(clap::Args)]
-        V1 => {
-            #[builder(into)] pub(crate) id: ExperienceId,
-            #[builder(into)] pub(crate) description: Description,
-        }
-    }
-}
-
-impl ClientRequest for UpdateExperienceDescription {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let UpdateExperienceDescription::V1(update) = self;
+    },
+    UpdateExperienceDescription => |this, client| {
+        let UpdateExperienceDescription::V1(update) = this;
         client
             .put(
                 &format!("/experiences/{}/description", update.id),
                 &serde_json::json!({ "description": update.description }),
             )
             .await
-    }
-}
-
-versioned! {
-    #[derive(JsonSchema)]
-    pub(crate) enum UpdateExperienceSensation {
-        #[derive(clap::Args)]
-        V1 => {
-            #[builder(into)] pub(crate) id: ExperienceId,
-            #[builder(into)] pub(crate) sensation: SensationName,
-        }
-    }
-}
-
-impl ClientRequest for UpdateExperienceSensation {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let UpdateExperienceSensation::V1(update) = self;
+    },
+    UpdateExperienceSensation => |this, client| {
+        let UpdateExperienceSensation::V1(update) = this;
         client
             .put(
                 &format!("/experiences/{}/sensation", update.id),
                 &serde_json::json!({ "sensation": update.sensation }),
             )
             .await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

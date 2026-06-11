@@ -14,13 +14,11 @@ versioned! {
     }
 }
 
-impl ClientRequest for GetPressure {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let GetPressure::V1(lookup) = self;
+resource_requests! {
+    GetPressure => |this, client| {
+        let GetPressure::V1(lookup) = this;
         client.get(&format!("/pressures/{}", lookup.agent)).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

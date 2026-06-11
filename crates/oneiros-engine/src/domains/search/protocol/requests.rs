@@ -42,11 +42,9 @@ impl SearchQueryV1 {
     }
 }
 
-impl ClientRequest for SearchQuery {
-    type Error = ClientError;
-
-    async fn execute_request(&self, client: &Client) -> Result<Vec<u8>, Self::Error> {
-        let SearchQuery::V1(query) = self;
+resource_requests! {
+    SearchQuery => |this, client| {
+        let SearchQuery::V1(query) = this;
         let mut parts: Vec<String> = Vec::new();
         if let Some(q) = &query.query {
             parts.push(format!("query={q}"));
@@ -71,7 +69,7 @@ impl ClientRequest for SearchQuery {
 
         let path = format!("/search?{}", parts.join("&"));
         client.get(&path).await
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]
