@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn all_skill_names_are_unique() {
         let skills = SkillInventory::all();
-        let mut names: Vec<&str> = skills.iter().map(|s| s.name).collect();
+        let mut names: Vec<&str> = skills.iter().map(|s| s.name.as_ref()).collect();
         names.sort();
         names.dedup();
         assert_eq!(names.len(), skills.len(), "duplicate skill names found");
@@ -230,7 +230,7 @@ mod tests {
             .iter()
             .filter(|s| {
                 matches!(
-                    s.name,
+                    s.name.as_ref(),
                     "wake"
                         | "dream"
                         | "introspect"

@@ -16,7 +16,7 @@ fn skill_docs_reference_valid_commands() {
     let mut stale: Vec<StaleRef> = Vec::new();
 
     for skill in SkillInventory::all() {
-        for invocation in extract_invocations(skill.content) {
+        for invocation in extract_invocations(skill.content.as_ref()) {
             // The captured invocation already starts with "oneiros" — clap
             // expects argv[0] to be the binary name, so we feed it as-is.
             let Some(argv) = shlex::split(invocation) else {
@@ -26,7 +26,7 @@ fn skill_docs_reference_valid_commands() {
             match Cli::try_parse_from(&argv) {
                 Err(err) if err.kind() == ErrorKind::InvalidSubcommand => {
                     stale.push(StaleRef {
-                        skill: skill.name,
+                        skill: skill.name.to_string(),
                         invocation: invocation.to_string(),
                     });
                 }
@@ -52,7 +52,7 @@ fn skill_docs_reference_valid_commands() {
 }
 
 struct StaleRef {
-    skill: &'static str,
+    skill: String,
     invocation: String,
 }
 
