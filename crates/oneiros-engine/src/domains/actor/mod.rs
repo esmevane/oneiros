@@ -80,6 +80,14 @@ mod operations {
             }
             .into()
         }
+
+        fn skill(&self) -> Skill {
+            Skill::builder()
+                .name(self.kind.to_string().as_ref())
+                .content(self.content().as_str())
+                .build()
+        }
+
         fn summary(&self) -> Description {
             match self.kind {
                 ActorRequestType::CreateActor => "Create an actor",
