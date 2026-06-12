@@ -1,4 +1,4 @@
-use crate::Skill;
+use crate::*;
 
 pub(crate) struct ActorSkills;
 

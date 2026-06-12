@@ -11,4 +11,6 @@ pub(crate) struct ResourceDocs {
     pub(crate) summary: Description,
     #[builder(into)]
     pub(crate) description: Description,
+    #[builder(default, into)]
+    pub(crate) content: Content,
 }
