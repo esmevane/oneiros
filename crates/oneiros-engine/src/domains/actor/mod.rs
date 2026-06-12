@@ -82,9 +82,12 @@ mod operations {
         }
 
         fn skill(&self) -> Skill {
+            let label = self.label();
+            let content = self.content();
+
             Skill::builder()
-                .name(self.kind.to_string().as_ref())
-                .content(self.content().as_str())
+                .name(label.as_ref())
+                .content(content.as_str())
                 .build()
         }
 
