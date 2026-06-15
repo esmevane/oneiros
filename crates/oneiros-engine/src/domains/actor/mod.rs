@@ -1,4 +1,3 @@
-mod docs;
 mod features;
 mod model;
 mod protocol;
@@ -7,7 +6,6 @@ mod service;
 mod store;
 mod view;
 
-pub(crate) use docs::*;
 pub(crate) use features::*;
 pub(crate) use model::*;
 pub(crate) use operations::*;
@@ -18,6 +16,8 @@ pub(crate) use store::*;
 pub(crate) use view::*;
 
 mod operations {
+    use std::collections::BTreeMap;
+
     use aide::axum::{ApiRouter, routing};
     use axum::{
         Json,
@@ -36,13 +36,23 @@ mod operations {
         const PURPOSE: &'static str = "Manage actors within a tenant";
 
         pub(crate) fn router() -> ApiRouter<ServerState> {
-            let mut router = ApiRouter::new();
-
+            let mut by_path: BTreeMap<&'static str, Vec<ActorRequestType>> = BTreeMap::new();
             for kind in ActorRequestType::all() {
-                router = router.merge(Self::new(*kind).route());
+                let ops = Self::new(*kind);
+                by_path.entry(ops.path()).or_default().push(*kind);
             }
 
-            ApiRouter::new().nest(&format!("/{}", Self::LABEL), router)
+            let mut inner = ApiRouter::<ServerState>::new();
+            for (path, kinds) in by_path {
+                let methods = kinds
+                    .into_iter()
+                    .map(|k| Self::new(k).http_handler())
+                    .reduce(|a, b| a.merge(b))
+                    .unwrap();
+                inner = inner.api_route(path, methods);
+            }
+
+            ApiRouter::new().nest(&format!("/{}", Self::LABEL), inner)
         }
 
         pub(crate) fn skills() -> Vec<Skill> {
@@ -115,25 +125,23 @@ mod operations {
                 .build()
         }
 
-        fn route(&self) -> ApiRouter<ServerState> {
-            let route = match self.kind {
+        fn http_handler(&self) -> aide::axum::routing::ApiMethodRouter<ServerState> {
+            match self.kind {
                 ActorRequestType::CreateActor => routing::post_with(create, |op| {
                     resource_op!(op, self).response::<201, Json<ActorCreatedResponse>>()
                 }),
-                ActorRequestType::GetActor => routing::get_with(list, |op| {
-                    resource_op!(op, self).response::<200, Json<ActorsResponse>>()
-                }),
-                ActorRequestType::ListActors => routing::get_with(show, |op| {
+                ActorRequestType::GetActor => routing::get_with(show, |op| {
                     resource_op!(op, self)
                         .input::<IdPathParam<ActorId>>()
                         .response::<200, Json<ActorFoundResponse>>()
                 }),
-            };
-
-            ApiRouter::new().api_route(self.path(), route)
+                ActorRequestType::ListActors => routing::get_with(list, |op| {
+                    resource_op!(op, self).response::<200, Json<ActorsResponse>>()
+                }),
+            }
         }
 
-        fn tag(&self) -> Tag {
+        pub(crate) fn tag(&self) -> Tag {
             Tag::builder()
                 .name(Self::LABEL)
                 .description(Self::PURPOSE)

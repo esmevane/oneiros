@@ -35,16 +35,16 @@ impl SkillInventory {
     pub(crate) fn all() -> Vec<Skill> {
         let mut skills = Vec::new();
 
-        skills.extend(ActorSkills::all());
+        skills.extend(ActorOperations::skills());
         skills.extend(AgentSkills::all());
-        skills.extend(BookmarkSkills::all());
+        skills.extend(BookmarkOperations::skills());
         skills.extend(CognitionSkills::all());
         skills.extend(ConnectionSkills::all());
         skills.extend(ContinuitySkills::all());
         skills.extend(DoctorSkills::all());
         skills.extend(ExperienceSkills::all());
         skills.extend(FollowSkills::all());
-        skills.extend(LevelSkills::all());
+        skills.extend(LevelOperations::skills());
         skills.extend(McpConfigSkills::all());
         skills.extend(MemorySkills::all());
         skills.extend(NatureSkills::all());
@@ -213,12 +213,17 @@ mod tests {
         let skills = SkillInventory::all();
         let level_skills: Vec<_> = skills
             .iter()
-            .filter(|s| s.name.starts_with("level-"))
+            .filter(|s| {
+                matches!(
+                    s.name.as_ref(),
+                    "set-level" | "get-level" | "list-levels" | "remove-level"
+                )
+            })
             .collect();
         assert_eq!(
             level_skills.len(),
             4,
-            "expected 4 level skills (set, show, list, remove), got {}",
+            "expected 4 level skills (set-level, get-level, list-levels, remove-level), got {}",
             level_skills.len()
         );
     }

@@ -25,16 +25,16 @@ impl AppDocs {
 
     pub(crate) fn tags(&self) -> Vec<Tag> {
         vec![
-            ActorDocs::Create.tag(),
+            ActorOperations::new(ActorRequestType::CreateActor).tag(),
             AgentDocs::Create.tag(),
-            BookmarkDocs::Create.tag(),
+            BookmarkOperations::new(BookmarkRequestType::CreateBookmark).tag(),
             ProjectDocs::Create.tag(),
             CognitionDocs::Add.tag(),
             ConnectionDocs::Create.tag(),
             ContinuityDocs::Emerge.tag(),
             ExperienceDocs::Create.tag(),
             FollowDocs::List.tag(),
-            LevelDocs::List.tag(),
+            LevelOperations::new(LevelRequestType::ListLevels).tag(),
             MemoryDocs::Add.tag(),
             NatureDocs::List.tag(),
             PeerDocs::Add.tag(),
