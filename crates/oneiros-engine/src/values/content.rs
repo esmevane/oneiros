@@ -9,10 +9,6 @@ impl Content {
         Self(value.as_ref().into())
     }
 
-    pub(crate) fn to_string(&self) -> String {
-        self.0.clone()
-    }
-
     pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
