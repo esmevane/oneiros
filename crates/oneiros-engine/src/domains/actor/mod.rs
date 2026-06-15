@@ -115,6 +115,26 @@ mod operations {
             }
         }
 
+        resource_routes! {
+            ActorRequestType::CreateActor => |this| {
+                routing::post_with(create, |op| {
+                    resource_op!(op, this).response::<201, Json<ActorCreatedResponse>>()
+                })
+            },
+            ActorRequestType::GetActor => |this| {
+                routing::get_with(show, |op| {
+                    resource_op!(op, this)
+                        .input::<IdPathParam<ActorId>>()
+                        .response::<200, Json<ActorFoundResponse>>()
+                })
+            },
+            ActorRequestType::ListActors => |this| {
+                routing::get_with(list, |op| {
+                    resource_op!(op, this).response::<200, Json<ActorsResponse>>()
+                })
+            },
+        }
+
         fn resource_docs(&self) -> ResourceDocs {
             ResourceDocs::builder()
                 .tag(self.tag())
@@ -123,22 +143,6 @@ mod operations {
                 .description(self.description())
                 .content(self.content())
                 .build()
-        }
-
-        fn http_handler(&self) -> aide::axum::routing::ApiMethodRouter<ServerState> {
-            match self.kind {
-                ActorRequestType::CreateActor => routing::post_with(create, |op| {
-                    resource_op!(op, self).response::<201, Json<ActorCreatedResponse>>()
-                }),
-                ActorRequestType::GetActor => routing::get_with(show, |op| {
-                    resource_op!(op, self)
-                        .input::<IdPathParam<ActorId>>()
-                        .response::<200, Json<ActorFoundResponse>>()
-                }),
-                ActorRequestType::ListActors => routing::get_with(list, |op| {
-                    resource_op!(op, self).response::<200, Json<ActorsResponse>>()
-                }),
-            }
         }
 
         pub(crate) fn tag(&self) -> Tag {
