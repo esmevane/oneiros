@@ -84,7 +84,7 @@ mod operations {
 
         fn description(&self) -> Description {
             match self.kind {
-                ActorRequestType::CreateActor => "Register a new actor under the current tenant.",
+                ActorRequestType::CreateActor => "Register a new actor.",
                 ActorRequestType::GetActor => "Look up a specific actor by ID.",
                 ActorRequestType::ListActors => "List all actors for a tenant.",
             }

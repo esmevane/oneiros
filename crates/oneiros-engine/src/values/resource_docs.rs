@@ -12,5 +12,7 @@ pub(crate) struct ResourceDocs {
     #[builder(into)]
     pub(crate) description: Description,
     #[builder(default, into)]
+    pub(crate) path: ResourceRoute,
+    #[builder(default, into)]
     pub(crate) content: Content,
 }
