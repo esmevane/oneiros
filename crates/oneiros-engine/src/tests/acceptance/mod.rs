@@ -137,6 +137,10 @@ impl Backend for EngineBackend {
         let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
             .project(ProjectName::new("test-project"))
+            .fetch(Fetch {
+                interval: std::time::Duration::from_millis(2),
+                timeout: std::time::Duration::from_millis(100),
+            })
             .service(
                 ServiceConfig::builder()
                     .address("127.0.0.1:0".parse()?)

@@ -246,13 +246,12 @@ impl CanonIndex {
         let mut project_config = config.clone();
         project_config.project = name.clone();
 
-        // Events DB — standalone (no ATTACH).
-        let events_path = project_config.events_db_path();
-        if !events_path.exists() {
+        // Events DB — standalone (no ATTACH). Bail early if the file
+        // doesn't exist — `open_database` would create it otherwise.
+        if !project_config.events_db_path().exists() {
             return Ok(());
         }
-        let events_db = rusqlite::Connection::open(&events_path)?;
-        events_db.pragma_update(None, "journal_mode", "wal")?;
+        let events_db = project_config.open_events_db()?;
         let log = EventLog::new(&events_db);
 
         // Ensure projection schema exists in the bookmark DB.

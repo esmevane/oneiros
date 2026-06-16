@@ -20,7 +20,7 @@ impl Migration for BrainsToProjects {
             return Ok(false);
         }
 
-        let conn = rusqlite::Connection::open(&host_db)?;
+        let conn = config.host_db()?;
         let needs_rename = table_exists(&conn, "brains")?
             || column_exists(&conn, "bookmarks", "brain")?
             || column_exists(&conn, "follows", "brain")?
@@ -31,8 +31,7 @@ impl Migration for BrainsToProjects {
     }
 
     fn apply(&self, config: &Config) -> Result<(), MigrationError> {
-        let host_db = config.platform().host_db_path();
-        let mut conn = rusqlite::Connection::open(&host_db)?;
+        let mut conn = config.host_db()?;
         let tx = conn.transaction()?;
 
         if table_exists(&tx, "brains")? && !table_exists(&tx, "projects")? {
