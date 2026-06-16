@@ -335,16 +335,50 @@ impl Config {
         Platform::new(&self.data_dir)
     }
 
+    // ── Database openers ────────────────────────────────────────────
+    //
+    // All database connections flow through these methods so that every
+    // pragma is applied from a single source. Callers should use these
+    // instead of reaching for `rusqlite::Connection::open` directly.
+
+    /// Apply every pragma from [`DatabaseConfig`] to a connection.
+    fn apply_pragmas(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
+        let db = &self.database;
+        conn.pragma_update(None, "journal_mode", &db.journal_mode)?;
+        conn.pragma_update(None, "synchronous", &db.synchronous)?;
+        conn.pragma_update(None, "cache_size", db.cache_size.to_string())?;
+        conn.pragma_update(None, "temp_store", &db.temp_store)?;
+        conn.pragma_update(None, "mmap_size", db.mmap_size.to_string())?;
+        conn.pragma_update(None, "limit_attached", db.limit_attached.to_string())?;
+        Ok(())
+    }
+
+    /// Open a connection and apply pragmas from [`DatabaseConfig`].
+    /// The `name` parameter is reserved for future in-memory database
+    /// support (connection lifecycle refactor).
+    pub(crate) fn open_database(
+        &self,
+        path: &std::path::Path,
+        _name: &str,
+    ) -> Result<rusqlite::Connection, rusqlite::Error> {
+        let conn = rusqlite::Connection::open(path)?;
+        self.apply_pragmas(&conn)?;
+        Ok(conn)
+    }
+
     /// Open the host database.
     pub(crate) fn host_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let conn = rusqlite::Connection::open(self.platform().host_db_path())?;
-        conn.pragma_update(None, "journal_mode", "wal")?;
-        Ok(conn)
+        self.open_database(&self.platform().host_db_path(), "host")
     }
 
     /// Path to the project's event log database.
     pub(crate) fn events_db_path(&self) -> PathBuf {
         self.platform().events_db_path(&self.project)
+    }
+
+    /// Open the project's event log database.
+    pub(crate) fn open_events_db(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
+        self.open_database(&self.events_db_path(), "events")
     }
 
     /// Path to the bookmark's projection database.
@@ -367,13 +401,9 @@ impl Config {
         let platform = self.platform();
         let _ = platform.ensure_bookmarks_dir(&self.project);
 
-        let conn =
-            rusqlite::Connection::open(platform.bookmark_db_path(&self.project, &self.bookmark))?;
-        conn.pragma_update(None, "journal_mode", "wal")?;
-        conn.pragma_update(
-            None,
-            "limit_attached",
-            self.database.limit_attached.to_string(),
+        let conn = self.open_database(
+            &platform.bookmark_db_path(&self.project, &self.bookmark),
+            &format!("bookmark_{}", self.bookmark),
         )?;
 
         conn.execute_batch(&format!(
@@ -468,11 +498,6 @@ pub(crate) trait FromConfig: Sized {
 mod tests {
     use super::*;
 
-    /// Build overrides with everything at default (all `None`).
-    fn empty_overrides() -> CliOverrides {
-        CliOverrides::default()
-    }
-
     /// Build a Config pointing at a tempdir for isolated file tests.
     fn config_in(dir: &std::path::Path) -> Config {
         Config::builder()
@@ -499,7 +524,7 @@ mod tests {
     #[test]
     fn missing_file_returns_defaults() {
         let dir = tempfile::tempdir().unwrap();
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         let expected = config_in(dir.path());
         assert_eq!(config.service.address, expected.service.address);
@@ -511,7 +536,7 @@ mod tests {
     fn empty_file_returns_defaults() {
         let dir = tempfile::tempdir().unwrap();
         write_config(dir.path(), "");
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         let expected = config_in(dir.path());
         assert_eq!(config.service.address, expected.service.address);
@@ -521,7 +546,7 @@ mod tests {
     fn malformed_file_falls_back_to_defaults() {
         let dir = tempfile::tempdir().unwrap();
         write_config(dir.path(), "this is not valid toml {{{{");
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         let expected = config_in(dir.path());
         assert_eq!(config.service.address, expected.service.address);
@@ -537,7 +562,7 @@ mod tests {
 address = "127.0.0.1:3000"
 "#,
         );
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(
             config.service.address,
@@ -556,7 +581,7 @@ interval = "50ms"
 timeout = "5s"
 "#,
         );
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.fetch.interval, std::time::Duration::from_millis(50));
         assert_eq!(config.fetch.timeout, std::time::Duration::from_secs(5));
@@ -573,7 +598,7 @@ cognition_size = 50
 dream_depth = 3
 "#,
         );
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.dream.cognition_size, 50);
         assert_eq!(config.dream.dream_depth, 3);
@@ -651,7 +676,7 @@ dream_depth = 3
     fn file_overrides_output_mode() {
         let dir = tempfile::tempdir().unwrap();
         write_config(dir.path(), r#"output = "json""#);
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.output, OutputMode::Json);
     }
@@ -666,7 +691,7 @@ dream_depth = 3
 health_check_delays_ms = [100, 200]
 "#,
         );
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.service.health_check_delays_ms, vec![100, 200]);
     }
@@ -681,7 +706,7 @@ health_check_delays_ms = [100, 200]
 experience_size = 25
 "#,
         );
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.dream.experience_size, 25);
         assert_eq!(config.dream.cognition_size, 20); // default preserved
@@ -692,7 +717,7 @@ experience_size = 25
     fn file_overrides_color_choice() {
         let dir = tempfile::tempdir().unwrap();
         write_config(dir.path(), r#"color = "never""#);
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.color, ColorChoice::Never);
     }
@@ -701,7 +726,7 @@ experience_size = 25
     fn file_overrides_verbosity() {
         let dir = tempfile::tempdir().unwrap();
         write_config(dir.path(), r#"verbosity = "verbose""#);
-        let config = resolve_in(dir.path(), &empty_overrides());
+        let config = resolve_in(dir.path(), &CliOverrides::default());
 
         assert_eq!(config.verbosity, Verbosity::Verbose);
     }
@@ -767,7 +792,7 @@ address = "127.0.0.1:4000"
                 .merge(Serialized::defaults(Config::default()))
                 .merge(Toml::file("config.toml"))
                 .merge(Env::prefixed("ONEIROS_").split("__"))
-                .merge(Serialized::defaults(empty_overrides()));
+                .merge(Serialized::defaults(CliOverrides::default()));
 
             let config: Config = figment.extract()?;
             assert_eq!(config.output, OutputMode::Prompt);

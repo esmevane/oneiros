@@ -79,13 +79,16 @@ impl ProjectService {
         let bookmarks_dir = project_dir.join("bookmarks");
         platform.ensure_dir(&bookmarks_dir)?;
 
-        let events_db = rusqlite::Connection::open(project_dir.join("events.db"))?;
-        events_db.pragma_update(None, "journal_mode", "wal")?;
+        // Build a config for the new project so we can use the unified openers.
+        let mut project_config = scope.config().clone();
+        project_config.project = project_name.clone();
+        project_config.bookmark = BookmarkName::main();
+
+        let events_db = project_config.open_events_db()?;
         EventLog::new(&events_db).init()?;
         drop(events_db);
 
-        let bookmark_db = rusqlite::Connection::open(bookmarks_dir.join("main.db"))?;
-        bookmark_db.pragma_update(None, "journal_mode", "wal")?;
+        let bookmark_db = project_config.bookmark_conn()?;
         Projections::project().migrate(&bookmark_db)?;
         drop(bookmark_db);
 
@@ -243,13 +246,7 @@ impl ProjectService {
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
-        let db = BookmarkDb::open_with(
-            &config.platform(),
-            &config.project,
-            &config.bookmark,
-            config.database.limit_attached,
-        )
-        .await?;
+        let db = BookmarkDb::open_with(config, &config.project, &config.bookmark).await?;
         let log = EventLog::attached(&db);
         let projections = Projections::<ProjectCanon>::project();
 
@@ -312,13 +309,7 @@ impl ProjectService {
         let _ = platform.remove_file(db_path.with_extension("db-wal"));
         let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
-        let db = BookmarkDb::open_with(
-            &config.platform(),
-            &config.project,
-            &config.bookmark,
-            config.database.limit_attached,
-        )
-        .await?;
+        let db = BookmarkDb::open_with(config, &config.project, &config.bookmark).await?;
         let projections = Projections::<ProjectCanon>::project();
         projections.migrate(&db)?;
         let log = EventLog::attached(&db);
