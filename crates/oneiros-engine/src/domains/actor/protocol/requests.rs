@@ -2,6 +2,12 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query},
+};
+use reqwest::StatusCode;
+
 use crate::*;
 
 versioned! {
@@ -16,6 +22,17 @@ versioned! {
     }
 }
 
+impl CreateActor {
+    pub(crate) async fn handler(
+        scope: Scope<AtHost>,
+        mailbox: Mailbox,
+        Json(body): Json<CreateActor>,
+    ) -> Result<(StatusCode, Json<ActorResponse>), ActorError> {
+        let response = ActorService::create(&scope, &mailbox, &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetActor {
@@ -23,6 +40,17 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) key: ResourceKey<ActorId>,
         }
+    }
+}
+
+impl GetActor {
+    pub(crate) async fn handler(
+        scope: Scope<AtHost>,
+        Path(key): Path<ResourceKey<ActorId>>,
+    ) -> Result<Json<ActorResponse>, ActorError> {
+        Ok(Json(
+            ActorService::get(&scope, &GetActor::builder_v1().key(key).build().into()).await?,
+        ))
     }
 }
 
@@ -36,6 +64,15 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ListActors {
+    pub(crate) async fn handler(
+        scope: Scope<AtHost>,
+        Query(params): Query<ListActors>,
+    ) -> Result<Json<ActorResponse>, ActorError> {
+        Ok(Json(ActorService::list(&scope, &params).await?))
     }
 }
 

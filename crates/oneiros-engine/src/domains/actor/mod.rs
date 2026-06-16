@@ -18,11 +18,7 @@ pub(crate) use view::*;
 mod operations {
 
     use aide::axum::routing::{self, ApiMethodRouter};
-    use axum::{
-        Json,
-        extract::{Path, Query},
-    };
-    use reqwest::StatusCode;
+    use axum::Json;
 
     use crate::*;
 
@@ -47,43 +43,18 @@ mod operations {
 
         fn http_handler(&self) -> ApiMethodRouter<ServerState> {
             match self.kind {
-                ActorRequestType::CreateActor => routing::post_with(create, |op| {
+                ActorRequestType::CreateActor => routing::post_with(CreateActor::handler, |op| {
                     resource_op!(op, self).response::<201, Json<ActorCreatedResponse>>()
                 }),
-                ActorRequestType::GetActor => routing::get_with(show, |op| {
+                ActorRequestType::GetActor => routing::get_with(GetActor::handler, |op| {
                     resource_op!(op, self)
                         .input::<IdPathParam<ActorId>>()
                         .response::<200, Json<ActorFoundResponse>>()
                 }),
-                ActorRequestType::ListActors => routing::get_with(list, |op| {
+                ActorRequestType::ListActors => routing::get_with(ListActors::handler, |op| {
                     resource_op!(op, self).response::<200, Json<ActorsResponse>>()
                 }),
             }
         }
-    }
-
-    async fn create(
-        scope: Scope<AtHost>,
-        mailbox: Mailbox,
-        Json(body): Json<CreateActor>,
-    ) -> Result<(StatusCode, Json<ActorResponse>), ActorError> {
-        let response = ActorService::create(&scope, &mailbox, &body).await?;
-        Ok((StatusCode::CREATED, Json(response)))
-    }
-
-    async fn list(
-        scope: Scope<AtHost>,
-        Query(params): Query<ListActors>,
-    ) -> Result<Json<ActorResponse>, ActorError> {
-        Ok(Json(ActorService::list(&scope, &params).await?))
-    }
-
-    async fn show(
-        scope: Scope<AtHost>,
-        Path(key): Path<ResourceKey<ActorId>>,
-    ) -> Result<Json<ActorResponse>, ActorError> {
-        Ok(Json(
-            ActorService::get(&scope, &GetActor::builder_v1().key(key).build().into()).await?,
-        ))
     }
 }
