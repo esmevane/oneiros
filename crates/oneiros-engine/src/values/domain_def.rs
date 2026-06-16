@@ -6,6 +6,7 @@ use crate::*;
 
 pub(crate) trait DomainDef {
     type Kind: Kind;
+    type Request: ResourceDispatch<Kind = Self::Kind>;
 
     const LABEL: &'static str;
     const PURPOSE: &'static str;
@@ -14,10 +15,22 @@ pub(crate) trait DomainDef {
 
     fn http_handler(&self) -> ApiMethodRouter<ServerState>;
     fn resource(&self) -> Self::Kind;
-    fn description(&self) -> Description;
-    fn content(&self) -> Content;
-    fn path(&self) -> &'static str;
-    fn summary(&self) -> Description;
+
+    fn content(&self) -> Content {
+        Self::Request::content_for(self.resource()).into()
+    }
+
+    fn description(&self) -> Description {
+        Self::Request::description_for(self.resource()).into()
+    }
+
+    fn summary(&self) -> Description {
+        Self::Request::summary_for(self.resource()).into()
+    }
+
+    fn path(&self) -> &'static str {
+        Self::Request::path_for(self.resource())
+    }
 
     fn label(&self) -> Label
     where

@@ -64,6 +64,72 @@ pub(crate) enum ActorRequest {
     ListActors(ListActors),
 }
 
+impl ResourceRequestMeta for CreateActor {
+    type Kind = ActorRequestType;
+    const PATH: &'static str = "/";
+    const SUMMARY: &'static str = "Create an actor";
+    const DESCRIPTION: &'static str = "Register a new actor under the current tenant.";
+    fn content() -> &'static str {
+        include_str!("../features/skills/create.md")
+    }
+}
+
+impl ResourceRequestMeta for GetActor {
+    type Kind = ActorRequestType;
+    const PATH: &'static str = "/{id}";
+    const SUMMARY: &'static str = "Get an actor";
+    const DESCRIPTION: &'static str = "Look up a specific actor by ID.";
+    fn content() -> &'static str {
+        include_str!("../features/skills/get.md")
+    }
+}
+
+impl ResourceRequestMeta for ListActors {
+    type Kind = ActorRequestType;
+    const PATH: &'static str = "/";
+    const SUMMARY: &'static str = "List actors";
+    const DESCRIPTION: &'static str = "List all actors for a tenant.";
+    fn content() -> &'static str {
+        include_str!("../features/skills/list.md")
+    }
+}
+
+impl ResourceDispatch for ActorRequest {
+    type Kind = ActorRequestType;
+
+    fn path_for(kind: ActorRequestType) -> &'static str {
+        match kind {
+            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::PATH,
+            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::PATH,
+            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::PATH,
+        }
+    }
+
+    fn summary_for(kind: ActorRequestType) -> &'static str {
+        match kind {
+            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::SUMMARY,
+            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::SUMMARY,
+            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::SUMMARY,
+        }
+    }
+
+    fn description_for(kind: ActorRequestType) -> &'static str {
+        match kind {
+            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::DESCRIPTION,
+            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::DESCRIPTION,
+            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::DESCRIPTION,
+        }
+    }
+
+    fn content_for(kind: ActorRequestType) -> &'static str {
+        match kind {
+            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::content(),
+            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::content(),
+            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::content(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

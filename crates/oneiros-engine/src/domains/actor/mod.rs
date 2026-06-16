@@ -32,6 +32,7 @@ mod operations {
 
     impl DomainDef for ActorOperations {
         type Kind = ActorRequestType;
+        type Request = ActorRequest;
 
         const LABEL: &'static str = "actors";
         const PURPOSE: &'static str = "Manage actors within a tenant";
@@ -42,41 +43,6 @@ mod operations {
 
         fn resource(&self) -> Self::Kind {
             self.kind
-        }
-
-        fn content(&self) -> Content {
-            match self.kind {
-                ActorRequestType::CreateActor => include_str!("features/skills/create.md"),
-                ActorRequestType::GetActor => include_str!("features/skills/get.md"),
-                ActorRequestType::ListActors => include_str!("features/skills/list.md"),
-            }
-            .into()
-        }
-
-        fn description(&self) -> Description {
-            match self.kind {
-                ActorRequestType::CreateActor => "Register a new actor.",
-                ActorRequestType::GetActor => "Look up a specific actor by ID.",
-                ActorRequestType::ListActors => "List all actors.",
-            }
-            .into()
-        }
-
-        fn summary(&self) -> Description {
-            match self.kind {
-                ActorRequestType::CreateActor => "Create an actor",
-                ActorRequestType::GetActor => "Get an actor",
-                ActorRequestType::ListActors => "List actors",
-            }
-            .into()
-        }
-
-        fn path(&self) -> &'static str {
-            match self.kind {
-                ActorRequestType::CreateActor => "/",
-                ActorRequestType::GetActor => "/{id}",
-                ActorRequestType::ListActors => "/",
-            }
         }
 
         fn http_handler(&self) -> ApiMethodRouter<ServerState> {
