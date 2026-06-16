@@ -16,9 +16,8 @@ pub(crate) use store::*;
 pub(crate) use view::*;
 
 mod operations {
-    use std::collections::BTreeMap;
 
-    use aide::axum::{ApiRouter, routing};
+    use aide::axum::routing::{self, ApiMethodRouter};
     use axum::{
         Json,
         extract::{Path, Query},
@@ -31,42 +30,18 @@ mod operations {
         pub(crate) kind: ActorRequestType,
     }
 
-    impl ActorOperations {
+    impl DomainDef for ActorOperations {
+        type Kind = ActorRequestType;
+
         const LABEL: &'static str = "actors";
         const PURPOSE: &'static str = "Manage actors within a tenant";
 
-        pub(crate) fn router() -> ApiRouter<ServerState> {
-            let mut by_path: BTreeMap<&'static str, Vec<ActorRequestType>> = BTreeMap::new();
-            for kind in ActorRequestType::all() {
-                let ops = Self::new(*kind);
-                by_path.entry(ops.path()).or_default().push(*kind);
-            }
-
-            let mut inner = ApiRouter::<ServerState>::new();
-            for (path, kinds) in by_path {
-                let methods = kinds
-                    .into_iter()
-                    .map(|k| Self::new(k).http_handler())
-                    .reduce(|a, b| a.merge(b))
-                    .unwrap();
-                inner = inner.api_route(path, methods);
-            }
-
-            ApiRouter::new().nest(&format!("/{}", Self::LABEL), inner)
-        }
-
-        pub(crate) fn skills() -> Vec<Skill> {
-            let mut skills = vec![];
-
-            for kind in ActorRequestType::all() {
-                skills.push(Self::new(*kind).skill())
-            }
-
-            skills
-        }
-
-        pub(crate) fn new(kind: ActorRequestType) -> Self {
+        fn resource_definition(kind: Self::Kind) -> Self {
             Self { kind }
+        }
+
+        fn resource(&self) -> Self::Kind {
+            self.kind
         }
 
         fn content(&self) -> Content {
@@ -78,24 +53,13 @@ mod operations {
             .into()
         }
 
-        fn label(&self) -> Label {
-            self.kind.to_string().into()
-        }
-
         fn description(&self) -> Description {
             match self.kind {
                 ActorRequestType::CreateActor => "Register a new actor.",
                 ActorRequestType::GetActor => "Look up a specific actor by ID.",
-                ActorRequestType::ListActors => "List all actors for a tenant.",
+                ActorRequestType::ListActors => "List all actors.",
             }
             .into()
-        }
-
-        fn skill(&self) -> Skill {
-            Skill::builder()
-                .name(self.kind.to_string())
-                .content(self.content().to_string())
-                .build()
         }
 
         fn summary(&self) -> Description {
@@ -115,41 +79,20 @@ mod operations {
             }
         }
 
-        resource_routes! {
-            ActorRequestType::CreateActor => |this| {
-                routing::post_with(create, |op| {
-                    resource_op!(op, this).response::<201, Json<ActorCreatedResponse>>()
-                })
-            },
-            ActorRequestType::GetActor => |this| {
-                routing::get_with(show, |op| {
-                    resource_op!(op, this)
+        fn http_handler(&self) -> ApiMethodRouter<ServerState> {
+            match self.kind {
+                ActorRequestType::CreateActor => routing::post_with(create, |op| {
+                    resource_op!(op, self).response::<201, Json<ActorCreatedResponse>>()
+                }),
+                ActorRequestType::GetActor => routing::get_with(show, |op| {
+                    resource_op!(op, self)
                         .input::<IdPathParam<ActorId>>()
                         .response::<200, Json<ActorFoundResponse>>()
-                })
-            },
-            ActorRequestType::ListActors => |this| {
-                routing::get_with(list, |op| {
-                    resource_op!(op, this).response::<200, Json<ActorsResponse>>()
-                })
-            },
-        }
-
-        fn resource_docs(&self) -> ResourceDocs {
-            ResourceDocs::builder()
-                .tag(self.tag())
-                .nickname(self.label())
-                .summary(self.summary())
-                .description(self.description())
-                .content(self.content())
-                .build()
-        }
-
-        pub(crate) fn tag(&self) -> Tag {
-            Tag::builder()
-                .name(Self::LABEL)
-                .description(Self::PURPOSE)
-                .build()
+                }),
+                ActorRequestType::ListActors => routing::get_with(list, |op| {
+                    resource_op!(op, self).response::<200, Json<ActorsResponse>>()
+                }),
+            }
         }
     }
 
