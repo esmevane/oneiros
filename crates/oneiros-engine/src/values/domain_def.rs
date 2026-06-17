@@ -13,7 +13,9 @@ pub(crate) trait DomainDef {
 
     fn resource_definition(given_kind: Self::Kind) -> Self;
 
-    fn http_handler(&self) -> ApiMethodRouter<ServerState>;
+    fn http_handler(&self) -> ApiMethodRouter<ServerState> {
+        Self::Request::route_for(self.resource())
+    }
     fn resource(&self) -> Self::Kind;
 
     fn content(&self) -> Content {
