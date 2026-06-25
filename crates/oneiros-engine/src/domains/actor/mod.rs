@@ -1,3 +1,4 @@
+mod docs;
 mod features;
 mod model;
 mod protocol;
@@ -6,6 +7,7 @@ mod service;
 mod store;
 mod view;
 
+pub(crate) use docs::*;
 pub(crate) use features::*;
 pub(crate) use model::*;
 pub(crate) use operations::*;
@@ -18,23 +20,10 @@ pub(crate) use view::*;
 mod operations {
     use crate::*;
 
-    pub(crate) struct ActorOperations {
-        pub(crate) kind: ActorRequestType,
-    }
+    pub(crate) struct ActorOperations;
 
     impl DomainDef for ActorOperations {
-        type Kind = ActorRequestType;
-        type Request = ActorRequest;
-
         const LABEL: &'static str = "actors";
         const PURPOSE: &'static str = "Manage actors within a tenant";
-
-        fn resource_definition(kind: Self::Kind) -> Self {
-            Self { kind }
-        }
-
-        fn resource(&self) -> Self::Kind {
-            self.kind
-        }
     }
 }

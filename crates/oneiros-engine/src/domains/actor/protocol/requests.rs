@@ -2,8 +2,6 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use aide::axum::routing::{self, ApiMethodRouter};
-use aide::transform::TransformOperation;
 use axum::{
     Json,
     extract::{Path, Query},
@@ -103,36 +101,23 @@ pub(crate) enum ActorRequest {
     ListActors(ListActors),
 }
 
-impl ResourceRequestMeta for CreateActor {
-    type Kind = ActorRequestType;
-    type Domain = ActorOperations;
+impl ResourceMeta for CreateActor {
     type Response = ActorCreatedResponse;
-
     const PATH: &'static str = "/";
     const SUMMARY: &'static str = "Create an actor";
     const DESCRIPTION: &'static str = "Register a new actor under the current tenant.";
     const STATUS: u16 = 201;
-
     fn content() -> &'static str {
         include_str!("../features/skills/create.md")
     }
-
-    fn transform<'t>(op: TransformOperation<'t>, nickname: Label) -> TransformOperation<'t> {
-        let docs = Self::resource_docs(Self::Domain::tag(), nickname);
-        op.id(docs.nickname.as_str())
-            .tag(docs.tag.name.as_str())
-            .summary(docs.summary.as_str())
-            .description(docs.description.as_str())
-            .response::<{ Self::STATUS }, Json<Self::Response>>()
-    }
-    fn route(nickname: Label) -> ApiMethodRouter<ServerState> {
-        routing::post_with(Self::handler, move |op| Self::transform(op, nickname))
-    }
 }
 
-impl ResourceRequestMeta for GetActor {
-    type Kind = ActorRequestType;
-    type Domain = ActorOperations;
+impl GetActor {
+    const CONTENT: &'static str = include_str!("../features/skills/get.md");
+    const KIND: ActorRequestType = ActorRequestType::GetActor;
+}
+
+impl ResourceMeta for GetActor {
     type Response = ActorFoundResponse;
     const PATH: &'static str = "/{id}";
     const SUMMARY: &'static str = "Get an actor";
@@ -140,77 +125,15 @@ impl ResourceRequestMeta for GetActor {
     fn content() -> &'static str {
         include_str!("../features/skills/get.md")
     }
-    fn transform<'t>(op: TransformOperation<'t>, nickname: Label) -> TransformOperation<'t> {
-        let docs = Self::resource_docs(Self::Domain::tag(), nickname);
-        op.id(docs.nickname.as_str())
-            .tag(docs.tag.name.as_str())
-            .summary(docs.summary.as_str())
-            .description(docs.description.as_str())
-            .input::<IdPathParam<ActorId>>()
-            .response::<200, Json<ActorFoundResponse>>()
-    }
-    fn route(nickname: Label) -> ApiMethodRouter<ServerState> {
-        routing::get_with(Self::handler, move |op| Self::transform(op, nickname))
-    }
 }
 
-impl ResourceRequestMeta for ListActors {
-    type Kind = ActorRequestType;
-    type Domain = ActorOperations;
+impl ResourceMeta for ListActors {
     type Response = ActorsResponse;
     const PATH: &'static str = "/";
     const SUMMARY: &'static str = "List actors";
     const DESCRIPTION: &'static str = "List all actors for a tenant.";
     fn content() -> &'static str {
         include_str!("../features/skills/list.md")
-    }
-    fn route(nickname: Label) -> ApiMethodRouter<ServerState> {
-        routing::get_with(Self::handler, move |op| Self::transform(op, nickname))
-    }
-}
-
-impl ResourceDispatch for ActorRequest {
-    type Kind = ActorRequestType;
-
-    fn path_for(kind: ActorRequestType) -> &'static str {
-        match kind {
-            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::PATH,
-            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::PATH,
-            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::PATH,
-        }
-    }
-
-    fn summary_for(kind: ActorRequestType) -> &'static str {
-        match kind {
-            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::SUMMARY,
-            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::SUMMARY,
-            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::SUMMARY,
-        }
-    }
-
-    fn description_for(kind: ActorRequestType) -> &'static str {
-        match kind {
-            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::DESCRIPTION,
-            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::DESCRIPTION,
-            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::DESCRIPTION,
-        }
-    }
-
-    fn content_for(kind: ActorRequestType) -> &'static str {
-        match kind {
-            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::content(),
-            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::content(),
-            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::content(),
-        }
-    }
-
-    fn route_for(kind: ActorRequestType) -> ApiMethodRouter<ServerState> {
-        let nickname: Label = kind.to_string().into();
-        match kind {
-            ActorRequestType::CreateActor => <CreateActor as ResourceRequestMeta>::route(nickname),
-            ActorRequestType::GetActor => <GetActor as ResourceRequestMeta>::route(nickname),
-            ActorRequestType::ListActors => <ListActors as ResourceRequestMeta>::route(nickname),
-        }
     }
 }
 
