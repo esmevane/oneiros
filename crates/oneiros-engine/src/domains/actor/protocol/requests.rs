@@ -23,6 +23,16 @@ versioned! {
 }
 
 impl CreateActor {
+    pub(crate) const fn meta() -> ResourceMeta {
+        ResourceMeta {
+            path: "/",
+            summary: "Create an actor",
+            description: "Register a new actor under the current tenant.",
+            content: include_str!("../features/skills/create.md"),
+            status: 201,
+        }
+    }
+
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         mailbox: Mailbox,
@@ -44,6 +54,16 @@ versioned! {
 }
 
 impl GetActor {
+    pub(crate) const fn meta() -> ResourceMeta {
+        ResourceMeta {
+            path: "/{id}",
+            summary: "Get an actor",
+            description: "Look up a specific actor by ID.",
+            content: include_str!("../features/skills/get.md"),
+            status: 200,
+        }
+    }
+
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         Path(key): Path<ResourceKey<ActorId>>,
@@ -68,6 +88,16 @@ versioned! {
 }
 
 impl ListActors {
+    pub(crate) const fn meta() -> ResourceMeta {
+        ResourceMeta {
+            path: "/",
+            summary: "List actors",
+            description: "List all actors for a tenant.",
+            content: include_str!("../features/skills/list.md"),
+            status: 200,
+        }
+    }
+
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         Query(params): Query<ListActors>,
@@ -101,39 +131,29 @@ pub(crate) enum ActorRequest {
     ListActors(ListActors),
 }
 
-impl ResourceMeta for CreateActor {
-    type Response = ActorCreatedResponse;
-    const PATH: &'static str = "/";
-    const SUMMARY: &'static str = "Create an actor";
-    const DESCRIPTION: &'static str = "Register a new actor under the current tenant.";
-    const STATUS: u16 = 201;
-    fn content() -> &'static str {
-        include_str!("../features/skills/create.md")
+impl ActorRequestType {
+    /// Dispatch from a kind to the inner struct's `ResourceMeta`.
+    /// The match arms are the irreducible bridge — each variant maps to one
+    /// inner struct's `meta()` call. A derive macro could generate this.
+    pub(crate) fn meta(&self) -> ResourceMeta {
+        match self {
+            Self::CreateActor => CreateActor::meta(),
+            Self::GetActor => GetActor::meta(),
+            Self::ListActors => ListActors::meta(),
+        }
     }
-}
 
-impl GetActor {
-    const CONTENT: &'static str = include_str!("../features/skills/get.md");
-    const KIND: ActorRequestType = ActorRequestType::GetActor;
-}
-
-impl ResourceMeta for GetActor {
-    type Response = ActorFoundResponse;
-    const PATH: &'static str = "/{id}";
-    const SUMMARY: &'static str = "Get an actor";
-    const DESCRIPTION: &'static str = "Look up a specific actor by ID.";
-    fn content() -> &'static str {
-        include_str!("../features/skills/get.md")
-    }
-}
-
-impl ResourceMeta for ListActors {
-    type Response = ActorsResponse;
-    const PATH: &'static str = "/";
-    const SUMMARY: &'static str = "List actors";
-    const DESCRIPTION: &'static str = "List all actors for a tenant.";
-    fn content() -> &'static str {
-        include_str!("../features/skills/list.md")
+    /// Build `ResourceDocs` for this kind from the inner struct's metadata.
+    /// Consumed by `resource_op!` and the docs inventory.
+    pub(crate) fn resource_docs(&self) -> ResourceDocs {
+        let meta = self.meta();
+        ResourceDocs::builder()
+            .tag(ActorOperations::tag())
+            .nickname(self.to_string())
+            .summary(meta.summary)
+            .description(meta.description)
+            .content(meta.content)
+            .build()
     }
 }
 
@@ -152,5 +172,13 @@ mod tests {
         for (request_type, expectation) in cases {
             assert_eq!(&request_type.to_string(), expectation)
         }
+    }
+
+    #[test]
+    fn meta_dispatch_returns_correct_metadata() {
+        assert_eq!(ActorRequestType::CreateActor.meta().status, 201);
+        assert_eq!(ActorRequestType::CreateActor.meta().path, "/");
+        assert_eq!(ActorRequestType::GetActor.meta().path, "/{id}");
+        assert_eq!(ActorRequestType::ListActors.meta().summary, "List actors");
     }
 }

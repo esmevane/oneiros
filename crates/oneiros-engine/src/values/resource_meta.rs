@@ -1,15 +1,12 @@
-use schemars::JsonSchema;
+use crate::*;
 
 /// Pure resource metadata — the description of a resource, independent of any
-/// consumer (aide routing, skills, docs). Carries value-level data (consts)
-/// and type-valued metadata (Response) but calls no consumer APIs.
-pub(crate) trait ResourceMeta {
-    type Response: JsonSchema;
-
-    const PATH: &'static str;
-    const SUMMARY: &'static str;
-    const DESCRIPTION: &'static str;
-    const STATUS: u16 = 200;
-
-    fn content() -> &'static str;
+/// consumer (aide routing, skills, docs). All value-level data, returned by
+/// const fn. No aide, no associated types.
+pub(crate) struct ResourceMeta {
+    pub path: &'static str,
+    pub summary: &'static str,
+    pub description: &'static str,
+    pub content: &'static str,
+    pub status: u16,
 }

@@ -1,4 +1,3 @@
-mod docs;
 mod features;
 mod model;
 mod protocol;
@@ -7,7 +6,6 @@ mod service;
 mod store;
 mod view;
 
-pub(crate) use docs::*;
 pub(crate) use features::*;
 pub(crate) use model::*;
 pub(crate) use operations::*;
