@@ -34,14 +34,26 @@ mod operations {
     /// calls (response types, input types) that can't be expressed as data.
     pub(crate) struct ActorOperations;
 
-    trait ResourceRootMeta<T: Kind> {
+    trait ResourceRoot<T: Kind> {
         const LABEL: &'static str;
         const PURPOSE: &'static str;
     }
 
-    trait ResourceHttpRoot {}
+    trait ResourceRootMeta {
+        fn meta(&self) -> ResourceMeta;
+    }
 
-    trait ResourceDocsRoot<T: Kind>: ResourceRootMeta<T> {
+    impl ResourceRootMeta for ActorRequestType {
+        fn meta(&self) -> ResourceMeta {
+            match self {
+                Self::CreateActor => CreateActor::meta(),
+                Self::GetActor => GetActor::meta(),
+                Self::ListActors => ListActors::meta(),
+            }
+        }
+    }
+
+    trait ResourceDocsRoot<T: Kind + ResourceRootMeta + core::fmt::Display>: ResourceRoot<T> {
         fn tag() -> Tag {
             Tag::builder()
                 .name(Self::LABEL)
@@ -49,18 +61,21 @@ mod operations {
                 .build()
         }
 
-        // fn skills() -> Vec<Skill> {
-        //     T::all()
-        //         .iter()
-        //         .map(|kind| {
-        //             let meta = kind.meta();
-        //             Skill::builder()
-        //                 .name(kind.to_string())
-        //                 .content(meta.content)
-        //                 .build()
-        //         })
-        //         .collect()
-        // }
+        fn skills() -> Vec<Skill>
+        where
+            T: 'static,
+        {
+            T::all()
+                .iter()
+                .map(|kind| {
+                    let meta = kind.meta();
+                    Skill::builder()
+                        .name(kind.to_string())
+                        .content(meta.content)
+                        .build()
+                })
+                .collect()
+        }
     }
 
     impl ActorOperations {
