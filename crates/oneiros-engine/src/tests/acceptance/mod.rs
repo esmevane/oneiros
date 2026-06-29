@@ -358,6 +358,7 @@ async fn agent_show_returns_details() -> TestResult {
 async fn agent_show_by_ref() -> TestResult {
     cases::agent::show_by_ref::<EngineBackend>().await
 }
+
 #[tokio::test]
 async fn agent_show_by_wrong_kind_ref_errors() -> TestResult {
     cases::agent::show_by_wrong_kind_ref_errors::<EngineBackend>().await
@@ -407,6 +408,10 @@ async fn agent_remove_prompt() -> TestResult {
 #[tokio::test]
 async fn connection_create() -> TestResult {
     cases::connection::create::<EngineBackend>().await
+}
+#[tokio::test]
+async fn connection_create_with_bare_refs() -> TestResult {
+    cases::connection::create_with_bare_refs::<EngineBackend>().await
 }
 #[tokio::test]
 async fn connection_list_empty() -> TestResult {
@@ -481,6 +486,10 @@ async fn memory_list_filters_by_query() -> TestResult {
 #[tokio::test]
 async fn cognition_show_by_id() -> TestResult {
     cases::cognition::show_by_id::<EngineBackend>().await
+}
+#[tokio::test]
+async fn cognition_show_by_bare_ref() -> TestResult {
+    cases::cognition::show_by_bare_ref::<EngineBackend>().await
 }
 #[tokio::test]
 async fn cognition_add_prompt_confirms_creation() -> TestResult {
