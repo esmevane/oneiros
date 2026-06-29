@@ -58,6 +58,27 @@ pub(crate) async fn create<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn create_with_bare_refs<B: Backend>() -> TestResult {
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
+
+    // Strip the "ref:" prefix from both tokens to exercise the bare-token fallback.
+    let bare_from = from_ref.strip_prefix("ref:").unwrap();
+    let bare_to = to_ref.strip_prefix("ref:").unwrap();
+
+    let cmd = format!("connection create caused {bare_from} {bare_to}");
+    let response = harness.exec_json(&cmd).await?;
+
+    assert!(
+        matches!(
+            response,
+            Responses::Connection(ConnectionResponse::ConnectionCreated(_))
+        ),
+        "expected ConnectionCreated with bare refs, got {response:#?}"
+    );
+
+    Ok(())
+}
+
 pub(crate) async fn list_empty<B: Backend>() -> TestResult {
     let harness = Harness::<B>::init_project().await?;
 

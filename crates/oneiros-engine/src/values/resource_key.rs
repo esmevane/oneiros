@@ -59,28 +59,25 @@ pub(crate) enum ResolveError {
     },
 }
 
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum ResourceKeyParseError<E: fmt::Debug + fmt::Display> {
-    #[error("{0}")]
-    Key(E),
-    #[error(transparent)]
-    Ref(#[from] RefError),
-}
-
 impl<K> FromStr for ResourceKey<K>
 where
     K: FromStr,
     K::Err: fmt::Debug + fmt::Display,
 {
-    type Err = ResourceKeyParseError<K::Err>;
+    type Err = RefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with(REF_PREFIX) {
             Ok(Self::Ref(s.parse::<RefToken>()?))
         } else {
-            s.parse::<K>()
-                .map(Self::Key)
-                .map_err(ResourceKeyParseError::Key)
+            // Try native key first. On failure, fall back to bare ref token.
+            // Models occasionally omit the "ref:" prefix when passing tokens
+            // from dream output — the base64url string doesn't look like a UUID
+            // or name, so the fallback catches it and recovers.
+            match s.parse::<K>() {
+                Ok(key) => Ok(Self::Key(key)),
+                Err(_key_err) => s.parse::<RefToken>().map(Self::Ref),
+            }
         }
     }
 }
@@ -240,15 +237,30 @@ mod tests {
     }
 
     #[test]
-    fn malformed_id_fails_as_key_parse_error() {
+    fn malformed_id_falls_through_to_ref_error() {
+        // "not-a-uuid" fails both the native key parse and the bare-ref
+        // fallback. The ref error surfaces because it's more descriptive
+        // ("invalid base64") than the key error ("invalid UUID").
         let result: Result<ResourceKey<ExperienceId>, _> = "not-a-uuid".parse();
-        assert!(matches!(result, Err(ResourceKeyParseError::Key(_))));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parses_bare_base64url_as_ref_when_not_a_valid_key() {
+        // Models sometimes omit the "ref:" prefix. The bare base64url
+        // should fall through the native-key parse and succeed as a Ref.
+        let id = ExperienceId::new();
+        let full_token = RefToken::new(Ref::experience(id)).to_string();
+        let bare = full_token.strip_prefix("ref:").unwrap();
+        let parsed: ResourceKey<ExperienceId> = bare.parse().unwrap();
+        assert!(matches!(parsed, ResourceKey::Ref(_)));
+        assert_eq!(parsed.resolve().unwrap(), id);
     }
 
     #[test]
     fn malformed_ref_fails_as_ref_parse_error() {
         let result: Result<ResourceKey<ExperienceId>, _> = "ref:!!!bad!!!".parse();
-        assert!(matches!(result, Err(ResourceKeyParseError::Ref(_))));
+        assert!(result.is_err());
     }
 
     #[test]

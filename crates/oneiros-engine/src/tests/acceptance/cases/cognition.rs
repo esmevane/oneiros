@@ -174,6 +174,41 @@ pub(crate) async fn show_by_id<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn show_by_bare_ref<B: Backend>() -> TestResult {
+    let harness = with_agent::<B>().await?;
+
+    let add_response = harness
+        .exec_json("cognition add thinker.process observation 'Show me this'")
+        .await?;
+
+    let ref_token = match add_response {
+        Responses::Cognition(CognitionResponse::CognitionAdded(CognitionAddedResponse::V1(
+            added,
+        ))) => RefToken::new(Ref::cognition(added.cognition.id)),
+        other => panic!("expected CognitionAdded, got {other:#?}"),
+    };
+
+    // Strip the "ref:" prefix — exercise the bare-token fallback in ResourceKey::from_str.
+    let bare = ref_token
+        .to_string()
+        .strip_prefix("ref:")
+        .unwrap()
+        .to_string();
+
+    let show_response = harness.exec_json(&format!("cognition show {bare}")).await?;
+
+    match show_response {
+        Responses::Cognition(CognitionResponse::CognitionDetails(
+            CognitionDetailsResponse::V1(details),
+        )) => {
+            assert_eq!(details.cognition.content.as_str(), "Show me this");
+        }
+        other => panic!("expected CognitionDetails via bare ref, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
     let harness = with_agent::<B>().await?;
 
