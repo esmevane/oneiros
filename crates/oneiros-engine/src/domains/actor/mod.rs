@@ -18,32 +18,63 @@ pub(crate) use view::*;
 mod operations {
     use std::collections::BTreeMap;
 
-    use aide::axum::{
-        ApiRouter,
-        routing::{self, ApiMethodRouter},
+    use aide::{
+        axum::{
+            ApiRouter,
+            routing::{self, ApiMethodRouter},
+        },
+        transform::TransformOperation,
     };
     use axum::Json;
     use kinded::Kind;
+    use schemars::JsonSchema;
 
     use crate::*;
 
-    /// Single point of entry for the actor domain.
-    /// Carries domain identity (LABEL, PURPOSE, tag) and the consumer loops
-    /// (router, skills) that iterate the kind enum and read from `meta()`.
-    /// The `http_handler` match is the hand-written aide consumer — type-level
-    /// calls (response types, input types) that can't be expressed as data.
-    pub(crate) struct ActorOperations;
+    enum RouteMethod {
+        Post,
+        Get,
+    }
 
-    trait ResourceRoot<T: Kind> {
+    trait ResourceRouteDocs {
+        fn resource_docs(&self) -> ResourceDocs;
+    }
+
+    trait ResourceRoute: ResourceRouteDocs {
+        type Response: JsonSchema;
+
+        const STATUS: u16 = 200;
+        const METHOD: RouteMethod;
+
+        fn transform<'a>(&self, op: TransformOperation<'a>) -> TransformOperation<'a> {
+            op.response::<{ Self::STATUS }, Json<Self::Response>>()
+        }
+
+        fn finalize_transform<'a>(&self, op: TransformOperation<'a>) -> TransformOperation<'a> {
+            let docs = self.resource_docs();
+
+            self.transform(docs.transform(op))
+        }
+
+        fn route(&self) -> ApiMethodRouter<ServerState> {
+            let handle = |op| self.finalize_transform(op)
+            match Self::METHOD {
+                RouteMethod::Post => routing::post_with(Self::handler, handle),
+                RouteMethod::Get => routing::get_with(Self::handler, handle)
+            }
+        }
+    }
+
+    trait ResourceRootMeta<T: Kind> {
         const LABEL: &'static str;
         const PURPOSE: &'static str;
     }
 
-    trait ResourceRootMeta {
+    trait ResourceOpMeta {
         fn meta(&self) -> ResourceMeta;
     }
 
-    impl ResourceRootMeta for ActorRequestType {
+    impl ResourceOpMeta for ActorRequestType {
         fn meta(&self) -> ResourceMeta {
             match self {
                 Self::CreateActor => CreateActor::meta(),
@@ -53,7 +84,7 @@ mod operations {
         }
     }
 
-    trait ResourceDocsRoot<T: Kind + ResourceRootMeta + core::fmt::Display>: ResourceRoot<T> {
+    trait ResourceRootDocs<T: Kind + ResourceOpMeta + core::fmt::Display>: ResourceRootMeta<T> {
         fn tag() -> Tag {
             Tag::builder()
                 .name(Self::LABEL)
@@ -77,6 +108,40 @@ mod operations {
                 .collect()
         }
     }
+
+    trait ResourceRootRouter<T: Kind + ResourceOpMeta + core::fmt::Display>:
+        ResourceRootMeta<T>
+    {
+        fn tag() -> Tag {
+            Tag::builder()
+                .name(Self::LABEL)
+                .description(Self::PURPOSE)
+                .build()
+        }
+
+        fn skills() -> Vec<Skill>
+        where
+            T: 'static,
+        {
+            T::all()
+                .iter()
+                .map(|kind| {
+                    let meta = kind.meta();
+                    Skill::builder()
+                        .name(kind.to_string())
+                        .content(meta.content)
+                        .build()
+                })
+                .collect()
+        }
+    }
+
+    /// Single point of entry for the actor domain.
+    /// Carries domain identity (LABEL, PURPOSE, tag) and the consumer loops
+    /// (router, skills) that iterate the kind enum and read from `meta()`.
+    /// The `http_handler` match is the hand-written aide consumer — type-level
+    /// calls (response types, input types) that can't be expressed as data.
+    pub(crate) struct ActorOperations;
 
     impl ActorOperations {
         pub(crate) const LABEL: &'static str = "actors";

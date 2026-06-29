@@ -16,3 +16,15 @@ pub(crate) struct ResourceDocs {
     #[builder(default, into)]
     pub(crate) content: Content,
 }
+
+impl ResourceDocs {
+    pub(crate) fn transform<'a>(
+        &self,
+        op: aide::transform::TransformOperation<'a>,
+    ) -> aide::transform::TransformOperation<'a> {
+        op.id(self.nickname.as_str())
+            .tag(self.tag.name.as_str())
+            .summary(self.summary.as_str())
+            .description(self.description.as_str())
+    }
+}
