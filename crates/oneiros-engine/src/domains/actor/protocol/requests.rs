@@ -2,6 +2,8 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use aide::axum::routing::{self, ApiMethodRouter};
+use aide::transform::TransformOperation;
 use axum::{
     Json,
     extract::{Path, Query},
@@ -33,6 +35,18 @@ impl CreateActor {
         }
     }
 
+    pub(crate) fn route_def() -> ResourceRouteDef<ActorRequestType> {
+        ResourceRouteDef {
+            build: |kind| {
+                routing::post_with(Self::handler, move |op| {
+                    let docs = kind.resource_docs();
+                    let op = docs.transform(op);
+                    op.response::<201, Json<ActorCreatedResponse>>()
+                })
+            },
+        }
+    }
+
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         mailbox: Mailbox,
@@ -61,6 +75,19 @@ impl GetActor {
             description: "Look up a specific actor by ID.",
             content: include_str!("../features/skills/get.md"),
             status: 200,
+        }
+    }
+
+    pub(crate) fn route_def() -> ResourceRouteDef<ActorRequestType> {
+        ResourceRouteDef {
+            build: |kind| {
+                routing::get_with(Self::handler, move |op| {
+                    let docs = kind.resource_docs();
+                    let op = docs.transform(op);
+                    op.input::<IdPathParam<ActorId>>()
+                        .response::<200, Json<ActorFoundResponse>>()
+                })
+            },
         }
     }
 
@@ -98,6 +125,18 @@ impl ListActors {
         }
     }
 
+    pub(crate) fn route_def() -> ResourceRouteDef<ActorRequestType> {
+        ResourceRouteDef {
+            build: |kind| {
+                routing::get_with(Self::handler, move |op| {
+                    let docs = kind.resource_docs();
+                    let op = docs.transform(op);
+                    op.response::<200, Json<ActorsResponse>>()
+                })
+            },
+        }
+    }
+
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         Query(params): Query<ListActors>,
@@ -131,20 +170,29 @@ pub(crate) enum ActorRequest {
     ListActors(ListActors),
 }
 
-impl ActorRequestType {
-    /// Dispatch from a kind to the inner struct's `ResourceMeta`.
-    /// The match arms are the irreducible bridge — each variant maps to one
-    /// inner struct's `meta()` call. A derive macro could generate this.
-    pub(crate) fn meta(&self) -> ResourceMeta {
+impl ResourceOpMeta for ActorRequestType {
+    fn meta(&self) -> ResourceMeta {
         match self {
             Self::CreateActor => CreateActor::meta(),
             Self::GetActor => GetActor::meta(),
             Self::ListActors => ListActors::meta(),
         }
     }
+}
 
+impl ResourceOpRoute for ActorRequestType {
+    fn route_def(&self) -> ResourceRouteDef<Self> {
+        match self {
+            Self::CreateActor => CreateActor::route_def(),
+            Self::GetActor => GetActor::route_def(),
+            Self::ListActors => ListActors::route_def(),
+        }
+    }
+}
+
+impl ActorRequestType {
     /// Build `ResourceDocs` for this kind from the inner struct's metadata.
-    /// Consumed by `resource_op!` and the docs inventory.
+    /// Consumed by the route builders and the docs inventory.
     pub(crate) fn resource_docs(&self) -> ResourceDocs {
         let meta = self.meta();
         ResourceDocs::builder()
