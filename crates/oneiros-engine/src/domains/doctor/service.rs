@@ -8,13 +8,13 @@ enum McpLiveResult {
 pub(crate) struct DoctorService;
 
 impl DoctorService {
-    pub(crate) async fn check(config: &Config) -> DoctorResponse {
+    pub(crate) async fn check(config: &Config, databases: &Databases) -> DoctorResponse {
         let mut checks = Vec::new();
 
         // Compose host-tier scope. Failure here means we don't have
         // host substrate at all — strangler bridge still produces
         // today's HostLog shape until consumers move to Scope.
-        let scope = match ComposeScope::new(config.clone()).host() {
+        let scope = match ComposeScope::new(config.clone(), databases.clone()).host() {
             Ok(scope) => scope,
             Err(_) => {
                 checks.push(DoctorCheck::NotInitialized);

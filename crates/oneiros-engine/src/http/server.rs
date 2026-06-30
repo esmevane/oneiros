@@ -108,6 +108,7 @@ impl Server {
         // `/oneiros/sync/1` connections from peers can serve canon updates.
         state.bridge().serve(
             self.config.clone(),
+            state.databases().clone(),
             state.canons().clone(),
             state.mailbox().clone(),
         );

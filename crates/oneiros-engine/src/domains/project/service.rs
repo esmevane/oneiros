@@ -329,7 +329,7 @@ impl ProjectService {
         request: &ShareProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let ShareProject::V1(req) = request;
-        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
         let project_name = if req.project.to_string().is_empty() {
             state.config().project.clone()
         } else {

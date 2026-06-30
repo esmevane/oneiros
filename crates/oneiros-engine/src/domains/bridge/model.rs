@@ -54,11 +54,17 @@ impl Bridge {
 
     /// Register the sync protocol handler on this bridge's endpoint.
     /// Idempotent: calling it multiple times has no effect after the first.
-    pub(crate) fn serve(&self, config: Config, canons: CanonIndex, mailbox: Mailbox) {
+    pub(crate) fn serve(
+        &self,
+        config: Config,
+        databases: Databases,
+        canons: CanonIndex,
+        mailbox: Mailbox,
+    ) {
         if self.router.get().is_some() {
             return;
         }
-        let handler = SyncHandler::new(config, canons, self.clone(), mailbox);
+        let handler = SyncHandler::new(config, databases, canons, self.clone(), mailbox);
         let router = iroh::protocol::Router::builder(self.endpoint.clone())
             .accept(SYNC_ALPN, handler)
             .spawn();

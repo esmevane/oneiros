@@ -93,7 +93,7 @@ async fn create(
     State(state): State<ServerState>,
     Json(body): Json<CreateBookmark>,
 ) -> Result<(StatusCode, Json<BookmarkResponse>), BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     let response = BookmarkService::create(&scope, &state, context.project_name(), &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
@@ -104,7 +104,7 @@ async fn switch(
     State(state): State<ServerState>,
     Json(body): Json<SwitchBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::switch(&scope, &state, context.project_name(), &body).await?,
     ))
@@ -116,7 +116,7 @@ async fn merge(
     State(state): State<ServerState>,
     Json(body): Json<MergeBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::merge(&scope, &state, context.project_name(), &body).await?,
     ))
@@ -128,7 +128,7 @@ async fn list(
     State(state): State<ServerState>,
     Query(params): Query<ListBookmarks>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::list(&scope, &state, context.project_name(), &params).await?,
     ))
@@ -140,7 +140,7 @@ async fn share(
     State(state): State<ServerState>,
     Json(body): Json<ShareBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::share(&scope, &state, context.project_name(), &body).await?,
     ))
@@ -152,7 +152,7 @@ async fn follow(
     State(state): State<ServerState>,
     Json(body): Json<FollowBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::follow(&scope, &state, context.project_name(), &body).await?,
     ))
@@ -164,7 +164,7 @@ async fn unfollow(
     State(state): State<ServerState>,
     Json(body): Json<UnfollowBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::unfollow(&scope, &state, context.project_name(), &body).await?,
     ))
@@ -176,7 +176,7 @@ async fn collect(
     State(state): State<ServerState>,
     Json(body): Json<CollectBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::collect(&scope, &state, context.project_name(), &body).await?,
     ))
@@ -188,7 +188,7 @@ async fn submit(
     State(state): State<ServerState>,
     Json(body): Json<SubmitBookmark>,
 ) -> Result<Json<BookmarkResponse>, BookmarkError> {
-    let scope = ComposeScope::new(state.config().clone()).host()?;
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         BookmarkService::submit(&scope, &state, context.project_name(), &body).await?,
     ))

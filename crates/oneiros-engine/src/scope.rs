@@ -37,14 +37,19 @@ impl Scope<Empty> {
         Self::wrap(Empty)
     }
 
-    pub(crate) fn with_config(self, config: Config) -> Scope<Configured> {
-        Scope::wrap(Configured { config })
+    pub(crate) fn with_config_and_databases(
+        self,
+        config: Config,
+        databases: Databases,
+    ) -> Scope<Configured> {
+        Scope::wrap(Configured { config, databases })
     }
 }
 
 #[derive(Clone)]
 pub(crate) struct Configured {
     config: Config,
+    databases: Databases,
 }
 
 impl Scope<Configured> {
@@ -53,26 +58,33 @@ impl Scope<Configured> {
     /// we've verified that the host instance can run.
     ///
     pub(crate) fn verify_host(self, host: Arc<HostInfra>) -> Scope<AtHost> {
-        let Configured { config } = self.inner;
-        Scope::wrap(AtHost { config, host })
+        let Configured { config, databases } = self.inner;
+        Scope::wrap(AtHost {
+            config,
+            databases,
+            host,
+        })
     }
 }
 
 #[derive(Clone)]
 pub(crate) struct AtHost {
     config: Config,
+    databases: Databases,
     host: Arc<HostInfra>,
 }
 
 #[derive(Clone)]
 pub(crate) struct AtProject {
     config: Config,
+    databases: Databases,
     project: Arc<ProjectInfra>,
 }
 
 #[derive(Clone)]
 pub(crate) struct AtBookmark {
     config: Config,
+    databases: Databases,
     project: Arc<ProjectInfra>,
     bookmark: Arc<BookmarkInfra>,
 }
@@ -90,6 +102,7 @@ pub(crate) struct AtBookmark {
 
 pub(crate) trait HasHost {
     fn config(&self) -> &Config;
+    fn databases(&self) -> &Databases;
 }
 
 pub(crate) trait HasProject: HasHost {
@@ -160,13 +173,21 @@ impl Scope<AtHost> {
         self,
         project: ProjectName,
     ) -> Result<Scope<AtProject>, ScopeError> {
-        let AtHost { config, host } = self.inner;
+        let AtHost {
+            config,
+            databases,
+            host,
+        } = self.inner;
         let project = host
             .projects
             .get(&project)
             .cloned()
             .ok_or(ScopeError::ProjectNotFound(project))?;
-        Ok(Scope::wrap(AtProject { config, project }))
+        Ok(Scope::wrap(AtProject {
+            config,
+            databases,
+            project,
+        }))
     }
 }
 
@@ -177,7 +198,11 @@ impl Scope<AtProject> {
         self,
         name: BookmarkName,
     ) -> Result<Scope<AtBookmark>, ScopeError> {
-        let AtProject { config, project } = self.inner;
+        let AtProject {
+            config,
+            databases,
+            project,
+        } = self.inner;
         let bookmark = project
             .bookmarks
             .get(&name)
@@ -185,6 +210,7 @@ impl Scope<AtProject> {
             .ok_or(ScopeError::BookmarkNotFound(name))?;
         Ok(Scope::wrap(AtBookmark {
             config,
+            databases,
             project,
             bookmark,
         }))
@@ -200,11 +226,17 @@ impl HasHost for Scope<AtHost> {
     fn config(&self) -> &Config {
         &self.inner.config
     }
+    fn databases(&self) -> &Databases {
+        &self.inner.databases
+    }
 }
 
 impl HasHost for Scope<AtProject> {
     fn config(&self) -> &Config {
         &self.inner.config
+    }
+    fn databases(&self) -> &Databases {
+        &self.inner.databases
     }
 }
 
@@ -217,6 +249,9 @@ impl HasProject for Scope<AtProject> {
 impl HasHost for Scope<AtBookmark> {
     fn config(&self) -> &Config {
         &self.inner.config
+    }
+    fn databases(&self) -> &Databases {
+        &self.inner.databases
     }
 }
 
@@ -244,11 +279,12 @@ impl HasBookmark for Scope<AtBookmark> {
 
 pub(crate) struct ComposeScope {
     config: Config,
+    databases: Databases,
 }
 
 impl ComposeScope {
-    pub(crate) fn new(config: Config) -> Self {
-        Self { config }
+    pub(crate) fn new(config: Config, databases: Databases) -> Self {
+        Self { config, databases }
     }
 
     /// Build a host-tier scope: validate `data_dir`, enumerate project
@@ -257,7 +293,7 @@ impl ComposeScope {
     pub(crate) fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
         let host = self.build_host_infra()?;
         Ok(Scope::empty()
-            .with_config(self.config.clone())
+            .with_config_and_databases(self.config.clone(), self.databases.clone())
             .verify_host(Arc::new(host)))
     }
 
@@ -275,7 +311,7 @@ impl ComposeScope {
 
         let host_arc = Arc::new(host);
         let host_scope = Scope::empty()
-            .with_config(self.config.clone())
+            .with_config_and_databases(self.config.clone(), self.databases.clone())
             .verify_host(host_arc);
         Ok(host_scope.verify_project(name)?)
     }
@@ -412,14 +448,17 @@ mod tests {
         let config = Config::builder()
             .data_dir(PathBuf::from("/this/path/does/not/exist"))
             .build();
-        let result = ComposeScope::new(config).host();
+        let databases = Databases::new(config.clone());
+        let result = ComposeScope::new(config, databases).host();
         assert!(matches!(result, Err(ComposeError::HostHydrationFailed(_))));
     }
 
     #[test]
     fn project_compose_unknown_project_errors() {
         let dir = TempDir::new().unwrap();
-        let result = ComposeScope::new(test_config(&dir)).project(ProjectName::from("nope"));
+        let config = test_config(&dir);
+        let databases = Databases::new(config.clone());
+        let result = ComposeScope::new(config, databases).project(ProjectName::from("nope"));
         assert!(matches!(
             result,
             Err(ComposeError::Scope(ScopeError::ProjectNotFound(_)))
@@ -431,8 +470,9 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
         seed_project(&config, "alpha");
+        let databases = Databases::new(config.clone());
 
-        let scope = ComposeScope::new(config).project(ProjectName::from("alpha"))?;
+        let scope = ComposeScope::new(config, databases).project(ProjectName::from("alpha"))?;
         assert_eq!(scope.project().name, ProjectName::from("alpha"));
 
         Ok(())
@@ -444,9 +484,10 @@ mod tests {
         let config = test_config(&dir);
         seed_project(&config, "alpha");
         seed_bookmark(&config, "alpha", "main");
+        let databases = Databases::new(config.clone());
 
-        let scope =
-            ComposeScope::new(config).bookmark(ProjectName::from("alpha"), BookmarkName::main())?;
+        let scope = ComposeScope::new(config, databases)
+            .bookmark(ProjectName::from("alpha"), BookmarkName::main())?;
         assert_eq!(scope.bookmark().name, BookmarkName::main());
         Ok(())
     }
@@ -456,8 +497,9 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
         seed_project(&config, "alpha");
+        let databases = Databases::new(config.clone());
 
-        let result = ComposeScope::new(config)
+        let result = ComposeScope::new(config, databases)
             .bookmark(ProjectName::from("alpha"), BookmarkName::from("nope"));
         assert!(matches!(
             result,

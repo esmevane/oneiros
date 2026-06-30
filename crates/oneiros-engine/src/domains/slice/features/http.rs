@@ -42,7 +42,7 @@ async fn create(
     mailbox: Mailbox,
     Json(body): Json<CreateSlice>,
 ) -> Result<(StatusCode, Json<SliceResponse>), SliceError> {
-    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    let host_scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     let project_scope = context.scope()?;
     Ok((
         StatusCode::CREATED,
@@ -56,7 +56,7 @@ async fn create(
 async fn list(
     axum::extract::State(state): axum::extract::State<ServerState>,
 ) -> Result<Json<SliceResponse>, SliceError> {
-    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    let host_scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(SliceService::list(&host_scope).await?))
 }
 
@@ -65,7 +65,7 @@ async fn delete(
     mailbox: Mailbox,
     Path(name): Path<SliceName>,
 ) -> Result<Json<SliceResponse>, SliceError> {
-    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    let host_scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     Ok(Json(
         SliceService::delete(&host_scope, &mailbox, &name).await?,
     ))
@@ -77,7 +77,7 @@ async fn diff(
     context: ProjectLog,
     Json(body): Json<DiffSlice>,
 ) -> Result<Json<SliceResponse>, SliceError> {
-    let host_scope = ComposeScope::new(state.config().clone()).host()?;
+    let host_scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
     let project_scope = context.scope()?;
     let DiffSlice::V1(req) = &body;
     Ok(Json(

@@ -72,8 +72,9 @@ impl BookmarkService {
                 .ok_or_else(|| {
                     BookmarkError::InvalidUri(format!("slice not found: {slice_name}"))
                 })?;
-            let bookmark_scope = ComposeScope::new(state.config().clone())
-                .bookmark(project.clone(), from.clone())?;
+            let bookmark_scope =
+                ComposeScope::new(state.config().clone(), state.databases().clone())
+                    .bookmark(project.clone(), from.clone())?;
             let selection = LensService::select(
                 &bookmark_scope,
                 state.canons(),
@@ -506,6 +507,7 @@ impl BookmarkService {
             state.bridge(),
             state.canons(),
             state.config(),
+            state.databases(),
             project,
             local_name,
             peer_link,
@@ -547,6 +549,7 @@ impl BookmarkService {
             state.bridge(),
             state.canons(),
             state.config(),
+            state.databases(),
             project,
             &follow.bookmark,
             peer_link,
@@ -587,6 +590,7 @@ impl BookmarkService {
         bridge: &Bridge,
         canons: &CanonIndex,
         config: &Config,
+        databases: &Databases,
         project: &ProjectName,
         bookmark_name: &BookmarkName,
         peer_link: PeerLink,
@@ -635,7 +639,7 @@ impl BookmarkService {
                 .await
                 .map_err(|error: BridgeError| BookmarkError::InvalidUri(error.to_string()))?;
 
-            let bookmark_scope = ComposeScope::new(config.clone())
+            let bookmark_scope = ComposeScope::new(config.clone(), databases.clone())
                 .bookmark(project.clone(), bookmark_name.clone())?;
 
             let expected_ids: std::collections::HashSet<String> =

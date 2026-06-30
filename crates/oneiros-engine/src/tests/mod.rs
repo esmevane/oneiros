@@ -293,7 +293,7 @@ async fn storage_content_round_trips() {
     // Internal mechanism under test: blob compression round-trip. There is
     // no HTTP route that returns raw blob bytes, so this single call
     // exercises the storage subsystem directly.
-    let scope = ComposeScope::new(app.config().clone())
+    let scope = ComposeScope::new(app.config().clone(), Databases::new(app.config().clone()))
         .bookmark(app.config().project.clone(), app.config().bookmark.clone())
         .expect("compose bookmark scope");
     let retrieved = StorageService::get_content(&scope, &StorageKey::new("test.txt"))

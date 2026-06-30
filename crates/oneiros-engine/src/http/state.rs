@@ -114,7 +114,7 @@ impl ServerState {
     /// `ProjectLog` extractor for legacy CLI/MCP dispatchers.
     #[expect(deprecated)]
     pub(crate) fn project_log(&self, config: Config) -> ProjectLog {
-        ProjectLog::new(config, self.canons.clone())
+        ProjectLog::new(config, self.databases.clone(), self.canons.clone())
     }
 
     /// Construct a ticket verifier backed by this server's config,
@@ -122,6 +122,7 @@ impl ServerState {
     pub(crate) fn ticket_verifier(&self) -> TicketVerifier {
         TicketVerifier::new(
             self.config.clone(),
+            self.databases.clone(),
             self.canons.clone(),
             self.host_secret.clone(),
         )
@@ -153,7 +154,7 @@ impl FromRequestParts<ServerState> for Scope<AtHost> {
         // The auth middleware already injected VerifiedSession into
         // extensions. For AtHost, we accept both host and project
         // sessions — all we need is a valid config to compose from.
-        Ok(ComposeScope::new(state.config.clone()).host()?)
+        Ok(ComposeScope::new(state.config.clone(), state.databases.clone()).host()?)
     }
 }
 
@@ -227,7 +228,7 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
         config.project = project_name;
         config.bookmark = bookmark;
 
-        let scope = ComposeScope::new(config.clone())
+        let scope = ComposeScope::new(config.clone(), state.databases.clone())
             .bookmark(config.project.clone(), config.bookmark.clone())?;
         Ok(scope)
     }

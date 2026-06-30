@@ -16,7 +16,9 @@ use crate::*;
 /// The tokens returned in `tickets` are the same tokens anyone
 /// with local access to the ticket DB can already read.
 pub(crate) async fn dashboard_config(State(state): State<ServerState>) -> Json<DashboardBootstrap> {
-    let scope = ComposeScope::new(state.config().clone()).host().ok();
+    let scope = ComposeScope::new(state.config().clone(), state.databases().clone())
+        .host()
+        .ok();
 
     let tenants = match scope.as_ref() {
         Some(s) => TenantRepo::new(s)

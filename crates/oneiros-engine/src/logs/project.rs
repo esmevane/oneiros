@@ -25,15 +25,18 @@ pub(crate) struct ProjectLog {
     /// Bookmark chronicle registry — shared from `ServerState`. Required
     /// for lens queries that route through chronicle-aware readers.
     canons: CanonIndex,
+    /// Database pool — shared from `ServerState`.
+    databases: Databases,
 }
 
 #[expect(deprecated)]
 impl ProjectLog {
-    pub(crate) fn new(config: Config, canons: CanonIndex) -> Self {
+    pub(crate) fn new(config: Config, databases: Databases, canons: CanonIndex) -> Self {
         Self {
             config,
             scope: Arc::new(std::sync::OnceLock::new()),
             canons,
+            databases,
         }
     }
 
@@ -52,7 +55,7 @@ impl ProjectLog {
     /// to pass `&Scope<AtBookmark>` to migrated services.
     pub(crate) fn scope(&self) -> Result<&Scope<AtBookmark>, ComposeError> {
         if self.scope.get().is_none() {
-            let s = ComposeScope::new(self.config.clone())
+            let s = ComposeScope::new(self.config.clone(), self.databases.clone())
                 .bookmark(self.config.project.clone(), self.config.bookmark.clone())?;
             let _ = self.scope.set(s);
         }
