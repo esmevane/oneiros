@@ -12,6 +12,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct ServerState {
     config: Config,
+    databases: Databases,
     canons: CanonIndex,
     bridge: Bridge,
     api: Arc<OnceLock<OpenApi>>,
@@ -38,8 +39,15 @@ impl ServerState {
         let canons = CanonIndex::new();
         let mailbox = Mailbox::spawn(canons.clone());
 
+        // Construct the database pool and spawn the background sweep
+        // task. The task runs until all `Databases` clones are dropped
+        // (which happens when `ServerState` is dropped).
+        let databases = Databases::new(config.clone());
+        databases.clone().spawn_sweep();
+
         Ok(Self {
             config,
+            databases,
             canons,
             bridge,
             api: Arc::new(OnceLock::new()),
@@ -89,6 +97,12 @@ impl ServerState {
     /// The server configuration.
     pub(crate) fn config(&self) -> &Config {
         &self.config
+    }
+
+    /// The database pool. Cloned cheaply (internally `Arc`'d); consumers
+    /// check out connections by [`DbKey`] and return them on drop.
+    pub(crate) fn databases(&self) -> &Databases {
+        &self.databases
     }
 
     /// The project name from the server config.
