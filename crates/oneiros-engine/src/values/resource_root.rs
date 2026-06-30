@@ -7,8 +7,25 @@ use crate::*;
 
 /// Pure resource metadata dispatch — on the kind enum.
 /// Kind value -> ResourceMeta by value. Pure forwarding match.
-pub(crate) trait ResourceOpMeta {
+/// Carries `type Root` to bridge to the domain's ResourceRoot, so
+/// `resource_docs()` can be a default.
+pub(crate) trait ResourceOpMeta: core::fmt::Display {
+    type Root: ResourceRoot;
+
     fn meta(&self) -> ResourceMeta;
+
+    /// Build `ResourceDocs` from meta() and the root's tag.
+    /// Default — no per-domain hand-writing needed.
+    fn resource_docs(&self) -> ResourceDocs {
+        let meta = self.meta();
+        ResourceDocs::builder()
+            .tag(Self::Root::tag())
+            .nickname(self.to_string())
+            .summary(meta.summary)
+            .description(meta.description)
+            .content(meta.content)
+            .build()
+    }
 }
 
 /// Route definition for a resource — carries a function pointer that builds

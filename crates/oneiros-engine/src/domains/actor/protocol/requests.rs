@@ -171,6 +171,8 @@ pub(crate) enum ActorRequest {
 }
 
 impl ResourceOpMeta for ActorRequestType {
+    type Root = ActorOperations;
+
     fn meta(&self) -> ResourceMeta {
         match self {
             Self::CreateActor => CreateActor::meta(),
@@ -181,27 +183,15 @@ impl ResourceOpMeta for ActorRequestType {
 }
 
 impl ResourceOpRoute for ActorRequestType {
-    fn route_def(&self) -> ResourceRouteDef<Self> {
+    fn route_def(&self) -> ResourceRouteDef<Self>
+    where
+        Self: Sized,
+    {
         match self {
             Self::CreateActor => CreateActor::route_def(),
             Self::GetActor => GetActor::route_def(),
             Self::ListActors => ListActors::route_def(),
         }
-    }
-}
-
-impl ActorRequestType {
-    /// Build `ResourceDocs` for this kind from the inner struct's metadata.
-    /// Consumed by the route builders and the docs inventory.
-    pub(crate) fn resource_docs(&self) -> ResourceDocs {
-        let meta = self.meta();
-        ResourceDocs::builder()
-            .tag(ActorOperations::tag())
-            .nickname(self.to_string())
-            .summary(meta.summary)
-            .description(meta.description)
-            .content(meta.content)
-            .build()
     }
 }
 
