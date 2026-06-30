@@ -137,7 +137,7 @@ impl Databases {
     pub(crate) fn sweep(&self) {
         let ttl = self.inner.config.database.sweep_interval;
         let mut pools = self.inner.pools.lock().unwrap();
-        pools.retain(|_, entry| entry.connection.is_some() && entry.last_used.elapsed() < ttl);
+        pools.retain(|_, entry| entry.connection.is_none() || entry.last_used.elapsed() < ttl);
     }
 
     /// Spawn the background sweep task. Runs until `Databases` is dropped
@@ -360,6 +360,8 @@ pub(crate) enum DbError {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
 
     fn test_config() -> (tempfile::TempDir, Config) {
@@ -473,11 +475,13 @@ mod tests {
         }
 
         databases.sweep();
-        let pools = databases.inner.pools.lock().unwrap();
-        assert!(
-            pools.contains_key(&DbKey::Host),
-            "sweep should skip checked-out entries"
-        );
+        {
+            let pools = databases.inner.pools.lock().unwrap();
+            assert!(
+                pools.contains_key(&DbKey::Host),
+                "sweep should skip checked-out entries"
+            );
+        }
         drop(handle);
     }
 }
