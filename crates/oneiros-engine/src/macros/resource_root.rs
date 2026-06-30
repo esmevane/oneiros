@@ -29,6 +29,16 @@ macro_rules! resource_root {
                 }
             }
         }
+
+        $(
+            impl $crate::ResourceLeafKind for $leaf
+            where
+                <$root as kinded::Kinded>::Kind: core::fmt::Display,
+            {
+                type Kind = <$root as kinded::Kinded>::Kind;
+                type Root = $root;
+            }
+        )*
     };
 }
 

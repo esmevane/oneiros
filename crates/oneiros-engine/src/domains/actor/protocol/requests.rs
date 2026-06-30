@@ -51,11 +51,6 @@ resource_handler! {
     }
 }
 
-impl ResourceLeafKind for CreateActor {
-    type Kind = ActorRequestType;
-    type Root = ActorRequest;
-}
-
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum GetActor {
@@ -93,11 +88,6 @@ resource_handler! {
         method: get,
         transform: |op| op.input::<IdPathParam<ActorId>>().response::<200, Json<ActorFoundResponse>>(),
     }
-}
-
-impl ResourceLeafKind for GetActor {
-    type Kind = ActorRequestType;
-    type Root = ActorRequest;
 }
 
 versioned! {
@@ -138,11 +128,6 @@ resource_handler! {
         method: get,
         transform: |op| op.response::<200, Json<ActorsResponse>>(),
     }
-}
-
-impl ResourceLeafKind for ListActors {
-    type Kind = ActorRequestType;
-    type Root = ActorRequest;
 }
 
 resource_requests! {
