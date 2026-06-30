@@ -46,7 +46,7 @@ resource_meta! {
 resource_handler! {
     CreateActor => {
         handler: Self::handler,
-        method: post,
+        method: ResourceMethod::Post,
         transform: |op| op.response::<201, Json<ActorCreatedResponse>>(),
     }
 }
@@ -85,7 +85,7 @@ resource_meta! {
 resource_handler! {
     GetActor => {
         handler: Self::handler,
-        method: get,
+        method: ResourceMethod::Get,
         transform: |op| op.input::<IdPathParam<ActorId>>().response::<200, Json<ActorFoundResponse>>(),
     }
 }
@@ -125,7 +125,7 @@ resource_meta! {
 resource_handler! {
     ListActors => {
         handler: Self::handler,
-        method: get,
+        method: ResourceMethod::Get,
         transform: |op| op.response::<200, Json<ActorsResponse>>(),
     }
 }

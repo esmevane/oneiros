@@ -1,6 +1,10 @@
 use std::collections::BTreeMap;
 
-use aide::axum::{ApiRouter, routing::ApiMethodRouter};
+use aide::axum::{
+    ApiRouter,
+    routing::{self, ApiMethodRouter},
+};
+use aide::transform::TransformOperation;
 use kinded::{Kind, Kinded};
 
 use crate::*;
@@ -97,6 +101,37 @@ where
 /// baked inside. Parallels ResourceMeta: a data struct returned by a fn.
 pub(crate) struct ResourceRouteDef<K> {
     pub build: fn(K) -> ApiMethodRouter<ServerState>,
+}
+
+/// HTTP method for a resource route.
+#[derive(Clone, Copy)]
+pub(crate) enum ResourceMethod {
+    Get,
+    Post,
+}
+
+impl ResourceMethod {
+    /// Build an ApiMethodRouter for this method, given a handler and transform.
+    /// The transform closure receives an op already set up with docs.
+    pub(crate) fn router<H, I, O, T, F>(
+        self,
+        handler: H,
+        transform: F,
+    ) -> ApiMethodRouter<ServerState>
+    where
+        H: axum::handler::Handler<T, ServerState> + aide::operation::OperationHandler<I, O>,
+        I: aide::operation::OperationInput,
+        O: aide::operation::OperationOutput,
+        T: 'static,
+        F: FnOnce(
+            aide::transform::TransformOperation<'_>,
+        ) -> aide::transform::TransformOperation<'_>,
+    {
+        match self {
+            Self::Get => routing::get_with(handler, transform),
+            Self::Post => routing::post_with(handler, transform),
+        }
+    }
 }
 
 /// Leaf-level metadata contract. Each inner struct (e.g. CreateActor)
