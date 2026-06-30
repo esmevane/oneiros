@@ -2,8 +2,6 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use aide::axum::routing::{self, ApiMethodRouter};
-use aide::transform::TransformOperation;
 use axum::{
     Json,
     extract::{Path, Query},
@@ -25,28 +23,6 @@ versioned! {
 }
 
 impl CreateActor {
-    pub(crate) const fn meta() -> ResourceMeta {
-        ResourceMeta {
-            path: "/",
-            summary: "Create an actor",
-            description: "Register a new actor under the current tenant.",
-            content: include_str!("../features/skills/create.md"),
-            status: 201,
-        }
-    }
-
-    pub(crate) fn route_def() -> ResourceRouteDef<ActorRequestType> {
-        ResourceRouteDef {
-            build: |kind| {
-                routing::post_with(Self::handler, move |op| {
-                    let docs = kind.resource_docs();
-                    let op = docs.transform(op);
-                    op.response::<201, Json<ActorCreatedResponse>>()
-                })
-            },
-        }
-    }
-
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         mailbox: Mailbox,
@@ -55,6 +31,29 @@ impl CreateActor {
         let response = ActorService::create(&scope, &mailbox, &body).await?;
         Ok((StatusCode::CREATED, Json(response)))
     }
+}
+
+resource_meta! {
+    CreateActor => {
+        path: "/",
+        summary: "Create an actor",
+        description: "Register a new actor under the current tenant.",
+        content: include_str!("../features/skills/create.md"),
+        status: 201,
+    }
+}
+
+resource_handler! {
+    CreateActor => {
+        handler: Self::handler,
+        method: post,
+        transform: |op| op.response::<201, Json<ActorCreatedResponse>>(),
+    }
+}
+
+impl ResourceLeafKind for CreateActor {
+    type Kind = ActorRequestType;
+    type Root = ActorRequest;
 }
 
 versioned! {
@@ -68,29 +67,6 @@ versioned! {
 }
 
 impl GetActor {
-    pub(crate) const fn meta() -> ResourceMeta {
-        ResourceMeta {
-            path: "/{id}",
-            summary: "Get an actor",
-            description: "Look up a specific actor by ID.",
-            content: include_str!("../features/skills/get.md"),
-            status: 200,
-        }
-    }
-
-    pub(crate) fn route_def() -> ResourceRouteDef<ActorRequestType> {
-        ResourceRouteDef {
-            build: |kind| {
-                routing::get_with(Self::handler, move |op| {
-                    let docs = kind.resource_docs();
-                    let op = docs.transform(op);
-                    op.input::<IdPathParam<ActorId>>()
-                        .response::<200, Json<ActorFoundResponse>>()
-                })
-            },
-        }
-    }
-
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         Path(key): Path<ResourceKey<ActorId>>,
@@ -99,6 +75,29 @@ impl GetActor {
             ActorService::get(&scope, &GetActor::builder_v1().key(key).build().into()).await?,
         ))
     }
+}
+
+resource_meta! {
+    GetActor => {
+        path: "/{id}",
+        summary: "Get an actor",
+        description: "Look up a specific actor by ID.",
+        content: include_str!("../features/skills/get.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    GetActor => {
+        handler: Self::handler,
+        method: get,
+        transform: |op| op.input::<IdPathParam<ActorId>>().response::<200, Json<ActorFoundResponse>>(),
+    }
+}
+
+impl ResourceLeafKind for GetActor {
+    type Kind = ActorRequestType;
+    type Root = ActorRequest;
 }
 
 versioned! {
@@ -115,34 +114,35 @@ versioned! {
 }
 
 impl ListActors {
-    pub(crate) const fn meta() -> ResourceMeta {
-        ResourceMeta {
-            path: "/",
-            summary: "List actors",
-            description: "List all actors for a tenant.",
-            content: include_str!("../features/skills/list.md"),
-            status: 200,
-        }
-    }
-
-    pub(crate) fn route_def() -> ResourceRouteDef<ActorRequestType> {
-        ResourceRouteDef {
-            build: |kind| {
-                routing::get_with(Self::handler, move |op| {
-                    let docs = kind.resource_docs();
-                    let op = docs.transform(op);
-                    op.response::<200, Json<ActorsResponse>>()
-                })
-            },
-        }
-    }
-
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         Query(params): Query<ListActors>,
     ) -> Result<Json<ActorResponse>, ActorError> {
         Ok(Json(ActorService::list(&scope, &params).await?))
     }
+}
+
+resource_meta! {
+    ListActors => {
+        path: "/",
+        summary: "List actors",
+        description: "List all actors for a tenant.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    ListActors => {
+        handler: Self::handler,
+        method: get,
+        transform: |op| op.response::<200, Json<ActorsResponse>>(),
+    }
+}
+
+impl ResourceLeafKind for ListActors {
+    type Kind = ActorRequestType;
+    type Root = ActorRequest;
 }
 
 resource_requests! {
@@ -170,27 +170,15 @@ pub(crate) enum ActorRequest {
     ListActors(ListActors),
 }
 
-impl ResourceOpMeta for ActorRequestType {
-    type Root = ActorOperations;
-
-    fn meta(&self) -> ResourceMeta {
-        match self {
-            Self::CreateActor => CreateActor::meta(),
-            Self::GetActor => GetActor::meta(),
-            Self::ListActors => ListActors::meta(),
-        }
-    }
-}
-
-impl ResourceOpRoute for ActorRequestType {
-    fn route_def(&self) -> ResourceRouteDef<Self>
-    where
-        Self: Sized,
-    {
-        match self {
-            Self::CreateActor => CreateActor::route_def(),
-            Self::GetActor => GetActor::route_def(),
-            Self::ListActors => ListActors::route_def(),
+resource_root! {
+    ActorRequest => {
+        meta: { label: "actors", summary: "Manage actors within a tenant" },
+        operations: {
+            match given_kind => {
+                ActorRequestType::CreateActor => CreateActor,
+                ActorRequestType::GetActor => GetActor,
+                ActorRequestType::ListActors => ListActors,
+            }
         }
     }
 }
@@ -214,9 +202,21 @@ mod tests {
 
     #[test]
     fn meta_dispatch_returns_correct_metadata() {
-        assert_eq!(ActorRequestType::CreateActor.meta().status, 201);
-        assert_eq!(ActorRequestType::CreateActor.meta().path, "/");
-        assert_eq!(ActorRequestType::GetActor.meta().path, "/{id}");
-        assert_eq!(ActorRequestType::ListActors.meta().summary, "List actors");
+        assert_eq!(
+            ActorRequest::meta_for(ActorRequestType::CreateActor).status,
+            201
+        );
+        assert_eq!(
+            ActorRequest::meta_for(ActorRequestType::CreateActor).path,
+            "/"
+        );
+        assert_eq!(
+            ActorRequest::meta_for(ActorRequestType::GetActor).path,
+            "/{id}"
+        );
+        assert_eq!(
+            ActorRequest::meta_for(ActorRequestType::ListActors).summary,
+            "List actors"
+        );
     }
 }

@@ -167,7 +167,7 @@ impl Server {
                     )
                 }),
             )
-            .merge(ActorOperations::router())
+            .merge(ActorRequest::router())
             .merge(AgentRouter.routes())
             .merge(BookmarkOperations::router())
             .merge(CognitionRouter.routes())

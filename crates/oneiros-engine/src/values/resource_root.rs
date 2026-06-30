@@ -1,57 +1,30 @@
 use std::collections::BTreeMap;
 
 use aide::axum::{ApiRouter, routing::ApiMethodRouter};
-use kinded::Kind;
+use kinded::{Kind, Kinded};
 
 use crate::*;
 
-/// Pure resource metadata dispatch — on the kind enum.
-/// Kind value -> ResourceMeta by value. Pure forwarding match.
-/// Carries `type Root` to bridge to the domain's ResourceRoot, so
-/// `resource_docs()` can be a default.
-pub(crate) trait ResourceOpMeta: core::fmt::Display {
-    type Root: ResourceRoot;
+/// Type alias to extract the Kind from a leaf that implements ResourceLeafKind.
+/// Used by macros to avoid complex projection syntax.
+pub(crate) type __KindOf<L> = <L as ResourceLeafKind>::Kind;
 
-    fn meta(&self) -> ResourceMeta;
-
-    /// Build `ResourceDocs` from meta() and the root's tag.
-    /// Default — no per-domain hand-writing needed.
-    fn resource_docs(&self) -> ResourceDocs {
-        let meta = self.meta();
-        ResourceDocs::builder()
-            .tag(Self::Root::tag())
-            .nickname(self.to_string())
-            .summary(meta.summary)
-            .description(meta.description)
-            .content(meta.content)
-            .build()
-    }
-}
-
-/// Route definition for a resource — carries a function pointer that builds
-/// the ApiMethodRouter, with all type-level info (Response, STATUS, inputs)
-/// baked inside. Parallels ResourceMeta: a data struct returned by a fn.
-pub(crate) struct ResourceRouteDef<K> {
-    pub build: fn(K) -> ApiMethodRouter<ServerState>,
-}
-
-/// Route dispatch — on the kind enum.
-/// Parallels ResourceOpMeta: kind value -> ResourceRouteDef by value.
-/// Pure forwarding match.
-pub(crate) trait ResourceOpRoute {
-    fn route_def(&self) -> ResourceRouteDef<Self>
-    where
-        Self: Sized;
-}
-
-/// Domain entry point — carries domain identity and the consumer loops.
-/// Auto-impls router() and skills() by iterating the kind enum and reading
-/// from ResourceOpMeta (for data) and ResourceOpRoute (for routing).
-pub(crate) trait ResourceRoot {
-    type Kind: Kind + core::fmt::Display + ResourceOpMeta + ResourceOpRoute;
-
+/// Domain entry point — carries domain identity and the dispatch methods.
+/// The dispatch (meta_for, route_def_for) is the irreducible bridge: kind
+/// value -> inner struct's methods. A declarative macro generates this from
+/// the enum declaration.
+///
+/// router() and skills() are auto-impl'd by iterating the kind enum and
+/// reading from meta_for() and route_def_for().
+pub(crate) trait ResourceRoot: Kinded
+where
+    <Self as Kinded>::Kind: Kind + core::fmt::Display,
+{
     const LABEL: &'static str;
     const PURPOSE: &'static str;
+
+    fn meta_for(kind: <Self as Kinded>::Kind) -> ResourceMeta;
+    fn route_def_for(kind: <Self as Kinded>::Kind) -> ResourceRouteDef<<Self as Kinded>::Kind>;
 
     fn tag() -> Tag {
         Tag::builder()
@@ -60,14 +33,29 @@ pub(crate) trait ResourceRoot {
             .build()
     }
 
+    /// Build `ResourceDocs` for a kind from meta_for() and tag().
+    fn resource_docs(kind: <Self as Kinded>::Kind) -> ResourceDocs {
+        let meta = Self::meta_for(kind);
+        ResourceDocs::builder()
+            .tag(Self::tag())
+            .nickname(kind.to_string())
+            .summary(meta.summary)
+            .description(meta.description)
+            .content(meta.content)
+            .build()
+    }
+
     fn router() -> ApiRouter<ServerState>
     where
         Self: Sized,
-        Self::Kind: 'static,
+        <Self as Kinded>::Kind: 'static,
     {
-        let mut by_path: BTreeMap<&'static str, Vec<Self::Kind>> = BTreeMap::new();
-        for kind in Self::Kind::all() {
-            by_path.entry(kind.meta().path).or_default().push(*kind);
+        let mut by_path: BTreeMap<&'static str, Vec<<Self as Kinded>::Kind>> = BTreeMap::new();
+        for kind in <Self as Kinded>::Kind::all() {
+            by_path
+                .entry(Self::meta_for(*kind).path)
+                .or_default()
+                .push(*kind);
         }
 
         let mut inner = ApiRouter::<ServerState>::new();
@@ -75,7 +63,7 @@ pub(crate) trait ResourceRoot {
             let methods = kinds
                 .into_iter()
                 .map(|kind| {
-                    let def = kind.route_def();
+                    let def = Self::route_def_for(kind);
                     (def.build)(kind)
                 })
                 .reduce(|a, b| a.merge(b))
@@ -89,12 +77,12 @@ pub(crate) trait ResourceRoot {
     fn skills() -> Vec<Skill>
     where
         Self: Sized,
-        Self::Kind: 'static,
+        <Self as Kinded>::Kind: 'static,
     {
-        Self::Kind::all()
+        <Self as Kinded>::Kind::all()
             .iter()
             .map(|kind| {
-                let meta = kind.meta();
+                let meta = Self::meta_for(*kind);
                 Skill::builder()
                     .name(kind.to_string())
                     .content(meta.content)
@@ -102,4 +90,35 @@ pub(crate) trait ResourceRoot {
             })
             .collect()
     }
+}
+
+/// Route definition for a resource — carries a function pointer that builds
+/// the ApiMethodRouter, with all type-level info (Response, STATUS, inputs)
+/// baked inside. Parallels ResourceMeta: a data struct returned by a fn.
+pub(crate) struct ResourceRouteDef<K> {
+    pub build: fn(K) -> ApiMethodRouter<ServerState>,
+}
+
+/// Leaf-level metadata contract. Each inner struct (e.g. CreateActor)
+/// implements this to provide its ResourceMeta.
+pub(crate) trait ResourceLeafMeta {
+    fn meta() -> ResourceMeta;
+}
+
+/// Leaf-level routing contract. Each inner struct (e.g. CreateActor)
+/// implements this to provide its ResourceRouteDef.
+pub(crate) trait ResourceLeafRoute: ResourceLeafKind {
+    fn route_def() -> ResourceRouteDef<<Self as ResourceLeafKind>::Kind>;
+}
+
+/// Leaf-level kind contract. Each inner struct knows its kind via Kinded.
+/// This bridges the leaf to the kind enum for route_def's return type.
+/// Carries `type Root` to bridge to the domain's ResourceRoot, so
+/// route_def can call ResourceRoot::resource_docs().
+pub(crate) trait ResourceLeafKind
+where
+    <Self::Root as Kinded>::Kind: core::fmt::Display,
+{
+    type Kind: Kind + core::fmt::Display;
+    type Root: ResourceRoot;
 }

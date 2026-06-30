@@ -35,7 +35,7 @@ impl SkillInventory {
     pub(crate) fn all() -> Vec<Skill> {
         let mut skills = Vec::new();
 
-        skills.extend(ActorOperations::skills());
+        skills.extend(ActorRequest::skills());
         skills.extend(AgentSkills::all());
         skills.extend(BookmarkOperations::skills());
         skills.extend(CognitionSkills::all());

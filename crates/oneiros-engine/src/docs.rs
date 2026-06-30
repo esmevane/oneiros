@@ -25,7 +25,7 @@ impl AppDocs {
 
     pub(crate) fn tags(&self) -> Vec<Tag> {
         vec![
-            ActorOperations::tag(),
+            ActorRequest::tag(),
             AgentDocs::Create.tag(),
             BookmarkOperations::new(BookmarkRequestType::CreateBookmark).tag(),
             ProjectDocs::Create.tag(),
