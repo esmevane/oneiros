@@ -131,16 +131,17 @@ pub(crate) trait DbConnection {
     type Error: Into<DbError>;
 
     async fn prepare(&self, sql: &str) -> Result<Self::Statement, Self::Error>;
-    async fn execute(&self, sql: &str, params: &dyn DbParams) -> Result<usize, Self::Error>;
+    async fn execute(&self, sql: &str, params: impl DbParams + Send + 'static) -> Result<usize, Self::Error>;
     async fn execute_batch(&self, sql: &str) -> Result<(), Self::Error>;
-    async fn query_row<T, F>(
+    async fn query_row<T, F, P>(
         &self,
         sql: &str,
-        params: &dyn DbParams,
+        params: P,
         f: F,
     ) -> Result<T, Self::Error>
     where
         F: FnOnce(&Self::Row) -> Result<T, Self::Error> + Send + 'static,
+        P: DbParams + Send + 'static,
         T: Send + 'static;
 }
 
@@ -148,22 +149,24 @@ pub(crate) trait DbStatement {
     type Row: DbRow;
     type Error: Into<DbError>;
 
-    async fn query_row<T, F>(
+    async fn query_row<T, F, P>(
         &mut self,
-        params: &dyn DbParams,
+        params: P,
         f: F,
     ) -> Result<T, Self::Error>
     where
         F: FnOnce(&Self::Row) -> Result<T, Self::Error> + Send + 'static,
+        P: DbParams + Send + 'static,
         T: Send + 'static;
 
-    async fn query_map<T, F>(
+    async fn query_map<T, F, P>(
         &mut self,
-        params: &dyn DbParams,
+        params: P,
         f: F,
     ) -> Result<Vec<T>, Self::Error>
     where
         F: FnMut(&Self::Row) -> Result<T, Self::Error> + Send + 'static,
+        P: DbParams + Send + 'static,
         T: Send + 'static;
 }
 
@@ -175,6 +178,11 @@ pub(crate) trait DbRow {
 Associated types (not `Box<dyn>`) — we know the backend at compile time,
 and the generic propagation is acceptable. Object safety would cost an
 allocation per query; we can revisit if the propagation hurts.
+
+Params are generic (not `&dyn DbParams`) — callers pass `params![...]`
+equivalents directly by value. The `DbParams` trait is implemented for
+owned param collections that are `Send + 'static` (required to cross the
+`spawn_blocking` boundary).
 
 The `Send + 'static` bounds on closures and return values are required
 because the rusqlite impl runs the closure inside `spawn_blocking`. The
@@ -356,17 +364,18 @@ slog. Step 7 is the payoff.
 
 ## Open questions (deferred, not blocking)
 
-- **`DbParams` abstraction.** `&dyn DbParams` works but is awkward. The
-  alternative is making `DbConnection` generic over params too, which is
-  worse. Keep `&dyn DbParams` for now.
-- **Sweep trigger.** Background task vs. inline on `handle()`. Background
-  is cleaner; inline is simpler. Decide at implementation time.
-- **`Scope` threading.** Does `Databases` live on `Scope` (so repos get
-  it from `self.scope.databases()`) or is it passed separately? `Scope`
-  is the natural home since it already carries `Config` and the tier
-  determines the key. But `Scope` is constructed per-request; `Databases`
-  would be an `Arc` clone.
+- **Sweep trigger.** Background task spawned at startup, periodic check
+  every 100ms (configurable via `DatabaseConfig::sweep_interval`).
+  Spawns in `ServerState::bind`, runs until `Databases` is dropped.
+- **`Scope` threading.** `Databases` should live on `Scope` — the intent
+  is "at the right spot with all I need." `ComposeScope::new(config)`
+  becomes `ComposeScope::new(config, databases)`. This touches every
+  scope construction site but they're concentrated. Decide whether to
+  thread it through `Scope` in this round or pass separately during
+  migration and clean up later. Leaning: thread it through now, since
+  retrofitting it later means touching all the same sites twice.
 - **The `Config` clone-per-request pattern.** Today `Config` is cloned
   with `project`/`bookmark` set per request. Under `Databases`, the key
   carries that information. The `Config` clone might become unnecessary
   for db access (though it's still used for paths, pragmas, etc.).
+  Defer — will become clear during migration.

@@ -42,6 +42,13 @@ pub(crate) struct DatabaseConfig {
     /// compile-time default.
     #[builder(default = 125u32)]
     pub(crate) limit_attached: u32,
+
+    /// How often the background sweep task checks for idle connections to
+    /// expire. Connections unused for longer than this interval are
+    /// dropped from the pool. Defaults to 100ms.
+    #[builder(default = std::time::Duration::from_millis(100))]
+    #[serde(with = "humantime_serde")]
+    pub(crate) sweep_interval: std::time::Duration,
 }
 
 impl Default for DatabaseConfig {
