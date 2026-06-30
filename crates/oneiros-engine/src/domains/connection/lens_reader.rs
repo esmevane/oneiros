@@ -5,11 +5,11 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct ConnectionLensReader<'a> {
-    db: &'a BookmarkDb,
+    db: &'a rusqlite::Connection,
 }
 
 impl<'a> ConnectionLensReader<'a> {
-    pub(crate) fn new(db: &'a BookmarkDb) -> Self {
+    pub(crate) fn new(db: &'a rusqlite::Connection) -> Self {
         Self { db }
     }
 

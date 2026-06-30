@@ -130,6 +130,9 @@ pub(crate) enum BridgeError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Db(#[from] crate::DbError),
+
+    #[error(transparent)]
     HostDb(#[from] HostDbError),
 
     #[error(transparent)]

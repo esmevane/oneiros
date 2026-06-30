@@ -17,7 +17,7 @@ impl<'a> TrailRepo<'a> {
         &self,
         entity_ref: &RefToken,
     ) -> Result<Vec<TrailEntry>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(
             "SELECT event_id, ref, event_type, created_at
              FROM trail
@@ -34,7 +34,7 @@ impl<'a> TrailRepo<'a> {
 
     /// Entity refs the given event emitted, in insertion order.
     pub(crate) async fn refs_from(&self, event_id: EventId) -> Result<Vec<RefToken>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt = db.prepare(
             "SELECT ref
              FROM trail

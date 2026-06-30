@@ -27,18 +27,16 @@ impl DoctorService {
             }
         };
 
-        let db = match HostDb::open(&scope).await {
-            Ok(db) => db,
-            Err(_) => {
-                checks.push(DoctorCheck::NotInitialized);
-                return DoctorResponse::CheckupStatus(
-                    CheckupStatusResponse::builder_v1()
-                        .checks(checks)
-                        .build()
-                        .into(),
-                );
-            }
-        };
+        let db_ok = scope.host_db().await.is_ok();
+        if !db_ok {
+            checks.push(DoctorCheck::NotInitialized);
+            return DoctorResponse::CheckupStatus(
+                CheckupStatusResponse::builder_v1()
+                    .checks(checks)
+                    .build()
+                    .into(),
+            );
+        }
 
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
@@ -70,9 +68,15 @@ impl DoctorService {
             checks.push(DoctorCheck::HostKeyMissing);
         }
 
-        let event_count = db
-            .query_row("select count(*) from events", [], |row| {
-                row.get::<_, i64>(0)
+        let event_count = scope
+            .host_db()
+            .await
+            .ok()
+            .and_then(|db| {
+                db.query_row("select count(*) from events", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .ok()
             })
             .unwrap_or(0);
 

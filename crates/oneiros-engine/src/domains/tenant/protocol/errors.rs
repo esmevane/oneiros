@@ -21,6 +21,9 @@ pub(crate) enum TenantError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Db(#[from] crate::DbError),
+
+    #[error(transparent)]
     HostDb(#[from] crate::HostDbError),
 
     #[error(transparent)]
@@ -50,6 +53,7 @@ impl IntoResponse for TenantError {
             TenantError::TimestampParse(_)
             | TenantError::Event(_)
             | TenantError::Database(_)
+            | TenantError::Db(_)
             | TenantError::HostDb(_)
             | TenantError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             TenantError::Client(_) | TenantError::Json(_) => {

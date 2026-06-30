@@ -33,7 +33,7 @@ impl<'a> ProjectRepo<'a> {
     }
 
     pub(crate) async fn get(&self, name: &ProjectName) -> Result<Option<Project>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare("select id, name, created_at from projects where name = ?1")?;
 
         let raw = stmt.query_row(params![name.to_string()], |row| {
@@ -57,7 +57,7 @@ impl<'a> ProjectRepo<'a> {
     }
 
     pub(crate) async fn get_by_id(&self, id: &ProjectId) -> Result<Option<Project>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare("select id, name, created_at from projects where id = ?1")?;
 
         let raw = stmt.query_row(params![id.to_string()], |row| {
@@ -84,7 +84,7 @@ impl<'a> ProjectRepo<'a> {
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<Project>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM projects")?;

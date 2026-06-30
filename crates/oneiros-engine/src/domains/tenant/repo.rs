@@ -21,7 +21,7 @@ impl<'a> TenantRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare("select id, name, created_at from tenants where id = ?1")?;
 
         let raw = stmt.query_row(params![id.to_string()], |row| {
@@ -46,7 +46,7 @@ impl<'a> TenantRepo<'a> {
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<Tenant>, TenantError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
         let count_sql = "SELECT COUNT(*) FROM tenants";
         let total = {

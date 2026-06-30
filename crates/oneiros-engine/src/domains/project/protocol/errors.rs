@@ -36,6 +36,9 @@ pub(crate) enum ProjectError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Db(#[from] crate::DbError),
+
+    #[error(transparent)]
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
@@ -64,6 +67,7 @@ impl IntoResponse for ProjectError {
             ProjectError::MissingName => (StatusCode::BAD_REQUEST, self.to_string()),
             ProjectError::Missing
             | ProjectError::Database(_)
+            | ProjectError::Db(_)
             | ProjectError::Event(_)
             | ProjectError::Io(_)
             | ProjectError::Upcast(_)

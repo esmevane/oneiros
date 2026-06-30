@@ -20,7 +20,7 @@ impl<'a> TextureRepo<'a> {
     }
 
     pub(crate) async fn get(&self, name: &TextureName) -> Result<Option<Texture>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
         let mut stmt =
             db.prepare("SELECT name, description, prompt FROM textures WHERE name = ?1")?;
 
@@ -49,7 +49,7 @@ impl<'a> TextureRepo<'a> {
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<Texture>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM textures")?;

@@ -14,7 +14,7 @@ impl<'a> BookmarkRepo<'a> {
         project: &ProjectName,
         filters: &SearchFilters,
     ) -> Result<Listed<Bookmark>, BookmarkError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
         let count_sql = "SELECT COUNT(*) FROM bookmarks WHERE project = ?1";
         let total = {

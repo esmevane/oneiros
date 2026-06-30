@@ -59,7 +59,7 @@ impl ProjectImportActor {
 
     async fn import(&self, import: ImportProjectEvent) -> Result<(), EventError> {
         let ImportProjectEvent { scope, stored } = import;
-        let events_db = EventsDb::open(&scope).await?;
+        let events_db = scope.project_log().await?;
         EventLog::new(&events_db).init()?;
         EventLog::new(&events_db).import(&stored)?;
         drop(events_db);

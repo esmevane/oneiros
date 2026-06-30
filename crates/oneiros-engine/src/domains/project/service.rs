@@ -192,7 +192,7 @@ impl ProjectService {
         let details = request.current()?;
         let target_dir = &details.target;
         let project_name = &scope.config().project;
-        let db = BookmarkDb::open(scope).await?;
+        let db = scope.bookmark_db().await?;
         let events = EventLog::attached(&db).load_all()?;
         let storage = StorageStore::new(&db);
 
@@ -246,7 +246,14 @@ impl ProjectService {
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
-        let db = BookmarkDb::open_with(config, &config.project, &config.bookmark).await?;
+        // TODO: thread Databases from server when CLI dispatch is refactored.
+        let databases = Databases::new(config.clone());
+        let db = databases
+            .handle(DbKey::Bookmark(
+                config.project.clone(),
+                config.bookmark.clone(),
+            ))
+            .await?;
         let log = EventLog::attached(&db);
         let projections = Projections::<ProjectCanon>::project();
 
@@ -309,7 +316,14 @@ impl ProjectService {
         let _ = platform.remove_file(db_path.with_extension("db-wal"));
         let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
-        let db = BookmarkDb::open_with(config, &config.project, &config.bookmark).await?;
+        // TODO: thread Databases from server when CLI dispatch is refactored.
+        let databases = Databases::new(config.clone());
+        let db = databases
+            .handle(DbKey::Bookmark(
+                config.project.clone(),
+                config.bookmark.clone(),
+            ))
+            .await?;
         let projections = Projections::<ProjectCanon>::project();
         projections.migrate(&db)?;
         let log = EventLog::attached(&db);

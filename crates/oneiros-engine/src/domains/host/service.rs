@@ -30,7 +30,7 @@ impl HostService {
 
         config.platform().ensure_dir(&config.data_dir)?;
         HostKey::new(config.platform()).ensure()?;
-        let host_db = HostDb::open_with(config).await?;
+        let host_db = databases.handle(DbKey::Host).await?;
         EventLog::new(&host_db).init()?;
         Projections::host().migrate(&host_db)?;
         drop(host_db);

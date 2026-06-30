@@ -21,7 +21,7 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut statement = db.prepare(
             "select id, key, address, name, kind, ticket_token, ticket_target, project, created_at from peers where id = ?1",
         )?;
@@ -36,7 +36,7 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub(crate) async fn get_by_name(&self, name: &PeerName) -> Result<Option<Peer>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut statement = db.prepare(
             "select id, key, address, name, kind, ticket_token, ticket_target, project, created_at from peers where name = ?1",
         )?;
@@ -51,7 +51,7 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM peers")?;

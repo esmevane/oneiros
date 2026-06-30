@@ -16,7 +16,7 @@ impl<'a> SliceRepo<'a> {
     }
 
     pub(crate) async fn get(&self, name: &SliceName) -> Result<Option<Slice>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare(
             "SELECT s.name, s.lens_expr, s.created_at,
                     COALESCE(c.event_count, 0) AS event_count
@@ -55,7 +55,7 @@ impl<'a> SliceRepo<'a> {
         &self,
         name: &SliceName,
     ) -> Result<Option<String>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare("SELECT lens_expr FROM slices WHERE name = ?1")?;
         let result = stmt.query_row(rusqlite::params![name.to_string()], |row| {
             row.get::<_, String>(0)
@@ -68,7 +68,7 @@ impl<'a> SliceRepo<'a> {
     }
 
     pub(crate) async fn list(&self) -> Result<Listed<Slice>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM slices")?;
             stmt.query_row([], |row| row.get::<_, usize>(0))?

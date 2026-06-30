@@ -16,6 +16,9 @@ pub(crate) enum ContinuityError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Db(#[from] crate::DbError),
+
+    #[error(transparent)]
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
@@ -42,6 +45,7 @@ impl IntoResponse for ContinuityError {
             ContinuityError::AgentNotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ContinuityError::Agent(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             ContinuityError::Database(_)
+            | ContinuityError::Db(_)
             | ContinuityError::Event(_)
             | ContinuityError::BookmarkDb(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())

@@ -74,7 +74,7 @@ async fn show(
 }
 
 async fn summary(scope: Scope<AtBookmark>) -> Result<Json<ProjectSummary>, ProjectError> {
-    let db = BookmarkDb::open(&scope).await?;
+    let db = scope.bookmark_db().await?;
 
     let agents = AgentStore::new(&db).list().unwrap_or_default();
     let agent_count = agents.len();

@@ -28,6 +28,9 @@ pub(crate) enum LensError {
     HostDb(#[from] crate::HostDbError),
 
     #[error(transparent)]
+    Db(#[from] crate::DbError),
+
+    #[error(transparent)]
     Alias(#[from] crate::AliasError),
 
     #[error(transparent)]
@@ -46,7 +49,8 @@ impl IntoResponse for LensError {
             LensError::Execute(_)
             | LensError::Event(_)
             | LensError::BookmarkDb(_)
-            | LensError::HostDb(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | LensError::HostDb(_)
+            | LensError::Db(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             LensError::Alias(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()),
             LensError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             LensError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),

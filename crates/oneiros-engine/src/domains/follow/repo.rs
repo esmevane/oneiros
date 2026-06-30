@@ -21,7 +21,7 @@ impl<'a> FollowRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare(
             "select id, project, bookmark, source, checkpoint, created_at \
              from follows where id = ?1",
@@ -37,7 +37,7 @@ impl<'a> FollowRepo<'a> {
     }
 
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM follows")?;
@@ -66,7 +66,7 @@ impl<'a> FollowRepo<'a> {
         project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<Option<Follow>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
         let mut stmt = db.prepare(
             "select id, project, bookmark, source, checkpoint, created_at \
              from follows where project = ?1 and bookmark = ?2",

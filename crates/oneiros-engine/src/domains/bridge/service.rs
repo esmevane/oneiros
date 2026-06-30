@@ -71,7 +71,7 @@ impl SyncHandler {
         };
 
         // Chronicle objects live in the host DB.
-        let host_db = HostDb::open(&scope).await?;
+        let host_db = scope.host_db().await?;
         let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
@@ -91,7 +91,7 @@ impl SyncHandler {
         let _ticket = self.validate_ticket(&scope, &resolve_req.link).await?;
 
         // Chronicle objects live in the host DB.
-        let host_db = HostDb::open(&scope).await?;
+        let host_db = scope.host_db().await?;
         let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
@@ -117,7 +117,7 @@ impl SyncHandler {
             .project(ticket.project_name.clone())?;
 
         // Event log lives in events.db (standalone, no ATTACH).
-        let db = EventsDb::open(&project_scope).await?;
+        let db = project_scope.project_log().await?;
 
         let ids: Vec<EventId> = fetch
             .event_ids

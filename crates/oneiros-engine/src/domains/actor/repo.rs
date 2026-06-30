@@ -21,7 +21,7 @@ impl<'a> ActorRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: ActorId) -> Result<Option<Actor>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.databases().handle(DbKey::Host).await?;
         let mut statement =
             db.prepare("select id, tenant_id, name, created_at from actors where id = ?1")?;
 
@@ -49,7 +49,7 @@ impl<'a> ActorRepo<'a> {
     }
 
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Actor>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.databases().handle(DbKey::Host).await?;
 
         let total = {
             let mut stmt = db.prepare("SELECT COUNT(*) FROM actors")?;

@@ -33,6 +33,9 @@ pub(crate) enum EventError {
     #[error(transparent)]
     BookmarkDb(#[from] BookmarkDbError),
 
+    #[error(transparent)]
+    Db(#[from] DbError),
+
     #[error("Import error: {0}")]
     Import(String),
 

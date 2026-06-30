@@ -103,14 +103,45 @@ pub(crate) struct AtBookmark {
 pub(crate) trait HasHost {
     fn config(&self) -> &Config;
     fn databases(&self) -> &Databases;
+
+    /// The [`DbKey`] for the host database. Available at every tier.
+    fn host_key(&self) -> DbKey {
+        DbKey::Host
+    }
+
+    /// Check out a handle to the host database.
+    async fn host_db(&self) -> Result<DbHandle<'_>, DbError> {
+        self.databases().handle(self.host_key()).await
+    }
 }
 
 pub(crate) trait HasProject: HasHost {
     fn project(&self) -> &ProjectInfra;
+
+    /// The [`DbKey`] for this project's event log.
+    fn project_log_key(&self) -> DbKey {
+        DbKey::ProjectLog(self.project().name.clone())
+    }
+
+    /// Check out a handle to this project's event log.
+    async fn project_log(&self) -> Result<DbHandle<'_>, DbError> {
+        self.databases().handle(self.project_log_key()).await
+    }
 }
 
 pub(crate) trait HasBookmark: HasProject {
     fn bookmark(&self) -> &BookmarkInfra;
+
+    /// The [`DbKey`] for this bookmark's projection database (with
+    /// events ATTACHed). Available only at the bookmark tier.
+    fn bookmark_key(&self) -> DbKey {
+        DbKey::Bookmark(self.project().name.clone(), self.bookmark().name.clone())
+    }
+
+    /// Check out a handle to this bookmark's projection database.
+    async fn bookmark_db(&self) -> Result<DbHandle<'_>, DbError> {
+        self.databases().handle(self.bookmark_key()).await
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────
