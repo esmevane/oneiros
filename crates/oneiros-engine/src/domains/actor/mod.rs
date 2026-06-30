@@ -43,11 +43,10 @@ mod operations {
     trait ResourceRoute: ResourceRouteDocs {
         type Response: JsonSchema;
 
-        const STATUS: u16 = 200;
-        const METHOD: RouteMethod;
+        // const METHOD: RouteMethod;
 
         fn transform<'a>(&self, op: TransformOperation<'a>) -> TransformOperation<'a> {
-            op.response::<{ Self::STATUS }, Json<Self::Response>>()
+            op
         }
 
         fn finalize_transform<'a>(&self, op: TransformOperation<'a>) -> TransformOperation<'a> {
@@ -56,13 +55,13 @@ mod operations {
             self.transform(docs.transform(op))
         }
 
-        fn route(&self) -> ApiMethodRouter<ServerState> {
-            let handle = |op| self.finalize_transform(op)
-            match Self::METHOD {
-                RouteMethod::Post => routing::post_with(Self::handler, handle),
-                RouteMethod::Get => routing::get_with(Self::handler, handle)
-            }
-        }
+        // fn route(&self) -> ApiMethodRouter<ServerState> {
+        //     let handle = |op| self.finalize_transform(op)
+        //     match Self::METHOD {
+        //         RouteMethod::Post => routing::post_with(Self::handler, handle),
+        //         RouteMethod::Get => routing::get_with(Self::handler, handle)
+        //     }
+        // }
     }
 
     trait ResourceRootMeta<T: Kind> {
@@ -112,27 +111,24 @@ mod operations {
     trait ResourceRootRouter<T: Kind + ResourceOpMeta + core::fmt::Display>:
         ResourceRootMeta<T>
     {
-        fn tag() -> Tag {
-            Tag::builder()
-                .name(Self::LABEL)
-                .description(Self::PURPOSE)
-                .build()
-        }
+        fn router() -> ApiRouter<ServerState> {
+            //     let mut by_path: BTreeMap<&'static str, Vec<ActorRequestType>> = BTreeMap::new();
+            //     for kind in ActorRequestType::all() {
+            //         by_path.entry(kind.meta().path).or_default().push(*kind);
+            //     }
 
-        fn skills() -> Vec<Skill>
-        where
-            T: 'static,
-        {
-            T::all()
-                .iter()
-                .map(|kind| {
-                    let meta = kind.meta();
-                    Skill::builder()
-                        .name(kind.to_string())
-                        .content(meta.content)
-                        .build()
-                })
-                .collect()
+            //     let mut inner = ApiRouter::<ServerState>::new();
+            //     for (path, kinds) in by_path {
+            //         let methods = kinds
+            //             .into_iter()
+            //             .map(Self::http_handler)
+            //             .reduce(|current, other| current.merge(other))
+            //             .unwrap();
+            //         inner = inner.api_route(path, methods);
+            //     }
+
+            //     ApiRouter::new().nest(&format!("/{}", Self::LABEL), inner)
+            ApiRouter::new().nest(&format!("/{}", Self::LABEL), ApiRouter::new())
         }
     }
 
