@@ -2,6 +2,14 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use aide::axum::routing::{self, ApiMethodRouter};
+use aide::transform::TransformOperation;
+use axum::{
+    Json,
+    extract::{Query, State},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
@@ -19,6 +27,37 @@ versioned! {
     }
 }
 
+impl CreateBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<CreateBookmark>,
+    ) -> Result<(StatusCode, Json<BookmarkResponse>), BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let response =
+            BookmarkService::create(&scope, &state, context.project_name(), &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
+resource_meta! {
+    CreateBookmark => {
+        path: "/",
+        summary: "Create a bookmark",
+        description: "Create a new bookmark that defines a named view of the event timeline.",
+        content: include_str!("../features/skills/create.md"),
+        status: 201,
+    }
+}
+
+resource_handler! {
+    CreateBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<201, Json<BookmarkCreatedResponse>>(),
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum SwitchBookmark {
@@ -29,6 +68,37 @@ versioned! {
     }
 }
 
+impl SwitchBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<SwitchBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::switch(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    SwitchBookmark => {
+        path: "/switch",
+        summary: "Switch to a bookmark",
+        description: "Set the active bookmark, making its timeline view the current working context.",
+        content: include_str!("../features/skills/switch.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    SwitchBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<BookmarkSwitchedResponse>>(),
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum MergeBookmark {
@@ -36,6 +106,37 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) source: BookmarkName,
         }
+    }
+}
+
+impl MergeBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<MergeBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::merge(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    MergeBookmark => {
+        path: "/merge",
+        summary: "Merge a bookmark",
+        description: "Integrate the events from a bookmark into the current active timeline.",
+        content: include_str!("../features/skills/merge.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    MergeBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<BookmarkMergedResponse>>(),
     }
 }
 
@@ -78,6 +179,37 @@ impl From<ListBookmarksV1> for ListBookmarks {
     }
 }
 
+impl ListBookmarks {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Query(params): Query<ListBookmarks>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::list(&scope, &state, context.project_name(), &params).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    ListBookmarks => {
+        path: "/",
+        summary: "List bookmarks",
+        description: "List all bookmarks known to the current project.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    ListBookmarks => {
+        handler: Self::handler,
+        method: ResourceMethod::Get,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<Listed<Bookmark>>>(),
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum ShareBookmark {
@@ -87,6 +219,37 @@ versioned! {
             #[arg(long)]
             pub(crate) actor_id: Option<ActorId>,
         }
+    }
+}
+
+impl ShareBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<ShareBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::share(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    ShareBookmark => {
+        path: "/share",
+        summary: "Share a bookmark",
+        description: "Produce a shareable oneiros:// link representing this bookmark",
+        content: include_str!("../features/skills/share.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    ShareBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<BookmarkShareResult>>(),
     }
 }
 
@@ -100,6 +263,37 @@ versioned! {
             #[builder(into)]
             pub(crate) name: BookmarkName,
         }
+    }
+}
+
+impl FollowBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<FollowBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::follow(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    FollowBookmark => {
+        path: "/follow",
+        summary: "Follow a bookmark link",
+        description: "Create a local bookmark by following a remote oneiros:// link.",
+        content: include_str!("../features/skills/follow.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    FollowBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<Follow>>(),
     }
 }
 
@@ -144,6 +338,37 @@ impl From<CollectBookmarkV1> for CollectBookmark {
     }
 }
 
+impl CollectBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<CollectBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::collect(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    CollectBookmark => {
+        path: "/collect",
+        summary: "Collect events into a bookmark",
+        description: "Collect events from a followed source or directly from a peer host.",
+        content: include_str!("../features/skills/collect.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    CollectBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<BookmarkCollectResult>>(),
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
     pub(crate) enum UnfollowBookmark {
@@ -151,6 +376,37 @@ versioned! {
         V1 => {
             #[builder(into)] pub(crate) name: BookmarkName,
         }
+    }
+}
+
+impl UnfollowBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<UnfollowBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::unfollow(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    UnfollowBookmark => {
+        path: "/unfollow",
+        summary: "Unfollow a bookmark",
+        description: "Remove a followed bookmark, stopping incremental collection.",
+        content: include_str!("../features/skills/unfollow.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    UnfollowBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<BookmarkUnfollowedResponse>>(),
     }
 }
 
@@ -175,6 +431,37 @@ versioned! {
             /// Local bookmark name to submit.
             #[builder(into)] pub(crate) name: BookmarkName,
         },
+    }
+}
+
+impl SubmitBookmark {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        State(state): State<ServerState>,
+        Json(body): Json<SubmitBookmark>,
+    ) -> Result<Json<BookmarkResponse>, BookmarkError> {
+        let scope = ComposeScope::new(state.config().clone()).host()?;
+        Ok(Json(
+            BookmarkService::submit(&scope, &state, context.project_name(), &body).await?,
+        ))
+    }
+}
+
+resource_meta! {
+    SubmitBookmark => {
+        path: "/submit",
+        summary: "Submit a bookmark to a remote",
+        description: "Submit a bookmark to a peer host.",
+        content: include_str!("../features/skills/submit.md"),
+        status: 200,
+    }
+}
+
+resource_handler! {
+    SubmitBookmark => {
+        handler: Self::handler,
+        method: ResourceMethod::Post,
+        transform: |op| op.security_requirement("BearerToken").response::<200, Json<BookmarkSubmitResult>>(),
     }
 }
 
@@ -217,6 +504,25 @@ pub(crate) enum BookmarkRequest {
     CollectBookmark(CollectBookmark),
     UnfollowBookmark(UnfollowBookmark),
     SubmitBookmark(SubmitBookmark),
+}
+
+resource_root! {
+    BookmarkRequest => {
+        meta: { label: "bookmarks", summary: "Manage timeline bookmarks" },
+        operations: {
+            match given_kind => {
+                BookmarkRequestType::CreateBookmark => CreateBookmark,
+                BookmarkRequestType::SwitchBookmark => SwitchBookmark,
+                BookmarkRequestType::MergeBookmark => MergeBookmark,
+                BookmarkRequestType::ListBookmarks => ListBookmarks,
+                BookmarkRequestType::ShareBookmark => ShareBookmark,
+                BookmarkRequestType::FollowBookmark => FollowBookmark,
+                BookmarkRequestType::CollectBookmark => CollectBookmark,
+                BookmarkRequestType::UnfollowBookmark => UnfollowBookmark,
+                BookmarkRequestType::SubmitBookmark => SubmitBookmark,
+            }
+        }
+    }
 }
 
 impl TryFrom<SubmitBookmarkV1> for SubmitBookmarkV2 {

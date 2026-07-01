@@ -27,7 +27,7 @@ impl AppDocs {
         vec![
             ActorRequest::tag(),
             AgentDocs::Create.tag(),
-            BookmarkOperations::new(BookmarkRequestType::CreateBookmark).tag(),
+            BookmarkRequest::tag(),
             ProjectDocs::Create.tag(),
             CognitionDocs::Add.tag(),
             ConnectionDocs::Create.tag(),
