@@ -147,7 +147,7 @@ impl SyncHandler {
         }
 
         // List bookmark names from the host DB projection.
-        let host_db = self.config.host_db().map_err(|e| {
+        let host_db = self.databases.handle_sync(DbKey::Host).map_err(|e| {
             BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
         })?;
         let bookmarks = BookmarkStore::new(&host_db)

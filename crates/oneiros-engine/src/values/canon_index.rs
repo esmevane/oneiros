@@ -241,6 +241,7 @@ impl CanonIndex {
     pub(crate) fn hydrate_project(
         &self,
         config: &Config,
+        databases: &Databases,
         name: &ProjectName,
     ) -> Result<(), EventError> {
         let mut project_config = config.clone();
@@ -251,11 +252,12 @@ impl CanonIndex {
         if !project_config.events_db_path().exists() {
             return Ok(());
         }
-        let events_db = project_config.open_events_db()?;
+        let events_db = databases.handle_sync(DbKey::ProjectLog(name.clone()))?;
         let log = EventLog::new(&events_db);
 
         // Ensure projection schema exists in the bookmark DB.
-        let bookmark_db = project_config.bookmark_conn()?;
+        let bookmark_db =
+            databases.handle_sync(DbKey::Bookmark(name.clone(), config.bookmark.clone()))?;
         Projections::<ProjectCanon>::project().migrate(&bookmark_db)?;
 
         let events = log.load_all()?;
@@ -269,7 +271,7 @@ impl CanonIndex {
         }
 
         // Rebuild the chronicle in the host DB.
-        let host_db = config.host_db()?;
+        let host_db = databases.handle_sync(DbKey::Host)?;
         let store = ChronicleStore::new(&host_db);
         store.migrate()?;
         for event in &events {

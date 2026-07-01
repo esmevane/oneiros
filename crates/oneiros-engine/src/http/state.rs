@@ -91,7 +91,7 @@ impl ServerState {
     pub(crate) fn hydrate(&self) {
         let _ = self
             .canons
-            .hydrate_project(&self.config, &self.config.project);
+            .hydrate_project(&self.config, &self.databases, &self.config.project);
     }
 
     /// The server configuration.

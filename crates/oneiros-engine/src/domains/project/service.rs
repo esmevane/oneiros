@@ -84,11 +84,15 @@ impl ProjectService {
         project_config.project = project_name.clone();
         project_config.bookmark = BookmarkName::main();
 
-        let events_db = project_config.open_events_db()?;
+        let events_db = scope
+            .databases()
+            .handle_sync(DbKey::ProjectLog(project_name.clone()))?;
         EventLog::new(&events_db).init()?;
         drop(events_db);
 
-        let bookmark_db = project_config.bookmark_conn()?;
+        let bookmark_db = scope
+            .databases()
+            .handle_sync(DbKey::Bookmark(project_name.clone(), BookmarkName::main()))?;
         Projections::project().migrate(&bookmark_db)?;
         drop(bookmark_db);
 

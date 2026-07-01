@@ -88,6 +88,14 @@ impl Databases {
     /// mutex until it's returned. For SQLite N=1 per key is fine —
     /// queries are fast, contention is low.
     pub(crate) async fn handle(&self, key: DbKey) -> Result<DbHandle<'_>, DbError> {
+        self.handle_sync(key)
+    }
+
+    /// Sync variant of [`Databases::handle`] for use in non-async
+    /// contexts (e.g. `ComposeScope::build_host_infra`). The pool
+    /// operations are all sync; the async wrapper exists for the
+    /// `DbConnection` trait seam.
+    pub(crate) fn handle_sync(&self, key: DbKey) -> Result<DbHandle<'_>, DbError> {
         // Fast path: the key exists and is idle. Take it.
         let connection = {
             let mut pools = self.inner.pools.lock().unwrap();

@@ -25,7 +25,7 @@ impl BookmarkService {
         }
 
         canons.fork_project(project, bookmark_name)?;
-        Self::create_bookmark_db(config, project, bookmark_name, &[])?;
+        Self::create_bookmark_db(config, scope.databases(), project, bookmark_name, &[])?;
 
         let from = canons.active_bookmark(project)?;
         let bookmark = Bookmark::builder()
@@ -48,7 +48,7 @@ impl BookmarkService {
                 .build(),
         ));
 
-        let host_db = config.host_db()?;
+        let host_db = scope.databases().handle_sync(DbKey::Host)?;
         BookmarkStore::new(&host_db).upsert(&bookmark)?;
         Ok(())
     }
@@ -89,7 +89,7 @@ impl BookmarkService {
 
         // Create the new bookmark's DB and replay the source events into it.
         // If event_ids is non-empty, only those events are replayed (scoped fork).
-        Self::create_bookmark_db(state.config(), project, name, &event_ids)?;
+        Self::create_bookmark_db(state.config(), state.databases(), project, name, &event_ids)?;
 
         let bookmark = Bookmark::builder()
             .project(project.clone())
@@ -168,7 +168,7 @@ impl BookmarkService {
         let target = state.canons().active_bookmark(project)?;
         state.canons().merge_project(project, source, &target)?;
 
-        Self::replay_bookmark(state.config(), project, &target)?;
+        Self::replay_bookmark(state.config(), state.databases(), project, &target)?;
 
         let event = BookmarkMerged::builder_v1()
             .project(project.clone())
@@ -390,7 +390,7 @@ impl BookmarkService {
         state.canons().fork_project(project, name)?;
 
         // Create the new bookmark's DB (empty — collect will populate it).
-        Self::create_bookmark_db(state.config(), project, name, &[])?;
+        Self::create_bookmark_db(state.config(), state.databases(), project, name, &[])?;
 
         let follow =
             FollowService::create(scope, mailbox, project.clone(), name.clone(), source).await?;
@@ -599,13 +599,13 @@ impl BookmarkService {
         let local_root = chronicle.root()?;
 
         {
-            let db = config.host_db()?;
+            let db = databases.handle_sync(DbKey::Host)?;
             ChronicleStore::new(&db).migrate()?;
         }
         let local_resolve = {
-            let config = config.clone();
+            let databases = databases.clone();
             move |hash: &ContentHash| -> Option<LedgerNode> {
-                let db = config.host_db().ok()?;
+                let db = databases.handle_sync(DbKey::Host).ok()?;
                 ChronicleStore::new(&db).get(hash)
             }
         };
@@ -656,9 +656,9 @@ impl BookmarkService {
 
             let chronicle_for_wait = chronicle.clone();
             let resolve_for_wait = {
-                let config = config.clone();
+                let databases = databases.clone();
                 move |hash: &ContentHash| -> Option<LedgerNode> {
-                    let db = config.host_db().ok()?;
+                    let db = databases.handle_sync(DbKey::Host).ok()?;
                     ChronicleStore::new(&db).get(hash)
                 }
             };
@@ -779,6 +779,7 @@ impl BookmarkService {
     /// Replay the event log into a specific bookmark's projection DB.
     fn replay_bookmark(
         config: &Config,
+        databases: &Databases,
         project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<(), BookmarkError> {
@@ -787,7 +788,7 @@ impl BookmarkService {
         project_config.project = project.clone();
         project_config.bookmark = bookmark.clone();
 
-        let db = project_config.bookmark_conn()?;
+        let db = databases.handle_sync(DbKey::Bookmark(project.clone(), bookmark.clone()))?;
         let log = EventLog::attached(&db);
 
         Projections::<ProjectCanon>::project().replay_project(&db, &log)?;
@@ -803,6 +804,7 @@ impl BookmarkService {
     /// (scoped fork — used by slice bookmarking).
     pub(crate) fn create_bookmark_db(
         config: &Config,
+        databases: &Databases,
         project: &ProjectName,
         bookmark: &BookmarkName,
         event_ids: &[EventId],
@@ -820,7 +822,7 @@ impl BookmarkService {
             .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
 
         // Open the new bookmark DB with events ATTACHed and replay.
-        let db = project_config.bookmark_conn()?;
+        let db = databases.handle_sync(DbKey::Bookmark(project.clone(), bookmark.clone()))?;
         let projections = Projections::<ProjectCanon>::project();
 
         projections.migrate(&db)?;

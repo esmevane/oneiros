@@ -111,7 +111,7 @@ pub(crate) trait HasHost {
 
     /// Check out a handle to the host database.
     async fn host_db(&self) -> Result<DbHandle<'_>, DbError> {
-        self.databases().handle(self.host_key()).await
+        self.databases().handle_sync(self.host_key())
     }
 }
 
@@ -125,7 +125,7 @@ pub(crate) trait HasProject: HasHost {
 
     /// Check out a handle to this project's event log.
     async fn project_log(&self) -> Result<DbHandle<'_>, DbError> {
-        self.databases().handle(self.project_log_key()).await
+        self.databases().handle_sync(self.project_log_key())
     }
 }
 
@@ -140,7 +140,7 @@ pub(crate) trait HasBookmark: HasProject {
 
     /// Check out a handle to this bookmark's projection database.
     async fn bookmark_db(&self) -> Result<DbHandle<'_>, DbError> {
-        self.databases().handle(self.bookmark_key()).await
+        self.databases().handle_sync(self.bookmark_key())
     }
 }
 
@@ -190,6 +190,9 @@ pub(crate) enum ComposeError {
 
     #[error(transparent)]
     Database(#[from] rusqlite::Error),
+
+    #[error(transparent)]
+    Db(#[from] DbError),
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -371,7 +374,7 @@ impl ComposeScope {
         // The host recognizes a project when an event made it real; the
         // filesystem is the underlying medium. Intersection means
         // both must agree.
-        let conn = self.config.host_db()?;
+        let conn = self.databases.handle_sync(DbKey::Host)?;
         let projection_names = ProjectStore::new(&conn).list()?;
 
         let mut projects = HashMap::new();
@@ -395,7 +398,7 @@ impl ComposeScope {
         // Authoritative source: `bookmarks` projection scoped to
         // project. Filesystem must agree.
         let platform = self.config.platform();
-        let conn = self.config.host_db()?;
+        let conn = self.databases.handle_sync(DbKey::Host)?;
         let projection_names = BookmarkStore::new(&conn).list_for_project(&project.name)?;
 
         let mut bookmarks = HashMap::new();

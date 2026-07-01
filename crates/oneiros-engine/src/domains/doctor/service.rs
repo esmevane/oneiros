@@ -85,7 +85,10 @@ impl DoctorService {
         // Project check
         let project_name = config.project.clone();
 
-        match config.bookmark_conn() {
+        match databases.handle_sync(DbKey::Bookmark(
+            config.project.clone(),
+            config.bookmark.clone(),
+        )) {
             Ok(project_db) => {
                 let project_events = project_db
                     .query_row("select count(*) from events.events", [], |row| {
