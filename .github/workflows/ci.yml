@@ -26,6 +26,9 @@ jobs:
         with:
           shared-key: ci
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      - &install-deps
+        name: Install crate dependencies
+        run: cargo install
       - name: Run cargo check
         run: cargo check --workspace --all-targets
 
@@ -40,6 +43,7 @@ jobs:
         with:
           shared-key: ci-windows
           save-if: ${{ github.ref == 'refs/heads/main' }}
+      - *install-deps
       - name: Run cargo check
         run: cargo check --workspace --all-targets
 
@@ -51,6 +55,7 @@ jobs:
       - *checkout
       - *install-rust
       - *cache
+      - *install-deps
       - name: Run cargo test
         run: cargo test --workspace
 
@@ -62,6 +67,7 @@ jobs:
       - *checkout
       - *install-rust
       - *cache
+      - *install-deps
       - name: Run clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
@@ -71,6 +77,7 @@ jobs:
     steps:
       - *checkout
       - *install-rust
+      - *install-deps
       - name: Check formatting
         run: cargo fmt --all --check
 
