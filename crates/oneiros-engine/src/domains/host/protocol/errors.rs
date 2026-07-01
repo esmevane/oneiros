@@ -36,8 +36,6 @@ pub(crate) enum HostError {
     #[error(transparent)]
     Client(#[from] ClientError),
 
-    #[error(transparent)]
-    HostDb(#[from] HostDbError),
 
     #[error(transparent)]
     Server(#[from] ServerError),
@@ -67,7 +65,6 @@ impl IntoResponse for HostError {
             | HostError::HostKey(_)
             | HostError::Upcast(_)
             | HostError::Compose(_)
-            | HostError::HostDb(_)
             | HostError::Server(_)
             | HostError::Manager(_)
             | HostError::UnexpectedResponse(_) => {

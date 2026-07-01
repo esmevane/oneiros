@@ -132,12 +132,6 @@ pub(crate) enum BridgeError {
     #[error(transparent)]
     Db(#[from] crate::DbError),
 
-    #[error(transparent)]
-    HostDb(#[from] HostDbError),
-
-    #[error(transparent)]
-    EventsDb(#[from] EventsDbError),
-
     /// A scope hydration error during sync handling.
     #[error(transparent)]
     Scope(#[from] ScopeError),

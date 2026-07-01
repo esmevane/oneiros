@@ -42,9 +42,6 @@ pub(crate) enum ProjectError {
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
-    BookmarkDb(#[from] crate::BookmarkDbError),
-
-    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -71,8 +68,7 @@ impl IntoResponse for ProjectError {
             | ProjectError::Event(_)
             | ProjectError::Io(_)
             | ProjectError::Upcast(_)
-            | ProjectError::Compose(_)
-            | ProjectError::BookmarkDb(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | ProjectError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ProjectError::Client(_) | ProjectError::Serde(_) => {
                 (StatusCode::BAD_GATEWAY, self.to_string())
             }

@@ -23,8 +23,6 @@ pub(crate) enum TenantError {
     #[error(transparent)]
     Db(#[from] crate::DbError),
 
-    #[error(transparent)]
-    HostDb(#[from] crate::HostDbError),
 
     #[error(transparent)]
     Event(#[from] crate::EventError),
@@ -54,7 +52,6 @@ impl IntoResponse for TenantError {
             | TenantError::Event(_)
             | TenantError::Database(_)
             | TenantError::Db(_)
-            | TenantError::HostDb(_)
             | TenantError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             TenantError::Client(_) | TenantError::Json(_) => {
                 (StatusCode::BAD_GATEWAY, self.to_string())

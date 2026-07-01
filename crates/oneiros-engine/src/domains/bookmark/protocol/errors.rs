@@ -42,12 +42,6 @@ pub(crate) enum BookmarkError {
     Db(#[from] crate::DbError),
 
     #[error(transparent)]
-    HostDb(#[from] HostDbError),
-
-    #[error(transparent)]
-    BookmarkDb(#[from] BookmarkDbError),
-
-    #[error(transparent)]
     Compose(#[from] crate::ComposeError),
 
     #[error(transparent)]
@@ -75,8 +69,6 @@ impl IntoResponse for BookmarkError {
             BookmarkError::NoActor
             | BookmarkError::Database(_)
             | BookmarkError::Db(_)
-            | BookmarkError::HostDb(_)
-            | BookmarkError::BookmarkDb(_)
             | BookmarkError::Event(_)
             | BookmarkError::IdParse(_)
             | BookmarkError::TimestampParse(_)

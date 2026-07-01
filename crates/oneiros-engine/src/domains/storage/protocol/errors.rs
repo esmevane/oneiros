@@ -34,9 +34,6 @@ pub(crate) enum StorageError {
     Compose(#[from] ComposeError),
 
     #[error(transparent)]
-    BookmarkDb(#[from] BookmarkDbError),
-
-    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -60,8 +57,7 @@ impl IntoResponse for StorageError {
             StorageError::Database(_)
             | StorageError::Db(_)
             | StorageError::Event(_)
-            | StorageError::Compose(_)
-            | StorageError::BookmarkDb(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            | StorageError::Compose(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             StorageError::Client(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             StorageError::Json(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
         };

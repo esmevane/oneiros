@@ -25,15 +25,6 @@ pub(crate) enum EventError {
     Upcast(#[from] UpcastError),
 
     #[error(transparent)]
-    HostDb(#[from] HostDbError),
-
-    #[error(transparent)]
-    EventsDb(#[from] EventsDbError),
-
-    #[error(transparent)]
-    BookmarkDb(#[from] BookmarkDbError),
-
-    #[error(transparent)]
     Db(#[from] DbError),
 
     #[error("Import error: {0}")]
