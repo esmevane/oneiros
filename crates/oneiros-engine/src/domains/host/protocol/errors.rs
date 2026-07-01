@@ -36,7 +36,6 @@ pub(crate) enum HostError {
     #[error(transparent)]
     Client(#[from] ClientError),
 
-
     #[error(transparent)]
     Server(#[from] ServerError),
 

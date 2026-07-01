@@ -9,7 +9,11 @@ pub(crate) struct ChronicleLensReader<'a> {
 }
 
 impl<'a> ChronicleLensReader<'a> {
-    pub(crate) fn new(host_db: &'a rusqlite::Connection, canons: &'a CanonIndex, project: ProjectName) -> Self {
+    pub(crate) fn new(
+        host_db: &'a rusqlite::Connection,
+        canons: &'a CanonIndex,
+        project: ProjectName,
+    ) -> Self {
         Self {
             host_db,
             canons,

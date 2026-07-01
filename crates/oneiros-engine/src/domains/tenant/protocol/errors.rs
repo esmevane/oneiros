@@ -23,7 +23,6 @@ pub(crate) enum TenantError {
     #[error(transparent)]
     Db(#[from] crate::DbError),
 
-
     #[error(transparent)]
     Event(#[from] crate::EventError),
 
