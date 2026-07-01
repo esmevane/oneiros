@@ -342,7 +342,7 @@ impl Config {
     // instead of reaching for `rusqlite::Connection::open` directly.
 
     /// Apply every pragma from [`DatabaseConfig`] to a connection.
-    fn apply_pragmas(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
+    pub(crate) fn apply_pragmas(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
         let db = &self.database;
         conn.pragma_update(None, "journal_mode", &db.journal_mode)?;
         conn.pragma_update(None, "synchronous", &db.synchronous)?;

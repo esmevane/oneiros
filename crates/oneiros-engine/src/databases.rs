@@ -14,6 +14,7 @@
 //! See `docs/recipes/database-pool-design.md` for the full design.
 
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
@@ -142,7 +143,14 @@ impl Databases {
     /// Sweep entries unused for longer than the configured sweep interval.
     /// Called periodically by the background sweep task. Entries that
     /// are checked out (`connection: None`) are skipped — they're in use.
+    ///
+    /// In `DatabaseMode::Memory`, sweep is a no-op — in-memory databases
+    /// are private to their connection. Dropping the connection loses
+    /// all data, so we must keep them alive for the pool's lifetime.
     pub(crate) fn sweep(&self) {
+        if self.inner.config.database.mode == DatabaseMode::Memory {
+            return;
+        }
         let ttl = self.inner.config.database.sweep_interval;
         let mut pools = self.inner.pools.lock().unwrap();
         pools.retain(|_, entry| entry.connection.is_none() || entry.last_used.elapsed() < ttl);
@@ -165,8 +173,17 @@ impl Databases {
 
     /// Open a fresh connection for a key, applying pragmas and ATTACHing
     /// events for bookmark tier. Dispatches on [`DbKey`].
+    ///
+    /// In `DatabaseMode::Memory`, each key gets its own `:memory:` database.
+    /// The pool holds the connection, so the in-memory database survives
+    /// across checkouts within the same process.
     fn open_for_key(&self, key: &DbKey) -> Result<rusqlite::Connection, DbError> {
         let config = &self.inner.config;
+
+        if config.database.mode == DatabaseMode::Memory {
+            return self.open_memory_for_key(key);
+        }
+
         let platform = config.platform();
 
         match key {
@@ -190,6 +207,61 @@ impl Databases {
                 project_config.project = project.clone();
                 project_config.bookmark = bookmark.clone();
                 project_config.bookmark_conn().map_err(DbError::Rusqlite)
+            }
+        }
+    }
+
+    /// Open in-memory connections. Each key gets a named shared-cache
+    /// in-memory database (`file:name?mode=memory&cache=shared`) so that
+    /// the bookmark db's ATTACHed `events` schema can see the same data
+    /// that `DbKey::ProjectLog` writes to.
+    ///
+    /// The names include a hash of the data_dir path so that separate
+    /// `Databases` instances pointing at the same data_dir (e.g. the
+    /// server's pool and a CLI-direct temporary pool) share the same
+    /// in-memory databases, while parallel tests with different tempdirs
+    /// stay isolated.
+    fn open_memory_for_key(&self, key: &DbKey) -> Result<rusqlite::Connection, DbError> {
+        let config = &self.inner.config;
+        let mut hasher = std::hash::DefaultHasher::new();
+        config.data_dir.hash(&mut hasher);
+        let pool_id = hasher.finish();
+
+        match key {
+            DbKey::Host => {
+                let uri = format!("file:host_{pool_id}?mode=memory&cache=shared");
+                let conn = rusqlite::Connection::open(&uri).map_err(DbError::Rusqlite)?;
+                config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+                Ok(conn)
+            }
+            DbKey::ProjectLog(project) => {
+                let uri = format!(
+                    "file:events_{}_{pool_id}?mode=memory&cache=shared",
+                    project.as_str()
+                );
+                let conn = rusqlite::Connection::open(&uri).map_err(DbError::Rusqlite)?;
+                config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+                Ok(conn)
+            }
+            DbKey::Bookmark(project, bookmark) => {
+                let uri = format!(
+                    "file:bookmark_{}_{}_{pool_id}?mode=memory&cache=shared",
+                    project.as_str(),
+                    bookmark.as_str()
+                );
+                let conn = rusqlite::Connection::open(&uri).map_err(DbError::Rusqlite)?;
+                config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+
+                // ATTACH the events db by name — same shared-cache
+                // in-memory database that DbKey::ProjectLog opens.
+                let events_uri = format!(
+                    "file:events_{}_{pool_id}?mode=memory&cache=shared",
+                    project.as_str()
+                );
+                conn.execute_batch(&format!("ATTACH DATABASE '{events_uri}' AS events"))
+                    .map_err(DbError::Rusqlite)?;
+
+                Ok(conn)
             }
         }
     }

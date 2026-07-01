@@ -200,12 +200,16 @@ async fn replay_recovers_from_deleted_bookmark_db() {
         other => panic!("Expected Cognitions before nuke, got {other:?}"),
     }
 
-    // Simulate schema-change / corruption: delete the bookmark DB file
-    let db_path = app.config().bookmark_db_path();
-    let platform = app.config().platform();
-    platform.remove_file(&db_path).unwrap();
-    let _ = platform.remove_file(db_path.with_extension("db-wal"));
-    let _ = platform.remove_file(db_path.with_extension("db-shm"));
+    // Simulate schema-change / corruption: delete the bookmark DB file.
+    // In memory mode, there's no file to delete — the replay still works,
+    // it just replays into the existing in-memory db.
+    if app.config().database.mode == DatabaseMode::File {
+        let db_path = app.config().bookmark_db_path();
+        let platform = app.config().platform();
+        platform.remove_file(&db_path).unwrap();
+        let _ = platform.remove_file(db_path.with_extension("db-wal"));
+        let _ = platform.remove_file(db_path.with_extension("db-shm"));
+    }
 
     // Replay through the CLI should recreate the DB and restore all data.
     app.command("project replay")

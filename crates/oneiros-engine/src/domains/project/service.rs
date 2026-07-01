@@ -313,12 +313,18 @@ impl ProjectService {
     /// Replay all events through projections, rebuilding read models.
     pub(crate) async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
         let platform = config.platform();
-        let db_path = config.bookmark_db_path();
-        if db_path.exists() {
-            platform.remove_file(&db_path)?;
+        // In file mode, delete the bookmark DB to force a fresh replay.
+        // In memory mode, the pool will create a fresh :memory: on next
+        // checkout — but we can't force that here. The replay still works;
+        // it just replays into the existing in-memory db.
+        if config.database.mode == DatabaseMode::File {
+            let db_path = config.bookmark_db_path();
+            if db_path.exists() {
+                platform.remove_file(&db_path)?;
+            }
+            let _ = platform.remove_file(db_path.with_extension("db-wal"));
+            let _ = platform.remove_file(db_path.with_extension("db-shm"));
         }
-        let _ = platform.remove_file(db_path.with_extension("db-wal"));
-        let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
         // TODO: thread Databases from server when CLI dispatch is refactored.
         let databases = Databases::new(config.clone());

@@ -248,8 +248,10 @@ impl CanonIndex {
         project_config.project = name.clone();
 
         // Events DB — standalone (no ATTACH). Bail early if the file
-        // doesn't exist — `open_database` would create it otherwise.
-        if !project_config.events_db_path().exists() {
+        // doesn't exist (file mode only — in memory mode, trust the pool).
+        if project_config.database.mode == DatabaseMode::File
+            && !project_config.events_db_path().exists()
+        {
             return Ok(());
         }
         let events_db = databases.handle_sync(DbKey::ProjectLog(name.clone()))?;

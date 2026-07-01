@@ -380,8 +380,11 @@ impl ComposeScope {
         let mut projects = HashMap::new();
         for name in projection_names {
             // The host says the project exists; verify it's actually
-            // reachable on disk. Mismatch = orphan, exclude.
-            if !platform.events_db_path(&name).exists() {
+            // reachable. In file mode, check the filesystem. In memory
+            // mode, trust the projection — the db lives in the pool.
+            if self.config.database.mode == DatabaseMode::File
+                && !platform.events_db_path(&name).exists()
+            {
                 continue;
             }
             let project = ProjectInfra {
@@ -403,11 +406,13 @@ impl ComposeScope {
 
         let mut bookmarks = HashMap::new();
         for name in projection_names {
-            let bookmark_db_path = platform.bookmark_db_path(&project.name, &name);
-            if !bookmark_db_path.exists() {
-                // Orphan: projection knows the bookmark but no DB on
-                // disk. Exclude.
-                continue;
+            // In file mode, verify the bookmark DB exists on disk.
+            // In memory mode, trust the projection.
+            if self.config.database.mode == DatabaseMode::File {
+                let bookmark_db_path = platform.bookmark_db_path(&project.name, &name);
+                if !bookmark_db_path.exists() {
+                    continue;
+                }
             }
             bookmarks.insert(name.clone(), Arc::new(BookmarkInfra { name }));
         }

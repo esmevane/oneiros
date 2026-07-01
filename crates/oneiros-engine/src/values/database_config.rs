@@ -1,6 +1,22 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
+/// Whether to open databases on disk or in memory.
+///
+/// In `Memory` mode, databases are opened as `:memory:` and kept alive
+/// by the [`Databases`](crate::Databases) pool. This is the test fast path —
+/// no disk I/O, no fsync, no WAL overhead. Production uses `File`.
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum DatabaseMode {
+    /// Open databases on disk at the configured paths (default).
+    #[default]
+    File,
+    /// Open databases in memory. The pool holds connections so `:memory:`
+    /// databases survive across checkouts within the same process.
+    Memory,
+}
+
 /// Database tuning knobs.
 ///
 /// Lives inside [`Config`] as the `[database]` section. Carries every
@@ -10,6 +26,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Builder, Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub(crate) struct DatabaseConfig {
+    /// File vs in-memory. Tests use `Memory`; production uses `File`.
+    #[builder(default)]
+    pub(crate) mode: DatabaseMode,
+
     // ── SQLite pragmas ──────────────────────────────────────────────
     /// Journal mode. Always `"wal"` — write-ahead log for concurrency.
     #[builder(default = String::from("wal"))]
