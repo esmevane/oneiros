@@ -115,7 +115,7 @@ async fn switch(
 }
 
 #[expect(deprecated)]
-// #[axum::debug_handler]
+#[axum::debug_handler]
 async fn merge(
     context: ProjectLog,
     State(state): State<ServerState>,
