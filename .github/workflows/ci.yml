@@ -28,7 +28,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - &install-deps
         name: Install crate dependencies
-        run: cargo install
+        run: cargo build
       - name: Run cargo check
         run: cargo check --workspace --all-targets
 
