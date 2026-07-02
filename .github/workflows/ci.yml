@@ -54,7 +54,7 @@ jobs:
       - name: Install cargo test deps
         run: cargo test --workspace --all-targets --no-run
       - name: Run cargo test
-        run: cargo nextest run
+        run: cargo test --workspace --all-targets
 
   clippy:
     name: Clippy
