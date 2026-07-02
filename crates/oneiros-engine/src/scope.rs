@@ -439,28 +439,26 @@ mod tests {
         Config::builder().data_dir(dir.path().to_path_buf()).build()
     }
 
-    /// Seed a project on both sides of the intersection: filesystem
+    /// Seed a project into the database via the pool — filesystem
     /// (project dir + events.db) AND projection (`projects` row).
-    fn seed_project(config: &Config, name: &str) -> PathBuf {
+    fn seed_project(databases: &Databases, config: &Config, name: &str) {
         let platform = config.platform();
         let project_dir = config.data_dir.join(name);
         platform.ensure_dir(&project_dir).unwrap();
         platform.write(project_dir.join("events.db"), b"").unwrap();
 
-        let conn = config.host_db().unwrap();
+        let conn = databases.handle_sync(DbKey::Host).unwrap();
         ProjectStore::new(&conn).migrate().unwrap();
         conn.execute(
             "insert or replace into projects (id, name, created_at) values (?1, ?2, ?3)",
             rusqlite::params![format!("project-{name}"), name, "2026-04-28T00:00:00"],
         )
         .unwrap();
-
-        project_dir
     }
 
-    /// Seed a bookmark on both sides: filesystem (`bookmarks/{name}.db`)
-    /// AND projection (`bookmarks` row scoped to project).
-    fn seed_bookmark(config: &Config, project: &str, name: &str) {
+    /// Seed a bookmark into the database via the pool — filesystem
+    /// (`bookmarks/{name}.db`) AND projection (`bookmarks` row).
+    fn seed_bookmark(databases: &Databases, config: &Config, project: &str, name: &str) {
         let platform = config.platform();
         let bookmarks_dir = config.data_dir.join(project).join("bookmarks");
         platform.ensure_dir(&bookmarks_dir).unwrap();
@@ -468,7 +466,7 @@ mod tests {
             .write(bookmarks_dir.join(format!("{name}.db")), b"")
             .unwrap();
 
-        let conn = config.host_db().unwrap();
+        let conn = databases.handle_sync(DbKey::Host).unwrap();
         BookmarkStore::new(&conn).migrate().unwrap();
         conn.execute(
             "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at) VALUES (?1, ?2, ?3, ?4)",
@@ -508,8 +506,8 @@ mod tests {
     fn project_compose_attaches_known_project() -> Result<(), ComposeError> {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
-        seed_project(&config, "alpha");
         let databases = Databases::new(config.clone());
+        seed_project(&databases, &config, "alpha");
 
         let scope = ComposeScope::new(config, databases).project(ProjectName::from("alpha"))?;
         assert_eq!(scope.project().name, ProjectName::from("alpha"));
@@ -521,9 +519,9 @@ mod tests {
     fn bookmark_compose_picks_existing_bookmark() -> Result<(), ComposeError> {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
-        seed_project(&config, "alpha");
-        seed_bookmark(&config, "alpha", "main");
         let databases = Databases::new(config.clone());
+        seed_project(&databases, &config, "alpha");
+        seed_bookmark(&databases, &config, "alpha", "main");
 
         let scope = ComposeScope::new(config, databases)
             .bookmark(ProjectName::from("alpha"), BookmarkName::main())?;
@@ -535,8 +533,8 @@ mod tests {
     fn bookmark_compose_unknown_bookmark_errors() {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
-        seed_project(&config, "alpha");
         let databases = Databases::new(config.clone());
+        seed_project(&databases, &config, "alpha");
 
         let result = ComposeScope::new(config, databases)
             .bookmark(ProjectName::from("alpha"), BookmarkName::from("nope"));

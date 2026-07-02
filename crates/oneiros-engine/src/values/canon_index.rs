@@ -201,6 +201,7 @@ impl CanonIndex {
     /// Merge source bookmark's chronicle into target bookmark.
     pub(crate) fn merge_project(
         &self,
+        databases: &Databases,
         project: &ProjectName,
         source: &BookmarkName,
         target: &BookmarkName,
@@ -215,12 +216,7 @@ impl CanonIndex {
                 (shelf.branches.get(source), shelf.branches.get(target))
         {
             // Chronicle objects live in the host DB.
-            let config = Config {
-                project: project.clone(),
-                ..Default::default()
-            };
-
-            if let Ok(db) = config.host_db() {
+            if let Ok(db) = databases.handle_sync(DbKey::Host) {
                 let store = ChronicleStore::new(&db);
                 let _ = store.migrate();
                 let _ = target_entry.chronicle.merge(

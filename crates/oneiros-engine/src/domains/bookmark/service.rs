@@ -166,7 +166,9 @@ impl BookmarkService {
         let MergeBookmark::V1(merging) = request;
         let source = &merging.source;
         let target = state.canons().active_bookmark(project)?;
-        state.canons().merge_project(project, source, &target)?;
+        state
+            .canons()
+            .merge_project(state.databases(), project, source, &target)?;
 
         Self::replay_bookmark(state.config(), state.databases(), project, &target)?;
 

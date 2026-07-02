@@ -1,4 +1,4 @@
-use crate::Config;
+use crate::{Config, Databases, DbKey};
 
 use super::{Migration, MigrationError};
 
@@ -20,7 +20,8 @@ impl Migration for BrainsToProjects {
             return Ok(false);
         }
 
-        let conn = config.host_db()?;
+        let databases = Databases::new(config.clone());
+        let conn = databases.handle_sync(DbKey::Host)?;
         let needs_rename = table_exists(&conn, "brains")?
             || column_exists(&conn, "bookmarks", "brain")?
             || column_exists(&conn, "follows", "brain")?
@@ -31,7 +32,8 @@ impl Migration for BrainsToProjects {
     }
 
     fn apply(&self, config: &Config) -> Result<(), MigrationError> {
-        let mut conn = config.host_db()?;
+        let databases = Databases::new(config.clone());
+        let mut conn = databases.handle_sync(DbKey::Host)?;
         let tx = conn.transaction()?;
 
         if table_exists(&tx, "brains")? && !table_exists(&tx, "projects")? {

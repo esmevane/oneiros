@@ -295,6 +295,14 @@ impl std::ops::Deref for DbHandle<'_> {
     }
 }
 
+impl std::ops::DerefMut for DbHandle<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.connection
+            .as_mut()
+            .expect("connection is only None after take() on drop")
+    }
+}
+
 impl Drop for DbHandle<'_> {
     fn drop(&mut self) {
         let mut pools = self.pool.pools.lock().unwrap();
