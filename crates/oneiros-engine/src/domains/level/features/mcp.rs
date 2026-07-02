@@ -13,7 +13,7 @@ impl LevelMcp {
         context: &ProjectLog,
         request: &LevelRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         level_mcp::resource(scope, request).await
     }
 }

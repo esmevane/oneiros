@@ -111,7 +111,7 @@ pub(crate) trait HasHost {
 
     /// Check out a handle to the host database.
     async fn host_db(&self) -> Result<DbHandle<'_>, DbError> {
-        self.databases().handle_sync(self.host_key())
+        self.databases().handle(self.host_key()).await
     }
 }
 
@@ -125,7 +125,7 @@ pub(crate) trait HasProject: HasHost {
 
     /// Check out a handle to this project's event log.
     async fn project_log(&self) -> Result<DbHandle<'_>, DbError> {
-        self.databases().handle_sync(self.project_log_key())
+        self.databases().handle(self.project_log_key()).await
     }
 }
 
@@ -140,7 +140,7 @@ pub(crate) trait HasBookmark: HasProject {
 
     /// Check out a handle to this bookmark's projection database.
     async fn bookmark_db(&self) -> Result<DbHandle<'_>, DbError> {
-        self.databases().handle_sync(self.bookmark_key())
+        self.databases().handle(self.bookmark_key()).await
     }
 }
 
@@ -324,8 +324,8 @@ impl ComposeScope {
     /// Build a host-tier scope: validate `data_dir`, enumerate project
     /// directories, assemble HostInfra with each project's resolved
     /// paths and (empty) bookmark map.
-    pub(crate) fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
-        let host = self.build_host_infra()?;
+    pub(crate) async fn host(&self) -> Result<Scope<AtHost>, ComposeError> {
+        let host = self.build_host_infra().await?;
         Ok(Scope::empty()
             .with_config_and_databases(self.config.clone(), self.databases.clone())
             .verify_host(Arc::new(host)))
@@ -334,13 +334,16 @@ impl ComposeScope {
     /// Build a project-tier scope for a specific project. Climbs to
     /// host, verifies the project exists, enumerates its bookmarks,
     /// and attaches the populated ProjectInfra.
-    pub(crate) fn project(&self, name: ProjectName) -> Result<Scope<AtProject>, ComposeError> {
-        let mut host = self.build_host_infra()?;
+    pub(crate) async fn project(
+        &self,
+        name: ProjectName,
+    ) -> Result<Scope<AtProject>, ComposeError> {
+        let mut host = self.build_host_infra().await?;
         let project = host
             .projects
             .remove(&name)
             .ok_or_else(|| ComposeError::Scope(ScopeError::ProjectNotFound(name.clone())))?;
-        let project = self.populate_bookmarks(&project)?;
+        let project = self.populate_bookmarks(&project).await?;
         host.projects.insert(name.clone(), Arc::new(project));
 
         let host_arc = Arc::new(host);
@@ -352,16 +355,16 @@ impl ComposeScope {
 
     /// Build a bookmark-tier scope. Climbs to project, verifies the
     /// bookmark exists, attaches.
-    pub(crate) fn bookmark(
+    pub(crate) async fn bookmark(
         &self,
         project: ProjectName,
         name: BookmarkName,
     ) -> Result<Scope<AtBookmark>, ComposeError> {
-        let project_scope = self.project(project)?;
+        let project_scope = self.project(project).await?;
         Ok(project_scope.verify_bookmark(name)?)
     }
 
-    fn build_host_infra(&self) -> Result<HostInfra, ComposeError> {
+    async fn build_host_infra(&self) -> Result<HostInfra, ComposeError> {
         let platform = self.config.platform();
         if !platform.data_dir().is_dir() {
             return Err(ComposeError::HostHydrationFailed(format!(
@@ -374,7 +377,7 @@ impl ComposeScope {
         // The host recognizes a project when an event made it real; the
         // filesystem is the underlying medium. Intersection means
         // both must agree.
-        let conn = self.databases.handle_sync(DbKey::Host)?;
+        let conn = self.databases.handle(DbKey::Host).await?;
         let projection_names = ProjectStore::new(&conn).list()?;
 
         let mut projects = HashMap::new();
@@ -397,11 +400,14 @@ impl ComposeScope {
         Ok(HostInfra { projects })
     }
 
-    fn populate_bookmarks(&self, project: &ProjectInfra) -> Result<ProjectInfra, ComposeError> {
+    async fn populate_bookmarks(
+        &self,
+        project: &ProjectInfra,
+    ) -> Result<ProjectInfra, ComposeError> {
         // Authoritative source: `bookmarks` projection scoped to
         // project. Filesystem must agree.
         let platform = self.config.platform();
-        let conn = self.databases.handle_sync(DbKey::Host)?;
+        let conn = self.databases.handle(DbKey::Host).await?;
         let projection_names = BookmarkStore::new(&conn).list_for_project(&project.name)?;
 
         let mut bookmarks = HashMap::new();
@@ -441,13 +447,13 @@ mod tests {
 
     /// Seed a project into the database via the pool — filesystem
     /// (project dir + events.db) AND projection (`projects` row).
-    fn seed_project(databases: &Databases, config: &Config, name: &str) {
+    async fn seed_project(databases: &Databases, config: &Config, name: &str) {
         let platform = config.platform();
         let project_dir = config.data_dir.join(name);
         platform.ensure_dir(&project_dir).unwrap();
         platform.write(project_dir.join("events.db"), b"").unwrap();
 
-        let conn = databases.handle_sync(DbKey::Host).unwrap();
+        let conn = databases.handle(DbKey::Host).await.unwrap();
         ProjectStore::new(&conn).migrate().unwrap();
         conn.execute(
             "insert or replace into projects (id, name, created_at) values (?1, ?2, ?3)",
@@ -458,7 +464,7 @@ mod tests {
 
     /// Seed a bookmark into the database via the pool — filesystem
     /// (`bookmarks/{name}.db`) AND projection (`bookmarks` row).
-    fn seed_bookmark(databases: &Databases, config: &Config, project: &str, name: &str) {
+    async fn seed_bookmark(databases: &Databases, config: &Config, project: &str, name: &str) {
         let platform = config.platform();
         let bookmarks_dir = config.data_dir.join(project).join("bookmarks");
         platform.ensure_dir(&bookmarks_dir).unwrap();
@@ -466,7 +472,7 @@ mod tests {
             .write(bookmarks_dir.join(format!("{name}.db")), b"")
             .unwrap();
 
-        let conn = databases.handle_sync(DbKey::Host).unwrap();
+        let conn = databases.handle(DbKey::Host).await.unwrap();
         BookmarkStore::new(&conn).migrate().unwrap();
         conn.execute(
             "INSERT OR REPLACE INTO bookmarks (id, project, name, created_at) VALUES (?1, ?2, ?3, ?4)",
@@ -480,64 +486,70 @@ mod tests {
         .unwrap();
     }
 
-    #[test]
-    fn missing_data_dir_fails_at_host_compose() {
+    #[tokio::test]
+    async fn missing_data_dir_fails_at_host_compose() {
         let config = Config::builder()
             .data_dir(PathBuf::from("/this/path/does/not/exist"))
             .build();
         let databases = Databases::new(config.clone());
-        let result = ComposeScope::new(config, databases).host();
+        let result = ComposeScope::new(config, databases).host().await;
         assert!(matches!(result, Err(ComposeError::HostHydrationFailed(_))));
     }
 
-    #[test]
-    fn project_compose_unknown_project_errors() {
+    #[tokio::test]
+    async fn project_compose_unknown_project_errors() {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
         let databases = Databases::new(config.clone());
-        let result = ComposeScope::new(config, databases).project(ProjectName::from("nope"));
+        let result = ComposeScope::new(config, databases)
+            .project(ProjectName::from("nope"))
+            .await;
         assert!(matches!(
             result,
             Err(ComposeError::Scope(ScopeError::ProjectNotFound(_)))
         ));
     }
 
-    #[test]
-    fn project_compose_attaches_known_project() -> Result<(), ComposeError> {
+    #[tokio::test]
+    async fn project_compose_attaches_known_project() -> Result<(), ComposeError> {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
         let databases = Databases::new(config.clone());
-        seed_project(&databases, &config, "alpha");
+        seed_project(&databases, &config, "alpha").await;
 
-        let scope = ComposeScope::new(config, databases).project(ProjectName::from("alpha"))?;
+        let scope = ComposeScope::new(config, databases)
+            .project(ProjectName::from("alpha"))
+            .await?;
         assert_eq!(scope.project().name, ProjectName::from("alpha"));
 
         Ok(())
     }
 
-    #[test]
-    fn bookmark_compose_picks_existing_bookmark() -> Result<(), ComposeError> {
+    #[tokio::test]
+    async fn bookmark_compose_picks_existing_bookmark() -> Result<(), ComposeError> {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
         let databases = Databases::new(config.clone());
-        seed_project(&databases, &config, "alpha");
-        seed_bookmark(&databases, &config, "alpha", "main");
+        seed_project(&databases, &config, "alpha").await;
+        seed_bookmark(&databases, &config, "alpha", "main").await;
 
         let scope = ComposeScope::new(config, databases)
-            .bookmark(ProjectName::from("alpha"), BookmarkName::main())?;
+            .bookmark(ProjectName::from("alpha"), BookmarkName::main())
+            .await?;
         assert_eq!(scope.bookmark().name, BookmarkName::main());
         Ok(())
     }
 
-    #[test]
-    fn bookmark_compose_unknown_bookmark_errors() {
+    #[tokio::test]
+    async fn bookmark_compose_unknown_bookmark_errors() {
         let dir = TempDir::new().unwrap();
         let config = test_config(&dir);
         let databases = Databases::new(config.clone());
-        seed_project(&databases, &config, "alpha");
+        seed_project(&databases, &config, "alpha").await;
 
         let result = ComposeScope::new(config, databases)
-            .bookmark(ProjectName::from("alpha"), BookmarkName::from("nope"));
+            .bookmark(ProjectName::from("alpha"), BookmarkName::from("nope"))
+            .await;
         assert!(matches!(
             result,
             Err(ComposeError::Scope(ScopeError::BookmarkNotFound(_)))

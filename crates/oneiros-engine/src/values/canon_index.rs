@@ -199,7 +199,7 @@ impl CanonIndex {
     }
 
     /// Merge source bookmark's chronicle into target bookmark.
-    pub(crate) fn merge_project(
+    pub(crate) async fn merge_project(
         &self,
         databases: &Databases,
         project: &ProjectName,
@@ -216,7 +216,7 @@ impl CanonIndex {
                 (shelf.branches.get(source), shelf.branches.get(target))
         {
             // Chronicle objects live in the host DB.
-            if let Ok(db) = databases.handle_sync(DbKey::Host) {
+            if let Ok(db) = databases.handle(DbKey::Host).await {
                 let store = ChronicleStore::new(&db);
                 let _ = store.migrate();
                 let _ = target_entry.chronicle.merge(
@@ -234,7 +234,7 @@ impl CanonIndex {
     ///
     /// Opens events.db standalone for the event log, then the bookmark
     /// connection for projection migrations.
-    pub(crate) fn hydrate_project(
+    pub(crate) async fn hydrate_project(
         &self,
         config: &Config,
         databases: &Databases,
@@ -250,12 +250,13 @@ impl CanonIndex {
         {
             return Ok(());
         }
-        let events_db = databases.handle_sync(DbKey::ProjectLog(name.clone()))?;
+        let events_db = databases.handle(DbKey::ProjectLog(name.clone())).await?;
         let log = EventLog::new(&events_db);
 
         // Ensure projection schema exists in the bookmark DB.
-        let bookmark_db =
-            databases.handle_sync(DbKey::Bookmark(name.clone(), config.bookmark.clone()))?;
+        let bookmark_db = databases
+            .handle(DbKey::Bookmark(name.clone(), config.bookmark.clone()))
+            .await?;
         Projections::<ProjectCanon>::project().migrate(&bookmark_db)?;
 
         let events = log.load_all()?;
@@ -269,7 +270,7 @@ impl CanonIndex {
         }
 
         // Rebuild the chronicle in the host DB.
-        let host_db = databases.handle_sync(DbKey::Host)?;
+        let host_db = databases.handle(DbKey::Host).await?;
         let store = ChronicleStore::new(&host_db);
         store.migrate()?;
         for event in &events {

@@ -86,13 +86,15 @@ impl ProjectService {
 
         let events_db = scope
             .databases()
-            .handle_sync(DbKey::ProjectLog(project_name.clone()))?;
+            .handle(DbKey::ProjectLog(project_name.clone()))
+            .await?;
         EventLog::new(&events_db).init()?;
         drop(events_db);
 
         let bookmark_db = scope
             .databases()
-            .handle_sync(DbKey::Bookmark(project_name.clone(), BookmarkName::main()))?;
+            .handle(DbKey::Bookmark(project_name.clone(), BookmarkName::main()))
+            .await?;
         Projections::project().migrate(&bookmark_db)?;
         drop(bookmark_db);
 
@@ -353,7 +355,9 @@ impl ProjectService {
         request: &ShareProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let ShareProject::V1(req) = request;
-        let scope = ComposeScope::new(state.config().clone(), state.databases().clone()).host()?;
+        let scope = ComposeScope::new(state.config().clone(), state.databases().clone())
+            .host()
+            .await?;
         let project_name = if req.project.to_string().is_empty() {
             state.config().project.clone()
         } else {

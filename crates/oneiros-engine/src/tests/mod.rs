@@ -299,6 +299,7 @@ async fn storage_content_round_trips() {
     // exercises the storage subsystem directly.
     let scope = ComposeScope::new(app.config().clone(), Databases::new(app.config().clone()))
         .bookmark(app.config().project.clone(), app.config().bookmark.clone())
+        .await
         .expect("compose bookmark scope");
     let retrieved = StorageService::get_content(&scope, &StorageKey::new("test.txt"))
         .await

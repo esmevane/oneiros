@@ -12,7 +12,7 @@ impl SearchService {
     ) -> Result<SearchResponse, SearchError> {
         let query = request.current()?;
         let agent_id = match &query.agent {
-            Some(name) => AgentRepo::new(context.scope()?)
+            Some(name) => AgentRepo::new(context.scope().await?)
                 .get(name)
                 .await?
                 .map(|a| a.id),
@@ -24,7 +24,7 @@ impl SearchService {
             total,
             hits,
             facets,
-        } = SearchRepo::new(context.scope()?)
+        } = SearchRepo::new(context.scope().await?)
             .search(&query, agent_id.as_ref())
             .await?;
 
@@ -65,25 +65,26 @@ pub(crate) async fn hydrate_hits(
         }
     }
 
-    let cognitions: HashMap<CognitionId, Cognition> = CognitionRepo::new(context.scope()?)
+    let cognitions: HashMap<CognitionId, Cognition> = CognitionRepo::new(context.scope().await?)
         .get_many(&cognition_ids)
         .await?
         .into_iter()
         .map(|c| (c.id, c))
         .collect();
-    let memories: HashMap<MemoryId, Memory> = MemoryRepo::new(context.scope()?)
+    let memories: HashMap<MemoryId, Memory> = MemoryRepo::new(context.scope().await?)
         .get_many(&memory_ids)
         .await?
         .into_iter()
         .map(|m| (m.id, m))
         .collect();
-    let experiences: HashMap<ExperienceId, Experience> = ExperienceRepo::new(context.scope()?)
-        .get_many(&experience_ids)
-        .await?
-        .into_iter()
-        .map(|e| (e.id, e))
-        .collect();
-    let mut agents: HashMap<AgentId, Agent> = AgentRepo::new(context.scope()?)
+    let experiences: HashMap<ExperienceId, Experience> =
+        ExperienceRepo::new(context.scope().await?)
+            .get_many(&experience_ids)
+            .await?
+            .into_iter()
+            .map(|e| (e.id, e))
+            .collect();
+    let mut agents: HashMap<AgentId, Agent> = AgentRepo::new(context.scope().await?)
         .get_many(&agent_ids)
         .await?
         .into_iter()

@@ -14,7 +14,7 @@ impl DoctorService {
         // Compose host-tier scope. Failure here means we don't have
         // host substrate at all — strangler bridge still produces
         // today's HostLog shape until consumers move to Scope.
-        let scope = match ComposeScope::new(config.clone(), databases.clone()).host() {
+        let scope = match ComposeScope::new(config.clone(), databases.clone()).host().await {
             Ok(scope) => scope,
             Err(_) => {
                 checks.push(DoctorCheck::NotInitialized);
@@ -85,10 +85,10 @@ impl DoctorService {
         // Project check
         let project_name = config.project.clone();
 
-        match databases.handle_sync(DbKey::Bookmark(
+        match databases.handle(DbKey::Bookmark(
             config.project.clone(),
             config.bookmark.clone(),
-        )) {
+        )).await {
             Ok(project_db) => {
                 let project_events = project_db
                     .query_row("select count(*) from events.events", [], |row| {

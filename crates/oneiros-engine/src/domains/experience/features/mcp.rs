@@ -61,7 +61,7 @@ mod experience_mcp {
             ExperienceRequestType::CreateExperience => {
                 let creation: CreateExperience = serde_json::from_value(params.clone())?;
                 let request = ExperienceRequest::CreateExperience(creation.clone());
-                let scope = context.scope().map_err(Error::from)?;
+                let scope = context.scope().await.map_err(Error::from)?;
                 let response = ExperienceService::create(scope, mailbox, &creation)
                     .await
                     .map_err(Error::from)?;
@@ -81,7 +81,7 @@ mod experience_mcp {
         context: &ProjectLog,
         request: &ExperienceRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         let response = match request {
             ExperienceRequest::GetExperience(get) => ExperienceService::get(scope, get)
                 .await

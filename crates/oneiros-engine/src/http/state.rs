@@ -88,10 +88,11 @@ impl ServerState {
 
     /// Hydrate reducer pipelines and chronicles from event logs.
     /// Best-effort — skips databases that don't exist yet (pre-init).
-    pub(crate) fn hydrate(&self) {
+    pub(crate) async fn hydrate(&self) {
         let _ = self
             .canons
-            .hydrate_project(&self.config, &self.databases, &self.config.project);
+            .hydrate_project(&self.config, &self.databases, &self.config.project)
+            .await;
     }
 
     /// The server configuration.
@@ -154,7 +155,11 @@ impl FromRequestParts<ServerState> for Scope<AtHost> {
         // The auth middleware already injected VerifiedSession into
         // extensions. For AtHost, we accept both host and project
         // sessions — all we need is a valid config to compose from.
-        Ok(ComposeScope::new(state.config.clone(), state.databases.clone()).host()?)
+        Ok(
+            ComposeScope::new(state.config.clone(), state.databases.clone())
+                .host()
+                .await?,
+        )
     }
 }
 
@@ -229,7 +234,8 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
         config.bookmark = bookmark;
 
         let scope = ComposeScope::new(config.clone(), state.databases.clone())
-            .bookmark(config.project.clone(), config.bookmark.clone())?;
+            .bookmark(config.project.clone(), config.bookmark.clone())
+            .await?;
         Ok(scope)
     }
 }

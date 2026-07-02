@@ -113,7 +113,7 @@ impl Server {
             state.mailbox().clone(),
         );
 
-        let app = Self::router_from_state(state);
+        let app = Self::router_from_state(state).await;
 
         axum::serve(listener, app.into_make_service()).await?;
 
@@ -122,7 +122,7 @@ impl Server {
 
     /// Build a router from an already-constructed state. Used by `serve`
     /// once the async bridge binding has completed.
-    pub(crate) fn router_from_state(state: ServerState) -> Router {
+    pub(crate) async fn router_from_state(state: ServerState) -> Router {
         /// Serves the OpenAPI spec as JSON. Pulled from state — populated
         /// once after router assembly to avoid a global `.layer(Extension)`
         /// walk over every route on each server build.
@@ -149,7 +149,7 @@ impl Server {
             ),
         );
 
-        state.hydrate();
+        state.hydrate().await;
 
         let mut api = OpenApi::default();
         let app_docs = AppDocs;

@@ -90,7 +90,9 @@ impl TicketVerifier {
             .decode()
             .map_err(|_| AuthError::InvalidToken)?;
 
-        let host_scope = ComposeScope::new(self.config.clone(), self.databases.clone()).host()?;
+        let host_scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
 
         let ticket = TicketRepo::new(&host_scope)
             .get_by_token(token_str)

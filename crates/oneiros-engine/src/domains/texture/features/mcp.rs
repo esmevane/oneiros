@@ -13,7 +13,7 @@ impl TextureMcp {
         context: &ProjectLog,
         request: &TextureRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         texture_mcp::resource(scope, request).await
     }
 }

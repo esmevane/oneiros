@@ -18,6 +18,7 @@ use crate::*;
 pub(crate) async fn dashboard_config(State(state): State<ServerState>) -> Json<DashboardBootstrap> {
     let scope = ComposeScope::new(state.config().clone(), state.databases().clone())
         .host()
+        .await
         .ok();
 
     let tenants = match scope.as_ref() {

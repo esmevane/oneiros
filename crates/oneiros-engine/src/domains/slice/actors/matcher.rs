@@ -74,6 +74,7 @@ impl SliceActor {
             project_scope.databases().clone(),
         )
         .host()
+        .await
         .map_err(|e| EventError::Import(e.to_string()))?;
         let slices = SliceRepo::new(&host_scope).list().await?;
 

@@ -35,7 +35,9 @@ impl HostService {
         Projections::host().migrate(&host_db)?;
         drop(host_db);
 
-        let scope = ComposeScope::new(config.clone(), databases.clone()).host()?;
+        let scope = ComposeScope::new(config.clone(), databases.clone())
+            .host()
+            .await?;
 
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
