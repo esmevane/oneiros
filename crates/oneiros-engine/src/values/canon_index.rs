@@ -206,25 +206,31 @@ impl CanonIndex {
         source: &BookmarkName,
         target: &BookmarkName,
     ) -> Result<(), EventError> {
-        let read = self
-            .projects
-            .read()
-            .map_err(|e| EventError::Lock(e.to_string()))?;
-
-        if let Some(shelf) = read.get(project)
-            && let (Some(source_entry), Some(target_entry)) =
-                (shelf.branches.get(source), shelf.branches.get(target))
-        {
-            // Chronicle objects live in the host DB.
-            if let Ok(db) = databases.handle(DbKey::Host).await {
-                let store = ChronicleStore::new(&db);
-                let _ = store.migrate();
-                let _ = target_entry.chronicle.merge(
-                    &source_entry.chronicle,
-                    &store.resolver(),
-                    &store.writer(),
-                );
+        // Extract chronicle clones under the read lock, then drop it
+        // before any .await — RwLockReadGuard is !Send.
+        let (source_chronicle, target_chronicle) = {
+            let read = self
+                .projects
+                .read()
+                .map_err(|e| EventError::Lock(e.to_string()))?;
+            if let Some(shelf) = read.get(project)
+                && let (Some(source_entry), Some(target_entry)) =
+                    (shelf.branches.get(source), shelf.branches.get(target))
+            {
+                (
+                    source_entry.chronicle.clone(),
+                    target_entry.chronicle.clone(),
+                )
+            } else {
+                return Ok(());
             }
+        };
+
+        // Chronicle objects live in the host DB.
+        if let Ok(db) = databases.handle(DbKey::Host).await {
+            let store = ChronicleStore::new(&db);
+            let _ = store.migrate();
+            let _ = target_chronicle.merge(&source_chronicle, &store.resolver(), &store.writer());
         }
 
         Ok(())
@@ -251,15 +257,16 @@ impl CanonIndex {
             return Ok(());
         }
         let events_db = databases.handle(DbKey::ProjectLog(name.clone())).await?;
-        let log = EventLog::new(&events_db);
+        let events = {
+            let log = EventLog::new(&events_db);
+            log.load_all()?
+        }; // log dropped — EventLog is !Send, can't hold across .await
 
         // Ensure projection schema exists in the bookmark DB.
         let bookmark_db = databases
             .handle(DbKey::Bookmark(name.clone(), config.bookmark.clone()))
             .await?;
         Projections::<ProjectCanon>::project().migrate(&bookmark_db)?;
-
-        let events = log.load_all()?;
 
         let entry = self.project_entry(name)?;
 
