@@ -67,7 +67,7 @@ impl Chronicle {
     /// Diff this chronicle against another.
     /// Returns changes needed to go from `self` to `other`.
     #[cfg(test)]
-    pub(crate) fn diff(
+    pub(crate) async fn diff(
         &self,
         other: &Chronicle,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
@@ -82,11 +82,12 @@ impl Chronicle {
             .lock()
             .map_err(|e| EventError::Lock(e.to_string()))?
             .clone();
-        Ok(Ledger::diff(
-            self_root.as_ref(),
-            other_root.as_ref(),
-            resolve,
-        ))
+        Ok(
+            Ledger::diff(self_root.as_ref(), other_root.as_ref(), &|hash| {
+                std::future::ready(resolve(hash))
+            })
+            .await,
+        )
     }
 
     /// Fork this chronicle — snapshots the current root hash.
@@ -118,7 +119,7 @@ impl Chronicle {
             .clone();
 
         if let Some(other_hash) = other_root {
-            let other_entries = Ledger::collect_all(&other_hash, resolve);
+            let other_entries = Ledger::collect_all_sync(&other_hash, resolve);
             let mut guard = self
                 .root
                 .lock()
@@ -190,8 +191,8 @@ mod tests {
             .build()
     }
 
-    #[test]
-    fn chronicle_records_and_diffs() {
+    #[tokio::test]
+    async fn chronicle_records_and_diffs() {
         let (store, resolve) = memory_store();
 
         let main = Chronicle::new();
@@ -205,17 +206,17 @@ mod tests {
         let event3 = test_event(3);
         experiment.record(&event3, &resolve, &store).unwrap();
 
-        let changes = main.diff(&experiment, &resolve).unwrap();
+        let changes = main.diff(&experiment, &resolve).await.unwrap();
         assert_eq!(changes.len(), 1);
         assert!(matches!(&changes[0], LedgerChange::Added(id) if *id == event3.id));
 
-        let changes = experiment.diff(&main, &resolve).unwrap();
+        let changes = experiment.diff(&main, &resolve).await.unwrap();
         assert_eq!(changes.len(), 1);
         assert!(matches!(&changes[0], LedgerChange::Removed(id) if *id == event3.id));
     }
 
-    #[test]
-    fn fork_shares_structure() {
+    #[tokio::test]
+    async fn fork_shares_structure() {
         let (store, resolve) = memory_store();
 
         let chronicle = Chronicle::new();
@@ -224,7 +225,7 @@ mod tests {
         let forked = chronicle.fork().unwrap();
         assert_eq!(chronicle.root().unwrap(), forked.root().unwrap());
 
-        let changes = chronicle.diff(&forked, &resolve).unwrap();
+        let changes = chronicle.diff(&forked, &resolve).await.unwrap();
         assert!(changes.is_empty());
     }
 }

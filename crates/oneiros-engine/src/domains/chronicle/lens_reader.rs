@@ -63,7 +63,7 @@ impl<'a> ChronicleLensReader<'a> {
 
         let store = ChronicleStore::new(self.host_db);
         let resolver = store.resolver();
-        let changes = Ledger::diff(from_root.as_ref(), to_root.as_ref(), &resolver);
+        let changes = Ledger::diff_sync(from_root.as_ref(), to_root.as_ref(), &resolver);
 
         let mut selection = Selection::new();
         for change in changes {

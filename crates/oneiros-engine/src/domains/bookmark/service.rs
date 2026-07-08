@@ -610,9 +610,15 @@ impl BookmarkService {
         }
         let local_resolve = {
             let databases = databases.clone();
-            move |hash: &ContentHash| -> Option<LedgerNode> {
-                let db = databases.handle_sync(DbKey::Host).ok()?;
-                ChronicleStore::new(&db).get(hash)
+            move |hash: &ContentHash| -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = Option<LedgerNode>> + Send + 'static>,
+            > {
+                let hash = hash.clone();
+                let databases = databases.clone();
+                Box::pin(async move {
+                    let db = databases.handle(DbKey::Host).await.ok()?;
+                    ChronicleStore::new(&db).get(&hash)
+                })
             }
         };
 
@@ -664,9 +670,15 @@ impl BookmarkService {
             let chronicle_for_wait = chronicle.clone();
             let resolve_for_wait = {
                 let databases = databases.clone();
-                move |hash: &ContentHash| -> Option<LedgerNode> {
-                    let db = databases.handle_sync(DbKey::Host).ok()?;
-                    ChronicleStore::new(&db).get(hash)
+                move |hash: &ContentHash| -> std::pin::Pin<
+                    Box<dyn std::future::Future<Output = Option<LedgerNode>> + Send + 'static>,
+                > {
+                    let hash = hash.clone();
+                    let databases = databases.clone();
+                    Box::pin(async move {
+                        let db = databases.handle(DbKey::Host).await.ok()?;
+                        ChronicleStore::new(&db).get(&hash)
+                    })
                 }
             };
             config
@@ -674,7 +686,7 @@ impl BookmarkService {
                 .eventual(|| async {
                     let root = chronicle_for_wait.root()?;
                     let seen = match root.as_ref() {
-                        Some(hash) => Ledger::collect_all_ids(Some(hash), &resolve_for_wait),
+                        Some(hash) => Ledger::collect_all_ids(Some(hash), &resolve_for_wait).await,
                         None => std::collections::HashSet::new(),
                     };
                     Ok::<_, EventError>(if expected_ids.is_subset(&seen) {

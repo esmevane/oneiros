@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 
 use crate::*;
@@ -82,7 +84,11 @@ impl Bridge {
         address: &PeerAddress,
         link: &Link,
         local_root: Option<&ContentHash>,
-        local_resolve: &(impl Fn(&ContentHash) -> Option<LedgerNode> + Send + Sync),
+        local_resolve: &(
+             impl Fn(&ContentHash) -> Pin<Box<dyn Future<Output = Option<LedgerNode>> + Send + 'static>>
+             + Send
+             + Sync
+         ),
     ) -> Result<DiffResult, BridgeError> {
         // Round 1: send our root hash, get server's root node.
         let diff_request = BridgeRequest::BridgeDiff(BridgeDiff {
@@ -106,7 +112,7 @@ impl Bridge {
                 // Walk the tree, requesting unresolved nodes in batches.
                 loop {
                     let needed =
-                        collect_unresolved(local_root, &server_root, local_resolve, &remote);
+                        collect_unresolved(local_root, &server_root, local_resolve, &remote).await;
 
                     if needed.is_empty() {
                         break;
@@ -136,10 +142,18 @@ impl Bridge {
                 }
 
                 // All server nodes are cached. Run the full diff locally.
-                let combined_resolve =
-                    |hash: &ContentHash| remote.get(hash).cloned().or_else(|| local_resolve(hash));
+                let combined_resolve = |hash: &ContentHash| {
+                    let remote_result = remote.get(hash).cloned();
+                    let hash = hash.clone();
+                    Box::pin(async move {
+                        if let Some(node) = remote_result {
+                            return Some(node);
+                        }
+                        local_resolve(&hash).await
+                    })
+                };
 
-                let changes = Ledger::diff(local_root, Some(&server_root), &combined_resolve);
+                let changes = Ledger::diff(local_root, Some(&server_root), &combined_resolve).await;
 
                 let missing: Vec<EventId> = changes
                     .into_iter()
@@ -257,12 +271,16 @@ impl Bridge {
 ///
 /// Returns an empty vec when all reachable server nodes are cached,
 /// meaning the diff can be computed locally.
-fn collect_unresolved(
+async fn collect_unresolved<F, Fut>(
     local_root: Option<&ContentHash>,
     server_root: &ContentHash,
-    local_resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
+    local_resolve: &F,
     remote: &HashMap<ContentHash, LedgerNode>,
-) -> Vec<ContentHash> {
+) -> Vec<ContentHash>
+where
+    F: Fn(&ContentHash) -> Fut,
+    Fut: Future<Output = Option<LedgerNode>>,
+{
     let mut needed = Vec::new();
 
     // Stack: (local_hash, server_hash)
@@ -289,12 +307,14 @@ fn collect_unresolved(
                 children: server_children,
             } => {
                 // Resolve the local node to compare children.
-                let local_children = local_hash.as_ref().and_then(|h| {
-                    local_resolve(h).and_then(|n| match n {
+                let local_children = if let Some(h) = local_hash.as_ref() {
+                    local_resolve(h).await.and_then(|n| match n {
                         LedgerNode::Interior { children } => Some(children),
                         _ => None,
                     })
-                });
+                } else {
+                    None
+                };
 
                 for (nibble, server_child_hash) in server_children {
                     let local_child = local_children.as_ref().and_then(|c| c.get(nibble)).cloned();
@@ -357,24 +377,36 @@ mod tests {
         b.shutdown().await;
     }
 
-    #[test]
-    fn collect_unresolved_with_matching_roots() {
+    #[tokio::test]
+    async fn collect_unresolved_with_matching_roots() {
         let root = ContentHash::new("same_root");
-        let needed = collect_unresolved(Some(&root), &root, &|_| None, &HashMap::new());
+        let needed = collect_unresolved(
+            Some(&root),
+            &root,
+            &|_| std::future::ready(None),
+            &HashMap::new(),
+        )
+        .await;
         assert!(needed.is_empty(), "matching roots should need nothing");
     }
 
-    #[test]
-    fn collect_unresolved_with_uncached_root() {
+    #[tokio::test]
+    async fn collect_unresolved_with_uncached_root() {
         let local = ContentHash::new("local_root");
         let server = ContentHash::new("server_root");
-        let needed = collect_unresolved(Some(&local), &server, &|_| None, &HashMap::new());
+        let needed = collect_unresolved(
+            Some(&local),
+            &server,
+            &|_| std::future::ready(None),
+            &HashMap::new(),
+        )
+        .await;
         assert_eq!(needed.len(), 1);
         assert_eq!(needed[0], server);
     }
 
-    #[test]
-    fn collect_unresolved_with_cached_leaf() {
+    #[tokio::test]
+    async fn collect_unresolved_with_cached_leaf() {
         use std::collections::BTreeMap;
 
         let local = ContentHash::new("local_root");
@@ -388,15 +420,21 @@ mod tests {
             },
         );
 
-        let needed = collect_unresolved(Some(&local), &server, &|_| None, &remote);
+        let needed = collect_unresolved(
+            Some(&local),
+            &server,
+            &|_| std::future::ready(None),
+            &remote,
+        )
+        .await;
         assert!(
             needed.is_empty(),
             "cached leaf should not need further resolution"
         );
     }
 
-    #[test]
-    fn collect_unresolved_with_interior_skips_matching_children() {
+    #[tokio::test]
+    async fn collect_unresolved_with_interior_skips_matching_children() {
         use std::collections::BTreeMap;
 
         let shared_child = ContentHash::new("shared");
@@ -420,15 +458,17 @@ mod tests {
             let local_root = local_root.clone();
             let local_interior = local_interior.clone();
             move |hash: &ContentHash| {
-                if *hash == local_root {
+                let result = if *hash == local_root {
                     Some(local_interior.clone())
                 } else {
                     None
-                }
+                };
+                std::future::ready(result)
             }
         };
 
-        let needed = collect_unresolved(Some(&local_root), &server_root, &local_resolve, &remote);
+        let needed =
+            collect_unresolved(Some(&local_root), &server_root, &local_resolve, &remote).await;
         assert_eq!(needed.len(), 1, "only the differing child should be needed");
         assert_eq!(needed[0], server_only);
     }
