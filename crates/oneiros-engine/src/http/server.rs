@@ -89,7 +89,7 @@ impl Server {
     /// against it, then assembles the router. Shared inner used by both
     /// `serve` and `spawn`.
     async fn serve_on(self, listener: TcpListener) -> Result<(), ServerError> {
-        match MigrationService::ensure_current(&self.config)? {
+        match MigrationService::ensure_current(&self.config).await? {
             MigrationOutcome::AlreadyCurrent => {}
             MigrationOutcome::Migrated {
                 applied,

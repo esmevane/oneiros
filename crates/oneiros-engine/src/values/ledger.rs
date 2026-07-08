@@ -415,17 +415,6 @@ impl Ledger {
             }
         }
     }
-
-    /// Sync variant of [`collect_all_ids`] for callers with sync resolvers.
-    pub(crate) fn collect_all_ids_sync(
-        root: Option<&ContentHash>,
-        resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
-    ) -> std::collections::HashSet<String> {
-        match root {
-            None => std::collections::HashSet::new(),
-            Some(hash) => Self::collect_all_sync(hash, resolve).into_keys().collect(),
-        }
-    }
 }
 
 #[cfg(test)]

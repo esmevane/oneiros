@@ -35,7 +35,7 @@ async fn pre_rename_data_dir_boots_into_current_layout() -> Result<(), Box<dyn c
 
     // Schema renames in host.db landed.
     let databases = Databases::new(app.config().clone());
-    let host = databases.handle_sync(DbKey::Host)?;
+    let host = databases.handle(DbKey::Host).await?;
     assert!(
         fixture::table_exists(&host, "projects"),
         "projects table should exist"
@@ -81,7 +81,8 @@ async fn pre_rename_data_dir_boots_into_current_layout() -> Result<(), Box<dyn c
     // event protocol's versioning (type-tag aliases + V1 historical structs
     // with TryFrom upcasts), not by data-rewriting migrations.
     let events_db = databases
-        .handle_sync(DbKey::ProjectLog(ProjectName::new(fixture::PROJECT_NAME)))?;
+        .handle(DbKey::ProjectLog(ProjectName::new(fixture::PROJECT_NAME)))
+        .await?;
     let preserved_tags: Vec<String> = events_db.query_map(
         "SELECT event_type FROM events ORDER BY event_type",
         [],

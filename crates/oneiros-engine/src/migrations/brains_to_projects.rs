@@ -1,13 +1,13 @@
+use std::pin::Pin;
+
 use crate::{Config, Databases, DbError, DbHandle, DbKey};
 
 use super::{Migration, MigrationError};
 
 /// Rename the host-DB tables and columns that still carry the legacy
 /// `brain*` vocabulary onto the current `project*` names. Each rename
-/// is idempotent (guarded by an existence check) and SQLite auto-commits
-/// DDL, so renames are applied directly against the host handle rather
-/// than wrapped in an explicit transaction. A partially-applied run is
-/// safe: re-running `apply` completes the remaining guarded steps.
+/// is idempotent (guarded by an existence check). The renames are
+/// wrapped in a transaction so a partial failure rolls back cleanly.
 pub(crate) struct BrainsToProjects;
 
 impl Migration for BrainsToProjects {
@@ -15,56 +15,67 @@ impl Migration for BrainsToProjects {
         "brains → projects (schema renames)"
     }
 
-    fn is_required(&self, config: &Config) -> Result<bool, MigrationError> {
-        let host_db = config.platform().host_db_path();
-        if !host_db.exists() {
-            // Pristine data-dir or freshly initialized — nothing to rename.
-            return Ok(false);
-        }
+    fn is_required<'a>(
+        &'a self,
+        config: &'a Config,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<bool, MigrationError>> + Send + 'a>> {
+        Box::pin(async move {
+            let host_db = config.platform().host_db_path();
+            if !host_db.exists() {
+                return Ok(false);
+            }
 
-        let databases = Databases::new(config.clone());
-        let conn = databases.handle_sync(DbKey::Host)?;
-        let needs_rename = table_exists(&conn, "brains")?
-            || column_exists(&conn, "bookmarks", "brain")?
-            || column_exists(&conn, "follows", "brain")?
-            || column_exists(&conn, "tickets", "brain_name")?
-            || column_exists(&conn, "tickets", "brain_id")?;
+            let databases = Databases::new(config.clone());
+            let conn = databases.handle(DbKey::Host).await?;
+            let needs_rename = table_exists(&conn, "brains")?
+                || column_exists(&conn, "bookmarks", "brain")?
+                || column_exists(&conn, "follows", "brain")?
+                || column_exists(&conn, "tickets", "brain_name")?
+                || column_exists(&conn, "tickets", "brain_id")?;
 
-        Ok(needs_rename)
+            Ok(needs_rename)
+        })
     }
 
-    fn apply(&self, config: &Config) -> Result<(), MigrationError> {
-        let databases = Databases::new(config.clone());
-        let conn = databases.handle_sync(DbKey::Host)?;
+    fn apply<'a>(
+        &'a self,
+        config: &'a Config,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<(), MigrationError>> + Send + 'a>> {
+        Box::pin(async move {
+            let databases = Databases::new(config.clone());
+            let tx = databases.transaction(DbKey::Host).await?;
 
-        if table_exists(&conn, "brains")? && !table_exists(&conn, "projects")? {
-            conn.execute_batch("ALTER TABLE brains RENAME TO projects")?;
-        }
+            if table_exists(&tx, "brains")? && !table_exists(&tx, "projects")? {
+                tx.execute_batch("ALTER TABLE brains RENAME TO projects")?;
+            }
 
-        if column_exists(&conn, "bookmarks", "brain")?
-            && !column_exists(&conn, "bookmarks", "project")?
-        {
-            conn.execute_batch("ALTER TABLE bookmarks RENAME COLUMN brain TO project")?;
-        }
+            if column_exists(&tx, "bookmarks", "brain")?
+                && !column_exists(&tx, "bookmarks", "project")?
+            {
+                tx.execute_batch("ALTER TABLE bookmarks RENAME COLUMN brain TO project")?;
+            }
 
-        if column_exists(&conn, "follows", "brain")? && !column_exists(&conn, "follows", "project")?
-        {
-            conn.execute_batch("ALTER TABLE follows RENAME COLUMN brain TO project")?;
-        }
+            if column_exists(&tx, "follows", "brain")?
+                && !column_exists(&tx, "follows", "project")?
+            {
+                tx.execute_batch("ALTER TABLE follows RENAME COLUMN brain TO project")?;
+            }
 
-        if column_exists(&conn, "tickets", "brain_name")?
-            && !column_exists(&conn, "tickets", "project_name")?
-        {
-            conn.execute_batch("ALTER TABLE tickets RENAME COLUMN brain_name TO project_name")?;
-        }
+            if column_exists(&tx, "tickets", "brain_name")?
+                && !column_exists(&tx, "tickets", "project_name")?
+            {
+                tx.execute_batch("ALTER TABLE tickets RENAME COLUMN brain_name TO project_name")?;
+            }
 
-        if column_exists(&conn, "tickets", "brain_id")?
-            && !column_exists(&conn, "tickets", "project_id")?
-        {
-            conn.execute_batch("ALTER TABLE tickets RENAME COLUMN brain_id TO project_id")?;
-        }
+            if column_exists(&tx, "tickets", "brain_id")?
+                && !column_exists(&tx, "tickets", "project_id")?
+            {
+                tx.execute_batch("ALTER TABLE tickets RENAME COLUMN brain_id TO project_id")?;
+            }
 
-        Ok(())
+            tx.commit()?;
+            Ok(())
+        })
     }
 }
 

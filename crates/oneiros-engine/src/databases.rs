@@ -94,10 +94,11 @@ impl Databases {
         self.handle_sync(key)
     }
 
-    /// Sync variant of [`Databases::handle`] for use in non-async
-    /// contexts (closures, migration trait, internal tests). Most
-    /// consumers should use [`Databases::handle`] instead.
-    pub(crate) fn handle_sync(&self, key: DbKey) -> Result<DbHandle<'_>, DbError> {
+    /// Sync variant of [`Databases::handle`] for internal use only.
+    /// The checkout is fundamentally sync (Mutex lock + HashMap lookup);
+    /// `handle()` is async only for API consistency. External callers
+    /// should use `handle().await`.
+    fn handle_sync(&self, key: DbKey) -> Result<DbHandle<'_>, DbError> {
         // Fast path: the key exists and is idle. Take it.
         let connection = {
             let mut pools = self.inner.pools.lock().unwrap();
@@ -134,11 +135,15 @@ impl Databases {
     }
 
     /// Begin a transaction on the given key. The connection is checked
-    /// out for the transaction's lifetime and returned on commit/rollback.
-    /// Today only migrations use this — transactions are rare.
+    /// out for the transaction's lifetime. BEGIN is issued immediately;
+    /// COMMIT on [`DbTransaction::commit`], ROLLBACK on drop if not
+    /// committed. Today only migrations use this.
     pub(crate) async fn transaction(&self, key: DbKey) -> Result<DbTransaction<'_>, DbError> {
         let handle = self.handle(key).await?;
-        Ok(DbTransaction { handle })
+        handle.execute_batch("BEGIN")?;
+        Ok(DbTransaction {
+            handle: Some(handle),
+        })
     }
 
     /// Sweep entries unused for longer than the configured sweep interval.
@@ -419,31 +424,41 @@ impl<'a> DbRow<'a> {
 ///
 /// Derefs to [`DbHandle`] so all the same query methods are available.
 /// The transaction is committed via [`DbTransaction::commit`] or rolled
-/// back on drop.
+/// back on drop if not committed.
 pub(crate) struct DbTransaction<'a> {
-    handle: DbHandle<'a>,
+    handle: Option<DbHandle<'a>>,
 }
 
 impl<'a> std::ops::Deref for DbTransaction<'a> {
     type Target = DbHandle<'a>;
     fn deref(&self) -> &Self::Target {
-        &self.handle
+        self.handle
+            .as_ref()
+            .expect("transaction handle is only None after commit")
     }
 }
 
 impl DbTransaction<'_> {
     /// Commit the transaction and return the connection to the pool.
-    pub(crate) fn commit(self) -> Result<(), DbError> {
-        // rusqlite::Transaction::commit consumes self and drops the
-        // connection. We don't have a Transaction here — we'd need to
-        // begin one on the underlying connection. For now, this is a
-        // placeholder; the migration that uses it will be updated when
-        // we wire it up.
-        //
-        // TODO: begin transaction on the underlying connection, commit
-        // on this call, rollback on drop.
-        drop(self.handle);
+    /// After this call, the transaction cannot be used further.
+    pub(crate) fn commit(mut self) -> Result<(), DbError> {
+        if let Some(handle) = self.handle.as_ref() {
+            handle.execute_batch("COMMIT")?;
+        }
+        self.handle = None;
         Ok(())
+    }
+}
+
+impl Drop for DbTransaction<'_> {
+    fn drop(&mut self) {
+        if let Some(handle) = self.handle.as_ref() {
+            // Not committed — rollback. Best-effort; if this fails
+            // the connection is still returned to the pool on DbHandle
+            // drop, and SQLite will rollback uncommitted writes when
+            // the connection is next used or dropped.
+            let _ = handle.execute_batch("ROLLBACK");
+        }
     }
 }
 
