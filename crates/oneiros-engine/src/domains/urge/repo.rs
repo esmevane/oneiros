@@ -21,15 +21,18 @@ impl<'a> UrgeRepo<'a> {
 
     pub(crate) async fn get(&self, name: &UrgeName) -> Result<Option<Urge>, EventError> {
         let db = self.scope.bookmark_db().await?;
-        let mut stmt = db.prepare("SELECT name, description, prompt FROM urges WHERE name = ?1")?;
 
-        let result = stmt.query_row(params![name.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-            ))
-        });
+        let result = db.query_row(
+            "SELECT name, description, prompt FROM urges WHERE name = ?1",
+            params![name.to_string()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
 
         match result {
             Ok((name, description, prompt)) => Ok(Some(
@@ -39,7 +42,7 @@ impl<'a> UrgeRepo<'a> {
                     .prompt(prompt)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -47,24 +50,22 @@ impl<'a> UrgeRepo<'a> {
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Urge>, EventError> {
         let db = self.scope.bookmark_db().await?;
 
-        let total = {
-            let mut stmt = db.prepare("SELECT COUNT(*) FROM urges")?;
-            stmt.query_row([], |row| row.get::<_, usize>(0))?
-        };
+        let total = db.query_row("SELECT COUNT(*) FROM urges", [], |row| {
+            row.get::<_, usize>(0)
+        })?;
 
-        let mut stmt = db.prepare(
-            "SELECT name, description, prompt FROM urges ORDER BY name LIMIT ?1 OFFSET ?2",
-        )?;
-
-        let items = stmt
-            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                ))
-            })?
-            .collect::<Result<Vec<(String, String, String)>, _>>()?
+        let items = db
+            .query_map(
+                "SELECT name, description, prompt FROM urges ORDER BY name LIMIT ?1 OFFSET ?2",
+                rusqlite::params![filters.limit, filters.offset],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, String>(2)?,
+                    ))
+                },
+            )?
             .into_iter()
             .map(|(name, description, prompt)| {
                 Urge::builder()

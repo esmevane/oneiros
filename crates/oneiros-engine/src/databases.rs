@@ -7,9 +7,11 @@
 //! freely.
 //!
 //! This is the seam for in-memory SQLite test mode (the connection
-//! survives in the pool instead of being dropped) and for sqlx-mode
-//! (the [`DbConnection`] trait abstracts the backend; rusqlite implements
-//! it via `spawn_blocking`, sqlx would implement it natively).
+//! survives in the pool instead of being dropped). `rusqlite` is an
+//! implementation detail of `DbHandle` — it never appears in public
+//! signatures outside this module. When a different backend (e.g. sqlx)
+//! arrives, it implements the same inherent methods on `DbHandle`; callsites
+//! don't change.
 //!
 //! See `docs/recipes/database-pool-design.md` for the full design.
 
@@ -275,29 +277,89 @@ impl Databases {
 /// locked during checkout and checkin — never during the query itself,
 /// so the query can span an `.await` freely.
 ///
-/// Derefs to [`rusqlite::Connection`] for now — the [`DbConnection`]
-/// trait is the sqlx seam, but migrating every consumer to it is a
-/// separate step. During the migration, consumers can use the raw
-/// rusqlite surface via `Deref`.
+/// `rusqlite` is hidden behind inherent methods on this type. Consumers
+/// call `handle.query_row(...)`, `handle.execute(...)`, etc. The row
+/// type they receive is [`DbRow`] — our wrapper, not `rusqlite::Row`.
+/// This keeps the backend swappable without a trait abstraction: when
+/// sqlx (or another backend) arrives, the same methods are implemented
+/// against it and callsites don't change.
 pub(crate) struct DbHandle<'a> {
     connection: Option<rusqlite::Connection>,
     key: DbKey,
     pool: &'a DatabasesInner,
 }
 
-impl std::ops::Deref for DbHandle<'_> {
-    type Target = rusqlite::Connection;
-    fn deref(&self) -> &Self::Target {
+impl DbHandle<'_> {
+    /// Execute a statement that returns no rows. Returns the number of
+    /// rows affected.
+    pub(crate) fn execute<P: rusqlite::Params>(
+        &self,
+        sql: &str,
+        params: P,
+    ) -> Result<usize, DbError> {
+        let conn = self.conn();
+        conn.execute(sql, params).map_err(Into::into)
+    }
+
+    /// Execute multiple statements (e.g. schema migration, `BEGIN`/`COMMIT`).
+    pub(crate) fn execute_batch(&self, sql: &str) -> Result<(), DbError> {
+        let conn = self.conn();
+        conn.execute_batch(sql).map_err(Into::into)
+    }
+
+    /// Query for a single row. The closure receives a [`DbRow`] — our
+    /// wrapper, not `rusqlite::Row`. Returns
+    /// [`DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)`] when
+    /// no row matches.
+    pub(crate) fn query_row<T, P, F>(
+        &self,
+        sql: &str,
+        params: P,
+        f: F,
+    ) -> Result<T, DbError>
+    where
+        P: rusqlite::Params,
+        F: FnOnce(&DbRow<'_>) -> Result<T, DbError>,
+    {
+        let conn = self.conn();
+        let mut stmt = conn.prepare(sql)?;
+        let mut rows = stmt.query(params)?;
+        match rows.next()? {
+            Some(row) => f(&DbRow { inner: row }),
+            None => Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)),
+        }
+    }
+
+    /// Query for multiple rows, collecting into a `Vec`. The closure
+    /// receives a [`DbRow`] for each row.
+    pub(crate) fn query_map<T, P, F>(
+        &self,
+        sql: &str,
+        params: P,
+        mut f: F,
+    ) -> Result<Vec<T>, DbError>
+    where
+        P: rusqlite::Params,
+        F: FnMut(&DbRow<'_>) -> Result<T, DbError>,
+    {
+        let conn = self.conn();
+        let mut stmt = conn.prepare(sql)?;
+        let mut rows = stmt.query(params)?;
+        let mut result = Vec::new();
+        while let Some(row) = rows.next()? {
+            result.push(f(&DbRow { inner: row })?);
+        }
+        Ok(result)
+    }
+
+    /// Returns the row ID of the most recent successful INSERT.
+    pub(crate) fn last_insert_rowid(&self) -> i64 {
+        self.conn().last_insert_rowid()
+    }
+
+    fn conn(&self) -> &rusqlite::Connection {
         self.connection
             .as_ref()
-            .expect("connection is only None after take() on drop")
-    }
-}
-
-impl std::ops::DerefMut for DbHandle<'_> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.connection
-            .as_mut()
             .expect("connection is only None after take() on drop")
     }
 }
@@ -320,6 +382,33 @@ impl Drop for DbHandle<'_> {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// DbRow — our row type, not rusqlite's
+// ─────────────────────────────────────────────────────────────────────
+
+/// A row from a query result. Wraps `rusqlite::Row` so callers never
+/// touch the backend's row type directly. When sqlx arrives, `DbRow`
+/// is re-implemented against sqlx's row; callsites don't change.
+///
+/// The `get` method accepts any `rusqlite::RowIndex` (integer or column
+/// name) and any `rusqlite::types::FromSql` type — these are trait
+/// bounds, not concrete types, and represent SQL-level concerns (column
+/// addressing and value conversion) rather than architectural coupling.
+pub(crate) struct DbRow<'a> {
+    inner: &'a rusqlite::Row<'a>,
+}
+
+impl<'a> DbRow<'a> {
+    /// Get a value from the row by index or column name.
+    pub(crate) fn get<I, T>(&self, idx: I) -> Result<T, DbError>
+    where
+        I: rusqlite::RowIndex,
+        T: rusqlite::types::FromSql,
+    {
+        self.inner.get(idx).map_err(Into::into)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // DbTransaction — separate concern (option B)
 // ─────────────────────────────────────────────────────────────────────
 
@@ -328,15 +417,15 @@ impl Drop for DbHandle<'_> {
 /// rollback) and a different concurrency shape (they hold a write lock).
 /// Today only migrations use this.
 ///
-/// Like [`DbHandle`], derefs to `rusqlite::Connection` during migration.
+/// Derefs to [`DbHandle`] so all the same query methods are available.
 /// The transaction is committed via [`DbTransaction::commit`] or rolled
 /// back on drop.
 pub(crate) struct DbTransaction<'a> {
     handle: DbHandle<'a>,
 }
 
-impl std::ops::Deref for DbTransaction<'_> {
-    type Target = rusqlite::Connection;
+impl<'a> std::ops::Deref for DbTransaction<'a> {
+    type Target = DbHandle<'a>;
     fn deref(&self) -> &Self::Target {
         &self.handle
     }
@@ -359,80 +448,11 @@ impl DbTransaction<'_> {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// DbConnection — the async trait, the sqlx seam
-// ─────────────────────────────────────────────────────────────────────
-
-/// The connection surface. This is the seam for sqlx-mode: rusqlite
-/// implements it via `spawn_blocking`, sqlx implements it natively.
-/// Consumers write `handle.query_row(...).await?` and it works for both.
-///
-/// Not yet implemented for `DbHandle` — this is the target shape. During
-/// migration, consumers use the raw rusqlite surface via `Deref`. Once
-/// all consumers are migrated, `DbHandle` will implement this trait and
-/// the `Deref` impl will be removed.
-pub(crate) trait DbConnection {
-    type Statement: DbStatement;
-    type Row: DbRow;
-    type Error: Into<DbError>;
-
-    async fn prepare(&self, sql: &str) -> Result<Self::Statement, Self::Error>;
-    async fn execute<P: DbParams + Send + 'static>(
-        &self,
-        sql: &str,
-        params: P,
-    ) -> Result<usize, Self::Error>;
-    async fn execute_batch(&self, sql: &str) -> Result<(), Self::Error>;
-    async fn query_row<T, F, P>(&self, sql: &str, params: P, f: F) -> Result<T, Self::Error>
-    where
-        F: FnOnce(&Self::Row) -> Result<T, Self::Error> + Send + 'static,
-        P: DbParams + Send + 'static,
-        T: Send + 'static;
-}
-
-pub(crate) trait DbStatement {
-    type Row: DbRow;
-    type Error: Into<DbError>;
-
-    async fn query_row<T, F, P>(&mut self, params: P, f: F) -> Result<T, Self::Error>
-    where
-        F: FnOnce(&Self::Row) -> Result<T, Self::Error> + Send + 'static,
-        P: DbParams + Send + 'static,
-        T: Send + 'static;
-
-    async fn query_map<T, F, P>(&mut self, params: P, f: F) -> Result<Vec<T>, Self::Error>
-    where
-        F: FnMut(&Self::Row) -> Result<T, Self::Error> + Send + 'static,
-        P: DbParams + Send + 'static,
-        T: Send + 'static;
-}
-
-pub(crate) trait DbRow {
-    fn get<T: DbValue>(&self, idx: usize) -> Result<T, DbError>;
-}
-
-/// Param collection for [`DbConnection`] methods. Implemented for owned
-/// param collections that are `Send + 'static` (required to cross the
-/// `spawn_blocking` boundary in the rusqlite impl).
-pub(crate) trait DbParams: Send {
-    /// Bind to a rusqlite statement. The statement is borrowed from the
-    /// caller — this is the rusqlite-specific seam; sqlx would have its
-    /// own binding path.
-    fn bind(&self, stmt: &mut rusqlite::Statement<'_>) -> Result<(), rusqlite::Error>;
-}
-
-/// A value that can be read from a [`DbRow`]. The rusqlite-specific seam;
-/// sqlx would have its own value trait. `R` is the concrete row type
-/// (known at compile time via associated types — no `dyn` needed).
-pub(crate) trait DbValue: Sized {
-    fn from_row<R: DbRow>(row: &R, idx: usize) -> Result<Self, DbError>;
-}
-
-// ─────────────────────────────────────────────────────────────────────
 // DbError — our error type, not rusqlite's
 // ─────────────────────────────────────────────────────────────────────
 
 /// The pool's error type. Wraps rusqlite and platform errors so
-/// consumers never see them directly — the sqlx seam.
+/// consumers never see them directly.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum DbError {
     #[error("database error: {0}")]
@@ -570,5 +590,100 @@ mod tests {
             );
         }
         drop(handle);
+    }
+
+    #[tokio::test]
+    async fn query_row_extracts_via_dbrow() {
+        let (_dir, config) = test_config();
+        let databases = Databases::new(config);
+        let handle = databases.handle(DbKey::Host).await.unwrap();
+
+        handle
+            .execute("CREATE TABLE probe (id INTEGER, name TEXT)", [])
+            .unwrap();
+        handle
+            .execute(
+                "INSERT INTO probe (id, name) VALUES (?1, ?2)",
+                rusqlite::params![1i64, "alpha"],
+            )
+            .unwrap();
+
+        let (id, name): (i64, String) = handle
+            .query_row(
+                "SELECT id, name FROM probe WHERE id = ?1",
+                rusqlite::params![1i64],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(id, 1);
+        assert_eq!(name, "alpha");
+    }
+
+    #[tokio::test]
+    async fn query_map_collects_via_dbrow() {
+        let (_dir, config) = test_config();
+        let databases = Databases::new(config);
+        let handle = databases.handle(DbKey::Host).await.unwrap();
+
+        handle
+            .execute("CREATE TABLE probe (id INTEGER, name TEXT)", [])
+            .unwrap();
+        handle
+            .execute(
+                "INSERT INTO probe (id, name) VALUES (?1, ?2)",
+                rusqlite::params![1i64, "alpha"],
+            )
+            .unwrap();
+        handle
+            .execute(
+                "INSERT INTO probe (id, name) VALUES (?1, ?2)",
+                rusqlite::params![2i64, "beta"],
+            )
+            .unwrap();
+
+        let rows: Vec<(i64, String)> = handle
+            .query_map("SELECT id, name FROM probe ORDER BY id", [], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].1, "alpha");
+        assert_eq!(rows[1].1, "beta");
+    }
+
+    #[tokio::test]
+    async fn query_row_returns_no_rows_error() {
+        let (_dir, config) = test_config();
+        let databases = Databases::new(config);
+        let handle = databases.handle(DbKey::Host).await.unwrap();
+
+        handle
+            .execute("CREATE TABLE probe (id INTEGER)", [])
+            .unwrap();
+
+        let result: Result<(i64,), DbError> =
+            handle.query_row("SELECT id FROM probe WHERE id = ?1", [1i64], |row| {
+                Ok((row.get(0)?,))
+            });
+
+        match result {
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => {}
+            other => panic!("expected QueryReturnedNoRows, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn last_insert_rowid_returns_rowid() {
+        let (_dir, config) = test_config();
+        let databases = Databases::new(config);
+        let handle = databases.handle(DbKey::Host).await.unwrap();
+
+        handle
+            .execute("CREATE TABLE probe (id INTEGER PRIMARY KEY AUTOINCREMENT)", [])
+            .unwrap();
+        handle
+            .execute("INSERT INTO probe DEFAULT VALUES", [])
+            .unwrap();
+        assert_eq!(handle.last_insert_rowid(), 1);
     }
 }

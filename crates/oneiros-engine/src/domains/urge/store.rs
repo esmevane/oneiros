@@ -3,11 +3,11 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct UrgeStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> UrgeStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -38,19 +38,19 @@ impl<'a> UrgeStore<'a> {
     }
 
     pub(crate) fn list(&self) -> Result<Vec<Urge>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT name, description, prompt FROM urges ORDER BY name")?;
-
-        let urges = stmt
-            .query_map([], |row| {
+        let raw: Vec<(String, String, String)> = self.conn.query_map(
+            "SELECT name, description, prompt FROM urges ORDER BY name",
+            [],
+            |row| {
                 Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
                 ))
-            })?
-            .collect::<Result<Vec<(String, String, String)>, _>>()?
+            },
+        )?;
+
+        let urges = raw
             .into_iter()
             .map(|(name, description, prompt)| {
                 Urge::builder()

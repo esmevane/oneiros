@@ -17,26 +17,18 @@ impl<'a> BookmarkRepo<'a> {
         let db = self.scope.host_db().await?;
 
         let count_sql = "SELECT COUNT(*) FROM bookmarks WHERE project = ?1";
-        let total = {
-            let mut stmt = db.prepare(count_sql)?;
-            stmt.query_row(rusqlite::params![project.to_string()], |row| {
-                row.get::<_, usize>(0)
-            })?
-        };
+        let total = db.query_row(count_sql, rusqlite::params![project.to_string()], |row| {
+            row.get::<_, usize>(0)
+        })?;
 
-        let mut stmt = db.prepare(
+        let raw: Vec<(String, String, String, String)> = db.query_map(
             "SELECT id, project, name, created_at FROM bookmarks
              WHERE project = ?1
              ORDER BY created_at DESC
              LIMIT ?2 OFFSET ?3",
+            rusqlite::params![project.to_string(), filters.limit, filters.offset],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
         )?;
-
-        let raw: Vec<(String, String, String, String)> = stmt
-            .query_map(
-                rusqlite::params![project.to_string(), filters.limit, filters.offset],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
-            )?
-            .collect::<Result<_, _>>()?;
 
         let mut bookmarks = vec![];
 

@@ -22,12 +22,10 @@ impl<'a> PressureRepo<'a> {
             None => return Ok(vec![]),
         };
 
-        let mut stmt = db.prepare(
+        let pressures = db.query_map(
             "SELECT id, agent_id, urge, data, updated_at FROM pressures WHERE agent_id = ?1 ORDER BY urge",
-        )?;
-
-        let pressures = stmt
-            .query_map(params![agent.id.to_string()], |row| {
+            params![agent.id.to_string()],
+            |row| {
                 let data_str: String = row.get(3)?;
                 let updated_str: String = row.get(4)?;
                 Ok(Pressure {
@@ -53,8 +51,8 @@ impl<'a> PressureRepo<'a> {
                     updated_at: Timestamp::parse_str(&updated_str)
                         .unwrap_or_else(|_| Timestamp::now()),
                 })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+            },
+        )?;
 
         Ok(pressures)
     }
@@ -62,12 +60,10 @@ impl<'a> PressureRepo<'a> {
     pub(crate) async fn list(&self) -> Result<Vec<Pressure>, EventError> {
         let db = self.scope.bookmark_db().await?;
 
-        let mut stmt = db.prepare(
+        let pressures = db.query_map(
             "SELECT id, agent_id, urge, data, updated_at FROM pressures ORDER BY agent_id, urge",
-        )?;
-
-        let pressures = stmt
-            .query_map([], |row| {
+            [],
+            |row| {
                 let data_str: String = row.get(3)?;
                 let updated_str: String = row.get(4)?;
                 Ok(Pressure {
@@ -93,8 +89,8 @@ impl<'a> PressureRepo<'a> {
                     updated_at: Timestamp::parse_str(&updated_str)
                         .unwrap_or_else(|_| Timestamp::now()),
                 })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+            },
+        )?;
 
         Ok(pressures)
     }

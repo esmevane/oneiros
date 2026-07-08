@@ -2,20 +2,20 @@ use rusqlite::params;
 
 use crate::*;
 
-fn is_missing_table(e: &rusqlite::Error) -> bool {
+fn is_missing_table(e: &DbError) -> bool {
     matches!(
         e,
-        rusqlite::Error::SqliteFailure(_, Some(msg))
+        DbError::Rusqlite(rusqlite::Error::SqliteFailure(_, Some(msg)))
             if msg.starts_with("no such table")
     )
 }
 
 pub(crate) struct ProjectStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> ProjectStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -46,16 +46,12 @@ impl<'a> ProjectStore<'a> {
 
     /// List all project names known to the host DB. Returns an empty
     /// list if the projection has not been migrated yet (cold start).
-    pub(crate) fn list(&self) -> Result<Vec<ProjectName>, rusqlite::Error> {
-        let mut stmt = match self.conn.prepare("select name from projects") {
-            Ok(stmt) => stmt,
-            Err(e) if is_missing_table(&e) => return Ok(Vec::new()),
-            Err(e) => return Err(e),
-        };
-        let rows = stmt
-            .query_map([], |row| row.get::<_, String>(0))?
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(rows.into_iter().map(ProjectName::from).collect())
+    pub(crate) fn list(&self) -> Result<Vec<ProjectName>, DbError> {
+        match self.conn.query_map("select name from projects", [], |row| row.get::<_, String>(0)) {
+            Ok(rows) => Ok(rows.into_iter().map(ProjectName::from).collect()),
+            Err(e) if is_missing_table(&e) => Ok(Vec::new()),
+            Err(e) => Err(e),
+        }
     }
 
     fn write_project(&self, project: &Project) -> Result<(), EventError> {

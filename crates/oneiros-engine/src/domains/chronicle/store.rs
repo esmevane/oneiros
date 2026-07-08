@@ -7,11 +7,11 @@ use crate::*;
 /// Nodes are stored by the BLAKE3/SHA256 hash of their serialized bytes.
 /// Structural sharing means identical subtrees are stored only once.
 pub(crate) struct ChronicleStore<'a> {
-    db: &'a rusqlite::Connection,
+    db: &'a DbHandle<'a>,
 }
 
 impl<'a> ChronicleStore<'a> {
-    pub(crate) fn new(db: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
         Self { db }
     }
 
@@ -41,13 +41,13 @@ impl<'a> ChronicleStore<'a> {
 
     /// Retrieve a ledger node by its content hash.
     pub(crate) fn get(&self, hash: &ContentHash) -> Option<LedgerNode> {
-        let mut stmt = self
+        let bytes: Vec<u8> = self
             .db
-            .prepare_cached("SELECT data FROM chronicle_objects WHERE hash = ?1")
-            .ok()?;
-
-        let bytes: Vec<u8> = stmt
-            .query_row(params![hash.to_string()], |row| row.get(0))
+            .query_row(
+                "SELECT data FROM chronicle_objects WHERE hash = ?1",
+                params![hash.to_string()],
+                |row| row.get(0),
+            )
             .ok()?;
 
         serde_json::from_slice(&bytes).ok()

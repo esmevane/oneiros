@@ -77,7 +77,7 @@ fn ticket_from_row(row: TicketRow) -> Result<Ticket, EventError> {
     })
 }
 
-fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TicketRow> {
+fn read_row(row: &DbRow<'_>) -> Result<TicketRow, DbError> {
     Ok((
         row.get(0)?,
         row.get(1)?,
@@ -111,13 +111,12 @@ impl<'a> TicketRepo<'a> {
     pub(crate) async fn get(&self, id: &TicketId) -> Result<Option<Ticket>, EventError> {
         let db = self.scope.host_db().await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE id = ?1");
-        let mut stmt = db.prepare(&sql)?;
 
-        let raw: Result<TicketRow, _> = stmt.query_row(params![id.to_string()], read_row);
+        let raw = db.query_row(&sql, params![id.to_string()], read_row);
 
         match raw {
             Ok(row) => Ok(Some(ticket_from_row(row)?)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -125,10 +124,9 @@ impl<'a> TicketRepo<'a> {
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Ticket>, EventError> {
         let db = self.scope.host_db().await?;
 
-        let total = {
-            let mut stmt = db.prepare("SELECT COUNT(*) FROM tickets")?;
-            stmt.query_row([], |row| row.get::<_, usize>(0))?
-        };
+        let total = db.query_row("SELECT COUNT(*) FROM tickets", [], |row| {
+            row.get::<_, usize>(0)
+        })?;
 
         let sql = format!(
             "SELECT {SELECT_COLUMNS}
@@ -136,11 +134,12 @@ impl<'a> TicketRepo<'a> {
              ORDER BY created_at DESC
              LIMIT ?1 OFFSET ?2"
         );
-        let mut stmt = db.prepare(&sql)?;
 
-        let raw: Vec<TicketRow> = stmt
-            .query_map(rusqlite::params![filters.limit, filters.offset], read_row)?
-            .collect::<Result<Vec<_>, _>>()?;
+        let raw: Vec<TicketRow> = db.query_map(
+            &sql,
+            rusqlite::params![filters.limit, filters.offset],
+            read_row,
+        )?;
 
         let mut tickets = vec![];
 
@@ -154,13 +153,12 @@ impl<'a> TicketRepo<'a> {
     pub(crate) async fn get_by_token(&self, token: &str) -> Result<Option<Ticket>, EventError> {
         let db = self.scope.host_db().await?;
         let sql = format!("SELECT {SELECT_COLUMNS} FROM tickets WHERE token = ?1");
-        let mut stmt = db.prepare(&sql)?;
 
-        let raw: Result<TicketRow, _> = stmt.query_row(params![token], read_row);
+        let raw = db.query_row(&sql, params![token], read_row);
 
         match raw {
             Ok(row) => Ok(Some(ticket_from_row(row)?)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }

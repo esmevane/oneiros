@@ -3,14 +3,14 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct ChronicleLensReader<'a> {
-    host_db: &'a rusqlite::Connection,
+    host_db: &'a DbHandle<'a>,
     canons: &'a CanonIndex,
     project: ProjectName,
 }
 
 impl<'a> ChronicleLensReader<'a> {
     pub(crate) fn new(
-        host_db: &'a rusqlite::Connection,
+        host_db: &'a DbHandle<'a>,
         canons: &'a CanonIndex,
         project: ProjectName,
     ) -> Self {
@@ -28,12 +28,10 @@ impl<'a> ChronicleLensReader<'a> {
             )));
         };
 
-        let mut stmt = self
+        let name: String = self
             .host_db
-            .prepare("SELECT name FROM bookmarks WHERE id = ?1 AND project = ?2")
-            .map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let name: String = stmt
             .query_row(
+                "SELECT name FROM bookmarks WHERE id = ?1 AND project = ?2",
                 params![bookmark_id.to_string(), self.project.to_string()],
                 |row| row.get(0),
             )

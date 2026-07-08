@@ -16,20 +16,22 @@ impl<'a> AgentRepo<'a> {
 
     pub(crate) async fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
         let db = self.scope.bookmark_db().await?;
-        let mut stmt = db
-            .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
 
-        let result = stmt.query_row(params![name.to_string()], |row| {
-            let id: String = row.get(0)?;
-            let name: String = row.get(1)?;
-            Ok((
-                id,
-                name,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+        let result = db.query_row(
+            "select id, name, persona, description, prompt from agents where name = ?1",
+            params![name.to_string()],
+            |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                Ok((
+                    id,
+                    name,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, name, persona, description, prompt)) => Ok(Some(
@@ -41,27 +43,29 @@ impl<'a> AgentRepo<'a> {
                     .prompt(prompt)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
 
     pub(crate) async fn get_by_id(&self, id: AgentId) -> Result<Option<Agent>, EventError> {
         let db = self.scope.bookmark_db().await?;
-        let mut stmt =
-            db.prepare("select id, name, persona, description, prompt from agents where id = ?1")?;
 
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            let id: String = row.get(0)?;
-            let name: String = row.get(1)?;
-            Ok((
-                id,
-                name,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+        let result = db.query_row(
+            "select id, name, persona, description, prompt from agents where id = ?1",
+            params![id.to_string()],
+            |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                Ok((
+                    id,
+                    name,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, name, persona, description, prompt)) => Ok(Some(
@@ -73,7 +77,7 @@ impl<'a> AgentRepo<'a> {
                     .prompt(prompt)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -94,18 +98,15 @@ impl<'a> AgentRepo<'a> {
              from agents where id in ({placeholders})"
         );
         let id_strs: Vec<String> = ids.iter().map(ToString::to_string).collect();
-        let mut stmt = db.prepare(&sql)?;
-        let rows = stmt
-            .query_map(params_from_iter(id_strs.iter()), |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, String>(4)?,
-                ))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+        let rows = db.query_map(&sql, params_from_iter(id_strs.iter()), |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
 
         let mut by_id: HashMap<AgentId, Agent> = HashMap::with_capacity(rows.len());
         for (id, name, persona, description, prompt) in rows {

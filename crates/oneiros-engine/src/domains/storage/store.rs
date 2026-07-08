@@ -8,11 +8,11 @@ use crate::*;
 /// - `blob` table: content-addressed by SHA256 hash, stores compressed binary
 /// - `storage` table: maps human-readable keys to blob hashes
 pub(crate) struct StorageStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> StorageStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -65,16 +65,16 @@ impl<'a> StorageStore<'a> {
 
     #[tracing::instrument(skip_all, fields(hash = %hash), err(Display))]
     pub(crate) fn get_blob(&self, hash: &ContentHash) -> Result<Option<BlobContent>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
-
-        let result = stmt.query_row(params![hash.as_str()], |row| {
-            let hash: String = row.get(0)?;
-            let data: Vec<u8> = row.get(1)?;
-            let size: i64 = row.get(2)?;
-            Ok((hash, data, size))
-        });
+        let result = self.conn.query_row(
+            "SELECT hash, data, size FROM blob WHERE hash = ?1",
+            params![hash.as_str()],
+            |row| {
+                let hash: String = row.get(0)?;
+                let data: Vec<u8> = row.get(1)?;
+                let size: i64 = row.get(2)?;
+                Ok((hash, data, size))
+            },
+        );
 
         match result {
             Ok((hash, data, size)) => Ok(Some(BlobContent {
@@ -82,7 +82,7 @@ impl<'a> StorageStore<'a> {
                 size: Size::new(size as usize),
                 data: Blob::encode(&data),
             })),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }

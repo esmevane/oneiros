@@ -40,8 +40,7 @@ impl<'a> SearchRepo<'a> {
 
         let total = {
             let sql = format!("select count(*) from search_index{}", where_clause.sql);
-            db.prepare(&sql)?
-                .query_row(params_from_iter(&params), |row| row.get::<_, usize>(0))?
+            db.query_row(&sql, params_from_iter(&params), |row| row.get::<_, usize>(0))?
         };
 
         let hits = {
@@ -63,10 +62,7 @@ impl<'a> SearchRepo<'a> {
             let mut paged: Vec<&dyn ToSql> = params.clone();
             paged.push(limit.as_ref());
             paged.push(offset.as_ref());
-            let mut statement = db.prepare(&sql)?;
-            statement
-                .query_map(params_from_iter(&paged), RankedHit::from_row)?
-                .collect::<Result<Vec<_>, _>>()?
+            db.query_map(&sql, params_from_iter(&paged), RankedHit::from_row)?
         };
 
         let facets = if query.with_facets {
@@ -87,7 +83,7 @@ impl<'a> SearchRepo<'a> {
     /// dimensions that actually apply to the result set.
     fn collect_facets(
         &self,
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         where_sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Facets, EventError> {
@@ -108,15 +104,12 @@ impl<'a> SearchRepo<'a> {
                  group by {column}
                  order by n desc, {column} asc"
             );
-            let mut stmt = db.prepare(&sql)?;
-            let rows = stmt
-                .query_map(params_from_iter(params), |row| {
-                    Ok(FacetBucket {
-                        value: row.get::<_, String>(0)?,
-                        count: row.get::<_, usize>(1)?,
-                    })
-                })?
-                .collect::<Result<Vec<_>, _>>()?;
+            let rows = db.query_map(&sql, params_from_iter(params), |row| {
+                Ok(FacetBucket {
+                    value: row.get::<_, String>(0)?,
+                    count: row.get::<_, usize>(1)?,
+                })
+            })?;
 
             if !rows.is_empty() {
                 groups.push(FacetGroup {

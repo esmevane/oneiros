@@ -24,21 +24,22 @@ impl<'a> MemoryRepo<'a> {
 
     pub(crate) async fn get(&self, id: &MemoryId) -> Result<Option<Memory>, EventError> {
         let db = self.scope.bookmark_db().await?;
-        let mut stmt = db.prepare(
+
+        let result = db.query_row(
             "SELECT id, agent_id, level, content, created_at
              FROM memories WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            let id: String = row.get(0)?;
-            Ok((
-                id,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+            params![id.to_string()],
+            |row| {
+                let id: String = row.get(0)?;
+                Ok((
+                    id,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, agent_id, level, content, created_at)) => Ok(Some(
@@ -50,7 +51,7 @@ impl<'a> MemoryRepo<'a> {
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -71,18 +72,15 @@ impl<'a> MemoryRepo<'a> {
              FROM memories WHERE id IN ({placeholders})"
         );
         let id_strs: Vec<String> = ids.iter().map(ToString::to_string).collect();
-        let mut stmt = db.prepare(&sql)?;
-        let rows = stmt
-            .query_map(params_from_iter(id_strs.iter()), |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, String>(4)?,
-                ))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+        let rows = db.query_map(&sql, params_from_iter(id_strs.iter()), |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
 
         let mut by_id: HashMap<MemoryId, Memory> = HashMap::with_capacity(rows.len());
         for (id, agent_id, level, content, created_at) in rows {

@@ -579,7 +579,7 @@ impl ContinuityService {
     }
 
     fn assemble_cognitions(
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         agent: &Agent,
         config: &DreamConfig,
         graph_ids: &HashSet<CognitionId>,
@@ -613,7 +613,7 @@ impl ContinuityService {
     }
 
     fn assemble_experiences(
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         recent: &[Experience],
         graph_ids: &HashSet<ExperienceId>,
     ) -> Result<Vec<Experience>, ContinuityError> {

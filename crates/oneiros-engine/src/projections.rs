@@ -15,7 +15,7 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Run all projection migrations.
-    pub(crate) fn migrate(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    pub(crate) fn migrate(&self, db: &DbHandle) -> Result<(), EventError> {
         for frame_set in &self.frames {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
@@ -33,7 +33,7 @@ impl<T: Clone + Default> Projections<T> {
     #[tracing::instrument(skip_all, fields(event_type = event.data.event_type(), sequence = event.sequence), err(Display))]
     pub(crate) fn apply(
         &self,
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         event: &StoredEvent,
     ) -> Result<(), EventError> {
         for frame_set in &self.frames {
@@ -58,7 +58,7 @@ impl<T: Clone + Default> Projections<T> {
     /// SQLite needs rebuilding.
     pub(crate) fn apply_frames(
         &self,
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         event: &StoredEvent,
     ) -> Result<(), EventError> {
         for frame_set in &self.frames {
@@ -74,7 +74,7 @@ impl<T: Clone + Default> Projections<T> {
     }
 
     /// Reset all projections across all frames.
-    pub(crate) fn reset(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    pub(crate) fn reset(&self, db: &DbHandle) -> Result<(), EventError> {
         for frame_set in self.frames.iter().rev() {
             for frame_item in &frame_set.contents {
                 for projection in &frame_item.projections {
@@ -94,7 +94,7 @@ impl<T: Clone + Default> Projections<T> {
     #[tracing::instrument(skip_all, err(Display))]
     pub(crate) fn replay(
         &self,
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         log: &EventLog,
     ) -> Result<usize, EventError> {
         let events = log.load_all()?;
@@ -131,7 +131,7 @@ impl Projections<ProjectCanon> {
     /// reducer-computed pressures to SQLite.
     pub(crate) fn apply_project(
         &self,
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         event: &StoredEvent,
     ) -> Result<(), EventError> {
         self.apply(db, event)?;
@@ -140,7 +140,7 @@ impl Projections<ProjectCanon> {
     }
 
     /// Write reducer-computed pressure state to the SQLite table.
-    fn sync_pressures(&self, db: &rusqlite::Connection) -> Result<(), EventError> {
+    fn sync_pressures(&self, db: &DbHandle) -> Result<(), EventError> {
         let state = self.reducers.state()?;
         let store = PressureStore::new(db);
 
@@ -159,7 +159,7 @@ impl Projections<ProjectCanon> {
     /// Replay for project projections — includes pressure sync at the end.
     pub(crate) fn replay_project(
         &self,
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         log: &EventLog,
     ) -> Result<usize, EventError> {
         let count = self.replay(db, log)?;
