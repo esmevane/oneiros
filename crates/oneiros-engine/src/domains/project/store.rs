@@ -47,7 +47,9 @@ impl<'a> ProjectStore<'a> {
     /// List all project names known to the host DB. Returns an empty
     /// list if the projection has not been migrated yet (cold start).
     pub(crate) fn list(&self) -> Result<Vec<ProjectName>, DbError> {
-        match self.conn.query_map("select name from projects", [], |row| row.get::<_, String>(0)) {
+        match self.conn.query_map("select name from projects", [], |row| {
+            row.get::<_, String>(0)
+        }) {
             Ok(rows) => Ok(rows.into_iter().map(ProjectName::from).collect()),
             Err(e) if is_missing_table(&e) => Ok(Vec::new()),
             Err(e) => Err(e),

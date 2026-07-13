@@ -147,17 +147,14 @@ impl<'a> EventLog<'a> {
         let param_refs: Vec<&dyn rusqlite::ToSql> =
             params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
 
-        let tuples: Vec<(String, i64, String, String, String)> = self.conn.query_map(
-            &query,
-            param_refs.as_slice(),
-            |row| {
+        let tuples: Vec<(String, i64, String, String, String)> =
+            self.conn.query_map(&query, param_refs.as_slice(), |row| {
                 let id_str: String = row.get(0)?;
                 let data_str: String = row.get(2)?;
                 let source_str: String = row.get(3)?;
                 let created_at_str: String = row.get(4)?;
                 Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
-            },
-        )?;
+            })?;
 
         let mut events = Vec::new();
         for (id_str, sequence, data_str, source_str, created_at_str) in tuples {

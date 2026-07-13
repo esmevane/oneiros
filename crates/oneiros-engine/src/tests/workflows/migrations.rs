@@ -97,11 +97,10 @@ async fn pre_rename_data_dir_boots_into_current_layout() -> Result<(), Box<dyn c
     // Each preserved row decodes through the current Events enum without
     // landing in `Event::Unknown` — proving the versioning layer handles
     // legacy data end-to-end.
-    let rows: Vec<(String, String)> = events_db.query_map(
-        "SELECT event_type, data FROM events",
-        [],
-        |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
-    )?;
+    let rows: Vec<(String, String)> =
+        events_db.query_map("SELECT event_type, data FROM events", [], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?;
     for (event_type, data) in &rows {
         let value: serde_json::Value = serde_json::from_str(data)?;
         let known: Events = serde_json::from_value(value).unwrap_or_else(|err| {

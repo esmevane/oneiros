@@ -82,9 +82,7 @@ impl<'a> ConnectionRepo<'a> {
             .iter()
             .map(|v| v as &dyn rusqlite::ToSql)
             .collect();
-        let total = db.query_row(&count_sql, params.as_slice(), |row| {
-            row.get::<_, usize>(0)
-        })?;
+        let total = db.query_row(&count_sql, params.as_slice(), |row| row.get::<_, usize>(0))?;
 
         // Fetch the bounded window.
         let select_sql = format!(

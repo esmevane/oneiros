@@ -55,8 +55,7 @@ impl Migration for BrainsToProjects {
                 tx.execute_batch("ALTER TABLE bookmarks RENAME COLUMN brain TO project")?;
             }
 
-            if column_exists(&tx, "follows", "brain")?
-                && !column_exists(&tx, "follows", "project")?
+            if column_exists(&tx, "follows", "brain")? && !column_exists(&tx, "follows", "project")?
             {
                 tx.execute_batch("ALTER TABLE follows RENAME COLUMN brain TO project")?;
             }

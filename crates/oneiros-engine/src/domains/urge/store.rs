@@ -41,13 +41,7 @@ impl<'a> UrgeStore<'a> {
         let raw: Vec<(String, String, String)> = self.conn.query_map(
             "SELECT name, description, prompt FROM urges ORDER BY name",
             [],
-            |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                ))
-            },
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )?;
 
         let urges = raw

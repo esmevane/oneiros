@@ -16,7 +16,9 @@ impl MigrationService {
     /// the data-dir if any migration has work, then applies the required
     /// ones in order. Returns `AlreadyCurrent` when nothing was needed —
     /// the common path on every subsequent boot.
-    pub(crate) async fn ensure_current(config: &Config) -> Result<MigrationOutcome, MigrationError> {
+    pub(crate) async fn ensure_current(
+        config: &Config,
+    ) -> Result<MigrationOutcome, MigrationError> {
         let registry = Self::registry();
         let mut backup_path: Option<std::path::PathBuf> = None;
         let mut applied: Vec<&'static str> = Vec::new();

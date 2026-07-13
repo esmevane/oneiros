@@ -116,7 +116,10 @@ impl<'a> CognitionStore<'a> {
         };
 
         let raw = match (agent, texture) {
-            (Some(a), Some(t)) => self.conn.query_map(sql, params![a.to_string(), t.as_str()], map_row),
+            (Some(a), Some(t)) => {
+                self.conn
+                    .query_map(sql, params![a.to_string(), t.as_str()], map_row)
+            }
             (Some(a), None) => self.conn.query_map(sql, params![a.to_string()], map_row),
             (None, Some(t)) => self.conn.query_map(sql, params![t.as_str()], map_row),
             (None, None) => self.conn.query_map(sql, [], map_row),

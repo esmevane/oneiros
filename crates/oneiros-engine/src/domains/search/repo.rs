@@ -40,7 +40,9 @@ impl<'a> SearchRepo<'a> {
 
         let total = {
             let sql = format!("select count(*) from search_index{}", where_clause.sql);
-            db.query_row(&sql, params_from_iter(&params), |row| row.get::<_, usize>(0))?
+            db.query_row(&sql, params_from_iter(&params), |row| {
+                row.get::<_, usize>(0)
+            })?
         };
 
         let hits = {

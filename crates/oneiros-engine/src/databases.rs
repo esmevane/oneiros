@@ -316,12 +316,7 @@ impl DbHandle<'_> {
     /// wrapper, not `rusqlite::Row`. Returns
     /// [`DbError::Rusqlite(rusqlite::Error::QueryReturnedNoRows)`] when
     /// no row matches.
-    pub(crate) fn query_row<T, P, F>(
-        &self,
-        sql: &str,
-        params: P,
-        f: F,
-    ) -> Result<T, DbError>
+    pub(crate) fn query_row<T, P, F>(&self, sql: &str, params: P, f: F) -> Result<T, DbError>
     where
         P: rusqlite::Params,
         F: FnOnce(&DbRow<'_>) -> Result<T, DbError>,
@@ -694,7 +689,10 @@ mod tests {
         let handle = databases.handle(DbKey::Host).await.unwrap();
 
         handle
-            .execute("CREATE TABLE probe (id INTEGER PRIMARY KEY AUTOINCREMENT)", [])
+            .execute(
+                "CREATE TABLE probe (id INTEGER PRIMARY KEY AUTOINCREMENT)",
+                [],
+            )
             .unwrap();
         handle
             .execute("INSERT INTO probe DEFAULT VALUES", [])
