@@ -591,6 +591,10 @@ impl BookmarkService {
     /// and the submit handshake.
     ///
     /// The caller must ensure the bookmark already exists on this host.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "We see a refactor that rolls these args up into one structure"
+    )]
     pub(crate) async fn collect_from_peer_link(
         mailbox: &Mailbox,
         bridge: &Bridge,

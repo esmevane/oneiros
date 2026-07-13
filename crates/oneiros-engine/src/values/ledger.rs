@@ -425,6 +425,10 @@ mod tests {
 
     /// In-memory store for testing. Returns a sync store, a sync resolve
     /// (for `Ledger::record`), and an async resolve (for diff/collect).
+    #[expect(
+        clippy::type_complexity,
+        reason = "This function needs to be removed entirely"
+    )]
     fn memory_store() -> (
         impl Fn(&LedgerNode) -> ContentHash,
         impl Fn(&ContentHash) -> Option<LedgerNode>,
