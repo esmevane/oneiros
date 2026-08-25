@@ -26,7 +26,8 @@ jobs:
         with:
           shared-key: ci
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Run cargo check
+      - &check
+        name: Run cargo check
         run: cargo check --workspace --all-targets
 
   check-windows:
@@ -40,8 +41,7 @@ jobs:
         with:
           shared-key: ci-windows
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Run cargo check
-        run: cargo check --workspace --all-targets
+      - *check
 
   test:
     name: Test
@@ -51,8 +51,10 @@ jobs:
       - *checkout
       - *install-rust
       - *cache
+      - name: Install cargo test deps
+        run: cargo test --workspace --all-targets --no-run
       - name: Run cargo test
-        run: cargo test --workspace
+        run: cargo test --workspace --all-targets
 
   clippy:
     name: Clippy
@@ -62,6 +64,7 @@ jobs:
       - *checkout
       - *install-rust
       - *cache
+      - *check
       - name: Run clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
@@ -71,6 +74,7 @@ jobs:
     steps:
       - *checkout
       - *install-rust
+      - *check
       - name: Check formatting
         run: cargo fmt --all --check
 
