@@ -342,7 +342,7 @@ impl Config {
     // instead of reaching for `rusqlite::Connection::open` directly.
 
     /// Apply every pragma from [`DatabaseConfig`] to a connection.
-    fn apply_pragmas(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
+    pub(crate) fn apply_pragmas(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
         let db = &self.database;
         conn.pragma_update(None, "journal_mode", &db.journal_mode)?;
         conn.pragma_update(None, "synchronous", &db.synchronous)?;
@@ -496,122 +496,190 @@ pub(crate) trait FromConfig: Sized {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
 
-    /// Build a Config pointing at a tempdir for isolated file tests.
-    fn config_in(dir: &std::path::Path) -> Config {
-        Config::builder()
-            .data_dir(dir.to_path_buf())
-            .project(ProjectName::new("test"))
-            .build()
+    /// A testable config wrapper that has knowledge of its tempdir
+    struct TestableConfig {
+        dir: Arc<tempfile::TempDir>,
+        config: Config,
     }
 
-    fn write_config(dir: &std::path::Path, contents: &str) {
-        let platform = Platform::new(dir);
-        platform.ensure_dir(platform.data_dir()).unwrap();
-        platform.write(platform.config_path(), contents).unwrap();
-    }
+    impl TestableConfig {
+        /// Build a Config pointing at a tempdir for isolated file tests.
+        fn init() -> Self {
+            let name = ProjectName::new("test");
+            let dir = tempfile::tempdir().expect("couldn't create temp dir");
+            let data_dir = dir.path().to_path_buf();
 
-    /// Resolve with explicit overrides, setting data_dir from the dir.
-    fn resolve_in(dir: &std::path::Path, overrides: &CliOverrides) -> Config {
-        let mut ov = overrides.clone();
-        if ov.data_dir.is_none() {
-            ov.data_dir = Some(dir.to_path_buf());
+            Self {
+                dir: Arc::new(dir),
+                config: Config::builder().data_dir(data_dir).project(name).build(),
+            }
         }
-        Config::resolve(&ov).expect("config resolution should succeed")
+
+        fn write_empty(&self) {
+            self.write("")
+        }
+
+        fn write(&self, contents: &str) {
+            let platform = Platform::new(self.dir.path());
+
+            platform.ensure_dir(platform.data_dir()).unwrap();
+            platform.write(platform.config_path(), contents).unwrap();
+        }
+
+        /// Resolve with overrides, sharing this harness's tempdir.
+        /// Panics if resolution fails — use `try_with_overrides` for error cases.
+        fn with_overrides(&self, overrides: &CliOverrides) -> Self {
+            let mut overrides = overrides.clone();
+            if overrides.data_dir.is_none() {
+                overrides.data_dir = Some(self.dir.path().to_path_buf());
+            }
+
+            Self {
+                dir: self.dir.clone(),
+                config: Config::resolve(&overrides).expect("config resolution should succeed"),
+            }
+        }
+
+        /// Resolve with overrides, returning the result instead of panicking.
+        #[expect(
+            clippy::result_large_err,
+            reason = "`figment::Error` is large (~200 bytes); we're knowingly permitting it for now"
+        )]
+        fn try_with_overrides(&self, overrides: &CliOverrides) -> Result<Config, figment::Error> {
+            let mut overrides = overrides.clone();
+            if overrides.data_dir.is_none() {
+                overrides.data_dir = Some(self.dir.path().to_path_buf());
+            }
+
+            Config::resolve(&overrides)
+        }
+
+        /// A fresh `TestableConfig` sharing this harness's tempdir but with
+        /// default builder config (no file, no overrides). Useful as the
+        /// "expected" side of comparison tests.
+        fn defaults(&self) -> Self {
+            Self {
+                dir: self.dir.clone(),
+                config: Config::builder()
+                    .data_dir(self.dir.path().to_path_buf())
+                    .project(ProjectName::new("test"))
+                    .build(),
+            }
+        }
     }
 
     #[test]
     fn missing_file_returns_defaults() {
-        let dir = tempfile::tempdir().unwrap();
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+        let expected = TestableConfig::init();
+        let subject = expected.with_overrides(&Default::default());
 
-        let expected = config_in(dir.path());
-        assert_eq!(config.service.address, expected.service.address);
-        assert_eq!(config.dream.cognition_size, expected.dream.cognition_size);
-        assert_eq!(config.output, expected.output);
+        assert_eq!(
+            subject.config.service.address,
+            expected.config.service.address
+        );
+        assert_eq!(
+            subject.config.dream.cognition_size,
+            expected.config.dream.cognition_size
+        );
+        assert_eq!(subject.config.output, expected.config.output);
     }
 
     #[test]
     fn empty_file_returns_defaults() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(dir.path(), "");
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+        let subject = TestableConfig::init();
 
-        let expected = config_in(dir.path());
-        assert_eq!(config.service.address, expected.service.address);
+        subject.write_empty();
+
+        let expected = subject.with_overrides(&Default::default());
+
+        assert_eq!(
+            subject.config.service.address,
+            expected.config.service.address
+        );
     }
 
     #[test]
     fn malformed_file_falls_back_to_defaults() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(dir.path(), "this is not valid toml {{{{");
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+        let subject = TestableConfig::init();
+        subject.write("this is not valid toml {{{{");
 
-        let expected = config_in(dir.path());
-        assert_eq!(config.service.address, expected.service.address);
+        let resolved = subject.with_overrides(&Default::default());
+        let expected = subject.defaults();
+
+        assert_eq!(
+            resolved.config.service.address,
+            expected.config.service.address
+        );
     }
 
     #[test]
     fn file_overrides_default_service_address() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [service]
 address = "127.0.0.1:3000"
 "#,
         );
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+
+        let resolved = subject.with_overrides(&Default::default());
 
         assert_eq!(
-            config.service.address,
+            resolved.config.service.address,
             "127.0.0.1:3000".parse::<SocketAddr>().unwrap()
         );
     }
 
     #[test]
     fn file_overrides_default_fetch_config() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [fetch]
 interval = "50ms"
 timeout = "5s"
 "#,
         );
-        let config = resolve_in(dir.path(), &CliOverrides::default());
 
-        assert_eq!(config.fetch.interval, std::time::Duration::from_millis(50));
-        assert_eq!(config.fetch.timeout, std::time::Duration::from_secs(5));
+        let resolved = subject.with_overrides(&Default::default());
+
+        assert_eq!(
+            resolved.config.fetch.interval,
+            std::time::Duration::from_millis(50)
+        );
+        assert_eq!(
+            resolved.config.fetch.timeout,
+            std::time::Duration::from_secs(5)
+        );
     }
 
     #[test]
     fn file_overrides_default_dream_config() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [dream]
 cognition_size = 50
 dream_depth = 3
 "#,
         );
-        let config = resolve_in(dir.path(), &CliOverrides::default());
 
-        assert_eq!(config.dream.cognition_size, 50);
-        assert_eq!(config.dream.dream_depth, 3);
-        // Unspecified fields keep their defaults
-        assert_eq!(config.dream.recent_window, 5);
-        assert_eq!(config.dream.recollection_size, 30);
+        let resolved = subject.with_overrides(&Default::default());
+
+        assert_eq!(resolved.config.dream.cognition_size, 50);
+        assert_eq!(resolved.config.dream.dream_depth, 3);
+        assert_eq!(resolved.config.dream.recent_window, 5);
+        assert_eq!(resolved.config.dream.recollection_size, 30);
     }
 
     #[test]
     fn cli_overrides_file_and_defaults() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [service]
 address = "127.0.0.1:3000"
@@ -630,25 +698,22 @@ cognition_size = 50
                 cognition_size: Some(5),
                 ..Default::default()
             },
-            data_dir: Some(dir.path().to_path_buf()),
             ..Default::default()
         };
 
-        let config = Config::resolve(&overrides).expect("resolve should succeed");
+        let resolved = subject.with_overrides(&overrides);
 
-        // CLI values win over file
         assert_eq!(
-            config.service.address,
+            resolved.config.service.address,
             "127.0.0.1:9999".parse::<SocketAddr>().unwrap()
         );
-        assert_eq!(config.dream.cognition_size, 5);
+        assert_eq!(resolved.config.dream.cognition_size, 5);
     }
 
     #[test]
     fn partial_cli_overrides_let_file_values_through() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [dream]
 cognition_size = 50
@@ -656,97 +721,107 @@ dream_depth = 3
 "#,
         );
 
-        // Only set cognition_size via CLI — dream_depth should come from file
         let overrides = CliOverrides {
             dream: DreamCli {
                 cognition_size: Some(5),
                 ..Default::default()
             },
-            data_dir: Some(dir.path().to_path_buf()),
             ..Default::default()
         };
 
-        let config = Config::resolve(&overrides).expect("resolve should succeed");
+        let resolved = subject.with_overrides(&overrides);
 
-        assert_eq!(config.dream.cognition_size, 5); // CLI
-        assert_eq!(config.dream.dream_depth, 3); // from file
+        assert_eq!(resolved.config.dream.cognition_size, 5);
+        assert_eq!(resolved.config.dream.dream_depth, 3);
     }
 
     #[test]
     fn file_overrides_output_mode() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(dir.path(), r#"output = "json""#);
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+        use figment::Jail;
 
-        assert_eq!(config.output, OutputMode::Json);
+        #[expect(clippy::result_large_err)]
+        Jail::expect_with(|jail| {
+            jail.create_file("config.toml", r#"output = "json""#)?;
+
+            let figment = Figment::new()
+                .merge(Serialized::defaults(Config::default()))
+                .merge(Toml::file("config.toml"))
+                .merge(Env::prefixed("ONEIROS_").split("__"))
+                .merge(Serialized::defaults(CliOverrides::default()));
+
+            let config: Config = figment.extract()?;
+            assert_eq!(config.output, OutputMode::Json);
+
+            Ok(())
+        });
     }
 
     #[test]
     fn file_overrides_health_check_delays() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [service]
 health_check_delays_ms = [100, 200]
 "#,
         );
-        let config = resolve_in(dir.path(), &CliOverrides::default());
 
-        assert_eq!(config.service.health_check_delays_ms, vec![100, 200]);
+        let resolved = subject.with_overrides(&Default::default());
+
+        assert_eq!(
+            resolved.config.service.health_check_delays_ms,
+            vec![100, 200]
+        );
     }
 
     #[test]
     fn partial_dream_section_fills_defaults() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [dream]
 experience_size = 25
 "#,
         );
-        let config = resolve_in(dir.path(), &CliOverrides::default());
 
-        assert_eq!(config.dream.experience_size, 25);
-        assert_eq!(config.dream.cognition_size, 20); // default preserved
-        assert_eq!(config.dream.dream_depth, 1); // default preserved
+        let resolved = subject.with_overrides(&Default::default());
+
+        assert_eq!(resolved.config.dream.experience_size, 25);
+        assert_eq!(resolved.config.dream.cognition_size, 20);
+        assert_eq!(resolved.config.dream.dream_depth, 1);
     }
 
     #[test]
     fn file_overrides_color_choice() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(dir.path(), r#"color = "never""#);
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+        let subject = TestableConfig::init();
+        subject.write(r#"color = "never""#);
 
-        assert_eq!(config.color, ColorChoice::Never);
+        let resolved = subject.with_overrides(&Default::default());
+
+        assert_eq!(resolved.config.color, ColorChoice::Never);
     }
 
     #[test]
     fn file_overrides_verbosity() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(dir.path(), r#"verbosity = "verbose""#);
-        let config = resolve_in(dir.path(), &CliOverrides::default());
+        let subject = TestableConfig::init();
+        subject.write(r#"verbosity = "verbose""#);
 
-        assert_eq!(config.verbosity, Verbosity::Verbose);
+        let resolved = subject.with_overrides(&Default::default());
+
+        assert_eq!(resolved.config.verbosity, Verbosity::Verbose);
     }
 
     #[test]
     fn unknown_field_in_config_file_is_rejected() {
-        let dir = tempfile::tempdir().unwrap();
-        write_config(
-            dir.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [sevice]
 address = "127.0.0.1:3000"
 "#,
         );
-        // Figment with deny_unknown_fields on Config should reject unknown keys
-        let overrides = CliOverrides {
-            data_dir: Some(dir.path().to_path_buf()),
-            ..Default::default()
-        };
-        let result = Config::resolve(&overrides);
+
+        let result = subject.try_with_overrides(&Default::default());
         assert!(
             result.is_err(),
             "unknown field 'sevice' should cause an error"
@@ -755,25 +830,18 @@ address = "127.0.0.1:3000"
 
     #[test]
     fn cli_data_dir_determines_config_file_location() {
-        let dir_b = tempfile::tempdir().unwrap();
-
-        // Config file in dir_b overrides service address
-        write_config(
-            dir_b.path(),
+        let subject = TestableConfig::init();
+        subject.write(
             r#"
 [service]
 address = "127.0.0.1:4000"
 "#,
         );
 
-        let overrides = CliOverrides {
-            data_dir: Some(dir_b.path().to_path_buf()),
-            ..Default::default()
-        };
+        let resolved = subject.with_overrides(&Default::default());
 
-        let config = Config::resolve(&overrides).expect("resolve should succeed");
         assert_eq!(
-            config.service.address,
+            resolved.config.service.address,
             "127.0.0.1:4000".parse::<SocketAddr>().unwrap()
         );
     }
@@ -809,10 +877,9 @@ address = "127.0.0.1:4000"
         // If a field is added to CliOverrides but not Config, serde's
         // deny_unknown_fields on Config catches it at runtime.
 
-        let dir = tempfile::tempdir().unwrap();
+        let subject = TestableConfig::init();
 
         let overrides = CliOverrides {
-            data_dir: Some(dir.path().to_path_buf()),
             project: Some(ProjectName::new("coverage-project")),
             bookmark: Some(BookmarkName::new("coverage-lens")),
             service: ServiceCli {
@@ -843,12 +910,13 @@ address = "127.0.0.1:4000"
             output: Some(OutputMode::Text),
             color: Some(ColorChoice::Always),
             verbosity: Some(Verbosity::Verbose),
+            ..Default::default()
         };
 
-        let config = Config::resolve(&overrides).expect("full coverage resolve should succeed");
+        let resolved = subject.with_overrides(&overrides);
 
-        // Every field from overrides should land in the resolved config
-        assert_eq!(config.data_dir, dir.path().to_path_buf());
+        let config = &resolved.config;
+        assert_eq!(config.data_dir, subject.dir.path().to_path_buf());
         assert_eq!(config.project, ProjectName::new("coverage-project"));
         assert_eq!(config.bookmark, BookmarkName::new("coverage-lens"));
         assert_eq!(config.service.label, "com.test.coverage");
