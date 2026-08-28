@@ -7,11 +7,11 @@ use crate::*;
 /// Nodes are stored by the BLAKE3/SHA256 hash of their serialized bytes.
 /// Structural sharing means identical subtrees are stored only once.
 pub(crate) struct ChronicleStore<'a> {
-    db: &'a DbHandle<'a>,
+    db: &'a DbHandle,
 }
 
 impl<'a> ChronicleStore<'a> {
-    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(db: &'a DbHandle) -> Self {
         Self { db }
     }
 

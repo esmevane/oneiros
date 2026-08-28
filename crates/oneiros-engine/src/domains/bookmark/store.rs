@@ -9,11 +9,11 @@ fn is_missing_table(e: &rusqlite::Error) -> bool {
 }
 
 pub(crate) struct BookmarkStore<'a> {
-    db: &'a DbHandle<'a>,
+    db: &'a DbHandle,
 }
 
 impl<'a> BookmarkStore<'a> {
-    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(db: &'a DbHandle) -> Self {
         Self { db }
     }
 

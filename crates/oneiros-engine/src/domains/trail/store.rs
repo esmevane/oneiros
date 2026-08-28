@@ -12,11 +12,11 @@ use crate::*;
 /// The primary key (`event_id`, `ref`) makes replay idempotent on its own —
 /// a second `apply` of the same event lands on the existing row.
 pub(crate) struct TrailStore<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
 }
 
 impl<'a> TrailStore<'a> {
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self { conn }
     }
 

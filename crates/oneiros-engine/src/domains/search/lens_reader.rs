@@ -1,17 +1,19 @@
 use rusqlite::params;
+use std::future::Future;
+use std::pin::Pin;
 
 use crate::*;
 
 pub(crate) struct SearchIndexReader<'a> {
-    db: &'a DbHandle<'a>,
+    db: &'a DbHandle,
 }
 
 impl<'a> SearchIndexReader<'a> {
-    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(db: &'a DbHandle) -> Self {
         Self { db }
     }
 
-    fn read_text(&self, query: &str) -> Result<Selection, ReaderError> {
+    pub(crate) fn read_text(&self, query: &str) -> Result<Selection, ReaderError> {
         let sql = "select resource_ref, created_at, rank from search_index where search_index match ?1 order by rank";
         let tuples = self
             .db
@@ -43,7 +45,7 @@ impl<'a> SearchIndexReader<'a> {
         Ok(selection)
     }
 
-    fn step_by_column(
+    pub(crate) fn step_by_column(
         &self,
         column: &str,
         names: Vec<String>,
@@ -114,23 +116,43 @@ impl<'a> SearchIndexReader<'a> {
     }
 }
 
-impl Reader for SearchIndexReader<'_> {
-    fn read(&self, read: &Read) -> Option<Result<Selection, ReaderError>> {
+impl LensReader for SearchIndexReader<'_> {
+    fn read<'a>(
+        &'a self,
+        read: &'a LensRead,
+    ) -> Pin<Box<dyn Future<Output = Option<Result<Selection, ReaderError>>> + Send + 'a>> {
         match read {
-            Read::SearchText(query) => Some(self.read_text(query)),
-            _ => None,
+            LensRead::SearchText(query) => Box::pin(async move { Some(self.read_text(query)) }),
+            LensRead::ChronicleBetween { .. } => Box::pin(async { None }),
         }
     }
 
-    fn step(&self, kind: &StepKind, input: &Selection) -> Option<Result<Selection, ReaderError>> {
-        let (column, name_kind, resolve_agent) = match kind {
-            StepKind::SearchByAgent => ("agent_id", NameKind::Agent, true),
-            StepKind::SearchByTexture => ("texture", NameKind::Texture, false),
-            StepKind::SearchByLevel => ("level", NameKind::Level, false),
-            StepKind::SearchByKind => ("kind", NameKind::Kind, false),
-            _ => return None,
-        };
-        let names = input.names_of(name_kind);
-        Some(self.step_by_column(column, names, resolve_agent))
+    fn step(
+        &self,
+        kind: &LensStepKind,
+        input: &Selection,
+    ) -> Option<Result<Selection, ReaderError>> {
+        match kind {
+            LensStepKind::SearchByAgent => {
+                Some(self.step_by_column("agent_id", input.names_of(NameKind::Agent), true))
+            }
+            LensStepKind::SearchByTexture => {
+                Some(self.step_by_column("texture", input.names_of(NameKind::Texture), false))
+            }
+            LensStepKind::SearchByLevel => {
+                Some(self.step_by_column("level", input.names_of(NameKind::Level), false))
+            }
+            LensStepKind::SearchByKind => {
+                Some(self.step_by_column("kind", input.names_of(NameKind::Kind), false))
+            }
+            LensStepKind::EventsFor
+            | LensStepKind::RefsFrom
+            | LensStepKind::ConnectedFrom
+            | LensStepKind::ConnectedTo
+            | LensStepKind::Descendants
+            | LensStepKind::Ancestors
+            | LensStepKind::Within(_)
+            | LensStepKind::Component => None,
+        }
     }
 }

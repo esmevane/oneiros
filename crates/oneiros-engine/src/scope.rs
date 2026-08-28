@@ -103,7 +103,7 @@ pub(crate) trait HasHost {
     fn databases(&self) -> &Databases;
 
     /// Check out a handle to the host database.
-    async fn host_db(&self) -> Result<DbHandle<'_>, DbError> {
+    async fn host_db(&self) -> Result<DbHandle, DbError> {
         self.databases().host().await
     }
 }
@@ -112,7 +112,7 @@ pub(crate) trait HasProject: HasHost {
     fn project(&self) -> &ProjectInfra;
 
     /// Check out a handle to this project's event log.
-    async fn project_log(&self) -> Result<DbHandle<'_>, DbError> {
+    async fn project_log(&self) -> Result<DbHandle, DbError> {
         self.databases().project_log(&self.project().name).await
     }
 }
@@ -121,7 +121,7 @@ pub(crate) trait HasBookmark: HasProject {
     fn bookmark(&self) -> &BookmarkInfra;
 
     /// Check out a handle to this bookmark's projection database.
-    async fn bookmark_db(&self) -> Result<DbHandle<'_>, DbError> {
+    async fn bookmark_db(&self) -> Result<DbHandle, DbError> {
         self.databases()
             .bookmark(&self.project().name, &self.bookmark().name)
             .await

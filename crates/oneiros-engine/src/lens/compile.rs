@@ -23,50 +23,53 @@ impl Compiler {
         Self { registry }
     }
 
-    pub(crate) fn compile(&self, ast: &Lens) -> Result<Ir, CompileError> {
+    pub(crate) fn compile(
+        &self,
+        ast: &Lens,
+    ) -> Result<LensIntermediateRepresentation, CompileError> {
         let mut ops = Vec::new();
         self.walk(ast, WalkContext::Open, &mut ops)?;
-        Ok(Ir::new(ops))
+        Ok(LensIntermediateRepresentation::new(ops))
     }
 
     fn walk(
         &self,
         node: &Lens,
         context: WalkContext,
-        ops: &mut Vec<Op>,
-    ) -> Result<SlotId, CompileError> {
+        ops: &mut Vec<LensOp>,
+    ) -> Result<LensSlotId, CompileError> {
         match node {
             Lens::Predicate(predicate) => self.compile_predicate(predicate, ops),
             Lens::Union(left, right) => {
                 let left_slot = self.walk(left, context, ops)?;
                 let right_slot = self.walk(right, context, ops)?;
-                let slot = SlotId(ops.len());
-                ops.push(Op::Union(left_slot, right_slot));
+                let slot = LensSlotId(ops.len());
+                ops.push(LensOp::Union(left_slot, right_slot));
                 Ok(slot)
             }
             Lens::Intersection(left, right) => {
                 let left_slot = self.walk(left, context, ops)?;
                 let right_slot = self.walk(right, context, ops)?;
-                let slot = SlotId(ops.len());
-                ops.push(Op::Intersect(left_slot, right_slot));
+                let slot = LensSlotId(ops.len());
+                ops.push(LensOp::Intersect(left_slot, right_slot));
                 Ok(slot)
             }
             Lens::Difference(left, right) => {
                 let left_slot = self.walk(left, context, ops)?;
                 let right_slot = self.walk(right, context, ops)?;
-                let slot = SlotId(ops.len());
-                ops.push(Op::Difference(left_slot, right_slot));
+                let slot = LensSlotId(ops.len());
+                ops.push(LensOp::Difference(left_slot, right_slot));
                 Ok(slot)
             }
             Lens::Ref(reference) => {
-                let slot = SlotId(ops.len());
-                ops.push(Op::Const(ConstValue::Ref(reference.clone())));
+                let slot = LensSlotId(ops.len());
+                ops.push(LensOp::Const(LensConstValue::Ref(reference.clone())));
                 Ok(slot)
             }
             Lens::Symbol(identifier) => match context {
                 WalkContext::Names(kind) => {
-                    let slot = SlotId(ops.len());
-                    ops.push(Op::Const(ConstValue::Name {
+                    let slot = LensSlotId(ops.len());
+                    ops.push(LensOp::Const(LensConstValue::Name {
                         name: identifier.to_string(),
                         kind,
                     }));
@@ -85,8 +88,8 @@ impl Compiler {
     fn compile_predicate(
         &self,
         predicate: &Predicate,
-        ops: &mut Vec<Op>,
-    ) -> Result<SlotId, CompileError> {
+        ops: &mut Vec<LensOp>,
+    ) -> Result<LensSlotId, CompileError> {
         let spec = self
             .registry
             .lookup(&predicate.name)
@@ -105,8 +108,8 @@ impl Compiler {
                         other => format!("{other:?}"),
                     })
                     .unwrap_or_default();
-                let slot = SlotId(ops.len());
-                ops.push(Op::Read(Read::SearchText(text)));
+                let slot = LensSlotId(ops.len());
+                ops.push(LensOp::Read(LensRead::SearchText(text)));
                 Ok(slot)
             }
             ExecutorHint::ChronicleBetween => {
@@ -120,8 +123,8 @@ impl Compiler {
                         name: predicate.name.clone(),
                     });
                 };
-                let slot = SlotId(ops.len());
-                ops.push(Op::Read(Read::ChronicleBetween {
+                let slot = LensSlotId(ops.len());
+                ops.push(LensOp::Read(LensRead::ChronicleBetween {
                     from: from.clone(),
                     to: to.clone(),
                 }));
@@ -134,9 +137,9 @@ impl Compiler {
         &self,
         predicate: &Predicate,
         spec: &PredicateSpec,
-        spec_kind: StepKind,
-        ops: &mut Vec<Op>,
-    ) -> Result<SlotId, CompileError> {
+        spec_kind: LensStepKind,
+        ops: &mut Vec<LensOp>,
+    ) -> Result<LensSlotId, CompileError> {
         let Some(sub_lens) = predicate.args.first() else {
             return Err(CompileError::UncompilablePredicate {
                 name: predicate.name.clone(),
@@ -151,20 +154,20 @@ impl Compiler {
         let input_slot = self.walk(sub_lens, sub_context, ops)?;
 
         let kind = match spec_kind {
-            StepKind::Within(_) => {
+            LensStepKind::Within(_) => {
                 let Some(Lens::Integer(n)) = predicate.args.get(1) else {
                     return Err(CompileError::UncompilablePredicate {
                         name: predicate.name.clone(),
                     });
                 };
                 let depth = u32::try_from(n.value().max(0)).unwrap_or(0);
-                StepKind::Within(depth)
+                LensStepKind::Within(depth)
             }
             other => other,
         };
 
-        let slot = SlotId(ops.len());
-        ops.push(Op::Step {
+        let slot = LensSlotId(ops.len());
+        ops.push(LensOp::Step {
             kind,
             input: input_slot,
         });
@@ -187,15 +190,15 @@ mod tests {
         assert_eq!(ir.ops.len(), 2);
         assert!(matches!(
             &ir.ops[0],
-            Op::Const(ConstValue::Name {
+            LensOp::Const(LensConstValue::Name {
                 kind: NameKind::Texture,
                 ..
             })
         ));
         assert!(matches!(
             &ir.ops[1],
-            Op::Step {
-                kind: StepKind::SearchByTexture,
+            LensOp::Step {
+                kind: LensStepKind::SearchByTexture,
                 ..
             }
         ));
@@ -206,7 +209,7 @@ mod tests {
         let ast = Lens::predicate("search", [Lens::string("hello world")]);
         let ir = compiler().compile(&ast).unwrap();
         assert_eq!(ir.ops.len(), 1);
-        assert!(matches!(&ir.ops[0], Op::Read(Read::SearchText(_))));
+        assert!(matches!(&ir.ops[0], LensOp::Read(LensRead::SearchText(_))));
     }
 
     #[test]
@@ -226,8 +229,8 @@ mod tests {
         assert_eq!(ir.ops.len(), 4);
         assert!(matches!(
             &ir.ops[3],
-            Op::Step {
-                kind: StepKind::SearchByAgent,
+            LensOp::Step {
+                kind: LensStepKind::SearchByAgent,
                 ..
             }
         ));

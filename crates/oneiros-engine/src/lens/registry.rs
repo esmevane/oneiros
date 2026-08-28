@@ -63,7 +63,7 @@ pub(crate) enum SpecResultType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ExecutorHint {
     SearchIndexText,
-    GraphStep(StepKind),
+    GraphStep(LensStepKind),
     ChronicleBetween,
 }
 
@@ -119,25 +119,25 @@ impl Registry {
                 "agent",
                 [ArgType::LensOfNames(NameKind::Agent)],
                 entities,
-                ExecutorHint::GraphStep(StepKind::SearchByAgent),
+                ExecutorHint::GraphStep(LensStepKind::SearchByAgent),
             ))
             .with(PredicateSpec::new(
                 "texture",
                 [ArgType::LensOfNames(NameKind::Texture)],
                 entities,
-                ExecutorHint::GraphStep(StepKind::SearchByTexture),
+                ExecutorHint::GraphStep(LensStepKind::SearchByTexture),
             ))
             .with(PredicateSpec::new(
                 "level",
                 [ArgType::LensOfNames(NameKind::Level)],
                 entities,
-                ExecutorHint::GraphStep(StepKind::SearchByLevel),
+                ExecutorHint::GraphStep(LensStepKind::SearchByLevel),
             ))
             .with(PredicateSpec::new(
                 "kind",
                 [ArgType::LensOfNames(NameKind::Kind)],
                 entities,
-                ExecutorHint::GraphStep(StepKind::SearchByKind),
+                ExecutorHint::GraphStep(LensStepKind::SearchByKind),
             ))
             .with(PredicateSpec::new(
                 "search",
@@ -149,49 +149,49 @@ impl Registry {
                 "events_for",
                 [ArgType::Lens],
                 events,
-                ExecutorHint::GraphStep(StepKind::EventsFor),
+                ExecutorHint::GraphStep(LensStepKind::EventsFor),
             ))
             .with(PredicateSpec::new(
                 "refs_from",
                 [ArgType::Lens],
                 entities,
-                ExecutorHint::GraphStep(StepKind::RefsFrom),
+                ExecutorHint::GraphStep(LensStepKind::RefsFrom),
             ))
             .with(PredicateSpec::new(
                 "from",
                 [ArgType::Lens],
                 entities,
-                ExecutorHint::GraphStep(StepKind::ConnectedFrom),
+                ExecutorHint::GraphStep(LensStepKind::ConnectedFrom),
             ))
             .with(PredicateSpec::new(
                 "to",
                 [ArgType::Lens],
                 entities,
-                ExecutorHint::GraphStep(StepKind::ConnectedTo),
+                ExecutorHint::GraphStep(LensStepKind::ConnectedTo),
             ))
             .with(PredicateSpec::new(
                 "descendants",
                 [ArgType::Lens],
                 entities,
-                ExecutorHint::GraphStep(StepKind::Descendants),
+                ExecutorHint::GraphStep(LensStepKind::Descendants),
             ))
             .with(PredicateSpec::new(
                 "ancestors",
                 [ArgType::Lens],
                 entities,
-                ExecutorHint::GraphStep(StepKind::Ancestors),
+                ExecutorHint::GraphStep(LensStepKind::Ancestors),
             ))
             .with(PredicateSpec::new(
                 "within",
                 [ArgType::Lens, ArgType::Integer],
                 entities,
-                ExecutorHint::GraphStep(StepKind::Within(0)),
+                ExecutorHint::GraphStep(LensStepKind::Within(0)),
             ))
             .with(PredicateSpec::new(
                 "component",
                 [ArgType::Lens],
                 entities,
-                ExecutorHint::GraphStep(StepKind::Component),
+                ExecutorHint::GraphStep(LensStepKind::Component),
             ))
             .with(PredicateSpec::new(
                 "between",

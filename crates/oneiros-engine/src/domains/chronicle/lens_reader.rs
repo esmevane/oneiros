@@ -1,19 +1,17 @@
 use rusqlite::params;
+use std::future::Future;
+use std::pin::Pin;
 
 use crate::*;
 
-pub(crate) struct ChronicleLensReader<'a> {
-    host_db: &'a DbHandle<'a>,
-    canons: &'a CanonIndex,
+pub(crate) struct ChronicleLensReader {
+    host_db: DbHandle,
+    canons: CanonIndex,
     project: ProjectName,
 }
 
-impl<'a> ChronicleLensReader<'a> {
-    pub(crate) fn new(
-        host_db: &'a DbHandle<'a>,
-        canons: &'a CanonIndex,
-        project: ProjectName,
-    ) -> Self {
+impl ChronicleLensReader {
+    pub(crate) fn new(host_db: DbHandle, canons: CanonIndex, project: ProjectName) -> Self {
         Self {
             host_db,
             canons,
@@ -39,7 +37,11 @@ impl<'a> ChronicleLensReader<'a> {
         Ok(BookmarkName::new(name))
     }
 
-    fn read_between(&self, from: &RefToken, to: &RefToken) -> Result<Selection, ReaderError> {
+    pub(crate) async fn read_between(
+        &self,
+        from: &RefToken,
+        to: &RefToken,
+    ) -> Result<Selection, ReaderError> {
         let from_name = self.resolve_bookmark_name(from)?;
         let to_name = self.resolve_bookmark_name(to)?;
 
@@ -59,9 +61,12 @@ impl<'a> ChronicleLensReader<'a> {
             .root()
             .map_err(|e| ReaderError::Internal(e.to_string()))?;
 
-        let store = ChronicleStore::new(self.host_db);
+        let store = ChronicleStore::new(&self.host_db);
         let resolver = store.resolver();
-        let changes = Ledger::diff_sync(from_root.as_ref(), to_root.as_ref(), &resolver);
+        let changes = Ledger::diff(from_root.as_ref(), to_root.as_ref(), &|hash| {
+            std::future::ready(resolver(hash))
+        })
+        .await;
 
         let mut selection = Selection::new();
         for change in changes {
@@ -77,11 +82,16 @@ impl<'a> ChronicleLensReader<'a> {
     }
 }
 
-impl Reader for ChronicleLensReader<'_> {
-    fn read(&self, read: &Read) -> Option<Result<Selection, ReaderError>> {
+impl LensReader for ChronicleLensReader {
+    fn read<'a>(
+        &'a self,
+        read: &'a LensRead,
+    ) -> Pin<Box<dyn Future<Output = Option<Result<Selection, ReaderError>>> + Send + 'a>> {
         match read {
-            Read::ChronicleBetween { from, to } => Some(self.read_between(from, to)),
-            _ => None,
+            LensRead::ChronicleBetween { from, to } => {
+                Box::pin(async move { Some(self.read_between(from, to).await) })
+            }
+            LensRead::SearchText(_) => Box::pin(async { None }),
         }
     }
 }

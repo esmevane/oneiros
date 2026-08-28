@@ -7,11 +7,11 @@ use crate::*;
 /// `BookmarkCollected`, `BookmarkUnfollowed`. `BookmarkShared` doesn't
 /// touch the follows table — it's only recorded for audit.
 pub(crate) struct FollowStore<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
 }
 
 impl<'a> FollowStore<'a> {
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self { conn }
     }
 
