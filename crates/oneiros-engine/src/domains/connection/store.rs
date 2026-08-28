@@ -4,11 +4,11 @@ use crate::*;
 
 /// Connection projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct ConnectionStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> ConnectionStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -47,20 +47,20 @@ impl<'a> ConnectionStore<'a> {
     }
 
     pub(crate) fn list(&self, entity_ref: Option<&str>) -> Result<Vec<Connection>, EventError> {
-        let mut stmt = match entity_ref {
-            Some(_) => self.conn.prepare(
+        let sql = match entity_ref {
+            Some(_) => {
                 "SELECT id, from_ref, to_ref, nature, created_at
                  FROM connections
                  WHERE from_ref = ?1 OR to_ref = ?1
-                 ORDER BY created_at",
-            )?,
-            None => self.conn.prepare(
+                 ORDER BY created_at"
+            }
+            None => {
                 "SELECT id, from_ref, to_ref, nature, created_at
-                 FROM connections ORDER BY created_at",
-            )?,
+                 FROM connections ORDER BY created_at"
+            }
         };
 
-        let map_row = |row: &rusqlite::Row<'_>| {
+        let map_row = |row: &DbRow<'_>| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -71,10 +71,9 @@ impl<'a> ConnectionStore<'a> {
         };
 
         let raw = match entity_ref {
-            Some(e) => stmt.query_map(params![e], map_row),
-            None => stmt.query_map([], map_row),
-        }?
-        .collect::<Result<Vec<_>, _>>()?;
+            Some(e) => self.conn.query_map(sql, params![e], map_row),
+            None => self.conn.query_map(sql, [], map_row),
+        }?;
 
         let mut connections = vec![];
         for (id, from_ref, to_ref, nature, created_at) in raw {

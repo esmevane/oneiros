@@ -97,7 +97,7 @@ impl ContinuityService {
         scope: &Scope<AtBookmark>,
         _request: &StatusAgent,
     ) -> Result<ContinuityResponse, ContinuityError> {
-        let db = BookmarkDb::open(scope).await?;
+        let db = scope.bookmark_db().await?;
         let agents = AgentStore::new(&db).list()?;
 
         let mut rows = Vec::with_capacity(agents.len());
@@ -416,7 +416,7 @@ impl ContinuityService {
         overrides: &DreamOverrides,
     ) -> Result<DreamContext, ContinuityError> {
         let config = scope.config().dream.merge(overrides);
-        let db = BookmarkDb::open(scope).await?;
+        let db = scope.bookmark_db().await?;
 
         let persona_name = agent.persona.clone();
         let persona = PersonaStore::new(&db).get(&persona_name)?;
@@ -579,7 +579,7 @@ impl ContinuityService {
     }
 
     fn assemble_cognitions(
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         agent: &Agent,
         config: &DreamConfig,
         graph_ids: &HashSet<CognitionId>,
@@ -613,7 +613,7 @@ impl ContinuityService {
     }
 
     fn assemble_experiences(
-        db: &rusqlite::Connection,
+        db: &DbHandle,
         recent: &[Experience],
         graph_ids: &HashSet<ExperienceId>,
     ) -> Result<Vec<Experience>, ContinuityError> {

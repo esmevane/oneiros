@@ -20,6 +20,7 @@ async fn init(
     State(state): State<ServerState>,
     Json(body): Json<InitHost>,
 ) -> Result<(StatusCode, Json<HostResponse>), HostError> {
-    let response = HostService::init(state.config(), state.mailbox(), &body).await?;
+    let response =
+        HostService::init(state.config(), state.databases(), state.mailbox(), &body).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }

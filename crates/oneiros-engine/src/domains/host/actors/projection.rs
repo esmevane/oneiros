@@ -67,13 +67,13 @@ impl HostProjectionActor {
     }
 
     async fn migrate(&self, scope: &Scope<AtHost>) -> Result<(), EventError> {
-        let host_db = HostDb::open(scope).await?;
+        let host_db = scope.host_db().await?;
         Projections::host().migrate(&host_db)?;
         Ok(())
     }
 
     async fn apply(&self, scope: &Scope<AtHost>, stored: &StoredEvent) -> Result<(), EventError> {
-        let host_db = HostDb::open(scope).await?;
+        let host_db = scope.host_db().await?;
         let projections = Projections::host();
         projections.migrate(&host_db)?;
         projections.apply(&host_db, stored)?;
@@ -81,7 +81,7 @@ impl HostProjectionActor {
     }
 
     async fn reset(&self, scope: &Scope<AtHost>) -> Result<(), EventError> {
-        let host_db = HostDb::open(scope).await?;
+        let host_db = scope.host_db().await?;
         let projections = Projections::host();
         projections.reset(&host_db)?;
         projections.migrate(&host_db)?;

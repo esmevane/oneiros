@@ -25,6 +25,7 @@ pub(crate) enum PeerAddressError {
 }
 
 impl PeerAddress {
+    #[cfg(test)]
     pub(crate) fn new(inner: iroh::EndpointAddr) -> Self {
         Self(inner)
     }

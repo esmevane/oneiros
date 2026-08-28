@@ -3,11 +3,11 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct TrailLensReader<'a> {
-    db: &'a BookmarkDb,
+    db: &'a DbHandle<'a>,
 }
 
 impl<'a> TrailLensReader<'a> {
-    pub(crate) fn new(db: &'a BookmarkDb) -> Self {
+    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
         Self { db }
     }
 
@@ -16,26 +16,23 @@ impl<'a> TrailLensReader<'a> {
         entity_ref: &Ref,
     ) -> Result<Vec<(EventId, Timestamp)>, ReaderError> {
         let ref_token = RefToken::new(entity_ref.clone());
-        let mut stmt = self
+        let rows = self
             .db
-            .prepare(
+            .query_map(
                 "SELECT event_id, created_at
                  FROM trail
                  WHERE ref = ?1
                  ORDER BY created_at DESC",
+                params![ref_token.to_string()],
+                |row| {
+                    let event_id: String = row.get(0)?;
+                    let created_at: String = row.get(1)?;
+                    Ok((event_id, created_at))
+                },
             )
             .map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let rows = stmt
-            .query_map(params![ref_token.to_string()], |row| {
-                let event_id: String = row.get(0)?;
-                let created_at: String = row.get(1)?;
-                Ok((event_id, created_at))
-            })
-            .map_err(|e| ReaderError::Internal(e.to_string()))?;
         let mut out = Vec::new();
-        for row in rows {
-            let (event_id_raw, created_at) =
-                row.map_err(|e| ReaderError::Internal(e.to_string()))?;
+        for (event_id_raw, created_at) in rows {
             let event_id: EventId = event_id_raw
                 .parse()
                 .map_err(|e: IdParseError| ReaderError::Internal(e.to_string()))?;
@@ -47,26 +44,23 @@ impl<'a> TrailLensReader<'a> {
     }
 
     fn refs_emitted_by(&self, event_id: &EventId) -> Result<Vec<(Ref, Timestamp)>, ReaderError> {
-        let mut stmt = self
+        let rows = self
             .db
-            .prepare(
+            .query_map(
                 "SELECT ref, created_at
                  FROM trail
                  WHERE event_id = ?1
                  ORDER BY created_at DESC",
+                params![event_id.to_string()],
+                |row| {
+                    let ref_token: String = row.get(0)?;
+                    let created_at: String = row.get(1)?;
+                    Ok((ref_token, created_at))
+                },
             )
             .map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let rows = stmt
-            .query_map(params![event_id.to_string()], |row| {
-                let ref_token: String = row.get(0)?;
-                let created_at: String = row.get(1)?;
-                Ok((ref_token, created_at))
-            })
-            .map_err(|e| ReaderError::Internal(e.to_string()))?;
         let mut out = Vec::new();
-        for row in rows {
-            let (ref_token_raw, created_at) =
-                row.map_err(|e| ReaderError::Internal(e.to_string()))?;
+        for (ref_token_raw, created_at) in rows {
             let ref_token: RefToken = ref_token_raw
                 .parse()
                 .map_err(|e: RefError| ReaderError::Internal(e.to_string()))?;

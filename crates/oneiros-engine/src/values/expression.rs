@@ -136,15 +136,19 @@ pub(crate) struct RankedHit {
 }
 
 impl RankedHit {
-    pub(crate) fn from_row(row: &rusqlite::Row) -> rusqlite::Result<Self> {
+    pub(crate) fn from_row(row: &DbRow<'_>) -> Result<Self, DbError> {
         let resource_ref = decode_ref(row.get::<_, String>(0)?, 0)?;
         Ok(Self { resource_ref })
     }
 }
 
-fn decode_ref(raw: String, col: usize) -> rusqlite::Result<Ref> {
+fn decode_ref(raw: String, col: usize) -> Result<Ref, DbError> {
     serde_json::from_str(&raw).map_err(|e| {
-        rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e))
+        DbError::Rusqlite(rusqlite::Error::FromSqlConversionFailure(
+            col,
+            rusqlite::types::Type::Text,
+            Box::new(e),
+        ))
     })
 }
 

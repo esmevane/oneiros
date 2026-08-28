@@ -31,15 +31,18 @@ impl<'a> StorageRepo<'a> {
         &self,
         key: &StorageKey,
     ) -> Result<Option<StorageEntry>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt = db.prepare("SELECT key, description, hash FROM storage WHERE key = ?1")?;
+        let db = self.scope.bookmark_db().await?;
 
-        let result = stmt.query_row(params![key.as_str()], |row| {
-            let key: String = row.get(0)?;
-            let description: String = row.get(1)?;
-            let hash: String = row.get(2)?;
-            Ok((key, description, hash))
-        });
+        let result = db.query_row(
+            "SELECT key, description, hash FROM storage WHERE key = ?1",
+            params![key.as_str()],
+            |row| {
+                let key: String = row.get(0)?;
+                let description: String = row.get(1)?;
+                let hash: String = row.get(2)?;
+                Ok((key, description, hash))
+            },
+        );
 
         match result {
             Ok((key, description, hash)) => Ok(Some(StorageEntry {
@@ -47,7 +50,7 @@ impl<'a> StorageRepo<'a> {
                 description: Description::new(description),
                 hash: ContentHash::new(hash),
             })),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -56,22 +59,20 @@ impl<'a> StorageRepo<'a> {
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<StorageEntry>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
 
         let total: usize = db.query_row("SELECT COUNT(*) FROM storage", [], |row| row.get(0))?;
 
-        let mut stmt = db.prepare(
+        let entries = db.query_map(
             "SELECT key, description, hash FROM storage ORDER BY key LIMIT ?1 OFFSET ?2",
-        )?;
-
-        let entries = stmt
-            .query_map(params![filters.limit, filters.offset], |row| {
+            params![filters.limit, filters.offset],
+            |row| {
                 let key: String = row.get(0)?;
                 let description: String = row.get(1)?;
                 let hash: String = row.get(2)?;
                 Ok((key, description, hash))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+            },
+        )?;
 
         let items = entries
             .into_iter()
@@ -104,15 +105,18 @@ impl<'a> StorageRepo<'a> {
         &self,
         hash: &ContentHash,
     ) -> Result<Option<BlobContent>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt = db.prepare("SELECT hash, data, size FROM blob WHERE hash = ?1")?;
+        let db = self.scope.bookmark_db().await?;
 
-        let result = stmt.query_row(params![hash.as_str()], |row| {
-            let hash: String = row.get(0)?;
-            let data: Vec<u8> = row.get(1)?;
-            let size: i64 = row.get(2)?;
-            Ok((hash, data, size))
-        });
+        let result = db.query_row(
+            "SELECT hash, data, size FROM blob WHERE hash = ?1",
+            params![hash.as_str()],
+            |row| {
+                let hash: String = row.get(0)?;
+                let data: Vec<u8> = row.get(1)?;
+                let size: i64 = row.get(2)?;
+                Ok((hash, data, size))
+            },
+        );
 
         match result {
             Ok((hash, data, size)) => Ok(Some(BlobContent {
@@ -120,7 +124,7 @@ impl<'a> StorageRepo<'a> {
                 size: Size::new(size as usize),
                 data: Blob::encode(&data),
             })),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }

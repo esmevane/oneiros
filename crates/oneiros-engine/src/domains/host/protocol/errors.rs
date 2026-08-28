@@ -16,6 +16,9 @@ pub(crate) enum HostError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
+    Db(#[from] crate::DbError),
+
+    #[error(transparent)]
     Event(#[from] EventError),
 
     #[error(transparent)]
@@ -32,9 +35,6 @@ pub(crate) enum HostError {
 
     #[error(transparent)]
     Client(#[from] ClientError),
-
-    #[error(transparent)]
-    HostDb(#[from] HostDbError),
 
     #[error(transparent)]
     Server(#[from] ServerError),
@@ -58,12 +58,12 @@ impl IntoResponse for HostError {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
             HostError::Database(_)
+            | HostError::Db(_)
             | HostError::Event(_)
             | HostError::Io(_)
             | HostError::HostKey(_)
             | HostError::Upcast(_)
             | HostError::Compose(_)
-            | HostError::HostDb(_)
             | HostError::Server(_)
             | HostError::Manager(_)
             | HostError::UnexpectedResponse(_) => {

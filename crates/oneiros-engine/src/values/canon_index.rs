@@ -199,36 +199,38 @@ impl CanonIndex {
     }
 
     /// Merge source bookmark's chronicle into target bookmark.
-    pub(crate) fn merge_project(
+    pub(crate) async fn merge_project(
         &self,
+        databases: &Databases,
         project: &ProjectName,
         source: &BookmarkName,
         target: &BookmarkName,
     ) -> Result<(), EventError> {
-        let read = self
-            .projects
-            .read()
-            .map_err(|e| EventError::Lock(e.to_string()))?;
-
-        if let Some(shelf) = read.get(project)
-            && let (Some(source_entry), Some(target_entry)) =
-                (shelf.branches.get(source), shelf.branches.get(target))
-        {
-            // Chronicle objects live in the host DB.
-            let config = Config {
-                project: project.clone(),
-                ..Default::default()
-            };
-
-            if let Ok(db) = config.host_db() {
-                let store = ChronicleStore::new(&db);
-                let _ = store.migrate();
-                let _ = target_entry.chronicle.merge(
-                    &source_entry.chronicle,
-                    &store.resolver(),
-                    &store.writer(),
-                );
+        // Extract chronicle clones under the read lock, then drop it
+        // before any .await — RwLockReadGuard is !Send.
+        let (source_chronicle, target_chronicle) = {
+            let read = self
+                .projects
+                .read()
+                .map_err(|e| EventError::Lock(e.to_string()))?;
+            if let Some(shelf) = read.get(project)
+                && let (Some(source_entry), Some(target_entry)) =
+                    (shelf.branches.get(source), shelf.branches.get(target))
+            {
+                (
+                    source_entry.chronicle.clone(),
+                    target_entry.chronicle.clone(),
+                )
+            } else {
+                return Ok(());
             }
+        };
+
+        // Chronicle objects live in the host DB.
+        if let Ok(db) = databases.host().await {
+            let store = ChronicleStore::new(&db);
+            let _ = store.migrate();
+            let _ = target_chronicle.merge(&source_chronicle, &store.resolver(), &store.writer());
         }
 
         Ok(())
@@ -238,27 +240,31 @@ impl CanonIndex {
     ///
     /// Opens events.db standalone for the event log, then the bookmark
     /// connection for projection migrations.
-    pub(crate) fn hydrate_project(
+    pub(crate) async fn hydrate_project(
         &self,
         config: &Config,
+        databases: &Databases,
         name: &ProjectName,
     ) -> Result<(), EventError> {
         let mut project_config = config.clone();
         project_config.project = name.clone();
 
         // Events DB — standalone (no ATTACH). Bail early if the file
-        // doesn't exist — `open_database` would create it otherwise.
-        if !project_config.events_db_path().exists() {
+        // doesn't exist (file mode only — in memory mode, trust the pool).
+        if project_config.database.mode == DatabaseMode::File
+            && !project_config.events_db_path().exists()
+        {
             return Ok(());
         }
-        let events_db = project_config.open_events_db()?;
-        let log = EventLog::new(&events_db);
+        let events_db = databases.project_log(name).await?;
+        let events = {
+            let log = EventLog::new(&events_db);
+            log.load_all()?
+        }; // log dropped — EventLog is !Send, can't hold across .await
 
         // Ensure projection schema exists in the bookmark DB.
-        let bookmark_db = project_config.bookmark_conn()?;
+        let bookmark_db = databases.bookmark(name, &config.bookmark).await?;
         Projections::<ProjectCanon>::project().migrate(&bookmark_db)?;
-
-        let events = log.load_all()?;
 
         let entry = self.project_entry(name)?;
 
@@ -269,7 +275,7 @@ impl CanonIndex {
         }
 
         // Rebuild the chronicle in the host DB.
-        let host_db = config.host_db()?;
+        let host_db = databases.host().await?;
         let store = ChronicleStore::new(&host_db);
         store.migrate()?;
         for event in &events {

@@ -11,6 +11,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::future::Future;
 
 use crate::*;
 
@@ -150,18 +151,22 @@ impl Ledger {
 
     /// Diff two ledger roots. Produces a minimal set of changes.
     /// Cost is proportional to the number of differences, not tree size.
-    pub(crate) fn diff(
+    pub(crate) async fn diff<F, Fut>(
         a: Option<&ContentHash>,
         b: Option<&ContentHash>,
-        resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
-    ) -> Vec<LedgerChange> {
+        resolve: &F,
+    ) -> Vec<LedgerChange>
+    where
+        F: Fn(&ContentHash) -> Fut,
+        Fut: Future<Output = Option<LedgerNode>>,
+    {
         if a == b {
             return vec![];
         }
         match (a, b) {
             (None, None) => vec![],
             (None, Some(b_hash)) => {
-                let entries = Self::collect_all(b_hash, resolve);
+                let entries = Self::collect_all(b_hash, resolve).await;
                 entries
                     .into_keys()
                     .filter_map(|k| k.parse().ok())
@@ -169,28 +174,32 @@ impl Ledger {
                     .collect()
             }
             (Some(a_hash), None) => {
-                let entries = Self::collect_all(a_hash, resolve);
+                let entries = Self::collect_all(a_hash, resolve).await;
                 entries
                     .into_keys()
                     .filter_map(|k| k.parse().ok())
                     .map(LedgerChange::Removed)
                     .collect()
             }
-            (Some(a_hash), Some(b_hash)) => Self::diff_nodes(a_hash, b_hash, resolve),
+            (Some(a_hash), Some(b_hash)) => Self::diff_nodes(a_hash, b_hash, resolve).await,
         }
     }
 
-    fn diff_nodes(
+    async fn diff_nodes<F, Fut>(
         a_hash: &ContentHash,
         b_hash: &ContentHash,
-        resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
-    ) -> Vec<LedgerChange> {
+        resolve: &F,
+    ) -> Vec<LedgerChange>
+    where
+        F: Fn(&ContentHash) -> Fut,
+        Fut: Future<Output = Option<LedgerNode>>,
+    {
         if a_hash == b_hash {
             return vec![];
         }
 
-        let a_node = resolve(a_hash);
-        let b_node = resolve(b_hash);
+        let a_node = resolve(a_hash).await;
+        let b_node = resolve(b_hash).await;
 
         match (a_node, b_node) {
             (
@@ -214,21 +223,21 @@ impl Ledger {
                 for nibble in all_nibbles {
                     let a_child = a_children.get(&nibble);
                     let b_child = b_children.get(&nibble);
-                    changes.extend(Self::diff(a_child, b_child, resolve));
+                    changes.extend(Box::pin(Self::diff(a_child, b_child, resolve)).await);
                 }
                 changes
             }
             _ => {
-                let a_entries = a_hash
-                    .to_string()
-                    .is_empty()
-                    .then(BTreeMap::new)
-                    .unwrap_or_else(|| Self::collect_all(a_hash, resolve));
-                let b_entries = b_hash
-                    .to_string()
-                    .is_empty()
-                    .then(BTreeMap::new)
-                    .unwrap_or_else(|| Self::collect_all(b_hash, resolve));
+                let a_entries = if a_hash.to_string().is_empty() {
+                    BTreeMap::new()
+                } else {
+                    Self::collect_all(a_hash, resolve).await
+                };
+                let b_entries = if b_hash.to_string().is_empty() {
+                    BTreeMap::new()
+                } else {
+                    Self::collect_all(b_hash, resolve).await
+                };
                 Self::diff_entries(&a_entries, &b_entries)
             }
         }
@@ -268,17 +277,44 @@ impl Ledger {
     }
 
     /// Collect all event ID strings reachable from a root.
-    pub(crate) fn collect_all_ids(
+    pub(crate) async fn collect_all_ids<F, Fut>(
         root: Option<&ContentHash>,
-        resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
-    ) -> std::collections::HashSet<String> {
+        resolve: &F,
+    ) -> std::collections::HashSet<String>
+    where
+        F: Fn(&ContentHash) -> Fut,
+        Fut: Future<Output = Option<LedgerNode>>,
+    {
         match root {
             None => std::collections::HashSet::new(),
-            Some(hash) => Self::collect_all(hash, resolve).into_keys().collect(),
+            Some(hash) => Self::collect_all(hash, resolve).await.into_keys().collect(),
         }
     }
 
-    pub(crate) fn collect_all(
+    pub(crate) async fn collect_all<F, Fut>(
+        node_hash: &ContentHash,
+        resolve: &F,
+    ) -> BTreeMap<String, ContentHash>
+    where
+        F: Fn(&ContentHash) -> Fut,
+        Fut: Future<Output = Option<LedgerNode>>,
+    {
+        match resolve(node_hash).await {
+            Some(LedgerNode::Leaf { entries }) => entries,
+            Some(LedgerNode::Interior { children }) => {
+                let mut all = BTreeMap::new();
+                for (_nibble, child_hash) in children {
+                    all.extend(Box::pin(Self::collect_all(&child_hash, resolve)).await);
+                }
+                all
+            }
+            None => BTreeMap::new(),
+        }
+    }
+
+    /// Sync variant of [`collect_all`] for callers with sync resolvers
+    /// (e.g. `Chronicle::merge` using `ChronicleStore::resolver()`).
+    pub(crate) fn collect_all_sync(
         node_hash: &ContentHash,
         resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
     ) -> BTreeMap<String, ContentHash> {
@@ -287,11 +323,96 @@ impl Ledger {
             Some(LedgerNode::Interior { children }) => {
                 let mut all = BTreeMap::new();
                 for (_nibble, child_hash) in children {
-                    all.extend(Self::collect_all(&child_hash, resolve));
+                    all.extend(Self::collect_all_sync(&child_hash, resolve));
                 }
                 all
             }
             None => BTreeMap::new(),
+        }
+    }
+
+    /// Sync variant of [`diff`] for callers with sync resolvers.
+    pub(crate) fn diff_sync(
+        a: Option<&ContentHash>,
+        b: Option<&ContentHash>,
+        resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
+    ) -> Vec<LedgerChange> {
+        if a == b {
+            return vec![];
+        }
+        match (a, b) {
+            (None, None) => vec![],
+            (None, Some(b_hash)) => {
+                let entries = Self::collect_all_sync(b_hash, resolve);
+                entries
+                    .into_keys()
+                    .filter_map(|k| k.parse().ok())
+                    .map(LedgerChange::Added)
+                    .collect()
+            }
+            (Some(a_hash), None) => {
+                let entries = Self::collect_all_sync(a_hash, resolve);
+                entries
+                    .into_keys()
+                    .filter_map(|k| k.parse().ok())
+                    .map(LedgerChange::Removed)
+                    .collect()
+            }
+            (Some(a_hash), Some(b_hash)) => Self::diff_nodes_sync(a_hash, b_hash, resolve),
+        }
+    }
+
+    fn diff_nodes_sync(
+        a_hash: &ContentHash,
+        b_hash: &ContentHash,
+        resolve: &impl Fn(&ContentHash) -> Option<LedgerNode>,
+    ) -> Vec<LedgerChange> {
+        if a_hash == b_hash {
+            return vec![];
+        }
+
+        let a_node = resolve(a_hash);
+        let b_node = resolve(b_hash);
+
+        match (a_node, b_node) {
+            (
+                Some(LedgerNode::Leaf { entries: a_entries }),
+                Some(LedgerNode::Leaf { entries: b_entries }),
+            ) => Self::diff_entries(&a_entries, &b_entries),
+            (
+                Some(LedgerNode::Interior {
+                    children: a_children,
+                }),
+                Some(LedgerNode::Interior {
+                    children: b_children,
+                }),
+            ) => {
+                let mut changes = Vec::new();
+                let all_nibbles: std::collections::BTreeSet<u8> = a_children
+                    .keys()
+                    .chain(b_children.keys())
+                    .copied()
+                    .collect();
+                for nibble in all_nibbles {
+                    let a_child = a_children.get(&nibble);
+                    let b_child = b_children.get(&nibble);
+                    changes.extend(Self::diff_sync(a_child, b_child, resolve));
+                }
+                changes
+            }
+            _ => {
+                let a_entries = if a_hash.to_string().is_empty() {
+                    BTreeMap::new()
+                } else {
+                    Self::collect_all_sync(a_hash, resolve)
+                };
+                let b_entries = if b_hash.to_string().is_empty() {
+                    BTreeMap::new()
+                } else {
+                    Self::collect_all_sync(b_hash, resolve)
+                };
+                Self::diff_entries(&a_entries, &b_entries)
+            }
         }
     }
 }
@@ -302,10 +423,16 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Mutex;
 
-    /// In-memory store for testing.
+    /// In-memory store for testing. Returns a sync store, a sync resolve
+    /// (for `Ledger::record`), and an async resolve (for diff/collect).
+    #[expect(
+        clippy::type_complexity,
+        reason = "This function needs to be removed entirely"
+    )]
     fn memory_store() -> (
         impl Fn(&LedgerNode) -> ContentHash,
         impl Fn(&ContentHash) -> Option<LedgerNode>,
+        impl Fn(&ContentHash) -> std::future::Ready<Option<LedgerNode>>,
     ) {
         let store: std::sync::Arc<Mutex<HashMap<String, LedgerNode>>> =
             std::sync::Arc::new(Mutex::new(HashMap::new()));
@@ -321,68 +448,80 @@ mod tests {
             hash
         };
 
-        let get = move |hash: &ContentHash| store.lock().unwrap().get(&hash.to_string()).cloned();
+        let store_read = store.clone();
+        let get_sync =
+            move |hash: &ContentHash| store_read.lock().unwrap().get(&hash.to_string()).cloned();
 
-        (put, get)
+        let get_async = move |hash: &ContentHash| {
+            std::future::ready(store.lock().unwrap().get(&hash.to_string()).cloned())
+        };
+
+        (put, get_sync, get_async)
     }
 
-    #[test]
-    fn record_and_diff_empty() {
-        let (store, resolve) = memory_store();
+    #[tokio::test]
+    async fn record_and_diff_empty() {
+        let (store, resolve_sync, resolve) = memory_store();
 
         let event_id = EventId::new();
         let event_hash = ContentHash::compute(b"event-data");
 
-        let root = Ledger::record(None, &event_id, event_hash, &resolve, &store);
+        let root = Ledger::record(None, &event_id, event_hash, &resolve_sync, &store);
 
-        let changes = Ledger::diff(None, Some(&root), &resolve);
+        let changes = Ledger::diff(None, Some(&root), &resolve).await;
         assert_eq!(changes.len(), 1);
         assert!(matches!(&changes[0], LedgerChange::Added(id) if *id == event_id));
     }
 
-    #[test]
-    fn diff_identical_roots() {
-        let (store, resolve) = memory_store();
+    #[tokio::test]
+    async fn diff_identical_roots() {
+        let (store, resolve_sync, resolve) = memory_store();
 
         let event_id = EventId::new();
         let event_hash = ContentHash::compute(b"event-data");
 
-        let root = Ledger::record(None, &event_id, event_hash, &resolve, &store);
+        let root = Ledger::record(None, &event_id, event_hash, &resolve_sync, &store);
 
-        let changes = Ledger::diff(Some(&root), Some(&root), &resolve);
+        let changes = Ledger::diff(Some(&root), Some(&root), &resolve).await;
         assert!(changes.is_empty());
     }
 
-    #[test]
-    fn diff_divergent_roots() {
-        let (store, resolve) = memory_store();
+    #[tokio::test]
+    async fn diff_divergent_roots() {
+        let (store, resolve_sync, resolve) = memory_store();
 
         let shared_id = EventId::new();
         let shared_hash = ContentHash::compute(b"shared");
 
         // Both branches start with the same event
-        let root_a = Ledger::record(None, &shared_id, shared_hash.clone(), &resolve, &store);
-        let root_b = Ledger::record(None, &shared_id, shared_hash, &resolve, &store);
+        let root_a = Ledger::record(None, &shared_id, shared_hash.clone(), &resolve_sync, &store);
+        let root_b = Ledger::record(None, &shared_id, shared_hash, &resolve_sync, &store);
 
         // Branch A gets one more event
         let extra_id = EventId::new();
         let extra_hash = ContentHash::compute(b"extra");
-        let root_a = Ledger::record(Some(&root_a), &extra_id, extra_hash, &resolve, &store);
+        let root_a = Ledger::record(Some(&root_a), &extra_id, extra_hash, &resolve_sync, &store);
 
         // Diff: A has one event that B doesn't
-        let changes = Ledger::diff(Some(&root_b), Some(&root_a), &resolve);
+        let changes = Ledger::diff(Some(&root_b), Some(&root_a), &resolve).await;
         assert_eq!(changes.len(), 1);
         assert!(matches!(&changes[0], LedgerChange::Added(id) if *id == extra_id));
     }
 
-    #[test]
-    fn fork_is_free() {
-        let (store, resolve) = memory_store();
+    #[tokio::test]
+    async fn fork_is_free() {
+        let (store, resolve_sync, resolve) = memory_store();
 
         let id1 = EventId::new();
         let id2 = EventId::new();
 
-        let root = Ledger::record(None, &id1, ContentHash::compute(b"1"), &resolve, &store);
+        let root = Ledger::record(
+            None,
+            &id1,
+            ContentHash::compute(b"1"),
+            &resolve_sync,
+            &store,
+        );
 
         // "Fork" by cloning the root hash
         let fork_root = root.clone();
@@ -392,12 +531,12 @@ mod tests {
             Some(&fork_root),
             &id2,
             ContentHash::compute(b"2"),
-            &resolve,
+            &resolve_sync,
             &store,
         );
 
         // Original unchanged
-        let changes = Ledger::diff(Some(&root), Some(&fork_root), &resolve);
+        let changes = Ledger::diff(Some(&root), Some(&fork_root), &resolve).await;
         assert_eq!(changes.len(), 1);
         assert!(matches!(&changes[0], LedgerChange::Added(id) if *id == id2));
     }

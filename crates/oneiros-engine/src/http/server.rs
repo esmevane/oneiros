@@ -89,7 +89,7 @@ impl Server {
     /// against it, then assembles the router. Shared inner used by both
     /// `serve` and `spawn`.
     async fn serve_on(self, listener: TcpListener) -> Result<(), ServerError> {
-        match MigrationService::ensure_current(&self.config)? {
+        match MigrationService::ensure_current(&self.config).await? {
             MigrationOutcome::AlreadyCurrent => {}
             MigrationOutcome::Migrated {
                 applied,
@@ -108,11 +108,12 @@ impl Server {
         // `/oneiros/sync/1` connections from peers can serve canon updates.
         state.bridge().serve(
             self.config.clone(),
+            state.databases().clone(),
             state.canons().clone(),
             state.mailbox().clone(),
         );
 
-        let app = Self::router_from_state(state);
+        let app = Self::router_from_state(state).await;
 
         axum::serve(listener, app.into_make_service()).await?;
 
@@ -121,7 +122,7 @@ impl Server {
 
     /// Build a router from an already-constructed state. Used by `serve`
     /// once the async bridge binding has completed.
-    pub(crate) fn router_from_state(state: ServerState) -> Router {
+    pub(crate) async fn router_from_state(state: ServerState) -> Router {
         /// Serves the OpenAPI spec as JSON. Pulled from state — populated
         /// once after router assembly to avoid a global `.layer(Extension)`
         /// walk over every route on each server build.
@@ -148,7 +149,7 @@ impl Server {
             ),
         );
 
-        state.hydrate();
+        state.hydrate().await;
 
         let mut api = OpenApi::default();
         let app_docs = AppDocs;

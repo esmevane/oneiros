@@ -8,13 +8,16 @@ enum McpLiveResult {
 pub(crate) struct DoctorService;
 
 impl DoctorService {
-    pub(crate) async fn check(config: &Config) -> DoctorResponse {
+    pub(crate) async fn check(config: &Config, databases: &Databases) -> DoctorResponse {
         let mut checks = Vec::new();
 
         // Compose host-tier scope. Failure here means we don't have
         // host substrate at all — strangler bridge still produces
         // today's HostLog shape until consumers move to Scope.
-        let scope = match ComposeScope::new(config.clone()).host() {
+        let scope = match ComposeScope::new(config.clone(), databases.clone())
+            .host()
+            .await
+        {
             Ok(scope) => scope,
             Err(_) => {
                 checks.push(DoctorCheck::NotInitialized);
@@ -27,18 +30,16 @@ impl DoctorService {
             }
         };
 
-        let db = match HostDb::open(&scope).await {
-            Ok(db) => db,
-            Err(_) => {
-                checks.push(DoctorCheck::NotInitialized);
-                return DoctorResponse::CheckupStatus(
-                    CheckupStatusResponse::builder_v1()
-                        .checks(checks)
-                        .build()
-                        .into(),
-                );
-            }
-        };
+        let db_ok = scope.host_db().await.is_ok();
+        if !db_ok {
+            checks.push(DoctorCheck::NotInitialized);
+            return DoctorResponse::CheckupStatus(
+                CheckupStatusResponse::builder_v1()
+                    .checks(checks)
+                    .build()
+                    .into(),
+            );
+        }
 
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),
@@ -70,9 +71,15 @@ impl DoctorService {
             checks.push(DoctorCheck::HostKeyMissing);
         }
 
-        let event_count = db
-            .query_row("select count(*) from events", [], |row| {
-                row.get::<_, i64>(0)
+        let event_count = scope
+            .host_db()
+            .await
+            .ok()
+            .and_then(|db| {
+                db.query_row("select count(*) from events", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .ok()
             })
             .unwrap_or(0);
 
@@ -81,7 +88,7 @@ impl DoctorService {
         // Project check
         let project_name = config.project.clone();
 
-        match config.bookmark_conn() {
+        match databases.bookmark(&config.project, &config.bookmark).await {
             Ok(project_db) => {
                 let project_events = project_db
                     .query_row("select count(*) from events.events", [], |row| {

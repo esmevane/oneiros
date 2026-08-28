@@ -91,7 +91,7 @@ impl BookmarkChronicleActor {
 
     async fn replay(&self, scope: &Scope<AtBookmark>) -> Result<(), EventError> {
         let events = {
-            let bookmark_db = BookmarkDb::open(scope).await?;
+            let bookmark_db = scope.bookmark_db().await?;
             EventLog::attached(&bookmark_db).load_all()?
         };
 
@@ -100,7 +100,7 @@ impl BookmarkChronicleActor {
         }
 
         let chronicle = self.chronicle_for(&scope.project().name, &scope.bookmark().name)?;
-        let host_db = HostDb::open(scope).await?;
+        let host_db = scope.host_db().await?;
         let store = ChronicleStore::new(&host_db);
         store.migrate()?;
         for event in &events {
@@ -115,7 +115,7 @@ impl BookmarkChronicleActor {
         stored: &StoredEvent,
     ) -> Result<(), EventError> {
         let chronicle = self.chronicle_for(&scope.project().name, &scope.bookmark().name)?;
-        let host_db = HostDb::open(scope).await?;
+        let host_db = scope.host_db().await?;
         let store = ChronicleStore::new(&host_db);
         store.migrate()?;
         chronicle.record(stored, &store.resolver(), &store.writer())?;

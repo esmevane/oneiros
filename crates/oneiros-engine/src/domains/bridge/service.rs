@@ -6,6 +6,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct SyncHandler {
     config: Config,
+    databases: Databases,
     canons: CanonIndex,
     bridge: Bridge,
     mailbox: Mailbox,
@@ -20,12 +21,14 @@ impl core::fmt::Debug for SyncHandler {
 impl SyncHandler {
     pub(crate) fn new(
         config: Config,
+        databases: Databases,
         canons: CanonIndex,
         bridge: Bridge,
         mailbox: Mailbox,
     ) -> Self {
         Self {
             config,
+            databases,
             canons,
             bridge,
             mailbox,
@@ -52,7 +55,9 @@ impl SyncHandler {
     }
 
     async fn handle_diff(&self, diff: &BridgeDiff) -> Result<BridgeResponse, BridgeError> {
-        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
         let ticket = self.validate_ticket(&scope, &diff.link).await?;
         let chronicle = self.canons.chronicle(&ticket.project_name)?;
         let server_root = chronicle.root()?;
@@ -68,7 +73,7 @@ impl SyncHandler {
         };
 
         // Chronicle objects live in the host DB.
-        let host_db = HostDb::open(&scope).await?;
+        let host_db = scope.host_db().await?;
         let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
@@ -84,11 +89,13 @@ impl SyncHandler {
         &self,
         resolve_req: &BridgeResolve,
     ) -> Result<BridgeResponse, BridgeError> {
-        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
         let _ticket = self.validate_ticket(&scope, &resolve_req.link).await?;
 
         // Chronicle objects live in the host DB.
-        let host_db = HostDb::open(&scope).await?;
+        let host_db = scope.host_db().await?;
         let store = ChronicleStore::new(&host_db);
         let resolve = store.resolver();
 
@@ -105,16 +112,19 @@ impl SyncHandler {
         &self,
         fetch: &BridgeFetchEvents,
     ) -> Result<BridgeResponse, BridgeError> {
-        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
         let ticket = self.validate_ticket(&scope, &fetch.link).await?;
 
         // Compose at the target project's project tier — events DB
         // lives there. ComposeScope verifies the project exists.
-        let project_scope =
-            ComposeScope::new(self.config.clone()).project(ticket.project_name.clone())?;
+        let project_scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .project(ticket.project_name.clone())
+            .await?;
 
         // Event log lives in events.db (standalone, no ATTACH).
-        let db = EventsDb::open(&project_scope).await?;
+        let db = project_scope.project_log().await?;
 
         let ids: Vec<EventId> = fetch
             .event_ids
@@ -131,7 +141,9 @@ impl SyncHandler {
         &self,
         request: &BridgeListBookmarks,
     ) -> Result<BridgeResponse, BridgeError> {
-        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
         let ticket = self.validate_ticket(&scope, &request.ticket).await?;
 
         if !ticket.can(PermissionOp::BookmarkList) {
@@ -144,7 +156,7 @@ impl SyncHandler {
         }
 
         // List bookmark names from the host DB projection.
-        let host_db = self.config.host_db().map_err(|e| {
+        let host_db = self.databases.host().await.map_err(|e| {
             BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string())))
         })?;
         let bookmarks = BookmarkStore::new(&host_db)
@@ -162,7 +174,9 @@ impl SyncHandler {
         &self,
         request: &BridgeSubmitBookmark,
     ) -> Result<BridgeResponse, BridgeError> {
-        let scope = ComposeScope::new(self.config.clone()).host()?;
+        let scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
         let ticket = self.validate_ticket(&scope, &request.ticket).await?;
 
         if !ticket.can(PermissionOp::BookmarkSubmit) {
@@ -178,6 +192,7 @@ impl SyncHandler {
             &ticket.project_name,
             &request.bookmark_name,
         )
+        .await
         .map_err(|e| BridgeError::Denied(DenyReason::Remote(OpaquePeer::from(e.to_string()))))?;
 
         // Collect the submitter's data via chronicle diff + fetch.
@@ -186,6 +201,7 @@ impl SyncHandler {
             &self.bridge,
             &self.canons,
             &self.config,
+            &self.databases,
             &ticket.project_name,
             &request.bookmark_name,
             request.bookmark.clone(),

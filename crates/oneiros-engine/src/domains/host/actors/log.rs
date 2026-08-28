@@ -59,8 +59,10 @@ impl HostLogActor {
 
     async fn append(&self, append: AppendHostLog) -> Result<(), EventError> {
         let AppendHostLog { scope, event } = append;
-        let host_db = HostDb::open(&scope).await?;
-        let stored = EventLog::new(&host_db).append(&event)?;
+        let stored = {
+            let host_db = scope.host_db().await?;
+            EventLog::new(&host_db).append(&event)?
+        };
         self.mailbox.tell(HostMessage::from(
             ApplyHostProjection::builder()
                 .scope(scope)

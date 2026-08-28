@@ -84,11 +84,14 @@ impl ProjectService {
         project_config.project = project_name.clone();
         project_config.bookmark = BookmarkName::main();
 
-        let events_db = project_config.open_events_db()?;
+        let events_db = scope.databases().project_log(&project_name).await?;
         EventLog::new(&events_db).init()?;
         drop(events_db);
 
-        let bookmark_db = project_config.bookmark_conn()?;
+        let bookmark_db = scope
+            .databases()
+            .bookmark(&project_name, &BookmarkName::main())
+            .await?;
         Projections::project().migrate(&bookmark_db)?;
         drop(bookmark_db);
 
@@ -192,7 +195,7 @@ impl ProjectService {
         let details = request.current()?;
         let target_dir = &details.target;
         let project_name = &scope.config().project;
-        let db = BookmarkDb::open(scope).await?;
+        let db = scope.bookmark_db().await?;
         let events = EventLog::attached(&db).load_all()?;
         let storage = StorageStore::new(&db);
 
@@ -246,7 +249,11 @@ impl ProjectService {
         let reader = std::io::BufReader::new(file);
         let mut imported = 0usize;
 
-        let db = BookmarkDb::open_with(config, &config.project, &config.bookmark).await?;
+        // TODO: thread Databases from server when CLI dispatch is refactored.
+        let databases = Databases::new(config.clone());
+        let db = databases
+            .bookmark(&config.project, &config.bookmark)
+            .await?;
         let log = EventLog::attached(&db);
         let projections = Projections::<ProjectCanon>::project();
 
@@ -302,14 +309,24 @@ impl ProjectService {
     /// Replay all events through projections, rebuilding read models.
     pub(crate) async fn replay(config: &Config) -> Result<ProjectResponse, ProjectError> {
         let platform = config.platform();
-        let db_path = config.bookmark_db_path();
-        if db_path.exists() {
-            platform.remove_file(&db_path)?;
+        // In file mode, delete the bookmark DB to force a fresh replay.
+        // In memory mode, the pool will create a fresh :memory: on next
+        // checkout — but we can't force that here. The replay still works;
+        // it just replays into the existing in-memory db.
+        if config.database.mode == DatabaseMode::File {
+            let db_path = config.bookmark_db_path();
+            if db_path.exists() {
+                platform.remove_file(&db_path)?;
+            }
+            let _ = platform.remove_file(db_path.with_extension("db-wal"));
+            let _ = platform.remove_file(db_path.with_extension("db-shm"));
         }
-        let _ = platform.remove_file(db_path.with_extension("db-wal"));
-        let _ = platform.remove_file(db_path.with_extension("db-shm"));
 
-        let db = BookmarkDb::open_with(config, &config.project, &config.bookmark).await?;
+        // TODO: thread Databases from server when CLI dispatch is refactored.
+        let databases = Databases::new(config.clone());
+        let db = databases
+            .bookmark(&config.project, &config.bookmark)
+            .await?;
         let projections = Projections::<ProjectCanon>::project();
         projections.migrate(&db)?;
         let log = EventLog::attached(&db);
@@ -329,7 +346,9 @@ impl ProjectService {
         request: &ShareProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let ShareProject::V1(req) = request;
-        let scope = ComposeScope::new(state.config().clone()).host()?;
+        let scope = ComposeScope::new(state.config().clone(), state.databases().clone())
+            .host()
+            .await?;
         let project_name = if req.project.to_string().is_empty() {
             state.config().project.clone()
         } else {

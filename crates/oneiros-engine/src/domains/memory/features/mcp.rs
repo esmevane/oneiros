@@ -61,7 +61,7 @@ mod memory_mcp {
             MemoryRequestType::AddMemory => {
                 let addition: AddMemory = serde_json::from_value(params.clone())?;
                 let request = MemoryRequest::AddMemory(addition.clone());
-                let scope = context.scope().map_err(Error::from)?;
+                let scope = context.scope().await.map_err(Error::from)?;
                 let response = MemoryService::add(scope, mailbox, &addition)
                     .await
                     .map_err(Error::from)?;
@@ -78,7 +78,7 @@ mod memory_mcp {
         context: &ProjectLog,
         request: &MemoryRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         let response = match request {
             MemoryRequest::GetMemory(get) => {
                 MemoryService::get(scope, get).await.map_err(Error::from)?

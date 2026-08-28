@@ -66,8 +66,8 @@ impl LensService {
         let compiler = Compiler::new(registry);
         let ir = compiler.compile(&lens)?;
 
-        let db = BookmarkDb::open(scope).await?;
-        let host_db = HostDb::open(scope).await?;
+        let db = scope.bookmark_db().await?;
+        let host_db = scope.host_db().await?;
         let search_reader = SearchIndexReader::new(&db);
         let trail_reader = TrailLensReader::new(&db);
         let connection_reader = ConnectionLensReader::new(&db);

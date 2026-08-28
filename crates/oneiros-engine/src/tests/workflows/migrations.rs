@@ -34,7 +34,8 @@ async fn pre_rename_data_dir_boots_into_current_layout() -> Result<(), Box<dyn c
     );
 
     // Schema renames in host.db landed.
-    let host = rusqlite::Connection::open(data_dir.join("host.db"))?;
+    let databases = Databases::new(app.config().clone());
+    let host = databases.host().await?;
     assert!(
         fixture::table_exists(&host, "projects"),
         "projects table should exist"
@@ -79,12 +80,14 @@ async fn pre_rename_data_dir_boots_into_current_layout() -> Result<(), Box<dyn c
     // keep their pre-rename form. Forward compatibility is handled by the
     // event protocol's versioning (type-tag aliases + V1 historical structs
     // with TryFrom upcasts), not by data-rewriting migrations.
-    let events_db =
-        rusqlite::Connection::open(data_dir.join(fixture::PROJECT_NAME).join("events.db"))?;
-    let preserved_tags: Vec<String> = events_db
-        .prepare("SELECT event_type FROM events ORDER BY event_type")?
-        .query_map([], |row| row.get::<_, String>(0))?
-        .collect::<Result<Vec<_>, _>>()?;
+    let events_db = databases
+        .project_log(&ProjectName::new(fixture::PROJECT_NAME))
+        .await?;
+    let preserved_tags: Vec<String> = events_db.query_map(
+        "SELECT event_type FROM events ORDER BY event_type",
+        [],
+        |row| row.get::<_, String>(0),
+    )?;
     assert_eq!(
         preserved_tags,
         vec!["bookmark-created".to_string(), "brain-created".to_string()],
@@ -94,12 +97,10 @@ async fn pre_rename_data_dir_boots_into_current_layout() -> Result<(), Box<dyn c
     // Each preserved row decodes through the current Events enum without
     // landing in `Event::Unknown` — proving the versioning layer handles
     // legacy data end-to-end.
-    let rows: Vec<(String, String)> = events_db
-        .prepare("SELECT event_type, data FROM events")?
-        .query_map([], |row| {
+    let rows: Vec<(String, String)> =
+        events_db.query_map("SELECT event_type, data FROM events", [], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        })?;
     for (event_type, data) in &rows {
         let value: serde_json::Value = serde_json::from_str(data)?;
         let known: Events = serde_json::from_value(value).unwrap_or_else(|err| {
@@ -142,7 +143,7 @@ async fn pristine_data_dir_takes_no_backup() -> Result<(), Box<dyn core::error::
 mod fixture {
     use std::path::Path;
 
-    use crate::Platform;
+    use crate::{DbHandle, Platform};
 
     pub(crate) const PROJECT_NAME: &str = "test-project";
     pub(crate) const PROJECT_ID: &str = "01999999-9999-7999-8999-999999999999";
@@ -262,7 +263,7 @@ mod fixture {
         Ok(())
     }
 
-    pub(crate) fn table_exists(conn: &rusqlite::Connection, name: &str) -> bool {
+    pub(crate) fn table_exists(conn: &DbHandle, name: &str) -> bool {
         let count: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
@@ -273,29 +274,16 @@ mod fixture {
         count > 0
     }
 
-    pub(crate) fn column_exists(conn: &rusqlite::Connection, table: &str, column: &str) -> bool {
+    pub(crate) fn column_exists(conn: &DbHandle, table: &str, column: &str) -> bool {
         if !table_exists(conn, table) {
             return false;
         }
         let sql = format!("PRAGMA table_info({table})");
-        let mut stmt = match conn.prepare(&sql) {
-            Ok(s) => s,
+        let names: Vec<String> = match conn.query_map(&sql, [], |row| row.get::<_, String>(1)) {
+            Ok(v) => v,
             Err(_) => return false,
         };
-        let mut rows = match stmt.query([]) {
-            Ok(r) => r,
-            Err(_) => return false,
-        };
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = match row.get(1) {
-                Ok(n) => n,
-                Err(_) => continue,
-            };
-            if name == column {
-                return true;
-            }
-        }
-        false
+        names.iter().any(|n| n == column)
     }
 
     pub(crate) fn count_backups(data_dir: &Path) -> usize {

@@ -23,22 +23,23 @@ impl<'a> ExperienceRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt = db.prepare(
+        let db = self.scope.bookmark_db().await?;
+
+        let result = db.query_row(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            let id: String = row.get(0)?;
-            Ok((
-                id,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+            params![id.to_string()],
+            |row| {
+                let id: String = row.get(0)?;
+                Ok((
+                    id,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(
@@ -50,7 +51,7 @@ impl<'a> ExperienceRepo<'a> {
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -64,7 +65,7 @@ impl<'a> ExperienceRepo<'a> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
         let placeholders = (1..=ids.len())
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()
@@ -74,18 +75,15 @@ impl<'a> ExperienceRepo<'a> {
              FROM experiences WHERE id IN ({placeholders})"
         );
         let id_strs: Vec<String> = ids.iter().map(ToString::to_string).collect();
-        let mut stmt = db.prepare(&sql)?;
-        let rows = stmt
-            .query_map(params_from_iter(id_strs.iter()), |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, String>(4)?,
-                ))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+        let rows = db.query_map(&sql, params_from_iter(id_strs.iter()), |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
 
         let mut by_id: HashMap<ExperienceId, Experience> = HashMap::with_capacity(rows.len());
         for (id, agent_id, sensation, description, created_at) in rows {

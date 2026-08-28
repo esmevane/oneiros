@@ -21,50 +21,52 @@ impl<'a> PeerRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: PeerId) -> Result<Option<Peer>, EventError> {
-        let db = HostDb::open(self.scope).await?;
-        let mut statement = db.prepare(
-            "select id, key, address, name, kind, ticket_token, ticket_target, project, created_at from peers where id = ?1",
-        )?;
+        let db = self.scope.host_db().await?;
 
-        let raw = statement.query_row(params![id.to_string()], read_row);
+        let raw = db.query_row(
+            "select id, key, address, name, kind, ticket_token, ticket_target, project, created_at from peers where id = ?1",
+            params![id.to_string()],
+            read_row,
+        );
 
         match raw {
             Ok(row) => Ok(Some(peer_from_row(row)?)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
     pub(crate) async fn get_by_name(&self, name: &PeerName) -> Result<Option<Peer>, EventError> {
-        let db = HostDb::open(self.scope).await?;
-        let mut statement = db.prepare(
-            "select id, key, address, name, kind, ticket_token, ticket_target, project, created_at from peers where name = ?1",
-        )?;
+        let db = self.scope.host_db().await?;
 
-        let raw = statement.query_row(params![name.to_string()], read_row);
+        let raw = db.query_row(
+            "select id, key, address, name, kind, ticket_token, ticket_target, project, created_at from peers where name = ?1",
+            params![name.to_string()],
+            read_row,
+        );
 
         match raw {
             Ok(row) => Ok(Some(peer_from_row(row)?)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Peer>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
-        let total = {
-            let mut stmt = db.prepare("SELECT COUNT(*) FROM peers")?;
-            stmt.query_row([], |row| row.get::<_, usize>(0))?
-        };
+        let total = db.query_row("SELECT COUNT(*) FROM peers", [], |row| {
+            row.get::<_, usize>(0)
+        })?;
 
         let select_sql = "SELECT id, key, address, name, kind, ticket_token, ticket_target, project, created_at \
                           FROM peers ORDER BY created_at DESC LIMIT ?1 OFFSET ?2";
-        let mut statement = db.prepare(select_sql)?;
 
-        let raw: Vec<PeerRow> = statement
-            .query_map(rusqlite::params![filters.limit, filters.offset], read_row)?
-            .collect::<Result<Vec<_>, _>>()?;
+        let raw: Vec<PeerRow> = db.query_map(
+            select_sql,
+            rusqlite::params![filters.limit, filters.offset],
+            read_row,
+        )?;
 
         let mut peers = vec![];
 
@@ -88,7 +90,7 @@ type PeerRow = (
     String, // created_at
 );
 
-fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<PeerRow> {
+fn read_row(row: &DbRow<'_>) -> Result<PeerRow, DbError> {
     Ok((
         row.get(0)?,
         row.get(1)?,

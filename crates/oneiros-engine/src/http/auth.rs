@@ -48,13 +48,20 @@ pub(crate) enum VerifiedSession {
 /// key. Project tokens are verified via DB lookup against the ticket store.
 pub(crate) struct TicketVerifier {
     config: Config,
+    databases: Databases,
     host_secret: iroh::SecretKey,
 }
 
 impl TicketVerifier {
-    pub(crate) fn new(config: Config, _canons: CanonIndex, host_secret: iroh::SecretKey) -> Self {
+    pub(crate) fn new(
+        config: Config,
+        databases: Databases,
+        _canons: CanonIndex,
+        host_secret: iroh::SecretKey,
+    ) -> Self {
         Self {
             config,
+            databases,
             host_secret,
         }
     }
@@ -83,7 +90,9 @@ impl TicketVerifier {
             .decode()
             .map_err(|_| AuthError::InvalidToken)?;
 
-        let host_scope = ComposeScope::new(self.config.clone()).host()?;
+        let host_scope = ComposeScope::new(self.config.clone(), self.databases.clone())
+            .host()
+            .await?;
 
         let ticket = TicketRepo::new(&host_scope)
             .get_by_token(token_str)
@@ -158,7 +167,12 @@ mod tests {
         let secret = iroh::SecretKey::generate();
         let config = test_config(dir.path());
         let canons = CanonIndex::new();
-        let verifier = TicketVerifier::new(config, canons, secret.clone());
+        let verifier = TicketVerifier::new(
+            config.clone(),
+            Databases::new(config),
+            canons,
+            secret.clone(),
+        );
 
         let host_token = HostToken::generate(&secret);
         let result = verifier.verify(&host_token.to_string()).await;
@@ -176,7 +190,7 @@ mod tests {
         let other_secret = iroh::SecretKey::generate();
         let config = test_config(dir.path());
         let canons = CanonIndex::new();
-        let verifier = TicketVerifier::new(config, canons, secret);
+        let verifier = TicketVerifier::new(config.clone(), Databases::new(config), canons, secret);
 
         let wrong_token = HostToken::generate(&other_secret);
         let result = verifier.verify(&wrong_token.to_string()).await;
@@ -193,7 +207,7 @@ mod tests {
         let secret = iroh::SecretKey::generate();
         let config = test_config(dir.path());
         let canons = CanonIndex::new();
-        let verifier = TicketVerifier::new(config, canons, secret);
+        let verifier = TicketVerifier::new(config.clone(), Databases::new(config), canons, secret);
 
         let result = verifier.verify("not-a-valid-token-at-all").await;
 

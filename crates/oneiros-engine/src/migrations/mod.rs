@@ -12,8 +12,9 @@
 //! the disk to decide whether it applies. Re-runs are no-ops. There is no
 //! sentinel table or version marker — the disk's shape is the marker.
 //!
-//! Migrations run on server boot, before any database connections open,
-//! so the engine always sees current-layout state. Users never invoke
+//! Migrations run on server boot, before the main database pool is
+//! constructed. Each migration that needs database access creates a
+//! temporary `Databases` pool from the config. Users never invoke
 //! them directly.
 
 mod backup;
@@ -31,6 +32,8 @@ pub(crate) use outcome::*;
 pub(crate) use service::*;
 pub(crate) use system_db_to_host_db::*;
 
+use std::pin::Pin;
+
 use crate::Config;
 
 /// A single layout migration — detect-then-apply against the data-dir.
@@ -38,15 +41,24 @@ use crate::Config;
 /// Implementations carry no state; the on-disk layout is the source of
 /// truth. `is_required` consults the filesystem and DB schema, `apply`
 /// performs the transformation transactionally where possible.
-pub(crate) trait Migration {
+///
+/// Both methods return boxed futures so the trait is object-safe and
+/// the registry can use `Box<dyn Migration>`.
+pub(crate) trait Migration: Send + Sync {
     /// Human-readable label, surfaced in logs and the boot report.
     fn name(&self) -> &'static str;
 
     /// True iff this migration has work to do against the current data-dir.
-    fn is_required(&self, config: &Config) -> Result<bool, MigrationError>;
+    fn is_required<'a>(
+        &'a self,
+        config: &'a Config,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<bool, MigrationError>> + Send + 'a>>;
 
     /// Apply the migration. Must be safe to call when `is_required` is
     /// true; behavior is undefined when called against an already-current
     /// data-dir (callers should always gate on `is_required`).
-    fn apply(&self, config: &Config) -> Result<(), MigrationError>;
+    fn apply<'a>(
+        &'a self,
+        config: &'a Config,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<(), MigrationError>> + Send + 'a>>;
 }

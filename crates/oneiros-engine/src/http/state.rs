@@ -12,6 +12,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct ServerState {
     config: Config,
+    databases: Databases,
     canons: CanonIndex,
     bridge: Bridge,
     api: Arc<OnceLock<OpenApi>>,
@@ -38,8 +39,15 @@ impl ServerState {
         let canons = CanonIndex::new();
         let mailbox = Mailbox::spawn(canons.clone());
 
+        // Construct the database pool and spawn the background sweep
+        // task. The task runs until all `Databases` clones are dropped
+        // (which happens when `ServerState` is dropped).
+        let databases = Databases::new(config.clone());
+        databases.clone().spawn_sweep();
+
         Ok(Self {
             config,
+            databases,
             canons,
             bridge,
             api: Arc::new(OnceLock::new()),
@@ -80,15 +88,23 @@ impl ServerState {
 
     /// Hydrate reducer pipelines and chronicles from event logs.
     /// Best-effort — skips databases that don't exist yet (pre-init).
-    pub(crate) fn hydrate(&self) {
+    pub(crate) async fn hydrate(&self) {
         let _ = self
             .canons
-            .hydrate_project(&self.config, &self.config.project);
+            .hydrate_project(&self.config, &self.databases, &self.config.project)
+            .await;
     }
 
     /// The server configuration.
     pub(crate) fn config(&self) -> &Config {
         &self.config
+    }
+
+    /// The database pool. Cloned cheaply (internally `Arc`'d); consumers
+    /// check out connections by accessor (`.host()`, `.project_log()`,
+    /// `.bookmark()`) and return them on drop.
+    pub(crate) fn databases(&self) -> &Databases {
+        &self.databases
     }
 
     /// The project name from the server config.
@@ -100,7 +116,7 @@ impl ServerState {
     /// `ProjectLog` extractor for legacy CLI/MCP dispatchers.
     #[expect(deprecated)]
     pub(crate) fn project_log(&self, config: Config) -> ProjectLog {
-        ProjectLog::new(config, self.canons.clone())
+        ProjectLog::new(config, self.databases.clone(), self.canons.clone())
     }
 
     /// Construct a ticket verifier backed by this server's config,
@@ -108,6 +124,7 @@ impl ServerState {
     pub(crate) fn ticket_verifier(&self) -> TicketVerifier {
         TicketVerifier::new(
             self.config.clone(),
+            self.databases.clone(),
             self.canons.clone(),
             self.host_secret.clone(),
         )
@@ -139,7 +156,11 @@ impl FromRequestParts<ServerState> for Scope<AtHost> {
         // The auth middleware already injected VerifiedSession into
         // extensions. For AtHost, we accept both host and project
         // sessions — all we need is a valid config to compose from.
-        Ok(ComposeScope::new(state.config.clone()).host()?)
+        Ok(
+            ComposeScope::new(state.config.clone(), state.databases.clone())
+                .host()
+                .await?,
+        )
     }
 }
 
@@ -213,8 +234,9 @@ impl FromRequestParts<ServerState> for Scope<AtBookmark> {
         config.project = project_name;
         config.bookmark = bookmark;
 
-        let scope = ComposeScope::new(config.clone())
-            .bookmark(config.project.clone(), config.bookmark.clone())?;
+        let scope = ComposeScope::new(config.clone(), state.databases.clone())
+            .bookmark(config.project.clone(), config.bookmark.clone())
+            .await?;
         Ok(scope)
     }
 }

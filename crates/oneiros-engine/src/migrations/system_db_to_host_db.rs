@@ -1,3 +1,5 @@
+use std::pin::Pin;
+
 use crate::Config;
 
 use super::{Migration, MigrationError};
@@ -12,33 +14,43 @@ impl Migration for SystemDbToHostDb {
         "system.db → host.db"
     }
 
-    fn is_required(&self, config: &Config) -> Result<bool, MigrationError> {
-        let platform = config.platform();
-        Ok(platform.legacy_host_db_path().exists() && !platform.host_db_path().exists())
+    fn is_required<'a>(
+        &'a self,
+        config: &'a Config,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<bool, MigrationError>> + Send + 'a>> {
+        Box::pin(async move {
+            let platform = config.platform();
+            Ok(platform.legacy_host_db_path().exists() && !platform.host_db_path().exists())
+        })
     }
 
-    fn apply(&self, config: &Config) -> Result<(), MigrationError> {
-        let platform = config.platform();
-        let legacy = platform.legacy_host_db_path();
-        let current = platform.host_db_path();
+    fn apply<'a>(
+        &'a self,
+        config: &'a Config,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<(), MigrationError>> + Send + 'a>> {
+        Box::pin(async move {
+            let platform = config.platform();
+            let legacy = platform.legacy_host_db_path();
+            let current = platform.host_db_path();
 
-        // Fold any pending WAL into the main DB before renaming so we
-        // can move a single file safely. The sidecars are then idle and
-        // can be cleaned up.
-        let conn = rusqlite::Connection::open(&legacy)?;
-        conn.pragma_update(None, "journal_mode", "wal")?;
-        conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
-        drop(conn);
+            // Fold any pending WAL into the main DB before renaming so we
+            // can move a single file safely. The sidecars are then idle and
+            // can be cleaned up.
+            let conn = rusqlite::Connection::open(&legacy)?;
+            conn.pragma_update(None, "journal_mode", "wal")?;
+            conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
+            drop(conn);
 
-        platform.rename(&legacy, &current)?;
+            platform.rename(&legacy, &current)?;
 
-        for suffix in ["db-wal", "db-shm"] {
-            let sidecar = legacy.with_extension(suffix);
-            if sidecar.exists() {
-                platform.remove_file(&sidecar)?;
+            for suffix in ["db-wal", "db-shm"] {
+                let sidecar = legacy.with_extension(suffix);
+                if sidecar.exists() {
+                    platform.remove_file(&sidecar)?;
+                }
             }
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 }

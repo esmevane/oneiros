@@ -36,17 +36,26 @@ pub(crate) struct TestApp {
 
 impl TestApp {
     /// Boot a new test app: tempdir, config, server on a random port.
+    /// Uses in-memory databases for speed.
     pub(crate) async fn new() -> Result<Self, Box<dyn core::error::Error>> {
         let dir = tempfile::tempdir().expect("create tempdir");
-        Self::with_data_dir(dir).await
+        Self::with_data_dir_and_mode(dir, DatabaseMode::Memory).await
     }
 
     /// Boot a test app reusing an externally-staged tempdir. Used by
     /// migration tests that pre-write old-layout files into the data-dir
     /// and need the server to boot against that exact directory (so the
-    /// production migration hook runs).
+    /// production migration hook runs). Uses file mode (default).
     pub(crate) async fn with_data_dir(
         dir: tempfile::TempDir,
+    ) -> Result<Self, Box<dyn core::error::Error>> {
+        Self::with_data_dir_and_mode(dir, DatabaseMode::File).await
+    }
+
+    /// Boot a test app with an explicit database mode.
+    pub(crate) async fn with_data_dir_and_mode(
+        dir: tempfile::TempDir,
+        mode: DatabaseMode,
     ) -> Result<Self, Box<dyn core::error::Error>> {
         let mut config = Config::builder()
             .data_dir(dir.path().to_path_buf())
@@ -64,6 +73,7 @@ impl TestApp {
                 interval: std::time::Duration::from_millis(2),
                 timeout: std::time::Duration::from_millis(100),
             })
+            .database(DatabaseConfig::builder().mode(mode).build())
             .build();
 
         let handle = Server::new(config.clone()).spawn().await?;

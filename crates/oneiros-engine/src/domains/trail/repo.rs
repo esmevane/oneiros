@@ -17,34 +17,32 @@ impl<'a> TrailRepo<'a> {
         &self,
         entity_ref: &RefToken,
     ) -> Result<Vec<TrailEntry>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt = db.prepare(
+        let db = self.scope.bookmark_db().await?;
+
+        let rows: Vec<TrailRow> = db.query_map(
             "SELECT event_id, ref, event_type, created_at
              FROM trail
              WHERE ref = ?1
              ORDER BY created_at ASC",
+            params![entity_ref.to_string()],
+            read_row,
         )?;
-
-        let rows: Vec<TrailRow> = stmt
-            .query_map(params![entity_ref.to_string()], read_row)?
-            .collect::<Result<Vec<_>, _>>()?;
 
         rows.into_iter().map(entry_from_row).collect()
     }
 
     /// Entity refs the given event emitted, in insertion order.
     pub(crate) async fn refs_from(&self, event_id: EventId) -> Result<Vec<RefToken>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt = db.prepare(
+        let db = self.scope.bookmark_db().await?;
+
+        let rows = db.query_map(
             "SELECT ref
              FROM trail
              WHERE event_id = ?1
              ORDER BY ref ASC",
+            params![event_id.to_string()],
+            |row| row.get::<_, String>(0),
         )?;
-
-        let rows = stmt
-            .query_map(params![event_id.to_string()], |row| row.get::<_, String>(0))?
-            .collect::<Result<Vec<_>, _>>()?;
 
         let mut refs = Vec::with_capacity(rows.len());
         for raw in rows {
@@ -56,7 +54,7 @@ impl<'a> TrailRepo<'a> {
 
 type TrailRow = (String, String, String, String);
 
-fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<TrailRow> {
+fn read_row(row: &DbRow<'_>) -> Result<TrailRow, DbError> {
     Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
 }
 

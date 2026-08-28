@@ -40,8 +40,11 @@ impl ProjectCommands {
                 serde_json::from_slice(&bytes)?
             }
             ProjectCommands::Export(exporting) => {
-                let scope = ComposeScope::new(config.clone())
-                    .bookmark(config.project.clone(), config.bookmark.clone())?;
+                // TODO: thread Databases from server when CLI dispatch is refactored.
+                let databases = Databases::new(config.clone());
+                let scope = ComposeScope::new(config.clone(), databases)
+                    .bookmark(config.project.clone(), config.bookmark.clone())
+                    .await?;
                 ProjectService::export(&scope, exporting).await?
             }
             ProjectCommands::Import(importing) => ProjectService::import(config, importing).await?,

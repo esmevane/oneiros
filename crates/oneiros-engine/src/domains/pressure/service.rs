@@ -9,7 +9,7 @@ impl PressureService {
         selector: &GetPressure,
     ) -> Result<PressureResponse, PressureError> {
         let details = selector.current()?;
-        let pressures = PressureRepo::new(context.scope()?)
+        let pressures = PressureRepo::new(context.scope().await?)
             .get(&details.agent)
             .await?;
         Ok(PressureResponse::Readings(
@@ -23,7 +23,7 @@ impl PressureService {
 
     #[expect(deprecated)]
     pub(crate) async fn list(context: &ProjectLog) -> Result<PressureResponse, PressureError> {
-        let pressures = PressureRepo::new(context.scope()?).list().await?;
+        let pressures = PressureRepo::new(context.scope().await?).list().await?;
         Ok(PressureResponse::AllReadings(
             AllReadingsResponse::builder_v1()
                 .pressures(pressures)

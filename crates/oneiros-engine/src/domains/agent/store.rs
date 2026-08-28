@@ -4,11 +4,11 @@ use crate::*;
 
 /// Agent projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct AgentStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> AgentStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -62,19 +62,19 @@ impl<'a> AgentStore<'a> {
     }
 
     pub(crate) fn get(&self, name: &AgentName) -> Result<Option<Agent>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("select id, name, persona, description, prompt from agents where name = ?1")?;
-
-        let result = stmt.query_row(params![name.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+        let result = self.conn.query_row(
+            "select id, name, persona, description, prompt from agents where name = ?1",
+            params![name.to_string()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, name, persona, description, prompt)) => Ok(Some(
@@ -86,18 +86,16 @@ impl<'a> AgentStore<'a> {
                     .prompt(prompt)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
 
     pub(crate) fn list(&self) -> Result<Vec<Agent>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, name, persona, description, prompt FROM agents ORDER BY name")?;
-
-        let raw: Vec<(String, String, String, String, String)> = stmt
-            .query_map([], |row| {
+        let raw: Vec<(String, String, String, String, String)> = self.conn.query_map(
+            "SELECT id, name, persona, description, prompt FROM agents ORDER BY name",
+            [],
+            |row| {
                 Ok((
                     row.get(0)?,
                     row.get(1)?,
@@ -105,8 +103,8 @@ impl<'a> AgentStore<'a> {
                     row.get(3)?,
                     row.get(4)?,
                 ))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+            },
+        )?;
 
         let mut agents = vec![];
         for (id, name, persona, description, prompt) in raw {

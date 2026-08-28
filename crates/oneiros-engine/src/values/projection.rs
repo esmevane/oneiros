@@ -8,7 +8,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct Projection {
     pub(crate) name: &'static str,
-    pub(crate) migrate: fn(&rusqlite::Connection) -> Result<(), EventError>,
-    pub(crate) apply: fn(&rusqlite::Connection, &StoredEvent) -> Result<(), EventError>,
-    pub(crate) reset: fn(&rusqlite::Connection) -> Result<(), EventError>,
+    pub(crate) migrate: fn(&DbHandle) -> Result<(), EventError>,
+    pub(crate) apply: fn(&DbHandle, &StoredEvent) -> Result<(), EventError>,
+    pub(crate) reset: fn(&DbHandle) -> Result<(), EventError>,
 }
