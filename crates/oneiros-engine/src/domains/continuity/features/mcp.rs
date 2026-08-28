@@ -13,7 +13,7 @@ impl ContinuityMcp {
         context: &ProjectLog,
         request: &ContinuityRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         continuity_mcp::resource(scope, request).await
     }
 }

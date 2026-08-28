@@ -161,7 +161,7 @@ impl Engine {
         request: axum::http::Request<Body>,
     ) -> Result<axum::http::Response<Body>, Box<dyn core::error::Error>> {
         let state = ServerState::bind(self.config.clone()).await?;
-        let router = Server::router_from_state(state);
+        let router = Server::router_from_state(state).await;
         Ok(router.oneshot(request).await?)
     }
 

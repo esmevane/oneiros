@@ -1,4 +1,4 @@
-use crate::PlatformError;
+use crate::{DbError, PlatformError};
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum MigrationError {
@@ -10,6 +10,9 @@ pub(crate) enum MigrationError {
 
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
+
+    #[error("Database pool error: {0}")]
+    Db(#[from] DbError),
 
     #[error("Serde error: {0}")]
     Serde(#[from] serde_json::Error),

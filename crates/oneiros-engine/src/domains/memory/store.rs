@@ -4,11 +4,11 @@ use crate::*;
 
 /// Memory projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct MemoryStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> MemoryStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -44,18 +44,18 @@ impl<'a> MemoryStore<'a> {
     }
 
     pub(crate) fn list(&self, agent: Option<&str>) -> Result<Vec<Memory>, EventError> {
-        let mut stmt = match agent {
-            Some(_) => self.conn.prepare(
+        let sql = match agent {
+            Some(_) => {
                 "SELECT id, agent_id, level, content, created_at
-                 FROM memories WHERE agent_id = ?1 ORDER BY created_at",
-            )?,
-            None => self.conn.prepare(
+                 FROM memories WHERE agent_id = ?1 ORDER BY created_at"
+            }
+            None => {
                 "SELECT id, agent_id, level, content, created_at
-                 FROM memories ORDER BY created_at",
-            )?,
+                 FROM memories ORDER BY created_at"
+            }
         };
 
-        let map_row = |row: &rusqlite::Row<'_>| {
+        let map_row = |row: &DbRow<'_>| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -66,10 +66,9 @@ impl<'a> MemoryStore<'a> {
         };
 
         let raw = match agent {
-            Some(a) => stmt.query_map(params![a], map_row),
-            None => stmt.query_map([], map_row),
-        }?
-        .collect::<Result<Vec<_>, _>>()?;
+            Some(a) => self.conn.query_map(sql, params![a], map_row),
+            None => self.conn.query_map(sql, [], map_row),
+        }?;
 
         let mut memories = vec![];
         for (id, agent_id, level, content, created_at) in raw {

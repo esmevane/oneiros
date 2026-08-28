@@ -9,11 +9,11 @@ use crate::*;
 /// their own event handlers. The search projection's `apply` is a no-op —
 /// search owns the substrate, domains own the meaning of their events.
 pub(crate) struct SearchStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> SearchStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 

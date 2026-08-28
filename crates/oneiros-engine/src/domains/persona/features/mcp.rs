@@ -13,7 +13,7 @@ impl PersonaMcp {
         context: &ProjectLog,
         request: &PersonaRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         persona_mcp::resource(scope, request).await
     }
 }

@@ -21,15 +21,18 @@ impl<'a> TenantRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: &TenantId) -> Result<Option<Tenant>, TenantError> {
-        let db = HostDb::open(self.scope).await?;
-        let mut stmt = db.prepare("select id, name, created_at from tenants where id = ?1")?;
+        let db = self.scope.host_db().await?;
 
-        let raw = stmt.query_row(params![id.to_string()], |row| {
-            let id: String = row.get(0)?;
-            let name: String = row.get(1)?;
-            let created_at: String = row.get(2)?;
-            Ok((id, name, created_at))
-        });
+        let raw = db.query_row(
+            "select id, name, created_at from tenants where id = ?1",
+            params![id.to_string()],
+            |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                let created_at: String = row.get(2)?;
+                Ok((id, name, created_at))
+            },
+        );
 
         match raw {
             Ok((id, name, created_at)) => Ok(Some(Tenant {
@@ -37,7 +40,7 @@ impl<'a> TenantRepo<'a> {
                 name: TenantName::new(name),
                 created_at: Timestamp::parse_str(created_at)?,
             })),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -46,22 +49,16 @@ impl<'a> TenantRepo<'a> {
         &self,
         filters: &SearchFilters,
     ) -> Result<Listed<Tenant>, TenantError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
         let count_sql = "SELECT COUNT(*) FROM tenants";
-        let total = {
-            let mut stmt = db.prepare(count_sql)?;
-            stmt.query_row([], |row| row.get::<_, usize>(0))?
-        };
+        let total = db.query_row(count_sql, [], |row| row.get::<_, usize>(0))?;
 
-        let mut stmt = db
-            .prepare("SELECT id, name, created_at FROM tenants ORDER BY name LIMIT ?1 OFFSET ?2")?;
-
-        let raw: Vec<(String, String, String)> = stmt
-            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+        let raw: Vec<(String, String, String)> = db.query_map(
+            "SELECT id, name, created_at FROM tenants ORDER BY name LIMIT ?1 OFFSET ?2",
+            rusqlite::params![filters.limit, filters.offset],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )?;
 
         let mut tenants = vec![];
 

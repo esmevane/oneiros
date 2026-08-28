@@ -12,7 +12,7 @@ impl BookmarkService {
     /// Ensure a bookmark exists locally. If not, fork the project, create
     /// the bookmark DB, emit a BookmarkForked event, and upsert into the
     /// host store so compose can find it.
-    pub(crate) fn ensure_bookmark_exists(
+    pub(crate) async fn ensure_bookmark_exists(
         scope: &Scope<AtHost>,
         canons: &CanonIndex,
         config: &Config,
@@ -25,7 +25,7 @@ impl BookmarkService {
         }
 
         canons.fork_project(project, bookmark_name)?;
-        Self::create_bookmark_db(config, project, bookmark_name, &[])?;
+        Self::create_bookmark_db(config, scope.databases(), project, bookmark_name, &[]).await?;
 
         let from = canons.active_bookmark(project)?;
         let bookmark = Bookmark::builder()
@@ -48,7 +48,7 @@ impl BookmarkService {
                 .build(),
         ));
 
-        let host_db = config.host_db()?;
+        let host_db = scope.databases().host().await?;
         BookmarkStore::new(&host_db).upsert(&bookmark)?;
         Ok(())
     }
@@ -72,8 +72,10 @@ impl BookmarkService {
                 .ok_or_else(|| {
                     BookmarkError::InvalidUri(format!("slice not found: {slice_name}"))
                 })?;
-            let bookmark_scope = ComposeScope::new(state.config().clone())
-                .bookmark(project.clone(), from.clone())?;
+            let bookmark_scope =
+                ComposeScope::new(state.config().clone(), state.databases().clone())
+                    .bookmark(project.clone(), from.clone())
+                    .await?;
             let selection = LensService::select(
                 &bookmark_scope,
                 state.canons(),
@@ -88,7 +90,8 @@ impl BookmarkService {
 
         // Create the new bookmark's DB and replay the source events into it.
         // If event_ids is non-empty, only those events are replayed (scoped fork).
-        Self::create_bookmark_db(state.config(), project, name, &event_ids)?;
+        Self::create_bookmark_db(state.config(), state.databases(), project, name, &event_ids)
+            .await?;
 
         let bookmark = Bookmark::builder()
             .project(project.clone())
@@ -165,9 +168,12 @@ impl BookmarkService {
         let MergeBookmark::V1(merging) = request;
         let source = &merging.source;
         let target = state.canons().active_bookmark(project)?;
-        state.canons().merge_project(project, source, &target)?;
+        state
+            .canons()
+            .merge_project(state.databases(), project, source, &target)
+            .await?;
 
-        Self::replay_bookmark(state.config(), project, &target)?;
+        Self::replay_bookmark(state.config(), state.databases(), project, &target).await?;
 
         let event = BookmarkMerged::builder_v1()
             .project(project.clone())
@@ -389,7 +395,7 @@ impl BookmarkService {
         state.canons().fork_project(project, name)?;
 
         // Create the new bookmark's DB (empty — collect will populate it).
-        Self::create_bookmark_db(state.config(), project, name, &[])?;
+        Self::create_bookmark_db(state.config(), state.databases(), project, name, &[]).await?;
 
         let follow =
             FollowService::create(scope, mailbox, project.clone(), name.clone(), source).await?;
@@ -495,7 +501,8 @@ impl BookmarkService {
             state.mailbox(),
             project,
             local_name,
-        )?;
+        )
+        .await?;
 
         let ticket = peer.ticket.ok_or_else(|| {
             BookmarkError::InvalidUri(format!("peer {} has no ticket", peer_name))
@@ -506,6 +513,7 @@ impl BookmarkService {
             state.bridge(),
             state.canons(),
             state.config(),
+            state.databases(),
             project,
             local_name,
             peer_link,
@@ -547,6 +555,7 @@ impl BookmarkService {
             state.bridge(),
             state.canons(),
             state.config(),
+            state.databases(),
             project,
             &follow.bookmark,
             peer_link,
@@ -582,11 +591,16 @@ impl BookmarkService {
     /// and the submit handshake.
     ///
     /// The caller must ensure the bookmark already exists on this host.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "We see a refactor that rolls these args up into one structure"
+    )]
     pub(crate) async fn collect_from_peer_link(
         mailbox: &Mailbox,
         bridge: &Bridge,
         canons: &CanonIndex,
         config: &Config,
+        databases: &Databases,
         project: &ProjectName,
         bookmark_name: &BookmarkName,
         peer_link: PeerLink,
@@ -595,14 +609,20 @@ impl BookmarkService {
         let local_root = chronicle.root()?;
 
         {
-            let db = config.host_db()?;
+            let db = databases.host().await?;
             ChronicleStore::new(&db).migrate()?;
         }
         let local_resolve = {
-            let config = config.clone();
-            move |hash: &ContentHash| -> Option<LedgerNode> {
-                let db = config.host_db().ok()?;
-                ChronicleStore::new(&db).get(hash)
+            let databases = databases.clone();
+            move |hash: &ContentHash| -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = Option<LedgerNode>> + Send + 'static>,
+            > {
+                let hash = hash.clone();
+                let databases = databases.clone();
+                Box::pin(async move {
+                    let db = databases.host().await.ok()?;
+                    ChronicleStore::new(&db).get(&hash)
+                })
             }
         };
 
@@ -635,8 +655,9 @@ impl BookmarkService {
                 .await
                 .map_err(|error: BridgeError| BookmarkError::InvalidUri(error.to_string()))?;
 
-            let bookmark_scope = ComposeScope::new(config.clone())
-                .bookmark(project.clone(), bookmark_name.clone())?;
+            let bookmark_scope = ComposeScope::new(config.clone(), databases.clone())
+                .bookmark(project.clone(), bookmark_name.clone())
+                .await?;
 
             let expected_ids: std::collections::HashSet<String> =
                 events.iter().map(|event| event.id.to_string()).collect();
@@ -652,10 +673,16 @@ impl BookmarkService {
 
             let chronicle_for_wait = chronicle.clone();
             let resolve_for_wait = {
-                let config = config.clone();
-                move |hash: &ContentHash| -> Option<LedgerNode> {
-                    let db = config.host_db().ok()?;
-                    ChronicleStore::new(&db).get(hash)
+                let databases = databases.clone();
+                move |hash: &ContentHash| -> std::pin::Pin<
+                    Box<dyn std::future::Future<Output = Option<LedgerNode>> + Send + 'static>,
+                > {
+                    let hash = hash.clone();
+                    let databases = databases.clone();
+                    Box::pin(async move {
+                        let db = databases.host().await.ok()?;
+                        ChronicleStore::new(&db).get(&hash)
+                    })
                 }
             };
             config
@@ -663,7 +690,7 @@ impl BookmarkService {
                 .eventual(|| async {
                     let root = chronicle_for_wait.root()?;
                     let seen = match root.as_ref() {
-                        Some(hash) => Ledger::collect_all_ids(Some(hash), &resolve_for_wait),
+                        Some(hash) => Ledger::collect_all_ids(Some(hash), &resolve_for_wait).await,
                         None => std::collections::HashSet::new(),
                     };
                     Ok::<_, EventError>(if expected_ids.is_subset(&seen) {
@@ -773,8 +800,9 @@ impl BookmarkService {
     }
 
     /// Replay the event log into a specific bookmark's projection DB.
-    fn replay_bookmark(
+    async fn replay_bookmark(
         config: &Config,
+        databases: &Databases,
         project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<(), BookmarkError> {
@@ -783,7 +811,7 @@ impl BookmarkService {
         project_config.project = project.clone();
         project_config.bookmark = bookmark.clone();
 
-        let db = project_config.bookmark_conn()?;
+        let db = databases.bookmark(project, bookmark).await?;
         let log = EventLog::attached(&db);
 
         Projections::<ProjectCanon>::project().replay_project(&db, &log)?;
@@ -797,8 +825,9 @@ impl BookmarkService {
     /// projections so the new bookmark starts with the source's state.
     /// When `event_ids` is non-empty, only matching events are replayed
     /// (scoped fork — used by slice bookmarking).
-    pub(crate) fn create_bookmark_db(
+    pub(crate) async fn create_bookmark_db(
         config: &Config,
+        databases: &Databases,
         project: &ProjectName,
         bookmark: &BookmarkName,
         event_ids: &[EventId],
@@ -816,7 +845,7 @@ impl BookmarkService {
             .map_err(|e| BookmarkError::InvalidUri(e.to_string()))?;
 
         // Open the new bookmark DB with events ATTACHed and replay.
-        let db = project_config.bookmark_conn()?;
+        let db = databases.bookmark(project, bookmark).await?;
         let projections = Projections::<ProjectCanon>::project();
 
         projections.migrate(&db)?;

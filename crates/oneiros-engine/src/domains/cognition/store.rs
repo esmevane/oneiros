@@ -4,11 +4,11 @@ use crate::*;
 
 /// Cognition projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct CognitionStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> CognitionStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -44,20 +44,20 @@ impl<'a> CognitionStore<'a> {
     }
 
     pub(crate) fn get(&self, id: &CognitionId) -> Result<Option<Cognition>, EventError> {
-        let mut stmt = self.conn.prepare(
+        let result = self.conn.query_row(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+            params![id.to_string()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, agent_id, texture, content, created_at)) => Ok(Some(
@@ -69,7 +69,7 @@ impl<'a> CognitionStore<'a> {
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -105,9 +105,7 @@ impl<'a> CognitionStore<'a> {
             }
         };
 
-        let mut stmt = self.conn.prepare(sql)?;
-
-        let map_row = |row: &rusqlite::Row<'_>| {
+        let map_row = |row: &DbRow<'_>| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -118,12 +116,14 @@ impl<'a> CognitionStore<'a> {
         };
 
         let raw = match (agent, texture) {
-            (Some(a), Some(t)) => stmt.query_map(params![a.to_string(), t.as_str()], map_row),
-            (Some(a), None) => stmt.query_map(params![a.to_string()], map_row),
-            (None, Some(t)) => stmt.query_map(params![t.as_str()], map_row),
-            (None, None) => stmt.query_map([], map_row),
-        }?
-        .collect::<Result<Vec<_>, _>>()?;
+            (Some(a), Some(t)) => {
+                self.conn
+                    .query_map(sql, params![a.to_string(), t.as_str()], map_row)
+            }
+            (Some(a), None) => self.conn.query_map(sql, params![a.to_string()], map_row),
+            (None, Some(t)) => self.conn.query_map(sql, params![t.as_str()], map_row),
+            (None, None) => self.conn.query_map(sql, [], map_row),
+        }?;
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {
@@ -147,27 +147,23 @@ impl<'a> CognitionStore<'a> {
         agent_id: &AgentId,
         limit: usize,
     ) -> Result<Vec<Cognition>, EventError> {
-        let mut stmt = self.conn.prepare(
+        let raw = self.conn.query_map(
             "SELECT id, agent_id, texture, content, created_at
              FROM cognitions
              WHERE agent_id = ?1
              ORDER BY created_at DESC
              LIMIT ?2",
+            params![agent_id.to_string(), limit],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
         )?;
-
-        let map_row = |row: &rusqlite::Row<'_>| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        };
-
-        let raw = stmt
-            .query_map(params![agent_id.to_string(), limit], map_row)?
-            .collect::<Result<Vec<_>, _>>()?;
 
         let mut cognitions = vec![];
         for (id, agent_id, texture, content, created_at) in raw {

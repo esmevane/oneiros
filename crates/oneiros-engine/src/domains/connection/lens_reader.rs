@@ -5,36 +5,34 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct ConnectionLensReader<'a> {
-    db: &'a BookmarkDb,
+    db: &'a DbHandle<'a>,
 }
 
 impl<'a> ConnectionLensReader<'a> {
-    pub(crate) fn new(db: &'a BookmarkDb) -> Self {
+    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
         Self { db }
     }
 
     fn neighbors_from(&self, source: &Ref) -> Result<Vec<(Ref, Timestamp)>, ReaderError> {
         let source_json =
             serde_json::to_string(source).map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let mut stmt = self
+        let rows = self
             .db
-            .prepare(
+            .query_map(
                 "SELECT to_ref, created_at
                  FROM connections
                  WHERE from_ref = ?1
                  ORDER BY created_at DESC",
+                params![source_json],
+                |row| {
+                    let to_ref: String = row.get(0)?;
+                    let created_at: String = row.get(1)?;
+                    Ok((to_ref, created_at))
+                },
             )
             .map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let rows = stmt
-            .query_map(params![source_json], |row| {
-                let to_ref: String = row.get(0)?;
-                let created_at: String = row.get(1)?;
-                Ok((to_ref, created_at))
-            })
-            .map_err(|e| ReaderError::Internal(e.to_string()))?;
         let mut out = Vec::new();
-        for row in rows {
-            let (to_ref_raw, created_at) = row.map_err(|e| ReaderError::Internal(e.to_string()))?;
+        for (to_ref_raw, created_at) in rows {
             let to_ref: Ref = serde_json::from_str(&to_ref_raw)
                 .map_err(|e| ReaderError::Internal(e.to_string()))?;
             let timestamp = Timestamp::parse_str(&created_at)
@@ -47,26 +45,23 @@ impl<'a> ConnectionLensReader<'a> {
     fn neighbors_to(&self, target: &Ref) -> Result<Vec<(Ref, Timestamp)>, ReaderError> {
         let target_json =
             serde_json::to_string(target).map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let mut stmt = self
+        let rows = self
             .db
-            .prepare(
+            .query_map(
                 "SELECT from_ref, created_at
                  FROM connections
                  WHERE to_ref = ?1
                  ORDER BY created_at DESC",
+                params![target_json],
+                |row| {
+                    let from_ref: String = row.get(0)?;
+                    let created_at: String = row.get(1)?;
+                    Ok((from_ref, created_at))
+                },
             )
             .map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let rows = stmt
-            .query_map(params![target_json], |row| {
-                let from_ref: String = row.get(0)?;
-                let created_at: String = row.get(1)?;
-                Ok((from_ref, created_at))
-            })
-            .map_err(|e| ReaderError::Internal(e.to_string()))?;
         let mut out = Vec::new();
-        for row in rows {
-            let (from_ref_raw, created_at) =
-                row.map_err(|e| ReaderError::Internal(e.to_string()))?;
+        for (from_ref_raw, created_at) in rows {
             let from_ref: Ref = serde_json::from_str(&from_ref_raw)
                 .map_err(|e| ReaderError::Internal(e.to_string()))?;
             let timestamp = Timestamp::parse_str(&created_at)

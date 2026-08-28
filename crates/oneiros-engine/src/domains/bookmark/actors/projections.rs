@@ -87,14 +87,14 @@ impl BookmarkProjectionsActor {
             self.replay(&apply.scope).await?;
             self.caught_up.insert(key);
         }
-        let bookmark_db = BookmarkDb::open(&apply.scope).await?;
+        let bookmark_db = apply.scope.bookmark_db().await?;
         let projections = self.projections_for(&apply.scope.project().name)?;
         projections.apply_project(&bookmark_db, &apply.stored)?;
         Ok(())
     }
 
     async fn replay(&self, scope: &Scope<AtBookmark>) -> Result<(), EventError> {
-        let bookmark_db = BookmarkDb::open(scope).await?;
+        let bookmark_db = scope.bookmark_db().await?;
         let projections = self.projections_for(&scope.project().name)?;
         projections.migrate(&bookmark_db)?;
         let log = EventLog::attached(&bookmark_db);

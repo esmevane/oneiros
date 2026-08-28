@@ -61,7 +61,7 @@ mod connection_mcp {
             ConnectionRequestType::CreateConnection => {
                 let creation: CreateConnection = serde_json::from_value(params.clone())?;
                 let request = ConnectionRequest::CreateConnection(creation.clone());
-                let scope = context.scope().map_err(Error::from)?;
+                let scope = context.scope().await.map_err(Error::from)?;
                 let response = ConnectionService::create(scope, mailbox, &creation)
                     .await
                     .map_err(Error::from)?;
@@ -80,7 +80,7 @@ mod connection_mcp {
         context: &ProjectLog,
         request: &ConnectionRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         let response = match request {
             ConnectionRequest::GetConnection(get) => ConnectionService::get(scope, get)
                 .await

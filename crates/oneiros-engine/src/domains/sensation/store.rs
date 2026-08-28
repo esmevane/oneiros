@@ -3,11 +3,11 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct SensationStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> SensationStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -38,19 +38,19 @@ impl<'a> SensationStore<'a> {
     }
 
     pub(crate) fn list(&self) -> Result<Vec<Sensation>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT name, description, prompt FROM sensations ORDER BY name")?;
-
-        let sensations = stmt
-            .query_map([], |row| {
+        let tuples: Vec<(String, String, String)> = self.conn.query_map(
+            "SELECT name, description, prompt FROM sensations ORDER BY name",
+            [],
+            |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, String>(1)?,
                     row.get::<_, String>(2)?,
                 ))
-            })?
-            .collect::<Result<Vec<(String, String, String)>, _>>()?
+            },
+        )?;
+
+        Ok(tuples
             .into_iter()
             .map(|(name, description, prompt)| {
                 Sensation::builder()
@@ -59,9 +59,7 @@ impl<'a> SensationStore<'a> {
                     .prompt(prompt)
                     .build()
             })
-            .collect();
-
-        Ok(sensations)
+            .collect())
     }
 
     fn set(&self, setting: &SensationSet) -> Result<(), EventError> {

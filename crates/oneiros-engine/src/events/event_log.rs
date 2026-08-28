@@ -21,13 +21,13 @@ use crate::*;
 ///   the events DB is ATTACHed as `events`. Table references use
 ///   the `events.` schema qualifier.
 pub(crate) struct EventLog<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
     table: &'static str,
 }
 
 impl<'a> EventLog<'a> {
     /// Standalone mode — events DB is the base connection.
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self {
             conn,
             table: "events",
@@ -35,7 +35,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// ATTACH mode — bookmark DB is the base, events DB ATTACHed as `events`.
-    pub(crate) fn attached(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn attached(conn: &'a DbHandle<'a>) -> Self {
         Self {
             conn,
             table: "events.events",
@@ -89,43 +89,39 @@ impl<'a> EventLog<'a> {
     /// Load all events in sequence order. Rows whose event type is not
     /// recognized are logged at warn and filtered out of the result.
     pub(crate) fn load_all(&self) -> Result<Vec<StoredEvent>, EventError> {
-        let mut stmt = self.conn.prepare(&format!(
-            "SELECT id, rowid, data, source, created_at FROM {} ORDER BY rowid",
-            self.table,
-        ))?;
-
-        let rows = stmt
-            .query_map([], |row| {
+        let tuples: Vec<(String, i64, String, String, String)> = self.conn.query_map(
+            &format!(
+                "SELECT id, rowid, data, source, created_at FROM {} ORDER BY rowid",
+                self.table,
+            ),
+            [],
+            |row| {
                 let id_str: String = row.get(0)?;
                 let data_str: String = row.get(2)?;
                 let source_str: String = row.get(3)?;
                 let created_at_str: String = row.get(4)?;
                 Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
-            })?
-            .map(|result| -> Result<StoredEvent, EventError> {
-                let (id_str, sequence, data_str, source_str, created_at_str) = result?;
-
-                let id = id_str.parse().unwrap_or_default();
-                let record = serde_json::from_str(&data_str)
-                    .inspect_err(|error| {
-                        tracing::warn!(%error, "skipping event row with malformed json");
-                    })
-                    .unwrap_or_default();
-
-                Ok(StoredEvent::builder()
-                    .id(id)
-                    .sequence(sequence)
-                    .data(record)
-                    .source(serde_json::from_str(&source_str).unwrap_or_default())
-                    .created_at(
-                        Timestamp::parse_str(created_at_str).unwrap_or_else(|_| Timestamp::now()),
-                    )
-                    .build())
-            });
+            },
+        )?;
 
         let mut events = Vec::new();
-        for row in rows {
-            let row = row?;
+        for (id_str, sequence, data_str, source_str, created_at_str) in tuples {
+            let id = id_str.parse().unwrap_or_default();
+            let record = serde_json::from_str(&data_str)
+                .inspect_err(|error| {
+                    tracing::warn!(%error, "skipping event row with malformed json");
+                })
+                .unwrap_or_default();
+
+            let row = StoredEvent::builder()
+                .id(id)
+                .sequence(sequence)
+                .data(record)
+                .source(serde_json::from_str(&source_str).unwrap_or_default())
+                .created_at(
+                    Timestamp::parse_str(created_at_str).unwrap_or_else(|_| Timestamp::now()),
+                )
+                .build();
             if let Event::Known(_) = row.data {
                 events.push(row);
             }
@@ -147,44 +143,37 @@ impl<'a> EventLog<'a> {
             placeholders.join(","),
         );
 
-        let mut stmt = self.conn.prepare(&query)?;
         let params: Vec<String> = ids.iter().map(|id| id.to_string()).collect();
         let param_refs: Vec<&dyn rusqlite::ToSql> =
             params.iter().map(|p| p as &dyn rusqlite::ToSql).collect();
 
-        let rows = stmt
-            .query_map(param_refs.as_slice(), |row| {
+        let tuples: Vec<(String, i64, String, String, String)> =
+            self.conn.query_map(&query, param_refs.as_slice(), |row| {
                 let id_str: String = row.get(0)?;
                 let data_str: String = row.get(2)?;
                 let source_str: String = row.get(3)?;
                 let created_at_str: String = row.get(4)?;
                 Ok((id_str, row.get(1)?, data_str, source_str, created_at_str))
-            })?
-            .map(|result| -> Result<StoredEvent, EventError> {
-                let (id_str, sequence, data_str, source_str, created_at_str) = result?;
-
-                let id = id_str.parse().unwrap_or_default();
-                let record = serde_json::from_str(&data_str)
-                    .inspect_err(|error| {
-                        tracing::warn!(%error, "skipping event row with malformed json");
-                    })
-                    .unwrap_or_default();
-
-                Ok(StoredEvent::builder()
-                    .id(id)
-                    .sequence(sequence)
-                    .data(record)
-                    .source(serde_json::from_str(&source_str).unwrap_or_default())
-                    .created_at(
-                        Timestamp::parse_str(created_at_str).unwrap_or_else(|_| Timestamp::now()),
-                    )
-                    .build())
-            });
+            })?;
 
         let mut events = Vec::new();
+        for (id_str, sequence, data_str, source_str, created_at_str) in tuples {
+            let id = id_str.parse().unwrap_or_default();
+            let record = serde_json::from_str(&data_str)
+                .inspect_err(|error| {
+                    tracing::warn!(%error, "skipping event row with malformed json");
+                })
+                .unwrap_or_default();
 
-        for row in rows {
-            let row = row?;
+            let row = StoredEvent::builder()
+                .id(id)
+                .sequence(sequence)
+                .data(record)
+                .source(serde_json::from_str(&source_str).unwrap_or_default())
+                .created_at(
+                    Timestamp::parse_str(created_at_str).unwrap_or_else(|_| Timestamp::now()),
+                )
+                .build();
             if let Event::Known(_) = row.data {
                 events.push(row)
             }

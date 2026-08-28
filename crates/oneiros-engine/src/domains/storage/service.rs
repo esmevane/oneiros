@@ -19,7 +19,7 @@ impl StorageService {
 
         // Put the blob directly — content-addressed storage, not a
         // projection. Direct write to the bookmark DB.
-        let bookmark_db = BookmarkDb::open(scope).await?;
+        let bookmark_db = scope.bookmark_db().await?;
         StorageStore::new(&bookmark_db).put_blob(&blob)?;
         drop(bookmark_db);
 

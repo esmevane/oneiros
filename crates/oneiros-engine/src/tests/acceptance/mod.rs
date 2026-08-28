@@ -146,6 +146,7 @@ impl Backend for EngineBackend {
                     .address("127.0.0.1:0".parse()?)
                     .build(),
             )
+            .database(DatabaseConfig::builder().mode(DatabaseMode::Memory).build())
             .build();
 
         // Start the HTTP server eagerly — the engine CLI routes all

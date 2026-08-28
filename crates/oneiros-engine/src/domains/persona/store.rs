@@ -4,11 +4,11 @@ use crate::*;
 
 /// Persona projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct PersonaStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> PersonaStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -39,19 +39,19 @@ impl<'a> PersonaStore<'a> {
     }
 
     pub(crate) fn get(&self, name: &PersonaName) -> Result<Option<Persona>, EventError> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT name, description, prompt FROM personas WHERE name = ?1")?;
+        let raw = self.conn.query_row(
+            "SELECT name, description, prompt FROM personas WHERE name = ?1",
+            params![name.to_string()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
 
-        let result = stmt.query_row(params![name.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-            ))
-        });
-
-        match result {
+        match raw {
             Ok((name, description, prompt)) => Ok(Some(
                 Persona::builder()
                     .name(name)
@@ -59,8 +59,8 @@ impl<'a> PersonaStore<'a> {
                     .prompt(prompt)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e.into()),
+            Err(DbError::NotFound) => Ok(None),
+            Err(error) => Err(error.into()),
         }
     }
 

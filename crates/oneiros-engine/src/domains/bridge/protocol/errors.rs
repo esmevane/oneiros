@@ -130,10 +130,7 @@ pub(crate) enum BridgeError {
     Database(#[from] rusqlite::Error),
 
     #[error(transparent)]
-    HostDb(#[from] HostDbError),
-
-    #[error(transparent)]
-    EventsDb(#[from] EventsDbError),
+    Db(#[from] crate::DbError),
 
     /// A scope hydration error during sync handling.
     #[error(transparent)]

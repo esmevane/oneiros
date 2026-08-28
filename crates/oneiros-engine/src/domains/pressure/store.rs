@@ -8,11 +8,11 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct PressureStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> PressureStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -43,12 +43,10 @@ impl<'a> PressureStore<'a> {
             None => return Ok(vec![]),
         };
 
-        let mut stmt = self.conn.prepare(
+        let pressures = self.conn.query_map(
             "select id, agent_id, urge, data, updated_at from pressures where agent_id = ?1 order by urge",
-        )?;
-
-        let pressures = stmt
-            .query_map(params![agent.id.to_string()], |row| {
+            params![agent.id.to_string()],
+            |row| {
                 let data_str: String = row.get(3)?;
                 let updated_str: String = row.get(4)?;
                 Ok(Pressure {
@@ -74,8 +72,8 @@ impl<'a> PressureStore<'a> {
                     updated_at: Timestamp::parse_str(&updated_str)
                         .unwrap_or_else(|_| Timestamp::now()),
                 })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+            },
+        )?;
 
         Ok(pressures)
     }

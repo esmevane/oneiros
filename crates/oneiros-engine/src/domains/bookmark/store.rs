@@ -9,11 +9,11 @@ fn is_missing_table(e: &rusqlite::Error) -> bool {
 }
 
 pub(crate) struct BookmarkStore<'a> {
-    db: &'a rusqlite::Connection,
+    db: &'a DbHandle<'a>,
 }
 
 impl<'a> BookmarkStore<'a> {
-    pub(crate) fn new(db: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
         Self { db }
     }
 
@@ -70,18 +70,16 @@ impl<'a> BookmarkStore<'a> {
     pub(crate) fn list_for_project(
         &self,
         project: &ProjectName,
-    ) -> Result<Vec<BookmarkName>, rusqlite::Error> {
-        let mut stmt = match self
-            .db
-            .prepare("SELECT name FROM bookmarks WHERE project = ?1")
-        {
-            Ok(stmt) => stmt,
-            Err(e) if is_missing_table(&e) => return Ok(Vec::new()),
-            Err(e) => return Err(e),
-        };
-        let rows = stmt
-            .query_map([project.to_string()], |row| row.get::<_, String>(0))?
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(rows.into_iter().map(BookmarkName::from).collect())
+    ) -> Result<Vec<BookmarkName>, DbError> {
+        let result = self.db.query_map(
+            "SELECT name FROM bookmarks WHERE project = ?1",
+            [project.to_string()],
+            |row| row.get::<_, String>(0),
+        );
+        match result {
+            Ok(names) => Ok(names.into_iter().map(BookmarkName::from).collect()),
+            Err(DbError::Rusqlite(e)) if is_missing_table(&e) => Ok(Vec::new()),
+            Err(e) => Err(e),
+        }
     }
 }

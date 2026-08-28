@@ -21,37 +21,35 @@ impl<'a> FollowRepo<'a> {
     }
 
     pub(crate) async fn get(&self, id: FollowId) -> Result<Option<Follow>, EventError> {
-        let db = HostDb::open(self.scope).await?;
-        let mut stmt = db.prepare(
+        let db = self.scope.host_db().await?;
+
+        let raw = db.query_row(
             "select id, project, bookmark, source, checkpoint, created_at \
              from follows where id = ?1",
-        )?;
-
-        let raw = stmt.query_row(params![id.to_string()], read_row);
+            params![id.to_string()],
+            read_row,
+        );
 
         match raw {
             Ok(row) => Ok(Some(follow_from_row(row)?)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
 
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Follow>, EventError> {
-        let db = HostDb::open(self.scope).await?;
+        let db = self.scope.host_db().await?;
 
-        let total = {
-            let mut stmt = db.prepare("SELECT COUNT(*) FROM follows")?;
-            stmt.query_row([], |row| row.get::<_, usize>(0))?
-        };
+        let total = db.query_row("SELECT COUNT(*) FROM follows", [], |row| {
+            row.get::<_, usize>(0)
+        })?;
 
-        let mut stmt = db.prepare(
+        let raw: Vec<FollowRow> = db.query_map(
             "SELECT id, project, bookmark, source, checkpoint, created_at \
              FROM follows ORDER BY created_at DESC LIMIT ?1 OFFSET ?2",
+            rusqlite::params![filters.limit, filters.offset],
+            read_row,
         )?;
-
-        let raw: Vec<FollowRow> = stmt
-            .query_map(rusqlite::params![filters.limit, filters.offset], read_row)?
-            .collect::<Result<Vec<_>, _>>()?;
 
         let mut follows = Vec::with_capacity(raw.len());
         for row in raw {
@@ -66,17 +64,18 @@ impl<'a> FollowRepo<'a> {
         project: &ProjectName,
         bookmark: &BookmarkName,
     ) -> Result<Option<Follow>, EventError> {
-        let db = HostDb::open(self.scope).await?;
-        let mut stmt = db.prepare(
+        let db = self.scope.host_db().await?;
+
+        let raw = db.query_row(
             "select id, project, bookmark, source, checkpoint, created_at \
              from follows where project = ?1 and bookmark = ?2",
-        )?;
-
-        let raw = stmt.query_row(params![project.to_string(), bookmark.to_string()], read_row);
+            params![project.to_string(), bookmark.to_string()],
+            read_row,
+        );
 
         match raw {
             Ok(row) => Ok(Some(follow_from_row(row)?)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(error) => Err(error.into()),
         }
     }
@@ -84,7 +83,7 @@ impl<'a> FollowRepo<'a> {
 
 type FollowRow = (String, String, String, String, String, String);
 
-fn read_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FollowRow> {
+fn read_row(row: &DbRow<'_>) -> Result<FollowRow, DbError> {
     Ok((
         row.get(0)?,
         row.get(1)?,

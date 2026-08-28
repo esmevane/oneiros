@@ -57,7 +57,7 @@ mod cognition_mcp {
             CognitionRequestType::AddCognition => {
                 let addition: AddCognition = serde_json::from_value(params.clone())?;
                 let request = CognitionRequest::AddCognition(addition.clone());
-                let scope = context.scope().map_err(Error::from)?;
+                let scope = context.scope().await.map_err(Error::from)?;
                 let response = CognitionService::add(scope, mailbox, &addition)
                     .await
                     .map_err(Error::from)?;
@@ -74,7 +74,7 @@ mod cognition_mcp {
         context: &ProjectLog,
         request: &CognitionRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         let response = match request {
             CognitionRequest::GetCognition(get) => CognitionService::get(scope, get)
                 .await

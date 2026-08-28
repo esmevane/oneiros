@@ -96,7 +96,7 @@ mod agent_mcp {
             .parse()
             .map_err(|_| ToolError::UnknownTool(tool_name.to_string()))?;
 
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
 
         match request_type {
             AgentRequestType::CreateAgent => {
@@ -131,7 +131,7 @@ mod agent_mcp {
         context: &ProjectLog,
         request: &AgentRequest,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         match request {
             AgentRequest::GetAgent(get) => {
                 let response = AgentService::get(scope, get).await.map_err(Error::from)?;
@@ -169,7 +169,7 @@ mod agent_mcp {
         context: &ProjectLog,
         name: &AgentName,
     ) -> Result<McpResponse, ToolError> {
-        let scope = context.scope().map_err(Error::from)?;
+        let scope = context.scope().await.map_err(Error::from)?;
         let agent = AgentService::get(
             scope,
             &GetAgent::builder_v1()

@@ -69,9 +69,13 @@ impl SliceActor {
         let stored = &msg.stored;
 
         // List slices from the host DB (cross-bookmark).
-        let host_scope = ComposeScope::new(project_scope.config().clone())
-            .host()
-            .map_err(|e| EventError::Import(e.to_string()))?;
+        let host_scope = ComposeScope::new(
+            project_scope.config().clone(),
+            project_scope.databases().clone(),
+        )
+        .host()
+        .await
+        .map_err(|e| EventError::Import(e.to_string()))?;
         let slices = SliceRepo::new(&host_scope).list().await?;
 
         for slice in &slices.items {

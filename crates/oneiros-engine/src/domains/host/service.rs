@@ -22,6 +22,7 @@ impl HostService {
     /// 5. dispatch the bootstrap actor via the bus
     pub(crate) async fn init(
         config: &Config,
+        databases: &Databases,
         mailbox: &Mailbox,
         request: &InitHost,
     ) -> Result<HostResponse, HostError> {
@@ -29,12 +30,14 @@ impl HostService {
 
         config.platform().ensure_dir(&config.data_dir)?;
         HostKey::new(config.platform()).ensure()?;
-        let host_db = HostDb::open_with(config).await?;
+        let host_db = databases.host().await?;
         EventLog::new(&host_db).init()?;
         Projections::host().migrate(&host_db)?;
         drop(host_db);
 
-        let scope = ComposeScope::new(config.clone()).host()?;
+        let scope = ComposeScope::new(config.clone(), databases.clone())
+            .host()
+            .await?;
 
         let all_filters = SearchFilters {
             limit: Limit(usize::MAX),

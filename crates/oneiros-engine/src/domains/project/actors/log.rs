@@ -59,9 +59,11 @@ impl ProjectLogActor {
 
     async fn append(&self, append: AppendProjectLog) -> Result<(), EventError> {
         let AppendProjectLog { scope, event } = append;
-        let events_db = EventsDb::open(&scope).await?;
-        EventLog::new(&events_db).init()?;
-        let stored = Box::new(EventLog::new(&events_db).append(&event)?);
+        let stored = {
+            let events_db = scope.project_log().await?;
+            EventLog::new(&events_db).init()?;
+            Box::new(EventLog::new(&events_db).append(&event)?)
+        };
 
         self.mailbox.tell(BookmarkMessage::from(
             ApplyBookmarkProjection::builder()

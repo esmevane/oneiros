@@ -4,11 +4,11 @@ use crate::*;
 
 /// Experience projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct ExperienceStore<'a> {
-    conn: &'a rusqlite::Connection,
+    conn: &'a DbHandle<'a>,
 }
 
 impl<'a> ExperienceStore<'a> {
-    pub(crate) fn new(conn: &'a rusqlite::Connection) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
         Self { conn }
     }
 
@@ -63,20 +63,20 @@ impl<'a> ExperienceStore<'a> {
     }
 
     pub(crate) fn get(&self, id: &ExperienceId) -> Result<Option<Experience>, EventError> {
-        let mut stmt = self.conn.prepare(
+        let result = self.conn.query_row(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences WHERE id = ?1",
-        )?;
-
-        let result = stmt.query_row(params![id.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        });
+            params![id.to_string()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        );
 
         match result {
             Ok((id, agent_id, sensation, description, created_at)) => Ok(Some(
@@ -88,24 +88,24 @@ impl<'a> ExperienceStore<'a> {
                     .created_at(Timestamp::parse_str(&created_at)?)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
 
     pub(crate) fn list(&self, agent: Option<&str>) -> Result<Vec<Experience>, EventError> {
-        let mut stmt = match agent {
-            Some(_) => self.conn.prepare(
+        let sql = match agent {
+            Some(_) => {
                 "SELECT id, agent_id, sensation, description, created_at
-                 FROM experiences WHERE agent_id = ?1 ORDER BY created_at",
-            )?,
-            None => self.conn.prepare(
+                 FROM experiences WHERE agent_id = ?1 ORDER BY created_at"
+            }
+            None => {
                 "SELECT id, agent_id, sensation, description, created_at
-                 FROM experiences ORDER BY created_at",
-            )?,
+                 FROM experiences ORDER BY created_at"
+            }
         };
 
-        let map_row = |row: &rusqlite::Row<'_>| {
+        let map_row = |row: &DbRow<'_>| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -116,10 +116,9 @@ impl<'a> ExperienceStore<'a> {
         };
 
         let raw = match agent {
-            Some(a) => stmt.query_map(params![a], map_row),
-            None => stmt.query_map([], map_row),
-        }?
-        .collect::<Result<Vec<_>, _>>()?;
+            Some(a) => self.conn.query_map(sql, params![a], map_row),
+            None => self.conn.query_map(sql, [], map_row),
+        }?;
 
         let mut experiences = vec![];
         for (id, agent_id, sensation, description, created_at) in raw {
@@ -143,27 +142,23 @@ impl<'a> ExperienceStore<'a> {
         agent_id: &str,
         limit: usize,
     ) -> Result<Vec<Experience>, EventError> {
-        let mut stmt = self.conn.prepare(
+        let raw = self.conn.query_map(
             "SELECT id, agent_id, sensation, description, created_at
              FROM experiences
              WHERE agent_id = ?1
              ORDER BY created_at DESC
              LIMIT ?2",
+            params![agent_id, limit],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
         )?;
-
-        let map_row = |row: &rusqlite::Row<'_>| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                row.get::<_, String>(4)?,
-            ))
-        };
-
-        let raw = stmt
-            .query_map(params![agent_id, limit], map_row)?
-            .collect::<Result<Vec<_>, _>>()?;
 
         let mut experiences = vec![];
         for (id, agent_id, sensation, description, created_at) in raw {

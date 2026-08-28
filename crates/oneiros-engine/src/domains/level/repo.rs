@@ -20,17 +20,19 @@ impl<'a> LevelRepo<'a> {
     }
 
     pub(crate) async fn get(&self, name: &LevelName) -> Result<Option<Level>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
-        let mut stmt =
-            db.prepare("SELECT name, description, prompt FROM levels WHERE name = ?1")?;
+        let db = self.scope.bookmark_db().await?;
 
-        let result = stmt.query_row(params![name.to_string()], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-            ))
-        });
+        let result = db.query_row(
+            "SELECT name, description, prompt FROM levels WHERE name = ?1",
+            params![name.to_string()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        );
 
         match result {
             Ok((name, description, prompt)) => Ok(Some(
@@ -40,32 +42,30 @@ impl<'a> LevelRepo<'a> {
                     .prompt(prompt)
                     .build(),
             )),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(DbError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
 
     pub(crate) async fn list(&self, filters: &SearchFilters) -> Result<Listed<Level>, EventError> {
-        let db = BookmarkDb::open(self.scope).await?;
+        let db = self.scope.bookmark_db().await?;
 
-        let total = {
-            let mut stmt = db.prepare("SELECT COUNT(*) FROM levels")?;
-            stmt.query_row([], |row| row.get::<_, usize>(0))?
-        };
+        let total = db.query_row("SELECT COUNT(*) FROM levels", [], |row| {
+            row.get::<_, usize>(0)
+        })?;
 
-        let mut stmt = db.prepare(
-            "SELECT name, description, prompt FROM levels ORDER BY name LIMIT ?1 OFFSET ?2",
-        )?;
-
-        let items = stmt
-            .query_map(rusqlite::params![filters.limit, filters.offset], |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                ))
-            })?
-            .collect::<Result<Vec<(String, String, String)>, _>>()?
+        let items = db
+            .query_map(
+                "SELECT name, description, prompt FROM levels ORDER BY name LIMIT ?1 OFFSET ?2",
+                rusqlite::params![filters.limit, filters.offset],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, String>(2)?,
+                    ))
+                },
+            )?
             .into_iter()
             .map(|(name, description, prompt)| {
                 Level::builder()

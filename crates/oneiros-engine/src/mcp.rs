@@ -450,8 +450,9 @@ impl ServerHandler for EngineToolBox {
                         None,
                     ));
                 };
-                let scope = ComposeScope::new(config.clone())
+                let scope = ComposeScope::new(config.clone(), Databases::new(config.clone()))
                     .bookmark(config.project.clone(), config.bookmark.clone())
+                    .await
                     .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
                 let request: DreamAgent = DreamAgent::builder_v1()

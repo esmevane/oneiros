@@ -3,13 +3,17 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct ChronicleLensReader<'a> {
-    host_db: &'a HostDb,
+    host_db: &'a DbHandle<'a>,
     canons: &'a CanonIndex,
     project: ProjectName,
 }
 
 impl<'a> ChronicleLensReader<'a> {
-    pub(crate) fn new(host_db: &'a HostDb, canons: &'a CanonIndex, project: ProjectName) -> Self {
+    pub(crate) fn new(
+        host_db: &'a DbHandle<'a>,
+        canons: &'a CanonIndex,
+        project: ProjectName,
+    ) -> Self {
         Self {
             host_db,
             canons,
@@ -24,12 +28,10 @@ impl<'a> ChronicleLensReader<'a> {
             )));
         };
 
-        let mut stmt = self
+        let name: String = self
             .host_db
-            .prepare("SELECT name FROM bookmarks WHERE id = ?1 AND project = ?2")
-            .map_err(|e| ReaderError::Internal(e.to_string()))?;
-        let name: String = stmt
             .query_row(
+                "SELECT name FROM bookmarks WHERE id = ?1 AND project = ?2",
                 params![bookmark_id.to_string(), self.project.to_string()],
                 |row| row.get(0),
             )
@@ -59,7 +61,7 @@ impl<'a> ChronicleLensReader<'a> {
 
         let store = ChronicleStore::new(self.host_db);
         let resolver = store.resolver();
-        let changes = Ledger::diff(from_root.as_ref(), to_root.as_ref(), &resolver);
+        let changes = Ledger::diff_sync(from_root.as_ref(), to_root.as_ref(), &resolver);
 
         let mut selection = Selection::new();
         for change in changes {

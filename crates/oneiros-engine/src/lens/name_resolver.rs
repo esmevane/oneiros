@@ -18,7 +18,7 @@ pub(crate) struct NameResolver {
 
 impl NameResolver {
     pub(crate) async fn fetch(scope: &Scope<AtBookmark>) -> Result<Self, EventError> {
-        let db = BookmarkDb::open(scope).await?;
+        let db = scope.bookmark_db().await?;
         Ok(Self {
             agents: Self::names_from(&db, "agents")?,
             textures: Self::names_from(&db, "textures")?,
@@ -26,11 +26,10 @@ impl NameResolver {
         })
     }
 
-    fn names_from(db: &BookmarkDb, table: &str) -> Result<HashSet<String>, rusqlite::Error> {
+    fn names_from(db: &DbHandle<'_>, table: &str) -> Result<HashSet<String>, DbError> {
         let sql = format!("select name from {table}");
-        let mut stmt = db.prepare(&sql)?;
-        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
-        rows.collect()
+        let rows = db.query_map(&sql, [], |row| row.get::<_, String>(0))?;
+        Ok(rows.into_iter().collect())
     }
 }
 
