@@ -68,19 +68,16 @@ impl LensService {
 
         let db = scope.bookmark_db().await?;
         let host_db = scope.host_db().await?;
-        let search_reader = SearchIndexReader::new(&db);
-        let trail_reader = TrailLensReader::new(&db);
-        let connection_reader = ConnectionLensReader::new(&db);
-        let chronicle_reader =
-            ChronicleLensReader::new(&host_db, canons, scope.project().name.clone());
-        let readers: Vec<&dyn Reader> = vec![
-            &search_reader,
-            &trail_reader,
-            &connection_reader,
-            &chronicle_reader,
-        ];
-        let executor = Executor::new(&readers);
-        let selection = executor.run(&ir)?;
+
+        let search = SearchIndexReader::new(&db);
+        let trail = TrailLensReader::new(&db);
+        let connections = ConnectionLensReader::new(&db);
+        let chronicle =
+            ChronicleLensReader::new(host_db, canons.clone(), scope.project().name.clone());
+
+        let readers: [&dyn LensReader; 4] = [&search, &trail, &connections, &chronicle];
+        let executor = LensExecutor::new(&readers);
+        let selection = executor.run(&ir).await?;
 
         let hits = selection.sorted_by_timestamp_desc();
         let total = hits.len();

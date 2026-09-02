@@ -1,13 +1,15 @@
 use rusqlite::params;
+use std::future::Future;
+use std::pin::Pin;
 
 use crate::*;
 
 pub(crate) struct TrailLensReader<'a> {
-    db: &'a DbHandle<'a>,
+    db: &'a DbHandle,
 }
 
 impl<'a> TrailLensReader<'a> {
-    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(db: &'a DbHandle) -> Self {
         Self { db }
     }
 
@@ -71,7 +73,7 @@ impl<'a> TrailLensReader<'a> {
         Ok(out)
     }
 
-    fn step_events_for(&self, input: &Selection) -> Result<Selection, ReaderError> {
+    pub(crate) fn step_events_for(&self, input: &Selection) -> Result<Selection, ReaderError> {
         let mut selection = Selection::new();
         for entity_ref in input.entity_refs() {
             for (event_id, timestamp) in self.events_for_entity(&entity_ref)? {
@@ -85,7 +87,7 @@ impl<'a> TrailLensReader<'a> {
         Ok(selection)
     }
 
-    fn step_refs_from(&self, input: &Selection) -> Result<Selection, ReaderError> {
+    pub(crate) fn step_refs_from(&self, input: &Selection) -> Result<Selection, ReaderError> {
         let mut selection = Selection::new();
         for event_id in input.event_ids() {
             for (entity_ref, timestamp) in self.refs_emitted_by(&event_id)? {
@@ -100,15 +102,22 @@ impl<'a> TrailLensReader<'a> {
     }
 }
 
-impl Reader for TrailLensReader<'_> {
-    fn read(&self, _read: &Read) -> Option<Result<Selection, ReaderError>> {
-        None
+impl LensReader for TrailLensReader<'_> {
+    fn read<'a>(
+        &'a self,
+        _read: &'a LensRead,
+    ) -> Pin<Box<dyn Future<Output = Option<Result<Selection, ReaderError>>> + Send + 'a>> {
+        Box::pin(async { None })
     }
 
-    fn step(&self, kind: &StepKind, input: &Selection) -> Option<Result<Selection, ReaderError>> {
+    fn step(
+        &self,
+        kind: &LensStepKind,
+        input: &Selection,
+    ) -> Option<Result<Selection, ReaderError>> {
         match kind {
-            StepKind::EventsFor => Some(self.step_events_for(input)),
-            StepKind::RefsFrom => Some(self.step_refs_from(input)),
+            LensStepKind::EventsFor => Some(self.step_events_for(input)),
+            LensStepKind::RefsFrom => Some(self.step_refs_from(input)),
             _ => None,
         }
     }

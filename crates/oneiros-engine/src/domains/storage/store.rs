@@ -8,11 +8,11 @@ use crate::*;
 /// - `blob` table: content-addressed by SHA256 hash, stores compressed binary
 /// - `storage` table: maps human-readable keys to blob hashes
 pub(crate) struct StorageStore<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
 }
 
 impl<'a> StorageStore<'a> {
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self { conn }
     }
 

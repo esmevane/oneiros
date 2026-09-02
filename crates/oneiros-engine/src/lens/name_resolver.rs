@@ -26,7 +26,7 @@ impl NameResolver {
         })
     }
 
-    fn names_from(db: &DbHandle<'_>, table: &str) -> Result<HashSet<String>, DbError> {
+    fn names_from(db: &DbHandle, table: &str) -> Result<HashSet<String>, DbError> {
         let sql = format!("select name from {table}");
         let rows = db.query_map(&sql, [], |row| row.get::<_, String>(0))?;
         Ok(rows.into_iter().collect())

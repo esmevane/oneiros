@@ -11,11 +11,11 @@ fn is_missing_table(e: &DbError) -> bool {
 }
 
 pub(crate) struct ProjectStore<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
 }
 
 impl<'a> ProjectStore<'a> {
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self { conn }
     }
 

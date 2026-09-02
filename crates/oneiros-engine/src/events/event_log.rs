@@ -21,13 +21,13 @@ use crate::*;
 ///   the events DB is ATTACHed as `events`. Table references use
 ///   the `events.` schema qualifier.
 pub(crate) struct EventLog<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
     table: &'static str,
 }
 
 impl<'a> EventLog<'a> {
     /// Standalone mode — events DB is the base connection.
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self {
             conn,
             table: "events",
@@ -35,7 +35,7 @@ impl<'a> EventLog<'a> {
     }
 
     /// ATTACH mode — bookmark DB is the base, events DB ATTACHed as `events`.
-    pub(crate) fn attached(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn attached(conn: &'a DbHandle) -> Self {
         Self {
             conn,
             table: "events.events",

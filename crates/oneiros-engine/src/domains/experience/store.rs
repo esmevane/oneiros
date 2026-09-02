@@ -4,11 +4,11 @@ use crate::*;
 
 /// Experience projection store — projection lifecycle, write operations, and sync read queries.
 pub(crate) struct ExperienceStore<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
 }
 
 impl<'a> ExperienceStore<'a> {
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self { conn }
     }
 

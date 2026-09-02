@@ -90,17 +90,17 @@ impl Databases {
     /// If the key is currently checked out, this blocks on the pool
     /// mutex until it's returned. For SQLite N=1 per key is fine —
     /// queries are fast, contention is low.
-    pub(crate) async fn handle(&self, key: DbKey) -> Result<DbHandle<'_>, DbError> {
+    pub(crate) async fn handle(&self, key: DbKey) -> Result<DbHandle, DbError> {
         self.handle_sync(key)
     }
 
     /// Check out the host database connection.
-    pub(crate) async fn host(&self) -> Result<DbHandle<'_>, DbError> {
+    pub(crate) async fn host(&self) -> Result<DbHandle, DbError> {
         self.handle(DbKey::Host).await
     }
 
     /// Check out a project's event log connection.
-    pub(crate) async fn project_log(&self, project: &ProjectName) -> Result<DbHandle<'_>, DbError> {
+    pub(crate) async fn project_log(&self, project: &ProjectName) -> Result<DbHandle, DbError> {
         self.handle(DbKey::ProjectLog(project.clone())).await
     }
 
@@ -109,7 +109,7 @@ impl Databases {
         &self,
         project: &ProjectName,
         bookmark: &BookmarkName,
-    ) -> Result<DbHandle<'_>, DbError> {
+    ) -> Result<DbHandle, DbError> {
         self.handle(DbKey::Bookmark(project.clone(), bookmark.clone()))
             .await
     }
@@ -118,7 +118,7 @@ impl Databases {
     /// The checkout is fundamentally sync (Mutex lock + HashMap lookup);
     /// `handle()` is async only for API consistency. External callers
     /// should use `handle().await`.
-    fn handle_sync(&self, key: DbKey) -> Result<DbHandle<'_>, DbError> {
+    fn handle_sync(&self, key: DbKey) -> Result<DbHandle, DbError> {
         // Fast path: the key exists and is idle. Take it.
         let connection = {
             let mut pools = self.inner.pools.lock().unwrap();
@@ -150,12 +150,12 @@ impl Databases {
         Ok(DbHandle {
             connection: Some(connection),
             key,
-            pool: &self.inner,
+            pool: self.inner.clone(),
         })
     }
 
     /// Begin a transaction on the host database.
-    pub(crate) async fn host_transaction(&self) -> Result<DbTransaction<'_>, DbError> {
+    pub(crate) async fn host_transaction(&self) -> Result<DbTransaction, DbError> {
         let handle = self.host().await?;
         handle.execute_batch("BEGIN")?;
         Ok(DbTransaction {
@@ -305,13 +305,22 @@ impl Databases {
 /// This keeps the backend swappable without a trait abstraction: when
 /// sqlx (or another backend) arrives, the same methods are implemented
 /// against it and callsites don't change.
-pub(crate) struct DbHandle<'a> {
+pub(crate) struct DbHandle {
     connection: Option<rusqlite::Connection>,
     key: DbKey,
-    pool: &'a DatabasesInner,
+    pool: Arc<DatabasesInner>,
 }
 
-impl DbHandle<'_> {
+// Safety: `DbHandle` is `Send` because `rusqlite::Connection` is `Send`
+// (via its own `unsafe impl Send`). We implement `Sync` because the pool
+// guarantees exclusive checkout — only one `DbHandle` exists per key at
+// a time, so `&DbHandle` cannot be used concurrently from multiple
+// threads. The `RefCell` inside `rusqlite::Connection` is a single-thread
+// borrow guard; our pool's Mutex provides the cross-thread synchronization
+// that makes sharing `&DbHandle` across an `.await` point safe.
+unsafe impl Sync for DbHandle {}
+
+impl DbHandle {
     /// Execute a statement that returns no rows. Returns the number of
     /// rows affected.
     pub(crate) fn execute<P: rusqlite::Params>(
@@ -380,7 +389,7 @@ impl DbHandle<'_> {
     }
 }
 
-impl Drop for DbHandle<'_> {
+impl Drop for DbHandle {
     fn drop(&mut self) {
         let mut pools = self.pool.pools.lock().unwrap();
         match pools.get_mut(&self.key) {
@@ -436,12 +445,12 @@ impl<'a> DbRow<'a> {
 /// Derefs to [`DbHandle`] so all the same query methods are available.
 /// The transaction is committed via [`DbTransaction::commit`] or rolled
 /// back on drop if not committed.
-pub(crate) struct DbTransaction<'a> {
-    handle: Option<DbHandle<'a>>,
+pub(crate) struct DbTransaction {
+    handle: Option<DbHandle>,
 }
 
-impl<'a> std::ops::Deref for DbTransaction<'a> {
-    type Target = DbHandle<'a>;
+impl std::ops::Deref for DbTransaction {
+    type Target = DbHandle;
     fn deref(&self) -> &Self::Target {
         self.handle
             .as_ref()
@@ -449,7 +458,7 @@ impl<'a> std::ops::Deref for DbTransaction<'a> {
     }
 }
 
-impl DbTransaction<'_> {
+impl DbTransaction {
     /// Commit the transaction and return the connection to the pool.
     /// After this call, the transaction cannot be used further.
     pub(crate) fn commit(mut self) -> Result<(), DbError> {
@@ -461,7 +470,7 @@ impl DbTransaction<'_> {
     }
 }
 
-impl Drop for DbTransaction<'_> {
+impl Drop for DbTransaction {
     fn drop(&mut self) {
         if let Some(handle) = self.handle.as_ref() {
             // Not committed — rollback. Best-effort; if this fails

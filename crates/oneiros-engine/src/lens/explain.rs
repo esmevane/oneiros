@@ -1,11 +1,11 @@
 use crate::*;
 
 pub(crate) struct Explanation {
-    ir: Ir,
+    ir: LensIntermediateRepresentation,
 }
 
 impl Explanation {
-    pub(crate) fn new(ir: Ir) -> Self {
+    pub(crate) fn new(ir: LensIntermediateRepresentation) -> Self {
         Self { ir }
     }
 }
@@ -13,30 +13,30 @@ impl Explanation {
 impl core::fmt::Display for Explanation {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for (i, op) in self.ir.ops.iter().enumerate() {
-            let slot = SlotId(i);
+            let slot = LensSlotId(i);
             match op {
-                Op::Const(ConstValue::Name { name, kind }) => {
+                LensOp::Const(LensConstValue::Name { name, kind }) => {
                     writeln!(f, "{slot}: const name({}: {name:?})", kind.describe())?;
                 }
-                Op::Const(ConstValue::Ref(reference)) => {
+                LensOp::Const(LensConstValue::Ref(reference)) => {
                     writeln!(f, "{slot}: const ref({reference})")?;
                 }
-                Op::Read(Read::SearchText(text)) => {
+                LensOp::Read(LensRead::SearchText(text)) => {
                     writeln!(f, "{slot}: read search_text({text:?})")?;
                 }
-                Op::Read(Read::ChronicleBetween { from, to }) => {
+                LensOp::Read(LensRead::ChronicleBetween { from, to }) => {
                     writeln!(f, "{slot}: read between({from}, {to})")?;
                 }
-                Op::Step { kind, input } => {
+                LensOp::Step { kind, input } => {
                     writeln!(f, "{slot}: step {kind:?}({input})")?;
                 }
-                Op::Union(left, right) => {
+                LensOp::Union(left, right) => {
                     writeln!(f, "{slot}: union({left}, {right})")?;
                 }
-                Op::Intersect(left, right) => {
+                LensOp::Intersect(left, right) => {
                     writeln!(f, "{slot}: intersect({left}, {right})")?;
                 }
-                Op::Difference(left, right) => {
+                LensOp::Difference(left, right) => {
                     writeln!(f, "{slot}: difference({left}, {right})")?;
                 }
             }
@@ -51,14 +51,14 @@ mod tests {
 
     #[test]
     fn explains_name_literal_and_step() {
-        let ir = Ir::new(vec![
-            Op::Const(ConstValue::Name {
+        let ir = LensIntermediateRepresentation::new(vec![
+            LensOp::Const(LensConstValue::Name {
                 name: "observation".into(),
                 kind: NameKind::Texture,
             }),
-            Op::Step {
-                kind: StepKind::SearchByTexture,
-                input: SlotId(0),
+            LensOp::Step {
+                kind: LensStepKind::SearchByTexture,
+                input: LensSlotId(0),
             },
         ]);
         let explanation = Explanation::new(ir);
@@ -69,24 +69,24 @@ mod tests {
 
     #[test]
     fn explains_intersection_pipeline() {
-        let ir = Ir::new(vec![
-            Op::Const(ConstValue::Name {
+        let ir = LensIntermediateRepresentation::new(vec![
+            LensOp::Const(LensConstValue::Name {
                 name: "observation".into(),
                 kind: NameKind::Texture,
             }),
-            Op::Step {
-                kind: StepKind::SearchByTexture,
-                input: SlotId(0),
+            LensOp::Step {
+                kind: LensStepKind::SearchByTexture,
+                input: LensSlotId(0),
             },
-            Op::Const(ConstValue::Name {
+            LensOp::Const(LensConstValue::Name {
                 name: "governor.process".into(),
                 kind: NameKind::Agent,
             }),
-            Op::Step {
-                kind: StepKind::SearchByAgent,
-                input: SlotId(2),
+            LensOp::Step {
+                kind: LensStepKind::SearchByAgent,
+                input: LensSlotId(2),
             },
-            Op::Intersect(SlotId(1), SlotId(3)),
+            LensOp::Intersect(LensSlotId(1), LensSlotId(3)),
         ]);
         let explanation = Explanation::new(ir);
         let output = explanation.to_string();

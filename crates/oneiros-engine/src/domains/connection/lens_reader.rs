@@ -1,15 +1,17 @@
 use std::collections::HashSet;
+use std::future::Future;
+use std::pin::Pin;
 
 use rusqlite::params;
 
 use crate::*;
 
 pub(crate) struct ConnectionLensReader<'a> {
-    db: &'a DbHandle<'a>,
+    db: &'a DbHandle,
 }
 
 impl<'a> ConnectionLensReader<'a> {
-    pub(crate) fn new(db: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(db: &'a DbHandle) -> Self {
         Self { db }
     }
 
@@ -71,7 +73,7 @@ impl<'a> ConnectionLensReader<'a> {
         Ok(out)
     }
 
-    fn step_connected_from(&self, input: &Selection) -> Result<Selection, ReaderError> {
+    pub(crate) fn step_connected_from(&self, input: &Selection) -> Result<Selection, ReaderError> {
         let mut selection = Selection::new();
         for source in input.entity_refs() {
             for (neighbor, timestamp) in self.neighbors_from(&source)? {
@@ -85,7 +87,7 @@ impl<'a> ConnectionLensReader<'a> {
         Ok(selection)
     }
 
-    fn step_connected_to(&self, input: &Selection) -> Result<Selection, ReaderError> {
+    pub(crate) fn step_connected_to(&self, input: &Selection) -> Result<Selection, ReaderError> {
         let mut selection = Selection::new();
         for target in input.entity_refs() {
             for (neighbor, timestamp) in self.neighbors_to(&target)? {
@@ -99,7 +101,7 @@ impl<'a> ConnectionLensReader<'a> {
         Ok(selection)
     }
 
-    fn walk(
+    pub(crate) fn walk(
         &self,
         input: &Selection,
         max_depth: Option<u32>,
@@ -145,25 +147,27 @@ impl<'a> ConnectionLensReader<'a> {
     }
 }
 
-impl Reader for ConnectionLensReader<'_> {
-    fn read(&self, _read: &Read) -> Option<Result<Selection, ReaderError>> {
-        None
+impl LensReader for ConnectionLensReader<'_> {
+    fn read<'a>(
+        &'a self,
+        _read: &'a LensRead,
+    ) -> Pin<Box<dyn Future<Output = Option<Result<Selection, ReaderError>>> + Send + 'a>> {
+        Box::pin(async { None })
     }
 
-    fn step(&self, kind: &StepKind, input: &Selection) -> Option<Result<Selection, ReaderError>> {
+    fn step(
+        &self,
+        kind: &LensStepKind,
+        input: &Selection,
+    ) -> Option<Result<Selection, ReaderError>> {
         match kind {
-            StepKind::ConnectedFrom => Some(self.step_connected_from(input)),
-            StepKind::ConnectedTo => Some(self.step_connected_to(input)),
-            StepKind::Descendants => Some(self.walk(input, None, true, false)),
-            StepKind::Ancestors => Some(self.walk(input, None, false, true)),
-            StepKind::Within(n) => Some(self.walk(input, Some(*n), true, true)),
-            StepKind::Component => Some(self.walk(input, None, true, true)),
-            StepKind::EventsFor
-            | StepKind::RefsFrom
-            | StepKind::SearchByAgent
-            | StepKind::SearchByTexture
-            | StepKind::SearchByLevel
-            | StepKind::SearchByKind => None,
+            LensStepKind::ConnectedFrom => Some(self.step_connected_from(input)),
+            LensStepKind::ConnectedTo => Some(self.step_connected_to(input)),
+            LensStepKind::Descendants => Some(self.walk(input, None, true, false)),
+            LensStepKind::Ancestors => Some(self.walk(input, None, false, true)),
+            LensStepKind::Within(n) => Some(self.walk(input, Some(*n), true, true)),
+            LensStepKind::Component => Some(self.walk(input, None, true, true)),
+            _ => None,
         }
     }
 }

@@ -8,11 +8,11 @@ use rusqlite::params;
 use crate::*;
 
 pub(crate) struct PressureStore<'a> {
-    conn: &'a DbHandle<'a>,
+    conn: &'a DbHandle,
 }
 
 impl<'a> PressureStore<'a> {
-    pub(crate) fn new(conn: &'a DbHandle<'a>) -> Self {
+    pub(crate) fn new(conn: &'a DbHandle) -> Self {
         Self { conn }
     }
 
