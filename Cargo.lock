@@ -2945,7 +2945,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "oneiros"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "oneiros-engine",
  "tokio",
@@ -2953,7 +2953,7 @@ dependencies = [
 
 [[package]]
 name = "oneiros-engine"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "aide",
  "anstream",
@@ -5708,7 +5708,7 @@ dependencies = [
 
 [[package]]
 name = "xtasks"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "clap",
  "oneiros-engine",
