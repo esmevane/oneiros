@@ -16,6 +16,7 @@ mod macros;
 mod mailbox;
 mod mcp;
 mod migrations;
+mod notations;
 mod projections;
 mod protocol;
 mod reducers;
@@ -42,6 +43,7 @@ pub(crate) use logs::*;
 pub(crate) use mailbox::*;
 pub(crate) use mcp::*;
 pub(crate) use migrations::*;
+pub(crate) use notations::*;
 pub(crate) use projections::*;
 pub(crate) use protocol::*;
 pub(crate) use reducers::*;
@@ -53,3 +55,6 @@ pub use engine::*;
 pub use skill::*;
 
 use macros::*;
+
+pub(crate) use noteworthy::Annotated;
+pub(crate) use noteworthy::annotation;

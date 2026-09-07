@@ -37,6 +37,8 @@ pub(crate) enum LensError {
     Reader(#[from] ReaderError),
 }
 
+resource_op_error!(LensError);
+
 impl IntoResponse for LensError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

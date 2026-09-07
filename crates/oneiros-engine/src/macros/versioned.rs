@@ -115,7 +115,7 @@ macro_rules! versioned {
     // latest variant's attrs containing `Args`.
     // ───────────────────────────────────────────────────────────────────
     (
-        $(#[$enum_attr:meta])*
+        $(#[$($enum_attr:tt)*])*
         $vis:vis enum $name:ident {
             // Variant attrs are captured as raw token trees (not `:meta`) so
             // the helper macro `__versioned_if_args!` can scan into the
@@ -142,7 +142,7 @@ macro_rules! versioned {
         }
     ) => {
         ::paste::paste! {
-            $(#[$enum_attr])*
+            $(#[$($enum_attr)*])*
             #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize)]
             #[serde(untagged)]
             $vis enum $name {
@@ -275,12 +275,12 @@ macro_rules! versioned {
     // V_n struct's derive set must diverge from the inline form).
     // ───────────────────────────────────────────────────────────────────
     (
-        $(#[$enum_attr:meta])*
+        $(#[$($enum_attr:tt)*])*
         $vis:vis enum $name:ident {
             V1 => $v1_type:ty $(,)?
         }
     ) => {
-        $(#[$enum_attr])*
+        $(#[$($enum_attr)*])*
         #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize)]
         #[serde(untagged)]
         $vis enum $name {

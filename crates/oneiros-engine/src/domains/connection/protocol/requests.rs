@@ -2,10 +2,35 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "Create a connection",
+        description: "Draw a typed relationship between two entities using a defined nature.",
+        content: include_str!("../features/skills/create.md"),
+        status: 201,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Post,
+        build: |docs| {
+            ResourceMethod::Post.router(
+                CreateConnection::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken").response::<201, Json<ConnectionCreatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum CreateConnection {
         #[derive(clap::Args)]
         V1 => {
@@ -16,8 +41,38 @@ versioned! {
     }
 }
 
+impl CreateConnection {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Json(body): Json<CreateConnection>,
+    ) -> Result<(StatusCode, Json<ConnectionResponse>), ConnectionError> {
+        let response = ConnectionService::create(&scope, &mailbox, &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}",
+        summary: "Get a connection",
+        description: "Look up the details of a specific relationship by ID.",
+        content: include_str!("../features/skills/show.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetConnection::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken").input::<IdPathParam<ConnectionId>>().response::<200, Json<ConnectionDetailsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetConnection {
         #[derive(clap::Args)]
         V1 => {
@@ -26,8 +81,39 @@ versioned! {
     }
 }
 
+impl GetConnection {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Path(key): Path<ResourceKey<ConnectionId>>,
+    ) -> Result<Json<ConnectionResponse>, ConnectionError> {
+        Ok(Json(
+            ConnectionService::get(&scope, &GetConnection::builder_v1().key(key).build().into())
+                .await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List connections",
+        description: "List all relationships visible to the current project, optionally filtered by nature or entity.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListConnections::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken").response::<200, Json<ConnectionsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListConnections {
         #[derive(clap::Args)]
         V1 => {
@@ -47,13 +133,58 @@ versioned! {
     }
 }
 
+impl ListConnections {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Query(params): Query<ListConnections>,
+    ) -> Result<Json<ConnectionResponse>, ConnectionError> {
+        Ok(Json(ConnectionService::list(&scope, &params).await?))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}",
+        summary: "Remove a connection",
+        description: "Delete a relationship between entities, removing it from the graph.",
+        content: include_str!("../features/skills/remove.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Delete,
+        build: |docs| {
+            ResourceMethod::Delete.router(
+                RemoveConnection::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken").response::<200, Json<ConnectionRemovedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum RemoveConnection {
         #[derive(clap::Args)]
         V1 => {
             #[builder(into)] pub(crate) id: ConnectionId,
         }
+    }
+}
+
+impl RemoveConnection {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(id): Path<ConnectionId>,
+    ) -> Result<Json<ConnectionResponse>, ConnectionError> {
+        Ok(Json(
+            ConnectionService::remove(
+                &scope,
+                &mailbox,
+                &RemoveConnection::builder_v1().id(id).build().into(),
+            )
+            .await?,
+        ))
     }
 }
 
@@ -100,6 +231,14 @@ pub(crate) enum ConnectionRequest {
     GetConnection(GetConnection),
     ListConnections(ListConnections),
     RemoveConnection(RemoveConnection),
+}
+
+resource_root! {
+    ConnectionRequest => {
+        label: "connections",
+        purpose: "Draw and manage relationships between entities",
+        operations: [CreateConnection, GetConnection, ListConnections, RemoveConnection],
+    }
 }
 
 #[cfg(test)]

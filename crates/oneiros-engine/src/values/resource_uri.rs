@@ -232,9 +232,9 @@ impl ResourcePath {
             ResourcePath::Urges => Some(ResourceRequest::Urge(UrgeRequest::ListUrges(
                 ListUrges::builder_v1().build().into(),
             ))),
-            ResourcePath::Pressure => {
-                Some(ResourceRequest::Pressure(PressureRequest::ListPressures))
-            }
+            ResourcePath::Pressure => Some(ResourceRequest::Pressure(
+                PressureRequest::ListPressures(ListPressures::builder_v1().build().into()),
+            )),
             ResourcePath::Status => Some(ResourceRequest::Continuity(
                 ContinuityRequest::StatusAgent(StatusAgent::builder_v1().build().into()),
             )),

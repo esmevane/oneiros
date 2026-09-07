@@ -79,14 +79,15 @@ const TAGGED_DOMAINS: &[&str] = &[
     "actors",
     "agents",
     "bookmarks",
-    "cognition",
+    "cognitions",
     "connections",
     "continuity",
     "experiences",
     "follows",
     "host",
+    "lens",
     "levels",
-    "memory",
+    "memories",
     "natures",
     "peers",
     "personas",
@@ -304,7 +305,7 @@ async fn responses_round_trip_through_super_enum() {
         BookmarkResponse::Bookmarks(Listed::new(vec![], 0)),
     );
     round_trip::<CognitionResponse>(
-        "cognition",
+        "cognitions",
         CognitionResponse::Cognitions(CognitionsResponse::V1(CognitionsResponseV1 {
             items: vec![],
             total: 0,

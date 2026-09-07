@@ -2,10 +2,32 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{Json, extract::Query};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "Search the project",
+        description: "Query across agents, cognitions, memories, and other entities in the project.",
+        content: include_str!("../features/skills/search.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                SearchQuery::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<200, Json<SearchResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum SearchQuery {
         #[derive(clap::Args)]
         V1 => {
@@ -39,6 +61,16 @@ impl SearchQueryV1 {
             with_facets: true,
             ..self.clone()
         }
+    }
+}
+
+#[expect(deprecated)]
+impl SearchQuery {
+    pub(crate) async fn handler(
+        context: ProjectLog,
+        Query(params): Query<SearchQuery>,
+    ) -> Result<Json<SearchResponse>, SearchError> {
+        Ok(Json(SearchService::search(&context, &params).await?))
     }
 }
 
@@ -77,6 +109,14 @@ resource_requests! {
 #[kinded(kind = SearchRequestType, display = "kebab-case")]
 pub(crate) enum SearchRequest {
     SearchQuery(SearchQuery),
+}
+
+resource_root! {
+    SearchRequest => {
+        label: "search",
+        purpose: "Search across all entities in a project",
+        operations: [SearchQuery],
+    }
 }
 
 #[cfg(test)]
