@@ -1,0 +1,12 @@
+[package]
+name = "noteworthy"
+version.workspace = true
+edition.workspace = true
+description = "Annotation system for Rust — attach typed data to structs, retrieve it by type"
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+noteworthy-macros = { path = "../noteworthy-macros", version = "0.0.11" }
+
+[dev-dependencies]
