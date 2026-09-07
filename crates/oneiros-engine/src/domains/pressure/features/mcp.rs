@@ -29,7 +29,7 @@ mod pressure_mcp {
             PressureRequest::GetPressure(get) => PressureService::get(context, get)
                 .await
                 .map_err(Error::from)?,
-            PressureRequest::ListPressures => {
+            PressureRequest::ListPressures(_) => {
                 PressureService::list(context).await.map_err(Error::from)?
             }
         };

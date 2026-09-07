@@ -2,10 +2,36 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "Create an agent",
+        description: "Register a new cognitive agent under the current project.",
+        content: include_str!("../features/skills/create.md"),
+        status: 201,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Post,
+        build: |docs| {
+            ResourceMethod::Post.router(
+                CreateAgent::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<201, Json<AgentCreatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum CreateAgent {
         #[derive(clap::Args)]
         V1 => {
@@ -21,8 +47,40 @@ versioned! {
     }
 }
 
+impl CreateAgent {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Json(body): Json<CreateAgent>,
+    ) -> Result<(StatusCode, Json<AgentResponse>), AgentError> {
+        let response = AgentService::create(&scope, &mailbox, &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Get an agent",
+        description: "Look up a specific cognitive agent by name or ID.",
+        content: include_str!("../features/skills/show.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetAgent::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<AgentName>>()
+                        .response::<200, Json<AgentDetailsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetAgent {
         #[derive(clap::Args)]
         V1 => {
@@ -31,8 +89,39 @@ versioned! {
     }
 }
 
+impl GetAgent {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Path(key): Path<ResourceKey<AgentName>>,
+    ) -> Result<Json<AgentResponse>, AgentError> {
+        Ok(Json(
+            AgentService::get(&scope, &GetAgent::builder_v1().key(key).build().into()).await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List agents",
+        description: "List all cognitive agents registered in the current project.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListAgents::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<200, Json<AgentsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListAgents {
         #[derive(clap::Args)]
         V1 => {
@@ -56,8 +145,49 @@ versioned! {
     }
 }
 
+impl ListAgents {
+    pub(crate) async fn handler(
+        State(state): State<ServerState>,
+        scope: Scope<AtBookmark>,
+        Query(params): Query<ListAgents>,
+    ) -> Result<Json<AgentResponse>, AgentError> {
+        let ListAgents::V1(listing) = &params;
+
+        if let Some(source) = listing.lens.as_deref() {
+            return Ok(Json(
+                AgentLens::new(&scope, state.canons())
+                    .list(source, &listing.filters)
+                    .await?,
+            ));
+        }
+
+        Ok(Json(AgentService::list(&scope, &params).await?))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Update an agent",
+        description: "Modify the configuration or metadata of an existing cognitive agent.",
+        content: include_str!("../features/skills/update.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Put,
+        build: |docs| {
+            ResourceMethod::Put.router(
+                UpdateAgent::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<AgentName>>()
+                        .response::<200, Json<AgentUpdatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum UpdateAgent {
         #[derive(clap::Args)]
         V1 => {
@@ -73,13 +203,62 @@ versioned! {
     }
 }
 
+impl UpdateAgent {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(_): Path<AgentName>,
+        Json(body): Json<UpdateAgent>,
+    ) -> Result<Json<AgentResponse>, AgentError> {
+        Ok(Json(AgentService::update(&scope, &mailbox, &body).await?))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Remove an agent",
+        description: "Permanently remove a cognitive agent and all associated records from the project.",
+        content: include_str!("../features/skills/remove.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Delete,
+        build: |docs| {
+            ResourceMethod::Delete.router(
+                RemoveAgent::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<AgentName>>()
+                        .response::<200, Json<AgentRemovedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum RemoveAgent {
         #[derive(clap::Args)]
         V1 => {
             #[builder(into)] pub(crate) name: AgentName,
         }
+    }
+}
+
+impl RemoveAgent {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(name): Path<AgentName>,
+    ) -> Result<Json<AgentResponse>, AgentError> {
+        Ok(Json(
+            AgentService::remove(
+                &scope,
+                &mailbox,
+                &RemoveAgent::builder_v1().name(name).build().into(),
+            )
+            .await?,
+        ))
     }
 }
 
@@ -132,6 +311,14 @@ pub(crate) enum AgentRequest {
     ListAgents(ListAgents),
     UpdateAgent(UpdateAgent),
     RemoveAgent(RemoveAgent),
+}
+
+resource_root! {
+    AgentRequest => {
+        label: "agents",
+        purpose: "Manage cognitive agents",
+        operations: [CreateAgent, GetAgent, ListAgents, UpdateAgent, RemoveAgent],
+    }
 }
 
 #[cfg(test)]

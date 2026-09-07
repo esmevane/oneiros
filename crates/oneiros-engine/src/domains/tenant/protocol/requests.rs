@@ -2,10 +2,35 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "Create a tenant",
+        description: "Register a new tenant project on this host.",
+        content: include_str!("../features/skills/create.md"),
+        status: 201,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Post,
+        build: |docs| {
+            ResourceMethod::Post.router(
+                CreateTenant::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.response::<201, Json<TenantCreatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum CreateTenant {
         #[derive(clap::Args)]
         V1 => {
@@ -14,8 +39,38 @@ versioned! {
     }
 }
 
+impl CreateTenant {
+    pub(crate) async fn handler(
+        scope: Scope<AtHost>,
+        mailbox: Mailbox,
+        Json(body): Json<CreateTenant>,
+    ) -> Result<(StatusCode, Json<TenantResponse>), TenantError> {
+        let response = TenantService::create(&scope, &mailbox, &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}",
+        summary: "Show a tenant",
+        description: "Retrieve details for a specific tenant project on this host.",
+        content: include_str!("../features/skills/get.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetTenant::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.input::<IdPathParam<TenantId>>().response::<200, Json<TenantFoundResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetTenant {
         #[derive(clap::Args)]
         V1 => {
@@ -24,8 +79,38 @@ versioned! {
     }
 }
 
+impl GetTenant {
+    pub(crate) async fn handler(
+        scope: Scope<AtHost>,
+        Path(key): Path<ResourceKey<TenantId>>,
+    ) -> Result<Json<TenantResponse>, TenantError> {
+        Ok(Json(
+            TenantService::get(&scope, &GetTenant::builder_v1().key(key).build().into()).await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List tenants",
+        description: "See all tenant projects registered on this host.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListTenants::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.response::<200, Json<TenantsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListTenants {
         #[derive(clap::Args)]
         V1 => {
@@ -34,6 +119,15 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ListTenants {
+    pub(crate) async fn handler(
+        scope: Scope<AtHost>,
+        Query(params): Query<ListTenants>,
+    ) -> Result<Json<TenantResponse>, TenantError> {
+        Ok(Json(TenantService::list(&scope, &params).await?))
     }
 }
 
@@ -47,10 +141,7 @@ resource_requests! {
     },
     ListTenants => |this, client| {
         let ListTenants::V1(listing) = this;
-        let query = format!(
-            "limit={}&offset={}",
-            listing.filters.limit, listing.filters.offset,
-        );
+        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
         client.get(&format!("/tenants?{query}")).await
     },
 }
@@ -62,6 +153,14 @@ pub(crate) enum TenantRequest {
     CreateTenant(CreateTenant),
     GetTenant(GetTenant),
     ListTenants(ListTenants),
+}
+
+resource_root! {
+    TenantRequest => {
+        label: "tenants",
+        purpose: "Manage tenants on this host",
+        operations: [CreateTenant, GetTenant, ListTenants],
+    }
 }
 
 #[cfg(test)]

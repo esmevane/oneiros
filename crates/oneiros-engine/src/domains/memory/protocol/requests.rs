@@ -2,10 +2,36 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "Add a memory",
+        description: "Store a piece of consolidated knowledge for the agent at a specified retention level.",
+        content: include_str!("../features/skills/add.md"),
+        status: 201,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Post,
+        build: |docs| {
+            ResourceMethod::Post.router(
+                AddMemory::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<201, Json<MemoryAddedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum AddMemory {
         #[derive(clap::Args)]
         V1 => {
@@ -16,8 +42,40 @@ versioned! {
     }
 }
 
+impl AddMemory {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Json(body): Json<AddMemory>,
+    ) -> Result<(StatusCode, Json<MemoryResponse>), MemoryError> {
+        let response = MemoryService::add(&scope, &mailbox, &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}",
+        summary: "Get a memory",
+        description: "Retrieve the full content of a specific memory by ID.",
+        content: include_str!("../features/skills/show.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetMemory::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<IdPathParam<MemoryId>>()
+                        .response::<200, Json<MemoryDetailsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetMemory {
         #[derive(clap::Args)]
         V1 => {
@@ -26,8 +84,39 @@ versioned! {
     }
 }
 
+impl GetMemory {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Path(key): Path<ResourceKey<MemoryId>>,
+    ) -> Result<Json<MemoryResponse>, MemoryError> {
+        Ok(Json(
+            MemoryService::get(&scope, &GetMemory::builder_v1().key(key).build().into()).await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List memories",
+        description: "List all memories held by the agent, optionally filtered by retention level.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListMemories::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<200, Json<MemoriesResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListMemories {
         #[derive(clap::Args)]
         V1 => {
@@ -51,6 +140,24 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ListMemories {
+    pub(crate) async fn handler(
+        State(state): State<ServerState>,
+        scope: Scope<AtBookmark>,
+        Query(params): Query<ListMemories>,
+    ) -> Result<Json<MemoryResponse>, MemoryError> {
+        let ListMemories::V1(listing) = &params;
+        if let Some(source) = listing.lens.as_deref() {
+            return Ok(Json(
+                MemoryLens::new(&scope, state.canons())
+                    .list(source, &listing.filters)
+                    .await?,
+            ));
+        }
+        Ok(Json(MemoryService::list(&scope, &params).await?))
     }
 }
 
@@ -102,6 +209,14 @@ pub(crate) enum MemoryRequest {
     AddMemory(AddMemory),
     GetMemory(GetMemory),
     ListMemories(ListMemories),
+}
+
+resource_root! {
+    MemoryRequest => {
+        label: "memories",
+        purpose: "Consolidate and review knowledge",
+        operations: [AddMemory, GetMemory, ListMemories],
+    }
 }
 
 #[cfg(test)]

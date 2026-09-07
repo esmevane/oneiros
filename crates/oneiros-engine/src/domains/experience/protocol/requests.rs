@@ -2,10 +2,36 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "Create an experience",
+        description: "Mark a meaningful moment in the agent's timeline with a description and sensation.",
+        content: include_str!("../features/skills/create.md"),
+        status: 201,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Post,
+        build: |docs| {
+            ResourceMethod::Post.router(
+                CreateExperience::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<201, Json<ExperienceCreatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum CreateExperience {
         #[derive(clap::Args)]
         V1 => {
@@ -16,8 +42,40 @@ versioned! {
     }
 }
 
+impl CreateExperience {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Json(body): Json<CreateExperience>,
+    ) -> Result<(StatusCode, Json<ExperienceResponse>), ExperienceError> {
+        let response = ExperienceService::create(&scope, &mailbox, &body).await?;
+        Ok((StatusCode::CREATED, Json(response)))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}",
+        summary: "Get an experience",
+        description: "Retrieve the full record of a specific marked moment by ID.",
+        content: include_str!("../features/skills/show.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetExperience::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<IdPathParam<ExperienceId>>()
+                        .response::<200, Json<ExperienceDetailsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetExperience {
         #[derive(clap::Args)]
         V1 => {
@@ -26,8 +84,40 @@ versioned! {
     }
 }
 
+impl GetExperience {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Path(key): Path<ResourceKey<ExperienceId>>,
+    ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+        Ok(Json(
+            ExperienceService::get(&scope, &GetExperience::builder_v1().key(key).build().into())
+                .await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List experiences",
+        description: "List all marked experiences in the agent's history, optionally filtered by sensation.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListExperiences::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<200, Json<ExperiencesResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListExperiences {
         #[derive(clap::Args)]
         V1 => {
@@ -55,8 +145,47 @@ versioned! {
     }
 }
 
+impl ListExperiences {
+    pub(crate) async fn handler(
+        State(state): State<ServerState>,
+        scope: Scope<AtBookmark>,
+        Query(params): Query<ListExperiences>,
+    ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+        let ListExperiences::V1(listing) = &params;
+        if let Some(source) = listing.lens.as_deref() {
+            return Ok(Json(
+                ExperienceLens::new(&scope, state.canons())
+                    .list(source, &listing.filters)
+                    .await?,
+            ));
+        }
+        Ok(Json(ExperienceService::list(&scope, &params).await?))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}/description",
+        summary: "Update an experience description",
+        description: "Modify the description of a specific marked moment.",
+        content: include_str!("../features/skills/update.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Put,
+        build: |docs| {
+            ResourceMethod::Put.router(
+                UpdateExperienceDescription::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<IdPathParam<ExperienceId>>()
+                        .response::<200, Json<ExperienceUpdatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum UpdateExperienceDescription {
         #[derive(clap::Args)]
         V1 => {
@@ -66,14 +195,81 @@ versioned! {
     }
 }
 
+impl UpdateExperienceDescription {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(id): Path<ExperienceId>,
+        Json(body): Json<UpdateExperienceDescription>,
+    ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+        let UpdateExperienceDescription::V1(inner) = &body;
+        Ok(Json(
+            ExperienceService::update_description(
+                &scope,
+                &mailbox,
+                &UpdateExperienceDescription::builder_v1()
+                    .id(id)
+                    .description(inner.description.clone())
+                    .build()
+                    .into(),
+            )
+            .await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{id}/sensation",
+        summary: "Update an experience sensation",
+        description: "Modify the sensation of a specific marked moment.",
+        content: include_str!("../features/skills/update.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Put,
+        build: |docs| {
+            ResourceMethod::Put.router(
+                UpdateExperienceSensation::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<IdPathParam<ExperienceId>>()
+                        .response::<200, Json<ExperienceUpdatedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum UpdateExperienceSensation {
         #[derive(clap::Args)]
         V1 => {
             #[builder(into)] pub(crate) id: ExperienceId,
             #[builder(into)] pub(crate) sensation: SensationName,
         }
+    }
+}
+
+impl UpdateExperienceSensation {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(id): Path<ExperienceId>,
+        Json(body): Json<UpdateExperienceSensation>,
+    ) -> Result<Json<ExperienceResponse>, ExperienceError> {
+        let UpdateExperienceSensation::V1(inner) = &body;
+        Ok(Json(
+            ExperienceService::update_sensation(
+                &scope,
+                &mailbox,
+                &UpdateExperienceSensation::builder_v1()
+                    .id(id)
+                    .sensation(inner.sensation.clone())
+                    .build()
+                    .into(),
+            )
+            .await?,
+        ))
     }
 }
 
@@ -119,19 +315,13 @@ resource_requests! {
     UpdateExperienceDescription => |this, client| {
         let UpdateExperienceDescription::V1(update) = this;
         client
-            .put(
-                &format!("/experiences/{}/description", update.id),
-                &serde_json::json!({ "description": update.description }),
-            )
+            .put(&format!("/experiences/{}/description", update.id), this)
             .await
     },
     UpdateExperienceSensation => |this, client| {
         let UpdateExperienceSensation::V1(update) = this;
         client
-            .put(
-                &format!("/experiences/{}/sensation", update.id),
-                &serde_json::json!({ "sensation": update.sensation }),
-            )
+            .put(&format!("/experiences/{}/sensation", update.id), this)
             .await
     },
 }
@@ -145,6 +335,14 @@ pub(crate) enum ExperienceRequest {
     ListExperiences(ListExperiences),
     UpdateExperienceDescription(UpdateExperienceDescription),
     UpdateExperienceSensation(UpdateExperienceSensation),
+}
+
+resource_root! {
+    ExperienceRequest => {
+        label: "experiences",
+        purpose: "Mark and revisit meaningful moments",
+        operations: [CreateExperience, GetExperience, ListExperiences, UpdateExperienceDescription, UpdateExperienceSensation],
+    }
 }
 
 #[cfg(test)]

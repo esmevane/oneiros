@@ -2,10 +2,37 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Set a nature",
+        description: "Define or update a named relationship kind that can be used to type connections between entities.",
+        content: include_str!("../features/skills/set.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Put,
+        build: |docs| {
+            ResourceMethod::Put.router(
+                SetNature::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<NatureName>>()
+                        .response::<200, Json<NatureSetResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum SetNature {
         #[derive(clap::Args)]
         V1 => {
@@ -20,8 +47,46 @@ versioned! {
     }
 }
 
+impl SetNature {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(name): Path<NatureName>,
+        Json(body): Json<SetNature>,
+    ) -> Result<(StatusCode, Json<NatureResponse>), NatureError> {
+        let SetNature::V1(mut setting) = body;
+        setting.name = name;
+        let request = SetNature::V1(setting);
+        Ok((
+            StatusCode::OK,
+            Json(NatureService::set(&scope, &mailbox, &request).await?),
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Get a nature",
+        description: "Look up the definition of a specific relationship kind by name.",
+        content: include_str!("../features/skills/show.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetNature::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<NatureName>>()
+                        .response::<200, Json<NatureDetailsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetNature {
         #[derive(clap::Args)]
         V1 => {
@@ -30,18 +95,39 @@ versioned! {
     }
 }
 
-versioned! {
-    #[derive(JsonSchema)]
-    pub(crate) enum RemoveNature {
-        #[derive(clap::Args)]
-        V1 => {
-            #[builder(into)] pub(crate) name: NatureName,
-        }
+impl GetNature {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Path(key): Path<ResourceKey<NatureName>>,
+    ) -> Result<Json<NatureResponse>, NatureError> {
+        Ok(Json(
+            NatureService::get(&scope, &GetNature::builder_v1().key(key).build().into()).await?,
+        ))
     }
 }
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List natures",
+        description: "List all relationship kinds defined for the current project.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListNatures::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<200, Json<NaturesResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListNatures {
         #[derive(clap::Args)]
         V1 => {
@@ -50,6 +136,63 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ListNatures {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Query(params): Query<ListNatures>,
+    ) -> Result<Json<NatureResponse>, NatureError> {
+        Ok(Json(NatureService::list(&scope, &params).await?))
+    }
+}
+
+versioned! {
+    #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Remove a nature",
+        description: "Delete a relationship kind, preventing it from being assigned to new connections.",
+        content: include_str!("../features/skills/remove.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Delete,
+        build: |docs| {
+            ResourceMethod::Delete.router(
+                RemoveNature::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<NatureName>>()
+                        .response::<200, Json<NatureRemovedResponse>>()
+                },
+            )
+        },
+    })]
+    pub(crate) enum RemoveNature {
+        #[derive(clap::Args)]
+        V1 => {
+            #[builder(into)] pub(crate) name: NatureName,
+        }
+    }
+}
+
+impl RemoveNature {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(name): Path<NatureName>,
+    ) -> Result<Json<NatureResponse>, NatureError> {
+        Ok(Json(
+            NatureService::remove(
+                &scope,
+                &mailbox,
+                &RemoveNature::builder_v1().name(name).build().into(),
+            )
+            .await?,
+        ))
     }
 }
 
@@ -84,6 +227,14 @@ pub(crate) enum NatureRequest {
     GetNature(GetNature),
     ListNatures(ListNatures),
     RemoveNature(RemoveNature),
+}
+
+resource_root! {
+    NatureRequest => {
+        label: "natures",
+        purpose: "Define kinds of relationships",
+        operations: [SetNature, GetNature, ListNatures, RemoveNature],
+    }
 }
 
 #[cfg(test)]

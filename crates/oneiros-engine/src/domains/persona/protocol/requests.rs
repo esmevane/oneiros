@@ -2,10 +2,37 @@ use kinded::Kinded;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+};
+
 use crate::*;
 
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Set a persona",
+        description: "Create or update an agent category.",
+        content: include_str!("../features/skills/set.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Put,
+        build: |docs| {
+            ResourceMethod::Put.router(
+                SetPersona::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<PersonaName>>()
+                        .response::<200, Json<PersonaSetResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum SetPersona {
         #[derive(clap::Args)]
         V1 => {
@@ -20,8 +47,46 @@ versioned! {
     }
 }
 
+impl SetPersona {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(name): Path<PersonaName>,
+        Json(body): Json<SetPersona>,
+    ) -> Result<(StatusCode, Json<PersonaResponse>), PersonaError> {
+        let SetPersona::V1(mut setting) = body;
+        setting.name = name;
+        let request = SetPersona::V1(setting);
+        Ok((
+            StatusCode::OK,
+            Json(PersonaService::set(&scope, &mailbox, &request).await?),
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Get a persona",
+        description: "Retrieve a single agent category by name.",
+        content: include_str!("../features/skills/show.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                GetPersona::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<PersonaName>>()
+                        .response::<200, Json<PersonaDetailsResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum GetPersona {
         #[derive(clap::Args)]
         V1 => {
@@ -30,8 +95,40 @@ versioned! {
     }
 }
 
+impl GetPersona {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Path(key): Path<ResourceKey<PersonaName>>,
+    ) -> Result<Json<PersonaResponse>, PersonaError> {
+        Ok(Json(
+            PersonaService::get(&scope, &GetPersona::builder_v1().key(key).build().into()).await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/{name}",
+        summary: "Remove a persona",
+        description: "Delete an agent category from the project.",
+        content: include_str!("../features/skills/remove.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Delete,
+        build: |docs| {
+            ResourceMethod::Delete.router(
+                RemovePersona::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .input::<NamePathParam<PersonaName>>()
+                        .response::<200, Json<PersonaRemovedResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum RemovePersona {
         #[derive(clap::Args)]
         V1 => {
@@ -40,8 +137,45 @@ versioned! {
     }
 }
 
+impl RemovePersona {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        mailbox: Mailbox,
+        Path(name): Path<PersonaName>,
+    ) -> Result<Json<PersonaResponse>, PersonaError> {
+        Ok(Json(
+            PersonaService::remove(
+                &scope,
+                &mailbox,
+                &RemovePersona::builder_v1().name(name).build().into(),
+            )
+            .await?,
+        ))
+    }
+}
+
 versioned! {
     #[derive(JsonSchema)]
+    #[annotation(ResourceMeta {
+        path: "/",
+        summary: "List personas",
+        description: "See all defined agent categories.",
+        content: include_str!("../features/skills/list.md"),
+        status: 200,
+    })]
+    #[annotation(ResourceHandler {
+        method: ResourceMethod::Get,
+        build: |docs| {
+            ResourceMethod::Get.router(
+                ListPersonas::handler,
+                move |op| {
+                    let op = docs.transform(op);
+                    op.security_requirement("BearerToken")
+                        .response::<200, Json<PersonasResponse>>()
+                },
+            )
+        },
+    })]
     pub(crate) enum ListPersonas {
         #[derive(clap::Args)]
         V1 => {
@@ -50,6 +184,15 @@ versioned! {
             #[builder(default)]
             pub(crate) filters: SearchFilters,
         }
+    }
+}
+
+impl ListPersonas {
+    pub(crate) async fn handler(
+        scope: Scope<AtBookmark>,
+        Query(params): Query<ListPersonas>,
+    ) -> Result<Json<PersonaResponse>, PersonaError> {
+        Ok(Json(PersonaService::list(&scope, &params).await?))
     }
 }
 
@@ -86,6 +229,14 @@ pub(crate) enum PersonaRequest {
     GetPersona(GetPersona),
     ListPersonas(ListPersonas),
     RemovePersona(RemovePersona),
+}
+
+resource_root! {
+    PersonaRequest => {
+        label: "personas",
+        purpose: "Define categories of agents",
+        operations: [SetPersona, GetPersona, ListPersonas, RemovePersona],
+    }
 }
 
 #[cfg(test)]

@@ -28,6 +28,7 @@ inquire.workspace = true
 iroh.workspace = true
 kinded.workspace = true
 mime_guess.workspace = true
+noteworthy.workspace = true
 paste.workspace = true
 pkcs8.workspace = true
 postcard.workspace = true

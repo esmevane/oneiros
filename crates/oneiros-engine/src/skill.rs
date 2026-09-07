@@ -35,36 +35,41 @@ impl SkillInventory {
     pub(crate) fn all() -> Vec<Skill> {
         let mut skills = Vec::new();
 
-        skills.extend(ActorSkills::all());
-        skills.extend(AgentSkills::all());
-        skills.extend(BookmarkSkills::all());
-        skills.extend(CognitionSkills::all());
-        skills.extend(ConnectionSkills::all());
-        skills.extend(ContinuitySkills::all());
+        skills.extend(ActorRequest::skills());
+        skills.extend(AgentRequest::skills());
+        skills.extend(BookmarkRequest::skills());
+        skills.extend(CognitionRequest::skills());
+        skills.extend(ConnectionRequest::skills());
+        skills.extend(ContinuityRequest::skills());
         skills.extend(DoctorSkills::all());
-        skills.extend(ExperienceSkills::all());
-        skills.extend(FollowSkills::all());
-        skills.extend(LevelSkills::all());
+        skills.extend(ExperienceRequest::skills());
+        skills.extend(FollowRequest::skills());
+        skills.extend(LevelRequest::skills());
         skills.extend(McpConfigSkills::all());
-        skills.extend(MemorySkills::all());
-        skills.extend(NatureSkills::all());
-        skills.extend(PeerSkills::all());
-        skills.extend(PersonaSkills::all());
-        skills.extend(PressureSkills::all());
-        skills.extend(ProjectSkills::all());
-        skills.extend(SearchSkills::all());
-        skills.extend(SeedSkills::all());
-        skills.extend(SensationSkills::all());
+        skills.extend(MemoryRequest::skills());
+        skills.extend(NatureRequest::skills());
+        skills.extend(PeerRequest::skills());
+        skills.extend(PersonaRequest::skills());
+        skills.extend(PressureRequest::skills());
+        skills.extend(ProjectRequest::skills());
+        skills.extend(SearchRequest::skills());
+        skills.extend(SeedRequest::skills());
+        skills.extend(SensationRequest::skills());
         skills.extend(SetupSkills::all());
-        skills.extend(SliceSkills::all());
-        skills.extend(StorageSkills::all());
-        skills.extend(HostSkills::all());
-        skills.extend(LensSkills::all());
-        skills.extend(TenantSkills::all());
-        skills.extend(TextureSkills::all());
-        skills.extend(TicketSkills::all());
-        skills.extend(TrailSkills::all());
-        skills.extend(UrgeSkills::all());
+        skills.extend(SliceRequest::skills());
+        skills.extend(StorageRequest::skills());
+        skills.push(Skill::new(
+            "storage-get",
+            include_str!("domains/storage/features/skills/get.md"),
+        ));
+        skills.extend(HostRequest::skills());
+        skills.extend(HostServiceSkills::all());
+        skills.extend(LensRequest::skills());
+        skills.extend(TenantRequest::skills());
+        skills.extend(TextureRequest::skills());
+        skills.extend(TicketRequest::skills());
+        skills.extend(TrailRequest::skills());
+        skills.extend(UrgeRequest::skills());
 
         skills
     }
@@ -213,12 +218,17 @@ mod tests {
         let skills = SkillInventory::all();
         let level_skills: Vec<_> = skills
             .iter()
-            .filter(|s| s.name.starts_with("level-"))
+            .filter(|s| {
+                matches!(
+                    s.name.as_ref(),
+                    "set-level" | "get-level" | "list-levels" | "remove-level"
+                )
+            })
             .collect();
         assert_eq!(
             level_skills.len(),
             4,
-            "expected 4 level skills (set, show, list, remove), got {}",
+            "expected 4 level skills (set, get, list, remove), got {}",
             level_skills.len()
         );
     }
@@ -231,16 +241,16 @@ mod tests {
             .filter(|s| {
                 matches!(
                     s.name.as_ref(),
-                    "wake"
-                        | "dream"
-                        | "introspect"
-                        | "reflect"
-                        | "sense"
-                        | "sleep"
-                        | "guidebook"
-                        | "emerge"
-                        | "recede"
-                        | "status"
+                    "wake-agent"
+                        | "dream-agent"
+                        | "introspect-agent"
+                        | "reflect-agent"
+                        | "sense-content"
+                        | "sleep-agent"
+                        | "guidebook-agent"
+                        | "emerge-agent"
+                        | "recede-agent"
+                        | "status-agent"
                 )
             })
             .collect();
@@ -255,10 +265,54 @@ mod tests {
     #[test]
     fn vocabulary_domains_are_complete() {
         let skills = SkillInventory::all();
-        for domain in &["texture", "sensation", "nature", "persona", "urge"] {
+        let cases: &[(&str, &[&str])] = &[
+            (
+                "texture",
+                &[
+                    "set-texture",
+                    "get-texture",
+                    "list-textures",
+                    "remove-texture",
+                ],
+            ),
+            (
+                "sensation",
+                &[
+                    "set-sensation",
+                    "get-sensation",
+                    "list-sensations",
+                    "remove-sensation",
+                ],
+            ),
+            (
+                "nature",
+                &["set-nature", "get-nature", "list-natures", "remove-nature"],
+            ),
+            (
+                "persona",
+                &[
+                    "set-persona",
+                    "get-persona",
+                    "list-personas",
+                    "remove-persona",
+                ],
+            ),
+            (
+                "urge",
+                &["set-urge", "get-urge", "list-urges", "remove-urge"],
+            ),
+        ];
+
+        for (domain, new_names) in cases {
+            // Check both naming conventions: new (verb-domain) and
+            // legacy (domain-verb) until all vocabulary domains are converted
+            // to the noteworthy annotation pattern.
+            let legacy_prefix = format!("{domain}-");
             let domain_skills: Vec<_> = skills
                 .iter()
-                .filter(|s| s.name.starts_with(domain))
+                .filter(|s| {
+                    new_names.contains(&s.name.as_ref()) || s.name.starts_with(&legacy_prefix)
+                })
                 .collect();
             assert_eq!(
                 domain_skills.len(),

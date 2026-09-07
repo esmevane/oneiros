@@ -4,14 +4,12 @@
 //! services into higher-level operations: dream, introspect, reflect, sense, sleep.
 //! Each produces continuity events and returns composed results.
 
-mod docs;
 mod features;
 mod presenter;
 mod protocol;
 mod service;
 mod view;
 
-pub(crate) use docs::*;
 pub(crate) use features::*;
 pub(crate) use presenter::*;
 pub(crate) use protocol::*;
