@@ -40,14 +40,38 @@ struct GetResource;
 #[annotation(Empty {})]
 struct BareResource;
 
-// --- Tests ---
-
 #[test]
 fn retrieve_single_annotation() {
-    let meta = <CreateResource as Annotated<Meta>>::DATA;
+    let meta = <CreateResource as Annotated<Meta>>::data();
     assert_eq!(meta.path, "/");
     assert_eq!(meta.summary, "Create");
     assert_eq!(meta.status, 201);
+}
+
+#[test]
+fn respects_defaults() {
+    #[derive(Default, Notation)]
+    struct Config {
+        name: &'static str,
+        status: u16,
+    }
+
+    #[annotation(Config)]
+    struct FullDefaults;
+
+    let config = FullDefaults::annotation::<Config>();
+
+    assert_eq!(config.name, "");
+    assert_eq!(config.status, 0);
+
+    #[annotation(Config { name: "Status is default", .. })]
+
+    struct ManuallySetsDefaults;
+
+    let config = ManuallySetsDefaults::annotation::<Config>();
+
+    assert_eq!(config.name, "Status is default");
+    assert_eq!(config.status, 0);
 }
 
 #[test]
@@ -87,7 +111,7 @@ fn empty_notation_works() {
 #[test]
 fn annotation_with_struct_fields() {
     // Annotations use full field syntax (not shorthand)
-    let meta = <GetResource as Annotated<Meta>>::DATA;
+    let meta = <GetResource as Annotated<Meta>>::data();
     assert_eq!(meta.path, "/{id}");
 }
 
@@ -109,7 +133,7 @@ struct UsesNested;
 
 #[test]
 fn nested_notation_types() {
-    let wrapper = <NestedNotation as Annotated<Wrapper>>::DATA;
+    let wrapper = <NestedNotation as Annotated<Wrapper>>::data();
     assert_eq!(wrapper.label, "inner");
 
     let nested = UsesNested::annotation::<NestedNotation>();
