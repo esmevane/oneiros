@@ -28,15 +28,15 @@ pub trait Notation: Sized + 'static {}
 ///
 /// ```ignore
 /// impl Annotated<T> for MyStruct {
-///     const DATA: T = T { ... };
+///     fn data() -> T { T { ... } }
 /// }
 /// ```
 ///
-/// Retrieve via `<MyStruct as Annotated<T>>::DATA` or
+/// Retrieve via `<MyStruct as Annotated<T>>::data()` or
 /// `MyStruct::annotation::<T>()`.
 pub trait Annotated<T: Notation> {
-    /// The annotation payload, as a const.
-    const DATA: T;
+    /// The annotation payload.
+    fn data() -> T;
 }
 
 /// Extension trait providing ergonomic retrieval.
@@ -49,7 +49,7 @@ pub trait AnnotatedExt: Sized {
     where
         Self: Annotated<T>,
     {
-        <Self as Annotated<T>>::DATA
+        <Self as Annotated<T>>::data()
     }
 }
 

@@ -48,11 +48,11 @@ macro_rules! resource_root {
                 #[allow(unreachable_patterns)]
                 match kind {
                     $(
-                        <$root as kinded::Kinded>::Kind::$leaf => Some(<$leaf as $crate::Annotated<$crate::ResourceMeta>>::DATA),
+                        <$root as kinded::Kinded>::Kind::$leaf => Some(<$leaf as $crate::Annotated<$crate::ResourceMeta>>::data()),
                     )*
                     $(
                         $(
-                            <$root as kinded::Kinded>::Kind::$skill_leaf => Some(<$skill_leaf as $crate::Annotated<$crate::ResourceMeta>>::DATA),
+                            <$root as kinded::Kinded>::Kind::$skill_leaf => Some(<$skill_leaf as $crate::Annotated<$crate::ResourceMeta>>::data()),
                         )*
                     )?
                     _ => None,
@@ -63,7 +63,7 @@ macro_rules! resource_root {
                 #[allow(unreachable_patterns)]
                 match kind {
                     $(
-                        <$root as kinded::Kinded>::Kind::$leaf => Some(<$leaf as $crate::Annotated<$crate::ResourceHandler>>::DATA),
+                        <$root as kinded::Kinded>::Kind::$leaf => Some(<$leaf as $crate::Annotated<$crate::ResourceHandler>>::data()),
                     )*
                     _ => None,
                 }
