@@ -1,4 +1,5 @@
 use kinded::Kinded;
+use noteworthy::annotation;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
