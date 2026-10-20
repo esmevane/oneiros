@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use kinded::Kinded;
+use noteworthy::annotation;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
