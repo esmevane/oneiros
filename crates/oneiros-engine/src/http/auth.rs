@@ -13,6 +13,8 @@ pub(crate) enum AuthError {
     NoAuthHeader,
     #[error("Invalid or expired token")]
     InvalidToken,
+    #[error("Token is not permitted to access this route")]
+    Forbidden,
     #[error(transparent)]
     Compose(#[from] ComposeError),
     #[error(transparent)]
@@ -23,6 +25,7 @@ impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let status = match &self {
             AuthError::NoAuthHeader | AuthError::InvalidToken => StatusCode::UNAUTHORIZED,
+            AuthError::Forbidden => StatusCode::FORBIDDEN,
             AuthError::Compose(_) | AuthError::Event(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, axum::Json(ErrorResponse::new(self.to_string()))).into_response()
@@ -36,7 +39,7 @@ pub(crate) enum VerifiedSession {
     /// routes (dashboard, host management, project CRUD).
     Host,
     /// Authenticated with a project-scoped project token. Grants access to
-    /// project-scoped routes and (by implication) host-scoped routes. The
+    /// project-scoped routes only — host-scoped routes refuse it. The
     /// project is resolved from the ticket; callers derive the full config
     /// from `ServerState`.
     Project(ProjectName),

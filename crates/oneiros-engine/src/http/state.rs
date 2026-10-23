@@ -147,34 +147,30 @@ impl FromRequestParts<ServerState> for Mailbox {
 impl aide::operation::OperationInput for Scope<AtHost> {}
 
 impl FromRequestParts<ServerState> for Scope<AtHost> {
-    type Rejection = ScopeExtractError;
+    type Rejection = AuthError;
 
     async fn from_request_parts(
-        _parts: &mut Parts,
+        parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
-        // The auth middleware already injected VerifiedSession into
-        // extensions. For AtHost, we accept both host and project
-        // sessions — all we need is a valid config to compose from.
+        // The auth middleware already validated the token and injected a
+        // VerifiedSession into request extensions. Host-scoped routes
+        // require a host token — a project token is valid, but not here.
+        let session = parts
+            .extensions
+            .get::<VerifiedSession>()
+            .ok_or(AuthError::NoAuthHeader)?;
+
+        match session {
+            VerifiedSession::Host => {}
+            VerifiedSession::Project(_) => return Err(AuthError::Forbidden),
+        }
+
         Ok(
             ComposeScope::new(state.config.clone(), state.databases.clone())
                 .host()
                 .await?,
         )
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub(crate) struct ScopeExtractError(#[from] ComposeError);
-
-impl axum::response::IntoResponse for ScopeExtractError {
-    fn into_response(self) -> axum::response::Response {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            self.to_string(),
-        )
-            .into_response()
     }
 }
 

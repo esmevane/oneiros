@@ -177,17 +177,17 @@ impl ListTickets {
 }
 
 resource_requests! {
-    CreateTicket => |this, client| { client.post("/tickets", this).await },
+    CreateTicket => |this, client| { client.host_tier().post("/tickets", this).await },
     GetTicket => |this, client| {
         let GetTicket::V1(lookup) = this;
-        client.get(&format!("/tickets/{}", lookup.key)).await
+        client.host_tier().get(&format!("/tickets/{}", lookup.key)).await
     },
     ListTickets => |this, client| {
         let ListTickets::V1(listing) = this;
         let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.get(&format!("/tickets?{query}")).await
+        client.host_tier().get(&format!("/tickets?{query}")).await
     },
-    ValidateTicket => |this, client| { client.post("/tickets/validate", this).await },
+    ValidateTicket => |this, client| { client.host_tier().post("/tickets/validate", this).await },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Kinded)]

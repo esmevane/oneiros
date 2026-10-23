@@ -135,10 +135,10 @@ impl ListActors {
 }
 
 resource_requests! {
-    CreateActor => |this, client| { client.post("/actors", this).await },
+    CreateActor => |this, client| { client.host_tier().post("/actors", this).await },
     GetActor => |this, client| {
         let GetActor::V1(lookup) = this;
-        client.get(&format!("/actors/{}", lookup.key)).await
+        client.host_tier().get(&format!("/actors/{}", lookup.key)).await
     },
     ListActors => |this, client| {
         let ListActors::V1(listing) = this;
@@ -146,7 +146,7 @@ resource_requests! {
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
-        client.get(&format!("/actors?{query}")).await
+        client.host_tier().get(&format!("/actors?{query}")).await
     }
 }
 

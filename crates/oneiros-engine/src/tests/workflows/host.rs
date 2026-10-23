@@ -247,3 +247,118 @@ async fn host_init_creates_host_keypair() -> Result<(), Box<dyn core::error::Err
 
     Ok(())
 }
+
+/// Issue #317 — a project-scoped token must not reach host-tier routes.
+///
+/// `init_project` leaves a project token on disk; `app.token()` returns it.
+/// Host administration (tenants, actors, tickets, peers, follows, the
+/// project index, sharing, and host-wide slice listing and deletion)
+/// answers 403 to that token: it's valid, but
+/// not permitted here.
+#[tokio::test]
+async fn project_token_is_refused_on_host_routes() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_host()
+        .await?
+        .init_project()
+        .await?;
+    let token = app.token().expect("init_project writes a project token");
+    let http = reqwest::Client::new();
+    let base = app.base_url();
+
+    let mut leaked = Vec::new();
+
+    for path in [
+        "/tenants",
+        "/actors",
+        "/tickets",
+        "/projects",
+        "/peers",
+        "/follows",
+        "/slices",
+    ] {
+        let status = http
+            .get(format!("{base}{path}"))
+            .bearer_auth(token.to_string())
+            .send()
+            .await?
+            .status();
+        if status != reqwest::StatusCode::FORBIDDEN {
+            leaked.push(format!("GET {path} -> {status}"));
+        }
+    }
+
+    // A write: mint a tenant using only a project token.
+    let body = CreateTenant::builder_v1().name("evil").build();
+    let status = http
+        .post(format!("{base}/tenants"))
+        .bearer_auth(token.to_string())
+        .json(&body)
+        .send()
+        .await?
+        .status();
+    if status != reqwest::StatusCode::FORBIDDEN {
+        leaked.push(format!("POST /tenants -> {status}"));
+    }
+
+    // Slices are stored host-wide (see #322), so deleting one is host
+    // administration until slices belong to a project.
+    let status = http
+        .delete(format!("{base}/slices/anything"))
+        .bearer_auth(token.to_string())
+        .send()
+        .await?
+        .status();
+    if status != reqwest::StatusCode::FORBIDDEN {
+        leaked.push(format!("DELETE /slices/anything -> {status}"));
+    }
+
+    // Sharing issues a ticket for whichever project the body names, so a
+    // project token must not be able to reach it.
+    let body = ShareProject::builder_v1()
+        .project(app.config().project.clone())
+        .build();
+    let status = http
+        .post(format!("{base}/projects/share"))
+        .bearer_auth(token.to_string())
+        .json(&body)
+        .send()
+        .await?
+        .status();
+    if status != reqwest::StatusCode::FORBIDDEN {
+        leaked.push(format!("POST /projects/share -> {status}"));
+    }
+
+    assert!(
+        leaked.is_empty(),
+        "project token reached host-tier routes: {leaked:#?}"
+    );
+    Ok(())
+}
+
+/// The host token still reaches host-tier routes, and the typed client
+/// routes host-tier requests through it even when a project token exists.
+#[tokio::test]
+async fn host_tier_requests_use_the_host_token() -> Result<(), Box<dyn core::error::Error>> {
+    let app = TestApp::new()
+        .await?
+        .init_host()
+        .await?
+        .init_project()
+        .await?;
+    assert!(app.token().is_some(), "a project token exists on disk");
+
+    let client = app.client();
+
+    match client
+        .tenant()
+        .list(&ListTenants::builder_v1().build().into())
+        .await?
+    {
+        TenantResponse::Listed(_) => {}
+        other => panic!("expected Listed, got {other:?}"),
+    }
+
+    Ok(())
+}

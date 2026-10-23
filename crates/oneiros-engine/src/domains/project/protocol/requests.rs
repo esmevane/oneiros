@@ -227,9 +227,10 @@ versioned! {
 impl ShareProject {
     pub(crate) async fn handler(
         State(state): State<ServerState>,
+        scope: Scope<AtHost>,
         Json(body): Json<ShareProject>,
     ) -> Result<Json<ProjectResponse>, ProjectError> {
-        Ok(Json(ProjectService::share(&state, &body).await?))
+        Ok(Json(ProjectService::share(&state, &scope, &body).await?))
     }
 }
 
@@ -328,22 +329,22 @@ pub(crate) async fn summary(
 
 resource_requests! {
     CreateProject => |this, client| {
-        client.post("/projects", this).await
+        client.host_tier().post("/projects", this).await
     },
     GetProject => |this, client| {
         let GetProject::V1(lookup) = this;
-        client.get(&format!("/projects/{}", lookup.key)).await
+        client.host_tier().get(&format!("/projects/{}", lookup.key)).await
     },
     ListProjects => |this, client| {
         let ListProjects::V1(listing) = this;
         let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.get(&format!("/projects?{query}")).await
+        client.host_tier().get(&format!("/projects?{query}")).await
     },
     ShareProject => |this, client| {
-        client.post("/projects/share", this).await
+        client.host_tier().post("/projects/share", this).await
     },
     FollowProject => |this, client| {
-        client.post("/projects/follow", this).await
+        client.host_tier().post("/projects/follow", this).await
     },
 }
 
