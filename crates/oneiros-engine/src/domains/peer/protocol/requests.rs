@@ -183,15 +183,15 @@ impl ListPeers {
 
 resource_requests! {
     AddPeer => |this, client| {
-        client.post("/peers", this).await
+        client.host_tier().post("/peers", this).await
     },
     GetPeer => |this, client| {
         let GetPeer::V1(lookup) = this;
-        client.get(&format!("/peers/{}", lookup.key)).await
+        client.host_tier().get(&format!("/peers/{}", lookup.key)).await
     },
     RemovePeer => |this, client| {
         let RemovePeer::V1(removal) = this;
-        client.delete(&format!("/peers/{}", removal.id)).await
+        client.host_tier().delete(&format!("/peers/{}", removal.id)).await
     },
     ListPeers => |this, client| {
         let ListPeers::V1(listing) = this;
@@ -199,7 +199,7 @@ resource_requests! {
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
-        client.get(&format!("/peers?{query}")).await
+        client.host_tier().get(&format!("/peers?{query}")).await
     },
 }
 

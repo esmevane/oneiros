@@ -90,13 +90,8 @@ versioned! {
 }
 
 impl ListSlices {
-    pub(crate) async fn handler(
-        axum::extract::State(state): axum::extract::State<ServerState>,
-    ) -> Result<Json<SliceResponse>, SliceError> {
-        let host_scope = ComposeScope::new(state.config().clone(), state.databases().clone())
-            .host()
-            .await?;
-        Ok(Json(SliceService::list(&host_scope).await?))
+    pub(crate) async fn handler(scope: Scope<AtHost>) -> Result<Json<SliceResponse>, SliceError> {
+        Ok(Json(SliceService::list(&scope).await?))
     }
 }
 
@@ -132,16 +127,11 @@ versioned! {
 
 impl DeleteSlice {
     pub(crate) async fn handler(
-        axum::extract::State(state): axum::extract::State<ServerState>,
+        scope: Scope<AtHost>,
         mailbox: Mailbox,
         Path(name): Path<SliceName>,
     ) -> Result<Json<SliceResponse>, SliceError> {
-        let host_scope = ComposeScope::new(state.config().clone(), state.databases().clone())
-            .host()
-            .await?;
-        Ok(Json(
-            SliceService::delete(&host_scope, &mailbox, &name).await?,
-        ))
+        Ok(Json(SliceService::delete(&scope, &mailbox, &name).await?))
     }
 }
 
@@ -206,13 +196,13 @@ resource_requests! {
     CreateSlice => |this, client| { client.post("/slices", this).await },
     DeleteSlice => |this, client| {
         let DeleteSlice::V1(req) = this;
-        client.delete(&format!("/slices/{}", req.name)).await
+        client.host_tier().delete(&format!("/slices/{}", req.name)).await
     },
     DiffSlice => |this, client| { client.post("/slices/diff", this).await },
 }
 
 resource_requests! {
-    ListSlices => |client| { client.get("/slices").await },
+    ListSlices => |client| { client.host_tier().get("/slices").await },
 }
 
 #[allow(dead_code)]

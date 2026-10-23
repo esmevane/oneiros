@@ -40,6 +40,9 @@ impl IntoResponse for ClientError {
 pub(crate) struct Client {
     http: reqwest::Client,
     base_url: String,
+    /// A separate client carrying the host token, used for host-tier
+    /// routes. Present only when the host key is available locally.
+    host: Option<Box<Client>>,
 }
 
 impl Client {
@@ -47,7 +50,15 @@ impl Client {
         Self {
             http: reqwest::Client::new(),
             base_url: base_url.as_ref().into(),
+            host: None,
         }
+    }
+
+    /// The client to use for host-tier routes. Uses the host credential
+    /// when one is available; otherwise falls back to this client, whose
+    /// project token the server will refuse on host-tier routes.
+    pub(crate) fn host_tier(&self) -> &Client {
+        self.host.as_deref().unwrap_or(self)
     }
 
     pub(crate) fn with_bearer(
@@ -67,6 +78,7 @@ impl Client {
         Ok(Self {
             http,
             base_url: base_url.into(),
+            host: None,
         })
     }
 
@@ -149,22 +161,27 @@ impl FromConfig for Client {
     /// from disk when available; falls back to a host token (derived from
     /// the host key) so that bootstrap operations (host init, project
     /// create) can authenticate before any project exists.
+    ///
+    /// When the host key is available, host-tier routes always use the
+    /// host token (see [`Client::host_tier`]), since project tokens are
+    /// refused there.
     fn from_config(config: &Config) -> Result<Self, ClientError> {
-        let bearer = match config.token() {
-            Some(token) => token.to_string(),
-            None => {
-                let secret = HostKey::new(config.platform())
-                    .load()
-                    .ok()
-                    .flatten()
-                    .map(|secret| HostToken::generate(&secret).to_string());
-                let Some(host_token) = secret else {
-                    return Ok(Self::new(config.base_url()));
-                };
-                host_token
+        let host_token = HostKey::new(config.platform())
+            .load()
+            .ok()
+            .flatten()
+            .map(|secret| HostToken::generate(&secret).to_string());
+
+        match (config.token(), host_token) {
+            (Some(token), Some(host_token)) => {
+                let mut client = Self::with_bearer(config.base_url(), &token.to_string())?;
+                client.host = Some(Box::new(Self::with_bearer(config.base_url(), &host_token)?));
+                Ok(client)
             }
-        };
-        Self::with_bearer(config.base_url(), &bearer)
+            (Some(token), None) => Self::with_bearer(config.base_url(), &token.to_string()),
+            (None, Some(host_token)) => Self::with_bearer(config.base_url(), &host_token),
+            (None, None) => Ok(Self::new(config.base_url())),
+        }
     }
 }
 

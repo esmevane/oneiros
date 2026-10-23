@@ -119,7 +119,7 @@ impl ListFollows {
 resource_requests! {
     GetFollow => |this, client| {
         let GetFollow::V1(lookup) = this;
-        client.get(&format!("/follows/{}", lookup.key)).await
+        client.host_tier().get(&format!("/follows/{}", lookup.key)).await
     },
     ListFollows => |this, client| {
         let ListFollows::V1(listing) = this;
@@ -127,7 +127,7 @@ resource_requests! {
             "limit={}&offset={}",
             listing.filters.limit, listing.filters.offset,
         );
-        client.get(&format!("/follows?{query}")).await
+        client.host_tier().get(&format!("/follows?{query}")).await
     },
 }
 

@@ -343,19 +343,17 @@ impl ProjectService {
     /// Share a project by issuing a project-scoped ticket.
     pub(crate) async fn share(
         state: &ServerState,
+        scope: &Scope<AtHost>,
         request: &ShareProject,
     ) -> Result<ProjectResponse, ProjectError> {
         let ShareProject::V1(req) = request;
-        let scope = ComposeScope::new(state.config().clone(), state.databases().clone())
-            .host()
-            .await?;
         let project_name = if req.project.to_string().is_empty() {
             state.config().project.clone()
         } else {
             req.project.clone()
         };
 
-        let project = ProjectRepo::new(&scope)
+        let project = ProjectRepo::new(scope)
             .get(&project_name)
             .await?
             .ok_or_else(|| ProjectError::NotFound(project_name.clone()))?;
@@ -365,7 +363,7 @@ impl ProjectService {
             limit: Limit(usize::MAX),
             offset: Offset(0),
         };
-        let actor = ActorRepo::new(&scope)
+        let actor = ActorRepo::new(scope)
             .list(&all)
             .await?
             .items
@@ -390,7 +388,7 @@ impl ProjectService {
             ])
             .build()
             .into();
-        let ticket = TicketService::issue(&scope, state.mailbox(), &request)
+        let ticket = TicketService::issue(scope, state.mailbox(), &request)
             .await
             .map_err(|e| ProjectError::NotFound(ProjectName::new(e.to_string())))?;
 
