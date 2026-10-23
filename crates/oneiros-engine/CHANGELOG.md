@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.13](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.12...oneiros-engine-v0.0.13) - 2026-10-23
+
+### 🐛 Fixes
+
+- [patch] Project scopes don't permit host access. (#325)
+
+This one just slipped through because most of our work has been via a
+local access setup, but: project tokens were granting host level access
+to remotes. This does some basic work to introduce a way to prevent that
+kind of access, answering with a 403 forbidden instead. Local access is
+still fine.
+
+- [patch] Tolerate checkout contention. (#324)
+
+This mitigates our checkout contention issue, by adding a timeout to
+situations where we have checkout contention. Basically, any time a
+`CheckedOut` error returns, we continue polling.
+
+Closes #323
+
+- [patch] Remove noteworthy re-exports. (#315)
+
+Why were they there to begin with, frankly? This junks the re-exports of
+the noteworthy annotation stuff. This lets us find all the spots where
+noteworthy is in use, but also removes a bizarre re-export coupling that
+maybe only existed because it lowered lines of code? I don't really
+know.
+
+
 ## [0.0.12](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.11...oneiros-engine-v0.0.12) - 2026-09-09
 
 ### 🐛 Fixes
