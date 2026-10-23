@@ -62,6 +62,9 @@ pub(crate) struct Databases {
 struct DatabasesInner {
     config: Config,
     pools: Mutex<HashMap<DbKey, DbEntry>>,
+    /// Signalled whenever a handle returns its connection, so waiting
+    /// checkouts can retry.
+    returned: tokio::sync::Notify,
 }
 
 struct DbEntry {
@@ -79,6 +82,7 @@ impl Databases {
             inner: Arc::new(DatabasesInner {
                 config,
                 pools: Mutex::new(HashMap::new()),
+                returned: tokio::sync::Notify::new(),
             }),
         }
     }
@@ -87,11 +91,28 @@ impl Databases {
     /// access. The connection is owned by the returned [`DbHandle`] for
     /// its lifetime and returned to the pool on drop.
     ///
-    /// If the key is currently checked out, this blocks on the pool
-    /// mutex until it's returned. For SQLite N=1 per key is fine —
-    /// queries are fast, contention is low.
+    /// If the key is currently checked out, this waits until the holder
+    /// returns it, up to `database.checkout_timeout`. For SQLite N=1 per key is
+    /// fine — queries are fast, so waits are short.
     pub(crate) async fn handle(&self, key: DbKey) -> Result<DbHandle, DbError> {
-        self.handle_sync(key)
+        let deadline = tokio::time::Instant::now() + self.inner.config.database.checkout_timeout;
+
+        loop {
+            // Register for the next return *before* trying, so a handle
+            // dropped between the attempt and the wait isn't missed.
+            let returned = self.inner.returned.notified();
+            tokio::pin!(returned);
+            returned.as_mut().enable();
+
+            match self.try_checkout(key.clone()) {
+                Err(DbError::CheckedOut(_)) => {}
+                result => return result,
+            }
+
+            if tokio::time::timeout_at(deadline, returned).await.is_err() {
+                return Err(DbError::CheckedOut(key));
+            }
+        }
     }
 
     /// Check out the host database connection.
@@ -114,11 +135,9 @@ impl Databases {
             .await
     }
 
-    /// Sync variant of [`Databases::handle`] for internal use only.
-    /// The checkout is fundamentally sync (Mutex lock + HashMap lookup);
-    /// `handle()` is async only for API consistency. External callers
-    /// should use `handle().await`.
-    fn handle_sync(&self, key: DbKey) -> Result<DbHandle, DbError> {
+    /// A single checkout attempt. Returns [`DbError::CheckedOut`] if the
+    /// key is busy; [`Databases::handle`] waits and retries on that.
+    fn try_checkout(&self, key: DbKey) -> Result<DbHandle, DbError> {
         // Fast path: the key exists and is idle. Take it.
         let connection = {
             let mut pools = self.inner.pools.lock().unwrap();
@@ -126,9 +145,7 @@ impl Databases {
                 Some(entry) => match entry.connection.take() {
                     Some(conn) => conn,
                     None => {
-                        // Checked out. Drop the lock and wait briefly
-                        // before retrying. For SQLite this is rare and
-                        // brief — the holder is doing sync work.
+                        // Checked out — the caller waits for a return.
                         drop(pools);
                         return Err(DbError::CheckedOut(key));
                     }
@@ -391,18 +408,21 @@ impl DbHandle {
 
 impl Drop for DbHandle {
     fn drop(&mut self) {
-        let mut pools = self.pool.pools.lock().unwrap();
-        match pools.get_mut(&self.key) {
-            Some(entry) => {
-                entry.connection = self.connection.take();
-                entry.last_used = Instant::now();
-            }
-            None => {
-                // Entry was swept while we held the handle. Drop the
-                // connection — it's stale. The next open for this key
-                // will create a fresh one.
+        {
+            let mut pools = self.pool.pools.lock().unwrap();
+            match pools.get_mut(&self.key) {
+                Some(entry) => {
+                    entry.connection = self.connection.take();
+                    entry.last_used = Instant::now();
+                }
+                None => {
+                    // Entry was swept while we held the handle. Drop the
+                    // connection — it's stale. The next open for this key
+                    // will create a fresh one.
+                }
             }
         }
+        self.pool.returned.notify_waiters();
     }
 }
 

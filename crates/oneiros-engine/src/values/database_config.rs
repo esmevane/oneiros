@@ -69,6 +69,14 @@ pub(crate) struct DatabaseConfig {
     #[builder(default = std::time::Duration::from_millis(100))]
     #[serde(with = "humantime_serde")]
     pub(crate) sweep_interval: std::time::Duration,
+
+    /// How long a checkout waits for a busy connection before giving up
+    /// with `DbError::CheckedOut`. SQLite work is short, so this only
+    /// trips when a holder is stuck — most likely a task that already
+    /// holds the connection asking for it again. Defaults to 5s.
+    #[builder(default = std::time::Duration::from_secs(5))]
+    #[serde(with = "humantime_serde")]
+    pub(crate) checkout_timeout: std::time::Duration,
 }
 
 impl Default for DatabaseConfig {
