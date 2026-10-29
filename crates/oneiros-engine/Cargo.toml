@@ -20,6 +20,7 @@ der.workspace = true
 etcetera.workspace = true
 figment.workspace = true
 flate2.workspace = true
+form_urlencoded.workspace = true
 hmac.workspace = true
 http-body-util.workspace = true
 humantime.workspace = true

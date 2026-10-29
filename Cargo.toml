@@ -29,6 +29,7 @@ der = "=0.8.0-rc.10"
 etcetera = "0.11.0"
 figment = { version = "0.10", features = ["env", "toml"] }
 flate2 = "1"
+form_urlencoded = "1"
 futures = "0.3"
 hmac = "0.12"
 http-body-util = "0.1"

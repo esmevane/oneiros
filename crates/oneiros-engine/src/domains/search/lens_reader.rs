@@ -14,10 +14,13 @@ impl<'a> SearchIndexReader<'a> {
     }
 
     pub(crate) fn read_text(&self, query: &str) -> Result<Selection, ReaderError> {
+        let Some(expression) = MatchExpression::from_text(query) else {
+            return Ok(Selection::new());
+        };
         let sql = "select resource_ref, created_at, rank from search_index where search_index match ?1 order by rank";
         let tuples = self
             .db
-            .query_map(sql, params![query], |row| {
+            .query_map(sql, params![expression.as_str()], |row| {
                 let ref_json: String = row.get(0)?;
                 let created_at: String = row.get(1)?;
                 let rank: f64 = row.get(2)?;
