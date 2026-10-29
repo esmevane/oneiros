@@ -1,6 +1,7 @@
 //! System workflow — peer distribution.
 
 use crate::tests::harness::TestApp;
+use crate::*;
 
 #[tokio::test]
 async fn add_peer_with_valid_ticket() -> Result<(), Box<dyn core::error::Error>> {
@@ -19,8 +20,9 @@ async fn add_peer_with_valid_ticket() -> Result<(), Box<dyn core::error::Error>>
     Ok(())
 }
 
-#[tokio::test]
-async fn remove_peer_drops_from_list() -> Result<(), Box<dyn core::error::Error>> {
+/// Add a peer named `dreamforge` to a fresh local host, returning the
+/// local app (and the remote, which must outlive it) plus the peer's id.
+async fn with_added_peer() -> Result<(TestApp, TestApp, PeerId), Box<dyn core::error::Error>> {
     let remote = TestApp::new().await?.init_host().await?;
     let local = TestApp::new().await?.init_host().await?;
 
@@ -28,9 +30,65 @@ async fn remove_peer_drops_from_list() -> Result<(), Box<dyn core::error::Error>
     let output = remote.command("project share test").await?;
     let uri = output.prompt().trim().to_string();
 
-    local
+    let added = local
         .command(&format!("peer add \"{uri}\" --name dreamforge"))
         .await?;
+    let id = match added.response() {
+        Responses::Peer(PeerResponse::Added(PeerAddedResponse::V1(added))) => added.id,
+        other => panic!("expected peer Added, got {other:#?}"),
+    };
+
+    Ok((remote, local, id))
+}
+
+async fn assert_peer_removed(
+    local: &TestApp,
+    id: PeerId,
+    removal: &Rendered<Responses>,
+) -> Result<(), Box<dyn core::error::Error>> {
+    match removal.response() {
+        Responses::Peer(PeerResponse::Removed(PeerRemovedResponse::V1(removed))) => {
+            assert_eq!(removed.id, id);
+        }
+        other => panic!("expected peer Removed, got {other:#?}"),
+    }
+
+    let list = local.command("peer list").await?;
+    assert!(!list.prompt().contains("dreamforge"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn remove_peer_drops_from_list() -> Result<(), Box<dyn core::error::Error>> {
+    let (_remote, local, id) = with_added_peer().await?;
+
+    let removal = local.command(&format!("peer remove {id}")).await?;
+    assert_peer_removed(&local, id, &removal).await
+}
+
+#[tokio::test]
+async fn remove_peer_by_ref() -> Result<(), Box<dyn core::error::Error>> {
+    let (_remote, local, id) = with_added_peer().await?;
+
+    let token = RefToken::new(Ref::peer(id));
+    let removal = local.command(&format!("peer remove {token}")).await?;
+    assert_peer_removed(&local, id, &removal).await
+}
+
+#[tokio::test]
+async fn remove_peer_by_wrong_kind_ref_is_rejected() -> Result<(), Box<dyn core::error::Error>> {
+    let (_remote, local, _id) = with_added_peer().await?;
+
+    let token = RefToken::new(Ref::connection(ConnectionId::new()));
+    let Err(err) = local.command(&format!("peer remove {token}")).await else {
+        panic!("expected error for wrong-kind ref, got Ok");
+    };
+    let message = err.to_string();
+    assert!(
+        message.contains("peer") && message.contains("connection"),
+        "expected wrong-kind error naming both kinds, got: {message}"
+    );
+
     let list = local.command("peer list").await?;
     assert!(list.prompt().contains("dreamforge"));
     Ok(())

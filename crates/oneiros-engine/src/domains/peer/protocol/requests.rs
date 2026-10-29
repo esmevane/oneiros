@@ -118,7 +118,7 @@ versioned! {
     pub(crate) enum RemovePeer {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub(crate) id: PeerId,
+            #[builder(into)] pub(crate) key: ResourceKey<PeerId>,
         }
     }
 }
@@ -127,13 +127,13 @@ impl RemovePeer {
     pub(crate) async fn handler(
         scope: Scope<AtHost>,
         mailbox: Mailbox,
-        Path(id): Path<PeerId>,
+        Path(key): Path<ResourceKey<PeerId>>,
     ) -> Result<Json<PeerResponse>, PeerError> {
         Ok(Json(
             PeerService::remove(
                 &scope,
                 &mailbox,
-                &RemovePeer::builder_v1().id(id).build().into(),
+                &RemovePeer::builder_v1().key(key).build().into(),
             )
             .await?,
         ))
@@ -191,7 +191,7 @@ resource_requests! {
     },
     RemovePeer => |this, client| {
         let RemovePeer::V1(removal) = this;
-        client.host_tier().delete(&format!("/peers/{}", removal.id)).await
+        client.host_tier().delete(&format!("/peers/{}", removal.key)).await
     },
     ListPeers => |this, client| {
         let ListPeers::V1(listing) = this;

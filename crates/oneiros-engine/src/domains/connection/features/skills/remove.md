@@ -1,6 +1,6 @@
 ---
 description: Remove a connection between two entities
-argument-hint: <id>
+argument-hint: <ref-or-id>
 ---
 
-Run `oneiros connection remove $ARGUMENTS` to remove a connection by ID. Accepts a full UUID or an 8+ character prefix.
+Run `oneiros connection remove $ARGUMENTS` to remove a connection. Accepts the `ref:` token shown by `connection list` and `connection show`, or a full connection UUID.

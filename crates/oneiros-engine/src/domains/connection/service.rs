@@ -100,20 +100,14 @@ impl ConnectionService {
         request: &RemoveConnection,
     ) -> Result<ConnectionResponse, ConnectionError> {
         let RemoveConnection::V1(removal) = request;
-        if ConnectionRepo::new(scope)
-            .fetch(&removal.id)
-            .await?
-            .is_none()
-        {
-            return Err(ConnectionError::NotFound(removal.id));
+        let id = removal.key.resolve()?;
+        if ConnectionRepo::new(scope).fetch(&id).await?.is_none() {
+            return Err(ConnectionError::NotFound(id));
         }
 
         let new_event = NewEvent::builder()
             .data(Events::Connection(ConnectionEvents::ConnectionRemoved(
-                ConnectionRemoved::builder_v1()
-                    .id(removal.id)
-                    .build()
-                    .into(),
+                ConnectionRemoved::builder_v1().id(id).build().into(),
             )))
             .build();
 
@@ -127,12 +121,12 @@ impl ConnectionService {
         scope
             .config()
             .fetch
-            .until_absent(|| async { ConnectionRepo::new(scope).get(&removal.id).await })
+            .until_absent(|| async { ConnectionRepo::new(scope).get(&id).await })
             .await?;
 
         Ok(ConnectionResponse::ConnectionRemoved(
             ConnectionRemovedResponse::builder_v1()
-                .id(removal.id)
+                .id(id)
                 .build()
                 .into(),
         ))
