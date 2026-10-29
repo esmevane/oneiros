@@ -2984,6 +2984,7 @@ dependencies = [
  "etcetera",
  "figment",
  "flate2",
+ "form_urlencoded",
  "futures",
  "hmac",
  "http-body-util",

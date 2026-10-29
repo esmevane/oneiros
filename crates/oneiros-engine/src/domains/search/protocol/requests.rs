@@ -78,29 +78,31 @@ impl SearchQuery {
 resource_requests! {
     SearchQuery => |this, client| {
         let SearchQuery::V1(query) = this;
-        let mut parts: Vec<String> = Vec::new();
+        // Values are free text (`#317`, `a & b`), so they must be
+        // percent-encoded — a raw `#` would truncate the URL at a fragment.
+        let mut params = form_urlencoded::Serializer::new(String::new());
         if let Some(q) = &query.query {
-            parts.push(format!("query={q}"));
+            params.append_pair("query", q);
         }
         if let Some(a) = &query.agent {
-            parts.push(format!("agent={a}"));
+            params.append_pair("agent", &a.to_string());
         }
         if let Some(k) = query.kind {
-            parts.push(format!("kind={}", k.as_str()));
+            params.append_pair("kind", k.as_str());
         }
         if let Some(t) = &query.texture {
-            parts.push(format!("texture={t}"));
+            params.append_pair("texture", &t.to_string());
         }
         if let Some(l) = &query.level {
-            parts.push(format!("level={l}"));
+            params.append_pair("level", &l.to_string());
         }
         if let Some(s) = &query.sensation {
-            parts.push(format!("sensation={s}"));
+            params.append_pair("sensation", &s.to_string());
         }
-        parts.push(format!("limit={}", query.filters.limit));
-        parts.push(format!("offset={}", query.filters.offset));
+        params.append_pair("limit", &query.filters.limit.to_string());
+        params.append_pair("offset", &query.filters.offset.to_string());
 
-        let path = format!("/search?{}", parts.join("&"));
+        let path = format!("/search?{}", params.finish());
         client.get(&path).await
     },
 }

@@ -34,7 +34,7 @@ impl<'a> SearchRepo<'a> {
     ) -> Result<SearchHits, EventError> {
         let db = self.scope.bookmark_db().await?;
 
-        let has_query = query.query.is_some();
+        let has_query = query.match_expression().is_some();
         let where_clause = query.where_clause(agent_id);
         let params = where_clause.params();
 
@@ -142,6 +142,12 @@ impl WhereClause {
 }
 
 impl SearchQueryV1 {
+    /// The query text as a safe FTS5 `MATCH` operand, or `None` when there
+    /// is no text (or only whitespace) to match on.
+    pub(crate) fn match_expression(&self) -> Option<MatchExpression> {
+        self.query.as_deref().and_then(MatchExpression::from_text)
+    }
+
     /// Translate the query's filters into a WHERE clause + parameter
     /// bindings. The FTS5 `match` condition is only included when a text
     /// query is present; otherwise we fall back to column-only filtering.
@@ -154,8 +160,11 @@ impl SearchQueryV1 {
             conditions.push(condition.replace("?N", &format!("?{}", bindings.len())));
         };
 
-        if let Some(q) = &self.query {
-            push("search_index match ?N".into(), Box::new(q.clone()));
+        if let Some(expression) = self.match_expression() {
+            push(
+                "search_index match ?N".into(),
+                Box::new(expression.as_str().to_string()),
+            );
         }
         if let Some(kind) = self.kind {
             push("kind = ?N".into(), Box::new(kind.as_str().to_string()));

@@ -280,6 +280,23 @@ async fn lens_query_results_sort_by_relevance_when_requested()
 }
 
 #[tokio::test]
+async fn lens_search_text_is_not_fts_syntax() -> Result<(), Box<dyn core::error::Error>> {
+    let app = seeded_app().await?;
+    app.command(r#"cognition add gov.process observation "Tracking #317 here""#)
+        .await?;
+
+    let rendered = app.command(r##"lens query "search(\"#317\")""##).await?;
+    assert_eq!(extract_query_hits(&rendered).len(), 1);
+
+    let rendered = app
+        .command(r#"lens query "search(\"ref:AAQQ garden\")""#)
+        .await?;
+    assert!(extract_query_hits(&rendered).is_empty());
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn lens_query_events_for_returns_events_that_touched_entity()
 -> Result<(), Box<dyn core::error::Error>> {
     let app = TestApp::new()
