@@ -493,7 +493,7 @@ async fn removing_nonexistent_entities() -> Result<(), Box<dyn core::error::Erro
         .connection()
         .remove(
             &RemoveConnection::builder_v1()
-                .id(ConnectionId::from(fake_id))
+                .key(ConnectionId::from(fake_id))
                 .build()
                 .into(),
         )

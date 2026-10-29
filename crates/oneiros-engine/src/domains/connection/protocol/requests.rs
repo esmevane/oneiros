@@ -167,7 +167,7 @@ versioned! {
     pub(crate) enum RemoveConnection {
         #[derive(clap::Args)]
         V1 => {
-            #[builder(into)] pub(crate) id: ConnectionId,
+            #[builder(into)] pub(crate) key: ResourceKey<ConnectionId>,
         }
     }
 }
@@ -176,13 +176,13 @@ impl RemoveConnection {
     pub(crate) async fn handler(
         scope: Scope<AtBookmark>,
         mailbox: Mailbox,
-        Path(id): Path<ConnectionId>,
+        Path(key): Path<ResourceKey<ConnectionId>>,
     ) -> Result<Json<ConnectionResponse>, ConnectionError> {
         Ok(Json(
             ConnectionService::remove(
                 &scope,
                 &mailbox,
-                &RemoveConnection::builder_v1().id(id).build().into(),
+                &RemoveConnection::builder_v1().key(key).build().into(),
             )
             .await?,
         ))
@@ -220,7 +220,7 @@ resource_requests! {
     },
     RemoveConnection => |this, client| {
         let RemoveConnection::V1(removal) = this;
-        client.delete(&format!("/connections/{}", removal.id)).await
+        client.delete(&format!("/connections/{}", removal.key)).await
     }
 }
 

@@ -431,6 +431,14 @@ async fn connection_remove_by_id() -> TestResult {
     cases::connection::remove_by_id::<EngineBackend>().await
 }
 #[tokio::test]
+async fn connection_remove_by_ref() -> TestResult {
+    cases::connection::remove_by_ref::<EngineBackend>().await
+}
+#[tokio::test]
+async fn connection_remove_by_wrong_kind_ref_errors() -> TestResult {
+    cases::connection::remove_by_wrong_kind_ref_errors::<EngineBackend>().await
+}
+#[tokio::test]
 async fn connection_create_prompt_confirms_creation() -> TestResult {
     cases::connection::create_prompt_confirms_creation::<EngineBackend>().await
 }

@@ -180,6 +180,78 @@ pub(crate) async fn remove_by_id<B: Backend>() -> TestResult {
     Ok(())
 }
 
+pub(crate) async fn remove_by_ref<B: Backend>() -> TestResult {
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
+
+    let create_cmd = format!("connection create caused {from_ref} {to_ref}");
+    let create_response = harness.exec_json(&create_cmd).await?;
+
+    let ref_token = match create_response {
+        Responses::Connection(ConnectionResponse::ConnectionCreated(
+            ConnectionCreatedResponse::V1(created),
+        )) => RefToken::new(Ref::connection(created.connection.id)),
+        other => panic!("expected ConnectionCreated, got {other:#?}"),
+    };
+
+    let remove_response = harness
+        .exec_json(&format!("connection remove {ref_token}"))
+        .await?;
+
+    assert!(
+        matches!(
+            remove_response,
+            Responses::Connection(ConnectionResponse::ConnectionRemoved(_))
+        ),
+        "expected ConnectionRemoved, got {remove_response:?}"
+    );
+
+    let list_response = harness.exec_json("connection list").await?;
+
+    assert!(
+        matches!(
+            list_response,
+            Responses::Connection(ConnectionResponse::NoConnections)
+        ),
+        "expected NoConnections after removal, got {list_response:?}"
+    );
+
+    Ok(())
+}
+
+pub(crate) async fn remove_by_wrong_kind_ref_errors<B: Backend>() -> TestResult {
+    let (harness, from_ref, to_ref) = with_connectable_entities::<B>().await?;
+
+    let create_cmd = format!("connection create caused {from_ref} {to_ref}");
+    harness.exec_json(&create_cmd).await?;
+
+    // from_ref points at a cognition, not a connection.
+    let result = harness
+        .exec_json(&format!("connection remove {from_ref}"))
+        .await;
+
+    let Err(err) = result else {
+        panic!("expected error for wrong-kind ref, got Ok");
+    };
+    let message = err.to_string();
+    assert!(
+        message.contains("connection") && message.contains("cognition"),
+        "expected wrong-kind error naming both kinds, got: {message}"
+    );
+
+    let list_response = harness.exec_json("connection list").await?;
+
+    match list_response {
+        Responses::Connection(ConnectionResponse::Connections(ConnectionsResponse::V1(
+            connections,
+        ))) => {
+            assert_eq!(connections.items.len(), 1);
+        }
+        other => panic!("expected the connection to survive, got {other:#?}"),
+    }
+
+    Ok(())
+}
+
 pub(crate) async fn show_prompt<B: Backend>() -> TestResult {
     let (harness, first_ref, second_ref) = with_connectable_entities::<B>().await?;
 

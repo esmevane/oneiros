@@ -198,10 +198,11 @@ impl PeerService {
         request: &RemovePeer,
     ) -> Result<PeerResponse, PeerError> {
         let RemovePeer::V1(remove) = request;
+        let id = remove.key.resolve()?;
         let existing = PeerRepo::new(scope)
-            .get(remove.id)
+            .get(id)
             .await?
-            .ok_or(PeerError::NotFound(remove.id))?;
+            .ok_or(PeerError::NotFound(id))?;
 
         let new_event = NewEvent::builder()
             .data(Events::Peer(PeerEvents::PeerRemoved(
@@ -217,10 +218,7 @@ impl PeerService {
         ));
 
         Ok(PeerResponse::Removed(
-            PeerRemovedResponse::builder_v1()
-                .id(remove.id)
-                .build()
-                .into(),
+            PeerRemovedResponse::builder_v1().id(id).build().into(),
         ))
     }
 }
