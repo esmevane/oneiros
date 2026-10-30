@@ -186,12 +186,7 @@ impl ContinuityService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event));
 
         Ok(ContinuityResponse::Waking(
             WakingResponse::builder_v1().context(dream).build().into(),
@@ -218,12 +213,7 @@ impl ContinuityService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event));
 
         Ok(ContinuityResponse::Dreaming(
             DreamingResponse::builder_v1().context(dream).build().into(),
@@ -250,12 +240,7 @@ impl ContinuityService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event));
 
         Ok(ContinuityResponse::Introspecting(
             IntrospectingResponse::builder_v1()
@@ -285,12 +270,7 @@ impl ContinuityService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event));
 
         Ok(ContinuityResponse::Reflecting(
             ReflectingResponse::builder_v1()
@@ -321,12 +301,7 @@ impl ContinuityService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event));
 
         Ok(ContinuityResponse::Sleeping(
             SleepingResponse::builder_v1().context(dream).build().into(),
@@ -353,12 +328,7 @@ impl ContinuityService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event));
 
         Ok(ContinuityResponse::Sleeping(
             SleepingResponse::builder_v1().context(dream).build().into(),

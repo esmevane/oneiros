@@ -14,29 +14,22 @@ impl PersonaService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
-        let name = persona.name.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Persona(PersonaEvents::PersonaSet(
-                PersonaSet::builder_v1().persona(persona).build().into(),
+                PersonaSet::builder_v1()
+                    .persona(persona.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = PersonaRepo::new(scope)
-            .fetch(&name)
-            .await?
-            .ok_or(PersonaError::NotFound(name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(PersonaResponse::PersonaSet(
             PersonaSetResponse::builder_v1()
-                .persona(projected)
+                .persona(persona)
                 .build()
                 .into(),
         ))
@@ -96,18 +89,8 @@ impl PersonaService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { PersonaRepo::new(scope).get(&name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(PersonaResponse::PersonaRemoved(
             PersonaRemovedResponse::builder_v1()

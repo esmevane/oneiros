@@ -14,29 +14,22 @@ impl ActorService {
             .tenant_id(create.tenant_id)
             .name(create.name.clone())
             .build();
-        let id = actor.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Actor(ActorEvents::ActorCreated(
-                ActorCreated::builder_v1().actor(actor).build().into(),
+                ActorCreated::builder_v1()
+                    .actor(actor.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = ActorRepo::new(scope)
-            .fetch(id)
-            .await?
-            .ok_or(ActorError::NotFound(id))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(ActorResponse::Created(
             ActorCreatedResponse::builder_v1()
-                .actor(stored)
+                .actor(actor)
                 .build()
                 .into(),
         ))

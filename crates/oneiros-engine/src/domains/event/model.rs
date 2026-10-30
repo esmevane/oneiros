@@ -6,8 +6,14 @@ use crate::*;
 resource_id!(EventId);
 
 /// A new event to be persisted.
+///
+/// The id is minted with the event, not by the log, so whoever builds an
+/// event can recognise it once it's stored — see [`Persistence`].
 #[derive(Builder, Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct NewEvent {
+    #[builder(default)]
+    #[serde(default)]
+    pub(crate) id: EventId,
     #[builder(into)]
     pub(crate) data: Events,
     #[builder(default)]

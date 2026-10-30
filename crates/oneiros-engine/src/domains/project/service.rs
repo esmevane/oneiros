@@ -41,17 +41,8 @@ impl ProjectService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = ProjectRepo::new(scope)
-            .fetch(&project_name)
-            .await?
-            .ok_or_else(|| ProjectError::NotFound(project_name.clone()))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         let main_bookmark = Bookmark::builder()
             .project(project_name.clone())
@@ -67,12 +58,8 @@ impl ProjectService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         let platform = scope.config().platform();
         let project_dir = scope.config().data_dir.join(project_name.as_str());
@@ -130,7 +117,7 @@ impl ProjectService {
 
         Ok(ProjectResponse::Created(
             ProjectCreatedResponse::builder_v1()
-                .project(stored)
+                .project(project)
                 .token(token)
                 .build()
                 .into(),
@@ -457,12 +444,8 @@ impl ProjectService {
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(ProjectResponse::Followed(ProjectFollowedResponse::V1(
             ProjectFollowedResponseV1 {

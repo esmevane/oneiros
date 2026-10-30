@@ -65,6 +65,9 @@ struct DatabasesInner {
     /// Signalled whenever a handle returns its connection, so waiting
     /// checkouts can retry.
     returned: tokio::sync::Notify,
+    /// Signalled whenever an event log gains an event, so anyone waiting
+    /// on a particular event can look again.
+    appended: tokio::sync::Notify,
 }
 
 struct DbEntry {
@@ -83,6 +86,7 @@ impl Databases {
                 config,
                 pools: Mutex::new(HashMap::new()),
                 returned: tokio::sync::Notify::new(),
+                appended: tokio::sync::Notify::new(),
             }),
         }
     }
@@ -113,6 +117,13 @@ impl Databases {
                 return Err(DbError::CheckedOut(key));
             }
         }
+    }
+
+    /// Resolves at the next append to any event log. Enable it before
+    /// looking at a log, so an append between the look and the wait
+    /// isn't missed.
+    pub(crate) fn appended(&self) -> tokio::sync::futures::Notified<'_> {
+        self.inner.appended.notified()
     }
 
     /// Check out the host database connection.
@@ -261,6 +272,22 @@ impl Databases {
     /// server's pool and a CLI-direct temporary pool) share the same
     /// in-memory databases, while parallel tests with different tempdirs
     /// stay isolated.
+    /// Open a shared-cache in-memory connection.
+    ///
+    /// Shared cache locks per table, and a reader holding a table lock
+    /// makes writers fail outright with `SQLITE_LOCKED` — busy timeouts
+    /// don't apply. The bookmark connection reads the ATTACHed `events`
+    /// table while the log actor appends to it, so readers here run
+    /// read-uncommitted, which takes no read locks. File mode has no
+    /// shared cache and isn't affected.
+    fn open_shared_memory(config: &Config, uri: &str) -> Result<rusqlite::Connection, DbError> {
+        let conn = rusqlite::Connection::open(uri).map_err(DbError::Rusqlite)?;
+        config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+        conn.pragma_update(None, "read_uncommitted", true)
+            .map_err(DbError::Rusqlite)?;
+        Ok(conn)
+    }
+
     fn open_memory_for_key(&self, key: &DbKey) -> Result<rusqlite::Connection, DbError> {
         let config = &self.inner.config;
         let mut hasher = std::hash::DefaultHasher::new();
@@ -270,8 +297,7 @@ impl Databases {
         match key {
             DbKey::Host => {
                 let uri = format!("file:host_{pool_id}?mode=memory&cache=shared");
-                let conn = rusqlite::Connection::open(&uri).map_err(DbError::Rusqlite)?;
-                config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+                let conn = Self::open_shared_memory(config, &uri)?;
                 Ok(conn)
             }
             DbKey::ProjectLog(project) => {
@@ -279,8 +305,7 @@ impl Databases {
                     "file:events_{}_{pool_id}?mode=memory&cache=shared",
                     project.as_str()
                 );
-                let conn = rusqlite::Connection::open(&uri).map_err(DbError::Rusqlite)?;
-                config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+                let conn = Self::open_shared_memory(config, &uri)?;
                 Ok(conn)
             }
             DbKey::Bookmark(project, bookmark) => {
@@ -289,8 +314,7 @@ impl Databases {
                     project.as_str(),
                     bookmark.as_str()
                 );
-                let conn = rusqlite::Connection::open(&uri).map_err(DbError::Rusqlite)?;
-                config.apply_pragmas(&conn).map_err(DbError::Rusqlite)?;
+                let conn = Self::open_shared_memory(config, &uri)?;
 
                 // ATTACH the events db by name — same shared-cache
                 // in-memory database that DbKey::ProjectLog opens.
@@ -347,6 +371,11 @@ impl DbHandle {
     ) -> Result<usize, DbError> {
         let conn = self.conn();
         conn.execute(sql, params).map_err(Into::into)
+    }
+
+    /// Tell anyone waiting on an event log that it just gained an event.
+    pub(crate) fn announce_append(&self) {
+        self.pool.appended.notify_waiters();
     }
 
     /// Execute multiple statements (e.g. schema migration, `BEGIN`/`COMMIT`).

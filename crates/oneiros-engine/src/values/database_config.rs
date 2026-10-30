@@ -77,6 +77,14 @@ pub(crate) struct DatabaseConfig {
     #[builder(default = std::time::Duration::from_secs(5))]
     #[serde(with = "humantime_serde")]
     pub(crate) checkout_timeout: std::time::Duration,
+
+    /// How long a write waits for its event to show up in the log before
+    /// giving up with `EventError::NotPersisted`. Appends are queued behind
+    /// other appends and a connection checkout, so this sits a little
+    /// above `checkout_timeout`. Defaults to 10s.
+    #[builder(default = std::time::Duration::from_secs(10))]
+    #[serde(with = "humantime_serde")]
+    pub(crate) persist_timeout: std::time::Duration,
 }
 
 impl Default for DatabaseConfig {

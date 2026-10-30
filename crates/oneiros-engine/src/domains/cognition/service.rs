@@ -3,13 +3,14 @@ use crate::*;
 pub(crate) struct CognitionService;
 
 impl CognitionService {
-    /// Record a cognition by dispatching `CognitionAdded` through the
-    /// bus and reading the eventually-consistent record back via fetch.
+    /// Record a cognition by telling the bus about `CognitionAdded` and waiting
+    /// until the event is persisted in the log.
     ///
-    /// No phantom state — the response carries whatever the projection
-    /// has seen, never a synthesised record. If the fetch window
-    /// expires before the projection catches up, this surfaces as
-    /// `CognitionError::NotFound`.
+    /// The response carries the record from the event itself — the same
+    /// payload the projection applies. Once the event is persisted the
+    /// request succeeds; reading the projection back here could fail a
+    /// write that already happened, and the client's retry would
+    /// duplicate it.
     pub(crate) async fn add(
         scope: &Scope<AtBookmark>,
         mailbox: &Mailbox,
@@ -26,32 +27,22 @@ impl CognitionService {
             .texture(addition.texture.clone())
             .content(addition.content.clone())
             .build();
-        let id = cognition.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Cognition(CognitionEvents::CognitionAdded(
                 CognitionAdded::builder_v1()
-                    .cognition(cognition)
+                    .cognition(cognition.clone())
                     .build()
                     .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = CognitionRepo::new(scope)
-            .fetch(&id)
-            .await?
-            .ok_or(CognitionError::NotFound(id))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(CognitionResponse::CognitionAdded(
             CognitionAddedResponse::builder_v1()
-                .cognition(stored)
+                .cognition(cognition)
                 .build()
                 .into(),
         ))

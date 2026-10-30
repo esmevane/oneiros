@@ -19,32 +19,22 @@ impl ExperienceService {
             .sensation(creation.sensation.clone())
             .description(creation.description.clone())
             .build();
-        let id = experience.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Experience(ExperienceEvents::ExperienceCreated(
                 ExperienceCreated::builder_v1()
-                    .experience(experience)
+                    .experience(experience.clone())
                     .build()
                     .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = ExperienceRepo::new(scope)
-            .fetch(&id)
-            .await?
-            .ok_or(ExperienceError::NotFound(id))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(ExperienceResponse::ExperienceCreated(
             ExperienceCreatedResponse::builder_v1()
-                .experience(stored)
+                .experience(experience)
                 .build()
                 .into(),
         ))
@@ -125,7 +115,7 @@ impl ExperienceService {
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceDescription::V1(update) = request;
         // Validate the experience exists before dispatching the update.
-        ExperienceRepo::new(scope)
+        let existing = ExperienceRepo::new(scope)
             .fetch(&update.id)
             .await?
             .ok_or(ExperienceError::NotFound(update.id))?;
@@ -142,26 +132,13 @@ impl ExperienceService {
             ))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
-        // Read back the updated record. Fetch polls until the projection
-        // reflects the new description.
-        let updated = scope
-            .config()
-            .fetch
-            .eventual(|| async {
-                ExperienceRepo::new(scope)
-                    .get(&update.id)
-                    .await
-                    .map(|opt| opt.filter(|exp| exp.description == update.description))
-            })
-            .await?
-            .ok_or(ExperienceError::NotFound(update.id))?;
+        let updated = Experience {
+            description: update.description.clone(),
+            ..existing
+        };
 
         Ok(ExperienceResponse::ExperienceUpdated(
             ExperienceUpdatedResponse::builder_v1()
@@ -177,7 +154,7 @@ impl ExperienceService {
         request: &UpdateExperienceSensation,
     ) -> Result<ExperienceResponse, ExperienceError> {
         let UpdateExperienceSensation::V1(update) = request;
-        ExperienceRepo::new(scope)
+        let existing = ExperienceRepo::new(scope)
             .fetch(&update.id)
             .await?
             .ok_or(ExperienceError::NotFound(update.id))?;
@@ -194,24 +171,13 @@ impl ExperienceService {
             ))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
-        let updated = scope
-            .config()
-            .fetch
-            .eventual(|| async {
-                ExperienceRepo::new(scope)
-                    .get(&update.id)
-                    .await
-                    .map(|opt| opt.filter(|exp| exp.sensation == update.sensation))
-            })
-            .await?
-            .ok_or(ExperienceError::NotFound(update.id))?;
+        let updated = Experience {
+            sensation: update.sensation.clone(),
+            ..existing
+        };
 
         Ok(ExperienceResponse::ExperienceUpdated(
             ExperienceUpdatedResponse::builder_v1()

@@ -28,31 +28,18 @@ impl StorageService {
             description: upload.description.clone(),
             hash: blob.hash.clone(),
         };
-        let key = entry.key.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Storage(StorageEvents::StorageSet(
-                StorageSet::builder_v1().entry(entry).build().into(),
+                StorageSet::builder_v1().entry(entry.clone()).build().into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = StorageRepo::new(scope)
-            .fetch_storage(&key)
-            .await?
-            .ok_or(StorageError::KeyNotFound(key))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(StorageResponse::StorageSet(
-            StorageSetResponse::builder_v1()
-                .entry(stored)
-                .build()
-                .into(),
+            StorageSetResponse::builder_v1().entry(entry).build().into(),
         ))
     }
 
@@ -119,18 +106,8 @@ impl StorageService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { StorageRepo::new(scope).fetch_storage(&removal.key).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(StorageResponse::StorageRemoved(
             StorageRemovedResponse::builder_v1()

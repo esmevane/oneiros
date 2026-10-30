@@ -14,31 +14,18 @@ impl LevelService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
-        let name = level.name.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Level(LevelEvents::LevelSet(
-                LevelSet::builder_v1().level(level).build().into(),
+                LevelSet::builder_v1().level(level.clone()).build().into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = LevelRepo::new(scope)
-            .fetch(&name)
-            .await?
-            .ok_or(LevelError::NotFound(name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(LevelResponse::LevelSet(
-            LevelSetResponse::builder_v1()
-                .level(projected)
-                .build()
-                .into(),
+            LevelSetResponse::builder_v1().level(level).build().into(),
         ))
     }
 
@@ -93,18 +80,8 @@ impl LevelService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { LevelRepo::new(scope).get(&name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(LevelResponse::LevelRemoved(
             LevelRemovedResponse::builder_v1().name(name).build().into(),

@@ -14,32 +14,22 @@ impl SensationService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
-        let name = sensation.name.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Sensation(SensationEvents::SensationSet(
                 SensationSet::builder_v1()
-                    .sensation(sensation)
+                    .sensation(sensation.clone())
                     .build()
                     .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = SensationRepo::new(scope)
-            .fetch(&name)
-            .await?
-            .ok_or(SensationError::NotFound(name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(SensationResponse::SensationSet(
             SensationSetResponse::builder_v1()
-                .sensation(projected)
+                .sensation(sensation)
                 .build()
                 .into(),
         ))
@@ -99,18 +89,8 @@ impl SensationService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { SensationRepo::new(scope).get(&name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(SensationResponse::SensationRemoved(
             SensationRemovedResponse::builder_v1()

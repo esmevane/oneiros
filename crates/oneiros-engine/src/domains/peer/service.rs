@@ -99,12 +99,8 @@ impl PeerService {
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(PeerResponse::Added(PeerAddedResponse::V1(
             peer_to_added_v1(peer),
@@ -182,12 +178,8 @@ impl PeerService {
             .data(Events::Peer(PeerEvents::PeerAdded(event.into())))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(peer)
     }
@@ -210,12 +202,8 @@ impl PeerService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(PeerResponse::Removed(
             PeerRemovedResponse::builder_v1().id(id).build().into(),

@@ -11,10 +11,6 @@ impl<'a> SliceRepo<'a> {
         Self { scope }
     }
 
-    pub(crate) async fn fetch(&self, name: &SliceName) -> Result<Option<Slice>, EventError> {
-        self.scope.config().fetch.eventual(|| self.get(name)).await
-    }
-
     pub(crate) async fn get(&self, name: &SliceName) -> Result<Option<Slice>, EventError> {
         let db = self.scope.host_db().await?;
 
