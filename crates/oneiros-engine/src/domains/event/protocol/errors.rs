@@ -32,4 +32,7 @@ pub(crate) enum EventError {
 
     #[error("Database lock poisoned: {0}")]
     Lock(String),
+
+    #[error("Event {0} was not persisted in time")]
+    NotPersisted(EventId),
 }

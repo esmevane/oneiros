@@ -15,32 +15,22 @@ impl ConnectionService {
             .to_ref(creation.to_ref.clone().into_inner())
             .nature(creation.nature.clone())
             .build();
-        let id = connection.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Connection(ConnectionEvents::ConnectionCreated(
                 ConnectionCreated::builder_v1()
-                    .connection(connection)
+                    .connection(connection.clone())
                     .build()
                     .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = ConnectionRepo::new(scope)
-            .fetch(&id)
-            .await?
-            .ok_or(ConnectionError::NotFound(id))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(ConnectionResponse::ConnectionCreated(
             ConnectionCreatedResponse::builder_v1()
-                .connection(stored)
+                .connection(connection)
                 .build()
                 .into(),
         ))
@@ -111,18 +101,8 @@ impl ConnectionService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { ConnectionRepo::new(scope).get(&id).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(ConnectionResponse::ConnectionRemoved(
             ConnectionRemovedResponse::builder_v1()

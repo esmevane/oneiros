@@ -34,12 +34,8 @@ impl FollowService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(follow)
     }
@@ -91,12 +87,8 @@ impl FollowService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(())
     }
@@ -124,12 +116,8 @@ impl FollowService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(())
     }

@@ -3,13 +3,14 @@ use crate::*;
 pub(crate) struct TenantService;
 
 impl TenantService {
-    /// Create a tenant by dispatching `TenantCreated` through the bus
-    /// and reading the eventually-consistent record back via fetch.
+    /// Create a tenant by telling the bus about `TenantCreated` and waiting
+    /// until the event is persisted in the log.
     ///
-    /// No phantom state — the response carries whatever the projection
-    /// has seen, never a synthesized record. If the fetch window
-    /// expires before the projection catches up, this surfaces as
-    /// `TenantError::NotFound`.
+    /// The response carries the record from the event itself — the same
+    /// payload the projection applies. Once the event is persisted the
+    /// request succeeds; reading the projection back here could fail a
+    /// write that already happened, and the client's retry would
+    /// duplicate it.
     pub(crate) async fn create(
         scope: &Scope<AtHost>,
         mailbox: &Mailbox,
@@ -18,29 +19,22 @@ impl TenantService {
         let CreateTenant::V1(create) = request;
 
         let tenant = Tenant::builder().name(create.name.clone()).build();
-        let id = tenant.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Tenant(TenantEvents::TenantCreated(
-                TenantCreated::builder_v1().tenant(tenant).build().into(),
+                TenantCreated::builder_v1()
+                    .tenant(tenant.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = TenantRepo::new(scope)
-            .fetch(&id)
-            .await?
-            .ok_or(TenantError::NotFound(id))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(TenantResponse::Created(
             TenantCreatedResponse::builder_v1()
-                .tenant(stored)
+                .tenant(tenant)
                 .build()
                 .into(),
         ))

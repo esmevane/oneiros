@@ -19,29 +19,22 @@ impl MemoryService {
             .level(addition.level.clone())
             .content(addition.content.clone())
             .build();
-        let id = memory.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Memory(MemoryEvents::MemoryAdded(
-                MemoryAdded::builder_v1().memory(memory).build().into(),
+                MemoryAdded::builder_v1()
+                    .memory(memory.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = MemoryRepo::new(scope)
-            .fetch(&id)
-            .await?
-            .ok_or(MemoryError::NotFound(id))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(MemoryResponse::MemoryAdded(
             MemoryAddedResponse::builder_v1()
-                .memory(stored)
+                .memory(memory)
                 .build()
                 .into(),
         ))

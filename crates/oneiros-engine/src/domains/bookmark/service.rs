@@ -41,12 +41,8 @@ impl BookmarkService {
                     .into(),
             )))
             .build();
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         let host_db = scope.databases().host().await?;
         BookmarkStore::new(&host_db).upsert(&bookmark)?;
@@ -107,12 +103,8 @@ impl BookmarkService {
                     .into(),
             )))
             .build();
-        state.mailbox().tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        state.mailbox().tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(BookmarkResponse::Forked(
             BookmarkForkedResponse::builder_v1()
@@ -143,12 +135,8 @@ impl BookmarkService {
                 event.into(),
             )))
             .build();
-        state.mailbox().tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        state.mailbox().tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(BookmarkResponse::Switched(
             BookmarkSwitchedResponse::builder_v1()
@@ -186,12 +174,8 @@ impl BookmarkService {
                 event.into(),
             )))
             .build();
-        state.mailbox().tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        state.mailbox().tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(BookmarkResponse::Merged(
             BookmarkMergedResponse::builder_v1()
@@ -333,12 +317,8 @@ impl BookmarkService {
                     .into(),
             )))
             .build();
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(BookmarkResponse::Shared(BookmarkShareResult {
             ticket,
@@ -385,12 +365,8 @@ impl BookmarkService {
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         state.canons().fork_project(project, name)?;
 

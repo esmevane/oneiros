@@ -14,29 +14,22 @@ impl NatureService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
-        let name = nature.name.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Nature(NatureEvents::NatureSet(
-                NatureSet::builder_v1().nature(nature).build().into(),
+                NatureSet::builder_v1()
+                    .nature(nature.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = NatureRepo::new(scope)
-            .fetch(&name)
-            .await?
-            .ok_or(NatureError::NotFound(name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(NatureResponse::NatureSet(
             NatureSetResponse::builder_v1()
-                .nature(projected)
+                .nature(nature)
                 .build()
                 .into(),
         ))
@@ -96,18 +89,8 @@ impl NatureService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { NatureRepo::new(scope).get(&name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(NatureResponse::NatureRemoved(
             NatureRemovedResponse::builder_v1()

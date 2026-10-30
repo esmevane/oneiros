@@ -36,25 +36,19 @@ impl AgentService {
 
         let new_event = NewEvent::builder()
             .data(Events::Agent(AgentEvents::AgentCreated(
-                AgentCreated::builder_v1().agent(agent).build().into(),
+                AgentCreated::builder_v1()
+                    .agent(agent.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let stored = AgentRepo::new(scope)
-            .fetch(&normalized_name)
-            .await?
-            .ok_or(AgentError::NotFound(normalized_name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(AgentResponse::AgentCreated(
             AgentCreatedResponse::builder_v1()
-                .agent(stored)
+                .agent(agent)
                 .build()
                 .into(),
         ))
@@ -152,39 +146,19 @@ impl AgentService {
 
         let new_event = NewEvent::builder()
             .data(Events::Agent(AgentEvents::AgentUpdated(
-                AgentUpdated::builder_v1().agent(agent).build().into(),
+                AgentUpdated::builder_v1()
+                    .agent(agent.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        // Read back the updated record. Filter on the fields we just
-        // changed so fetch keeps polling until the projection reflects
-        // them — otherwise we'd race the projector and return the
-        // pre-update record.
-        let updated = scope
-            .config()
-            .fetch
-            .eventual(|| async {
-                AgentRepo::new(scope).get(&update.name).await.map(|opt| {
-                    opt.filter(|agent| {
-                        agent.persona == update.persona
-                            && agent.description == update.description
-                            && agent.prompt == update.prompt
-                    })
-                })
-            })
-            .await?
-            .ok_or_else(|| AgentError::NotFound(update.name.clone()))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(AgentResponse::AgentUpdated(
             AgentUpdatedResponse::builder_v1()
-                .agent(updated)
+                .agent(agent)
                 .build()
                 .into(),
         ))
@@ -209,18 +183,8 @@ impl AgentService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { AgentRepo::new(scope).get(&removal.name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(AgentResponse::AgentRemoved(
             AgentRemovedResponse::builder_v1()

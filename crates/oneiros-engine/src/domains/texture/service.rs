@@ -14,29 +14,22 @@ impl TextureService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
-        let name = texture.name.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Texture(TextureEvents::TextureSet(
-                TextureSet::builder_v1().texture(texture).build().into(),
+                TextureSet::builder_v1()
+                    .texture(texture.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = TextureRepo::new(scope)
-            .fetch(&name)
-            .await?
-            .ok_or(TextureError::NotFound(name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(TextureResponse::TextureSet(
             TextureSetResponse::builder_v1()
-                .texture(projected)
+                .texture(texture)
                 .build()
                 .into(),
         ))
@@ -96,18 +89,8 @@ impl TextureService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { TextureRepo::new(scope).get(&name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(TextureResponse::TextureRemoved(
             TextureRemovedResponse::builder_v1()

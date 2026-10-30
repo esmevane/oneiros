@@ -14,28 +14,18 @@ impl UrgeService {
             .description(set.description.clone())
             .prompt(set.prompt.clone())
             .build();
-        let name = urge.name.clone();
 
         let new_event = NewEvent::builder()
             .data(Events::Urge(UrgeEvents::UrgeSet(
-                UrgeSet::builder_v1().urge(urge).build().into(),
+                UrgeSet::builder_v1().urge(urge.clone()).build().into(),
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = UrgeRepo::new(scope)
-            .fetch(&name)
-            .await?
-            .ok_or(UrgeError::NotFound(name))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(UrgeResponse::UrgeSet(
-            UrgeSetResponse::builder_v1().urge(projected).build().into(),
+            UrgeSetResponse::builder_v1().urge(urge).build().into(),
         ))
     }
 
@@ -87,18 +77,8 @@ impl UrgeService {
             )))
             .build();
 
-        mailbox.tell(ProjectMessage::from(
-            AppendProjectLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { UrgeRepo::new(scope).get(&name).await })
-            .await?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(UrgeResponse::UrgeRemoved(
             UrgeRemovedResponse::builder_v1().name(name).build().into(),

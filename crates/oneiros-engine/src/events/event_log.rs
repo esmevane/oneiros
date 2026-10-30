@@ -61,7 +61,7 @@ impl<'a> EventLog<'a> {
     /// Append a single event. Returns the stored form with sequence.
     #[tracing::instrument(skip_all, fields(event_type = event.data.event_type()), err(Display))]
     pub(crate) fn append(&self, event: &NewEvent) -> Result<StoredEvent, EventError> {
-        let id = EventId::new();
+        let id = event.id;
         let data_json = serde_json::to_string(&event.data)?;
         let source_json = serde_json::to_string(&event.source)?;
         let event_type = event.data.event_type();
@@ -76,6 +76,7 @@ impl<'a> EventLog<'a> {
         )?;
 
         let sequence = self.conn.last_insert_rowid();
+        self.conn.announce_append();
 
         Ok(StoredEvent::builder()
             .id(id)
@@ -84,6 +85,15 @@ impl<'a> EventLog<'a> {
             .source(event.source)
             .created_at(now)
             .build())
+    }
+
+    /// Whether an event with this id is in the log.
+    pub(crate) fn contains(&self, id: EventId) -> Result<bool, EventError> {
+        Ok(self.conn.query_row(
+            &format!("select exists(select 1 from {} where id = ?1)", self.table),
+            params![id.to_string()],
+            |row| row.get(0),
+        )?)
     }
 
     /// Load all events in sequence order. Rows whose event type is not

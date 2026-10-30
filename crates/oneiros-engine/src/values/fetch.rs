@@ -47,6 +47,9 @@ impl Fetch {
     /// Poll the closure until it yields a value or the patience window
     /// expires.
     ///
+    /// The first look always runs to completion; `timeout` bounds only
+    /// the waiting after it. A zero timeout is a plain read.
+    ///
     /// Returns `Ok(Some(_))` when the closure produces a value within
     /// `timeout`, `Ok(None)` when the window expires without a value,
     /// and `Err(_)` if the closure errors.
@@ -55,43 +58,19 @@ impl Fetch {
         F: Fn() -> Fut,
         Fut: Future<Output = Result<Option<T>, E>>,
     {
+        if let Some(value) = f().await? {
+            return Ok(Some(value));
+        }
         tokio::time::timeout(self.timeout, async {
             loop {
+                tokio::time::sleep(self.interval).await;
                 if let Some(value) = f().await? {
                     return Ok(Some(value));
                 }
-                tokio::time::sleep(self.interval).await;
             }
         })
         .await
         .unwrap_or(Ok(None))
-    }
-
-    /// Poll a presence-check closure until it returns `Ok(None)` (the
-    /// resource has disappeared) or the patience window expires. The
-    /// remove-side counterpart to [`eventual`]: after dispatching a
-    /// remove event, callers wait here until the projection has caught
-    /// up to the absence, so the response acknowledges actual state
-    /// rather than just receipt.
-    ///
-    /// Returns `Ok(true)` if absence was observed within the window,
-    /// `Ok(false)` if the timeout expired with the resource still
-    /// present, and `Err(_)` if the closure errored.
-    pub(crate) async fn until_absent<T, E, F, Fut>(&self, f: F) -> Result<bool, E>
-    where
-        F: Fn() -> Fut,
-        Fut: Future<Output = Result<Option<T>, E>>,
-    {
-        tokio::time::timeout(self.timeout, async {
-            loop {
-                if f().await?.is_none() {
-                    return Ok(true);
-                }
-                tokio::time::sleep(self.interval).await;
-            }
-        })
-        .await
-        .unwrap_or(Ok(false))
     }
 }
 
@@ -124,6 +103,23 @@ mod tests {
         };
         let result: Result<Option<i32>, ()> = fetch.eventual(|| async { Ok(None) }).await;
         assert_eq!(result, Ok(None));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn eventual_with_zero_timeout_still_looks_once() {
+        let fetch = Fetch {
+            interval: Duration::from_millis(10),
+            timeout: Duration::ZERO,
+        };
+        let result: Result<Option<i32>, ()> = fetch
+            .eventual(|| async {
+                // A look that has to wait (say, on a busy connection)
+                // still gets to finish.
+                tokio::time::sleep(Duration::from_millis(50)).await;
+                Ok(Some(42))
+            })
+            .await;
+        assert_eq!(result, Ok(Some(42)));
     }
 
     #[tokio::test(start_paused = true)]

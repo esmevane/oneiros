@@ -29,27 +29,18 @@ impl SliceService {
         let new_event = NewEvent::builder()
             .data(Events::Slice(SliceEvents::SliceCreated(
                 SliceCreated::builder_v1()
-                    .slice(slice)
+                    .slice(slice.clone())
                     .initial_event_ids(initial_event_ids)
                     .build()
                     .into(),
             )))
             .build();
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        let projected = SliceRepo::new(scope)
-            .fetch(&req.name)
-            .await?
-            .ok_or(SliceError::NotFound(req.name.clone()))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(SliceResponse::Created(
             SliceCreatedResponse::builder_v1()
-                .slice(projected)
+                .slice(slice)
                 .build()
                 .into(),
         ))
@@ -71,19 +62,8 @@ impl SliceService {
         let new_event = NewEvent::builder()
             .data(Events::Slice(SliceEvents::SliceDeleted(deleted)))
             .build();
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
-
-        scope
-            .config()
-            .fetch
-            .until_absent(|| async { SliceRepo::new(scope).get(name).await })
-            .await
-            .map_err(|_| SliceError::NotFound(name.clone()))?;
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
         Ok(SliceResponse::Deleted(
             SliceDeletedResponse::builder_v1()

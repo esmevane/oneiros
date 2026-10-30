@@ -76,27 +76,20 @@ impl TicketService {
             .granted_by(request.actor_id)
             .permissions(request.permissions.clone())
             .build();
-        let id = ticket.id;
 
         let new_event = NewEvent::builder()
             .data(Events::Ticket(TicketEvents::TicketIssued(
-                TicketIssued::builder_v1().ticket(ticket).build().into(),
+                TicketIssued::builder_v1()
+                    .ticket(ticket.clone())
+                    .build()
+                    .into(),
             )))
             .build();
 
-        mailbox.tell(HostMessage::from(
-            AppendHostLog::builder()
-                .scope(scope.clone())
-                .event(new_event)
-                .build(),
-        ));
+        mailbox.tell(scope.append(new_event.clone()));
+        scope.ensure_persisted(&new_event).await?;
 
-        let stored = TicketRepo::new(scope)
-            .fetch(&id)
-            .await?
-            .ok_or(TicketError::NotFound(id))?;
-
-        Ok(stored)
+        Ok(ticket)
     }
 
     pub(crate) async fn get(
