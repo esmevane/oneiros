@@ -142,11 +142,11 @@ resource_requests! {
     },
     ListActors => |this, client| {
         let ListActors::V1(listing) = this;
-        let query = format!(
-            "limit={}&offset={}",
-            listing.filters.limit, listing.filters.offset,
-        );
-        client.host_tier().get(&format!("/actors?{query}")).await
+        let path = QueryPath::new("/actors")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.host_tier().get(&path).await
     }
 }
 

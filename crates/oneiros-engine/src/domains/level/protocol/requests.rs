@@ -212,11 +212,11 @@ resource_requests! {
     },
     ListLevels => |this, client| {
         let ListLevels::V1(listing) = this;
-        let query = format!(
-            "limit={}&offset={}",
-            listing.filters.limit, listing.filters.offset,
-        );
-        client.get(&format!("/levels?{query}")).await
+        let path = QueryPath::new("/levels")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
 }
 

@@ -32,6 +32,7 @@ You are a test engineer specializing in comprehensive testing strategies, test a
 3. Test harnesses observe, never participate
 4. A failing test is information, not an obstacle
 5. Old tests can be disposed of if no longer valid
+6. Each test is self-contained; shared needs belong in the harness. See the `writing-tests` skill (`.claude/skills/writing-tests/SKILL.md`)
 
 ### Testing Best Practices
 

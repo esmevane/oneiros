@@ -78,31 +78,16 @@ impl SearchQuery {
 resource_requests! {
     SearchQuery => |this, client| {
         let SearchQuery::V1(query) = this;
-        // Values are free text (`#317`, `a & b`), so they must be
-        // percent-encoded — a raw `#` would truncate the URL at a fragment.
-        let mut params = form_urlencoded::Serializer::new(String::new());
-        if let Some(q) = &query.query {
-            params.append_pair("query", q);
-        }
-        if let Some(a) = &query.agent {
-            params.append_pair("agent", &a.to_string());
-        }
-        if let Some(k) = query.kind {
-            params.append_pair("kind", k.as_str());
-        }
-        if let Some(t) = &query.texture {
-            params.append_pair("texture", &t.to_string());
-        }
-        if let Some(l) = &query.level {
-            params.append_pair("level", &l.to_string());
-        }
-        if let Some(s) = &query.sensation {
-            params.append_pair("sensation", &s.to_string());
-        }
-        params.append_pair("limit", &query.filters.limit.to_string());
-        params.append_pair("offset", &query.filters.offset.to_string());
-
-        let path = format!("/search?{}", params.finish());
+        let path = QueryPath::new("/search")
+            .maybe_param("query", query.query.as_ref())
+            .maybe_param("agent", query.agent.as_ref())
+            .maybe_param("kind", query.kind.map(|kind| kind.as_str()))
+            .maybe_param("texture", query.texture.as_ref())
+            .maybe_param("level", query.level.as_ref())
+            .maybe_param("sensation", query.sensation.as_ref())
+            .param("limit", query.filters.limit)
+            .param("offset", query.filters.offset)
+            .finish();
         client.get(&path).await
     },
 }

@@ -13,6 +13,7 @@ mod namespace;
 mod portability;
 mod pressure;
 mod protocol;
+mod query_encoding;
 mod remotes;
 mod search;
 mod skills;

@@ -482,27 +482,17 @@ impl GuidebookAgent {
     }
 }
 
-fn encode_dream_overrides(overrides: &DreamOverrides) -> String {
-    let mut parts: Vec<String> = Vec::new();
-    if let Some(value) = overrides.recent_window {
-        parts.push(format!("recent_window={value}"));
-    }
-    if let Some(value) = overrides.dream_depth {
-        parts.push(format!("dream_depth={value}"));
-    }
-    if let Some(value) = overrides.cognition_size {
-        parts.push(format!("cognition_size={value}"));
-    }
-    if let Some(value) = &overrides.recollection_level {
-        parts.push(format!("recollection_level={value}"));
-    }
-    if let Some(value) = overrides.recollection_size {
-        parts.push(format!("recollection_size={value}"));
-    }
-    if let Some(value) = overrides.experience_size {
-        parts.push(format!("experience_size={value}"));
-    }
-    parts.join("&")
+/// The dream route for `agent`, with any explicit overrides encoded as
+/// query parameters.
+pub(crate) fn dream_path(agent: &AgentName, overrides: &DreamOverrides) -> String {
+    QueryPath::new(format!("/continuity/{agent}/dream"))
+        .maybe_param("recent_window", overrides.recent_window)
+        .maybe_param("dream_depth", overrides.dream_depth)
+        .maybe_param("cognition_size", overrides.cognition_size)
+        .maybe_param("recollection_level", overrides.recollection_level.as_ref())
+        .maybe_param("recollection_size", overrides.recollection_size)
+        .maybe_param("experience_size", overrides.experience_size)
+        .finish()
 }
 
 resource_requests! {
@@ -517,12 +507,7 @@ resource_requests! {
     },
     DreamAgent => |this, client| {
         let DreamAgent::V1(dream) = this;
-        let query = encode_dream_overrides(&DreamOverrides::default());
-        let path = if query.is_empty() {
-            format!("/continuity/{agent}/dream", agent = dream.agent)
-        } else {
-            format!("/continuity/{agent}/dream?{query}", agent = dream.agent)
-        };
+        let path = dream_path(&dream.agent, &DreamOverrides::default());
         client.post(&path, &serde_json::Value::Null).await
     },
     IntrospectAgent => |this, client| {

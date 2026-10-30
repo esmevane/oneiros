@@ -148,6 +148,27 @@ impl TestApp {
         Ok(self.engine.execute(&cli).await?)
     }
 
+    /// Execute a batch of CLI command strings in order, stopping at the
+    /// first failure. Fixtures read best as the commands a user would type.
+    ///
+    /// ```rust,ignore
+    /// app.commands(&[
+    ///     r#"agent create gov process --description "Governor agent""#,
+    ///     r#"cognition add gov.process observation "Seeds need tending""#,
+    /// ])
+    /// .await?;
+    /// ```
+    pub(crate) async fn commands(
+        &self,
+        inputs: &[&str],
+    ) -> Result<Vec<Rendered<Responses>>, Box<dyn core::error::Error>> {
+        let mut rendered = Vec::with_capacity(inputs.len());
+        for input in inputs {
+            rendered.push(self.command(input).await?);
+        }
+        Ok(rendered)
+    }
+
     /// Get a typed HTTP client connected to this app's server.
     ///
     /// The client authenticates with the project's token (written during
@@ -156,6 +177,10 @@ impl TestApp {
     pub(crate) fn client(&self) -> TestClient {
         let client = Client::from_config(self.engine.config()).expect("test client");
         TestClient { client }
+    }
+
+    pub(crate) fn testable<'this>(&'this self) -> Testables<'this> {
+        Testables { app: self }
     }
 
     /// The engine config — useful for tests that need the underlying
@@ -177,6 +202,90 @@ impl TestApp {
     /// The project token, if one exists (written during `init_project`).
     pub(crate) fn token(&self) -> Option<Token> {
         self.engine.config().token()
+    }
+}
+
+pub(crate) struct Testables<'testable> {
+    app: &'testable TestApp,
+}
+
+impl<'testable> Testables<'testable> {
+    pub(crate) async fn cognitions(
+        &self,
+        request: ListCognitions,
+    ) -> Result<Vec<String>, Box<dyn core::error::Error>> {
+        let items = match self.app.client().cognition().list(&request).await? {
+            CognitionResponse::Cognitions(CognitionsResponse::V1(listed)) => listed.items,
+            CognitionResponse::NoCognitions => Vec::new(),
+            other => panic!("expected Cognitions, got {other:#?}"),
+        };
+        let mut items = items
+            .iter()
+            .map(|item| item.content.to_string())
+            .collect::<Vec<String>>();
+
+        items.sort();
+
+        Ok(items)
+    }
+
+    pub(crate) async fn memories(
+        &self,
+        request: ListMemories,
+    ) -> Result<Vec<String>, Box<dyn core::error::Error>> {
+        let items = match self.app.client().memory().list(&request).await? {
+            MemoryResponse::Memories(MemoriesResponse::V1(listed)) => listed.items,
+            MemoryResponse::NoMemories => Vec::new(),
+            other => panic!("expected Memories, got {other:#?}"),
+        };
+
+        let mut items = items
+            .iter()
+            .map(|item| item.content.to_string())
+            .collect::<Vec<String>>();
+
+        items.sort();
+
+        Ok(items)
+    }
+
+    pub(crate) async fn experiences(
+        &self,
+        request: ListExperiences,
+    ) -> Result<Vec<String>, Box<dyn core::error::Error>> {
+        let items = match self.app.client().experience().list(&request).await? {
+            ExperienceResponse::Experiences(ExperiencesResponse::V1(listed)) => listed.items,
+            ExperienceResponse::NoExperiences => Vec::new(),
+            other => panic!("expected Experiences, got {other:#?}"),
+        };
+
+        let mut items = items
+            .iter()
+            .map(|item| item.description.to_string())
+            .collect::<Vec<String>>();
+
+        items.sort();
+
+        Ok(items)
+    }
+
+    pub(crate) async fn agents(
+        &self,
+        request: ListAgents,
+    ) -> Result<Vec<String>, Box<dyn core::error::Error>> {
+        let items = match self.app.client().agent().list(&request).await? {
+            AgentResponse::Agents(AgentsResponse::V1(listed)) => listed.items,
+            AgentResponse::NoAgents => Vec::new(),
+            other => panic!("expected Agents, got {other:#?}"),
+        };
+        let mut items = items
+            .iter()
+            .map(|item| item.name.to_string())
+            .collect::<Vec<String>>();
+
+        items.sort();
+
+        Ok(items)
     }
 }
 
@@ -377,13 +486,8 @@ impl<'a> ContinuityClient<'a> {
     ) -> Result<ContinuityResponse, ClientError> {
         // The `DreamAgent` request hard-codes `DreamOverrides::default()`
         // when serializing to a URL; tests that want explicit overrides
-        // build the query string here and call the raw client.
-        let query = encode_dream_overrides(overrides);
-        let path = if query.is_empty() {
-            format!("/continuity/{agent}/dream")
-        } else {
-            format!("/continuity/{agent}/dream?{query}")
-        };
+        // build the path here and call the raw client.
+        let path = dream_path(agent, overrides);
         let bytes = self.client.post(&path, &serde_json::Value::Null).await?;
         decode(bytes, "continuity")
     }
@@ -447,29 +551,6 @@ impl<'a> ContinuityClient<'a> {
         let bytes = request.execute_request(self.client).await?;
         decode(bytes, "continuity")
     }
-}
-
-fn encode_dream_overrides(overrides: &DreamOverrides) -> String {
-    let mut parts: Vec<String> = Vec::new();
-    if let Some(value) = overrides.recent_window {
-        parts.push(format!("recent_window={value}"));
-    }
-    if let Some(value) = overrides.dream_depth {
-        parts.push(format!("dream_depth={value}"));
-    }
-    if let Some(value) = overrides.cognition_size {
-        parts.push(format!("cognition_size={value}"));
-    }
-    if let Some(value) = &overrides.recollection_level {
-        parts.push(format!("recollection_level={value}"));
-    }
-    if let Some(value) = overrides.recollection_size {
-        parts.push(format!("recollection_size={value}"));
-    }
-    if let Some(value) = overrides.experience_size {
-        parts.push(format!("experience_size={value}"));
-    }
-    parts.join("&")
 }
 
 pub(crate) struct StorageClient<'a> {

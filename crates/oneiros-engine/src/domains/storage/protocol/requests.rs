@@ -236,8 +236,11 @@ resource_requests! {
     },
     ListStorage => |this, client| {
         let ListStorage::V1(listing) = this;
-        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset);
-        client.get(&format!("/storage?{query}")).await
+        let path = QueryPath::new("/storage")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
 }
 

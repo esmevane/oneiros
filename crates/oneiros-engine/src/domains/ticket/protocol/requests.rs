@@ -184,8 +184,11 @@ resource_requests! {
     },
     ListTickets => |this, client| {
         let ListTickets::V1(listing) = this;
-        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.host_tier().get(&format!("/tickets?{query}")).await
+        let path = QueryPath::new("/tickets")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.host_tier().get(&path).await
     },
     ValidateTicket => |this, client| { client.host_tier().post("/tickets/validate", this).await },
 }

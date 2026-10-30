@@ -123,11 +123,11 @@ resource_requests! {
     },
     ListFollows => |this, client| {
         let ListFollows::V1(listing) = this;
-        let query = format!(
-            "limit={}&offset={}",
-            listing.filters.limit, listing.filters.offset,
-        );
-        client.host_tier().get(&format!("/follows?{query}")).await
+        let path = QueryPath::new("/follows")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.host_tier().get(&path).await
     },
 }
 

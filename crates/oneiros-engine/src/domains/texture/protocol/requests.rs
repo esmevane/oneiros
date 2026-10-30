@@ -212,8 +212,11 @@ resource_requests! {
     },
     ListTextures => |this, client| {
         let ListTextures::V1(listing) = this;
-        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.get(&format!("/textures?{query}")).await
+        let path = QueryPath::new("/textures")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
 }
 
