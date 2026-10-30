@@ -516,15 +516,19 @@ resource_requests! {
     ListBookmarks => |this, client| {
         match this {
             ListBookmarks::V2(v2) => {
-                let mut query = format!("limit={}&offset={}", v2.filters.limit, v2.filters.offset,);
-                if let Some(ref from) = v2.from {
-                    query.push_str(&format!("&from={}", from));
-                }
-                client.get(&format!("/bookmarks?{query}")).await
+                let path = QueryPath::new("/bookmarks")
+                    .param("limit", v2.filters.limit)
+                    .param("offset", v2.filters.offset)
+                    .maybe_param("from", v2.from.as_ref())
+                    .finish();
+                client.get(&path).await
             }
             ListBookmarks::V1(v1) => {
-                let query = format!("limit={}&offset={}", v1.filters.limit, v1.filters.offset,);
-                client.get(&format!("/bookmarks?{query}")).await
+                let path = QueryPath::new("/bookmarks")
+                    .param("limit", v1.filters.limit)
+                    .param("offset", v1.filters.offset)
+                    .finish();
+                client.get(&path).await
             }
         }
     },

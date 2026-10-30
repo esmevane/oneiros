@@ -337,8 +337,11 @@ resource_requests! {
     },
     ListProjects => |this, client| {
         let ListProjects::V1(listing) = this;
-        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.host_tier().get(&format!("/projects?{query}")).await
+        let path = QueryPath::new("/projects")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.host_tier().get(&path).await
     },
     ShareProject => |this, client| {
         client.host_tier().post("/projects/share", this).await

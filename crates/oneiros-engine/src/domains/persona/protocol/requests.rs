@@ -214,11 +214,11 @@ resource_requests! {
     },
     ListPersonas => |this, client| {
         let ListPersonas::V1(listing) = this;
-        let query = format!(
-            "limit={}&offset={}",
-            listing.filters.limit, listing.filters.offset,
-        );
-        client.get(&format!("/personas?{query}")).await
+        let path = QueryPath::new("/personas")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
 }
 

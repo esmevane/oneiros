@@ -172,34 +172,15 @@ resource_requests! {
     },
     ListMemories => |this, client| {
         let ListMemories::V1(listing) = this;
-        let mut params: Vec<(&str, String)> = Vec::new();
-
-        if let Some(agent_name) = &listing.agent {
-            params.push(("agent", agent_name.to_string()));
-        }
-
-        if let Some(level_name) = &listing.level {
-            params.push(("level", level_name.to_string()));
-        }
-
-        if let Some(query) = &listing.query {
-            params.push(("query", query.clone()));
-        }
-
-        if let Some(lens) = &listing.lens {
-            params.push(("lens", lens.clone()));
-        }
-
-        params.push(("limit", listing.filters.limit.to_string()));
-        params.push(("offset", listing.filters.offset.to_string()));
-
-        let query = params
-            .iter()
-            .map(|(key, value)| format!("{key}={value}"))
-            .collect::<Vec<_>>()
-            .join("&");
-
-        client.get(&format!("/memories?{query}")).await
+        let path = QueryPath::new("/memories")
+            .maybe_param("agent", listing.agent.as_ref())
+            .maybe_param("level", listing.level.as_ref())
+            .maybe_param("query", listing.query.as_ref())
+            .maybe_param("lens", listing.lens.as_ref())
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
 }
 

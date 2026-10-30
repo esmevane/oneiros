@@ -212,8 +212,11 @@ resource_requests! {
     },
     ListUrges => |this, client| {
         let ListUrges::V1(listing) = this;
-        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.get(&format!("/urges?{query}")).await
+        let path = QueryPath::new("/urges")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
 }
 

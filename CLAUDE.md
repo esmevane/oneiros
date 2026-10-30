@@ -27,3 +27,7 @@ If the service isn't running: `oneiros service run &`
 
 If the project doesn't exist: `oneiros project create && oneiros seed core`
 <!-- oneiros:end -->
+
+## Tests
+
+Tests here are self-contained: setup, fixtures, and every assertion live in the test body, and shared needs go into the test harness. Read the `writing-tests` skill (`.claude/skills/writing-tests/SKILL.md`) before writing or refactoring tests.

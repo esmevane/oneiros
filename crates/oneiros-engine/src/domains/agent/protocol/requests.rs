@@ -271,25 +271,13 @@ resource_requests! {
     },
     ListAgents => |this, client| {
         let ListAgents::V1(listing) = this;
-        let mut params: Vec<(&str, String)> = Vec::new();
-
-        if let Some(query) = &listing.query {
-            params.push(("query", query.clone()));
-        }
-
-        if let Some(lens) = &listing.lens {
-            params.push(("lens", lens.clone()));
-        }
-
-        params.push(("limit", listing.filters.limit.to_string()));
-        params.push(("offset", listing.filters.offset.to_string()));
-
-        let query = params
-            .iter()
-            .map(|(key, value)| format!("{key}={value}"))
-            .collect::<Vec<_>>()
-            .join("&");
-        client.get(&format!("/agents?{query}")).await
+        let path = QueryPath::new("/agents")
+            .maybe_param("query", listing.query.as_ref())
+            .maybe_param("lens", listing.lens.as_ref())
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
     UpdateAgent => |this, client| {
         let UpdateAgent::V1(body) = this;

@@ -142,8 +142,11 @@ resource_requests! {
     },
     ListTenants => |this, client| {
         let ListTenants::V1(listing) = this;
-        let query = format!("limit={}&offset={}", listing.filters.limit, listing.filters.offset,);
-        client.host_tier().get(&format!("/tenants?{query}")).await
+        let path = QueryPath::new("/tenants")
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.host_tier().get(&path).await
     },
 }
 

@@ -197,26 +197,13 @@ resource_requests! {
     },
     ListConnections => |this, client| {
         let ListConnections::V1(listing) = this;
-        let mut params: Vec<(&str, String)> = Vec::new();
-
-        if let Some(entity) = &listing.entity {
-            params.push(("entity", entity.to_string()));
-        }
-
-        if let Some(lens) = &listing.lens {
-            params.push(("lens", lens.clone()));
-        }
-
-        params.push(("limit", listing.filters.limit.to_string()));
-        params.push(("offset", listing.filters.offset.to_string()));
-
-        let query = params
-            .iter()
-            .map(|(key, value)| format!("{key}={value}"))
-            .collect::<Vec<_>>()
-            .join("&");
-
-        client.get(&format!("/connections?{query}")).await
+        let path = QueryPath::new("/connections")
+            .maybe_param("entity", listing.entity.as_ref())
+            .maybe_param("lens", listing.lens.as_ref())
+            .param("limit", listing.filters.limit)
+            .param("offset", listing.filters.offset)
+            .finish();
+        client.get(&path).await
     },
     RemoveConnection => |this, client| {
         let RemoveConnection::V1(removal) = this;
