@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.13](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.12...oneiros-engine-v0.0.13) - 2026-10-30
+
+### 🐛 Fixes
+
+- [patch] Fix write idempotency issues. (#333)
+
+In some cases we need to ensure a bit of durability in the creation of
+new records, to make sure that repeated requests aren't something users
+think they need to attempt. This commit institutes a log metaphor and
+some plumbing to verify the persistence when it matters.
+
+Related to #323, #324
+
+- [patch] Encode client urls. (#331)
+
+In places where we're using the client, we sometimes pass query
+parameters, and those weren't url encoded. This commit adds a query
+param encoding step to every spot where we need it. In turn, this
+resolves an issue where some parameters we invoke with could cause odd
+errors.
+
+Closes #330
+
+- [patch] Search uses match expressions. (#329)
+
+We were doing string manipulation for inputs to search up to now - not
+great. It meant there was a sql injection route, for one, but it also
+meant that a bunch of searches would 500, meaning the route was super
+obvious and broke sometimes. This commit fixes it so that inbound
+searches actually do sanitization and stuff like that.
+
+Closes #326
+
+- [patch] Remove connection by ref (#328)
+
+This lets our `connection remove` accept refs in addition to ids, which
+we made possible a while back, but missed adding to this endpoint.
+Whoops!
+
+Closes #327
+
+- [patch] Project scopes don't permit host access. (#325)
+
+This one just slipped through because most of our work has been via a
+local access setup, but: project tokens were granting host level access
+to remotes. This does some basic work to introduce a way to prevent that
+kind of access, answering with a 403 forbidden instead. Local access is
+still fine.
+
+- [patch] Tolerate checkout contention. (#324)
+
+This mitigates our checkout contention issue, by adding a timeout to
+situations where we have checkout contention. Basically, any time a
+`CheckedOut` error returns, we continue polling.
+
+Closes #323
+
+- [patch] Remove noteworthy re-exports. (#315)
+
+Why were they there to begin with, frankly? This junks the re-exports of
+the noteworthy annotation stuff. This lets us find all the spots where
+noteworthy is in use, but also removes a bizarre re-export coupling that
+maybe only existed because it lowered lines of code? I don't really
+know.
+
+
 ## [0.0.12](https://github.com/esmevane/oneiros/compare/oneiros-engine-v0.0.11...oneiros-engine-v0.0.12) - 2026-09-09
 
 ### 🐛 Fixes
